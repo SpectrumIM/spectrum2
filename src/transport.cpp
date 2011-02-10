@@ -46,8 +46,8 @@ Transport::Transport(Swift::EventLoop *loop, Config::Variables &config) {
 	m_component->setSoftwareVersion("", "");
 	m_component->onConnected.connect(bind(&Transport::handleConnected, this));
 	m_component->onError.connect(bind(&Transport::handleConnectionError, this, _1));
-// 	m_component->onDataRead.connect(bind(&Transport::handleDataRead, this, _1));
-// 	m_component->onDataWritten.connect(bind(&Transport::handleDataWritten, this, _1));
+	m_component->onDataRead.connect(bind(&Transport::handleDataRead, this, _1));
+	m_component->onDataWritten.connect(bind(&Transport::handleDataWritten, this, _1));
 // 	m_component->onPresenceReceived.connect(bind(&Transport::handlePresenceReceived, this, _1));
 // 	m_component->onMessageReceived.connect(bind(&Transport::handleMessageReceived, this, _1));
 
@@ -84,17 +84,24 @@ void Transport::connect() {
 }
 
 void Transport::handleConnected() {
-	std::cout <<"Transport" << " CONNECTED!\n";
+	onConnected();
 	m_reconnectCount = 0;
 }
 
 void Transport::handleConnectionError(const ComponentError &error) {
-	std::cout << "Transport" << " Disconnected from Jabber server!\n";
-
+	onConnectionError(error);
 // 	if (m_reconnectCount == 2)
 // 		Transport::instance()->userManager()->removeAllUsers();
 
 	m_reconnectTimer->start();
+}
+
+void Transport::handleDataRead(const String &data) {
+	onXMLIn(data.getUTF8String());
+}
+
+void Transport::handleDataWritten(const String &data) {
+	onXMLOut(data.getUTF8String());
 }
 
 }

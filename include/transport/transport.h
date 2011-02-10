@@ -48,9 +48,12 @@ namespace Transport {
 
 			// Connect to server
 			void connect();
-			
-			Swift::Component *getComponent() { return m_component; }
-		
+
+			boost::signal<void (const Swift::ComponentError&)> onConnectionError;
+			boost::signal<void ()> onConnected;
+			boost::signal<void (const std::string &)> onXMLOut;
+			boost::signal<void (const std::string &)> onXMLIn;
+
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
@@ -59,9 +62,9 @@ namespace Transport {
 // 			void handlePresence(Swift::Presence::ref presence);
 // 			void handleSubscription(Swift::Presence::ref presence);
 // 			void handleProbePresence(Swift::Presence::ref presence);
-// 			void handleDataRead(const Swift::String &data);
-// 			void handleDataWritten(const Swift::String &data);
-// 			
+			void handleDataRead(const Swift::String &data);
+			void handleDataWritten(const Swift::String &data);
+
 // 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, const boost::optional<Swift::ErrorPayload>& error, const Swift::JID& jid);
 // 			void handleCapsChanged(const Swift::JID& jid);
 
