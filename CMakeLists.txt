@@ -24,6 +24,8 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 SET(TRANSPORT_VERSION 2.0)
+include_directories(include)
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
+ADD_SUBDIRECTORY(examples)
