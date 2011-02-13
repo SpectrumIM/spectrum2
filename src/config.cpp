@@ -36,6 +36,8 @@ bool load(const std::string &configfile, Variables &variables, boost::program_op
 		("service.server", value<std::string>(), "set compression level")
 		("service.password", value<std::string>(), "set compression level")
 		("service.port", value<int>(), "set compression level")
+		("database.database", value<std::string>(), "set compression level")
+		("database.prefix", value<std::string>(), "set compression level")
 	;
 
 

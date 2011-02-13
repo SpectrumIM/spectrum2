@@ -7,7 +7,7 @@ FILE(GLOB HEADERS ../../include/transport/*.h)
 ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC})
 ADD_DEFINITIONS(-fPIC)
 
-TARGET_LINK_LIBRARIES(transport -lSwiften -lresolv -lidn -lz -lpthread -lexpat -lidn -lboost_date_time -lboost_system -lboost_filesystem -lboost_program_options -lboost_regex -lboost_thread-mt -lboost_signals -lz -lssl -lcrypto -lexpat -lresolv -lc -lxml2 -export-dynamic)
+TARGET_LINK_LIBRARIES(transport -lSwiften -lresolv -lidn -lz -lpthread -lexpat -lidn -lboost_date_time -lboost_system -lboost_filesystem -lboost_program_options -lboost_regex -lboost_thread-mt -lboost_signals -lz -lssl -lcrypto -lexpat -lresolv -lc -lxml2 ${SQLITE3_LIBRARIES})
 
 SET_TARGET_PROPERTIES(transport PROPERTIES
       VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}

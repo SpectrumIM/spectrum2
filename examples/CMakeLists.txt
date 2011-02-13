@@ -1,1 +1,2 @@
 ADD_SUBDIRECTORY(server_connect)
+ADD_SUBDIRECTORY(usermanager)

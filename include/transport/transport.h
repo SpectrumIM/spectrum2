@@ -29,7 +29,11 @@
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
+#include <boost/bind.hpp>
 #include "transport/config.h"
+
+#define tr(lang,STRING)    (STRING)
+#define _(STRING)    (STRING)
 
 namespace Transport {
 	// typedef enum { 	CLIENT_FEATURE_ROSTERX = 2,
@@ -40,32 +44,42 @@ namespace Transport {
 	// 
 	// class SpectrumDiscoInfoResponder;
 	// class SpectrumRegisterHandler;
+	class StorageBackend;
+	class DiscoInfoResponder;
 
-	class Transport {
+	class Component {
 		public:
-			Transport(Swift::EventLoop *loop, Config::Variables &config);
-			~Transport();
+			Component(Swift::EventLoop *loop, Config::Variables &config);
+			~Component();
 
 			// Connect to server
 			void connect();
+
+			void setStorageBackend(StorageBackend *backend);
+
+			void setTransportFeatures(std::list<std::string> &features);
+			void setBuddyFeatures(std::list<std::string> &features);
+
+			Swift::JID &getJID() { return m_jid; }
 
 			boost::signal<void (const Swift::ComponentError&)> onConnectionError;
 			boost::signal<void ()> onConnected;
 			boost::signal<void (const std::string &)> onXMLOut;
 			boost::signal<void (const std::string &)> onXMLIn;
+			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
-// 			void handlePresenceReceived(Swift::Presence::ref presence);
+			void handlePresenceReceived(Swift::Presence::ref presence);
 // 			void handleMessageReceived(Swift::Message::ref message);
-// 			void handlePresence(Swift::Presence::ref presence);
-// 			void handleSubscription(Swift::Presence::ref presence);
-// 			void handleProbePresence(Swift::Presence::ref presence);
+			void handlePresence(Swift::Presence::ref presence);
+			void handleSubscription(Swift::Presence::ref presence);
+			void handleProbePresence(Swift::Presence::ref presence);
 			void handleDataRead(const Swift::String &data);
 			void handleDataWritten(const Swift::String &data);
 
-// 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, const boost::optional<Swift::ErrorPayload>& error, const Swift::JID& jid);
+			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 // 			void handleCapsChanged(const Swift::JID& jid);
 
 			Swift::BoostNetworkFactories *m_factories;
@@ -76,10 +90,15 @@ namespace Transport {
 			Swift::CapsManager *m_capsManager;
 			Swift::CapsMemoryStorage *m_capsMemoryStorage;
 			Swift::PresenceOracle *m_presenceOracle;
-// 			SpectrumDiscoInfoResponder *m_discoInfoResponder;
+			StorageBackend *m_storageBackend;
+ 			DiscoInfoResponder *m_discoInfoResponder;
 // 			SpectrumRegisterHandler *m_registerHandler;
 			int m_reconnectCount;
 			Config::Variables m_config;
+			std::string m_protocol;
 			Swift::JID m_jid;
+
+		friend class User;
+		friend class UserRegistration;
 	};
 }
