@@ -32,7 +32,7 @@ namespace Transport {
 class SQLite3Backend : public StorageBackend
 {
 	public:
-		SQLite3Backend(Config::Variables &config);
+		SQLite3Backend(Config *config);
 		~SQLite3Backend();
 
 		bool connect();
@@ -49,7 +49,7 @@ class SQLite3Backend : public StorageBackend
 		bool exec(const std::string &query);
 
 		sqlite3 *m_db;
-		Config::Variables m_config;
+		Config *m_config;
 		std::string m_prefix;
 };
 

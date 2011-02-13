@@ -26,12 +26,28 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 
+#define CONFIG_STRING(PTR, KEY) (*PTR)[KEY].as<std::string>()
+#define CONFIG_INT(PTR, KEY) (*PTR)[KEY].as<int>()
+#define CONFIG_BOOL(PTR, KEY) (*PTR)[KEY].as<bool>()
+#define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
+
 namespace Transport {
-	namespace Config {
-		typedef boost::program_options::variables_map Variables;
-		
-		bool load(const std::string &configfile, Variables &variables, boost::program_options::options_description &opts);
-		bool load(const std::string &configfile, Variables &variables);
-		
-	}
+
+typedef boost::program_options::variables_map Variables;
+
+class Config {
+	public:
+		Config() {}
+		virtual ~Config() {}
+		bool load(const std::string &configfile, boost::program_options::options_description &opts);
+		bool load(const std::string &configfile);
+
+		const boost::program_options::variable_value &operator[] (const std::string &key) {
+			return m_variables[key];
+		}
+	
+	private:
+		Variables m_variables;
+};
+
 }

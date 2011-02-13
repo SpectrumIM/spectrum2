@@ -24,33 +24,30 @@
 using namespace boost::program_options;
 
 namespace Transport {
-namespace Config {
 
-bool load(const std::string &configfile, Variables &variables, boost::program_options::options_description &opts) {
+bool Config::load(const std::string &configfile, boost::program_options::options_description &opts) {
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
 		return false;
 
 	opts.add_options()
-		("service.jid", value<std::string>(), "set compression level")
-		("service.server", value<std::string>(), "set compression level")
-		("service.password", value<std::string>(), "set compression level")
-		("service.port", value<int>(), "set compression level")
-		("database.database", value<std::string>(), "set compression level")
-		("database.prefix", value<std::string>(), "set compression level")
+		("service.jid", value<std::string>()->default_value(""), "Transport Jabber ID")
+		("service.server", value<std::string>()->default_value(""), "Server to connect to")
+		("service.password", value<std::string>()->default_value(""), "Password used to auth the server")
+		("service.port", value<int>()->default_value(0), "Port the server is listening on")
+		("database.database", value<std::string>()->default_value(""), "Database used to store data")
+		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
 	;
 
-
-    store(parse_config_file(ifs, opts), variables);
-	notify(variables);
+    store(parse_config_file(ifs, opts), m_variables);
+	notify(m_variables);
 
 	return true;
 }
 
-bool load(const std::string &configfile, Variables &variables) {
+bool Config::load(const std::string &configfile) {
 	options_description opts("Transport options");
-	return load(configfile, variables, opts);
+	return load(configfile, opts);
 }
 
-}
 }

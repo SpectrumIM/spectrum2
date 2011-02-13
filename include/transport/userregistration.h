@@ -31,6 +31,7 @@ struct UserInfo;
 class Component;
 class StorageBackend;
 class UserManager;
+class Config;
 
 class UserRegistration : Swift::GetResponder<Swift::InBandRegistrationPayload>, Swift::SetResponder<Swift::InBandRegistrationPayload> {
 	public:
@@ -54,6 +55,7 @@ class UserRegistration : Swift::GetResponder<Swift::InBandRegistrationPayload>, 
 		Component *m_component;
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
+		Config *m_config;
 
 };
 

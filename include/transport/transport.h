@@ -49,7 +49,7 @@ namespace Transport {
 
 	class Component {
 		public:
-			Component(Swift::EventLoop *loop, Config::Variables &config);
+			Component(Swift::EventLoop *loop, Config *config);
 			~Component();
 
 			// Connect to server
@@ -94,7 +94,7 @@ namespace Transport {
  			DiscoInfoResponder *m_discoInfoResponder;
 // 			SpectrumRegisterHandler *m_registerHandler;
 			int m_reconnectCount;
-			Config::Variables m_config;
+			Config* m_config;
 			std::string m_protocol;
 			Swift::JID m_jid;
 

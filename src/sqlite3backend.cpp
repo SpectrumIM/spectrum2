@@ -27,10 +27,10 @@ using namespace boost;
 
 namespace Transport {
 
-SQLite3Backend::SQLite3Backend(Config::Variables &config) {
+SQLite3Backend::SQLite3Backend(Config *config) {
 	m_config = config;
 	m_db = NULL;
-	m_prefix = m_config["database.prefix"].as<std::string>();
+	m_prefix = CONFIG_STRING(m_config, "database.prefix");
 }
 
 SQLite3Backend::~SQLite3Backend(){
@@ -40,7 +40,7 @@ SQLite3Backend::~SQLite3Backend(){
 }
 
 bool SQLite3Backend::connect() {
-	if (sqlite3_open(m_config["database.database"].as<std::string>().c_str(), &m_db)) {
+	if (sqlite3_open(CONFIG_STRING(m_config, "database.database").c_str(), &m_db)) {
 		 sqlite3_close(m_db);
 		 return false;
 	}

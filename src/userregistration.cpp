@@ -32,6 +32,7 @@ namespace Transport {
 
 UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::GetResponder<Swift::InBandRegistrationPayload>(component->m_component->getIQRouter()), Swift::SetResponder<Swift::InBandRegistrationPayload>(component->m_component->getIQRouter()) {
 	m_component = component;
+	m_config = m_component->m_config;
 	m_storageBackend = storageBackend;
 	m_userManager = userManager;
 	Swift::GetResponder<Swift::InBandRegistrationPayload>::start();
@@ -119,7 +120,7 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 }
 
 bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
-	if (m_component->m_config["service.protocol"].as<std::string>() == "irc") {
+	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
 	}
@@ -127,8 +128,8 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	std::string barejid = from.toBare().toString().getUTF8String();
 
 // 	User *user = m_userManager->getUserByJID(barejid);
-	if (!m_component->m_config["registration.enable_public_registration"].as<bool>()) {
-		std::list<std::string> const &x = m_component->m_config["registration.enable_public_registration"].as<std::list<std::string> >();
+	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
+		std::list<std::string> const &x = CONFIG_LIST(m_config,"registration.enable_public_registration");
 		if (std::find(x.begin(), x.end(), from.getDomain().getUTF8String()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
 			Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -136,22 +137,22 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		}
 	}
 
-// 	const char *_language = user ? user->getLang() : m_component->m_config["registration.language"].as<std::string>().c_str();
+// 	const char *_language = user ? user->getLang() : CONFIG_STRING(m_config, "registration.language").c_str();
 
 	boost::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
 
 	UserInfo res;
 	bool registered = m_storageBackend->getUser(barejid, res);
 
-	std::string instructions = m_component->m_config["registration.reg_instructions"].as<std::string>();
+	std::string instructions = CONFIG_STRING(m_config, "registration.reg_instructions");
 
 	reg->setInstructions(instructions);
 	reg->setRegistered(res.id != -1);
 	reg->setUsername(res.uin);
-	if (m_component->m_config["service.protocol"].as<std::string>() != "twitter" && m_component->m_config["service.protocol"].as<std::string>() != "bonjour")
+	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
 		reg->setPassword(res.password);
 
-	std::string usernameField = m_component->m_config["registration.reg_username_field"].as<std::string>();
+	std::string usernameField = CONFIG_STRING(m_config, "registration.reg_username_field");
 
 	Form::ref form(new Form(Form::FormType));
 	form->setTitle(tr(_language, _("Registration")));
@@ -169,7 +170,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	username->setRequired(true);
 	form->addField(username);
 
-	if (m_component->m_config["service.protocol"].as<std::string>() != "twitter" && m_component->m_config["service.protocol"].as<std::string>() != "bonjour") {
+	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour") {
 		TextPrivateFormField::ref password = TextPrivateFormField::create();
 		password->setName("password");
 		password->setLabel(tr(_language, _("Password")));
@@ -183,7 +184,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	if (registered)
 		language->setValue(res.language);
 	else
-		language->setValue(m_component->m_config["registration.language"].as<std::string>());
+		language->setValue(CONFIG_STRING(m_config, "registration.language"));
 // 	std::map <std::string, std::string> languages = localization.getLanguages();
 // 	for (std::map <std::string, std::string>::iterator it = languages.begin(); it != languages.end(); it++) {
 // 		language->addOption(FormField::Option((*it).second, (*it).first));
@@ -196,7 +197,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	if (registered)
 		encoding->setValue(res.encoding);
 	else
-		encoding->setValue(m_component->m_config["registration.encoding"].as<std::string>());
+		encoding->setValue(CONFIG_STRING(m_config, "registration.encoding"));
 	form->addField(encoding);
 
 	if (registered) {
@@ -215,7 +216,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 }
 
 bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
-	if (m_component->m_config["service.protocol"].as<std::string>() == "irc") {
+	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
 	}
@@ -223,8 +224,8 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	std::string barejid = from.toBare().toString().getUTF8String();
 
 // 	AbstractUser *user = m_component->userManager()->getUserByJID(barejid);
-	if (!m_component->m_config["registration.enable_public_registration"].as<bool>()) {
-		std::list<std::string> const &x = m_component->m_config["registration.enable_public_registration"].as<std::list<std::string> >();
+	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
+		std::list<std::string> const &x = CONFIG_LIST(m_config,"registration.enable_public_registration");
 		if (std::find(x.begin(), x.end(), from.getDomain().getUTF8String()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
 			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -294,7 +295,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	// Register or change password
 	if (payload->getUsername()->isEmpty() ||
-		(payload->getPassword()->isEmpty() && m_component->m_config["service.protocol"].as<std::string>() != "twitter" && m_component->m_config["service.protocol"].as<std::string>() != "bonjour")
+		(payload->getPassword()->isEmpty() && CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
 // 		|| localization.getLanguages().find(language) == localization.getLanguages().end()
 	)
 	{
@@ -302,7 +303,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		return true;
 	}
 
-	if (m_component->m_config["service.protocol"].as<std::string>() == "xmpp") {
+	if (CONFIG_STRING(m_config, "service.protocol") == "xmpp") {
 		// User tries to register himself.
 		if ((Swift::JID(*payload->getUsername()).toBare() == from.toBare())) {
 			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
@@ -322,8 +323,8 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // 	m_component->protocol()->prepareUsername(username);
 
 	std::string newUsername(username);
-	if (!m_component->m_config["registration.username_mask"].as<std::string>().empty()) {
-		newUsername = m_component->m_config["registration.username_mask"].as<std::string>();
+	if (!CONFIG_STRING(m_config, "registration.username_mask").empty()) {
+		newUsername = CONFIG_STRING(m_config, "registration.username_mask");
 // 		replace(newUsername, "$username", username.c_str());
 	}
 
@@ -334,8 +335,8 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // 	}
 
 // #if GLIB_CHECK_VERSION(2,14,0)
-// 	if (!m_component->m_config["registration.reg_allowed_usernames"].as<std::string>().empty() &&
-// 		!g_regex_match_simple(m_component->m_config["registration.reg_allowed_usernames"].as<std::string>(), newUsername.c_str(),(GRegexCompileFlags) (G_REGEX_CASELESS | G_REGEX_EXTENDED), (GRegexMatchFlags) 0)) {
+// 	if (!CONFIG_STRING(m_config, "registration.reg_allowed_usernames").empty() &&
+// 		!g_regex_match_simple(CONFIG_STRING(m_config, "registration.reg_allowed_usernames"), newUsername.c_str(),(GRegexCompileFlags) (G_REGEX_CASELESS | G_REGEX_EXTENDED), (GRegexMatchFlags) 0)) {
 // 		Log("UserRegistration", "This is not valid username: "<< newUsername);
 // 		Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 // 		return true;

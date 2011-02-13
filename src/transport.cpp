@@ -28,24 +28,19 @@ using namespace boost;
 
 namespace Transport {
 
-Component::Component(Swift::EventLoop *loop, Config::Variables &config) {
+Component::Component(Swift::EventLoop *loop, Config *config) {
 	m_reconnectCount = 0;
 	m_config = config;
 	m_storageBackend = NULL;
 
-	for (Config::Variables::iterator i = config.begin() ; i != config.end() ; ++i )
-	{
-		std::cout << (*i).first << "\n";
-	} 
-
-	m_jid = Swift::JID(m_config["service.jid"].as<std::string>());
+	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
 	m_factories = new BoostNetworkFactories(loop);
 
 	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(1000);
 	m_reconnectTimer->onTick.connect(bind(&Component::connect, this)); 
 
-	m_component = new Swift::Component(loop, m_factories, m_jid, m_config["service.password"].as<std::string>());
+	m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
 	m_component->setSoftwareVersion("", "");
 	m_component->onConnected.connect(bind(&Component::handleConnected, this));
 	m_component->onError.connect(bind(&Component::handleConnectionError, this, _1));
@@ -95,7 +90,7 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 
 void Component::connect() {
 	m_reconnectCount++;
-	m_component->connect(m_config["service.server"].as<std::string>(), m_config["service.port"].as<int>());
+	m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 	m_reconnectTimer->stop();
 }
 
