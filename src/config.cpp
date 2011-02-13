@@ -42,6 +42,8 @@ bool Config::load(const std::string &configfile, boost::program_options::options
     store(parse_config_file(ifs, opts), m_variables);
 	notify(m_variables);
 
+	onConfigReloaded();
+
 	return true;
 }
 

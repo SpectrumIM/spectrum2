@@ -25,6 +25,9 @@
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
+#include <boost/bind.hpp>
+#include <boost/signal.hpp>
+
 
 #define CONFIG_STRING(PTR, KEY) (*PTR)[KEY].as<std::string>()
 #define CONFIG_INT(PTR, KEY) (*PTR)[KEY].as<int>()
@@ -45,6 +48,8 @@ class Config {
 		const boost::program_options::variable_value &operator[] (const std::string &key) {
 			return m_variables[key];
 		}
+
+		boost::signal<void ()> onConfigReloaded;
 	
 	private:
 		Variables m_variables;
