@@ -9,6 +9,8 @@ find_package(cppunit)
 set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(sqlite3)
 
+find_package(Doxygen)
+
 message("Supported features")
 message("------------------")
 
@@ -40,11 +42,20 @@ else(CMAKE_BUILD_TYPE MATCHES Debug)
 	message("Debug        : no")
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
+
 SET(TRANSPORT_VERSION 2.0)
+SET(PROJECT_VERSION 2.0)
 include_directories(include)
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
 ADD_SUBDIRECTORY(examples)
+
+if(DOXYGEN_FOUND)
+	message("Docs         : yes")
+	ADD_SUBDIRECTORY(docs)
+else(DOXYGEN_FOUND)
+	message("Docs         : no")
+endif(DOXYGEN_FOUND)
 
 message("------------------")

@@ -129,7 +129,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 
 // 	User *user = m_userManager->getUserByJID(barejid);
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
-		std::list<std::string> const &x = CONFIG_LIST(m_config,"registration.enable_public_registration");
+		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain().getUTF8String()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
 			Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -144,7 +144,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	UserInfo res;
 	bool registered = m_storageBackend->getUser(barejid, res);
 
-	std::string instructions = CONFIG_STRING(m_config, "registration.reg_instructions");
+	std::string instructions = CONFIG_STRING(m_config, "registration.instructions");
 
 	reg->setInstructions(instructions);
 	reg->setRegistered(res.id != -1);
@@ -152,7 +152,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
 		reg->setPassword(res.password);
 
-	std::string usernameField = CONFIG_STRING(m_config, "registration.reg_username_field");
+	std::string usernameField = CONFIG_STRING(m_config, "registration.username_field");
 
 	Form::ref form(new Form(Form::FormType));
 	form->setTitle(tr(_language, _("Registration")));
@@ -225,7 +225,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 // 	AbstractUser *user = m_component->userManager()->getUserByJID(barejid);
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
-		std::list<std::string> const &x = CONFIG_LIST(m_config,"registration.enable_public_registration");
+		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain().getUTF8String()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
 			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
