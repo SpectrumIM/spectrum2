@@ -42,24 +42,44 @@ namespace Transport {
 	// 				CLIENT_FEATURE_CHATSTATES = 16
 	// 				} SpectrumImportantFeatures;
 	// 
-	// class SpectrumDiscoInfoResponder;
-	// class SpectrumRegisterHandler;
 	class StorageBackend;
 	class DiscoInfoResponder;
 
+	/// Represents one transport instance.
+
+	/// It's used to connect
+	/// the Jabber server and provides transaction layer between Jabber server
+	/// and other classes.
 	class Component {
 		public:
+			/// Creates new Component instance.
+			/// \param loop main event loop 
+			/// \param config cofiguration, this class uses following Config values:
+			/// 	- service.jid
+			/// 	- service.password
+			/// 	- service.server
+			/// 	- service.port
 			Component(Swift::EventLoop *loop, Config *config);
+
+			/// Component destructor.
 			~Component();
 
-			// Connect to server
+			/// Connects the Jabber server.
+			/// \see Component()
 			void connect();
 
-			void setStorageBackend(StorageBackend *backend);
-
+			/// Sets disco#info features which are sent as answer to
+			/// disco#info IQ-get. This sets features of transport contact (For example "j2j.domain.tld").
+			/// \param features list of features as sent in disco#info response
 			void setTransportFeatures(std::list<std::string> &features);
+
+			/// Sets disco#info features which are sent as answer to
+			/// disco#info IQ-get. This sets features of legacy network buddies (For example "me\40gmail.com@j2j.domain.tld").
+			/// \param features list of features as sent in disco#info response
 			void setBuddyFeatures(std::list<std::string> &features);
 
+			/// Returns Jabber ID of this transport.
+			/// \return Jabber ID of this transport
 			Swift::JID &getJID() { return m_jid; }
 
 			boost::signal<void (const Swift::ComponentError&)> onConnectionError;

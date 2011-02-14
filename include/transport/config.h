@@ -38,6 +38,7 @@ namespace Transport {
 
 typedef boost::program_options::variables_map Variables;
 
+/// Class used to load.
 class Config {
 	public:
 		Config() {}

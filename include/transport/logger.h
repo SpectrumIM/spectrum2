@@ -33,13 +33,23 @@ class Component;
 class StorageBackend;
 class UserRegistration;
 
+/// Basic logging class which logs various data into std::out (standard output).
 class Logger
 {
 	public:
+		/// Creates new Logger class instance.
+		/// \param component component instance
 		Logger(Component *component);
+
+		/// Logger destructor.
 		~Logger();
 
+		/// Starts logging data related to StorageBackend class.
+		/// \param storage storage class
 		void setStorageBackend(StorageBackend *storage);
+
+		/// Starts logging data related to UserRegistration class.
+		/// \param userRegistration userRegistration class
 		void setUserRegistration(UserRegistration *userRegistration);
 
 	private:

@@ -26,8 +26,6 @@ int main(void)
 		std::cout << "Can't connect to database.\n";
 	}
 
-	transport.setStorageBackend(&sql);
-
 	UserManager userManager(&transport);
 	UserRegistration userRegistration(&transport, &userManager, &sql);
 

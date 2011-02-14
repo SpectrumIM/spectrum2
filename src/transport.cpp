@@ -31,7 +31,6 @@ namespace Transport {
 Component::Component(Swift::EventLoop *loop, Config *config) {
 	m_reconnectCount = 0;
 	m_config = config;
-	m_storageBackend = NULL;
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
@@ -73,10 +72,6 @@ Component::~Component() {
 // 	delete m_registerHandler;
 	delete m_component;
 	delete m_factories;
-}
-
-void Component::setStorageBackend(StorageBackend *backend) {
-	m_storageBackend = backend;
 }
 
 void Component::setTransportFeatures(std::list<std::string> &features) {
