@@ -38,18 +38,38 @@ namespace Transport {
 
 typedef boost::program_options::variables_map Variables;
 
-/// Class used to load.
+/// Represents config file.
+
+/// It's used to load config file and allows others parts of libtransport to be configured
+/// properly. Config files are text files which use "ini" format. Variables are divided into multiple
+/// sections. Every class is configurable with some variables which change its behavior. Check particular
+/// class documentation to get a list of all relevant variables for that class.
 class Config {
 	public:
+		/// Constructor.
 		Config() {}
+
+		/// Destructor
 		virtual ~Config() {}
+
+		/// Loads data from config file. You can pass your extra options which will be recognized by
+		/// the parser using opts parameter.
+		/// \param configfile path to config file
+		/// \param opts extra options which will be recognized by a parser
 		bool load(const std::string &configfile, boost::program_options::options_description &opts);
+
+		/// Loads data from config file. This function loads only config variables needed by libtransport.
+		/// \see load(const std::string &, boost::program_options::options_description &)
+		/// \param configfile path to config file
 		bool load(const std::string &configfile);
 
+		/// Returns value of variable defined by key. For variables in sections you can use "section.variable" key format.
+		/// \param key config variable name
 		const boost::program_options::variable_value &operator[] (const std::string &key) {
 			return m_variables[key];
 		}
 
+		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
 	
 	private:

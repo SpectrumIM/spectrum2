@@ -131,7 +131,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<std::string> &roster) {
 	return true;
 }
 
-void SQLite3Backend::removeUser(long id) {
+bool SQLite3Backend::removeUser(long id) {
 	
 }
 

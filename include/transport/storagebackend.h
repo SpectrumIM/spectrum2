@@ -25,31 +25,46 @@
 
 namespace Transport {
 
+/// Represents all data needed to be stored in database.
 struct UserInfo {
-	long id;
-	std::string jid;
-	std::string uin;
-	std::string password;
-	std::string language;
-	std::string encoding;
-	bool vip;
+	long id;				///< id of user used as primary key in database
+	std::string jid;		///< barejid of XMPP user
+	std::string uin;		///< legacy network username
+	std::string password;	///< password for legacy network
+	std::string language;	///< user's preferred language
+	std::string encoding;	///< user's preferred encoding
+	bool vip;				///< true if user is VIP
 };
 
+/// Abstract class defining storage backends.
 class StorageBackend
 {
 	public:
+		/// Virtual desctructor.
 		virtual ~StorageBackend() {}
 
+		/// connect
 		virtual bool connect() = 0;
+
+		/// createDatabase
 		virtual bool createDatabase() = 0;
 
+		/// setUser
 		virtual void setUser(const UserInfo &user) = 0;
-		virtual bool getUser(const std::string &barejid, UserInfo &user) = 0;
-		virtual void setUserOnline(long id, bool online) = 0;
-		virtual void removeUser(long id) = 0;
 
+		/// getuser
+		virtual bool getUser(const std::string &barejid, UserInfo &user) = 0;
+
+		/// setUserOnline
+		virtual void setUserOnline(long id, bool online) = 0;
+
+		/// removeUser
+		virtual bool removeUser(long id) = 0;
+
+		/// getBuddies
 		virtual bool getBuddies(long id, std::list<std::string> &roster) = 0;
 
+		/// onStorageError
 		boost::signal<void (const std::string &statement, const std::string &error)> onStorageError;
 
 };

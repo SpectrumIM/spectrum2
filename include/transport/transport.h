@@ -82,10 +82,25 @@ namespace Transport {
 			/// \return Jabber ID of this transport
 			Swift::JID &getJID() { return m_jid; }
 
-			boost::signal<void (const Swift::ComponentError&)> onConnectionError;
+			/// This signal is emitted when server disconnects the transport because of some error.
+			/// \param error disconnection error
+			boost::signal<void (const Swift::ComponentError &error)> onConnectionError;
+
+			/// This signal is emitted when transport successfully connects the server.
 			boost::signal<void ()> onConnected;
-			boost::signal<void (const std::string &)> onXMLOut;
-			boost::signal<void (const std::string &)> onXMLIn;
+
+			/// This signal is emitted when XML stanza is sent to server.
+			/// \param xml xml stanza
+			boost::signal<void (const std::string &xml)> onXMLOut;
+
+			/// This signal is emitted when XML stanza is received from server.
+			/// \param xml xml stanza
+			boost::signal<void (const std::string &xml)> onXMLIn;
+
+			/// This signal is emitted when presence from XMPP user (for example "user@domain.tld")
+			/// is received. It's emitted only for presences addressed to transport itself
+			/// (for example to="j2j.domain.tld").
+			/// \param presence presence data
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
 		private:
