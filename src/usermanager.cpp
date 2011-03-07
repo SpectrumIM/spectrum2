@@ -35,7 +35,7 @@ UserManager::~UserManager(){
 }
 
 User *UserManager::getUserByJID(const std::string &barejid){
-	if (m_cachedUser && barejid == m_cachedUser->getJID().toBare().toString().getUTF8String()) {
+	if (m_cachedUser && barejid == m_cachedUser->getJID().toBare().toString()) {
 		return m_cachedUser;
 	}
 

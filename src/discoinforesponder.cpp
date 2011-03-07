@@ -72,14 +72,14 @@ void DiscoInfoResponder::setBuddyFeatures(std::list<std::string> &f) {
 	onBuddyCapsInfoChanged(caps.generateCapsInfo(m_buddyInfo));
 }
 
-bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::DiscoInfo> info) {
-	if (!info->getNode().isEmpty()) {
+bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> info) {
+	if (!info->getNode().empty()) {
 		sendError(from, id, ErrorPayload::ItemNotFound, ErrorPayload::Cancel);
 		return true;
 	}
 
 	// presence for transport
-	if (to.getNode().isEmpty()) {
+	if (to.getNode().empty()) {
 		sendResponse(from, id, boost::shared_ptr<DiscoInfo>(new DiscoInfo(m_transportInfo)));
 	}
 	// presence for buddy

@@ -111,8 +111,8 @@ namespace Transport {
 			void handlePresence(Swift::Presence::ref presence);
 			void handleSubscription(Swift::Presence::ref presence);
 			void handleProbePresence(Swift::Presence::ref presence);
-			void handleDataRead(const Swift::String &data);
-			void handleDataWritten(const Swift::String &data);
+			void handleDataRead(const std::string &data);
+			void handleDataWritten(const std::string &data);
 
 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 // 			void handleCapsChanged(const Swift::JID& jid);

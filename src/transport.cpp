@@ -102,12 +102,12 @@ void Component::handleConnectionError(const ComponentError &error) {
 	m_reconnectTimer->start();
 }
 
-void Component::handleDataRead(const String &data) {
-	onXMLIn(data.getUTF8String());
+void Component::handleDataRead(const std::string &data) {
+	onXMLIn(data);
 }
 
-void Component::handleDataWritten(const String &data) {
-	onXMLOut(data.getUTF8String());
+void Component::handleDataWritten(const std::string &data) {
+	onXMLOut(data);
 }
 
 void Component::handlePresenceReceived(Swift::Presence::ref presence) {
@@ -133,7 +133,7 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 	bool isMUC = presence->getPayload<MUCPayload>() != NULL;
 
 	// filter out login/logout presence spam
-	if (!presence->getTo().getNode().isEmpty() && isMUC == false)
+	if (!presence->getTo().getNode().empty() && isMUC == false)
 		return;
 
 	// filter out bad presences
@@ -173,7 +173,7 @@ void Component::handleProbePresence(Swift::Presence::ref presence) {
 
 void Component::handleSubscription(Swift::Presence::ref presence) {
 	// answer to subscibe
-	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().isEmpty()) {
+	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
 // 		Log(presence->getFrom().toString().getUTF8String(), "Subscribe presence received => sending subscribed");
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setFrom(presence->getTo());

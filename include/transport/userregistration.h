@@ -49,8 +49,8 @@ class UserRegistration : Swift::GetResponder<Swift::InBandRegistrationPayload>, 
 		boost::signal<void (const UserInfo &user)> onUserUpdated;
 
 	private:
-		bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
-		bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
 		
 		Component *m_component;
 		StorageBackend *m_storageBackend;

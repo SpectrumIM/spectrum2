@@ -119,18 +119,18 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 	return true;
 }
 
-bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
 	}
 
-	std::string barejid = from.toBare().toString().getUTF8String();
+	std::string barejid = from.toBare().toString();
 
 // 	User *user = m_userManager->getUserByJID(barejid);
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
-		if (std::find(x.begin(), x.end(), from.getDomain().getUTF8String()) == x.end()) {
+		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
 			Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
@@ -215,18 +215,18 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	return true;
 }
 
-bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const Swift::String& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
 	}
 
-	std::string barejid = from.toBare().toString().getUTF8String();
+	std::string barejid = from.toBare().toString();
 
 // 	AbstractUser *user = m_component->userManager()->getUserByJID(barejid);
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
-		if (std::find(x.begin(), x.end(), from.getDomain().getUTF8String()) == x.end()) {
+		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
 			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
@@ -249,7 +249,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 					payload->setUsername(textSingle->getValue());
 				}
 				else if (textSingle->getName() == "encoding") {
-					encoding = textSingle->getValue().getUTF8String();
+					encoding = textSingle->getValue();
 				}
 				continue;
 			}
@@ -265,7 +265,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 			ListSingleFormField::ref listSingle = boost::dynamic_pointer_cast<ListSingleFormField>(*it);
 			if (listSingle) {
 				if (listSingle->getName() == "language") {
-					language = listSingle->getValue().getUTF8String();
+					language = listSingle->getValue();
 				}
 				continue;
 			}
@@ -294,8 +294,8 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	}
 
 	// Register or change password
-	if (payload->getUsername()->isEmpty() ||
-		(payload->getPassword()->isEmpty() && CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
+	if (payload->getUsername()->empty() ||
+		(payload->getPassword()->empty() && CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
 // 		|| localization.getLanguages().find(language) == localization.getLanguages().end()
 	)
 	{
@@ -312,14 +312,14 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 		// User tries to register someone who's already registered.
 		UserInfo user_row;
-		bool registered = m_storageBackend->getUser(Swift::JID(*payload->getUsername()).toBare().toString().getUTF8String(), user_row);
+		bool registered = m_storageBackend->getUser(Swift::JID(*payload->getUsername()).toBare().toString(), user_row);
 		if (registered) {
 			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}
 	}
 
-	std::string username = payload->getUsername()->getUTF8String();
+	std::string username = *payload->getUsername();
 // 	m_component->protocol()->prepareUsername(username);
 
 	std::string newUsername(username);
@@ -345,7 +345,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	if (!registered) {
 		res.jid = barejid;
 		res.uin = username;
-		res.password = payload->getPassword()->getUTF8String();
+		res.password = *payload->getPassword();
 		res.language = language;
 		res.encoding = encoding;
 		res.vip = 0;
@@ -356,7 +356,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		// change passwordhttp://soumar.jabbim.cz/phpmyadmin/index.php
 // 		Log("UserRegistration", "changing user password: "<< barejid << ", " << username);
 		res.jid = barejid;
-		res.password = payload->getPassword()->getUTF8String();
+		res.password = *payload->getPassword();
 		res.language = language;
 		res.encoding = encoding;
 		m_storageBackend->setUser(res);
