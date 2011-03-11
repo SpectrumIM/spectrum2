@@ -22,6 +22,24 @@
 #include <boost/bind.hpp>
 
 #define SQLITE_DB_VERSION 3
+#define CHECK_DB_RESPONSE(stmt) \
+	if(stmt) { \
+		sqlite3_exec(m_db, "ROLLBACK;", NULL, NULL, NULL); \
+		return 0; \
+	}
+
+// Prepare the SQL statement
+#define PREP_STMT(sql, str) \
+	if(sqlite3_prepare_v2(m_db, std::string(str).c_str(), -1, &sql, NULL)) { \
+		onStorageError(str, (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db))); \
+		return false; \
+	}
+
+// Finalize the prepared statement
+#define FINALIZE_STMT(prep) \
+	if(prep != NULL) { \
+		sqlite3_finalize(prep); \
+	}
 
 using namespace boost;
 
@@ -35,16 +53,33 @@ SQLite3Backend::SQLite3Backend(Config *config) {
 
 SQLite3Backend::~SQLite3Backend(){
 	if (m_db) {
+		// Would be nice to use this:
+		//
+		//   sqlite3_stmt *pStmt;
+		//   while((pStmt = sqlite3_next_stmt(db, 0)) != 0 ) {
+		//    sqlite3_finalize(pStmt);
+		//   }
+		//
+		// But requires SQLite3 >= 3.6.0 beta
+	
+		FINALIZE_STMT(m_setUser);
 		sqlite3_close(m_db);
 	}
 }
 
 bool SQLite3Backend::connect() {
 	if (sqlite3_open(CONFIG_STRING(m_config, "database.database").c_str(), &m_db)) {
-		 sqlite3_close(m_db);
-		 return false;
+		sqlite3_close(m_db);
+		return false;
 	}
-	return createDatabase();
+
+	if (createDatabase() == false)
+		return false;
+
+	PREP_STMT(m_setUser, "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, DATETIME('NOW'), ?)");
+	PREP_STMT(m_getUser, "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
+
+	return true;
 }
 
 bool SQLite3Backend::createDatabase() {
@@ -116,11 +151,42 @@ bool SQLite3Backend::exec(const std::string &query) {
 }
 
 void SQLite3Backend::setUser(const UserInfo &user) {
-	
+	sqlite3_reset(m_setUser);
+	sqlite3_bind_text(m_setUser, 1, user.jid.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 2, user.uin.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 3, user.password.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 4, user.language.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 5, user.encoding.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_int (m_setUser, 6, user.vip);
+
+	if(sqlite3_step(m_setUser) != SQLITE_DONE) {
+		onStorageError("setUser query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+	}
 }
 
 bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
-	return true;
+// 	SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?
+	sqlite3_reset(m_getUser);
+	sqlite3_bind_text(m_getUser, 1, barejid.c_str(), -1, SQLITE_TRANSIENT);
+
+	int ret;
+	while((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
+		user.id = sqlite3_column_int(m_getUser, 0);
+		user.jid = (const char *) sqlite3_column_text(m_getUser, 1);
+		user.uin = (const char *) sqlite3_column_text(m_getUser, 2);
+		std::cout << user.uin << "\n";
+		user.password = (const char *) sqlite3_column_text(m_getUser, 3);
+		user.language = (const char *) sqlite3_column_text(m_getUser, 4);
+		user.encoding = (const char *) sqlite3_column_text(m_getUser, 5);
+		user.vip = sqlite3_column_int(m_getUser, 6);
+		return true;
+	}
+
+	if (ret != SQLITE_DONE) {
+		onStorageError("getUser query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+	}
+
+	return false;
 }
 
 void SQLite3Backend::setUserOnline(long id, bool online) {
@@ -132,6 +198,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<std::string> &roster) {
 }
 
 bool SQLite3Backend::removeUser(long id) {
+	
 	return true;
 }
 

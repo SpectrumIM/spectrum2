@@ -28,6 +28,7 @@ int main(void)
 
 	UserManager userManager(&transport);
 	UserRegistration userRegistration(&transport, &userManager, &sql);
+	logger.setUserRegistration(&userRegistration);
 
 	transport.connect();
 	eventLoop.run();

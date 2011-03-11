@@ -42,6 +42,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("registration.instructions", value<std::string>()->default_value(""), "Instructions showed to user in registration form")
 		("registration.username_field", value<std::string>()->default_value(""), "Label for username field")
 		("registration.username_mask", value<std::string>()->default_value(""), "Username mask")
+		("registration.encoding", value<std::string>()->default_value("en"), "Default encoding in registration form")
 		("database.database", value<std::string>()->default_value(""), "Database used to store data")
 		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
 	;

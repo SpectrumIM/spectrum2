@@ -85,6 +85,10 @@ class SQLite3Backend : public StorageBackend
 		sqlite3 *m_db;
 		Config *m_config;
 		std::string m_prefix;
+
+		// statements
+		sqlite3_stmt *m_setUser;
+		sqlite3_stmt *m_getUser;
 };
 
 }
