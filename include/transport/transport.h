@@ -44,6 +44,7 @@ namespace Transport {
 	// 
 	class StorageBackend;
 	class DiscoInfoResponder;
+	class DiscoItemsResponder;
 
 	/// Represents one transport instance.
 
@@ -127,6 +128,7 @@ namespace Transport {
 			Swift::PresenceOracle *m_presenceOracle;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;
+			DiscoItemsResponder *m_discoItemsResponder;
 // 			SpectrumRegisterHandler *m_registerHandler;
 			int m_reconnectCount;
 			Config* m_config;

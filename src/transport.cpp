@@ -22,6 +22,7 @@
 #include <boost/bind.hpp>
 #include "transport/storagebackend.h"
 #include "discoinforesponder.h"
+#include "discoitemsresponder.h"
 
 using namespace Swift;
 using namespace boost;
@@ -58,6 +59,9 @@ Component::Component(Swift::EventLoop *loop, Config *config) {
 
 	m_discoInfoResponder = new DiscoInfoResponder(m_component->getIQRouter());
 	m_discoInfoResponder->start();
+
+	m_discoItemsResponder = new DiscoItemsResponder(m_component->getIQRouter());
+	m_discoItemsResponder->start();
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();
