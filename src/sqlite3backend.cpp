@@ -79,6 +79,11 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_setUser, "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, DATETIME('NOW'), ?)");
 	PREP_STMT(m_getUser, "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
+	PREP_STMT(m_removeUser, "DELETE FROM " + m_prefix + "users WHERE id=?");
+	PREP_STMT(m_removeUserBuddies, "DELETE FROM " + m_prefix + "buddies WHERE user_id=?");
+	PREP_STMT(m_removeUserSettings, "DELETE FROM " + m_prefix + "users_settings WHERE user_id=?");
+	PREP_STMT(m_removeUserBuddiesSettings, "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
+
 	return true;
 }
 
@@ -174,10 +179,9 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 		user.id = sqlite3_column_int(m_getUser, 0);
 		user.jid = (const char *) sqlite3_column_text(m_getUser, 1);
 		user.uin = (const char *) sqlite3_column_text(m_getUser, 2);
-		std::cout << user.uin << "\n";
 		user.password = (const char *) sqlite3_column_text(m_getUser, 3);
-		user.language = (const char *) sqlite3_column_text(m_getUser, 4);
-		user.encoding = (const char *) sqlite3_column_text(m_getUser, 5);
+		user.encoding = (const char *) sqlite3_column_text(m_getUser, 4);
+		user.language = (const char *) sqlite3_column_text(m_getUser, 5);
 		user.vip = sqlite3_column_int(m_getUser, 6);
 		return true;
 	}
@@ -198,7 +202,34 @@ bool SQLite3Backend::getBuddies(long id, std::list<std::string> &roster) {
 }
 
 bool SQLite3Backend::removeUser(long id) {
-	
+	sqlite3_reset(m_removeUser);
+	sqlite3_bind_int(m_removeUser, 1, id);
+	if(sqlite3_step(m_removeUser) != SQLITE_DONE) {
+		onStorageError("removeUser query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
+	sqlite3_reset(m_removeUserSettings);
+	sqlite3_bind_int(m_removeUserSettings, 1, id);
+	if(sqlite3_step(m_removeUserSettings) != SQLITE_DONE) {
+		onStorageError("removeUserSettings query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
+	sqlite3_reset(m_removeUserBuddies);
+	sqlite3_bind_int(m_removeUserBuddies, 1, id);
+	if(sqlite3_step(m_removeUserBuddies) != SQLITE_DONE) {
+		onStorageError("removeUserBuddies query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
+	sqlite3_reset(m_removeUserBuddiesSettings);
+	sqlite3_bind_int(m_removeUserBuddiesSettings, 1, id);
+	if(sqlite3_step(m_removeUserBuddiesSettings) != SQLITE_DONE) {
+		onStorageError("removeUserBuddiesSettings query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
 	return true;
 }
 

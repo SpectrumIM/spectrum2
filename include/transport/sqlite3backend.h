@@ -89,6 +89,10 @@ class SQLite3Backend : public StorageBackend
 		// statements
 		sqlite3_stmt *m_setUser;
 		sqlite3_stmt *m_getUser;
+		sqlite3_stmt *m_removeUser;
+		sqlite3_stmt *m_removeUserBuddies;
+		sqlite3_stmt *m_removeUserSettings;
+		sqlite3_stmt *m_removeUserBuddiesSettings;
 };
 
 }
