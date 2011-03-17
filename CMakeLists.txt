@@ -9,11 +9,19 @@ find_package(cppunit)
 set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(sqlite3)
 
+set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(purple REQUIRED)
+
+set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(glib REQUIRED)
+
+set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(event)
+
 find_package(Doxygen)
 
 message("Supported features")
 message("------------------")
-
 if (SQLITE3_FOUND)
 	ADD_DEFINITIONS(-DWITH_SQLITE)
 	include_directories(SQLITE3_INCLUDE_DIR)
@@ -47,9 +55,14 @@ SET(TRANSPORT_VERSION 2.0)
 SET(PROJECT_VERSION 2.0)
 include_directories(include)
 
+include_directories(${PURPLE_INCLUDE_DIR})
+include_directories(${EVENT_INCLUDE_DIRS})
+include_directories(${GLIB2_INCLUDE_DIR})
+
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
 ADD_SUBDIRECTORY(examples)
+ADD_SUBDIRECTORY(spectrum)
 
 if(DOXYGEN_FOUND)
 	message("Docs         : yes")
