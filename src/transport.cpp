@@ -78,6 +78,14 @@ Component::~Component() {
 	delete m_factories;
 }
 
+Swift::Component *Component::getComponent() {
+	return m_component;
+}
+
+Swift::PresenceOracle *Component::getPresenceOracle() {
+	return m_presenceOracle;
+}
+
 void Component::setTransportFeatures(std::list<std::string> &features) {
 	m_discoInfoResponder->setTransportFeatures(features);
 }

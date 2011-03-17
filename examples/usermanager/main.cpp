@@ -26,9 +26,10 @@ int main(void)
 		std::cout << "Can't connect to database.\n";
 	}
 
-	UserManager userManager(&transport);
+	UserManager userManager(&transport, &sql);
 	UserRegistration userRegistration(&transport, &userManager, &sql);
 	logger.setUserRegistration(&userRegistration);
+	logger.setUserManager(&userManager);
 
 	transport.connect();
 	eventLoop.run();

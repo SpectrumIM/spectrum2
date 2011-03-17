@@ -21,12 +21,15 @@
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
+#include "transport/storagebackend.h"
 
 namespace Transport {
 
-UserManager::UserManager(Component *component) {
+UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
+	m_component = component;
+	m_storageBackend = storageBackend;
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 }
@@ -34,7 +37,12 @@ UserManager::UserManager(Component *component) {
 UserManager::~UserManager(){
 }
 
-User *UserManager::getUserByJID(const std::string &barejid){
+void UserManager::addUser(User *user) {
+	m_users[user->getJID().toBare().toString()] = user;
+	onUserCreated(user);
+}
+
+User *UserManager::getUser(const std::string &barejid){
 	if (m_cachedUser && barejid == m_cachedUser->getJID().toBare().toString()) {
 		return m_cachedUser;
 	}
@@ -47,55 +55,49 @@ User *UserManager::getUserByJID(const std::string &barejid){
 	return NULL;
 }
 
-int UserManager::userCount() {
+void UserManager::removeUser(User *user) {
+	m_users.erase(user->getJID().toBare().toString());
+	if (m_cachedUser == user)
+		m_cachedUser = NULL;
+	onUserDestroyed(user);
+	delete user;
+}
+
+int UserManager::getUserCount() {
 	return m_users.size();
 }
 
 void UserManager::handlePresence(Swift::Presence::ref presence) {
-// 	std::string barejid = presence->getTo().toBare().toString().getUTF8String();
-// 	std::string userkey = presence->getFrom().toBare().toString().getUTF8String();
-// // 	if (Transport::instance()->protocol()->tempAccountsAllowed()) {
-// // 		std::string server = barejid.substr(barejid.find("%") + 1, barejid.length() - barejid.find("%"));
-// // 		userkey += server;
-// // 	}
-// 
-// 	User *user = getUserByJID(userkey);
-// 	if (user ) {
-// 		user->handlePresence(presence);
-// 	}
-// 	else {
-// // 		// No user, unavailable presence... nothing to do
-// // 		if (presence->getType() == Swift::Presence::Unavailable) {
-// // 			Swift::Presence::ref response = Swift::Presence::create();
-// // 			response->setTo(presence->getFrom());
-// // 			response->setFrom(Swift::JID(Transport::instance()->jid()));
-// // 			response->setType(Swift::Presence::Unavailable);
-// // 			m_component->sendPresence(response);
-// // 
-// // // 			UserRow res = Transport::instance()->sql()->getUserByJid(userkey);
-// // // 			if (res.id != -1) {
-// // // 				Transport::instance()->sql()->setUserOnline(res.id, false);
-// // // 			}
-// // 			return;
-// // 		}
-// // 		UserRow res = Transport::instance()->sql()->getUserByJid(userkey);
-// // 		if (res.id == -1 && !Transport::instance()->protocol()->tempAccountsAllowed()) {
-// // 			// presence from unregistered user
-// // 			Log(presence->getFrom().toString().getUTF8String(), "This user is not registered");
-// // 			return;
-// // 		}
-// // 		else {
-// // 			if (res.id == -1 && Transport::instance()->protocol()->tempAccountsAllowed()) {
-// // 				res.jid = userkey;
-// // 				res.uin = presence->getFrom().toBare().toString().getUTF8String();
-// // 				res.password = "";
-// // 				res.language = "en";
-// // 				res.encoding = CONFIG().encoding;
-// // 				res.vip = 0;
-// // 				Transport::instance()->sql()->addUser(res);
-// // 				res = Transport::instance()->sql()->getUserByJid(userkey);
-// // 			}
-// // 
+	std::string barejid = presence->getTo().toBare().toString();
+	std::string userkey = presence->getFrom().toBare().toString();
+
+	User *user = getUser(userkey);
+	if (!user ) {
+		// No user and unavailable presence -> answer with unavailable
+		if (presence->getType() == Swift::Presence::Unavailable) {
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setTo(presence->getFrom());
+			response->setFrom(presence->getTo());
+			response->setType(Swift::Presence::Unavailable);
+			m_component->getComponent()->sendPresence(response);
+
+			UserInfo res;
+			bool registered = m_storageBackend->getUser(userkey, res);
+			if (registered) {
+				m_storageBackend->setUserOnline(res.id, false);
+			}
+			return;
+		}
+
+		UserInfo res;
+		bool registered = m_storageBackend->getUser(userkey, res);
+
+		if (!registered) {
+			// TODO: logging
+			return;
+		}
+
+		// TODO: isVIP
 // // 			bool isVip = res.vip;
 // // 			std::list<std::string> const &x = CONFIG().allowedServers;
 // // 			if (CONFIG().onlyForVIP && !isVip && std::find(x.begin(), x.end(), presence->getFrom().getDomain().getUTF8String()) == x.end()) {
@@ -103,60 +105,31 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 // // 				return;
 // // 			}
 // // 
-// // 			Log(presence->getFrom().toString().getUTF8String(), "Creating new User instance");
 // // 
-// // 			if (Transport::instance()->protocol()->tempAccountsAllowed()) {
-// // 				std::string server = barejid.substr(barejid.find("%") + 1, barejid.length() - barejid.find("%"));
-// // 				res.uin = presence->getTo().getResource().getUTF8String() + "@" + server;
-// // 			}
-// // 			else {
-// // 				if (purple_accounts_find(res.uin.c_str(), Transport::instance()->protocol()->protocol().c_str()) != NULL) {
-// // 					PurpleAccount *act = purple_accounts_find(res.uin.c_str(), Transport::instance()->protocol()->protocol().c_str());
-// // 					user = Transport::instance()->userManager()->getUserByAccount(act);
-// // 					if (user) {
-// // 						Log(presence->getFrom().toString().getUTF8String(), "This account is already connected by another jid " << user->jid());
-// // 						return;
-// // 					}
-// // 				}
-// // 			}
-// // 			user = (AbstractUser *) new User(res, userkey, m_component, m_presenceOracle, m_entityCapsManager);
+				user = new User(presence->getFrom(), res, m_component);
+				// TODO: handle features somehow
 // // 			user->setFeatures(isVip ? CONFIG().VIPFeatures : CONFIG().transportFeatures);
 // // // 				if (c != NULL)
 // // // 					if (Transport::instance()->hasClientCapabilities(c->findAttribute("ver")))
 // // // 						user->setResource(stanza.from().resource(), stanza.priority(), Transport::instance()->getCapabilities(c->findAttribute("ver")));
 // // // 
-// // 			Transport::instance()->userManager()->addUser(user);
-// // 			user->receivedPresence(presence);
-// // // 				if (protocol()->tempAccountsAllowed()) {
-// // // 					std::string server = stanza.to().username().substr(stanza.to().username().find("%") + 1, stanza.to().username().length() - stanza.to().username().find("%"));
-// // // 					server = stanza.from().bare() + server;
-// // // 					purple_timeout_add_seconds(15, &connectUser, g_strdup(server.c_str()));
-// // // 				}
-// // // 				else
-// // // 					purple_timeout_add_seconds(15, &connectUser, g_strdup(stanza.from().bare().c_str()));
-// // // 			}
-// // 		}
-// // // 		if (stanza.presence() == Presence::Unavailable && stanza.to().username() == ""){
-// // // 			Log(stanza.from().full(), "User is already logged out => sending unavailable presence");
-// // // 			Tag *tag = new Tag("presence");
-// // // 			tag->addAttribute( "to", stanza.from().bare() );
-// // // 			tag->addAttribute( "type", "unavailable" );
-// // // 			tag->addAttribute( "from", jid() );
-// // // 			j->send( tag );
-// // // 		}
-// 	}
-// 
-// 	if (presence->getType() == Swift::Presence::Unavailable) {
-// 		if (user) {
-// 			Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(presence->getFrom().toBare());
-// 			if (presence->getType() == Swift::Presence::Unavailable && (!highest || (highest && highest->getType() == Swift::Presence::Unavailable))) {
-// 				Transport::instance()->userManager()->removeUser(user);
-// 			}
-// 		}
+			addUser(user);
+	}
+	user->handlePresence(presence);
+
+	if (presence->getType() == Swift::Presence::Unavailable) {
+		if (user) {
+			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
+			// There's no presence for this user, so disconnect
+			if (!highest || (highest && highest->getType() == Swift::Presence::Unavailable)) {
+				removeUser(user);
+			}
+		}
+		// TODO: HANDLE MUC SOMEHOW
 // 		else if (user && Transport::instance()->protocol()->tempAccountsAllowed() && !((User *) user)->hasOpenedMUC()) {
 // 			Transport::instance()->userManager()->removeUser(user);
 // 		}
-// 	}
+	}
 }
 
 }

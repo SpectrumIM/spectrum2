@@ -36,6 +36,7 @@
 
 namespace Transport {
 
+/// Represents variable:value pairs.
 typedef boost::program_options::variables_map Variables;
 
 /// Represents config file.

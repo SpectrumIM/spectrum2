@@ -65,6 +65,16 @@ namespace Transport {
 			/// Component destructor.
 			~Component();
 
+			/// Returns Swift::Component associated with this Transport::Component.
+			/// You can use it to send presences and other stanzas.
+			/// \return Swift::Component associated with this Transport::Component
+			Swift::Component *getComponent();
+
+			/// Returns Swift::PresenceOracle associated with this Transport::Component.
+			/// You can use it to check current resource connected for particular user.
+			/// \return Swift::PresenceOracle associated with this Transport::Component
+			Swift::PresenceOracle *getPresenceOracle();
+
 			/// Connects the Jabber server.
 			/// \see Component()
 			void connect();

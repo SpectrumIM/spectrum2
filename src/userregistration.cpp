@@ -74,7 +74,7 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 
 	Swift::Presence::ref response;
 
-	User *user = m_userManager->getUserByJID(barejid);
+	User *user = m_userManager->getUser(barejid);
 
 	// roster contains already escaped jids
 	std::list <std::string> roster;

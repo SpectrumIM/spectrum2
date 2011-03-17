@@ -50,6 +50,10 @@ void Logger::setUserRegistration(UserRegistration *userRegistration) {
 	userRegistration->onUserUpdated.connect(bind(&Logger::handleUserUpdated, this, _1));
 }
 
+void Logger::setUserManager(UserManager *userManager) {
+	userManager->onUserCreated.connect(bind(&Logger::handleUserCreated, this, _1));
+	userManager->onUserDestroyed.connect(bind(&Logger::handleUserDestroyed, this, _1));
+}
 
 void Logger::handleConnected() {
 	std::cout << "[COMPONENT] Connected to Jabber Server!\n";
@@ -90,6 +94,14 @@ void Logger::handleUserUnregistered(const UserInfo &user) {
 
 void Logger::handleUserUpdated(const UserInfo &user) {
 	std::cout << "[REGISTRATION] User \"" << user.jid << "\" updated \"" << user.uin << "\"\n";
+}
+
+void Logger::handleUserCreated(User *user) {
+	std::cout << "[USERMANAGER] User \"" << user->getJID().toString() << "\" (UIN: \"" << user->getUserInfo().uin << "\") connected and User class has been created\n";
+}
+
+void Logger::handleUserDestroyed(User *user) {
+	std::cout << "[USERMANAGER] User \"" << user->getJID().toBare().toString() << "\" (UIN: \"" << user->getUserInfo().uin << "\") disconnected and User class is going to be destroyed\n";
 }
 
 }

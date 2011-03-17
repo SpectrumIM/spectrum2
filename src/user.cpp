@@ -20,25 +20,42 @@
 
 #include "transport/user.h"
 #include "transport/transport.h"
+#include "transport/storagebackend.h"
 #include "Swiften/Swiften.h"
 
 namespace Transport {
 
-User::User(const Swift::JID &jid, const std::string &username, const std::string &password, Component *component) {
+User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component) {
 	m_jid = jid;
 
-	m_component = component->m_component;
+	m_component = component;
 	m_presenceOracle = component->m_presenceOracle;
 	m_entityCapsManager = component->m_entityCapsManager;
-// 	m_activeResource = m_jid.getResource();
-
+	m_userInfo = userInfo;
 }
+
 User::~User(){
 
 }
 
 const Swift::JID &User::getJID() {
 	return m_jid;
+}
+
+void User::handlePresence(Swift::Presence::ref presence) {
+	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
+	if (highest) {
+		highest->setTo(presence->getFrom());
+		highest->setFrom(m_component->getJID());
+		m_component->getComponent()->sendPresence(highest);
+	}
+	else {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(m_jid.toBare());
+		response->setFrom(m_component->getJID());
+		response->setType(Swift::Presence::Unavailable);
+		m_component->getComponent()->sendPresence(response);
+	}
 }
 
 }

@@ -33,20 +33,40 @@ class StorageBackend;
 class UserManager;
 class Config;
 
+/// Allows users to register the transport using service discovery.
 class UserRegistration : Swift::GetResponder<Swift::InBandRegistrationPayload>, Swift::SetResponder<Swift::InBandRegistrationPayload> {
 	public:
+		/// Creates new UserRegistration handler.
+		/// \param component Component associated with this class
+		/// \param userManager UserManager associated with this class
+		/// \param storageBackend StorageBackend where the registered users will be stored
 		UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend);
+
+		/// Destroys UserRegistration.
 		~UserRegistration();
 
-		// Registers new user, returns false if user was already registered.
-		bool registerUser(const UserInfo &user);
+		/// Registers new user. This function stores user into database and subscribe user to transport.
+		/// \param userInfo UserInfo struct with informations about registered user
+		/// \return false if user is already registered
+		bool registerUser(const UserInfo &userInfo);
 
-		// Unregisters user, returns true if user was successfully unregistered.
+		/// Unregisters user. This function removes all data about user from databa, unsubscribe all buddies
+		/// managed by this transport and disconnects user if he's connected.
+		/// \param barejid bare JID of user to unregister
+		/// \return false if there is no such user registered
 		bool unregisterUser(const std::string &barejid);
 
-		boost::signal<void (const UserInfo &user)> onUserRegistered;
-		boost::signal<void (const UserInfo &user)> onUserUnregistered;
-		boost::signal<void (const UserInfo &user)> onUserUpdated;
+		/// Called when new user has been registered.
+		/// \param userInfo UserInfo struct with informations about user
+		boost::signal<void (const UserInfo &userInfo)> onUserRegistered;
+
+		/// Called when user has been unregistered.
+		/// \param userInfo UserInfo struct with informations about user
+		boost::signal<void (const UserInfo &userInfo)> onUserUnregistered;
+
+		/// Called when user's registration has been updated.
+		/// \param userInfo UserInfo struct with informations about user
+		boost::signal<void (const UserInfo &userInfo)> onUserUpdated;
 
 	private:
 		bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);

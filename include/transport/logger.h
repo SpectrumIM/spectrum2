@@ -52,6 +52,10 @@ class Logger
 		/// \param userRegistration userRegistration class
 		void setUserRegistration(UserRegistration *userRegistration);
 
+		/// Starts logging data related to UserManager class.
+		/// \param userManager userManager class
+		void setUserManager(UserManager *userManager);
+
 	private:
 		// Component
 		void handleConnected();
@@ -66,6 +70,10 @@ class Logger
 		void handleUserRegistered(const UserInfo &user);
 		void handleUserUnregistered(const UserInfo &user);
 		void handleUserUpdated(const UserInfo &user);
+
+		// UserManager
+		void handleUserCreated(User *user);
+		void handleUserDestroyed(User *user);
 };
 
 }

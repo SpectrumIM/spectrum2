@@ -28,28 +28,53 @@ namespace Transport {
 
 class User;
 class Component;
+class StorageBackend;
 
-// Class for managing online XMPP users.
-class UserManager
-{
+/// Manages online XMPP Users.
+
+/// This class handles presences and creates User classes when new user connects.
+/// It also removes the User class once the last user's resource disconnected.
+class UserManager {
 	public:
-		UserManager(Component *component);
+		/// Creates new UserManager.
+		/// \param component Component which's presence will be handled
+		/// \param storageBackend Storage backend used to fetch UserInfos
+		UserManager(Component *component, StorageBackend *storageBackend);
+
+		/// Destroys UserManager.
 		~UserManager();
 
-		// User *
-		User *getUserByJID(const std::string &barejid);
+		/// Returns user according to his bare JID.
+		/// \param barejid bare JID of user
+		/// \return User class associated with this user
+		User *getUser(const std::string &barejid);
 
-		// Returns count of online users;
-		int userCount();
+		/// Returns number of online users.
+		/// \return number of online users
+		int getUserCount();
 
-		void removeUser(User *user) {}
+		/// Removes user. This function disconnects user and safely removes
+		/// User class. This does *not* remove user from database.
+		/// \param user User class to remove
+		void removeUser(User *user);
+
+		/// Called when new User class is created.
+		/// \param user newly created User class
+		boost::signal<void (User *user)> onUserCreated;
+
+		/// Called when User class is going to be removed
+		/// \param user removed User class
+		boost::signal<void (User *user)> onUserDestroyed;
 
 	private:
 		void handlePresence(Swift::Presence::ref presence);
+		void addUser(User *user);
 
 		long m_onlineBuddies;
 		User *m_cachedUser;
 		std::map<std::string, User *> m_users;
+		Component *m_component;
+		StorageBackend *m_storageBackend;
 };
 
 }

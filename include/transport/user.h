@@ -24,26 +24,48 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
+#include "storagebackend.h"
 
 namespace Transport {
 
 class Component;
+struct UserInfo;
 
-// Representation of XMPP User
+/// Represents online XMPP user.
 class User {
 	public:
-		User(const Swift::JID &jid, const std::string &username, const std::string &password, Component * component);
+		/// Creates new User class.
+		/// \param jid XMPP JID associated with this user
+		/// \param userInfo UserInfo struct with informations needed to connect
+		/// this user to legacy network
+		/// \param component Component associated with this user
+		User(const Swift::JID &jid, UserInfo &userInfo, Component * component);
+
+		/// Destroyes User.
 		virtual ~User();
 
+		/// Returns JID of XMPP user who is currently connected using this User class.
+		/// \return full JID
 		const Swift::JID &getJID();
 
+		/// Returns UserInfo struct with informations needed to connect the legacy network.
+		/// \return UserInfo struct
+		UserInfo &getUserInfo() { return m_userInfo; }
+
+		/// Handles presence from XMPP JID associated with this user.
+		/// \param presence Swift::Presence.
+		void handlePresence(Swift::Presence::ref presence);
+
+		/// Returns language.
+		/// \return language
 		const char *getLang() { return "en"; }
 
 	private:
 		Swift::JID m_jid;
-		Swift::Component *m_component;		
+		Component *m_component;		
 		Swift::EntityCapsManager *m_entityCapsManager;
 		Swift::PresenceOracle *m_presenceOracle;
+		UserInfo m_userInfo;
 };
 
 }
