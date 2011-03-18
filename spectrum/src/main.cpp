@@ -37,9 +37,39 @@ static GOptionEntry options_entries[] = {
 	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
+static void buddyListNewNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+	PurpleBuddy *buddy = (PurpleBuddy *) node;
+	PurpleAccount *account = purple_buddy_get_account(buddy);
+	User *user = (User *) account->ui_data;
+
+	if (!user)
+		return;
+	
+}
+
+static PurpleBlistUiOps blistUiOps =
+{
+	NULL,
+	buddyListNewNode,
+	NULL,
+	NULL, // buddyListUpdate,
+	NULL, //NodeRemoved,
+	NULL,
+	NULL,
+	NULL, // buddyListAddBuddy,
+	NULL,
+	NULL,
+	NULL, //buddyListSaveNode,
+	NULL, //buddyListRemoveNode,
+	NULL, //buddyListSaveAccount,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
-// 	purple_blist_set_ui_ops(&blistUiOps);
+	purple_blist_set_ui_ops(&blistUiOps);
 // 	purple_accounts_set_ui_ops(&accountUiOps);
 // 	purple_notify_set_ui_ops(&notifyUiOps);
 // 	purple_request_set_ui_ops(&requestUiOps);
