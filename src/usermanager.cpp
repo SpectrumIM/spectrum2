@@ -32,6 +32,7 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_storageBackend = storageBackend;
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
+// 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
 }
 
 UserManager::~UserManager(){

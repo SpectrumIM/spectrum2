@@ -32,6 +32,11 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component) {
 	m_presenceOracle = component->m_presenceOracle;
 	m_entityCapsManager = component->m_entityCapsManager;
 	m_userInfo = userInfo;
+	m_connected = false;
+	m_readyForConnect = false;
+
+	m_reconnectTimer = m_component->getFactories()->getTimerFactory()->createTimer(10000);
+	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
 }
 
 User::~User(){
@@ -44,8 +49,31 @@ const Swift::JID &User::getJID() {
 
 void User::handlePresence(Swift::Presence::ref presence) {
 	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
+
+	if (!m_connected) {
+		// we are not connected to legacy network, so we should do it when disco#info arrive :)
+		if (m_readyForConnect == false) {
+			
+			// Forward status message to legacy network, but only if it's sent from active resource
+// 					if (m_activeResource == presence->getFrom().getResource().getUTF8String()) {
+// 						forwardStatus(presenceShow, stanzaStatus);
+// 					}
+			boost::shared_ptr<Swift::CapsInfo> capsInfo = presence->getPayload<Swift::CapsInfo>();
+			if (capsInfo && capsInfo->getHash() == "sha-1") {
+				if (m_entityCapsManager->getCaps(presence->getFrom()) != Swift::DiscoInfo::ref()) {
+					m_readyForConnect = true;
+					onReadyToConnect();
+				}
+			}
+			else {
+				m_reconnectTimer->start();
+			}
+		}
+	}
+
+
 	if (highest) {
-		highest->setTo(presence->getFrom());
+		highest->setTo(presence->getFrom().toBare());
 		highest->setFrom(m_component->getJID());
 		m_component->getComponent()->sendPresence(highest);
 	}
@@ -56,6 +84,14 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		response->setType(Swift::Presence::Unavailable);
 		m_component->getComponent()->sendPresence(response);
 	}
+}
+
+void User::onConnectingTimeout() {
+	if (m_connected || m_readyForConnect)
+		return;
+	m_reconnectTimer->stop();
+	m_readyForConnect = true;
+	onReadyToConnect();
 }
 
 }

@@ -8,9 +8,12 @@
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/userregistration.h"
+#include "transport/user.h"
+#include "transport/storagebackend.h"
 #include "spectrumeventloop.h"
 #include "geventloop.h"
 
+#define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
 
 
 using namespace Transport;
@@ -61,13 +64,39 @@ static PurpleCoreUiOps coreUiOps =
 	NULL
 };
 
+static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
+	std::string c("[LIBPURPLE");
+
+	if (category) {
+		c.push_back('/');
+		c.append(category);
+	}
+
+	c.push_back(']');
+
+	std::cout << c << " " << arg_s;
+}
+
+/*
+ * Ops....
+ */
+static PurpleDebugUiOps debugUiOps =
+{
+	printDebug,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
 static bool initPurple(Config &cfg) {
 	bool ret;
 
 	purple_util_set_user_dir("./");
 
 // 	if (m_configuration.logAreas & LOG_AREA_PURPLE)
-// 		purple_debug_set_ui_ops(&debugUiOps);
+		purple_debug_set_ui_ops(&debugUiOps);
 
 	purple_core_set_ui_ops(&coreUiOps);
 	purple_eventloop_set_ui_ops(getEventLoopUiOps());
@@ -117,6 +146,118 @@ static bool initPurple(Config &cfg) {
 
 	}
 	return ret;
+}
+
+static void handleUserReadyToConnect(User *user) {
+	PurpleAccount *account = (PurpleAccount *) user->getData();
+	purple_account_set_enabled(account, "spectrum", TRUE);
+	
+	const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);
+	if (status_type != NULL) {
+		purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, NULL);
+	}
+}
+
+static void handleUserCreated(User *user, UserManager *userManager, Config *config) {
+	UserInfo userInfo = user->getUserInfo();
+	PurpleAccount *account = NULL;
+	const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
+	if (purple_accounts_find(userInfo.uin.c_str(), protocol) != NULL){
+		Log(userInfo.jid, "this account already exists");
+		account = purple_accounts_find(userInfo.uin.c_str(), protocol);
+		User *u = (User *) account->ui_data;
+		if (u && u != user) {
+			Log(userInfo.jid, "This account is already connected by another jid " << user->getJID());
+			return;
+		}
+	}
+	else {
+		Log(userInfo.jid, "creating new account");
+		account = purple_account_new(userInfo.uin.c_str(), protocol);
+
+		purple_accounts_add(account);
+	}
+// 	Transport::instance()->collector()->stopCollecting(m_account);
+
+// 	PurplePlugin *plugin = purple_find_prpl(protocol);
+// 	PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+// 	for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
+// 		PurpleAccountOption *option = (PurpleAccountOption *) l->data;
+// 		purple_account_remove_setting(account, purple_account_option_get_setting(option));
+// 	}
+// 
+// 	std::map <std::string, PurpleAccountSettingValue> &settings = Transport::instance()->getConfiguration().purple_account_settings;
+// 	for (std::map <std::string, PurpleAccountSettingValue>::iterator it = settings.begin(); it != settings.end(); it++) {
+// 		PurpleAccountSettingValue v = (*it).second;
+// 		std::string key((*it).first);
+// 		switch (v.type) {
+// 			case PURPLE_PREF_BOOLEAN:
+// 				purple_account_set_bool(m_account, key.c_str(), v.b);
+// 				break;
+// 
+// 			case PURPLE_PREF_INT:
+// 				purple_account_set_int(m_account, key.c_str(), v.i);
+// 				break;
+// 
+// 			case PURPLE_PREF_STRING:
+// 				if (v.str)
+// 					purple_account_set_string(m_account, key.c_str(), v.str);
+// 				else
+// 					purple_account_remove_setting(m_account, key.c_str());
+// 				break;
+// 
+// 			case PURPLE_PREF_STRING_LIST:
+// 				// TODO:
+// 				break;
+// 
+// 			default:
+// 				continue;
+// 		}
+// 	}
+
+	purple_account_set_string(account, "encoding", userInfo.encoding.empty() ? CONFIG_STRING(config, "registration.encoding").c_str() : userInfo.encoding.c_str());
+	purple_account_set_bool(account, "use_clientlogin", false);
+// 	purple_account_set_bool(account, "require_tls",  Transport::instance()->getConfiguration().require_tls);
+// 	purple_account_set_bool(account, "use_ssl",  Transport::instance()->getConfiguration().require_tls);
+	purple_account_set_bool(account, "direct_connect", false);
+// 	purple_account_set_bool(account, "check-mail", purple_value_get_boolean(getSetting("enable_notify_email")));
+
+	account->ui_data = user;
+	user->setData(account);
+
+	user->onReadyToConnect.connect(boost::bind(&handleUserReadyToConnect, user));
+	
+// 	Transport::instance()->protocol()->onPurpleAccountCreated(m_account);
+
+// 	m_loadingBuddiesFromDB = true;
+// 	loadRoster();
+// 	m_loadingBuddiesFromDB = false;
+
+// 	m_connectionStart = time(NULL);
+// 	m_readyForConnect = false;
+	purple_account_set_password(account, userInfo.password.c_str());
+// 	Log(m_jid, "UIN:" << m_username << " USER_ID:" << m_userID);
+}
+
+static void handleUserDestroyed(User *user, UserManager *userManager, Config *config) {
+	PurpleAccount *account = (PurpleAccount *) user->getData();
+	if (account) {
+		purple_account_set_enabled(account, "spectrum", FALSE);
+
+		// Remove conversations.
+		// This has to be called before m_account->ui_data = NULL;, because it uses
+		// ui_data to call SpectrumMessageHandler::purpleConversationDestroyed() callback.
+		GList *iter;
+		for (iter = purple_get_conversations(); iter; ) {
+			PurpleConversation *conv = (PurpleConversation*) iter->data;
+			iter = iter->next;
+			if (purple_conversation_get_account(conv) == account)
+				purple_conversation_destroy(conv);
+		}
+
+		account->ui_data = NULL;
+// 		Transport::instance()->collector()->collect(m_account);
+	}
 }
 
 int main(int argc, char **argv) {
@@ -183,7 +324,7 @@ int main(int argc, char **argv) {
 #endif
 		Config config;
 		if (!config.load(argv[1])) {
-			std::cout << "Can't open sample.cfg configuration file.\n";
+			std::cout << "Can't open " << argv[1] << " configuration file.\n";
 			return 1;
 		}
 
@@ -192,8 +333,22 @@ int main(int argc, char **argv) {
 		SpectrumEventLoop eventLoop;
 		Component transport(&eventLoop, &config);
 		Logger logger(&transport);
+
+		SQLite3Backend sql(&config);
+		logger.setStorageBackend(&sql);
+		if (!sql.connect()) {
+			std::cout << "Can't connect to database.\n";
+		}
+
+		UserManager userManager(&transport, &sql);
+		userManager.onUserCreated.connect(boost::bind(&handleUserCreated, _1, &userManager, &config));
+		userManager.onUserDestroyed.connect(boost::bind(&handleUserDestroyed, _1, &userManager, &config));
+
+		UserRegistration userRegistration(&transport, &userManager, &sql);
+		logger.setUserRegistration(&userRegistration);
+		logger.setUserManager(&userManager);
+
 		transport.connect();
-		
 		eventLoop.run();
 	}
 

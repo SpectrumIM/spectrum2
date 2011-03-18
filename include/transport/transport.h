@@ -93,6 +93,8 @@ namespace Transport {
 			/// \return Jabber ID of this transport
 			Swift::JID &getJID() { return m_jid; }
 
+			Swift::BoostNetworkFactories *getFactories() { return m_factories; }
+
 			/// This signal is emitted when server disconnects the transport because of some error.
 			/// \param error disconnection error
 			boost::signal<void (const Swift::ComponentError &error)> onConnectionError;
@@ -114,6 +116,8 @@ namespace Transport {
 			/// \param presence presence data
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
+// 			boost::signal<void (boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid)> onDiscoInfoResponse;
+
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
@@ -125,8 +129,8 @@ namespace Transport {
 			void handleDataRead(const std::string &data);
 			void handleDataWritten(const std::string &data);
 
-			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
-// 			void handleCapsChanged(const Swift::JID& jid);
+// 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+			void handleCapsChanged(const Swift::JID& jid);
 
 			Swift::BoostNetworkFactories *m_factories;
 			Swift::Component *m_component;

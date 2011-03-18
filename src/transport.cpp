@@ -52,7 +52,7 @@ Component::Component(Swift::EventLoop *loop, Config *config) {
 	m_capsMemoryStorage = new CapsMemoryStorage();
 	m_capsManager = new CapsManager(m_capsMemoryStorage, m_component->getStanzaChannel(), m_component->getIQRouter());
 	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_component->getStanzaChannel());
-// 	m_entityCapsManager->onCapsChanged.connect(boost::bind(&Component::handleCapsChanged, this, _1));
+ 	m_entityCapsManager->onCapsChanged.connect(boost::bind(&Component::handleCapsChanged, this, _1));
 	
 	m_presenceOracle = new PresenceOracle(m_component->getStanzaChannel());
 	m_presenceOracle->onPresenceChange.connect(bind(&Component::handlePresence, this, _1));
@@ -169,11 +169,11 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 			haveFeatures = m_entityCapsManager->getCaps(presence->getFrom()) != DiscoInfo::ref();
 			std::cout << "has capsInfo " << haveFeatures << "\n";
 		}
-		else {
-			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_component->getIQRouter());
-			discoInfoRequest->onResponse.connect(boost::bind(&Component::handleDiscoInfoResponse, this, _1, _2, presence->getFrom()));
-			discoInfoRequest->send();
-		}
+// 		else {
+// 			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_component->getIQRouter());
+// 			discoInfoRequest->onResponse.connect(boost::bind(&Component::handleDiscoInfoResponse, this, _1, _2, presence->getFrom()));
+// 			discoInfoRequest->send();
+// 		}
 	}
 
 	onUserPresenceReceived(presence);
@@ -223,35 +223,9 @@ void Component::handleSubscription(Swift::Presence::ref presence) {
 // 	}
 }
 
-void Component::handleDiscoInfoResponse(boost::shared_ptr<DiscoInfo> discoInfo, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
-// 	AbstractUser *user = Transport::instance()->userManager()->getUserByJID(jid.toBare().toString().getUTF8String());
-// 
-// 	std::string resource = jid.getResource().getUTF8String();
-// 	if (user && user->hasResource(resource)) {
-// 		if (user->getResource(resource).caps == 0) {
-// 			int capabilities = 0;
-// 
-// 			for (std::vector< String >::const_iterator it = discoInfo->getFeatures().begin(); it != discoInfo->getFeatures().end(); ++it) {
-// 				if (*it == "http://jabber.org/protocol/rosterx") {
-// 					capabilities |= CLIENT_FEATURE_ROSTERX;
-// 				}
-// 				else if (*it == "http://jabber.org/protocol/xhtml-im") {
-// 					capabilities |= CLIENT_FEATURE_XHTML_IM;
-// 				}
-// 				else if (*it == "http://jabber.org/protocol/si/profile/file-transfer") {
-// 					capabilities |= CLIENT_FEATURE_FILETRANSFER;
-// 				}
-// 				else if (*it == "http://jabber.org/protocol/chatstates") {
-// 					capabilities |= CLIENT_FEATURE_CHATSTATES;
-// 				}
-// 			}
-// 
-// 			user->setResource(resource, -256, capabilities);
-// 			if (user->readyForConnect()) {
-// 				user->connect();
-// 			}
-// 		}
-// 	}
+void Component::handleCapsChanged(const Swift::JID& jid) {
+	bool haveFeatures = m_entityCapsManager->getCaps(jid) != DiscoInfo::ref();
+	std::cout << "has capsInfo " << haveFeatures << "\n";
 }
 
 }

@@ -52,6 +52,9 @@ class User {
 		/// \return UserInfo struct
 		UserInfo &getUserInfo() { return m_userInfo; }
 
+		void setData(void *data) { m_data = data; }
+		void *getData() { return m_data; }
+
 		/// Handles presence from XMPP JID associated with this user.
 		/// \param presence Swift::Presence.
 		void handlePresence(Swift::Presence::ref presence);
@@ -60,12 +63,20 @@ class User {
 		/// \return language
 		const char *getLang() { return "en"; }
 
+		boost::signal<void ()> onReadyToConnect;
+
 	private:
+		void onConnectingTimeout();
+
 		Swift::JID m_jid;
 		Component *m_component;		
 		Swift::EntityCapsManager *m_entityCapsManager;
 		Swift::PresenceOracle *m_presenceOracle;
 		UserInfo m_userInfo;
+		void *m_data;
+		bool m_connected;
+		bool m_readyForConnect;
+		Swift::Timer::ref m_reconnectTimer;
 };
 
 }
