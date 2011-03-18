@@ -42,11 +42,16 @@ class SpectrumBuddy : public AbstractBuddy {
 		std::string getIconHash();
 		std::vector<std::string> getGroups();
 		std::string getSafeName();
+
+		void addBuddy(PurpleBuddy *buddy) { m_buddies.push_back(buddy); }
+		void removeBuddy(PurpleBuddy *buddy) { m_buddies.remove(buddy); }
+		int getBuddiesCount() { return m_buddies.size(); }
 		
 		PurpleBuddy *getBuddy() { return m_buddy; }
 
 	private:
 		PurpleBuddy *m_buddy;
+		std::list<PurpleBuddy *> m_buddies;
 };
 
 #endif

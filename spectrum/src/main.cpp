@@ -48,9 +48,25 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	if (!user)
 		return;
 
-	buddy->node.ui_data = (void *) new SpectrumBuddy(-1, buddy);
-	SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
-	s_buddy->setFlags(SPECTRUM_BUDDY_JID_ESCAPING);
+	SpectrumBuddy *s_buddy = NULL;
+	GSList *list = purple_find_buddies(account, purple_buddy_get_name(buddy));
+	while (list) {
+		PurpleBuddy *b = (PurpleBuddy *) list->data;
+		if (b->node.ui_data)
+			s_buddy = (SpectrumBuddy *) b->node.ui_data;
+		list = g_slist_delete_link(list, list);
+	}
+
+	if (s_buddy) {
+		buddy->node.ui_data = s_buddy;
+		s_buddy->addBuddy(buddy);
+	}
+	else {
+		buddy->node.ui_data = (void *) new SpectrumBuddy(-1, buddy);
+		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
+		s_buddy->setFlags(SPECTRUM_BUDDY_JID_ESCAPING);
+		// TODO: add buddy to RosterManager
+	}
 }
 
 static void NodeRemoved(PurpleBlistNode *node, void *data) {
@@ -60,14 +76,14 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 	
 	PurpleAccount *account = purple_buddy_get_account(buddy);
 	User *user = (User *) account->ui_data;
-// 	if (user != NULL) {
-// 		user->handleBuddyRemoved(buddy);
-// 	}
 	if (buddy->node.ui_data) {
 		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
-		Log("PurpleBuddy", "Deleting data for " << s_buddy->getName());
-		delete s_buddy;
+		s_buddy->removeBuddy(buddy);
 		buddy->node.ui_data = NULL;
+		if (s_buddy->getBuddiesCount() == 0) {
+			// TODO: remove buddy from RosterManager
+			delete s_buddy;
+		}
 	}
 }
 
