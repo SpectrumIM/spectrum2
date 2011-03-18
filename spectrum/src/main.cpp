@@ -11,6 +11,7 @@
 #include "transport/user.h"
 #include "transport/storagebackend.h"
 #include "spectrumeventloop.h"
+#include "spectrumbuddy.h"
 #include "geventloop.h"
 
 #define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
@@ -46,7 +47,28 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 
 	if (!user)
 		return;
+
+	buddy->node.ui_data = (void *) new SpectrumBuddy(-1, buddy);
+	SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
+	s_buddy->setFlags(SPECTRUM_BUDDY_JID_ESCAPING);
+}
+
+static void NodeRemoved(PurpleBlistNode *node, void *data) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	
+	PurpleAccount *account = purple_buddy_get_account(buddy);
+	User *user = (User *) account->ui_data;
+// 	if (user != NULL) {
+// 		user->handleBuddyRemoved(buddy);
+// 	}
+	if (buddy->node.ui_data) {
+		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
+		Log("PurpleBuddy", "Deleting data for " << s_buddy->getName());
+		delete s_buddy;
+		buddy->node.ui_data = NULL;
+	}
 }
 
 static PurpleBlistUiOps blistUiOps =
@@ -169,7 +191,7 @@ static bool initPurple(Config &cfg) {
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
-// 		purple_signal_connect(purple_blist_get_handle(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
+		purple_signal_connect(purple_blist_get_handle(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
 // 		purple_signal_connect(purple_conversations_get_handle(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
 // 
 // 		purple_commands_init();
