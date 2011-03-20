@@ -10,6 +10,7 @@
 #include "transport/userregistration.h"
 #include "transport/user.h"
 #include "transport/storagebackend.h"
+#include "transport/rostermanager.h"
 #include "spectrumeventloop.h"
 #include "spectrumbuddy.h"
 #include "geventloop.h"
@@ -65,7 +66,8 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		buddy->node.ui_data = (void *) new SpectrumBuddy(-1, buddy);
 		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
 		s_buddy->setFlags(SPECTRUM_BUDDY_JID_ESCAPING);
-		// TODO: add buddy to RosterManager
+
+		user->getRosterManager()->addBuddy(s_buddy);
 	}
 }
 
@@ -81,7 +83,7 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 		s_buddy->removeBuddy(buddy);
 		buddy->node.ui_data = NULL;
 		if (s_buddy->getBuddiesCount() == 0) {
-			// TODO: remove buddy from RosterManager
+			user->getRosterManager()->removeBuddy(s_buddy);
 			delete s_buddy;
 		}
 	}

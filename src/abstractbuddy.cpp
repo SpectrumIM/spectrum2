@@ -20,6 +20,8 @@
 
 #include "transport/abstractbuddy.h"
 
+namespace Transport {
+
 AbstractBuddy::AbstractBuddy(long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(0) {
 }
 
@@ -106,4 +108,6 @@ Swift::Presence::ref AbstractBuddy::generatePresenceStanza(int features, bool on
 	}
 
 	return presence;
+}
+
 }

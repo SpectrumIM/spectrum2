@@ -24,6 +24,8 @@
 #include "transport/transport.h"
 #include "transport/storagebackend.h"
 #include "transport/userregistration.h"
+#include "transport/abstractbuddy.h"
+#include "transport/rostermanager.h"
 #include <boost/bind.hpp>
 
 using namespace boost;
@@ -102,6 +104,14 @@ void Logger::handleUserCreated(User *user) {
 
 void Logger::handleUserDestroyed(User *user) {
 	std::cout << "[USERMANAGER] User \"" << user->getJID().toBare().toString() << "\" (UIN: \"" << user->getUserInfo().uin << "\") disconnected and User class is going to be destroyed\n";
+}
+
+void Logger::handleBuddyAdded(AbstractBuddy *buddy) {
+	std::cout << "[ROSTERMANAGER] \"" << buddy->getRosterManager()->getUser()->getJID().toBare().toString() << "\": Buddy \"" << buddy->getSafeName() << "\" (ALIAS: \"" << buddy->getAlias() << "\") has been bound with this user's roster.\n";
+}
+
+void Logger::handleBuddyRemoved(AbstractBuddy *buddy) {
+	std::cout << "[ROSTERMANAGER] \"" << buddy->getRosterManager()->getUser()->getJID().toBare().toString() << "\": Buddy \"" << buddy->getSafeName() << "\" (ALIAS: \"" << buddy->getAlias() << "\") has been unbound with this user's roster.\n";
 }
 
 }

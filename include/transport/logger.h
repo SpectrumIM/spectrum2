@@ -32,6 +32,8 @@ class UserManager;
 class Component;
 class StorageBackend;
 class UserRegistration;
+class RosterManager;
+class AbstractBuddy;
 
 /// Basic logging class which logs various data into std::out (standard output).
 class Logger
@@ -56,6 +58,10 @@ class Logger
 		/// \param userManager userManager class
 		void setUserManager(UserManager *userManager);
 
+		/// Starts logging data related to RosterManager class.
+		/// \param rosterManager rosterManager class
+		void setRosterManager(RosterManager *rosterManager);
+
 	private:
 		// Component
 		void handleConnected();
@@ -74,6 +80,10 @@ class Logger
 		// UserManager
 		void handleUserCreated(User *user);
 		void handleUserDestroyed(User *user);
+
+		// RosterManager
+		void handleBuddyAdded(AbstractBuddy *buddy);
+		void handleBuddyRemoved(AbstractBuddy *buddy);
 };
 
 }

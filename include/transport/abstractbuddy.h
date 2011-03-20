@@ -31,7 +31,9 @@ typedef enum { 	SPECTRUM_BUDDY_NO_FLAG = 0,
 				SPECTRUM_BUDDY_IGNORE = 4
 			} SpectrumBuddyFlag;
 
-using namespace Transport;
+namespace Transport {
+
+class RosterManager;
 
 // Wrapper for PurpleBuddy.
 class AbstractBuddy {
@@ -69,6 +71,9 @@ class AbstractBuddy {
 		// Returns flags.
 		int getFlags();
 
+		void setRosterManager(RosterManager *rosterManager) { m_rosterManager = rosterManager; }
+		RosterManager *getRosterManager() { return m_rosterManager; }
+
 		// Returns buddy's name (so for example UIN for ICQ, JID for XMPP...).
 		virtual std::string getName() = 0;
 
@@ -95,4 +100,7 @@ class AbstractBuddy {
 		std::string m_subscription;
 		Swift::Presence::ref m_lastPresence;
 		int m_flags;
+		RosterManager *m_rosterManager;
 };
+
+}
