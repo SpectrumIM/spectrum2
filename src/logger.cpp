@@ -57,6 +57,11 @@ void Logger::setUserManager(UserManager *userManager) {
 	userManager->onUserDestroyed.connect(bind(&Logger::handleUserDestroyed, this, _1));
 }
 
+void Logger::setRosterManager(RosterManager *rosterManager) {
+	rosterManager->onBuddySet.connect(bind(&Logger::handleBuddySet, this, _1));
+	rosterManager->onBuddyUnset.connect(bind(&Logger::handleBuddyUnset, this, _1));
+}
+
 void Logger::handleConnected() {
 	std::cout << "[COMPONENT] Connected to Jabber Server!\n";
 }
@@ -106,11 +111,11 @@ void Logger::handleUserDestroyed(User *user) {
 	std::cout << "[USERMANAGER] User \"" << user->getJID().toBare().toString() << "\" (UIN: \"" << user->getUserInfo().uin << "\") disconnected and User class is going to be destroyed\n";
 }
 
-void Logger::handleBuddyAdded(AbstractBuddy *buddy) {
+void Logger::handleBuddySet(AbstractBuddy *buddy) {
 	std::cout << "[ROSTERMANAGER] \"" << buddy->getRosterManager()->getUser()->getJID().toBare().toString() << "\": Buddy \"" << buddy->getSafeName() << "\" (ALIAS: \"" << buddy->getAlias() << "\") has been bound with this user's roster.\n";
 }
 
-void Logger::handleBuddyRemoved(AbstractBuddy *buddy) {
+void Logger::handleBuddyUnset(AbstractBuddy *buddy) {
 	std::cout << "[ROSTERMANAGER] \"" << buddy->getRosterManager()->getUser()->getJID().toBare().toString() << "\": Buddy \"" << buddy->getSafeName() << "\" (ALIAS: \"" << buddy->getAlias() << "\") has been unbound with this user's roster.\n";
 }
 

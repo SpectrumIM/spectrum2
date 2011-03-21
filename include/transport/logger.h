@@ -82,8 +82,8 @@ class Logger
 		void handleUserDestroyed(User *user);
 
 		// RosterManager
-		void handleBuddyAdded(AbstractBuddy *buddy);
-		void handleBuddyRemoved(AbstractBuddy *buddy);
+		void handleBuddySet(AbstractBuddy *buddy);
+		void handleBuddyUnset(AbstractBuddy *buddy);
 };
 
 }

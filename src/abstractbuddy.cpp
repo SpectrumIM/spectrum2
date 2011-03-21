@@ -22,25 +22,25 @@
 
 namespace Transport {
 
-AbstractBuddy::AbstractBuddy(long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(0) {
+AbstractBuddy::AbstractBuddy(long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG) {
 }
 
 AbstractBuddy::~AbstractBuddy() {
 }
 
-void AbstractBuddy::setId(long id) {
+void AbstractBuddy::setID(long id) {
 	m_id = id;
 }
 
-long AbstractBuddy::getId() {
+long AbstractBuddy::getID() {
 	return m_id;
 }
 
-void AbstractBuddy::setFlags(int flags) {
+void AbstractBuddy::setFlags(BuddyFlag flags) {
 	m_flags = flags;
 }
 
-int AbstractBuddy::getFlags() {
+BuddyFlag AbstractBuddy::getFlags() {
 	return m_flags;
 }
 
@@ -108,6 +108,23 @@ Swift::Presence::ref AbstractBuddy::generatePresenceStanza(int features, bool on
 	}
 
 	return presence;
+}
+
+std::string AbstractBuddy::getSafeName() {
+	std::string name = getName();
+// 	Transport::instance()->protocol()->prepareUsername(name, purple_buddy_get_account(m_buddy));
+	if (getFlags() & BUDDY_JID_ESCAPING) {
+// 		name = JID::escapeNode(name);
+	}
+	else {
+		if (name.find_last_of("@") != std::string::npos) {
+			name.replace(name.find_last_of("@"), 1, "%");
+		}
+	}
+	if (name.empty()) {
+// 		Log("SpectrumBuddy::getSafeName", "Name is EMPTY! Previous was " << getName() << ".");
+	}
+	return name;
 }
 
 }

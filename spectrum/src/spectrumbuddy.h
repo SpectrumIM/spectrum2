@@ -41,7 +41,6 @@ class SpectrumBuddy : public AbstractBuddy {
 		bool getStatus(Swift::StatusShow &status, std::string &statusMessage);
 		std::string getIconHash();
 		std::vector<std::string> getGroups();
-		std::string getSafeName();
 
 		void addBuddy(PurpleBuddy *buddy) { m_buddies.push_back(buddy); }
 		void removeBuddy(PurpleBuddy *buddy) { m_buddies.remove(buddy); }

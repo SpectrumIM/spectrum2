@@ -108,20 +108,3 @@ std::vector<std::string> SpectrumBuddy::getGroups() {
 	return groups;
 }
 
-std::string SpectrumBuddy::getSafeName() {
-	std::string name = getName();
-// 	Transport::instance()->protocol()->prepareUsername(name, purple_buddy_get_account(m_buddy));
-	if (getFlags() & SPECTRUM_BUDDY_JID_ESCAPING) {
-// 		name = JID::escapeNode(name);
-	}
-	else {
-		if (name.find_last_of("@") != std::string::npos) {
-			name.replace(name.find_last_of("@"), 1, "%");
-		}
-	}
-	if (name.empty()) {
-		Log("SpectrumBuddy::getSafeName", "Name is EMPTY! Previous was " << getName() << ".");
-	}
-	return name;
-}
-

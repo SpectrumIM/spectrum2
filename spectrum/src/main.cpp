@@ -20,6 +20,8 @@
 
 using namespace Transport;
 
+Logger *_logger;
+
 static gboolean nodaemon = FALSE;
 static gchar *logfile = NULL;
 static gchar *lock_file = NULL;
@@ -65,9 +67,9 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	else {
 		buddy->node.ui_data = (void *) new SpectrumBuddy(-1, buddy);
 		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
-		s_buddy->setFlags(SPECTRUM_BUDDY_JID_ESCAPING);
+		s_buddy->setFlags(BUDDY_JID_ESCAPING);
 
-		user->getRosterManager()->addBuddy(s_buddy);
+		user->getRosterManager()->setBuddy(s_buddy);
 	}
 }
 
@@ -83,7 +85,7 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 		s_buddy->removeBuddy(buddy);
 		buddy->node.ui_data = NULL;
 		if (s_buddy->getBuddiesCount() == 0) {
-			user->getRosterManager()->removeBuddy(s_buddy);
+			user->getRosterManager()->unsetBuddy(s_buddy);
 			delete s_buddy;
 		}
 	}
@@ -296,6 +298,7 @@ static void handleUserCreated(User *user, UserManager *userManager, Config *conf
 	user->setData(account);
 
 	user->onReadyToConnect.connect(boost::bind(&handleUserReadyToConnect, user));
+	_logger->setRosterManager(user->getRosterManager());
 	
 // 	Transport::instance()->protocol()->onPurpleAccountCreated(m_account);
 
@@ -403,6 +406,7 @@ int main(int argc, char **argv) {
 		SpectrumEventLoop eventLoop;
 		Component transport(&eventLoop, &config);
 		Logger logger(&transport);
+		_logger = &logger;
 
 		SQLite3Backend sql(&config);
 		logger.setStorageBackend(&sql);
