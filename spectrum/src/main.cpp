@@ -65,11 +65,9 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		s_buddy->addBuddy(buddy);
 	}
 	else {
-		buddy->node.ui_data = (void *) new SpectrumBuddy(-1, buddy);
+		buddy->node.ui_data = (void *) new SpectrumBuddy(user->getRosterManager(), -1, buddy);
 		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
 		s_buddy->setFlags(BUDDY_JID_ESCAPING);
-
-		user->getRosterManager()->setBuddy(s_buddy);
 	}
 }
 
@@ -85,7 +83,6 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 		s_buddy->removeBuddy(buddy);
 		buddy->node.ui_data = NULL;
 		if (s_buddy->getBuddiesCount() == 0) {
-			user->getRosterManager()->unsetBuddy(s_buddy);
 			delete s_buddy;
 		}
 	}

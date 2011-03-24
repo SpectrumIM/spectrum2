@@ -19,13 +19,23 @@
  */
 
 #include "transport/abstractbuddy.h"
+#include "transport/rostermanager.h"
+#include "transport/user.h"
+#include "transport/transport.h"
 
 namespace Transport {
 
-AbstractBuddy::AbstractBuddy(long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG) {
+AbstractBuddy::AbstractBuddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
+	m_rosterManager->setBuddy(this);
 }
 
 AbstractBuddy::~AbstractBuddy() {
+	m_rosterManager->unsetBuddy(this);
+}
+
+void AbstractBuddy::generateJID() {
+	m_jid = Swift::JID();
+	m_jid = Swift::JID(getSafeName(), m_rosterManager->getUser()->getComponent()->getJID().toString(), "bot");
 }
 
 void AbstractBuddy::setID(long id) {
@@ -38,14 +48,19 @@ long AbstractBuddy::getID() {
 
 void AbstractBuddy::setFlags(BuddyFlag flags) {
 	m_flags = flags;
+
+	generateJID();
 }
 
 BuddyFlag AbstractBuddy::getFlags() {
 	return m_flags;
 }
 
-Swift::JID AbstractBuddy::getJID(const std::string &hostname) {
- 	return Swift::JID(getSafeName(), hostname, "bot");
+const Swift::JID &AbstractBuddy::getJID(const std::string &hostname) {
+	if (!m_jid.isValid()) {
+		generateJID();
+	}
+	return m_jid;
 }
 
 void AbstractBuddy::setOnline() {
@@ -111,19 +126,22 @@ Swift::Presence::ref AbstractBuddy::generatePresenceStanza(int features, bool on
 }
 
 std::string AbstractBuddy::getSafeName() {
+	if (m_jid.isValid()) {
+		return m_jid.getNode();
+	}
 	std::string name = getName();
 // 	Transport::instance()->protocol()->prepareUsername(name, purple_buddy_get_account(m_buddy));
 	if (getFlags() & BUDDY_JID_ESCAPING) {
-// 		name = JID::escapeNode(name);
+		name = Swift::JID::getEscapedNode(name);
 	}
 	else {
 		if (name.find_last_of("@") != std::string::npos) {
 			name.replace(name.find_last_of("@"), 1, "%");
 		}
 	}
-	if (name.empty()) {
+// 	if (name.empty()) {
 // 		Log("SpectrumBuddy::getSafeName", "Name is EMPTY! Previous was " << getName() << ".");
-	}
+// 	}
 	return name;
 }
 

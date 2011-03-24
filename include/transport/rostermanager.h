@@ -67,9 +67,12 @@ class RosterManager {
 		boost::signal<void (AbstractBuddy *buddy)> onBuddyUnset;
 
 	private:
+		void setBuddyCallback(AbstractBuddy *buddy);
+
 		std::map<std::string, AbstractBuddy *> m_buddies;
 		Component *m_component;
 		User *m_user;
+		Swift::Timer::ref m_setBuddyTimer;
 };
 
 }

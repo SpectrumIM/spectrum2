@@ -23,7 +23,7 @@
 
 #define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
 
-SpectrumBuddy::SpectrumBuddy(long id, PurpleBuddy *buddy) : AbstractBuddy(id), m_buddy(buddy) {
+SpectrumBuddy::SpectrumBuddy(RosterManager *rosterManager, long id, PurpleBuddy *buddy) : AbstractBuddy(rosterManager, id), m_buddy(buddy) {
 }
 
 SpectrumBuddy::~SpectrumBuddy() {

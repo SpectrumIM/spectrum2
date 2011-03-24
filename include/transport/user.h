@@ -55,6 +55,9 @@ class User {
 
 		RosterManager *getRosterManager() { return m_rosterManager; }
 
+
+		Component *getComponent() { return m_component; }
+
 		void setData(void *data) { m_data = data; }
 		void *getData() { return m_data; }
 

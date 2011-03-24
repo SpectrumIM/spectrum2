@@ -39,7 +39,7 @@ typedef enum { 	BUDDY_NO_FLAG = 0,
 class AbstractBuddy {
 	public:
 		/// Constructor.
-		AbstractBuddy(long id);
+		AbstractBuddy(RosterManager *rosterManager, long id);
 
 		/// Destructor
 		virtual ~AbstractBuddy();
@@ -59,7 +59,7 @@ class AbstractBuddy {
 		/// Returns full JID of this buddy.
 		/// \param hostname hostname used as domain in returned JID
 		/// \return full JID of this buddy
-		Swift::JID getJID(const std::string &hostname);
+		const Swift::JID &getJID(const std::string &hostname);
 
 		/// Generates whole Presennce stanza with current status/show for this buddy.
 		/// Presence stanza does not containt "to" attribute, it has to be added manually.
@@ -95,10 +95,6 @@ class AbstractBuddy {
 		/// \param flags flags
 		BuddyFlag getFlags();
 
-		/// Sets RosterManager associated with this buddy.
-		/// \param rosterManager RosterManager
-		void setRosterManager(RosterManager *rosterManager) { m_rosterManager = rosterManager; }
-
 		/// Returns RosterManager associated with this buddy
 		/// \return rosterManager
 		RosterManager *getRosterManager() { return m_rosterManager; }
@@ -132,10 +128,13 @@ class AbstractBuddy {
 		virtual std::string getIconHash() = 0;
 
 	private:
+		void generateJID();
+
 		long m_id;
 		bool m_online;
 		std::string m_subscription;
 		Swift::Presence::ref m_lastPresence;
+		Swift::JID m_jid;
 		BuddyFlag m_flags;
 		RosterManager *m_rosterManager;
 };

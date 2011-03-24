@@ -27,13 +27,14 @@
 #include "glib.h"
 #include <algorithm>
 #include "transport/abstractbuddy.h"
+#include "transport/rostermanager.h"
 
 using namespace Transport;
 
 // Wrapper for PurpleBuddy
 class SpectrumBuddy : public AbstractBuddy {
 	public:
-		SpectrumBuddy(long id, PurpleBuddy *buddy);
+		SpectrumBuddy(RosterManager *rosterManager, long id, PurpleBuddy *buddy);
 		virtual ~SpectrumBuddy();
 
 		std::string getAlias();

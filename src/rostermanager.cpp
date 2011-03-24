@@ -29,21 +29,31 @@ namespace Transport {
 RosterManager::RosterManager(User *user, Component *component){
 	m_user = user;
 	m_component = component;
+	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(10);
 }
 
 RosterManager::~RosterManager() {
 }
 
 void RosterManager::setBuddy(AbstractBuddy *buddy) {
+	m_setBuddyTimer->onTick.connect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
+	m_setBuddyTimer->start();
+}
+
+void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
+	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
+
 	m_buddies[buddy->getSafeName()] = buddy;
-	buddy->setRosterManager(this);
 	onBuddySet(buddy);
+
+	if (m_setBuddyTimer->onTick.empty()) {
+		m_setBuddyTimer->stop();
+	}
 }
 
 void RosterManager::unsetBuddy(AbstractBuddy *buddy) {
 	m_buddies.erase(buddy->getSafeName());
 	onBuddyUnset(buddy);
-	buddy->setRosterManager(NULL);
 }
 
 }
