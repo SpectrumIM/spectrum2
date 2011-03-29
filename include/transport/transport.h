@@ -22,6 +22,7 @@
 
 #include <vector>
 #include "Swiften/Swiften.h"
+#include "Swiften/Server/Server.h"
 #include "Swiften/Disco/GetDiscoInfoRequest.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/CapsManager.h"
@@ -29,6 +30,7 @@
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
+#include "Swiften/Server/UserRegistry.h"
 #include <boost/bind.hpp>
 #include "transport/config.h"
 
@@ -68,12 +70,15 @@ namespace Transport {
 			/// Returns Swift::Component associated with this Transport::Component.
 			/// You can use it to send presences and other stanzas.
 			/// \return Swift::Component associated with this Transport::Component
-			Swift::Component *getComponent();
+			Swift::StanzaChannel *getStanzaChannel();
 
 			/// Returns Swift::PresenceOracle associated with this Transport::Component.
 			/// You can use it to check current resource connected for particular user.
 			/// \return Swift::PresenceOracle associated with this Transport::Component
 			Swift::PresenceOracle *getPresenceOracle();
+
+			bool inServerMode() { return m_server != NULL; }
+			const std::string &getUserRegistryPassword(const std::string &barejid);
 
 			/// Connects the Jabber server.
 			/// \see Component()
@@ -134,12 +139,16 @@ namespace Transport {
 
 			Swift::BoostNetworkFactories *m_factories;
 			Swift::Component *m_component;
+			Swift::Server *m_server;
 			Swift::Timer::ref m_reconnectTimer;
 			Swift::BoostIOServiceThread m_boostIOServiceThread;
 			Swift::EntityCapsManager *m_entityCapsManager;
 			Swift::CapsManager *m_capsManager;
 			Swift::CapsMemoryStorage *m_capsMemoryStorage;
 			Swift::PresenceOracle *m_presenceOracle;
+			Swift::StanzaChannel *m_stanzaChannel;
+			Swift::IQRouter *m_iqRouter;
+			Swift::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;
 			DiscoItemsResponder *m_discoItemsResponder;

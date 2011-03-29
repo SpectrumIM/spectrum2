@@ -30,7 +30,7 @@ using namespace Swift;
 
 namespace Transport {
 
-UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::GetResponder<Swift::InBandRegistrationPayload>(component->m_component->getIQRouter()), Swift::SetResponder<Swift::InBandRegistrationPayload>(component->m_component->getIQRouter()) {
+UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::GetResponder<Swift::InBandRegistrationPayload>(component->m_iqRouter), Swift::SetResponder<Swift::InBandRegistrationPayload>(component->m_iqRouter) {
 	m_component = component;
 	m_config = m_component->m_config;
 	m_storageBackend = storageBackend;

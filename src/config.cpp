@@ -37,6 +37,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("service.port", value<int>()->default_value(0), "Port the server is listening on")
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
 		("service.allowed_servers", value<std::string>()->default_value(""), "Only users from these servers can connect")
+		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("registration.enable_public_registration", value<bool>()->default_value(true), "True if users should be able to register.")
 		("registration.language", value<std::string>()->default_value("en"), "Default language for registration form")
 		("registration.instructions", value<std::string>()->default_value(""), "Instructions showed to user in registration form")

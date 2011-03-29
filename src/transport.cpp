@@ -29,7 +29,22 @@ using namespace boost;
 
 namespace Transport {
 
+
+class MyUserRegistry : public Swift::UserRegistry {
+	public:
+		MyUserRegistry() {}
+		~MyUserRegistry() {}
+		bool isValidUserPassword(const JID& user, const std::string& password) const {
+			users[user.toBare().toString()] = password;
+			return true;
+		}
+		mutable std::map<std::string, std::string> users;
+};
+
 Component::Component(Swift::EventLoop *loop, Config *config) {
+	m_component = NULL;
+	m_userRegistry = NULL;
+	m_server = NULL;
 	m_reconnectCount = 0;
 	m_config = config;
 
@@ -40,27 +55,38 @@ Component::Component(Swift::EventLoop *loop, Config *config) {
 	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(1000);
 	m_reconnectTimer->onTick.connect(bind(&Component::connect, this)); 
 
-	m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
-	m_component->setSoftwareVersion("", "");
-	m_component->onConnected.connect(bind(&Component::handleConnected, this));
-	m_component->onError.connect(bind(&Component::handleConnectionError, this, _1));
-	m_component->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
-	m_component->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
-	m_component->onPresenceReceived.connect(bind(&Component::handlePresenceReceived, this, _1));
-// 	m_component->onMessageReceived.connect(bind(&Component::handleMessageReceived, this, _1));
+	if (CONFIG_BOOL(m_config, "service.server_mode")) {
+		m_userRegistry = new MyUserRegistry();
+		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
+		m_server->start();
+		m_stanzaChannel = m_server->getStanzaChannel();
+		m_iqRouter = m_server->getIQRouter();
+	}
+	else {
+		m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
+		m_component->setSoftwareVersion("", "");
+		m_component->onConnected.connect(bind(&Component::handleConnected, this));
+		m_component->onError.connect(bind(&Component::handleConnectionError, this, _1));
+		m_component->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
+		m_component->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
+		m_component->onPresenceReceived.connect(bind(&Component::handlePresenceReceived, this, _1));
+// 		m_component->onMessageReceived.connect(bind(&Component::handleMessageReceived, this, _1));
+		m_stanzaChannel = m_component->getStanzaChannel();
+		m_iqRouter = m_component->getIQRouter();
+	}
 
 	m_capsMemoryStorage = new CapsMemoryStorage();
-	m_capsManager = new CapsManager(m_capsMemoryStorage, m_component->getStanzaChannel(), m_component->getIQRouter());
-	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_component->getStanzaChannel());
+	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter);
+	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_stanzaChannel);
  	m_entityCapsManager->onCapsChanged.connect(boost::bind(&Component::handleCapsChanged, this, _1));
 	
-	m_presenceOracle = new PresenceOracle(m_component->getStanzaChannel());
+	m_presenceOracle = new PresenceOracle(m_stanzaChannel);
 	m_presenceOracle->onPresenceChange.connect(bind(&Component::handlePresence, this, _1));
 
-	m_discoInfoResponder = new DiscoInfoResponder(m_component->getIQRouter());
+	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter);
 	m_discoInfoResponder->start();
 
-	m_discoItemsResponder = new DiscoItemsResponder(m_component->getIQRouter());
+	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
 	m_discoItemsResponder->start();
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
@@ -74,12 +100,22 @@ Component::~Component() {
 	delete m_capsMemoryStorage;
 // 	delete m_discoInfoResponder;
 // 	delete m_registerHandler;
-	delete m_component;
+	if (m_component)
+		delete m_component;
+	if (m_server)
+		delete m_server;
+	if (m_userRegistry)
+		delete m_userRegistry;
 	delete m_factories;
 }
 
-Swift::Component *Component::getComponent() {
-	return m_component;
+const std::string &Component::getUserRegistryPassword(const std::string &barejid) {
+	MyUserRegistry *registry = dynamic_cast<MyUserRegistry *>(m_userRegistry);
+	return registry->users[barejid];
+}
+
+Swift::StanzaChannel *Component::getStanzaChannel() {
+	return m_stanzaChannel;
 }
 
 Swift::PresenceOracle *Component::getPresenceOracle() {
@@ -96,6 +132,8 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 }
 
 void Component::connect() {
+	if (!m_component)
+		return;
 	m_reconnectCount++;
 	m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 	m_reconnectTimer->stop();
@@ -170,7 +208,7 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 			std::cout << "has capsInfo " << haveFeatures << "\n";
 		}
 // 		else {
-// 			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_component->getIQRouter());
+// 			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_iqRouter);
 // 			discoInfoRequest->onResponse.connect(boost::bind(&Component::handleDiscoInfoResponse, this, _1, _2, presence->getFrom()));
 // 			discoInfoRequest->send();
 // 		}

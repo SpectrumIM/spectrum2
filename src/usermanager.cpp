@@ -80,7 +80,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			response->setTo(presence->getFrom());
 			response->setFrom(presence->getTo());
 			response->setType(Swift::Presence::Unavailable);
-			m_component->getComponent()->sendPresence(response);
+			m_component->getStanzaChannel()->sendPresence(response);
 
 			UserInfo res;
 			bool registered = m_storageBackend->getUser(userkey, res);
@@ -92,6 +92,16 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 		UserInfo res;
 		bool registered = m_storageBackend->getUser(userkey, res);
+
+		if (!registered && m_component->inServerMode()) {
+			res.password = m_component->getUserRegistryPassword(userkey);
+			res.uin = presence->getFrom().getNode();
+			if (res.uin.find_last_of("%") != std::string::npos) {
+				res.uin.replace(res.uin.find_last_of("%"), 1, "@");
+			}
+			registered = true;
+			m_storageBackend->setUser(res);
+		}
 
 		if (!registered) {
 			// TODO: logging
