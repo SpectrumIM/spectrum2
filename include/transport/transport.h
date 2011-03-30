@@ -73,6 +73,8 @@ namespace Transport {
 			/// \return Swift::Component associated with this Transport::Component
 			Swift::StanzaChannel *getStanzaChannel();
 
+			Swift::IQRouter *getIQRouter() { return m_iqRouter; }
+
 			/// Returns Swift::PresenceOracle associated with this Transport::Component.
 			/// You can use it to check current resource connected for particular user.
 			/// \return Swift::PresenceOracle associated with this Transport::Component

@@ -55,7 +55,31 @@ bool SpectrumBuddy::getStatus(Swift::StatusShow &status, std::string &statusMess
 	if (stat == NULL)
 		return false;
 	int st = purple_status_type_get_primitive(purple_status_get_type(stat));
-	// TODO: populate status
+
+	switch(st) {
+		case PURPLE_STATUS_AVAILABLE: {
+			break;
+		}
+		case PURPLE_STATUS_AWAY: {
+			status = Swift::StatusShow::Away;
+			break;
+		}
+		case PURPLE_STATUS_UNAVAILABLE: {
+			status = Swift::StatusShow::DND;
+			break;
+		}
+		case PURPLE_STATUS_EXTENDED_AWAY: {
+			status = Swift::StatusShow::XA;
+			break;
+		}
+		case PURPLE_STATUS_OFFLINE: {
+			status = Swift::StatusShow::None;
+			break;
+		}
+		default:
+			break;
+	}
+
 	const char *message = purple_status_get_attr_string(stat, "message");
 
 	if (message != NULL) {

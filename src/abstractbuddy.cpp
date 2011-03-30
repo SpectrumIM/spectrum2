@@ -56,7 +56,7 @@ BuddyFlag AbstractBuddy::getFlags() {
 	return m_flags;
 }
 
-const Swift::JID &AbstractBuddy::getJID(const std::string &hostname) {
+const Swift::JID &AbstractBuddy::getJID() {
 	if (!m_jid.isValid()) {
 		generateJID();
 	}
@@ -94,7 +94,8 @@ Swift::Presence::ref AbstractBuddy::generatePresenceStanza(int features, bool on
 		return Swift::Presence::ref();
 
 	Swift::Presence::ref presence = Swift::Presence::create();
-// 	presence->setFrom(getJID());
+ 	presence->setFrom(m_jid);
+	presence->setTo(m_rosterManager->getUser()->getJID().toBare());
 	presence->setType(Swift::Presence::Available);
 
 	if (!statusMessage.empty())
@@ -143,6 +144,13 @@ std::string AbstractBuddy::getSafeName() {
 // 		Log("SpectrumBuddy::getSafeName", "Name is EMPTY! Previous was " << getName() << ".");
 // 	}
 	return name;
+}
+
+void AbstractBuddy::buddyChanged() {
+	Swift::Presence::ref presence = generatePresenceStanza(255);
+	if (presence) {
+		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
+	}
 }
 
 }

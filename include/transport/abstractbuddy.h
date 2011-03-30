@@ -59,7 +59,7 @@ class AbstractBuddy {
 		/// Returns full JID of this buddy.
 		/// \param hostname hostname used as domain in returned JID
 		/// \return full JID of this buddy
-		const Swift::JID &getJID(const std::string &hostname);
+		const Swift::JID &getJID();
 
 		/// Generates whole Presennce stanza with current status/show for this buddy.
 		/// Presence stanza does not containt "to" attribute, it has to be added manually.
@@ -102,6 +102,8 @@ class AbstractBuddy {
 		/// Returns legacy network username which does not contain unsafe characters,
 		/// so it can be used in JIDs.
 		std::string getSafeName();
+
+		void buddyChanged();
 
 		/// Returns legacy network username of this buddy. (for example UIN for ICQ,
 		/// JID for Jabber, ...).

@@ -69,6 +69,9 @@ class RosterManager {
 	private:
 		void setBuddyCallback(AbstractBuddy *buddy);
 
+		void sendBuddyRosterPush(AbstractBuddy *buddy);
+		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key);
+
 		std::map<std::string, AbstractBuddy *> m_buddies;
 		Component *m_component;
 		User *m_user;

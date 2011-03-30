@@ -23,13 +23,16 @@
 #include "transport/usermanager.h"
 #include "transport/abstractbuddy.h"
 #include "transport/user.h"
+#include "Swiften/Roster/SetRosterRequest.h"
+#include "Swiften/Elements/RosterPayload.h"
+#include "Swiften/Elements/RosterItemPayload.h"
 
 namespace Transport {
 
 RosterManager::RosterManager(User *user, Component *component){
 	m_user = user;
 	m_component = component;
-	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(10);
+	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(1000);
 }
 
 RosterManager::~RosterManager() {
@@ -40,11 +43,29 @@ void RosterManager::setBuddy(AbstractBuddy *buddy) {
 	m_setBuddyTimer->start();
 }
 
+void RosterManager::sendBuddyRosterPush(AbstractBuddy *buddy) {
+	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+	Swift::RosterItemPayload item;
+	item.setJID(buddy->getJID().toBare());
+	item.setName(buddy->getAlias());
+	item.setGroups(buddy->getGroups());
+
+	payload->addItem(item);
+
+	Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_component->getIQRouter(), m_user->getJID().toBare());
+	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, buddy->getSafeName()));
+	request->send();
+}
+
 void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
 
 	m_buddies[buddy->getSafeName()] = buddy;
 	onBuddySet(buddy);
+
+	if (m_component->inServerMode()) {
+		sendBuddyRosterPush(buddy);
+	}
 
 	if (m_setBuddyTimer->onTick.empty()) {
 		m_setBuddyTimer->stop();
@@ -54,6 +75,12 @@ void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
 void RosterManager::unsetBuddy(AbstractBuddy *buddy) {
 	m_buddies.erase(buddy->getSafeName());
 	onBuddyUnset(buddy);
+}
+
+void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key) {
+	if (m_buddies[key] != NULL) {
+		m_buddies[key]->buddyChanged();
+	}
 }
 
 }
