@@ -37,7 +37,9 @@ RosterResponder::~RosterResponder() {
 }
 
 bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload) {
-	std::cout << "PAYLOAD\n";
+	// Get means we're in server mode and user wants to fetch his roster.
+	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
+	sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
 	return true;
 }
 
