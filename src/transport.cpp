@@ -23,6 +23,7 @@
 #include "transport/storagebackend.h"
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
+#include "rosterresponder.h"
 
 using namespace Swift;
 using namespace boost;
@@ -88,6 +89,10 @@ Component::Component(Swift::EventLoop *loop, Config *config) {
 
 	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
 	m_discoItemsResponder->start();
+
+	m_rosterResponder = new RosterResponder(m_iqRouter);
+	m_rosterResponder->start();
+	
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();
@@ -98,8 +103,8 @@ Component::~Component() {
 	delete m_entityCapsManager;
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
-// 	delete m_discoInfoResponder;
-// 	delete m_registerHandler;
+	delete m_rosterResponder;
+	delete m_discoInfoResponder;
 	if (m_component)
 		delete m_component;
 	if (m_server)

@@ -47,6 +47,7 @@ namespace Transport {
 	class StorageBackend;
 	class DiscoInfoResponder;
 	class DiscoItemsResponder;
+	class RosterResponder;
 
 	/// Represents one transport instance.
 
@@ -152,7 +153,7 @@ namespace Transport {
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;
 			DiscoItemsResponder *m_discoItemsResponder;
-// 			SpectrumRegisterHandler *m_registerHandler;
+			RosterResponder *m_rosterResponder;
 			int m_reconnectCount;
 			Config* m_config;
 			std::string m_protocol;
