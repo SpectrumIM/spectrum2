@@ -30,6 +30,7 @@ namespace Transport {
 
 class Component;
 class RosterManager;
+class ConversationManager;
 struct UserInfo;
 
 /// Represents online XMPP user.
@@ -55,6 +56,8 @@ class User {
 
 		RosterManager *getRosterManager() { return m_rosterManager; }
 
+		ConversationManager *getConversationManager() { return m_conversationManager; }
+
 
 		Component *getComponent() { return m_component; }
 
@@ -77,6 +80,7 @@ class User {
 		Swift::JID m_jid;
 		Component *m_component;
 		RosterManager *m_rosterManager;
+		ConversationManager *m_conversationManager;
 		Swift::EntityCapsManager *m_entityCapsManager;
 		Swift::PresenceOracle *m_presenceOracle;
 		UserInfo m_userInfo;

@@ -13,6 +13,7 @@
 #include "transport/rostermanager.h"
 #include "spectrumeventloop.h"
 #include "spectrumbuddy.h"
+#include "spectrumconversation.h"
 #include "geventloop.h"
 
 #define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
@@ -109,8 +110,8 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	
-	PurpleAccount *account = purple_buddy_get_account(buddy);
-	User *user = (User *) account->ui_data;
+// 	PurpleAccount *account = purple_buddy_get_account(buddy);
+// 	User *user = (User *) account->ui_data;
 	if (buddy->node.ui_data) {
 		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
 		s_buddy->removeBuddy(buddy);
@@ -139,6 +140,63 @@ static PurpleBlistUiOps blistUiOps =
 	NULL
 };
 
+static void conv_new(PurpleConversation *conv) {
+	PurpleAccount *account = purple_conversation_get_account(conv);
+	User *user = (User *) account->ui_data;
+
+	if (!user)
+		return;
+
+	std::string name = purple_conversation_get_name(conv);
+	size_t pos = name.find("/");
+	if (pos != std::string::npos)
+		name.erase((int) pos, name.length() - (int) pos);
+
+	SpectrumConversation *s_conv = new SpectrumConversation(user->getConversationManager(), name, conv);
+	conv->ui_data = s_conv;
+}
+
+static void conv_destroy(PurpleConversation *conv) {
+	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
+	if (s_conv) {
+		delete s_conv;
+	}
+}
+
+static void conv_write_im(PurpleConversation *conv, const char *who, const char *message, PurpleMessageFlags flags, time_t mtime) {
+	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
+	if (!s_conv)
+		return;
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(message);
+
+	s_conv->handleMessage(msg);
+}
+
+static PurpleConversationUiOps conversation_ui_ops =
+{
+	conv_new,
+	conv_destroy,
+	NULL,//conv_write_chat,                              /* write_chat           */
+	conv_write_im,             /* write_im             */
+	NULL,//conv_write_conv,           /* write_conv           */
+	NULL,//conv_chat_add_users,       /* chat_add_users       */
+	NULL,//conv_chat_rename_user,     /* chat_rename_user     */
+	NULL,//conv_chat_remove_users,    /* chat_remove_users    */
+	NULL,//pidgin_conv_chat_update_user,     /* chat_update_user     */
+	NULL,//pidgin_conv_present_conversation, /* present              */
+	NULL,//pidgin_conv_has_focus,            /* has_focus            */
+	NULL,//pidgin_conv_custom_smiley_add,    /* custom_smiley_add    */
+	NULL,//pidgin_conv_custom_smiley_write,  /* custom_smiley_write  */
+	NULL,//pidgin_conv_custom_smiley_close,  /* custom_smiley_close  */
+	NULL,//pidgin_conv_send_confirm,         /* send_confirm         */
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops(&blistUiOps);
@@ -147,7 +205,7 @@ static void transport_core_ui_init(void)
 // 	purple_request_set_ui_ops(&requestUiOps);
 // 	purple_xfers_set_ui_ops(getXferUiOps());
 // 	purple_connections_set_ui_ops(&conn_ui_ops);
-// 	purple_conversations_set_ui_ops(&conversation_ui_ops);
+	purple_conversations_set_ui_ops(&conversation_ui_ops);
 // #ifndef WIN32
 // 	purple_dnsquery_set_ui_ops(getDNSUiOps());
 // #endif
@@ -196,6 +254,8 @@ static bool initPurple(Config &cfg) {
 	bool ret;
 
 	purple_util_set_user_dir("./");
+	remove("./accounts.xml");
+	remove("./blist.xml");
 
 // 	if (m_configuration.logAreas & LOG_AREA_PURPLE)
 		purple_debug_set_ui_ops(&debugUiOps);

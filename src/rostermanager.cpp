@@ -53,14 +53,14 @@ void RosterManager::sendBuddyRosterPush(AbstractBuddy *buddy) {
 	payload->addItem(item);
 
 	Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_component->getIQRouter(), m_user->getJID().toBare());
-	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, buddy->getSafeName()));
+	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, buddy->getName()));
 	request->send();
 }
 
 void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
 
-	m_buddies[buddy->getSafeName()] = buddy;
+	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
 
 	if (m_component->inServerMode()) {
@@ -73,7 +73,7 @@ void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
 }
 
 void RosterManager::unsetBuddy(AbstractBuddy *buddy) {
-	m_buddies.erase(buddy->getSafeName());
+	m_buddies.erase(buddy->getName());
 	onBuddyUnset(buddy);
 }
 
@@ -81,6 +81,10 @@ void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error
 	if (m_buddies[key] != NULL) {
 		m_buddies[key]->buddyChanged();
 	}
+}
+
+AbstractBuddy *RosterManager::getBuddy(const std::string &name) {
+	return m_buddies[name];
 }
 
 }

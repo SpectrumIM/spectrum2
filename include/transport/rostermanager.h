@@ -54,6 +54,8 @@ class RosterManager {
 		/// \param buddy AbstractBuddy.
 		void unsetBuddy(AbstractBuddy *buddy);
 
+		AbstractBuddy *getBuddy(const std::string &name);
+
 		/// Returns user associated with this roster.
 		/// \return User
 		User *getUser() { return m_user; }

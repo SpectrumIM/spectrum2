@@ -22,6 +22,7 @@
 #include "transport/transport.h"
 #include "transport/storagebackend.h"
 #include "transport/rostermanager.h"
+#include "transport/conversationmanager.h"
 #include "Swiften/Swiften.h"
 
 namespace Transport {
@@ -40,10 +41,12 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component) {
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
 
 	m_rosterManager = new RosterManager(this, m_component);
+	m_conversationManager = new ConversationManager(this, m_component);
 }
 
 User::~User(){
 	delete m_rosterManager;
+	delete m_conversationManager;
 }
 
 const Swift::JID &User::getJID() {
