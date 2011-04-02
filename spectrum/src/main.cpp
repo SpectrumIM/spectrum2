@@ -173,7 +173,10 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		return;
 
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+
+	char *striped = purple_markup_strip_html(message);
 	msg->setBody(message);
+	g_free(striped);
 
 	s_conv->handleMessage(msg);
 }
