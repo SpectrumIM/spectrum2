@@ -18,6 +18,9 @@ find_package(glib REQUIRED)
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
+set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(Swiften REQUIRED)
+
 find_package(Doxygen)
 
 message("Supported features")
@@ -58,6 +61,7 @@ include_directories(include)
 include_directories(${PURPLE_INCLUDE_DIR})
 include_directories(${EVENT_INCLUDE_DIRS})
 include_directories(${GLIB2_INCLUDE_DIR})
+include_directories(${SWIFTEN_INCLUDE_DIR})
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
