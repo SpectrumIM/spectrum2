@@ -17,7 +17,7 @@ int main(void)
 	}
 
 	Swift::SimpleEventLoop eventLoop;
-	Component transport(&eventLoop, &config);
+	Component transport(&eventLoop, &config, NULL);
 	Logger logger(&transport);
 
 	SQLite3Backend sql(&config);

@@ -21,6 +21,7 @@
 #include "transport/transport.h"
 #include <boost/bind.hpp>
 #include "transport/storagebackend.h"
+#include "transport/factory.h"
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "rosterresponder.h"
@@ -42,12 +43,13 @@ class MyUserRegistry : public Swift::UserRegistry {
 		mutable std::map<std::string, std::string> users;
 };
 
-Component::Component(Swift::EventLoop *loop, Config *config) {
+Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_component = NULL;
 	m_userRegistry = NULL;
 	m_server = NULL;
 	m_reconnectCount = 0;
 	m_config = config;
+	m_factory = factory;
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 

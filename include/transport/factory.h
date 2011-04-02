@@ -18,24 +18,25 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "spectrumconversation.h"
-#include "transport/user.h"
+#pragma once
 
-#define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
+#include <string>
+#include <algorithm>
+#include "transport/transport.h"
 
-SpectrumConversation::SpectrumConversation(ConversationManager *conversationManager, const std::string &legacyName, PurpleConversation *conv) : AbstractConversation(conversationManager, legacyName), m_conv(conv) {
+#include "Swiften/Swiften.h"
+#include "Swiften/Elements/Message.h"
+#include "transport/abstractconversation.h"
+
+namespace Transport {
+
+class AbstractConversation;
+class ConversationManager;
+
+class Factory {
+	public:
+		
+		virtual AbstractConversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) = 0;
+};
+
 }
-
-SpectrumConversation::~SpectrumConversation() {
-}
-
-void SpectrumConversation::sendMessage(boost::shared_ptr<Swift::Message> &message) {
-	// escape and send
-	gchar *_markup = purple_markup_escape_text(message->getBody().c_str(), -1);
-	if (purple_conversation_get_type(m_conv) == PURPLE_CONV_TYPE_IM) {
-		purple_conv_im_send(PURPLE_CONV_IM(m_conv), _markup);
-	}
-	g_free(_markup);
-}
-
-

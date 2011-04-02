@@ -11,6 +11,7 @@
 #include "transport/user.h"
 #include "transport/storagebackend.h"
 #include "transport/rostermanager.h"
+#include "transport/abstractconversation.h"
 #include "spectrumeventloop.h"
 #include "spectrumbuddy.h"
 #include "spectrumconversation.h"
@@ -164,6 +165,9 @@ static void conv_destroy(PurpleConversation *conv) {
 }
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *message, PurpleMessageFlags flags, time_t mtime) {
+	// Don't forwards our own messages.
+	if (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)
+		return;
 	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
 	if (!s_conv)
 		return;
@@ -423,6 +427,14 @@ static void handleUserDestroyed(User *user, UserManager *userManager, Config *co
 	}
 }
 
+class SpectrumFactory : public Factory {
+	public:
+		AbstractConversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
+			PurpleConversation *conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, (PurpleAccount *) conversationManager->getUser()->getData() , legacyName.c_str());
+			return (AbstractConversation *) conv->ui_data;
+		}
+};
+
 int main(int argc, char **argv) {
 	GError *error = NULL;
 	GOptionContext *context;
@@ -494,7 +506,8 @@ int main(int argc, char **argv) {
 		initPurple(config);
 
 		SpectrumEventLoop eventLoop;
-		Component transport(&eventLoop, &config);
+		SpectrumFactory factory;
+		Component transport(&eventLoop, &config, &factory);
 		Logger logger(&transport);
 		_logger = &logger;
 

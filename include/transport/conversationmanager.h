@@ -52,10 +52,13 @@ class ConversationManager {
 		void unsetConversation(AbstractConversation *conv);
 
 	private:
+		void handleMessageReceived(Swift::Message::ref message);
+
 		Component *m_component;
 		User *m_user;
 
 		std::map<std::string, AbstractConversation *> m_convs;
+		friend class UserManager;
 };
 
 }

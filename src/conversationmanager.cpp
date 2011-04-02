@@ -22,6 +22,7 @@
 #include "transport/abstractconversation.h"
 #include "transport/usermanager.h"
 #include "transport/abstractbuddy.h"
+#include "transport/factory.h"
 #include "transport/user.h"
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
@@ -43,6 +44,18 @@ void ConversationManager::setConversation(AbstractConversation *conv) {
 
 void ConversationManager::unsetConversation(AbstractConversation *conv) {
 	m_convs.erase(conv->getLegacyName());
+}
+
+void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
+	std::string name = message->getTo().getUnescapedNode();
+	if (name.find_last_of("%") != std::string::npos) {
+		name.replace(name.find_last_of("%"), 1, "@");
+	}
+
+	if (!m_convs[name]) {
+		m_convs[name] = m_component->getFactory()->createConversation(this, name);
+	}
+	m_convs[name]->sendMessage(message);
 }
 
 }

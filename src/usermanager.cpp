@@ -22,6 +22,7 @@
 #include "transport/user.h"
 #include "transport/transport.h"
 #include "transport/storagebackend.h"
+#include "transport/conversationmanager.h"
 
 namespace Transport {
 
@@ -32,6 +33,7 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_storageBackend = storageBackend;
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
+	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
 // 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
 }
 
@@ -142,6 +144,15 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 // 			Transport::instance()->userManager()->removeUser(user);
 // 		}
 	}
+}
+
+void UserManager::handleMessageReceived(Swift::Message::ref message) {
+	User *user = getUser(message->getFrom().toBare().toString());
+	if (!user ){
+		return;
+	}
+
+	user->getConversationManager()->handleMessageReceived(message);
 }
 
 }

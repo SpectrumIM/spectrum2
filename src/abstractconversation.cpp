@@ -29,8 +29,8 @@
 namespace Transport {
 
 AbstractConversation::AbstractConversation(ConversationManager *conversationManager, const std::string &legacyName) : m_conversationManager(conversationManager) {
-	m_conversationManager->setConversation(this);
 	m_legacyName = legacyName;
+	m_conversationManager->setConversation(this);
 }
 
 AbstractConversation::~AbstractConversation() {

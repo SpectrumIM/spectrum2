@@ -27,6 +27,7 @@
 #include <algorithm>
 #include "transport/abstractconversation.h"
 #include "transport/conversationmanager.h"
+#include "transport/user.h"
 
 using namespace Transport;
 

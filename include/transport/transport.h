@@ -33,6 +33,7 @@
 #include "Swiften/Server/UserRegistry.h"
 #include <boost/bind.hpp>
 #include "transport/config.h"
+#include "transport/factory.h"
 
 #define tr(lang,STRING)    (STRING)
 #define _(STRING)    (STRING)
@@ -48,6 +49,7 @@ namespace Transport {
 	class DiscoInfoResponder;
 	class DiscoItemsResponder;
 	class RosterResponder;
+	class Factory;
 
 	/// Represents one transport instance.
 
@@ -63,7 +65,7 @@ namespace Transport {
 			/// 	- service.password
 			/// 	- service.server
 			/// 	- service.port
-			Component(Swift::EventLoop *loop, Config *config);
+			Component(Swift::EventLoop *loop, Config *config, Factory *factory);
 
 			/// Component destructor.
 			~Component();
@@ -102,6 +104,8 @@ namespace Transport {
 			Swift::JID &getJID() { return m_jid; }
 
 			Swift::BoostNetworkFactories *getFactories() { return m_factories; }
+
+			Factory *getFactory() { return m_factory; }
 
 			/// This signal is emitted when server disconnects the transport because of some error.
 			/// \param error disconnection error
@@ -160,6 +164,7 @@ namespace Transport {
 			Config* m_config;
 			std::string m_protocol;
 			Swift::JID m_jid;
+			Factory *m_factory;
 
 		friend class User;
 		friend class UserRegistration;
