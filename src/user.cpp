@@ -105,6 +105,12 @@ void User::onConnectingTimeout() {
 
 void User::handleDisconnected(const std::string &error) {
 	onDisconnected();
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(error);
+	msg->setTo(m_jid.toBare());
+	m_component->getStanzaChannel()->sendMessage(msg);
+
 	m_userManager->removeUser(this);
 }
 
