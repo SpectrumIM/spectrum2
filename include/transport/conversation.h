@@ -31,13 +31,13 @@ namespace Transport {
 
 class ConversationManager;
 
-class AbstractConversation {
+class Conversation {
 	public:
 		/// Constructor.
-		AbstractConversation(ConversationManager *conversationManager, const std::string &legacyName);
+		Conversation(ConversationManager *conversationManager, const std::string &legacyName);
 
 		/// Destructor
-		virtual ~AbstractConversation();
+		virtual ~Conversation();
 
 		const std::string &getLegacyName() { return m_legacyName; }
 

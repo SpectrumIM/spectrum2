@@ -27,7 +27,7 @@
 
 namespace Transport {
 
-class AbstractConversation;
+class Conversation;
 class User;
 class Component;
 
@@ -47,9 +47,9 @@ class ConversationManager {
 
 		Component *getComponent() { return m_component; }
 
-		void setConversation(AbstractConversation *conv);
+		void setConversation(Conversation *conv);
 
-		void unsetConversation(AbstractConversation *conv);
+		void unsetConversation(Conversation *conv);
 
 	private:
 		void handleMessageReceived(Swift::Message::ref message);
@@ -57,7 +57,7 @@ class ConversationManager {
 		Component *m_component;
 		User *m_user;
 
-		std::map<std::string, AbstractConversation *> m_convs;
+		std::map<std::string, Conversation *> m_convs;
 		friend class UserManager;
 };
 

@@ -28,7 +28,7 @@
 
 namespace Transport {
 
-class AbstractBuddy;
+class Buddy;
 class User;
 class Component;
 
@@ -47,34 +47,34 @@ class RosterManager {
 		/// and if the buddy is not already in XMPP user's server-side roster, the proper requests
 		/// are sent to XMPP user (subscribe presences, Roster Item Exchange stanza or
 		/// the buddy is added to server-side roster using remote-roster protoXEP).
-		/// \param buddy AbstractBuddy
-		void setBuddy(AbstractBuddy *buddy);
+		/// \param buddy Buddy
+		void setBuddy(Buddy *buddy);
 
 		/// Deassociates the buddy with this roster.
-		/// \param buddy AbstractBuddy.
-		void unsetBuddy(AbstractBuddy *buddy);
+		/// \param buddy Buddy.
+		void unsetBuddy(Buddy *buddy);
 
-		AbstractBuddy *getBuddy(const std::string &name);
+		Buddy *getBuddy(const std::string &name);
 
 		/// Returns user associated with this roster.
 		/// \return User
 		User *getUser() { return m_user; }
 
-		/// Called when new AbstractBuddy is added to this roster.
-		/// \param buddy newly added AbstractBuddy
-		boost::signal<void (AbstractBuddy *buddy)> onBuddySet;
+		/// Called when new Buddy is added to this roster.
+		/// \param buddy newly added Buddy
+		boost::signal<void (Buddy *buddy)> onBuddySet;
 
-		/// Called when AbstractBuddy has been removed from this roster.
-		/// \param buddy removed AbstractBuddy
-		boost::signal<void (AbstractBuddy *buddy)> onBuddyUnset;
+		/// Called when Buddy has been removed from this roster.
+		/// \param buddy removed Buddy
+		boost::signal<void (Buddy *buddy)> onBuddyUnset;
 
 	private:
-		void setBuddyCallback(AbstractBuddy *buddy);
+		void setBuddyCallback(Buddy *buddy);
 
-		void sendBuddyRosterPush(AbstractBuddy *buddy);
+		void sendBuddyRosterPush(Buddy *buddy);
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key);
 
-		std::map<std::string, AbstractBuddy *> m_buddies;
+		std::map<std::string, Buddy *> m_buddies;
 		Component *m_component;
 		User *m_user;
 		Swift::Timer::ref m_setBuddyTimer;

@@ -26,13 +26,13 @@
 #include "account.h"
 #include "glib.h"
 #include <algorithm>
-#include "transport/abstractbuddy.h"
+#include "transport/buddy.h"
 #include "transport/rostermanager.h"
 
 using namespace Transport;
 
 // Wrapper for PurpleBuddy
-class SpectrumBuddy : public AbstractBuddy {
+class SpectrumBuddy : public Buddy {
 	public:
 		SpectrumBuddy(RosterManager *rosterManager, long id, PurpleBuddy *buddy);
 		virtual ~SpectrumBuddy();

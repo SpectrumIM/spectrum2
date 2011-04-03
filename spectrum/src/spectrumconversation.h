@@ -25,14 +25,14 @@
 #include "account.h"
 #include "glib.h"
 #include <algorithm>
-#include "transport/abstractconversation.h"
+#include "transport/conversation.h"
 #include "transport/conversationmanager.h"
 #include "transport/user.h"
 
 using namespace Transport;
 
 // Wrapper for PurpleBuddy
-class SpectrumConversation : public AbstractConversation {
+class SpectrumConversation : public Conversation {
 	public:
 		SpectrumConversation(ConversationManager *conversationManager, const std::string &legacyName, PurpleConversation *conv);
 		virtual ~SpectrumConversation();

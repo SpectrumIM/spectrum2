@@ -19,27 +19,27 @@
  */
 
 #include <iostream>
-#include "transport/abstractconversation.h"
+#include "transport/conversation.h"
 #include "transport/conversationmanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
-#include "transport/abstractbuddy.h"
+#include "transport/buddy.h"
 #include "transport/rostermanager.h"
 
 namespace Transport {
 
-AbstractConversation::AbstractConversation(ConversationManager *conversationManager, const std::string &legacyName) : m_conversationManager(conversationManager) {
+Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
 	m_conversationManager->setConversation(this);
 }
 
-AbstractConversation::~AbstractConversation() {
+Conversation::~Conversation() {
 	m_conversationManager->unsetConversation(this);
 }
 
-void AbstractConversation::handleMessage(boost::shared_ptr<Swift::Message> &message) {
+void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message) {
 	message->setTo(m_conversationManager->getUser()->getJID().toBare());
-	AbstractBuddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
+	Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
 	if (buddy) {
 		std::cout << m_legacyName << " 222222\n";
 		message->setFrom(buddy->getJID());

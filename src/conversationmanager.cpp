@@ -19,9 +19,9 @@
  */
 
 #include "transport/conversationmanager.h"
-#include "transport/abstractconversation.h"
+#include "transport/conversation.h"
 #include "transport/usermanager.h"
-#include "transport/abstractbuddy.h"
+#include "transport/buddy.h"
 #include "transport/factory.h"
 #include "transport/user.h"
 #include "Swiften/Roster/SetRosterRequest.h"
@@ -38,11 +38,11 @@ ConversationManager::ConversationManager(User *user, Component *component){
 ConversationManager::~ConversationManager() {
 }
 
-void ConversationManager::setConversation(AbstractConversation *conv) {
+void ConversationManager::setConversation(Conversation *conv) {
 	m_convs[conv->getLegacyName()] = conv;
 }
 
-void ConversationManager::unsetConversation(AbstractConversation *conv) {
+void ConversationManager::unsetConversation(Conversation *conv) {
 	m_convs.erase(conv->getLegacyName());
 }
 

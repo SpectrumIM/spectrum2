@@ -33,7 +33,7 @@ class Component;
 class StorageBackend;
 class UserRegistration;
 class RosterManager;
-class AbstractBuddy;
+class Buddy;
 
 /// Basic logging class which logs various data into std::out (standard output).
 class Logger
@@ -82,8 +82,8 @@ class Logger
 		void handleUserDestroyed(User *user);
 
 		// RosterManager
-		void handleBuddySet(AbstractBuddy *buddy);
-		void handleBuddyUnset(AbstractBuddy *buddy);
+		void handleBuddySet(Buddy *buddy);
+		void handleBuddyUnset(Buddy *buddy);
 };
 
 }

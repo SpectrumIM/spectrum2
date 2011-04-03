@@ -23,7 +23,7 @@
 
 #define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
 
-SpectrumConversation::SpectrumConversation(ConversationManager *conversationManager, const std::string &legacyName, PurpleConversation *conv) : AbstractConversation(conversationManager, legacyName), m_conv(conv) {
+SpectrumConversation::SpectrumConversation(ConversationManager *conversationManager, const std::string &legacyName, PurpleConversation *conv) : Conversation(conversationManager, legacyName), m_conv(conv) {
 }
 
 SpectrumConversation::~SpectrumConversation() {

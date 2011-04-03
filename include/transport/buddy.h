@@ -36,13 +36,13 @@ typedef enum { 	BUDDY_NO_FLAG = 0,
 			} BuddyFlag;
 
 /// Represents one legacy network Buddy.
-class AbstractBuddy {
+class Buddy {
 	public:
 		/// Constructor.
-		AbstractBuddy(RosterManager *rosterManager, long id);
+		Buddy(RosterManager *rosterManager, long id);
 
 		/// Destructor
-		virtual ~AbstractBuddy();
+		virtual ~Buddy();
 		
 		/// Sets unique ID used to identify this buddy by StorageBackend. This is set
 		/// by RosterStorage class once the buddy is stored into database or when the
@@ -52,7 +52,7 @@ class AbstractBuddy {
 		void setID(long id);
 
 		/// Returns unique ID used to identify this buddy by StorageBackend.
-		/// \see AbstractBuddy::setID(long)
+		/// \see Buddy::setID(long)
 		/// \return ID
 		long getID();
 

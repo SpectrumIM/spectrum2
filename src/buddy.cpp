@@ -18,73 +18,73 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/abstractbuddy.h"
+#include "transport/buddy.h"
 #include "transport/rostermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
 
 namespace Transport {
 
-AbstractBuddy::AbstractBuddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
+Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
 	m_rosterManager->setBuddy(this);
 }
 
-AbstractBuddy::~AbstractBuddy() {
+Buddy::~Buddy() {
 	m_rosterManager->unsetBuddy(this);
 }
 
-void AbstractBuddy::generateJID() {
+void Buddy::generateJID() {
 	m_jid = Swift::JID();
 	m_jid = Swift::JID(getSafeName(), m_rosterManager->getUser()->getComponent()->getJID().toString(), "bot");
 }
 
-void AbstractBuddy::setID(long id) {
+void Buddy::setID(long id) {
 	m_id = id;
 }
 
-long AbstractBuddy::getID() {
+long Buddy::getID() {
 	return m_id;
 }
 
-void AbstractBuddy::setFlags(BuddyFlag flags) {
+void Buddy::setFlags(BuddyFlag flags) {
 	m_flags = flags;
 
 	generateJID();
 }
 
-BuddyFlag AbstractBuddy::getFlags() {
+BuddyFlag Buddy::getFlags() {
 	return m_flags;
 }
 
-const Swift::JID &AbstractBuddy::getJID() {
+const Swift::JID &Buddy::getJID() {
 	if (!m_jid.isValid()) {
 		generateJID();
 	}
 	return m_jid;
 }
 
-void AbstractBuddy::setOnline() {
+void Buddy::setOnline() {
 	m_online = true;
 }
 
-void AbstractBuddy::setOffline() {
+void Buddy::setOffline() {
 	m_online = false;
 	m_lastPresence = Swift::Presence::ref();
 }
 
-bool AbstractBuddy::isOnline() {
+bool Buddy::isOnline() {
 	return m_online;
 }
 
-void AbstractBuddy::setSubscription(const std::string &subscription) {
+void Buddy::setSubscription(const std::string &subscription) {
 	m_subscription = subscription;
 }
 
-const std::string &AbstractBuddy::getSubscription() {
+const std::string &Buddy::getSubscription() {
 	return m_subscription;
 }
 
-Swift::Presence::ref AbstractBuddy::generatePresenceStanza(int features, bool only_new) {
+Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) {
 	std::string alias = getAlias();
 	std::string name = getSafeName();
 
@@ -126,7 +126,7 @@ Swift::Presence::ref AbstractBuddy::generatePresenceStanza(int features, bool on
 	return presence;
 }
 
-std::string AbstractBuddy::getSafeName() {
+std::string Buddy::getSafeName() {
 	if (m_jid.isValid()) {
 		return m_jid.getNode();
 	}
@@ -146,7 +146,7 @@ std::string AbstractBuddy::getSafeName() {
 	return name;
 }
 
-void AbstractBuddy::buddyChanged() {
+void Buddy::buddyChanged() {
 	Swift::Presence::ref presence = generatePresenceStanza(255);
 	if (presence) {
 		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);

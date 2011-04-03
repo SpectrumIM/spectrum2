@@ -26,17 +26,17 @@
 
 #include "Swiften/Swiften.h"
 #include "Swiften/Elements/Message.h"
-#include "transport/abstractconversation.h"
+#include "transport/conversation.h"
 
 namespace Transport {
 
-class AbstractConversation;
+class Conversation;
 class ConversationManager;
 
 class Factory {
 	public:
 		
-		virtual AbstractConversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) = 0;
+		virtual Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) = 0;
 };
 
 }

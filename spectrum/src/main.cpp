@@ -11,7 +11,7 @@
 #include "transport/user.h"
 #include "transport/storagebackend.h"
 #include "transport/rostermanager.h"
-#include "transport/abstractconversation.h"
+#include "transport/conversation.h"
 #include "spectrumeventloop.h"
 #include "spectrumbuddy.h"
 #include "spectrumconversation.h"
@@ -432,9 +432,9 @@ static void handleUserDestroyed(User *user, UserManager *userManager, Config *co
 
 class SpectrumFactory : public Factory {
 	public:
-		AbstractConversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
+		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
 			PurpleConversation *conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, (PurpleAccount *) conversationManager->getUser()->getData() , legacyName.c_str());
-			return (AbstractConversation *) conv->ui_data;
+			return (Conversation *) conv->ui_data;
 		}
 };
 

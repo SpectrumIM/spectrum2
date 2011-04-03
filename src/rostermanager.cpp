@@ -19,9 +19,9 @@
  */
 
 #include "transport/rostermanager.h"
-#include "transport/abstractbuddy.h"
+#include "transport/buddy.h"
 #include "transport/usermanager.h"
-#include "transport/abstractbuddy.h"
+#include "transport/buddy.h"
 #include "transport/user.h"
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
@@ -38,12 +38,12 @@ RosterManager::RosterManager(User *user, Component *component){
 RosterManager::~RosterManager() {
 }
 
-void RosterManager::setBuddy(AbstractBuddy *buddy) {
+void RosterManager::setBuddy(Buddy *buddy) {
 	m_setBuddyTimer->onTick.connect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
 	m_setBuddyTimer->start();
 }
 
-void RosterManager::sendBuddyRosterPush(AbstractBuddy *buddy) {
+void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 	Swift::RosterItemPayload item;
 	item.setJID(buddy->getJID().toBare());
@@ -57,7 +57,7 @@ void RosterManager::sendBuddyRosterPush(AbstractBuddy *buddy) {
 	request->send();
 }
 
-void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
+void RosterManager::setBuddyCallback(Buddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
 
 	m_buddies[buddy->getName()] = buddy;
@@ -72,7 +72,7 @@ void RosterManager::setBuddyCallback(AbstractBuddy *buddy) {
 	}
 }
 
-void RosterManager::unsetBuddy(AbstractBuddy *buddy) {
+void RosterManager::unsetBuddy(Buddy *buddy) {
 	m_buddies.erase(buddy->getName());
 	onBuddyUnset(buddy);
 }
@@ -83,7 +83,7 @@ void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error
 	}
 }
 
-AbstractBuddy *RosterManager::getBuddy(const std::string &name) {
+Buddy *RosterManager::getBuddy(const std::string &name) {
 	return m_buddies[name];
 }
 
