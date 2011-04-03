@@ -22,17 +22,19 @@
 #include "transport/transport.h"
 #include "transport/storagebackend.h"
 #include "transport/rostermanager.h"
+#include "transport/usermanager.h"
 #include "transport/conversationmanager.h"
 #include "Swiften/Swiften.h"
 
 namespace Transport {
 
-User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component) {
+User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
 	m_jid = jid;
 
 	m_component = component;
 	m_presenceOracle = component->m_presenceOracle;
 	m_entityCapsManager = component->m_entityCapsManager;
+	m_userManager = userManager;
 	m_userInfo = userInfo;
 	m_connected = false;
 	m_readyForConnect = false;
@@ -45,6 +47,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component) {
 }
 
 User::~User(){
+	m_reconnectTimer->stop();
 	delete m_rosterManager;
 	delete m_conversationManager;
 }
@@ -98,6 +101,11 @@ void User::onConnectingTimeout() {
 	m_reconnectTimer->stop();
 	m_readyForConnect = true;
 	onReadyToConnect();
+}
+
+void User::handleDisconnected(const std::string &error) {
+	onDisconnected();
+	m_userManager->removeUser(this);
 }
 
 }

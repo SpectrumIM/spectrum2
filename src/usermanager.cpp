@@ -102,8 +102,9 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			if (res.uin.find_last_of("%") != std::string::npos) {
 				res.uin.replace(res.uin.find_last_of("%"), 1, "@");
 			}
-			m_storageBackend->setUser(res);
-			registered = m_storageBackend->getUser(userkey, res);
+// 			m_storageBackend->setUser(res);
+// 			registered = m_storageBackend->getUser(userkey, res);
+			registered = true;
 		}
 
 		if (!registered) {
@@ -120,7 +121,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 // // 			}
 // // 
 // // 
-				user = new User(presence->getFrom(), res, m_component);
+				user = new User(presence->getFrom(), res, m_component, this);
 				// TODO: handle features somehow
 // // 			user->setFeatures(isVip ? CONFIG().VIPFeatures : CONFIG().transportFeatures);
 // // // 				if (c != NULL)

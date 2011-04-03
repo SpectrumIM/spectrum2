@@ -31,6 +31,7 @@ namespace Transport {
 class Component;
 class RosterManager;
 class ConversationManager;
+class UserManager;
 struct UserInfo;
 
 /// Represents online XMPP user.
@@ -41,7 +42,7 @@ class User {
 		/// \param userInfo UserInfo struct with informations needed to connect
 		/// this user to legacy network
 		/// \param component Component associated with this user
-		User(const Swift::JID &jid, UserInfo &userInfo, Component * component);
+		User(const Swift::JID &jid, UserInfo &userInfo, Component * component, UserManager *userManager);
 
 		/// Destroyes User.
 		virtual ~User();
@@ -72,7 +73,10 @@ class User {
 		/// \return language
 		const char *getLang() { return "en"; }
 
+		void handleDisconnected(const std::string &error);
+
 		boost::signal<void ()> onReadyToConnect;
+		boost::signal<void ()> onDisconnected;
 
 	private:
 		void onConnectingTimeout();
@@ -80,6 +84,7 @@ class User {
 		Swift::JID m_jid;
 		Component *m_component;
 		RosterManager *m_rosterManager;
+		UserManager *m_userManager;
 		ConversationManager *m_conversationManager;
 		Swift::EntityCapsManager *m_entityCapsManager;
 		Swift::PresenceOracle *m_presenceOracle;

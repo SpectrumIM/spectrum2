@@ -204,6 +204,30 @@ static PurpleConversationUiOps conversation_ui_ops =
 	NULL
 };
 
+static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
+	PurpleAccount *account = purple_connection_get_account(gc);
+	User *user = (User *) account->ui_data;
+
+	if (!user)
+		return;
+	user->handleDisconnected(text);
+}
+
+static PurpleConnectionUiOps conn_ui_ops =
+{
+	NULL,
+	NULL,
+	NULL,//connection_disconnected,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	connection_report_disconnect,
+	NULL,
+	NULL,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops(&blistUiOps);
@@ -211,7 +235,7 @@ static void transport_core_ui_init(void)
 // 	purple_notify_set_ui_ops(&notifyUiOps);
 // 	purple_request_set_ui_ops(&requestUiOps);
 // 	purple_xfers_set_ui_ops(getXferUiOps());
-// 	purple_connections_set_ui_ops(&conn_ui_ops);
+	purple_connections_set_ui_ops(&conn_ui_ops);
 	purple_conversations_set_ui_ops(&conversation_ui_ops);
 // #ifndef WIN32
 // 	purple_dnsquery_set_ui_ops(getDNSUiOps());
