@@ -72,12 +72,15 @@ class RosterManager {
 		void setBuddyCallback(Buddy *buddy);
 
 		void sendBuddyRosterPush(Buddy *buddy);
+		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key);
+
 
 		std::map<std::string, Buddy *> m_buddies;
 		Component *m_component;
 		User *m_user;
 		Swift::Timer::ref m_setBuddyTimer;
+		Swift::Timer::ref m_RIETimer;
 };
 
 }

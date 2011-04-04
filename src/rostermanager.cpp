@@ -26,6 +26,7 @@
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
+#include "Swiften/Elements/RosterItemExchangePayload.h"
 
 namespace Transport {
 
@@ -33,9 +34,13 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_user = user;
 	m_component = component;
 	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(1000);
+	m_RIETimer = m_component->getFactories()->getTimerFactory()->createTimer(3000);
+	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
 }
 
 RosterManager::~RosterManager() {
+	m_setBuddyTimer->stop();
+	m_RIETimer->stop();
 }
 
 void RosterManager::setBuddy(Buddy *buddy) {
@@ -63,12 +68,20 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
 
+	// In server mode the only way is to send jabber:iq:roster push.
+	// In component mode we send RIE or Subscribe presences, based on features.
 	if (m_component->inServerMode()) {
 		sendBuddyRosterPush(buddy);
+	}
+	else {
+		
 	}
 
 	if (m_setBuddyTimer->onTick.empty()) {
 		m_setBuddyTimer->stop();
+		if (true /*&& rie_is_supported*/) {
+			m_RIETimer->start();
+		}
 	}
 }
 
@@ -85,6 +98,25 @@ void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error
 
 Buddy *RosterManager::getBuddy(const std::string &name) {
 	return m_buddies[name];
+}
+
+void RosterManager::sendRIE() {
+	m_RIETimer->stop();
+
+	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
+	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		Buddy *buddy = (*it).second;
+		Swift::RosterItemExchangePayload::Item item;
+		item.jid = buddy->getJID().toBare();
+		item.name = buddy->getAlias();
+		item.action = Swift::RosterItemExchangePayload::Add;
+		item.groups = buddy->getGroups();
+
+		payload->addItem(item);
+	}
+
+	boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, m_user->getJID(), payload, m_component->getIQRouter()));
+	request->send();
 }
 
 }
