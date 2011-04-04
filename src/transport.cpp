@@ -64,6 +64,9 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
+
+		m_server->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
+		m_server->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
 	}
 	else {
 		m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
