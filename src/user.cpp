@@ -25,6 +25,8 @@
 #include "transport/usermanager.h"
 #include "transport/conversationmanager.h"
 #include "Swiften/Swiften.h"
+#include "Swiften/Server/ServerStanzaChannel.h"
+#include "Swiften/Elements/StreamError.h"
 
 namespace Transport {
 
@@ -110,6 +112,7 @@ void User::handleDisconnected(const std::string &error) {
 	msg->setBody(error);
 	msg->setTo(m_jid.toBare());
 	m_component->getStanzaChannel()->sendMessage(msg);
+	dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
 
 	m_userManager->removeUser(this);
 }
