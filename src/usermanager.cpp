@@ -95,16 +95,18 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		UserInfo res;
 		bool registered = m_storageBackend->getUser(userkey, res);
 
-		if (!registered && m_component->inServerMode()) {
-			res.password = m_component->getUserRegistryPassword(userkey);
-			res.uin = presence->getFrom().getNode();
-			res.jid = userkey;
-			if (res.uin.find_last_of("%") != std::string::npos) {
-				res.uin.replace(res.uin.find_last_of("%"), 1, "@");
+		if (m_component->inServerMode()) {
+			if (!registered) {
+				res.password = "";
+				res.uin = presence->getFrom().getNode();
+				res.jid = userkey;
+				if (res.uin.find_last_of("%") != std::string::npos) {
+					res.uin.replace(res.uin.find_last_of("%"), 1, "@");
+				}
+				m_storageBackend->setUser(res);
+				registered = m_storageBackend->getUser(userkey, res);
 			}
-// 			m_storageBackend->setUser(res);
-// 			registered = m_storageBackend->getUser(userkey, res);
-			registered = true;
+			res.password = m_component->getUserRegistryPassword(userkey);
 		}
 
 		if (!registered) {
