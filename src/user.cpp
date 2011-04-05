@@ -111,8 +111,12 @@ void User::handleDisconnected(const std::string &error) {
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->setBody(error);
 	msg->setTo(m_jid.toBare());
+	msg->setFrom(m_component->getJID());
 	m_component->getStanzaChannel()->sendMessage(msg);
-	dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
+
+	if (m_component->inServerMode()) {
+		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
+	}
 
 	m_userManager->removeUser(this);
 }
