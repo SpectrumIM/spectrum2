@@ -68,6 +68,8 @@ class RosterManager {
 		/// \param buddy removed Buddy
 		boost::signal<void (Buddy *buddy)> onBuddyUnset;
 
+		void handleSubscription(Swift::Presence::ref presence);
+
 	private:
 		void setBuddyCallback(Buddy *buddy);
 

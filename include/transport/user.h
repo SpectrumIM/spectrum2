@@ -69,6 +69,8 @@ class User {
 		/// \param presence Swift::Presence.
 		void handlePresence(Swift::Presence::ref presence);
 
+		void handleSubscription(Swift::Presence::ref presence);
+
 		/// Returns language.
 		/// \return language
 		const char *getLang() { return "en"; }

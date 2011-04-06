@@ -119,4 +119,8 @@ void RosterManager::sendRIE() {
 	request->send();
 }
 
+void RosterManager::handleSubscription(Swift::Presence::ref presence) {
+	
+}
+
 }

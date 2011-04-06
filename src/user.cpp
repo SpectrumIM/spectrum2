@@ -97,6 +97,10 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	}
 }
 
+void User::handleSubscription(Swift::Presence::ref presence) {
+	m_rosterManager->handleSubscription(presence);
+}
+
 void User::onConnectingTimeout() {
 	if (m_connected || m_readyForConnect)
 		return;

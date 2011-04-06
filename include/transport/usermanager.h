@@ -69,6 +69,9 @@ class UserManager {
 	private:
 		void handlePresence(Swift::Presence::ref presence);
 		void handleMessageReceived(Swift::Message::ref message);
+		void handleGeneralPresenceReceived(Swift::Presence::ref presence);
+		void handleProbePresence(Swift::Presence::ref presence);
+		void handleSubscription(Swift::Presence::ref presence);
 // 		void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 		void addUser(User *user);
 

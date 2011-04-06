@@ -34,6 +34,7 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
+	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
 // 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
 }
 
@@ -156,6 +157,63 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	user->getConversationManager()->handleMessageReceived(message);
+}
+
+void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
+	switch(presence->getType()) {
+		case Swift::Presence::Subscribe:
+		case Swift::Presence::Subscribed:
+		case Swift::Presence::Unsubscribe:
+		case Swift::Presence::Unsubscribed:
+			handleSubscription(presence);
+			break;
+		case Swift::Presence::Available:
+		case Swift::Presence::Unavailable:
+			break;
+		case Swift::Presence::Probe:
+			handleProbePresence(presence);
+			break;
+		default:
+			break;
+	};
+}
+
+void UserManager::handleProbePresence(Swift::Presence::ref presence) {
+	
+}
+
+void UserManager::handleSubscription(Swift::Presence::ref presence) {
+	// answer to subscibe for transport itself
+	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setFrom(presence->getTo());
+		response->setTo(presence->getFrom());
+		response->setType(Swift::Presence::Subscribed);
+		m_component->getStanzaChannel()->sendPresence(response);
+
+		response = Swift::Presence::create();
+		response->setFrom(presence->getTo());
+		response->setTo(presence->getFrom());
+		response->setType(Swift::Presence::Subscribe);
+		m_component->getStanzaChannel()->sendPresence(response);
+		return;
+	}
+
+	User *user = getUser(presence->getFrom().toBare().toString());
+
+ 	if (user) {
+ 		user->handleSubscription(presence);
+ 	}
+ 	else if (presence->getType() == Swift::Presence::Unsubscribe) {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setFrom(presence->getTo());
+		response->setTo(presence->getFrom());
+		response->setType(Swift::Presence::Unsubscribed);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
+// 	else {
+// // 		Log(presence->getFrom().toString().getUTF8String(), "Subscribe presence received, but this user is not logged in");
+// 	}
 }
 
 }

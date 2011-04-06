@@ -75,8 +75,6 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 		m_component->onError.connect(bind(&Component::handleConnectionError, this, _1));
 		m_component->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
 		m_component->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
-		m_component->onPresenceReceived.connect(bind(&Component::handlePresenceReceived, this, _1));
-// 		m_component->onMessageReceived.connect(bind(&Component::handleMessageReceived, this, _1));
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
 	}
@@ -170,25 +168,6 @@ void Component::handleDataWritten(const std::string &data) {
 	onXMLOut(data);
 }
 
-void Component::handlePresenceReceived(Swift::Presence::ref presence) {
-	switch(presence->getType()) {
-		case Swift::Presence::Subscribe:
-		case Swift::Presence::Subscribed:
-		case Swift::Presence::Unsubscribe:
-		case Swift::Presence::Unsubscribed:
-			handleSubscription(presence);
-			break;
-		case Swift::Presence::Available:
-		case Swift::Presence::Unavailable:
-			break;
-		case Swift::Presence::Probe:
-			handleProbePresence(presence);
-			break;
-		default:
-			break;
-	};
-}
-
 void Component::handlePresence(Swift::Presence::ref presence) {
 	bool isMUC = presence->getPayload<MUCPayload>() != NULL;
 
@@ -225,50 +204,6 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 	}
 
 	onUserPresenceReceived(presence);
-}
-
-void Component::handleProbePresence(Swift::Presence::ref presence) {
-	
-}
-
-void Component::handleSubscription(Swift::Presence::ref presence) {
-	// answer to subscibe
-	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
-// 		Log(presence->getFrom().toString().getUTF8String(), "Subscribe presence received => sending subscribed");
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setFrom(presence->getTo());
-		response->setTo(presence->getFrom());
-		response->setType(Swift::Presence::Subscribed);
-		m_component->sendPresence(response);
-		return;
-	}
-
-	if (m_protocol == "irc") {
-		return;
-	}
-
-// 	User *user;
-// 	std::string barejid = presence->getTo().toBare().toString().getUTF8String();
-// 	std::string userkey = presence->getFrom().toBare().toString().getUTF8String();
-// 	if (Transport::instance()->protocol()->tempAccountsAllowed()) {
-// 		std::string server = barejid.substr(barejid.find("%") + 1, barejid.length() - barejid.find("%"));
-// 		userkey += server;
-// 	}
-
-// 	user = (User *) Transport::instance()->userManager()->getUserByJID(userkey);
-// 	if (user) {
-// 		user->handleSubscription(presence);
-// 	}
-// 	else if (presence->getType() == Swift::Presence::Unsubscribe) {
-// 		Swift::Presence::ref response = Swift::Presence::create();
-// 		response->setFrom(presence->getTo());
-// 		response->setTo(presence->getFrom());
-// 		response->setType(Swift::Presence::Unsubscribed);
-// 		m_component->sendPresence(response);
-// 	}
-// 	else {
-// // 		Log(presence->getFrom().toString().getUTF8String(), "Subscribe presence received, but this user is not logged in");
-// 	}
 }
 
 void Component::handleCapsChanged(const Swift::JID& jid) {

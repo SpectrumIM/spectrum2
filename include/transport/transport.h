@@ -133,11 +133,7 @@ namespace Transport {
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
-			void handlePresenceReceived(Swift::Presence::ref presence);
-// 			void handleMessageReceived(Swift::Message::ref message);
 			void handlePresence(Swift::Presence::ref presence);
-			void handleSubscription(Swift::Presence::ref presence);
-			void handleProbePresence(Swift::Presence::ref presence);
 			void handleDataRead(const std::string &data);
 			void handleDataWritten(const std::string &data);
 
