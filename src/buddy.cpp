@@ -153,4 +153,18 @@ void Buddy::buddyChanged() {
 	}
 }
 
+std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
+	std::string name;
+	if (jid.getUnescapedNode() == jid.getNode()) {
+		name = jid.getNode();
+		if (name.find_last_of("%") != std::string::npos) {
+			name.replace(name.find_last_of("%"), 1, "@");
+		}
+	}
+	else {
+		name = jid.getUnescapedNode();
+	}
+	return name;
+}
+
 }

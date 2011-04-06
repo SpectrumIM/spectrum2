@@ -120,7 +120,7 @@ void RosterManager::sendRIE() {
 }
 
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {
-	
+	std::string legacyName = Buddy::JIDToLegacyName(presence->getTo());
 }
 
 }

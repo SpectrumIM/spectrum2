@@ -129,6 +129,8 @@ class Buddy {
 		/// \return avatar hash or empty string.
 		virtual std::string getIconHash() = 0;
 
+		static std::string JIDToLegacyName(const Swift::JID &jid);
+
 	private:
 		void generateJID();
 
