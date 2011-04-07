@@ -88,6 +88,9 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 			m_RIETimer->start();
 		}
 	}
+
+	if (m_rosterStorage)
+		m_rosterStorage->storeBuddy(buddy);
 }
 
 void RosterManager::unsetBuddy(Buddy *buddy) {

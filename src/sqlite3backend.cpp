@@ -40,6 +40,15 @@
 	if(prep != NULL) { \
 		sqlite3_finalize(prep); \
 	}
+	
+#define BEGIN(STATEMENT) 	sqlite3_reset(m_addBuddy);\
+							int STATEMENT##_id = 1;
+
+#define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE);
+#define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC);
+#define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
+		onStorageError(NAME, (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
+			}
 
 using namespace boost;
 
@@ -83,6 +92,8 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_removeUserBuddies, "DELETE FROM " + m_prefix + "buddies WHERE user_id=?");
 	PREP_STMT(m_removeUserSettings, "DELETE FROM " + m_prefix + "users_settings WHERE user_id=?");
 	PREP_STMT(m_removeUserBuddiesSettings, "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
+
+	PREP_STMT(m_addBuddy, "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 
 	return true;
 }
@@ -195,6 +206,25 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 
 void SQLite3Backend::setUserOnline(long id, bool online) {
 	
+}
+
+long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
+// 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
+	BEGIN(m_addBuddy);
+	BIND_INT(m_addBuddy, userId);
+	BIND_STR(m_addBuddy, buddyInfo.legacyName);
+	BIND_STR(m_addBuddy, buddyInfo.subscription);
+	BIND_STR(m_addBuddy, buddyInfo.groups[0]); // TODO: serialize groups
+	BIND_STR(m_addBuddy, buddyInfo.alias);
+	BIND_INT(m_addBuddy, buddyInfo.flags);
+
+	EXECUTE_STATEMENT(m_addBuddy, "addBuddy query");
+
+	if(sqlite3_step(m_addBuddy) != SQLITE_DONE) {
+		onStorageError("addBuddy query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return -1;
+	}
+	return (long) sqlite3_last_insert_rowid(m_db);
 }
 
 bool SQLite3Backend::getBuddies(long id, std::list<std::string> &roster) {
