@@ -36,6 +36,15 @@ struct UserInfo {
 	bool vip;				///< true if user is VIP
 };
 
+struct BuddyInfo {
+	long id;
+	std::string alias;
+	std::string legacyName;
+	std::string subscription;
+	std::vector<std::string> groups;
+	int flags;
+};
+
 /// Abstract class defining storage backends.
 class StorageBackend
 {
@@ -63,6 +72,13 @@ class StorageBackend
 
 		/// getBuddies
 		virtual bool getBuddies(long id, std::list<std::string> &roster) = 0;
+
+		virtual long addBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
+		virtual void updateBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
+		virtual void removeBuddy(long id) = 0;
+
+		virtual void beginTransaction() = 0;
+		virtual void commitTransaction() = 0;
 
 		/// onStorageError
 		boost::signal<void (const std::string &statement, const std::string &error)> onStorageError;

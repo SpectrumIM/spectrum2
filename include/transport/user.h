@@ -59,7 +59,6 @@ class User {
 
 		ConversationManager *getConversationManager() { return m_conversationManager; }
 
-
 		Component *getComponent() { return m_component; }
 
 		void setData(void *data) { m_data = data; }

@@ -19,6 +19,8 @@
  */
 
 #include "transport/rostermanager.h"
+#include "transport/rosterstorage.h"
+#include "transport/storagebackend.h"
 #include "transport/buddy.h"
 #include "transport/usermanager.h"
 #include "transport/buddy.h"
@@ -31,6 +33,7 @@
 namespace Transport {
 
 RosterManager::RosterManager(User *user, Component *component){
+	m_rosterStorage = NULL;
 	m_user = user;
 	m_component = component;
 	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(1000);
@@ -41,6 +44,8 @@ RosterManager::RosterManager(User *user, Component *component){
 RosterManager::~RosterManager() {
 	m_setBuddyTimer->stop();
 	m_RIETimer->stop();
+	if (m_rosterStorage)
+		delete m_rosterStorage;
 }
 
 void RosterManager::setBuddy(Buddy *buddy) {
@@ -87,6 +92,8 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 
 void RosterManager::unsetBuddy(Buddy *buddy) {
 	m_buddies.erase(buddy->getName());
+	if (m_rosterStorage)
+		m_rosterStorage->removeBuddyFromQueue(buddy);
 	onBuddyUnset(buddy);
 }
 
@@ -121,6 +128,15 @@ void RosterManager::sendRIE() {
 
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	std::string legacyName = Buddy::JIDToLegacyName(presence->getTo());
+	
+}
+
+void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
+	if (m_rosterStorage) {
+		m_rosterStorage->storeBuddies();
+		delete m_rosterStorage;
+	}
+	m_rosterStorage = new RosterStorage(m_user, storageBackend);
 }
 
 }

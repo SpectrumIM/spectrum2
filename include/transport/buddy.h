@@ -39,7 +39,7 @@ typedef enum { 	BUDDY_NO_FLAG = 0,
 class Buddy {
 	public:
 		/// Constructor.
-		Buddy(RosterManager *rosterManager, long id);
+		Buddy(RosterManager *rosterManager, long id = -1);
 
 		/// Destructor
 		virtual ~Buddy();

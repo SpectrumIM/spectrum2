@@ -31,6 +31,8 @@ namespace Transport {
 class Buddy;
 class User;
 class Component;
+class StorageBackend;
+class RosterStorage;
 
 /// Manages roster of one XMPP user.
 class RosterManager {
@@ -56,6 +58,8 @@ class RosterManager {
 
 		Buddy *getBuddy(const std::string &name);
 
+		void setStorageBackend(StorageBackend *storageBackend);
+
 		/// Returns user associated with this roster.
 		/// \return User
 		User *getUser() { return m_user; }
@@ -80,6 +84,7 @@ class RosterManager {
 
 		std::map<std::string, Buddy *> m_buddies;
 		Component *m_component;
+		RosterStorage *m_rosterStorage;
 		User *m_user;
 		Swift::Timer::ref m_setBuddyTimer;
 		Swift::Timer::ref m_RIETimer;
