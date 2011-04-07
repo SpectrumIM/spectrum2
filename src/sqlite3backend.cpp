@@ -94,6 +94,7 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_removeUserBuddiesSettings, "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
 
 	PREP_STMT(m_addBuddy, "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
+	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
 
 	return true;
 }
@@ -218,13 +219,24 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	BIND_STR(m_addBuddy, buddyInfo.alias);
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
-	EXECUTE_STATEMENT(m_addBuddy, "addBuddy query");
-
 	if(sqlite3_step(m_addBuddy) != SQLITE_DONE) {
 		onStorageError("addBuddy query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return -1;
 	}
 	return (long) sqlite3_last_insert_rowid(m_db);
+}
+
+void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
+// 	UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?
+	BEGIN(m_updateBuddy);
+	BIND_STR(m_updateBuddy, buddyInfo.groups[0]); // TODO: serialize groups
+	BIND_STR(m_updateBuddy, buddyInfo.alias);
+	BIND_INT(m_updateBuddy, buddyInfo.flags);
+	BIND_STR(m_updateBuddy, buddyInfo.subscription);
+	BIND_INT(m_updateBuddy, userId);
+	BIND_STR(m_updateBuddy, buddyInfo.legacyName);
+
+	EXECUTE_STATEMENT(m_updateBuddy, "updateBuddy query");
 }
 
 bool SQLite3Backend::getBuddies(long id, std::list<std::string> &roster) {
@@ -261,6 +273,14 @@ bool SQLite3Backend::removeUser(long id) {
 	}
 
 	return true;
+}
+
+void SQLite3Backend::beginTransaction() {
+	exec("BEGIN TRANSACTION;");
+}
+
+void SQLite3Backend::commitTransaction() {
+	exec("COMMIT TRANSACTION;");
 }
 
 }
