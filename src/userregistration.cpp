@@ -77,11 +77,11 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 	User *user = m_userManager->getUser(barejid);
 
 	// roster contains already escaped jids
-	std::list <std::string> roster;
+	std::list <BuddyInfo> roster;
 	m_storageBackend->getBuddies(userInfo.id, roster);
 
-	for(std::list<std::string>::iterator u = roster.begin(); u != roster.end() ; u++){
-		std::string name = *u;
+	for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
+		std::string name = (*u).legacyName;
 
 		response = Swift::Presence::create();
 		response->setTo(Swift::JID(barejid));

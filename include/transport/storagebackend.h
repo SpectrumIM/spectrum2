@@ -71,7 +71,7 @@ class StorageBackend
 		virtual bool removeUser(long id) = 0;
 
 		/// getBuddies
-		virtual bool getBuddies(long id, std::list<std::string> &roster) = 0;
+		virtual bool getBuddies(long id, std::list<BuddyInfo> &roster) = 0;
 
 		virtual long addBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
 		virtual void updateBuddy(long userId, const BuddyInfo &buddyInfo) = 0;

@@ -77,7 +77,7 @@ class SQLite3Backend : public StorageBackend
 		/// \param id id of user - UserInfo.id
 		/// \param roster string list used to store user's roster
 		/// \return true if user has been found in database and roster has been fetched
-		bool getBuddies(long id, std::list<std::string> &roster);
+		bool getBuddies(long id, std::list<BuddyInfo> &roster);
 
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
@@ -103,6 +103,7 @@ class SQLite3Backend : public StorageBackend
 		sqlite3_stmt *m_removeUserBuddiesSettings;
 		sqlite3_stmt *m_addBuddy;
 		sqlite3_stmt *m_updateBuddy;
+		sqlite3_stmt *m_getBuddies;
 };
 
 }

@@ -42,10 +42,14 @@
 	}
 	
 #define BEGIN(STATEMENT) 	sqlite3_reset(m_addBuddy);\
-							int STATEMENT##_id = 1;
+							int STATEMENT##_id = 1;\
+							int STATEMENT##_id_get = -1;\
+							(void)STATEMENT##_id_get;
 
-#define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE);
-#define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC);
+#define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE)
+#define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC)
+#define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
+#define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
 #define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
 		onStorageError(NAME, (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
 			}
@@ -95,6 +99,7 @@ bool SQLite3Backend::connect() {
 
 	PREP_STMT(m_addBuddy, "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
+	PREP_STMT(m_getBuddies, "SELECT id uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 
 	return true;
 }
@@ -239,7 +244,28 @@ void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 	EXECUTE_STATEMENT(m_updateBuddy, "updateBuddy query");
 }
 
-bool SQLite3Backend::getBuddies(long id, std::list<std::string> &roster) {
+bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
+// 	"SELECT id, user_id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC"
+	BEGIN(m_getBuddies);
+	BIND_INT(m_getBuddies, id);
+
+	int ret;
+	while((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
+		BuddyInfo b;
+		b.id = GET_INT(m_getBuddies);
+		b.legacyName = GET_STR(m_getBuddies);
+		b.subscription = GET_STR(m_getBuddies);
+		b.alias = GET_STR(m_getBuddies);
+		b.groups.push_back(GET_STR(m_getBuddies));
+		b.flags = GET_INT(m_getBuddies);
+		roster.push_back(b);
+	}
+
+	if (ret != SQLITE_DONE) {
+		onStorageError("getBuddies query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+	
 	return true;
 }
 
