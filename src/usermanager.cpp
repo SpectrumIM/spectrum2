@@ -23,6 +23,7 @@
 #include "transport/transport.h"
 #include "transport/storagebackend.h"
 #include "transport/conversationmanager.h"
+#include "transport/rostermanager.h"
 
 namespace Transport {
 
@@ -125,6 +126,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 // // 
 // // 
 				user = new User(presence->getFrom(), res, m_component, this);
+				user->getRosterManager()->setStorageBackend(m_storageBackend);
 				// TODO: handle features somehow
 // // 			user->setFeatures(isVip ? CONFIG().VIPFeatures : CONFIG().transportFeatures);
 // // // 				if (c != NULL)
