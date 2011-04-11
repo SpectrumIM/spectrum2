@@ -36,12 +36,43 @@ struct UserInfo {
 	bool vip;				///< true if user is VIP
 };
 
+typedef enum
+{
+	TYPE_UNKNOWN = 0,  /**< Unknown type.                     */
+	TYPE_SUBTYPE,      /**< Subtype.                          */
+	TYPE_CHAR,         /**< Character.                        */
+	TYPE_UCHAR,        /**< Unsigned character.               */
+	TYPE_BOOLEAN,      /**< Boolean.                          */
+	TYPE_SHORT,        /**< Short integer.                    */
+	TYPE_USHORT,       /**< Unsigned short integer.           */
+	TYPE_INT,          /**< Integer.                          */
+	TYPE_UINT,         /**< Unsigned integer.                 */
+	TYPE_LONG,         /**< Long integer.                     */
+	TYPE_ULONG,        /**< Unsigned long integer.            */
+	TYPE_INT64,        /**< 64-bit integer.                   */
+	TYPE_UINT64,       /**< 64-bit unsigned integer.          */
+	TYPE_STRING,       /**< String.                           */
+	TYPE_OBJECT,       /**< Object pointer.                   */
+	TYPE_POINTER,      /**< Generic pointer.                  */
+	TYPE_ENUM,         /**< Enum.                             */
+	TYPE_BOXED         /**< Boxed pointer with specific type. */
+
+} SettingType;
+
+struct SettingVariableInfo {
+	int type;
+	std::string s;
+	int i;
+	bool b;
+};
+
 struct BuddyInfo {
 	long id;
 	std::string alias;
 	std::string legacyName;
 	std::string subscription;
 	std::vector<std::string> groups;
+	std::map<std::string, SettingVariableInfo> settings;
 	int flags;
 };
 

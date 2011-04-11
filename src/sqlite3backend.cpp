@@ -100,6 +100,7 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_addBuddy, "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
 	PREP_STMT(m_getBuddies, "SELECT id uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
+	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 
 	return true;
 }
@@ -249,8 +250,16 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	BEGIN(m_getBuddies);
 	BIND_INT(m_getBuddies, id);
 
+// 	"SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC"
+	BEGIN(m_getBuddiesSettings);
+	BIND_INT(m_getBuddiesSettings, id);
+
+	SettingVariableInfo var;
+	long buddy_id = -1;
+	std::string key;
+
 	int ret;
-	while((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
+	while((ret = sqlite3_step(m_getBuddies)) == SQLITE_ROW) {
 		BuddyInfo b;
 		b.id = GET_INT(m_getBuddies);
 		b.legacyName = GET_STR(m_getBuddies);
@@ -258,6 +267,42 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		b.alias = GET_STR(m_getBuddies);
 		b.groups.push_back(GET_STR(m_getBuddies));
 		b.flags = GET_INT(m_getBuddies);
+
+		if (buddy_id == b.id) {
+			std::cout << "Adding buddy info " << key << "\n";
+			b.settings[key] = var;
+			buddy_id = -1;
+		}
+
+		while(buddy_id == -1 && (ret = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+			buddy_id = GET_INT(m_getBuddiesSettings);
+			
+			var.type = GET_INT(m_getBuddiesSettings);
+			key = GET_STR(m_getBuddiesSettings);
+			std::string val = GET_STR(m_getBuddiesSettings);
+
+			switch (var.type) {
+				case TYPE_BOOLEAN:
+					var.b = atoi(val.c_str());
+					break;
+				case TYPE_STRING:
+					var.s = val;
+					break;
+				default:
+					break;
+			}
+			if (buddy_id == b.id) {
+				std::cout << "Adding buddy info " << key << "=" << val << "\n";
+				b.settings[key] = var;
+				buddy_id = -1;
+			}
+		}
+
+		if (ret != SQLITE_DONE) {
+			onStorageError("getBuddiesSettings query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+			return false;
+		}
+
 		roster.push_back(b);
 	}
 
