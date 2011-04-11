@@ -153,6 +153,11 @@ void Buddy::buddyChanged() {
 	}
 }
 
+void Buddy::handleVCardReceived(const std::string &id, const Swift::JID &to, Swift::VCard::ref vcard) {
+	boost::shared_ptr<Swift::GenericRequest<Swift::VCard> > request(new Swift::GenericRequest<Swift::VCard>(Swift::IQ::Result, m_rosterManager->getUser()->getJID(), vcard, m_rosterManager->getUser()->getComponent()->getIQRouter()));
+	request->send();
+}
+
 std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	std::string name;
 	if (jid.getUnescapedNode() == jid.getNode()) {

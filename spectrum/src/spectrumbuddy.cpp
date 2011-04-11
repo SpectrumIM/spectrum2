@@ -132,3 +132,7 @@ std::vector<std::string> SpectrumBuddy::getGroups() {
 	return groups;
 }
 
+void SpectrumBuddy::getVCard(const std::string &id, const Swift::JID &to) {
+	
+}
+

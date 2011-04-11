@@ -46,6 +46,7 @@ class SpectrumBuddy : public Buddy {
 		void addBuddy(PurpleBuddy *buddy) { m_buddies.push_back(buddy); }
 		void removeBuddy(PurpleBuddy *buddy) { m_buddies.remove(buddy); }
 		int getBuddiesCount() { return m_buddies.size(); }
+		void getVCard(const std::string &id, const Swift::JID &to);
 		
 		PurpleBuddy *getBuddy() { return m_buddy; }
 

@@ -105,6 +105,10 @@ class Buddy {
 
 		void buddyChanged();
 
+		void handleVCardReceived(const std::string &id, const Swift::JID &to, Swift::VCard::ref vcard);
+
+		virtual void getVCard(const std::string &id, const Swift::JID &to) = 0;
+
 		/// Returns legacy network username of this buddy. (for example UIN for ICQ,
 		/// JID for Jabber, ...).
 		/// \return legacy network username
