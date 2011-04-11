@@ -460,6 +460,29 @@ class SpectrumFactory : public Factory {
 			PurpleConversation *conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, (PurpleAccount *) conversationManager->getUser()->getData() , legacyName.c_str());
 			return (Conversation *) conv->ui_data;
 		}
+
+		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
+			PurpleAccount *account = (PurpleAccount *) rosterManager->getUser()->getData();
+			std::string group = buddyInfo.groups[0];
+			PurpleGroup *g = purple_find_group(group.c_str());
+			if (!g) {
+				g = purple_group_new(group.c_str());
+				purple_blist_add_group(g, NULL);
+			}
+
+			PurpleBuddy *buddy = purple_find_buddy_in_group(account, buddyInfo.legacyName.c_str(), g);
+			if (!buddy) {
+				// create contact
+				PurpleContact *contact = purple_contact_new();
+				purple_blist_add_contact(contact, g, NULL);
+
+				// create buddy
+				buddy = purple_buddy_new(account, buddyInfo.legacyName.c_str(), buddyInfo.alias.c_str());
+				purple_blist_add_buddy(buddy, contact, g, NULL);
+				purple_blist_server_alias_buddy(buddy, buddyInfo.alias.c_str());
+			}
+			return (Buddy *) buddy->node.ui_data;
+		}
 };
 
 int main(int argc, char **argv) {

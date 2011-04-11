@@ -27,16 +27,22 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Elements/Message.h"
 #include "transport/conversation.h"
+#include "transport/buddy.h"
+#include "transport/storagebackend.h"
 
 namespace Transport {
 
 class Conversation;
+class Buddy;
 class ConversationManager;
+class RosterManager;
 
 class Factory {
 	public:
 		
 		virtual Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) = 0;
+
+		virtual Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) = 0;
 };
 
 }
