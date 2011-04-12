@@ -21,6 +21,9 @@ find_package(event)
 set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Swiften REQUIRED)
 
+set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(Boost COMPONENTS date_time system filesystem program_options regex thread signals REQUIRED)
+
 find_package(Doxygen)
 
 message("Supported features")
@@ -62,6 +65,7 @@ include_directories(${PURPLE_INCLUDE_DIR})
 include_directories(${EVENT_INCLUDE_DIRS})
 include_directories(${GLIB2_INCLUDE_DIR})
 include_directories(${SWIFTEN_INCLUDE_DIR})
+include_directories(${Boost_INCLUDE_DIRS})
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
