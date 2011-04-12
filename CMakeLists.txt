@@ -24,6 +24,9 @@ find_package(Swiften REQUIRED)
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Boost COMPONENTS date_time system filesystem program_options regex thread signals REQUIRED)
 
+set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(Protobuf REQUIRED)
+
 find_package(Doxygen)
 
 message("Supported features")
@@ -36,6 +39,14 @@ else (SQLITE3_FOUND)
 	set(SQLITE3_LIBRARIES "")
 	message("SQLite3      : no")
 endif (SQLITE3_FOUND)
+
+if (PROTOBUF_FOUND)
+	ADD_DEFINITIONS(-DWITH_PROTOBUF)
+	include_directories(${PROTOBUF_INCLUDE_DIRS})
+	message("Spectrum Java/Python network protocol : yes")
+else()
+	message("Spectrum Java/Python network protocol : no (install Google Protocol Buffers)")
+endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
 	ADD_DEFINITIONS(-ggdb)
