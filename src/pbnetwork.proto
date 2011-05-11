@@ -1,24 +1,62 @@
 package pbnetwork;
 
-message Person {
-  required string name = 1;
-  required int32 id = 2;
-  optional string email = 3;
-
-  enum PhoneType {
-    MOBILE = 0;
-    HOME = 1;
-    WORK = 2;
-  }
-
-  message PhoneNumber {
-    required string number = 1;
-    optional PhoneType type = 2 [default = HOME];
-  }
-
-  repeated PhoneNumber phone = 4;
+message Connected {
+	required string user = 1;
+	required string name = 2;
 }
 
-message AddressBook {
-  repeated Person person = 1;
+message Disconnected {
+	required string user = 1;
+	required string name = 2;
+	required int32 error = 3;
+	optional string message = 4;
 }
+
+message Login {
+	required string user = 1;
+	required string legacyName = 2;
+	required string password = 3;
+}
+
+message Logout {
+	required string user = 1;
+	required string legacyName = 2;
+}
+
+message Buddy {
+	required string userName = 1;
+	required string buddyName = 2;
+	required string alias = 3;
+	required string groups = 4;
+	required int32 status = 5;
+	optional string statusMessage = 6;
+	optional string iconHash = 7;
+}
+
+message Conversation {
+	required string userName = 1;
+	required string buddyName = 2;
+}
+
+message ConversationMessage {
+	required string userName = 1;
+	required string buddyName = 2;
+	required string message = 3;
+}
+
+message WrapperMessage {
+	enum Type { 
+		TYPE_CONNECTED 		= 1;
+		TYPE_DISCONNECTED 	= 2;
+		TYPE_LOGIN 			= 3;
+		TYPE_LOGOUT 		= 4;
+		TYPE_BUDDY_CHANGED	= 6;
+		TYPE_BUDDY_REMOVED	= 7;
+		TYPE_CONV_CREATED	= 8;
+		TYPE_CONV_WRITE		= 9;
+		TYPE_CONV_REMOVED	= 10;
+	}
+	required Type type = 1;
+	required bytes payload = 2;
+}
+;
