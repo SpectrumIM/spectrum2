@@ -47,6 +47,10 @@ class ConversationManager {
 
 		Component *getComponent() { return m_component; }
 
+		Conversation *getConversation(const std::string &name) {
+			return m_convs[name];
+		}
+
 		void setConversation(Conversation *conv);
 
 		void unsetConversation(Conversation *conv);

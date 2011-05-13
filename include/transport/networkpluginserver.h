@@ -36,12 +36,15 @@ class Component;
 class Buddy;
 class LocalBuddy;
 class Config;
+class NetworkConversation;
 
 class NetworkPluginServer {
 	public:
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
 
 		virtual ~NetworkPluginServer();
+
+		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
@@ -51,6 +54,7 @@ class NetworkPluginServer {
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
 		void handleBuddyChangedPayload(const std::string &payload);
+		void handleConvMessagePayload(const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleUserReadyToConnect(User *user);

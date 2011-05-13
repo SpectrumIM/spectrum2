@@ -33,11 +33,6 @@ message Buddy {
 	optional string iconHash = 7;
 }
 
-message Conversation {
-	required string userName = 1;
-	required string buddyName = 2;
-}
-
 message ConversationMessage {
 	required string userName = 1;
 	required string buddyName = 2;
@@ -52,11 +47,9 @@ message WrapperMessage {
 		TYPE_LOGOUT 		= 4;
 		TYPE_BUDDY_CHANGED	= 6;
 		TYPE_BUDDY_REMOVED	= 7;
-		TYPE_CONV_CREATED	= 8;
-		TYPE_CONV_WRITE		= 9;
-		TYPE_CONV_REMOVED	= 10;
-		TYPE_PING			= 11;
-		TYPE_PONG			= 12;
+		TYPE_CONV_MESSAGE	= 8;
+		TYPE_PING			= 9;
+		TYPE_PONG			= 10;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

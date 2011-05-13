@@ -27,6 +27,7 @@
 #include "transport/conversationmanager.h"
 #include "transport/localbuddy.h"
 #include "transport/config.h"
+#include "transport/conversation.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -35,6 +36,37 @@
 #include "sys/signal.h"
 
 namespace Transport {
+
+class NetworkConversation : public Conversation {
+	public:
+		NetworkConversation(ConversationManager *conversationManager, const std::string &legacyName) : Conversation(conversationManager, legacyName) {
+		}
+
+		void sendMessage(boost::shared_ptr<Swift::Message> &message) {
+			onMessageToSend(this, message);
+		}
+
+		boost::signal<void (NetworkConversation *, boost::shared_ptr<Swift::Message> &)> onMessageToSend;
+};
+
+class NetworkFactory : public Factory {
+	public:
+		NetworkFactory(NetworkPluginServer *nps) {
+			m_nps = nps;
+		}
+		
+		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
+			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName);
+			nc->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, m_nps, _1, _2));
+			return nc;
+		}
+
+		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
+			return new LocalBuddy(rosterManager, -1);
+		}
+	private:
+		NetworkPluginServer *m_nps;
+};
 
 #define WRAP(MESSAGE, TYPE) 	pbnetwork::WrapperMessage wrap; \
 	wrap.set_type(TYPE); \
@@ -161,6 +193,26 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	}
 }
 
+void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+	if (!conv) {
+		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+	}
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(payload.message());
+	conv->handleMessage(msg);
+}
+
 void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c, const Swift::ByteArray &data) {
 	long expected_size = 0;
 	m_data += data.toString();
@@ -196,6 +248,9 @@ void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c,
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED:
 				handleBuddyChangedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE:
+				handleConvMessagePayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
 				m_pongReceived = true;
@@ -259,6 +314,10 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGOUT);
  
 	send(m_client, message);
+}
+
+void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message) {
+	
 }
 
 void NetworkPluginServer::sendPing() {

@@ -55,6 +55,20 @@ NetworkPlugin::~NetworkPlugin() {
 	delete m_factories;
 }
 
+void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg) {
+	pbnetwork::ConversationMessage m;
+	m.set_username(user);
+	m.set_buddyname(legacyName);
+	m.set_message(msg);
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
+
+	send(message);
+}
+
 void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
 			const std::string &groups, int status, const std::string &statusMessage, const std::string &iconHash) {
 	pbnetwork::Buddy buddy;

@@ -46,6 +46,8 @@ class NetworkPlugin {
 
 		void handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &message);
 
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message);
+
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
 

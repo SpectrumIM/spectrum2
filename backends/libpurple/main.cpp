@@ -317,17 +317,18 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	// Don't forwards our own messages.
 	if (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)
 		return;
-	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
-	if (!s_conv)
-		return;
+	PurpleAccount *account = purple_conversation_get_account(conv);
+// 	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
+// 	if (!s_conv)
+// 		return;
 
-	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+// 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 
 	char *striped = purple_markup_strip_html(message);
-	msg->setBody(message);
+	std::string msg = stripped;
 	g_free(striped);
 
-	s_conv->handleMessage(msg);
+	np->handleMessage(np->m_accounts[account], who, msg);
 }
 
 static PurpleConversationUiOps conversation_ui_ops =

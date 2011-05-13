@@ -164,5 +164,6 @@ namespace Transport {
 
 		friend class User;
 		friend class UserRegistration;
+		friend class NetworkPluginServer;
 	};
 }
