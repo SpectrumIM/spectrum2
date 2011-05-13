@@ -160,6 +160,9 @@ void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 			case pbnetwork::WrapperMessage_Type_TYPE_LOGOUT:
 				handleLogoutPayload(wrapper.payload());
 				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_PING:
+				sendPong();
+				break;
 			default:
 				return;
 		}
@@ -176,6 +179,16 @@ void NetworkPlugin::send(const std::string &data) {
 	}
 
 	m_conn->write(Swift::ByteArray(header + data));
+}
+
+void NetworkPlugin::sendPong() {
+	std::string message;
+	pbnetwork::WrapperMessage wrap;
+	wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_PONG);
+	wrap.SerializeToString(&message);
+
+	send(message);
+	std::cout << "SENDING PONG\n";
 }
 
 }

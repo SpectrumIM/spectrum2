@@ -222,7 +222,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	std::string message;
 	getStatus(buddy, status, message);
 
-	np->handleBuddyCreated(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
+	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
 }
 
 static void buddyStatusChanged(PurpleBuddy *buddy, PurpleStatus *status_, PurpleStatus *old_status) {

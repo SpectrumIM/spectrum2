@@ -58,6 +58,7 @@ class NetworkPlugin {
 		void handleDisconnected();
 
 		void send(const std::string &data);
+		void sendPong();
 
 		std::string m_data;
 		std::string m_host;

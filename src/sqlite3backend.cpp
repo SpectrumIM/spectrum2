@@ -76,6 +76,15 @@ SQLite3Backend::~SQLite3Backend(){
 		// But requires SQLite3 >= 3.6.0 beta
 	
 		FINALIZE_STMT(m_setUser);
+		FINALIZE_STMT(m_getUser);
+		FINALIZE_STMT(m_removeUser);
+		FINALIZE_STMT(m_removeUserBuddies);
+		FINALIZE_STMT(m_removeUserSettings);
+		FINALIZE_STMT(m_removeUserBuddiesSettings);
+		FINALIZE_STMT(m_addBuddy);
+		FINALIZE_STMT(m_updateBuddy);
+		FINALIZE_STMT(m_getBuddies);
+		FINALIZE_STMT(m_getBuddiesSettings);
 		sqlite3_close(m_db);
 	}
 }

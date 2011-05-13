@@ -55,8 +55,10 @@ message WrapperMessage {
 		TYPE_CONV_CREATED	= 8;
 		TYPE_CONV_WRITE		= 9;
 		TYPE_CONV_REMOVED	= 10;
+		TYPE_PING			= 11;
+		TYPE_PONG			= 12;
 	}
 	required Type type = 1;
-	required bytes payload = 2;
+	optional bytes payload = 2;
 }
 ;

@@ -35,6 +35,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("service.server", value<std::string>()->default_value(""), "Server to connect to")
 		("service.password", value<std::string>()->default_value(""), "Password used to auth the server")
 		("service.port", value<int>()->default_value(0), "Port the server is listening on")
+		("service.backend", value<std::string>()->default_value("libpurple_backend"), "Backend")
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
 		("service.allowed_servers", value<std::string>()->default_value(""), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
@@ -50,6 +51,8 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 
     store(parse_config_file(ifs, opts), m_variables);
 	notify(m_variables);
+
+	m_file = configfile;
 
 	onConfigReloaded();
 

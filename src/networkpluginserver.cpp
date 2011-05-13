@@ -73,8 +73,12 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
 	m_userManager = userManager;
 	m_config = config;
+	m_pongReceived = false;
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
+
+	m_pingTimer = component->getFactories()->getTimerFactory()->createTimer(10000);
+	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this)); 
 
 	m_server = component->getFactories()->getConnectionFactory()->createConnectionServer(10000);
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
@@ -86,7 +90,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
-	
+	m_pingTimer->stop();
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
@@ -94,15 +98,21 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 		c->disconnect();
 	}
 	m_client = c;
+	m_pongReceived = false;
+	
 
 	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, c));
 	c->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, c, _1));
+	sendPing();
+	m_pingTimer->start();
 }
 
 void NetworkPluginServer::handleSessionFinished(boost::shared_ptr<Swift::Connection> c) {
 	if (c == m_client) {
 		m_client.reset();
 	}
+	m_pingTimer->stop();
+	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
 }
 
 void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
@@ -187,6 +197,9 @@ void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c,
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED:
 				handleBuddyChangedPayload(wrapper.payload());
 				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
+				m_pongReceived = true;
+				break;
 			default:
 				return;
 		}
@@ -199,6 +212,17 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 		header.at(i) = static_cast<char>(data.size() >> (8 * (3 - i)));
 	
 	c->write(Swift::ByteArray(header + data));
+}
+
+void NetworkPluginServer::pingTimeout() {
+	std::cout << "pingtimeout\n";
+	if (m_pongReceived) {
+		sendPing();
+		m_pingTimer->start();
+	}
+	else {
+		exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
+	}
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {
@@ -233,8 +257,20 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	logout.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGOUT);
+ 
+	send(m_client, message);
+}
+
+void NetworkPluginServer::sendPing() {
+
+	std::string message;
+	pbnetwork::WrapperMessage wrap;
+	wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_PING);
+	wrap.SerializeToString(&message);
 
 	send(m_client, message);
+	m_pongReceived = false;
+	std::cout << "SENDING PING\n";
 }
 
 }

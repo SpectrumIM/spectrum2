@@ -2,12 +2,16 @@ cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB HEADERS ../../include/transport/*.h)
 
+if (PROTOBUF_FOUND)
+	PROTOBUF_GENERATE_CPP(PROTOBUF_SRC PROTOBUF_HDRS "pbnetwork.proto")
+endif()
+
 # SOURCE_GROUP(headers FILES ${HEADERS})
 
-ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC})
+ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS})
 ADD_DEFINITIONS(-fPIC)
 
-TARGET_LINK_LIBRARIES(transport -lresolv -lidn -lz -lpthread -lexpat -lidn -lz -lssl -lcrypto -lexpat -lresolv -lc -lxml2 ${Boost_LIBRARIES} ${SQLITE3_LIBRARIES} ${SWIFTEN_LIBRARY})
+TARGET_LINK_LIBRARIES(transport -lresolv -lidn -lz -lpthread -lexpat -lidn -lz -lssl -lcrypto -lexpat -lresolv -lc -lxml2 ${Boost_LIBRARIES} ${SQLITE3_LIBRARIES} ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES})
 
 SET_TARGET_PROPERTIES(transport PROPERTIES
       VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}

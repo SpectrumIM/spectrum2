@@ -37,20 +37,25 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_user = user;
 	m_component = component;
 	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(1000);
-	m_RIETimer = m_component->getFactories()->getTimerFactory()->createTimer(3000);
+	m_RIETimer = m_component->getFactories()->getTimerFactory()->createTimer(5000);
 	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
 }
 
 RosterManager::~RosterManager() {
 	m_setBuddyTimer->stop();
 	m_RIETimer->stop();
+	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		Buddy *buddy = (*it).second;
+		delete buddy;
+	}
 	if (m_rosterStorage)
 		delete m_rosterStorage;
 }
 
 void RosterManager::setBuddy(Buddy *buddy) {
-	m_setBuddyTimer->onTick.connect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
-	m_setBuddyTimer->start();
+// 	m_setBuddyTimer->onTick.connect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
+// 	m_setBuddyTimer->start();
+	setBuddyCallback(buddy);
 }
 
 void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
@@ -70,6 +75,7 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 void RosterManager::setBuddyCallback(Buddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
 
+	std::cout << "ADDING " << buddy->getName() << "\n";
 	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
 
@@ -79,13 +85,11 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		sendBuddyRosterPush(buddy);
 	}
 	else {
-		
-	}
-
-	if (m_setBuddyTimer->onTick.empty()) {
-		m_setBuddyTimer->stop();
-		if (true /*&& rie_is_supported*/) {
-			m_RIETimer->start();
+		if (m_setBuddyTimer->onTick.empty()) {
+			m_setBuddyTimer->stop();
+			if (true /*&& rie_is_supported*/) {
+				m_RIETimer->start();
+			}
 		}
 	}
 

@@ -58,12 +58,17 @@ class NetworkPluginServer {
 
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
+		void pingTimeout();
+		void sendPing();
+
 		std::string m_command;
 		std::string m_data;
 		UserManager *m_userManager;
 		Config *m_config;
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		boost::shared_ptr<Swift::Connection> m_client;
+		bool m_pongReceived;
+		Swift::Timer::ref m_pingTimer;
 };
 
 }

@@ -70,11 +70,14 @@ class Config {
 			return m_variables[key];
 		}
 
+		const std::string &getConfigFile() { return m_file; }
+
 		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
 	
 	private:
 		Variables m_variables;
+		std::string m_file;
 };
 
 }
