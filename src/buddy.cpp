@@ -30,7 +30,7 @@ Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false),
 }
 
 Buddy::~Buddy() {
-	m_rosterManager->unsetBuddy(this);
+// 	m_rosterManager->unsetBuddy(this);
 }
 
 void Buddy::generateJID() {

@@ -92,7 +92,7 @@ void NetworkPlugin::handleDisconnected(const std::string &user, const std::strin
 void NetworkPlugin::handleConnected(bool error) {
 	if (error) {
 		std::cout << "Connecting error\n";
-		connect();
+		m_reconnectTimer->start();
 	}
 	else {
 		std::cout << "Connected\n";
