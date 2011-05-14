@@ -195,11 +195,12 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
+	std::cout << "payload...\n";
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
 		return;
 	}
-
+	std::cout << "payload 2...\n";
 	User *user = m_userManager->getUser(payload.username());
 	if (!user)
 		return;

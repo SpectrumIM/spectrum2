@@ -65,6 +65,7 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	m.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
+	std::cout << "SENDING MESSAGE\n";
 
 	send(message);
 }
@@ -106,7 +107,8 @@ void NetworkPlugin::handleDisconnected(const std::string &user, const std::strin
 void NetworkPlugin::handleConnected(bool error) {
 	if (error) {
 		std::cout << "Connecting error\n";
-		m_reconnectTimer->start();
+// 		m_reconnectTimer->start();
+		exit(1);
 	}
 	else {
 		std::cout << "Connected\n";
@@ -116,7 +118,8 @@ void NetworkPlugin::handleConnected(bool error) {
 
 void NetworkPlugin::handleDisconnected() {
 	std::cout << "Disconnected\n";
-	m_reconnectTimer->start();
+// 	m_reconnectTimer->start();
+	exit(1);
 }
 
 void NetworkPlugin::connect() {

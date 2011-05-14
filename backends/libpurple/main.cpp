@@ -325,16 +325,21 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 // 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 
 	char *striped = purple_markup_strip_html(message);
-	std::string msg = stripped;
+	std::string msg = striped;
 	g_free(striped);
 
-	np->handleMessage(np->m_accounts[account], who, msg);
+	std::string w = who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+
+	np->handleMessage(np->m_accounts[account], w, msg);
 }
 
 static PurpleConversationUiOps conversation_ui_ops =
 {
-	conv_new,
-	conv_destroy,
+	NULL,
+	NULL,
 	NULL,//conv_write_chat,                              /* write_chat           */
 	conv_write_im,             /* write_im             */
 	NULL,//conv_write_conv,           /* write_conv           */
