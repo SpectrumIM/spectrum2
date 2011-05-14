@@ -27,7 +27,14 @@ find_package(Boost COMPONENTS date_time system filesystem program_options regex 
 set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Protobuf REQUIRED)
 
+set(IRCClientQt_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(IRCClientQt)
+
 find_package(Doxygen)
+
+INCLUDE(FindQt4)
+FIND_PACKAGE(Qt4 COMPONENTS QtCore)
+
 
 message("  Supported features")
 message("-----------------------")
@@ -44,14 +51,24 @@ if (PROTOBUF_FOUND)
 	ADD_DEFINITIONS(-DWITH_PROTOBUF)
 	include_directories(${PROTOBUF_INCLUDE_DIRS})
 	message("Network plugins   : yes")
+
+	if(PURPLE_LIBRARY AND PURPLE_INCLUDE_DIR)
+		message("Libpurple plugin  : yes")
+	else()
+		message("Libpurple plugin  : no (install libpurple)")
+	endif()
+
+	if(IRC_FOUND)
+		ADD_DEFINITIONS(-DIRC_SHARED)
+		message("IRC plugin        : yes")
+	else()
+		message("IRC plugin        : no (install libircclient-qt and Google Protocol Buffers)")
+	endif()
+
 else()
 	message("Network plugins   : no (install Google Protocol Buffers)")
-endif()
-
-if(PURPLE_LIBRARY AND PURPLE_INCLUDE_DIR AND PROTOBUF_FOUND)
-	message("Libpurple backend : yes")
-else()
-	message("Libpurple backend : no (install libpurple and Google Protocol Buffers)")
+	message("Libpurple plugin  : no (install libpurple and Google Protocol Buffers)")
+	message("IRC plugin        : no (install libircclient-qt and Google Protocol Buffers)")
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -70,7 +87,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 	ADD_DEFINITIONS(-Wundef -Wunused)
 	message("Debug             : yes")
 else(CMAKE_BUILD_TYPE MATCHES Debug)
-	message("Debug             : no")
+	message("Debug             : no (run \"cmake . -DCMAKE_BUILD_TYPE=Debug\")")
 endif(CMAKE_BUILD_TYPE MATCHES Debug)
 
 
@@ -83,6 +100,8 @@ include_directories(${EVENT_INCLUDE_DIRS})
 include_directories(${GLIB2_INCLUDE_DIR})
 include_directories(${SWIFTEN_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${IRC_INCLUDE_DIR})
+include(${QT_USE_FILE})
 
 ADD_SUBDIRECTORY(src)
 ADD_SUBDIRECTORY(include)
@@ -94,7 +113,7 @@ if(DOXYGEN_FOUND)
 	message("Docs              : yes")
 	ADD_SUBDIRECTORY(docs)
 else(DOXYGEN_FOUND)
-	message("Docs              : no")
+	message("Docs              : no (install doxygen)")
 endif(DOXYGEN_FOUND)
 
 message("----------------------")
