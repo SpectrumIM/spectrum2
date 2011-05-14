@@ -146,6 +146,16 @@ void NetworkPlugin::handleLogoutPayload(const std::string &data) {
 	handleLogoutRequest(payload.user(), payload.legacyname());
 }
 
+void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message());
+}
+
 void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 	long expected_size = 0;
 	m_data += data.toString();
@@ -179,6 +189,9 @@ void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PING:
 				sendPong();
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE:
+				handleConvMessagePayload(wrapper.payload());
 				break;
 			default:
 				return;

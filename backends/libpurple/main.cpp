@@ -107,6 +107,21 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
+			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
+			PurpleAccount *account = purple_accounts_find(user.c_str(), protocol);
+			std::cout << user << "\n";
+			if (account) {
+				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+				if (!conv) {
+					conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+				}
+				gchar *_markup = purple_markup_escape_text(message.c_str(), -1);
+				purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+				g_free(_markup);
+			}
+		}
+
 		std::map<PurpleAccount *, std::string> m_accounts;
 	private:
 		Config *config;
@@ -318,11 +333,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	if (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)
 		return;
 	PurpleAccount *account = purple_conversation_get_account(conv);
-// 	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
-// 	if (!s_conv)
-// 		return;
-
-// 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 
 	char *striped = purple_markup_strip_html(message);
 	std::string msg = striped;

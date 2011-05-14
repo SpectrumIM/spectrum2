@@ -105,6 +105,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
 	m_userManager = userManager;
 	m_config = config;
+	component->m_factory = new NetworkFactory(this);
 	m_pongReceived = false;
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -208,6 +209,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->setBody(payload.message());
@@ -317,8 +319,18 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	send(m_client, message);
 }
 
-void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message) {
-	
+void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
+	pbnetwork::ConversationMessage m;
+	m.set_username(conv->getConversationManager()->getUser()->getUserInfo().uin);
+	m.set_buddyname(conv->getLegacyName());
+	m.set_message(msg->getBody());
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
+
+	send(m_client, message);
 }
 
 void NetworkPluginServer::sendPing() {

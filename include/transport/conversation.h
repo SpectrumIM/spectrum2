@@ -45,6 +45,10 @@ class Conversation {
 
 		virtual void sendMessage(boost::shared_ptr<Swift::Message> &message) = 0;
 
+		ConversationManager *getConversationManager() {
+			return m_conversationManager;
+		}
+
 	private:
 		ConversationManager *m_conversationManager;
 		std::string m_legacyName;
