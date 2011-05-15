@@ -51,6 +51,7 @@ class NetworkPlugin {
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
 		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) = 0;
+		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		
 
 	private:
@@ -58,6 +59,7 @@ class NetworkPlugin {
 		void handleLoginPayload(const std::string &payload);
 		void handleLogoutPayload(const std::string &payload);
 		void handleConvMessagePayload(const std::string &payload);
+		void handleJoinRoomPayload(const std::string &payload);
 		void handleDataRead(const Swift::ByteArray&);
 		void handleConnected(bool error);
 		void handleDisconnected();

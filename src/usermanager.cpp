@@ -137,6 +137,10 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	}
 	user->handlePresence(presence);
 
+	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
+	if (isMUC)
+		return;
+
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		if (user) {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());

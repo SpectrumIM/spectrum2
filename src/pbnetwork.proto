@@ -39,17 +39,35 @@ message ConversationMessage {
 	required string message = 3;
 }
 
+message Room {
+	required string userName = 1;
+	required string nickname = 2;
+	required string room = 3;
+	optional string password = 4;
+}
+
+message Participant {
+	required string userName = 1;
+	required string room = 2;
+	required string nickname = 3;
+	required int32 flag = 4;
+}
+
 message WrapperMessage {
 	enum Type { 
-		TYPE_CONNECTED 		= 1;
-		TYPE_DISCONNECTED 	= 2;
-		TYPE_LOGIN 			= 3;
-		TYPE_LOGOUT 		= 4;
-		TYPE_BUDDY_CHANGED	= 6;
-		TYPE_BUDDY_REMOVED	= 7;
-		TYPE_CONV_MESSAGE	= 8;
-		TYPE_PING			= 9;
-		TYPE_PONG			= 10;
+		TYPE_CONNECTED 				= 1;
+		TYPE_DISCONNECTED 			= 2;
+		TYPE_LOGIN 					= 3;
+		TYPE_LOGOUT 				= 4;
+		TYPE_BUDDY_CHANGED			= 6;
+		TYPE_BUDDY_REMOVED			= 7;
+		TYPE_CONV_MESSAGE			= 8;
+		TYPE_PING					= 9;
+		TYPE_PONG					= 10;
+		TYPE_JOIN_ROOM				= 11;
+		TYPE_PART_ROOM				= 12;
+		TYPE_PARTICIPANT_CHANGED	= 13;
+		TYPE_PARTICIPANT_LEFT		= 14;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

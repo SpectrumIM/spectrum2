@@ -169,8 +169,7 @@ void Component::handleDataWritten(const std::string &data) {
 }
 
 void Component::handlePresence(Swift::Presence::ref presence) {
-	bool isMUC = presence->getPayload<MUCPayload>() != NULL;
-
+	bool isMUC = presence->getPayload<MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	// filter out login/logout presence spam
 	if (!presence->getTo().getNode().empty() && isMUC == false)
 		return;

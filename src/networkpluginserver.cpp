@@ -154,7 +154,7 @@ void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-	std::cout << payload.name() << "\n";
+// 	std::cout << payload.name() << "\n";
 }
 
 void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
@@ -196,12 +196,12 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
-	std::cout << "payload...\n";
+// 	std::cout << "payload...\n";
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
 		return;
 	}
-	std::cout << "payload 2...\n";
+// 	std::cout << "payload 2...\n";
 	User *user = m_userManager->getUser(payload.username());
 	if (!user)
 		return;
@@ -219,13 +219,13 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c, const Swift::ByteArray &data) {
 	long expected_size = 0;
 	m_data += data.toString();
-	std::cout << "received data; size = " << m_data.size() << "\n";
+// 	std::cout << "received data; size = " << m_data.size() << "\n";
 	while (m_data.size() != 0) {
 		if (m_data.size() >= 4) {
 			unsigned char * head = (unsigned char*) m_data.c_str();
 			expected_size = (((((*head << 8) | *(head + 1)) << 8) | *(head + 2)) << 8) | *(head + 3);
 			//expected_size = m_data[0];
-			std::cout << "expected_size=" << expected_size << "\n";
+// 			std::cout << "expected_size=" << expected_size << "\n";
 			if (m_data.size() - 4 < expected_size)
 				return;
 		}
@@ -286,6 +286,7 @@ void NetworkPluginServer::pingTimeout() {
 void NetworkPluginServer::handleUserCreated(User *user) {
 // 	UserInfo userInfo = user->getUserInfo();
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
+	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
@@ -301,6 +302,23 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGIN);
 
+	send(m_client, message);
+}
+
+void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
+	UserInfo userInfo = user->getUserInfo();
+
+	pbnetwork::Room room;
+	room.set_username(user->getJID().toBare());
+	room.set_nickname(nickname);
+	room.set_room(r);
+	room.set_password(password);
+
+	std::string message;
+	room.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM);
+ 
 	send(m_client, message);
 }
 

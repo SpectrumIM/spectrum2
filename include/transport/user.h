@@ -77,6 +77,8 @@ class User {
 		void handleDisconnected(const std::string &error);
 
 		boost::signal<void ()> onReadyToConnect;
+		boost::signal<void (const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		boost::signal<void (const std::string &room)> onRoomLeft;
 		boost::signal<void ()> onDisconnected;
 
 	private:

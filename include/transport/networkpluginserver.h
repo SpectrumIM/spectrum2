@@ -57,6 +57,7 @@ class NetworkPluginServer {
 		void handleConvMessagePayload(const std::string &payload);
 
 		void handleUserCreated(User *user);
+		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
 		void handleUserReadyToConnect(User *user);
 		void handleUserDestroyed(User *user);
 

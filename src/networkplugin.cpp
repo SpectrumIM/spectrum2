@@ -65,7 +65,7 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	m.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
-	std::cout << "SENDING MESSAGE\n";
+// 	std::cout << "SENDING MESSAGE\n";
 
 	send(message);
 }
@@ -156,14 +156,24 @@ void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
 	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message());
 }
 
+void NetworkPlugin::handleJoinRoomPayload(const std::string &data) {
+	pbnetwork::Room payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleJoinRoomRequest(payload.username(), payload.room(), payload.nickname(), payload.password());
+}
+
 void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 	long expected_size = 0;
 	m_data += data.toString();
-	std::cout << "received data; size = " << m_data.size() << "\n";
+// 	std::cout << "received data; size = " << m_data.size() << "\n";
 	while (m_data.size() != 0) {
 		if (m_data.size() >= 4) {
 			expected_size = (((((m_data[0] << 8) | m_data[1]) << 8) | m_data[2]) << 8) | m_data[3];
-			std::cout << "expected_size=" << expected_size << "\n";
+// 			std::cout << "expected_size=" << expected_size << "\n";
 			if (m_data.size() - 4 < expected_size)
 				return;
 		}
@@ -193,6 +203,9 @@ void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE:
 				handleConvMessagePayload(wrapper.payload());
 				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM:
+				handleJoinRoomPayload(wrapper.payload());
+				break;
 			default:
 				return;
 		}
@@ -201,11 +214,11 @@ void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 
 void NetworkPlugin::send(const std::string &data) {
 	std::string header("    ");
-	std::cout << data.size() << "\n";
+// 	std::cout << data.size() << "\n";
 	boost::int32_t size = data.size();
 	for (int i = 0; i != 4; ++i) {
 		header.at(i) = static_cast<char>(size >> (8 * (3 - i)));
-		std::cout << std::hex << (int) header.at(i) << "\n";
+// 		std::cout << std::hex << (int) header.at(i) << "\n";
 	}
 
 	m_conn->write(Swift::ByteArray(header + data));
@@ -218,7 +231,7 @@ void NetworkPlugin::sendPong() {
 	wrap.SerializeToString(&message);
 
 	send(message);
-	std::cout << "SENDING PONG\n";
+// 	std::cout << "SENDING PONG\n";
 }
 
 }

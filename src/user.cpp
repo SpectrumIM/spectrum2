@@ -27,6 +27,7 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#include "Swiften/Elements/MUCPayload.h"
 
 namespace Transport {
 
@@ -80,6 +81,13 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				m_reconnectTimer->start();
 			}
 		}
+	}
+	std::cout << "HANDLE PRESENCE\n";
+	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
+	if (isMUC) {
+		std::cout << "AAAAAAAAA\n";
+		onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
+		return;
 	}
 
 

@@ -10,7 +10,7 @@
 
 #include "transport/config.h"
 #include "transport/networkplugin.h"
-#include "ircsession.h"
+#include "session.h"
 #include <QtCore>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
 
@@ -27,13 +27,34 @@ class IRCNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+			Swift::JID jid(legacyName);
+			MyIrcSession *session = new MyIrcSession();
+			session->setNick(QString::fromStdString(jid.getNode()));
+			session->connectToServer(QString::fromStdString(jid.getDomain()), 6667);
+			std::cout << "CONNECTING IRC NETWORK " << jid.getNode() << " " << jid.getDomain() << "\n";
+			m_sessions[user] = session;
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
+			if (m_sessions[user] == NULL)
+				return;
+			m_sessions[user]->disconnectFromServer();
+			m_sessions[user]->deleteLater();
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
+			
 		}
+
+		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
+			std::cout << "JOIN\n";
+			if (m_sessions[user] == NULL)
+				return;
+			m_sessions[user]->addAutoJoinChannel(QString::fromStdString(room));
+			m_sessions[user]->join(QString::fromStdString(room), QString::fromStdString(password));
+		}
+
+		std::map<std::string, MyIrcSession *> m_sessions;
 
 	private:
 		Config *config;
