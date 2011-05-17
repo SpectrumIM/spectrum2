@@ -1,0 +1,29 @@
+package pbnetwork;
+
+message Connected {
+	required string name = 1;
+}
+
+message Disconnected {
+	required string name = 1;
+	required int32 error = 2;
+	optional string message = 3;
+}
+
+message Login {
+	required string protocol = 1;
+	required string legacyName = 2;
+	required string password = 3;
+}
+
+message WrapperMessage {
+	enum Type { 
+		TYPE_CONNECTED 		= 1;
+		TYPE_DISCONNECTED 	= 2;
+		TYPE_LOGIN 			= 3;
+		TYPE_LOGOUT 		= 4;
+	}
+	required Type type = 1;
+	required bytes payload = 2;
+}
+;

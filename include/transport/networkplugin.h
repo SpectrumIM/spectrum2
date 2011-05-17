@@ -44,6 +44,8 @@ class NetworkPlugin {
 			const std::string &groups, int status, const std::string &statusMessage = "", const std::string &iconHash = ""
 		);
 
+		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags);
+
 		void handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &message);
 
 		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message);

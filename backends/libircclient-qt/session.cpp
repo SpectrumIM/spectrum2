@@ -12,8 +12,10 @@
 #include <QtCore>
 #include <iostream>
 
-MyIrcSession::MyIrcSession(QObject* parent) : Irc::Session(parent)
+MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent) : Irc::Session(parent)
 {
+	this->np = np;
+	this->user = user;
 }
 
 void MyIrcSession::on_connected()
@@ -38,12 +40,14 @@ void MyIrcSession::on_bufferRemoved(Irc::Buffer* buffer)
 
 Irc::Buffer* MyIrcSession::createBuffer(const QString& receiver)
 {
-    return new MyIrcBuffer(receiver, this);
+    return new MyIrcBuffer(receiver, user, np, this);
 }
 
-MyIrcBuffer::MyIrcBuffer(const QString& receiver, Irc::Session* parent)
+MyIrcBuffer::MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, Irc::Session* parent)
     : Irc::Buffer(receiver, parent)
 {
+	this->np = np;
+	this->user = user;
     connect(this, SIGNAL(receiverChanged(QString)), SLOT(on_receiverChanged(QString)));
     connect(this, SIGNAL(joined(QString)), SLOT(on_joined(QString)));
     connect(this, SIGNAL(parted(QString, QString)), SLOT(on_parted(QString, QString)));
@@ -144,6 +148,16 @@ void MyIrcBuffer::on_ctcpActionReceived(const QString& origin, const QString& ac
 
 void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, const QStringList& params)
 {
+	switch (code) {
+		case 353:
+			QString channel = params.value(2);
+			QStringList members = params.value(3).split(" ");
+
+			for (int i = 0; i < members.size(); i++) {
+				np->handleParticipantChanged(user, members.at(i).toStdString(), channel.toStdString(), 0);
+			}
+			break;
+	}
     qDebug() << "numeric message received:" << receiver() << origin << code << params;
 }
 

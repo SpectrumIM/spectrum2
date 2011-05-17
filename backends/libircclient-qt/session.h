@@ -13,13 +13,16 @@
 
 #include <IrcSession>
 #include <IrcBuffer>
+#include <transport/networkplugin.h>
+
+using namespace Transport;
 
 class MyIrcSession : public Irc::Session
 {
     Q_OBJECT
 
 public:
-    MyIrcSession(QObject* parent = 0);
+    MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent = 0);
 
 protected Q_SLOTS:
     void on_connected();
@@ -29,6 +32,8 @@ protected Q_SLOTS:
     void on_bufferRemoved(Irc::Buffer* buffer);
 
 protected:
+	NetworkPlugin *np;
+	std::string user;
     virtual Irc::Buffer* createBuffer(const QString& receiver);
 };
 
@@ -37,7 +42,9 @@ class MyIrcBuffer : public Irc::Buffer
     Q_OBJECT
 
 public:
-    MyIrcBuffer(const QString& receiver, Irc::Session* parent);
+    MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, Irc::Session* parent);
+	NetworkPlugin *np;
+	std::string user;
 
 protected Q_SLOTS:
     void on_receiverChanged(const QString& receiver);

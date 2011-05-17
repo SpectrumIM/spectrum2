@@ -38,17 +38,37 @@ Conversation::~Conversation() {
 }
 
 void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message) {
-	message->setTo(m_conversationManager->getUser()->getJID().toBare());
-	Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
-	if (buddy) {
-		std::cout << m_legacyName << " 222222\n";
-		message->setFrom(buddy->getJID());
+	if (message->getType() != Swift::Message::Groupchat) {
+		message->setTo(m_conversationManager->getUser()->getJID().toBare());
+		Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
+		if (buddy) {
+			std::cout << m_legacyName << " 222222\n";
+			message->setFrom(buddy->getJID());
+		}
+		else {
+			std::cout << m_legacyName << " 1111111\n";
+			// TODO: escape from and setFrom
+		}
+		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}
-	else {
-		std::cout << m_legacyName << " 1111111\n";
-		// TODO: escape from and setFrom
+}
+
+void Conversation::handleParticipantChanged(const std::string &nickname, int flag) {
+	Swift::Presence::ref presence = Swift::Presence::create();
+ 	presence->setFrom(Swift::JID(m_legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
+	presence->setTo(m_conversationManager->getUser()->getJID().toString());
+	presence->setType(Swift::Presence::Available);
+
+	Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
+	if (m_nickname == nickname) {
+		Swift::MUCUserPayload::StatusCode c;
+		c.code = 110;
+		p->addStatusCode(c);
 	}
-	m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+	p->addItem(Swift::MUCUserPayload::Item(Swift::MUCOccupant::Member, Swift::MUCOccupant::Participant));
+
+	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
+	m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
 }
 
 }

@@ -1,0 +1,10 @@
+FIND_LIBRARY(IRC_LIBRARY NAMES ircclient-qt)
+FIND_PATH(IRC_INCLUDE_DIR NAMES "ircglobal.h" PATH_SUFFIXES ircclient-qt )
+
+# message( STATUS ${IRC_LIBRARY})
+if( IRC_LIBRARY AND IRC_INCLUDE_DIR )
+    message( STATUS "Found libircclient-qt: ${IRC_LIBRARY}, ${IRC_INCLUDE_DIR}")
+    set( IRC_FOUND 1 )
+else()
+    message( STATUS "Could NOT find libircclient-qt" )
+endif()

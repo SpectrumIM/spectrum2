@@ -28,7 +28,7 @@ class IRCNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			Swift::JID jid(legacyName);
-			MyIrcSession *session = new MyIrcSession();
+			MyIrcSession *session = new MyIrcSession(user, this);
 			session->setNick(QString::fromStdString(jid.getNode()));
 			session->connectToServer(QString::fromStdString(jid.getDomain()), 6667);
 			std::cout << "CONNECTING IRC NETWORK " << jid.getNode() << " " << jid.getDomain() << "\n";

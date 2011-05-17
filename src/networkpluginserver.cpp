@@ -194,6 +194,37 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	}
 }
 
+void NetworkPluginServer::handleParticipantChangedPayload(const std::string &data) {
+	pbnetwork::Participant payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.room());
+	if (!conv) {
+		return;
+	}
+
+	conv->handleParticipantChanged(payload.nickname(), payload.flag());
+
+// 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
+// 	if (buddy) {
+// 		handleBuddyPayload(buddy, payload);
+// 		buddy->buddyChanged();
+// 	}
+// 	else {
+// 		buddy = new LocalBuddy(user->getRosterManager(), -1);
+// 		handleBuddyPayload(buddy, payload);
+// 		user->getRosterManager()->setBuddy(buddy);
+// 	}
+	std::cout << payload.nickname() << "\n";
+}
+
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
 // 	std::cout << "payload...\n";
@@ -258,6 +289,9 @@ void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c,
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
 				m_pongReceived = true;
 				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED:
+				handleParticipantChangedPayload(wrapper.payload());
+				break;
 			default:
 				return;
 		}
@@ -320,6 +354,10 @@ void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, con
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM);
  
 	send(m_client, message);
+
+	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r);
+	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+	conv->setNickname(nickname);
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {

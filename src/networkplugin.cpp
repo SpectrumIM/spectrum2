@@ -104,6 +104,21 @@ void NetworkPlugin::handleDisconnected(const std::string &user, const std::strin
 	send(message);
 }
 
+void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags) {
+	pbnetwork::Participant d;
+	d.set_username(user);
+	d.set_nickname(nickname);
+	d.set_room(room);
+	d.set_flag(flags);
+
+	std::string message;
+	d.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED);
+
+	send(message);
+}
+
 void NetworkPlugin::handleConnected(bool error) {
 	if (error) {
 		std::cout << "Connecting error\n";
