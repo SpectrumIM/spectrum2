@@ -78,7 +78,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 	}
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, int flag) {
+void Conversation::handleParticipantChanged(const std::string &nick, int flag, const std::string &newname) {
 	std::string nickname = nick;
 	if (nickname.find("@") == 0) {
 		nickname = nickname.substr(1);
@@ -94,7 +94,16 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag) {
 		c.code = 110;
 		p->addStatusCode(c);
 	}
-	p->addItem(Swift::MUCUserPayload::Item(Swift::MUCOccupant::Member, Swift::MUCOccupant::Participant));
+
+	Swift::MUCUserPayload::Item item(Swift::MUCOccupant::Member, Swift::MUCOccupant::Participant);
+	if (!newname.empty()) {
+		item.nick = newname;
+		Swift::MUCUserPayload::StatusCode c;
+		c.code = 303;
+		p->addStatusCode(c);
+	}
+
+	p->addItem(item);
 
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 	m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);

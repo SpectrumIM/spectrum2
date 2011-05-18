@@ -76,9 +76,9 @@ void MyIrcBuffer::on_receiverChanged(const QString& receiver)
     qDebug() << "receiver changed:" << receiver;
 }
 
-void MyIrcBuffer::on_joined(const QString& origin)
-{
-    qDebug() << "joined:" << receiver() << origin;
+void MyIrcBuffer::on_joined(const QString& origin) {
+	qDebug() << "joined:" << receiver() << origin;
+	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString(), 0);
 }
 
 void MyIrcBuffer::on_parted(const QString& origin, const QString& message)
@@ -91,9 +91,9 @@ void MyIrcBuffer::on_quit(const QString& origin, const QString& message)
     qDebug() << "quit:" << receiver() << origin << message;
 }
 
-void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick)
-{
-    qDebug() << "nick changed:" << receiver() << origin << nick;
+void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick) {
+	qDebug() << "nick changed:" << receiver() << origin << nick;
+	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString(), 0, nick.toStdString());
 }
 
 void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, const QString& args)

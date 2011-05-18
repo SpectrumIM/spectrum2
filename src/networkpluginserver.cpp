@@ -210,7 +210,7 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 		return;
 	}
 
-	conv->handleParticipantChanged(payload.nickname(), payload.flag());
+	conv->handleParticipantChanged(payload.nickname(), payload.flag(), payload.newname());
 
 // 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 // 	if (buddy) {
@@ -222,7 +222,7 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 // 		handleBuddyPayload(buddy, payload);
 // 		user->getRosterManager()->setBuddy(buddy);
 // 	}
-	std::cout << payload.nickname() << "\n";
+// 	std::cout << payload.nickname() << "\n";
 }
 
 void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {

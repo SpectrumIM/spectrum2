@@ -52,6 +52,7 @@ message Participant {
 	required string room = 2;
 	required string nickname = 3;
 	required int32 flag = 4;
+	optional string newname = 5;
 }
 
 message WrapperMessage {
