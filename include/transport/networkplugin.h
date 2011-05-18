@@ -48,7 +48,7 @@ class NetworkPlugin {
 
 		void handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &message);
 
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message);
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
 
 		void handleRoomChanged(const std::string &user, const std::string &room, const std::string &nickname);
 

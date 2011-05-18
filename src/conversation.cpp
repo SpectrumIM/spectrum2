@@ -31,24 +31,46 @@ namespace Transport {
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
 	m_conversationManager->setConversation(this);
+	m_muc = -1;
 }
 
 Conversation::~Conversation() {
 	m_conversationManager->unsetConversation(this);
 }
 
-void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message) {
+void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {
+	if (m_muc == -1)
+		m_muc = message->getType() != Swift::Message::Groupchat;
+	if (m_muc == 0) {
+		message->setType(Swift::Message::Groupchat);
+	}
+	else {
+		message->setType(Swift::Message::Chat);
+	}
 	if (message->getType() != Swift::Message::Groupchat) {
+		
 		message->setTo(m_conversationManager->getUser()->getJID().toBare());
-		Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
-		if (buddy) {
-			std::cout << m_legacyName << " 222222\n";
-			message->setFrom(buddy->getJID());
+		// normal message
+		if (nickname.empty()) {
+			Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
+			if (buddy) {
+				std::cout << m_legacyName << " 222222\n";
+				message->setFrom(buddy->getJID());
+			}
+			else {
+				std::cout << m_legacyName << " 1111111\n";
+				// TODO: escape from and setFrom
+			}
 		}
+		// PM message
 		else {
-			std::cout << m_legacyName << " 1111111\n";
-			// TODO: escape from and setFrom
+			message->setFrom(Swift::JID(nickname, m_conversationManager->getComponent()->getJID().toBare(), "user"));
 		}
+		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+	}
+	else {
+		message->setTo(m_conversationManager->getUser()->getJID().toString());
+		message->setFrom(Swift::JID(m_legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}
 }

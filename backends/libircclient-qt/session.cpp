@@ -116,10 +116,11 @@ void MyIrcBuffer::on_kicked(const QString& origin, const QString& nick, const QS
     qDebug() << "kicked:" << receiver() << origin << nick << message;
 }
 
-void MyIrcBuffer::on_messageReceived(const QString& origin, const QString& message, Irc::Buffer::MessageFlags flags)
-{
-    qDebug() << "message received:" << receiver() << origin << message
-             << (flags & Irc::Buffer::IdentifiedFlag ? "(identified!)" : "(not identified)");
+void MyIrcBuffer::on_messageReceived(const QString& origin, const QString& message, Irc::Buffer::MessageFlags flags) {
+	qDebug() << "message received:" << receiver() << origin << message << (flags & Irc::Buffer::IdentifiedFlag ? "(identified!)" : "(not identified)");
+	if (!receiver().startsWith("#") && (flags & Irc::Buffer::EchoFlag))
+		return;
+	np->handleMessage(user, receiver().toStdString(), message.toStdString(), origin.toStdString());
 }
 
 void MyIrcBuffer::on_noticeReceived(const QString& origin, const QString& notice, Irc::Buffer::MessageFlags flags)

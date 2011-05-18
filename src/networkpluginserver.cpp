@@ -255,14 +255,24 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 	if (!user)
 		return;
 
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(payload.message());
+
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
-	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->setBody(payload.message());
-	conv->handleMessage(msg);
+	else {
+		// groupchat messages can be created only for conversations initiated from XMPP side, not from legacy network side.
+		// ie. you can't create Groupchat conversation from legacy network side.
+		if (!payload.nickname().empty()) {
+			msg->setType(Swift::Message::Groupchat);
+		}
+	}
+
+	
+	conv->handleMessage(msg, payload.nickname());
 }
 
 void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c, const Swift::ByteArray &data) {
@@ -423,7 +433,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
 	pbnetwork::ConversationMessage m;
-	m.set_username(conv->getConversationManager()->getUser()->getUserInfo().uin);
+	m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 	m.set_buddyname(conv->getLegacyName());
 	m.set_message(msg->getBody());
 

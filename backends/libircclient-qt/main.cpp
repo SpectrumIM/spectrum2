@@ -43,7 +43,11 @@ class IRCNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
-			
+			std::cout << "MESSAGE " << user << " " << legacyName << "\n";
+			if (m_sessions[user] == NULL)
+				return;
+			m_sessions[user]->message(QString::fromStdString(legacyName), QString::fromStdString(message));
+			std::cout << "SENT\n";
 		}
 
 		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {

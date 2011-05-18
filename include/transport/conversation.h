@@ -41,7 +41,7 @@ class Conversation {
 
 		const std::string &getLegacyName() { return m_legacyName; }
 
-		void handleMessage(boost::shared_ptr<Swift::Message> &message);
+		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
 		void handleParticipantChanged(const std::string &nickname, int flag);
 		void setNickname(const std::string &nickname) {
 			m_nickname = nickname;
@@ -57,6 +57,7 @@ class Conversation {
 		ConversationManager *m_conversationManager;
 		std::string m_legacyName;
 		std::string m_nickname;
+		int m_muc;
 };
 
 }
