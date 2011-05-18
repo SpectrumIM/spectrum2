@@ -119,6 +119,21 @@ void NetworkPlugin::handleParticipantChanged(const std::string &user, const std:
 	send(message);
 }
 
+void NetworkPlugin::handleRoomChanged(const std::string &user, const std::string &r, const std::string &nickname) {
+	pbnetwork::Room room;
+	room.set_username(user);
+	room.set_nickname(nickname);
+	room.set_room(r);
+	room.set_password("");
+
+	std::string message;
+	room.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_NICKNAME_CHANGED);
+ 
+	send(message);
+}
+
 void NetworkPlugin::handleConnected(bool error) {
 	if (error) {
 		std::cout << "Connecting error\n";

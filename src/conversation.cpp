@@ -53,7 +53,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message) {
 	}
 }
 
-void Conversation::handleParticipantChanged(const std::string &nickname, int flag) {
+void Conversation::handleParticipantChanged(const std::string &nick, int flag) {
+	std::string nickname = nick;
+	if (nickname.find("@") == 0) {
+		nickname = nickname.substr(1);
+	}
 	Swift::Presence::ref presence = Swift::Presence::create();
  	presence->setFrom(Swift::JID(m_legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 	presence->setTo(m_conversationManager->getUser()->getJID().toString());

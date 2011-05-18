@@ -225,6 +225,24 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 	std::cout << payload.nickname() << "\n";
 }
 
+void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
+	pbnetwork::Room payload;
+	if (payload.ParseFromString(data) == false) {
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.room());
+	if (!conv) {
+		return;
+	}
+
+	conv->setNickname(payload.nickname());
+}
+
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
 // 	std::cout << "payload...\n";
@@ -291,6 +309,9 @@ void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c,
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED:
 				handleParticipantChangedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_NICKNAME_CHANGED:
+				handleRoomChangedPayload(wrapper.payload());
 				break;
 			default:
 				return;
