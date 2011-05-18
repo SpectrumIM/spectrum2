@@ -34,7 +34,7 @@ class ConversationManager;
 class Conversation {
 	public:
 		/// Constructor.
-		Conversation(ConversationManager *conversationManager, const std::string &legacyName);
+		Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool m_muc = false);
 
 		/// Destructor
 		virtual ~Conversation();
@@ -53,11 +53,24 @@ class Conversation {
 			return m_conversationManager;
 		}
 
+		bool isMUC() {
+			return m_muc;
+		}
+
+		void setRoom(const std::string &room) {
+			m_room = room;
+		}
+
+		const std::string &getRoom() {
+			return m_room;
+		}
+
 	private:
 		ConversationManager *m_conversationManager;
 		std::string m_legacyName;
 		std::string m_nickname;
-		int m_muc;
+		std::string m_room;
+		bool m_muc;
 };
 
 }

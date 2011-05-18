@@ -43,6 +43,11 @@ void ConversationManager::setConversation(Conversation *conv) {
 }
 
 void ConversationManager::unsetConversation(Conversation *conv) {
+	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
+		if ((*it).second->getRoom() == conv->getLegacyName()) {
+			(*it).second->setRoom("");
+		}
+	}
 	m_convs.erase(conv->getLegacyName());
 }
 
@@ -55,6 +60,15 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 	if (!m_convs[name]) {
 		m_convs[name] = m_component->getFactory()->createConversation(this, name);
 	}
+	else if (m_convs[name]->isMUC() && message->getType() != Swift::Message::Groupchat) {
+		std::string room_name = name;
+		name = message->getTo().getResource();
+		if (!m_convs[name]) {
+			m_convs[name] = m_component->getFactory()->createConversation(this, name);
+			m_convs[name]->setRoom(room_name);
+		}
+	}
+
 	m_convs[name]->sendMessage(message);
 }
 

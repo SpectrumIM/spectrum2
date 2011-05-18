@@ -28,10 +28,10 @@
 
 namespace Transport {
 
-Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName) : m_conversationManager(conversationManager) {
+Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
 	m_conversationManager->setConversation(this);
-	m_muc = -1;
+	m_muc = isMUC;
 }
 
 Conversation::~Conversation() {
@@ -39,9 +39,7 @@ Conversation::~Conversation() {
 }
 
 void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {
-	if (m_muc == -1)
-		m_muc = message->getType() != Swift::Message::Groupchat;
-	if (m_muc == 0) {
+	if (m_muc) {
 		message->setType(Swift::Message::Groupchat);
 	}
 	else {
@@ -64,7 +62,12 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		}
 		// PM message
 		else {
-			message->setFrom(Swift::JID(nickname, m_conversationManager->getComponent()->getJID().toBare(), "user"));
+			if (m_room.empty()) {
+				message->setFrom(Swift::JID(nickname, m_conversationManager->getComponent()->getJID().toBare(), "user"));
+			}
+			else {
+				message->setFrom(Swift::JID(m_room, m_conversationManager->getComponent()->getJID().toBare(), nickname));
+			}
 		}
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}

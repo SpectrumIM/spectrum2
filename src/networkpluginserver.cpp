@@ -39,7 +39,7 @@ namespace Transport {
 
 class NetworkConversation : public Conversation {
 	public:
-		NetworkConversation(ConversationManager *conversationManager, const std::string &legacyName) : Conversation(conversationManager, legacyName) {
+		NetworkConversation(ConversationManager *conversationManager, const std::string &legacyName, bool muc = false) : Conversation(conversationManager, legacyName, muc) {
 		}
 
 		void sendMessage(boost::shared_ptr<Swift::Message> &message) {
@@ -263,15 +263,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
-	else {
-		// groupchat messages can be created only for conversations initiated from XMPP side, not from legacy network side.
-		// ie. you can't create Groupchat conversation from legacy network side.
-		if (!payload.nickname().empty()) {
-			msg->setType(Swift::Message::Groupchat);
-		}
-	}
 
-	
 	conv->handleMessage(msg, payload.nickname());
 }
 
@@ -387,7 +379,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, con
  
 	send(m_client, message);
 
-	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r);
+	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
 }
