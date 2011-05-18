@@ -60,6 +60,7 @@ class NetworkPluginServer {
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
+		void handleRoomLeft(User *user, const std::string &room);
 		void handleUserReadyToConnect(User *user);
 		void handleUserDestroyed(User *user);
 

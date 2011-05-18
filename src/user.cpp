@@ -86,7 +86,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	if (isMUC) {
 		std::cout << "AAAAAAAAA\n";
-		onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
+		if (presence->getType() == Swift::Presence::Unavailable) {
+			onRoomLeft(presence->getTo().getNode());
+		}
+		else {
+			onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
+		}
 		return;
 	}
 

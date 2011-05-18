@@ -56,6 +56,13 @@ class IRCNetworkPlugin : public NetworkPlugin {
 			handleRoomChanged(user, room, m_sessions[user]->nick().toStdString());
 		}
 
+		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
+			std::cout << "PART\n";
+			if (m_sessions[user] == NULL)
+				return;
+			m_sessions[user]->part(QString::fromStdString(room));
+		}
+
 		std::map<std::string, MyIrcSession *> m_sessions;
 
 	private:

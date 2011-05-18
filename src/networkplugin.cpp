@@ -196,6 +196,16 @@ void NetworkPlugin::handleJoinRoomPayload(const std::string &data) {
 	handleJoinRoomRequest(payload.username(), payload.room(), payload.nickname(), payload.password());
 }
 
+void NetworkPlugin::handleLeaveRoomPayload(const std::string &data) {
+	pbnetwork::Room payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleLeaveRoomRequest(payload.username(), payload.room());
+}
+
 void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 	long expected_size = 0;
 	m_data += data.toString();
@@ -235,6 +245,9 @@ void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM:
 				handleJoinRoomPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM:
+				handleLeaveRoomPayload(wrapper.payload());
 				break;
 			default:
 				return;

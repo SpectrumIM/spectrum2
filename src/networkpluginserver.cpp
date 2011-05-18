@@ -342,6 +342,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 // 	UserInfo userInfo = user->getUserInfo();
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
+	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
@@ -379,6 +380,30 @@ void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, con
 	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
+}
+
+void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
+	UserInfo userInfo = user->getUserInfo();
+
+	pbnetwork::Room room;
+	room.set_username(user->getJID().toBare());
+	room.set_nickname("");
+	room.set_room(r);
+	room.set_password("");
+
+	std::string message;
+	room.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM);
+ 
+	send(m_client, message);
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(r);
+	if (!conv) {
+		return;
+	}
+
+	delete conv;
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {
