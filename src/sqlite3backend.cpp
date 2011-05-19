@@ -87,6 +87,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_getBuddiesSettings);
 		FINALIZE_STMT(m_getUserSetting);
 		FINALIZE_STMT(m_setUserSetting);
+		FINALIZE_STMT(m_updateUserSetting);
 		sqlite3_close(m_db);
 	}
 }
@@ -114,6 +115,7 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
+	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
 
 	return true;
 }
@@ -375,6 +377,14 @@ void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &t
 		type = GET_INT(m_getUserSetting);
 		value = GET_STR(m_getUserSetting);
 	}
+}
+
+void SQLite3Backend::updateUserSetting(long id, const std::string &variable, const std::string &value) {
+	BEGIN(m_updateUserSetting);
+	BIND_STR(m_updateUserSetting, value);
+	BIND_INT(m_updateUserSetting, id);
+	BIND_STR(m_updateUserSetting, variable);
+	EXECUTE_STATEMENT(m_updateUserSetting, "m_updateUserSetting");
 }
 
 void SQLite3Backend::beginTransaction() {
