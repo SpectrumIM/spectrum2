@@ -84,6 +84,8 @@ class SQLite3Backend : public StorageBackend
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
 		void removeBuddy(long id) {}
 
+		void getUserSetting(long userId, const std::string &variable, int &type, std::string &value);
+
 		void beginTransaction();
 		void commitTransaction();
 
@@ -97,6 +99,8 @@ class SQLite3Backend : public StorageBackend
 		// statements
 		sqlite3_stmt *m_setUser;
 		sqlite3_stmt *m_getUser;
+		sqlite3_stmt *m_getUserSetting;
+		sqlite3_stmt *m_setUserSetting;
 		sqlite3_stmt *m_removeUser;
 		sqlite3_stmt *m_removeUserBuddies;
 		sqlite3_stmt *m_removeUserSettings;

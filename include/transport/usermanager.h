@@ -29,6 +29,7 @@ namespace Transport {
 class User;
 class Component;
 class StorageBackend;
+class StorageResponder;
 
 /// Manages online XMPP Users.
 
@@ -80,6 +81,7 @@ class UserManager {
 		std::map<std::string, User *> m_users;
 		Component *m_component;
 		StorageBackend *m_storageBackend;
+		StorageResponder *m_storageResponder;
 };
 
 }

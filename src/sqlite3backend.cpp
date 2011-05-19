@@ -85,6 +85,8 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_updateBuddy);
 		FINALIZE_STMT(m_getBuddies);
 		FINALIZE_STMT(m_getBuddiesSettings);
+		FINALIZE_STMT(m_getUserSetting);
+		FINALIZE_STMT(m_setUserSetting);
 		sqlite3_close(m_db);
 	}
 }
@@ -110,6 +112,8 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
 	PREP_STMT(m_getBuddies, "SELECT id uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
+	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
+	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
 
 	return true;
 }
@@ -157,7 +161,7 @@ bool SQLite3Backend::createDatabase() {
 					"  user_id int(10) NOT NULL,"
 					"  var varchar(50) NOT NULL,"
 					"  type int(4) NOT NULL,"
-					"  value varchar(255) NOT NULL,"
+					"  value varchar(4095) NOT NULL,"
 					"  PRIMARY KEY (user_id, var)"
 					");");
 					
@@ -353,6 +357,24 @@ bool SQLite3Backend::removeUser(long id) {
 	}
 
 	return true;
+}
+
+void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {
+	BEGIN(m_getUserSetting);
+	BIND_INT(m_getUserSetting, id);
+	BIND_STR(m_getUserSetting, variable);
+	if(sqlite3_step(m_setUser) != SQLITE_ROW) {
+		BEGIN(m_setUserSetting);
+		BIND_INT(m_setUserSetting, id);
+		BIND_STR(m_setUserSetting, variable);
+		BIND_INT(m_setUserSetting, type);
+		BIND_STR(m_setUserSetting, value);
+		EXECUTE_STATEMENT(m_setUserSetting, "m_setUserSetting");
+	}
+	else {
+		type = GET_INT(m_getUserSetting);
+		value = GET_STR(m_getUserSetting);
+	}
 }
 
 void SQLite3Backend::beginTransaction() {
