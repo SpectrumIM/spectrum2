@@ -78,15 +78,21 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 	}
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, int flag, const std::string &newname) {
+void Conversation::handleParticipantChanged(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
 	std::string nickname = nick;
-	if (nickname.find("@") == 0) {
-		nickname = nickname.substr(1);
-	}
 	Swift::Presence::ref presence = Swift::Presence::create();
  	presence->setFrom(Swift::JID(m_legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 	presence->setTo(m_conversationManager->getUser()->getJID().toString());
 	presence->setType(Swift::Presence::Available);
+
+	if (!statusMessage.empty())
+		presence->setStatus(statusMessage);
+
+	Swift::StatusShow s((Swift::StatusShow::Type) status);
+
+	if (s.getType() == Swift::StatusShow::None)
+		presence->setType(Swift::Presence::Unavailable);
+	presence->setShow(s.getType());
 
 	Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
 	if (m_nickname == nickname) {
@@ -95,18 +101,28 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, c
 		p->addStatusCode(c);
 	}
 
+	
 	Swift::MUCUserPayload::Item item(Swift::MUCOccupant::Member, Swift::MUCOccupant::Participant);
+
+	if (flag & Moderator) {
+		item = Swift::MUCUserPayload::Item(Swift::MUCOccupant::Admin, Swift::MUCOccupant::Moderator);
+	}
+
 	if (!newname.empty()) {
 		item.nick = newname;
 		Swift::MUCUserPayload::StatusCode c;
 		c.code = 303;
 		p->addStatusCode(c);
+		presence->setType(Swift::Presence::Unavailable);
 	}
 
 	p->addItem(item);
 
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 	m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	if (!newname.empty()) {
+		handleParticipantChanged(newname, flag, status, statusMessage);
+	}
 }
 
 }

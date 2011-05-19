@@ -11,6 +11,7 @@
 #include "session.h"
 #include <QtCore>
 #include <iostream>
+#include "Swiften/Elements/StatusShow.h"
 
 MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent) : Irc::Session(parent)
 {
@@ -48,6 +49,7 @@ MyIrcBuffer::MyIrcBuffer(const QString& receiver, const std::string &user, Netwo
 {
 	this->np = np;
 	this->user = user;
+	p = (MyIrcSession *) parent;
     connect(this, SIGNAL(receiverChanged(QString)), SLOT(on_receiverChanged(QString)));
     connect(this, SIGNAL(joined(QString)), SLOT(on_joined(QString)));
     connect(this, SIGNAL(parted(QString, QString)), SLOT(on_parted(QString, QString)));
@@ -76,14 +78,30 @@ void MyIrcBuffer::on_receiverChanged(const QString& receiver)
     qDebug() << "receiver changed:" << receiver;
 }
 
-void MyIrcBuffer::on_joined(const QString& origin) {
-	qDebug() << "joined:" << receiver() << origin;
-	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString(), 0);
+int MyIrcBuffer::correctNickname(std::string &nickname) {
+	int flags = 0;
+	switch(nickname.at(0)) {
+		case '@': nickname = nickname.substr(1); flags = 1; break;
+		case '+': nickname = nickname.substr(1); break;
+		default: break;
+	}
+	return flags;
 }
 
-void MyIrcBuffer::on_parted(const QString& origin, const QString& message)
-{
-    qDebug() << "parted:" << receiver() << origin << message;
+void MyIrcBuffer::on_joined(const QString& origin) {
+	qDebug() << "joined:" << receiver() << origin;
+	int flags = 0;
+	std::string nickname = origin.toStdString();
+	flags = correctNickname(nickname);
+	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString(), flags, Swift::StatusShow::Online);
+}
+
+void MyIrcBuffer::on_parted(const QString& origin, const QString& message) {
+	qDebug() << "parted:" << receiver() << origin << message;
+	int flags = 0;
+	std::string nickname = origin.toStdString();
+	flags = correctNickname(nickname);
+	np->handleParticipantChanged(user, nickname, receiver().toStdString(), flags, Swift::StatusShow::None, message.toStdString());
 }
 
 void MyIrcBuffer::on_quit(const QString& origin, const QString& message)
@@ -93,12 +111,24 @@ void MyIrcBuffer::on_quit(const QString& origin, const QString& message)
 
 void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick) {
 	qDebug() << "nick changed:" << receiver() << origin << nick;
-	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString(), 0, nick.toStdString());
+	std::string nickname = origin.toStdString();
+	int flags = p->m_modes[receiver().toStdString() + nickname];
+	std::cout << receiver().toStdString() + nickname << " " << flags <<  "\n";
+	np->handleParticipantChanged(user, nickname, receiver().toStdString(), flags, Swift::StatusShow::Online, "", nick.toStdString());
 }
 
-void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, const QString& args)
-{
-    qDebug() << "mode changed:" << receiver() << origin << mode << args;
+void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, const QString& args) {
+	// mode changed: "#testik" "HanzZ" "+o" "hanzz_k" 
+	qDebug() << "mode changed:" << receiver() << origin << mode << args;
+	std::string nickname = args.toStdString();
+	if (mode == "+o") {
+		p->m_modes[receiver().toStdString() + nickname] = 1;
+	}
+	else {
+		p->m_modes[receiver().toStdString() + nickname] = 0;
+	}
+	int flags = p->m_modes[receiver().toStdString() + nickname];
+	np->handleParticipantChanged(user, nickname, receiver().toStdString(), flags, Swift::StatusShow::Online, "");
 }
 
 void MyIrcBuffer::on_topicChanged(const QString& origin, const QString& topic)
@@ -155,7 +185,12 @@ void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, co
 			QStringList members = params.value(3).split(" ");
 
 			for (int i = 0; i < members.size(); i++) {
-				np->handleParticipantChanged(user, members.at(i).toStdString(), channel.toStdString(), 0);
+				int flags = 0;
+				std::string nickname = members.at(i).toStdString();
+				flags = correctNickname(nickname);
+				p->m_modes[channel.toStdString() + nickname] = flags;
+				std::cout << channel.toStdString() + nickname << " " << flags << "\n";
+				np->handleParticipantChanged(user, nickname, channel.toStdString(), flags, Swift::StatusShow::Online);
 			}
 			break;
 	}

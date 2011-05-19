@@ -23,6 +23,7 @@ class MyIrcSession : public Irc::Session
 
 public:
     MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent = 0);
+	std::map<std::string, int> m_modes;
 
 protected Q_SLOTS:
     void on_connected();
@@ -45,6 +46,7 @@ public:
     MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, Irc::Session* parent);
 	NetworkPlugin *np;
 	std::string user;
+	MyIrcSession *p;
 
 protected Q_SLOTS:
     void on_receiverChanged(const QString& receiver);
@@ -63,6 +65,8 @@ protected Q_SLOTS:
     void on_ctcpActionReceived(const QString& origin, const QString& action, Irc::Buffer::MessageFlags flags);
     void on_numericMessageReceived(const QString& origin, uint code, const QStringList& params);
     void on_unknownMessageReceived(const QString& origin, const QStringList& params);
+
+	int correctNickname(std::string &nickname);
 };
 
 #endif // SESSION_H

@@ -105,13 +105,15 @@ void NetworkPlugin::handleDisconnected(const std::string &user, const std::strin
 	send(message);
 }
 
-void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, const std::string &newname) {
+void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, int status, const std::string &statusMessage, const std::string &newname) {
 	pbnetwork::Participant d;
 	d.set_username(user);
 	d.set_nickname(nickname);
 	d.set_room(room);
 	d.set_flag(flags);
 	d.set_newname(newname);
+	d.set_status(status);
+	d.set_statusmessage(statusMessage);
 
 	std::string message;
 	d.SerializeToString(&message);

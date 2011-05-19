@@ -90,6 +90,11 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			onRoomLeft(presence->getTo().getNode());
 		}
 		else {
+			// force connection to legacy network to let backend to handle auto-join on connect.
+			if (!m_readyForConnect) {
+				m_readyForConnect = true;
+				onReadyToConnect();
+			}
 			onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
 		}
 		return;

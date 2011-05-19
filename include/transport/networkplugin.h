@@ -44,7 +44,7 @@ class NetworkPlugin {
 			const std::string &groups, int status, const std::string &statusMessage = "", const std::string &iconHash = ""
 		);
 
-		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, const std::string &newname = "");
+		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
 
 		void handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &message);
 

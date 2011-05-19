@@ -65,6 +65,7 @@ class IRCNetworkPlugin : public NetworkPlugin {
 			if (m_sessions[user] == NULL)
 				return;
 			m_sessions[user]->part(QString::fromStdString(room));
+			m_sessions[user]->removeAutoJoinChannel(QString::fromStdString(room));
 		}
 
 		std::map<std::string, MyIrcSession *> m_sessions;

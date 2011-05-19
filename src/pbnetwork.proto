@@ -52,7 +52,9 @@ message Participant {
 	required string room = 2;
 	required string nickname = 3;
 	required int32 flag = 4;
-	optional string newname = 5;
+	required int32 status = 5;
+	optional string statusMessage = 6;
+	optional string newname = 7;
 }
 
 message WrapperMessage {
@@ -69,8 +71,7 @@ message WrapperMessage {
 		TYPE_JOIN_ROOM				= 11;
 		TYPE_LEAVE_ROOM				= 12;
 		TYPE_PARTICIPANT_CHANGED	= 13;
-		TYPE_PARTICIPANT_LEFT		= 14;
-		TYPE_ROOM_NICKNAME_CHANGED	= 15;
+		TYPE_ROOM_NICKNAME_CHANGED	= 14;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
