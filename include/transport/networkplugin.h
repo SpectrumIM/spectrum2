@@ -50,6 +50,8 @@ class NetworkPlugin {
 
 		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
 
+		void handleSubject(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
+
 		void handleRoomChanged(const std::string &user, const std::string &room, const std::string &nickname);
 
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;

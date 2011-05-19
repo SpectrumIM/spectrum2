@@ -54,7 +54,7 @@ class NetworkPluginServer {
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
 		void handleBuddyChangedPayload(const std::string &payload);
-		void handleConvMessagePayload(const std::string &payload);
+		void handleConvMessagePayload(const std::string &payload, bool subject = false);
 		void handleParticipantChangedPayload(const std::string &payload);
 		void handleRoomChangedPayload(const std::string &payload);
 

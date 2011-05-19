@@ -71,6 +71,22 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	send(message);
 }
 
+void NetworkPlugin::handleSubject(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname) {
+	pbnetwork::ConversationMessage m;
+	m.set_username(user);
+	m.set_buddyname(legacyName);
+	m.set_message(msg);
+	m.set_nickname(nickname);
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED);
+// 	std::cout << "SENDING MESSAGE\n";
+
+	send(message);
+}
+
 void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
 			const std::string &groups, int status, const std::string &statusMessage, const std::string &iconHash) {
 	pbnetwork::Buddy buddy;

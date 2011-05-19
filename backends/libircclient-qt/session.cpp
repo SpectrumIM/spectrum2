@@ -131,9 +131,10 @@ void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, con
 	np->handleParticipantChanged(user, nickname, receiver().toStdString(), flags, Swift::StatusShow::Online, "");
 }
 
-void MyIrcBuffer::on_topicChanged(const QString& origin, const QString& topic)
-{
-    qDebug() << "topic changed:" << receiver() << origin << topic;
+void MyIrcBuffer::on_topicChanged(const QString& origin, const QString& topic) {
+	//topic changed: "#testik" "HanzZ" "test"
+	qDebug() << "topic changed:" << receiver() << origin << topic;
+	np->handleSubject(user, receiver().toStdString(), topic.toStdString(), origin.toStdString());
 }
 
 void MyIrcBuffer::on_invited(const QString& origin, const QString& receiver, const QString& channel)
@@ -180,6 +181,12 @@ void MyIrcBuffer::on_ctcpActionReceived(const QString& origin, const QString& ac
 void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, const QStringList& params)
 {
 	switch (code) {
+		case 332:
+			m_topicData = params.value(2).toStdString();
+			break;
+		case 333:
+			np->handleSubject(user, params.value(1).toStdString(), m_topicData, params.value(2).toStdString());
+			break;
 		case 353:
 			QString channel = params.value(2);
 			QStringList members = params.value(3).split(" ");

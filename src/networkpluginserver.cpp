@@ -243,7 +243,7 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 	conv->setNickname(payload.nickname());
 }
 
-void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
+void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool subject) {
 	pbnetwork::ConversationMessage payload;
 // 	std::cout << "payload...\n";
 	if (payload.ParseFromString(data) == false) {
@@ -256,7 +256,12 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data) {
 		return;
 
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->setBody(payload.message());
+	if (subject) {
+		msg->setSubject(payload.message());
+	}
+	else {
+		msg->setBody(payload.message());
+	}
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
@@ -305,6 +310,9 @@ void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c,
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE:
 				handleConvMessagePayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED:
+				handleConvMessagePayload(wrapper.payload(), true);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
 				m_pongReceived = true;

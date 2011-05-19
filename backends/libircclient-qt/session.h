@@ -47,6 +47,7 @@ public:
 	NetworkPlugin *np;
 	std::string user;
 	MyIrcSession *p;
+	std::string m_topicData;
 
 protected Q_SLOTS:
     void on_receiverChanged(const QString& receiver);

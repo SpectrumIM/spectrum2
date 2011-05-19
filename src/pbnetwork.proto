@@ -72,6 +72,7 @@ message WrapperMessage {
 		TYPE_LEAVE_ROOM				= 12;
 		TYPE_PARTICIPANT_CHANGED	= 13;
 		TYPE_ROOM_NICKNAME_CHANGED	= 14;
+		TYPE_ROOM_SUBJECT_CHANGED	= 15;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
