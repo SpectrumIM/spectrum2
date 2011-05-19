@@ -39,6 +39,7 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router) : Swift::GetResp
 	std::list<std::string> features;
 	features.push_back("jabber:iq:register");
 	features.push_back("jabber:iq:gateway");
+	features.push_back("jabber:iq:private");
 	features.push_back("http://jabber.org/protocol/disco#info");
 	features.push_back("http://jabber.org/protocol/commands");
 	setTransportFeatures(features);
