@@ -109,6 +109,7 @@ class StorageBackend
 		virtual void removeBuddy(long id) = 0;
 
 		virtual void getUserSetting(long userId, const std::string &variable, int &type, std::string &value) = 0;
+		virtual void updateUserSetting(long userId, const std::string &variable, const std::string &value) = 0;
 
 		virtual void beginTransaction() = 0;
 		virtual void commitTransaction() = 0;

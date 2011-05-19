@@ -43,7 +43,7 @@
 	
 #define BEGIN(STATEMENT) 	sqlite3_reset(m_addBuddy);\
 							int STATEMENT##_id = 1;\
-							int STATEMENT##_id_get = -1;\
+							int STATEMENT##_id_get = 0;\
 							(void)STATEMENT##_id_get;
 
 #define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE)
@@ -365,7 +365,7 @@ void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &t
 	BEGIN(m_getUserSetting);
 	BIND_INT(m_getUserSetting, id);
 	BIND_STR(m_getUserSetting, variable);
-	if(sqlite3_step(m_setUser) != SQLITE_ROW) {
+	if(sqlite3_step(m_getUserSetting) != SQLITE_ROW) {
 		BEGIN(m_setUserSetting);
 		BIND_INT(m_setUserSetting, id);
 		BIND_STR(m_setUserSetting, variable);

@@ -23,6 +23,7 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
+#include "Swiften/Elements/RawXMLPayload.h"
 #include "Swiften/Swiften.h"
 #include "transport/usermanager.h"
 #include "transport/user.h"
@@ -32,7 +33,7 @@ using namespace boost;
 
 namespace Transport {
 
-StorageResponder::StorageResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::GetResponder<PrivateStorage>(router) {
+StorageResponder::StorageResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::Responder<PrivateStorage>(router) {
 	m_storageBackend = storageBackend;
 	m_userManager = userManager;
 }
@@ -43,14 +44,30 @@ StorageResponder::~StorageResponder() {
 bool StorageResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		sendResponse(from, id, boost::shared_ptr<PrivateStorage>(new PrivateStorage()));
+		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
 		return true;
 	}
 
 	int type = 0;
 	std::string value = "";
 	m_storageBackend->getUserSetting(user->getUserInfo().id, "storage", type, value);
-	sendResponse(from, id, boost::shared_ptr<PrivateStorage>(new PrivateStorage()));
+	std::cout << value << "\n";
+
+	sendResponse(from, id, boost::shared_ptr<PrivateStorage>(new PrivateStorage(boost::shared_ptr<RawXMLPayload>(new RawXMLPayload(value)))));
+	return true;
+}
+
+bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload) {
+	User *user = m_userManager->getUser(from.toBare().toString());
+	if (!user) {
+		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
+		return true;
+	}
+
+	StorageSerializer serializer;
+	std::string value = serializer.serializePayload(boost::dynamic_pointer_cast<Storage>(payload->getPayload()));
+	m_storageBackend->updateUserSetting(user->getUserInfo().id, "storage", value);
+	sendResponse(from, id, boost::shared_ptr<PrivateStorage>());
 	return true;
 }
 

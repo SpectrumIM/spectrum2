@@ -25,6 +25,7 @@
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "rosterresponder.h"
+#include "storageparser.h"
 
 using namespace Swift;
 using namespace boost;
@@ -64,6 +65,8 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
+
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
 
 		m_server->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
 		m_server->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));

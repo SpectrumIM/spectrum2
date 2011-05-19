@@ -22,7 +22,7 @@
 
 #include <vector>
 #include "Swiften/Swiften.h"
-#include "Swiften/Queries/GetResponder.h"
+#include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/RosterPayload.h"
 
 namespace Transport {
@@ -30,13 +30,14 @@ namespace Transport {
 class StorageBackend;
 class UserManager;
 
-class StorageResponder : public Swift::GetResponder<Swift::PrivateStorage> {
+class StorageResponder : public Swift::Responder<Swift::PrivateStorage> {
 	public:
 		StorageResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager);
 		~StorageResponder();
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload);
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
 };
