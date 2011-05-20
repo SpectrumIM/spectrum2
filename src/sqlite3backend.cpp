@@ -41,7 +41,7 @@
 		sqlite3_finalize(prep); \
 	}
 	
-#define BEGIN(STATEMENT) 	sqlite3_reset(m_addBuddy);\
+#define BEGIN(STATEMENT) 	sqlite3_reset(STATEMENT);\
 							int STATEMENT##_id = 1;\
 							int STATEMENT##_id_get = 0;\
 							(void)STATEMENT##_id_get;
