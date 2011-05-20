@@ -107,6 +107,7 @@ void MyIrcBuffer::on_parted(const QString& origin, const QString& message) {
 void MyIrcBuffer::on_quit(const QString& origin, const QString& message)
 {
     qDebug() << "quit:" << receiver() << origin << message;
+	on_parted(origin, message);
 }
 
 void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick) {
