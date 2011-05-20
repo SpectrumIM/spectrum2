@@ -30,7 +30,7 @@ find_path(GLIB2_INTERNAL_INCLUDE_DIR glibconfig.h
 if(GLIB2_THREAD)
 	set(GLIB2_LIBRARIES ${GLIB2_LIBRARIES} ${GLIB2_THREAD})
 else(GLIB2_THREAD)
-	message( FATAL_ERROR "Could NOT find gthread-2.0" )
+	message( STATUS "Could NOT find gthread-2.0" )
 endif(GLIB2_THREAD)
 
 

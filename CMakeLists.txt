@@ -13,7 +13,7 @@ set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(purple)
 
 set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(glib REQUIRED)
+find_package(glib)
 
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
