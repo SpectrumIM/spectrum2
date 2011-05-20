@@ -121,6 +121,8 @@ void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, con
 	// mode changed: "#testik" "HanzZ" "+o" "hanzz_k" 
 	qDebug() << "mode changed:" << receiver() << origin << mode << args;
 	std::string nickname = args.toStdString();
+	if (nickname.empty())
+		return;
 	if (mode == "+o") {
 		p->m_modes[receiver().toStdString() + nickname] = 1;
 	}
