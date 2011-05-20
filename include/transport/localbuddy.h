@@ -22,9 +22,6 @@
 #define SPECTRUM_BUDDY_H
 
 #include <string>
-#include "purple.h"
-#include "account.h"
-#include "glib.h"
 #include <algorithm>
 #include "transport/buddy.h"
 #include "transport/rostermanager.h"
