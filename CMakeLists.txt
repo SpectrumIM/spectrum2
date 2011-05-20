@@ -10,7 +10,7 @@ set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(sqlite3)
 
 set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(purple REQUIRED)
+find_package(purple)
 
 set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(glib REQUIRED)
