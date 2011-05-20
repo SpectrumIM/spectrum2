@@ -365,7 +365,7 @@ void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &t
 	BEGIN(m_getUserSetting);
 	BIND_INT(m_getUserSetting, id);
 	BIND_STR(m_getUserSetting, variable);
-	if(sqlite3_step(m_getUserSetting) != SQLITE_ROW) {
+	if(sqlite3_step(m_getUserSetting) != SQLITE_DONE) {
 		BEGIN(m_setUserSetting);
 		BIND_INT(m_setUserSetting, id);
 		BIND_STR(m_setUserSetting, variable);
