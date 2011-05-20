@@ -6,5 +6,5 @@ ADD_EXECUTABLE(spectrum ${SRC})
 ADD_DEPENDENCIES(spectrum libpurple_backend)
 ADD_DEPENDENCIES(spectrum libircclient-qt_backend)
 
-target_link_libraries(spectrum ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport)
+target_link_libraries(spectrum transport)
 
