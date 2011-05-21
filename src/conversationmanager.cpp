@@ -36,6 +36,9 @@ ConversationManager::ConversationManager(User *user, Component *component){
 }
 
 ConversationManager::~ConversationManager() {
+	while(!m_convs.empty()) {
+		delete (*m_convs.begin()).second;
+	}
 }
 
 void ConversationManager::setConversation(Conversation *conv) {
