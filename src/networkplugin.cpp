@@ -41,13 +41,14 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 	m_factories = new Swift::BoostNetworkFactories(loop);
 	m_host = host;
 	m_port = port;
+	m_pingReceived = false;
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
 	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::handleConnected, this, _1));
 	m_conn->onDisconnected.connect(boost::bind(&NetworkPlugin::handleDisconnected, this));
 
-	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(1000);
-	m_reconnectTimer->onTick.connect(boost::bind(&NetworkPlugin::connect, this)); 
+	m_pingTimer = m_factories->getTimerFactory()->createTimer(30000);
+	m_pingTimer->onTick.connect(boost::bind(&NetworkPlugin::pingTimeout, this)); 
 	connect();
 }
 
@@ -156,26 +157,25 @@ void NetworkPlugin::handleRoomChanged(const std::string &user, const std::string
 
 void NetworkPlugin::handleConnected(bool error) {
 	if (error) {
-		std::cout << "Connecting error\n";
-// 		m_reconnectTimer->start();
+		std::cerr << "Connecting error\n";
+		m_pingTimer->stop();
 		exit(1);
 	}
 	else {
 		std::cout << "Connected\n";
-		m_reconnectTimer->stop();
+		m_pingTimer->start();
 	}
 }
 
 void NetworkPlugin::handleDisconnected() {
-	std::cout << "Disconnected\n";
-// 	m_reconnectTimer->start();
+	std::cerr << "Disconnected\n";
+	m_pingTimer->stop();
 	exit(1);
 }
 
 void NetworkPlugin::connect() {
 	std::cout << "Trying to connect the server\n";
 	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(m_host), m_port));
-	m_reconnectTimer->stop();
 }
 
 void NetworkPlugin::handleLoginPayload(const std::string &data) {
@@ -288,6 +288,7 @@ void NetworkPlugin::send(const std::string &data) {
 }
 
 void NetworkPlugin::sendPong() {
+	m_pingReceived = true;
 	std::string message;
 	pbnetwork::WrapperMessage wrap;
 	wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_PONG);
@@ -295,6 +296,13 @@ void NetworkPlugin::sendPong() {
 
 	send(message);
 // 	std::cout << "SENDING PONG\n";
+}
+
+void NetworkPlugin::pingTimeout() {
+	if (m_pingReceived == false) {
+		exit(1);
+	}
+	m_pingReceived = false;
 }
 
 }
