@@ -299,10 +299,12 @@ void NetworkPlugin::sendPong() {
 }
 
 void NetworkPlugin::pingTimeout() {
+	std::cout << "PINGTIMEOUT " << m_pingReceived << " " << this << "\n";
 	if (m_pingReceived == false) {
 		exit(1);
 	}
 	m_pingReceived = false;
+	m_pingTimer->start();
 }
 
 }
