@@ -44,6 +44,7 @@ class NetworkPluginServer {
 			bool pongReceived;
 			std::list<User *> users;
 			std::string data;
+			boost::shared_ptr<Swift::Connection> connection;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
@@ -54,8 +55,8 @@ class NetworkPluginServer {
 
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
-		void handleSessionFinished(boost::shared_ptr<Swift::Connection>);
-		void handleDataRead(boost::shared_ptr<Swift::Connection>, const Swift::ByteArray&);
+		void handleSessionFinished(Client *c);
+		void handleDataRead(Client *c, const Swift::ByteArray&);
 
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
@@ -73,13 +74,13 @@ class NetworkPluginServer {
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
-		void sendPing(boost::shared_ptr<Swift::Connection> c);
-		boost::shared_ptr<Swift::Connection> getFreeClient();
+		void sendPing(Client *c);
+		Client *getFreeClient();
 
 		UserManager *m_userManager;
 		Config *m_config;
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
-		std::map<boost::shared_ptr<Swift::Connection>, Client >  m_clients;
+		std::list<Client *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
 };
 

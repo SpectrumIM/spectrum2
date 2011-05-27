@@ -126,27 +126,30 @@ NetworkPluginServer::~NetworkPluginServer() {
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
-	Client client;
-	client.pongReceived = true;
+	Client *client = new Client;
+	client->pongReceived = true;
+	client->connection = c;
 
-	m_clients[c] = client;
+	m_clients.push_back(client);
 
-	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, c));
-	c->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, c, _1));
-	sendPing(c);
+	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, client));
+	c->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, client, _1));
+	sendPing(client);
 	m_pingTimer->start();
 }
 
-void NetworkPluginServer::handleSessionFinished(boost::shared_ptr<Swift::Connection> c) {
-	for (std::list<User *>::const_iterator it = m_clients[c].users.begin(); it != m_clients[c].users.end(); it++) {
+void NetworkPluginServer::handleSessionFinished(Client *c) {
+	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
+		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
 
-	m_clients.erase(c);
+	m_clients.remove(c);
+	delete c;
 
 	// Execute new session only if there's no free one after this crash/disconnection
-	for (std::map<boost::shared_ptr<Swift::Connection>, Client>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it).second.users.size() < 1) {
+	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		if ((*it)->users.size() < 1) {
 			return;
 		}
 	}
@@ -277,25 +280,25 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	conv->handleMessage(msg, payload.nickname());
 }
 
-void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c, const Swift::ByteArray &data) {
+void NetworkPluginServer::handleDataRead(Client *c, const Swift::ByteArray &data) {
 	long expected_size = 0;
-	m_clients[c].data += data.toString();
+	c->data += data.toString();
 // 	std::cout << "received data; size = " << m_data.size() << "\n";
-	while (m_clients[c].data.size() != 0) {
-		if (m_clients[c].data.size() >= 4) {
-			unsigned char * head = (unsigned char*) m_clients[c].data.c_str();
+	while (c->data.size() != 0) {
+		if (c->data.size() >= 4) {
+			unsigned char * head = (unsigned char*) c->data.c_str();
 			expected_size = (((((*head << 8) | *(head + 1)) << 8) | *(head + 2)) << 8) | *(head + 3);
 			//expected_size = m_data[0];
 // 			std::cout << "expected_size=" << expected_size << "\n";
-			if (m_clients[c].data.size() - 4 < expected_size)
+			if (c->data.size() - 4 < expected_size)
 				return;
 		}
 		else {
 			return;
 		}
 
-		std::string msg = m_clients[c].data.substr(4, expected_size);
-		m_clients[c].data.erase(0, 4 + expected_size);
+		std::string msg = c->data.substr(4, expected_size);
+		c->data.erase(0, 4 + expected_size);
 
 		pbnetwork::WrapperMessage wrapper;
 		if (wrapper.ParseFromString(msg) == false) {
@@ -320,7 +323,7 @@ void NetworkPluginServer::handleDataRead(boost::shared_ptr<Swift::Connection> c,
 				handleConvMessagePayload(wrapper.payload(), true);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
-				m_clients[c].pongReceived = true;
+				c->pongReceived = true;
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED:
 				handleParticipantChangedPayload(wrapper.payload());
@@ -344,9 +347,9 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 
 void NetworkPluginServer::pingTimeout() {
 	std::cout << "pingtimeout\n";
-	for (std::map<boost::shared_ptr<Swift::Connection>, Client>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it).second.pongReceived) {
-			sendPing((*it).first);
+	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		if ((*it)->pongReceived) {
+			sendPing((*it));
 			m_pingTimer->start();
 		}
 		else {
@@ -356,8 +359,9 @@ void NetworkPluginServer::pingTimeout() {
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {
-	user->connection = getFreeClient();
-	m_clients[user->connection].users.push_back(user);
+	Client *c = getFreeClient();
+	user->setData(c);
+	c->users.push_back(user);
 
 // 	UserInfo userInfo = user->getUserInfo();
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
@@ -378,7 +382,8 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGIN);
 
-	send(user->connection, message);
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
 }
 
 void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
@@ -395,7 +400,8 @@ void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, con
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM);
  
-	send(user->connection, message);
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
 
 	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
@@ -416,7 +422,8 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM);
  
-	send(user->connection, message);
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(r);
 	if (!conv) {
@@ -438,14 +445,17 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGOUT);
  
-	send(user->connection, message);
-
-	m_clients[user->connection].users.remove(user);
-	if (m_clients[user->connection].users.size() == 0) {
+	Client *c = (Client *) user->getData();
+	if (!c) {
+		return;
+	}
+	send(c->connection, message);
+	c->users.remove(user);
+	if (c->users.size() == 0) {
 		std::cout << "DISCONNECTING\n";
-		user->connection->disconnect();
-		user->connection.reset();
-		m_clients.erase(user->connection);
+		c->connection->disconnect();
+		c->connection.reset();
+// 		m_clients.erase(user->connection);
 	}
 }
 
@@ -460,31 +470,32 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
 
-	send(conv->getConversationManager()->getUser()->connection, message);
+	Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+	send(c->connection, message);
 }
 
-void NetworkPluginServer::sendPing(boost::shared_ptr<Swift::Connection> c) {
+void NetworkPluginServer::sendPing(Client *c) {
 
 	std::string message;
 	pbnetwork::WrapperMessage wrap;
 	wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_PING);
 	wrap.SerializeToString(&message);
 
-	send(c, message);
-	m_clients[c].pongReceived = false;
+	send(c->connection, message);
+	c->pongReceived = false;
 	std::cout << "SENDING PING\n";
 }
 
-boost::shared_ptr<Swift::Connection> NetworkPluginServer::getFreeClient() {
-	for (std::map<boost::shared_ptr<Swift::Connection>, Client>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it).second.users.size() < 1) {
-			if ((*it).second.users.size() + 1 == 1) {
+NetworkPluginServer::Client *NetworkPluginServer::getFreeClient() {
+	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		if ((*it)->users.size() < 1) {
+			if ((*it)->users.size() + 1 == 1) {
 				exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
 			}
-			return (*it).first;
+			return (*it);
 		}
 	}
-	return boost::shared_ptr<Swift::Connection>(); 
+	return NULL;
 }
 
 }
