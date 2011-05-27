@@ -356,6 +356,9 @@ void NetworkPluginServer::pingTimeout() {
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {
+	user->connection = getFreeClient();
+	m_clients[user->connection].users.push_back(user);
+
 // 	UserInfo userInfo = user->getUserInfo();
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
@@ -374,8 +377,6 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 	login.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGIN);
-	user->connection = getFreeClient();
-	m_clients[user->connection].users.push_back(user);
 
 	send(user->connection, message);
 }
