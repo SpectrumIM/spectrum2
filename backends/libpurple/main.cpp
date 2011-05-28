@@ -14,8 +14,6 @@
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
 #include "spectrumeventloop.h"
-#include "spectrumbuddy.h"
-#include "spectrumconversation.h"
 #include "geventloop.h"
 
 #define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
@@ -34,8 +32,6 @@ static gchar *lock_file = NULL;
 static gchar *host = NULL;
 static int port = 10000;
 static gboolean ver = FALSE;
-static gboolean upgrade_db = FALSE;
-static gboolean check_db_version = FALSE;
 static gboolean list_purple_settings = FALSE;
 
 static GOptionEntry options_entries[] = {
@@ -110,7 +106,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
-			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
@@ -136,14 +131,6 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 	else
 		alias = (std::string) purple_buddy_get_alias(m_buddy);
 	return alias;
-}
-
-static std::string getName(PurpleBuddy *m_buddy) {
-	std::string name(purple_buddy_get_name(m_buddy));
-	if (name.empty()) {
-		Log("getName", "Name is EMPTY!");
-	}
-	return name;
 }
 
 static bool getStatus(PurpleBuddy *m_buddy, Swift::StatusShow &status, std::string &statusMessage) {
@@ -275,18 +262,7 @@ static void buddySignedOff(PurpleBuddy *buddy) {
 static void NodeRemoved(PurpleBlistNode *node, void *data) {
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
 		return;
-	PurpleBuddy *buddy = (PurpleBuddy *) node;
-	
-// 	PurpleAccount *account = purple_buddy_get_account(buddy);
-// 	User *user = (User *) account->ui_data;
-	if (buddy->node.ui_data) {
-		SpectrumBuddy *s_buddy = (SpectrumBuddy *) buddy->node.ui_data;
-		s_buddy->removeBuddy(buddy);
-		buddy->node.ui_data = NULL;
-		if (s_buddy->getBuddiesCount() == 0) {
-			delete s_buddy;
-		}
-	}
+// 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 }
 
 static PurpleBlistUiOps blistUiOps =
@@ -306,29 +282,6 @@ static PurpleBlistUiOps blistUiOps =
 	NULL, //buddyListSaveAccount,
 	NULL
 };
-
-static void conv_new(PurpleConversation *conv) {
-	PurpleAccount *account = purple_conversation_get_account(conv);
-	User *user = (User *) account->ui_data;
-
-	if (!user)
-		return;
-
-	std::string name = purple_conversation_get_name(conv);
-	size_t pos = name.find("/");
-	if (pos != std::string::npos)
-		name.erase((int) pos, name.length() - (int) pos);
-
-	SpectrumConversation *s_conv = new SpectrumConversation(user->getConversationManager(), name, conv);
-	conv->ui_data = s_conv;
-}
-
-static void conv_destroy(PurpleConversation *conv) {
-	SpectrumConversation *s_conv = (SpectrumConversation *) conv->ui_data;
-	if (s_conv) {
-		delete s_conv;
-	}
-}
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *message, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
@@ -459,8 +412,6 @@ static bool initPurple(Config &cfg) {
 
 	ret = purple_core_init("spectrum");
 	if (ret) {
-		static int conversation_handle;
-		static int conn_handle;
 		static int blist_handle;
 
 		purple_set_blist(purple_blist_new());
