@@ -48,6 +48,7 @@
 
 #define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE)
 #define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC)
+#define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
 #define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
 #define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
 #define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
@@ -111,7 +112,7 @@ bool SQLite3Backend::connect() {
 
 	PREP_STMT(m_addBuddy, "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
-	PREP_STMT(m_getBuddies, "SELECT id uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
+	PREP_STMT(m_getBuddies, "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
@@ -261,7 +262,7 @@ void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 }
 
 bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
-// 	"SELECT id, user_id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC"
+//	SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC
 	BEGIN(m_getBuddies);
 	BIND_INT(m_getBuddies, id);
 
@@ -276,6 +277,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	int ret;
 	while((ret = sqlite3_step(m_getBuddies)) == SQLITE_ROW) {
 		BuddyInfo b;
+		RESET_GET_COUNTER(m_getBuddies);
 		b.id = GET_INT(m_getBuddies);
 		b.legacyName = GET_STR(m_getBuddies);
 		b.subscription = GET_STR(m_getBuddies);
@@ -313,10 +315,10 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			}
 		}
 
-		if (ret != SQLITE_DONE) {
-			onStorageError("getBuddiesSettings query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
-			return false;
-		}
+// 		if (ret != SQLITE_DONE) {
+// 			onStorageError("getBuddiesSettings query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+// 			return false;
+// 		}
 
 		roster.push_back(b);
 	}

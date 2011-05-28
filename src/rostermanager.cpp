@@ -39,6 +39,9 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(1000);
 	m_RIETimer = m_component->getFactories()->getTimerFactory()->createTimer(5000);
 	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
+
+	
+
 }
 
 RosterManager::~RosterManager() {
@@ -144,6 +147,16 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 		delete m_rosterStorage;
 	}
 	m_rosterStorage = new RosterStorage(m_user, storageBackend);
+
+	std::list<BuddyInfo> roster;
+	storageBackend->getBuddies(m_user->getUserInfo().id, roster);
+
+	for (std::list<BuddyInfo>::const_iterator it = roster.begin(); it != roster.end(); it++) {
+		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
+		std::cout << "CREATING BUDDY FROM DATABASE CACHE " << buddy->getName() << "\n";
+		m_buddies[buddy->getName()] = buddy;
+		onBuddySet(buddy);
+	}
 }
 
 }

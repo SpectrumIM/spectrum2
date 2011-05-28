@@ -62,7 +62,13 @@ class NetworkFactory : public Factory {
 		}
 
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
-			return new LocalBuddy(rosterManager, -1);
+			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
+			buddy->setAlias(buddyInfo.alias);
+			buddy->setName(buddyInfo.legacyName);
+			buddy->setSubscription(buddyInfo.subscription);
+			buddy->setGroups(buddyInfo.groups);
+			buddy->setFlags((BuddyFlag) buddyInfo.flags);
+			return buddy;
 		}
 	private:
 		NetworkPluginServer *m_nps;

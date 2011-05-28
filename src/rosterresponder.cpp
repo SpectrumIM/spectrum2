@@ -30,7 +30,9 @@ using namespace boost;
 
 namespace Transport {
 
-RosterResponder::RosterResponder(Swift::IQRouter *router) : Swift::GetResponder<RosterPayload>(router) {
+RosterResponder::RosterResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::Responder<RosterPayload>(router) {
+	m_storageBackend = storageBackend;
+	m_userManager = userManager;
 }
 
 RosterResponder::~RosterResponder() {
@@ -39,6 +41,11 @@ RosterResponder::~RosterResponder() {
 bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload) {
 	// Get means we're in server mode and user wants to fetch his roster.
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
+	sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
+	return true;
+}
+
+bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload) {
 	sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
 	return true;
 }

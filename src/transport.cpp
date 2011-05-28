@@ -24,7 +24,6 @@
 #include "transport/factory.h"
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
-#include "rosterresponder.h"
 #include "storageparser.h"
 
 using namespace Swift;
@@ -96,9 +95,6 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
 	m_discoItemsResponder->start();
 
-	m_rosterResponder = new RosterResponder(m_iqRouter);
-	m_rosterResponder->start();
-	
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();
@@ -109,7 +105,6 @@ Component::~Component() {
 	delete m_entityCapsManager;
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
-	delete m_rosterResponder;
 	delete m_discoInfoResponder;
 	if (m_component)
 		delete m_component;
