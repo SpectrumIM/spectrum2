@@ -96,6 +96,7 @@ class User {
 		bool m_connected;
 		bool m_readyForConnect;
 		Swift::Timer::ref m_reconnectTimer;
+		boost::shared_ptr<Swift::Connection> connection;
 };
 
 }

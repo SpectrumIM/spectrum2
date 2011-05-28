@@ -74,6 +74,7 @@ class NetworkPlugin {
 
 		void send(const std::string &data);
 		void sendPong();
+		void pingTimeout();
 
 		std::string m_data;
 		std::string m_host;
@@ -81,7 +82,8 @@ class NetworkPlugin {
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
-		Swift::Timer::ref m_reconnectTimer;
+		Swift::Timer::ref m_pingTimer;
+		bool m_pingReceived;
 
 };
 

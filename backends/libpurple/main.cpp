@@ -74,6 +74,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_accounts_add(account);
 			}
 
+			m_sessions[user] = account;
 			purple_account_set_password(account, password.c_str());
 			purple_account_set_enabled(account, "spectrum", TRUE);
 			
@@ -88,6 +89,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
 			PurpleAccount *account = purple_accounts_find(legacyName.c_str(), protocol);
 			if (account) {
+				m_sessions[user] = NULL;
 				purple_account_set_enabled(account, "spectrum", FALSE);
 
 				// Remove conversations.
@@ -109,8 +111,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
 			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
-			PurpleAccount *account = purple_accounts_find(user.c_str(), protocol);
-			std::cout << user << "\n";
+			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
 				if (!conv) {
@@ -122,6 +123,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 	private:
 		Config *config;
