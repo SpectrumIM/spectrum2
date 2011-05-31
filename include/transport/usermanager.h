@@ -84,6 +84,7 @@ class UserManager {
 		StorageBackend *m_storageBackend;
 		StorageResponder *m_storageResponder;
 		RosterResponder *m_rosterResponder;
+		friend class RosterResponder;
 };
 
 }

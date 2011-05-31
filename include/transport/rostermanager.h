@@ -60,6 +60,8 @@ class RosterManager {
 
 		void setStorageBackend(StorageBackend *storageBackend);
 
+		Swift::RosterPayload::ref generateRosterPayload();
+
 		/// Returns user associated with this roster.
 		/// \return User
 		User *getUser() { return m_user; }

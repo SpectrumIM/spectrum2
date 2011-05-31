@@ -159,4 +159,18 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 	}
 }
 
+Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
+	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+
+	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		Buddy *buddy = (*it).second;
+		Swift::RosterItemPayload item;
+		item.setJID(buddy->getJID().toBare());
+		item.setName(buddy->getAlias());
+		item.setGroups(buddy->getGroups());
+		payload->addItem(item);
+	}
+	return payload;
+}
+
 }

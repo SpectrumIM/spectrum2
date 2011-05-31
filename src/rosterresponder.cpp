@@ -24,6 +24,9 @@
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Swiften.h"
+#include "transport/user.h"
+#include "transport/usermanager.h"
+#include "transport/rostermanager.h"
 
 using namespace Swift;
 using namespace boost;
@@ -41,7 +44,25 @@ RosterResponder::~RosterResponder() {
 bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload) {
 	// Get means we're in server mode and user wants to fetch his roster.
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
-	sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
+	User *user = m_userManager->getUser(from.toBare().toString());
+	if (!user) {
+		// Client can send jabber:iq:roster IQ before presence, so we do little hack here to
+		// trigger logging in.
+		// UserManager should create user now, if everything is OK.
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(to);
+		response->setFrom(from);
+		response->setType(Swift::Presence::Available);
+		m_userManager->handlePresence(response);
+
+		// if it's not created, lets finish this get
+		user = m_userManager->getUser(from.toBare().toString());
+		if (!user) {
+			sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
+			return true;
+		}
+	}
+	sendResponse(from, id, user->getRosterManager()->generateRosterPayload());
 	return true;
 }
 

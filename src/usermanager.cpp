@@ -88,7 +88,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	std::string userkey = presence->getFrom().toBare().toString();
 
 	User *user = getUser(userkey);
-	if (!user ) {
+	if (!user) {
 		// No user and unavailable presence -> answer with unavailable
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			Swift::Presence::ref response = Swift::Presence::create();
