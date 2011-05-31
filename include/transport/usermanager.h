@@ -31,6 +31,7 @@ class Component;
 class StorageBackend;
 class StorageResponder;
 class RosterResponder;
+class VCardResponder;
 
 /// Manages online XMPP Users.
 
@@ -84,6 +85,7 @@ class UserManager {
 		StorageBackend *m_storageBackend;
 		StorageResponder *m_storageResponder;
 		RosterResponder *m_rosterResponder;
+		VCardResponder *m_vcardResponder;
 		friend class RosterResponder;
 };
 
