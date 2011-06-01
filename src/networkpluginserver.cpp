@@ -487,7 +487,19 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 }
 
 void NetworkPluginServer::handleVCardRequired(User *user, const std::string &name, unsigned int id) {
-	
+	std::cout << "VCARD REQUIRED " << name << " " << id << "\n";
+	pbnetwork::VCard vcard;
+	vcard.set_username(user->getJID().toBare());
+	vcard.set_buddyname(name);
+	vcard.set_id(id);
+
+	std::string message;
+	vcard.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
+
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
 }
 
 void NetworkPluginServer::sendPing(Client *c) {

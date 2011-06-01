@@ -57,6 +57,15 @@ message Participant {
 	optional string newname = 7;
 }
 
+message VCard {
+	required string userName = 1;
+	required string buddyName = 2;
+	required int32 id = 3;
+	optional string fullname = 4;
+	optional string nickname = 5;
+	optional bytes photo = 6;
+}
+
 message WrapperMessage {
 	enum Type { 
 		TYPE_CONNECTED 				= 1;
@@ -73,6 +82,7 @@ message WrapperMessage {
 		TYPE_PARTICIPANT_CHANGED	= 13;
 		TYPE_ROOM_NICKNAME_CHANGED	= 14;
 		TYPE_ROOM_SUBJECT_CHANGED	= 15;
+		TYPE_VCARD			= 16;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
