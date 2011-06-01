@@ -29,18 +29,29 @@ namespace Transport {
 
 class StorageBackend;
 class UserManager;
+class User;
 
 class VCardResponder : public Swift::Responder<Swift::VCard> {
 	public:
-		VCardResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager);
+		VCardResponder(Swift::IQRouter *router, UserManager *userManager);
 		~VCardResponder();
-		boost::signal<void (const Swift::JID& from, const Swift::JID& to, const std::string& id)> onVCardRequired;
+
+		void sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard);
+
+		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
 
 	private:
+		struct VCardData {
+			Swift::JID from;
+			Swift::JID to;
+			std::string id;
+		};
+
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload);
 		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload);
-		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
+		std::map<unsigned int, VCardData> m_queries;
+		unsigned int m_id;
 };
 
 }

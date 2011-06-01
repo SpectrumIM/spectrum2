@@ -26,7 +26,6 @@
 #include "transport/rostermanager.h"
 #include "storageresponder.h"
 #include "rosterresponder.h"
-#include "vcardresponder.h"
 
 namespace Transport {
 
@@ -42,9 +41,6 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_rosterResponder = new RosterResponder(component->getIQRouter(), m_storageBackend, this);
 	m_rosterResponder->start();
 
-	m_vcardResponder = new VCardResponder(component->getIQRouter(), m_storageBackend, this);
-	m_vcardResponder->start();
-
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
 	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
@@ -55,7 +51,6 @@ UserManager::~UserManager(){
 	m_storageResponder->stop();
 	delete m_storageResponder;
 	delete m_rosterResponder;
-	delete m_vcardResponder;
 }
 
 void UserManager::addUser(User *user) {

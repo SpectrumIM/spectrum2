@@ -37,6 +37,7 @@ class Buddy;
 class LocalBuddy;
 class Config;
 class NetworkConversation;
+class VCardResponder;
 
 class NetworkPluginServer {
 	public:
@@ -71,6 +72,8 @@ class NetworkPluginServer {
 		void handleUserReadyToConnect(User *user);
 		void handleUserDestroyed(User *user);
 
+		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
+
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
@@ -78,6 +81,7 @@ class NetworkPluginServer {
 		Client *getFreeClient();
 
 		UserManager *m_userManager;
+		VCardResponder *m_vcardResponder;
 		Config *m_config;
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Client *>  m_clients;

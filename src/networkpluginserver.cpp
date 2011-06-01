@@ -28,6 +28,7 @@
 #include "transport/localbuddy.h"
 #include "transport/config.h"
 #include "transport/conversation.h"
+#include "transport/vcardresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -118,6 +119,10 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_pingTimer = component->getFactories()->getTimerFactory()->createTimer(10000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this)); 
 
+	m_vcardResponder = new VCardResponder(component->getIQRouter(), userManager);
+	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
+	m_vcardResponder->start();
+
 	m_server = component->getFactories()->getConnectionFactory()->createConnectionServer(10000);
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
@@ -129,6 +134,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 NetworkPluginServer::~NetworkPluginServer() {
 	m_pingTimer->stop();
+	delete m_vcardResponder;
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
@@ -478,6 +484,10 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 	Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
 	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleVCardRequired(User *user, const std::string &name, unsigned int id) {
+	
 }
 
 void NetworkPluginServer::sendPing(Client *c) {

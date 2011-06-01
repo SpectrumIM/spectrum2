@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "vcardresponder.h"
+#include "transport/vcardresponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
@@ -33,18 +33,39 @@ using namespace boost;
 
 namespace Transport {
 
-VCardResponder::VCardResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::Responder<VCard>(router) {
-	m_storageBackend = storageBackend;
+VCardResponder::VCardResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<VCard>(router) {
+	m_id = 0;
 	m_userManager = userManager;
 }
 
 VCardResponder::~VCardResponder() {
 }
 
+void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard) {
+	if (m_queries.find(id) == m_queries.end())
+		return;
+
+	sendResponse(m_queries[id].to, m_queries[id].from, m_queries[id].id, vcard);
+	m_queries.erase(id);
+}
+
 bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
 	// Get means we're in server mode and user wants to fetch his roster.
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
-	onVCardRequired(from, to, id);
+	User *user = m_userManager->getUser(from.toBare().toString());
+	if (!user) {
+		return false;
+	}
+
+	std::string name = to.getUnescapedNode();
+	if (name.find_last_of("%") != std::string::npos) {
+		name.replace(name.find_last_of("%"), 1, "@");
+	}
+
+	m_queries[m_id].from = from;
+	m_queries[m_id].to = to;
+	m_queries[m_id].id = id; 
+	onVCardRequired(user, name, m_id++);
 	return true;
 }
 
