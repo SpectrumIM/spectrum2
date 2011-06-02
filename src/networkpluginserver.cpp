@@ -191,6 +191,22 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 	user->handleDisconnected(payload.message());
 }
 
+void NetworkPluginServer::handleVCardPayload(const std::string &data) {
+	pbnetwork::VCard payload;
+	if (payload.ParseFromString(data) == false) {
+		std::cout << "PARSING ERROR\n";
+		// TODO: ERROR
+		return;
+	}
+	std::cout << "OMG?\n";
+	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
+	vcard->setFullName(payload.fullname());
+	vcard->setPhoto(Swift::ByteArray(payload.photo()));
+	vcard->setNickname(payload.nickname());
+
+	m_vcardResponder->sendVCard(payload.id(), vcard);
+}
+
 void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
@@ -342,6 +358,9 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::ByteArray &data
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_NICKNAME_CHANGED:
 				handleRoomChangedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_VCARD:
+				handleVCardPayload(wrapper.payload());
 				break;
 			default:
 				return;

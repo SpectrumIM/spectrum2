@@ -42,10 +42,13 @@ VCardResponder::~VCardResponder() {
 }
 
 void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard) {
-	if (m_queries.find(id) == m_queries.end())
+	std::cout << "RECEIVED VCARD FROM BACKEND\n";
+	if (m_queries.find(id) == m_queries.end()) {
+		std::cout << "ERROR\n";
 		return;
-
-	sendResponse(m_queries[id].to, m_queries[id].from, m_queries[id].id, vcard);
+	}
+	std::cout << "SENT " << m_queries[id].to << " " << m_queries[id].from << " " << m_queries[id].id << "\n";
+	sendResponse(m_queries[id].from, m_queries[id].to, m_queries[id].id, vcard);
 	m_queries.erase(id);
 }
 

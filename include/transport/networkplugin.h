@@ -54,9 +54,12 @@ class NetworkPlugin {
 
 		void handleRoomChanged(const std::string &user, const std::string &room, const std::string &nickname);
 
+		void handleVCard(const std::string &user, unsigned int id, const std::string &legacyName, const std::string &fullName, const std::string &nickname, const std::string &photo);
+
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
 		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) = 0;
+		virtual void handleVCardRequest(const std::string &/*user*/, const std::string &/*legacyName*/, unsigned int /*id*/) {}
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		virtual void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/) {}
 		
@@ -68,6 +71,7 @@ class NetworkPlugin {
 		void handleConvMessagePayload(const std::string &payload);
 		void handleJoinRoomPayload(const std::string &payload);
 		void handleLeaveRoomPayload(const std::string &payload);
+		void handleVCardPayload(const std::string &payload);
 		void handleDataRead(const Swift::ByteArray&);
 		void handleConnected(bool error);
 		void handleDisconnected();

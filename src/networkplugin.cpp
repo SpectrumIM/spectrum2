@@ -72,6 +72,22 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	send(message);
 }
 
+void NetworkPlugin::handleVCard(const std::string &user, unsigned int id, const std::string &legacyName, const std::string &fullName, const std::string &nickname, const std::string &photo) {
+	pbnetwork::VCard vcard;
+	vcard.set_username(user);
+	vcard.set_buddyname(legacyName);
+	vcard.set_id(id);
+	vcard.set_fullname(fullName);
+	vcard.set_nickname(nickname);
+	vcard.set_photo(photo);
+
+	std::string message;
+	vcard.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
+	send(message);
+}
+
 void NetworkPlugin::handleSubject(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
@@ -226,6 +242,16 @@ void NetworkPlugin::handleLeaveRoomPayload(const std::string &data) {
 	handleLeaveRoomRequest(payload.username(), payload.room());
 }
 
+void NetworkPlugin::handleVCardPayload(const std::string &data) {
+	pbnetwork::VCard payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleVCardRequest(payload.username(), payload.buddyname(), payload.id());
+}
+
 void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 	long expected_size = 0;
 	m_data += data.toString();
@@ -268,6 +294,9 @@ void NetworkPlugin::handleDataRead(const Swift::ByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM:
 				handleLeaveRoomPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_VCARD:
+				handleVCardPayload(wrapper.payload());
 				break;
 			default:
 				return;

@@ -118,8 +118,17 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		virtual void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				serv_get_info(purple_account_get_connection(account), legacyName.c_str());
+				m_vcards[user + legacyName] = id;
+			}
+		}
+
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
+		std::map<std::string, unsigned int> m_vcards;
 	private:
 		Config *config;
 };
@@ -344,11 +353,97 @@ static PurpleConnectionUiOps conn_ui_ops =
 	NULL
 };
 
+static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info) {
+	std::string name(who);
+	PurpleAccount *account = purple_connection_get_account(gc);
+	GList *vcardEntries = purple_notify_user_info_get_entries(user_info);
+	PurpleNotifyUserInfoEntry *vcardEntry;
+	std::string firstName;
+	std::string lastName;
+	std::string fullName;
+	std::string nickname;
+	std::string header;
+	std::string label;
+	Swift::ByteArray photo;
+
+	while (vcardEntries) {
+		vcardEntry = (PurpleNotifyUserInfoEntry *)(vcardEntries->data);
+		if (purple_notify_user_info_entry_get_label(vcardEntry) && purple_notify_user_info_entry_get_value(vcardEntry)){
+			label = purple_notify_user_info_entry_get_label(vcardEntry);
+			if (label == "Given Name"){
+				firstName = purple_notify_user_info_entry_get_value(vcardEntry);
+			}
+			else if (label == "Family Name"){
+				lastName = purple_notify_user_info_entry_get_value(vcardEntry);
+			}
+			else if (label=="Nickname"){
+				nickname = purple_notify_user_info_entry_get_value(vcardEntry);
+			}
+			else if (label=="Full Name"){
+				fullName = purple_notify_user_info_entry_get_value(vcardEntry);
+			}
+		}
+		vcardEntries = vcardEntries->next;
+	}
+
+	if ((!firstName.empty() || !lastName.empty()) && fullName.empty())
+		fullName = firstName + " " + lastName;
+
+	PurpleBuddy *buddy = purple_find_buddy(purple_connection_get_account(gc), who);
+	if (buddy) {
+		gsize len;
+		PurpleBuddyIcon *icon = NULL;
+		icon = purple_buddy_icons_find(purple_connection_get_account(gc), name.c_str());
+		if (icon) {
+			const gchar * data = (gchar*)purple_buddy_icon_get_data(icon, &len);
+			// Sometimes libpurple returns really broken pointers here
+			// They weren't able to do anything with that and I don't know what to do too,
+			// so it's better to hack through it by not trying to forward really broken things...
+			if (len < 300000 && data) {
+				photo = Swift::ByteArray(data, len);
+// 				const gchar *ext = (gchar*)purple_buddy_icon_get_extension(icon);
+// 				if (ext) {
+// 					std::string extension(ext);
+// 					if (extension != "icon") {
+// 						if (extension == "jpg") {
+// 							extension = "jpeg";
+// 						}
+// 						photo->addChild( new Tag("TYPE", "image/" + extension) );
+// 					}
+// 				}
+			}
+		}
+	}
+
+	
+	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, photo.toString());
+	np->m_vcards.erase(np->m_accounts[account] + name);
+
+	return NULL;
+}
+
+static PurpleNotifyUiOps notifyUiOps =
+{
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		notify_user_info,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops(&blistUiOps);
 // 	purple_accounts_set_ui_ops(&accountUiOps);
-// 	purple_notify_set_ui_ops(&notifyUiOps);
+	purple_notify_set_ui_ops(&notifyUiOps);
 // 	purple_request_set_ui_ops(&requestUiOps);
 // 	purple_xfers_set_ui_ops(getXferUiOps());
 	purple_connections_set_ui_ops(&conn_ui_ops);
