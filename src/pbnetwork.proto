@@ -2,7 +2,6 @@ package pbnetwork;
 
 message Connected {
 	required string user = 1;
-	required string name = 2;
 }
 
 message Disconnected {

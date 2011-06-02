@@ -112,7 +112,8 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
 	m_userManager = userManager;
 	m_config = config;
-	component->m_factory = new NetworkFactory(this);
+	m_component = component;
+	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
 
@@ -174,6 +175,8 @@ void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
+	std::cout << "CONNECTED LOGIN 2 " << payload.user() << "\n";
+	m_component->m_userRegistry->onPasswordValid(payload.user());
 // 	std::cout << payload.name() << "\n";
 }
 
@@ -185,9 +188,11 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 	}
 
 	User *user = m_userManager->getUser(payload.user());
-	if (!user)
+	if (!user) {
 		return;
+	}
 
+	m_component->m_userRegistry->onPasswordInvalid(payload.user());
 	user->handleDisconnected(payload.message());
 }
 

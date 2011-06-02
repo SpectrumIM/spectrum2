@@ -44,7 +44,7 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 	m_pingReceived = false;
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
-	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::handleConnected, this, _1));
+	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::_handleConnected, this, _1));
 	m_conn->onDisconnected.connect(boost::bind(&NetworkPlugin::handleDisconnected, this));
 
 	m_pingTimer = m_factories->getTimerFactory()->createTimer(30000);
@@ -123,6 +123,18 @@ void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::strin
 	send(message);
 }
 
+void NetworkPlugin::handleConnected(const std::string &user) {
+	pbnetwork::Connected d;
+	d.set_user(user);
+
+	std::string message;
+	d.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONNECTED);
+
+	send(message);	
+}
+
 void NetworkPlugin::handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &msg) {
 	pbnetwork::Disconnected d;
 	d.set_user(user);
@@ -171,7 +183,7 @@ void NetworkPlugin::handleRoomChanged(const std::string &user, const std::string
 	send(message);
 }
 
-void NetworkPlugin::handleConnected(bool error) {
+void NetworkPlugin::_handleConnected(bool error) {
 	if (error) {
 		std::cerr << "Connecting error\n";
 		m_pingTimer->stop();

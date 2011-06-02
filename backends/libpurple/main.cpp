@@ -466,6 +466,11 @@ static PurpleCoreUiOps coreUiOps =
 	NULL
 };
 
+static void signed_on(PurpleConnection *gc, gpointer unused) {
+	PurpleAccount *account = purple_connection_get_account(gc);
+	np->handleConnected(np->m_accounts[account]);
+}
+
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
 	std::string c("[LIBPURPLE");
 
@@ -536,7 +541,7 @@ static bool initPurple(Config &cfg) {
 // 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
 // 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
 // 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
-// 		purple_signal_connect(purple_connections_get_handle(), "signed-on", &conn_handle,PURPLE_CALLBACK(signed_on), NULL);
+		purple_signal_connect(purple_connections_get_handle(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);

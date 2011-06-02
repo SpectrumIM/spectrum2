@@ -34,13 +34,20 @@ namespace Transport {
 
 class MyUserRegistry : public Swift::UserRegistry {
 	public:
-		MyUserRegistry() {}
+		MyUserRegistry(Component *c) {component = c;}
 		~MyUserRegistry() {}
 		bool isValidUserPassword(const JID& user, const std::string& password) const {
 			users[user.toBare().toString()] = password;
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setTo(component->getJID());
+			response->setFrom(user);
+			response->setType(Swift::Presence::Available);
+			component->onUserPresenceReceived(response);
+			std::cout << "CONNECTED LOGIN 1" << user.toString() << "\n";
 			return true;
 		}
 		mutable std::map<std::string, std::string> users;
+		mutable Component *component;
 };
 
 Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
@@ -59,7 +66,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_reconnectTimer->onTick.connect(bind(&Component::connect, this)); 
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
-		m_userRegistry = new MyUserRegistry();
+		m_userRegistry = new MyUserRegistry(this);
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
@@ -174,14 +181,6 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 
 	// filter out bad presences
 	if (!presence->getFrom().isValid()) {
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(presence->getFrom());
-		response->setFrom(presence->getTo());
-		response->setType(Swift::Presence::Error);
-
-		response->addPayload(boost::shared_ptr<Payload>(new ErrorPayload(ErrorPayload::JIDMalformed, ErrorPayload::Modify)));
-
-		m_component->sendPresence(response);
 		return;
 	}
 

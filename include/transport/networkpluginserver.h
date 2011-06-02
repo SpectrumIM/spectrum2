@@ -87,6 +87,7 @@ class NetworkPluginServer {
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Client *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
+		Component *m_component;
 };
 
 }

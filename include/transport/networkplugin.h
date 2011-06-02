@@ -48,6 +48,8 @@ class NetworkPlugin {
 
 		void handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &message);
 
+		void handleConnected(const std::string &user);
+
 		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
 
 		void handleSubject(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
@@ -73,7 +75,7 @@ class NetworkPlugin {
 		void handleLeaveRoomPayload(const std::string &payload);
 		void handleVCardPayload(const std::string &payload);
 		void handleDataRead(const Swift::ByteArray&);
-		void handleConnected(bool error);
+		void _handleConnected(bool error);
 		void handleDisconnected();
 
 		void send(const std::string &data);

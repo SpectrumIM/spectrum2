@@ -77,6 +77,10 @@ void User::handlePresence(Swift::Presence::ref presence) {
 					onReadyToConnect();
 				}
 			}
+			else if (m_component->inServerMode()) {
+					m_readyForConnect = true;
+					onReadyToConnect();
+			}
 			else {
 				m_reconnectTimer->start();
 			}
