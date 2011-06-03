@@ -171,11 +171,12 @@ void NetworkPluginServer::handleSessionFinished(Client *c) {
 
 void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 	pbnetwork::Connected payload;
+	std::cout << "CONNECTED LOGIN 2 " << payload.user() << "\n";
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
 		return;
 	}
-	std::cout << "CONNECTED LOGIN 2 " << payload.user() << "\n";
+	std::cout << "CONNECTED LOGIN 3 " << payload.user() << "\n";
 	m_component->m_userRegistry->onPasswordValid(payload.user());
 // 	std::cout << payload.name() << "\n";
 }
@@ -206,7 +207,7 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 	std::cout << "OMG?\n";
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
 	vcard->setFullName(payload.fullname());
-	vcard->setPhoto(Swift::ByteArray(payload.photo()));
+	vcard->setPhoto(Swift::createByteArray(payload.photo()));
 	vcard->setNickname(payload.nickname());
 
 	m_vcardResponder->sendVCard(payload.id(), vcard);
@@ -313,16 +314,15 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	conv->handleMessage(msg, payload.nickname());
 }
 
-void NetworkPluginServer::handleDataRead(Client *c, const Swift::ByteArray &data) {
-	long expected_size = 0;
-	c->data += data.toString();
-// 	std::cout << "received data; size = " << m_data.size() << "\n";
+void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &data) {
+	c->data.insert(c->data.begin(), data.begin(), data.end());
+
 	while (c->data.size() != 0) {
+		unsigned int expected_size;
+
 		if (c->data.size() >= 4) {
-			unsigned char * head = (unsigned char*) c->data.c_str();
-			expected_size = (((((*head << 8) | *(head + 1)) << 8) | *(head + 2)) << 8) | *(head + 3);
-			//expected_size = m_data[0];
-// 			std::cout << "expected_size=" << expected_size << "\n";
+			expected_size = *((unsigned int*) &c->data[0]);
+			expected_size = ntohl(expected_size);
 			if (c->data.size() - 4 < expected_size)
 				return;
 		}
@@ -330,14 +330,12 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::ByteArray &data
 			return;
 		}
 
-		std::string msg = c->data.substr(4, expected_size);
-		c->data.erase(0, 4 + expected_size);
-
 		pbnetwork::WrapperMessage wrapper;
-		if (wrapper.ParseFromString(msg) == false) {
-			// TODO: ERROR
+		if (wrapper.ParseFromArray(&c->data[4], expected_size) == false) {
+			c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
 			return;
 		}
+		c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
 
 		switch(wrapper.type()) {
 			case pbnetwork::WrapperMessage_Type_TYPE_CONNECTED:
@@ -374,11 +372,9 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::ByteArray &data
 }
 
 void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const std::string &data) {
-	std::string header("    ");
-	for (int i = 0; i != 4; ++i)
-		header.at(i) = static_cast<char>(data.size() >> (8 * (3 - i)));
-	
-	c->write(Swift::ByteArray(header + data));
+	char header[4];
+	*((int*)(header)) = htonl(data.size());
+	c->write(Swift::createSafeByteArray(std::string(header, 4) + data));
 }
 
 void NetworkPluginServer::pingTimeout() {

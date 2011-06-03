@@ -400,7 +400,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			// They weren't able to do anything with that and I don't know what to do too,
 			// so it's better to hack through it by not trying to forward really broken things...
 			if (len < 300000 && data) {
-				photo = Swift::ByteArray(data, len);
+				photo = Swift::createByteArray(data, len);
 // 				const gchar *ext = (gchar*)purple_buddy_icon_get_extension(icon);
 // 				if (ext) {
 // 					std::string extension(ext);
@@ -416,7 +416,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	}
 
 	
-	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, photo.toString());
+	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, Swift::byteArrayToString(photo));
 	np->m_vcards.erase(np->m_accounts[account] + name);
 
 	return NULL;

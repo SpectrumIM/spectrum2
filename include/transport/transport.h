@@ -133,8 +133,8 @@ namespace Transport {
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
 			void handlePresence(Swift::Presence::ref presence);
-			void handleDataRead(const std::string &data);
-			void handleDataWritten(const std::string &data);
+			void handleDataRead(const Swift::SafeByteArray &data);
+			void handleDataWritten(const Swift::SafeByteArray &data);
 
 // 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);

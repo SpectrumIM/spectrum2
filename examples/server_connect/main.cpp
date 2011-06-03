@@ -15,7 +15,8 @@ class DummyUserRegistry : public Swift::UserRegistry {
 	public:
 		DummyUserRegistry() {}
 
-		virtual bool isValidUserPassword(const Swift::JID&, const std::string&) const {
+		virtual bool isValidUserPassword(const Swift::JID&user, const Swift::SafeByteArray&) const {
+			onPasswordValid(user.toString());
 			return true;
 		}
 };

@@ -44,7 +44,7 @@ class NetworkPluginServer {
 		struct Client {
 			bool pongReceived;
 			std::list<User *> users;
-			std::string data;
+			Swift::SafeByteArray data;
 			boost::shared_ptr<Swift::Connection> connection;
 		};
 
@@ -57,7 +57,7 @@ class NetworkPluginServer {
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Client *c);
-		void handleDataRead(Client *c, const Swift::ByteArray&);
+		void handleDataRead(Client *c, const Swift::SafeByteArray&);
 
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);

@@ -70,7 +70,7 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 
 	payload->addItem(item);
 
-	Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_component->getIQRouter(), m_user->getJID().toBare());
+	Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_user->getJID().toBare(), m_component->getIQRouter());
 	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, buddy->getName()));
 	request->send();
 }
@@ -124,10 +124,10 @@ void RosterManager::sendRIE() {
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		Swift::RosterItemExchangePayload::Item item;
-		item.jid = buddy->getJID().toBare();
-		item.name = buddy->getAlias();
-		item.action = Swift::RosterItemExchangePayload::Add;
-		item.groups = buddy->getGroups();
+		item.setJID(buddy->getJID().toBare());
+		item.setName(buddy->getAlias());
+		item.setAction(Swift::RosterItemExchangePayload::Item::Add);
+		item.setGroups(buddy->getGroups());
 
 		payload->addItem(item);
 	}

@@ -36,8 +36,8 @@ class MyUserRegistry : public Swift::UserRegistry {
 	public:
 		MyUserRegistry(Component *c) {component = c;}
 		~MyUserRegistry() {}
-		bool isValidUserPassword(const JID& user, const std::string& password) const {
-			users[user.toBare().toString()] = password;
+		bool isValidUserPassword(const JID& user, const Swift::SafeByteArray& password) const {
+			users[user.toBare().toString()] = Swift::safeByteArrayToString(password);
 			Swift::Presence::ref response = Swift::Presence::create();
 			response->setTo(component->getJID());
 			response->setFrom(user);
@@ -165,12 +165,12 @@ void Component::handleConnectionError(const ComponentError &error) {
 	m_reconnectTimer->start();
 }
 
-void Component::handleDataRead(const std::string &data) {
-	onXMLIn(data);
+void Component::handleDataRead(const Swift::SafeByteArray &data) {
+	onXMLIn(safeByteArrayToString(data));
 }
 
-void Component::handleDataWritten(const std::string &data) {
-	onXMLOut(data);
+void Component::handleDataWritten(const Swift::SafeByteArray &data) {
+	onXMLOut(safeByteArrayToString(data));
 }
 
 void Component::handlePresence(Swift::Presence::ref presence) {

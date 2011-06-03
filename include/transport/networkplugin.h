@@ -74,7 +74,7 @@ class NetworkPlugin {
 		void handleJoinRoomPayload(const std::string &payload);
 		void handleLeaveRoomPayload(const std::string &payload);
 		void handleVCardPayload(const std::string &payload);
-		void handleDataRead(const Swift::ByteArray&);
+		void handleDataRead(const Swift::SafeByteArray&);
 		void _handleConnected(bool error);
 		void handleDisconnected();
 
@@ -82,7 +82,7 @@ class NetworkPlugin {
 		void sendPong();
 		void pingTimeout();
 
-		std::string m_data;
+		Swift::SafeByteArray m_data;
 		std::string m_host;
 		int m_port;
 		Swift::BoostNetworkFactories *m_factories;
