@@ -19,9 +19,8 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* 
 	this->user = user;
 }
 
-void MyIrcSession::on_connected()
-{
-    std::cout << "connected:\n";
+void MyIrcSession::on_connected(){
+	std::cout << "connected:\n";
 }
 
 void MyIrcSession::on_disconnected()
@@ -184,6 +183,9 @@ void MyIrcBuffer::on_ctcpActionReceived(const QString& origin, const QString& ac
 void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, const QStringList& params)
 {
 	switch (code) {
+		case 251:
+			np->handleConnected(user);
+			break;
 		case 332:
 			m_topicData = params.value(2).toStdString();
 			break;
