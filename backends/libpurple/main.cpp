@@ -268,7 +268,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 // 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
 // }
 
-void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
+static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;

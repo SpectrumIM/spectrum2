@@ -48,10 +48,10 @@ RosterManager::~RosterManager() {
 	m_setBuddyTimer->stop();
 	m_RIETimer->stop();
 	if (m_rosterStorage) {
-		for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
-			Buddy *buddy = (*it).second;
-			m_rosterStorage->storeBuddy(buddy);
-		}
+// 		for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+// 			Buddy *buddy = (*it).second;
+// 			m_rosterStorage->storeBuddy(buddy);
+// 		}
 		m_rosterStorage->storeBuddies();
 	}
 
@@ -85,6 +85,10 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 
 void RosterManager::setBuddyCallback(Buddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
+
+	if (m_rosterStorage) {
+		buddy->onBuddyChanged.connect(boost::bind(&RosterStorage::storeBuddy, m_rosterStorage, buddy));
+	}
 
 	std::cout << "ADDING " << buddy->getName() << "\n";
 	m_buddies[buddy->getName()] = buddy;
@@ -151,8 +155,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 
 void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 	if (m_rosterStorage) {
-		m_rosterStorage->storeBuddies();
-		delete m_rosterStorage;
+		return;
 	}
 	m_rosterStorage = new RosterStorage(m_user, storageBackend);
 
@@ -163,6 +166,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
 		std::cout << "CREATING BUDDY FROM DATABASE CACHE " << buddy->getName() << "\n";
 		m_buddies[buddy->getName()] = buddy;
+		buddy->onBuddyChanged.connect(boost::bind(&RosterStorage::storeBuddy, m_rosterStorage, buddy));
 		onBuddySet(buddy);
 	}
 }
