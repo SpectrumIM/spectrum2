@@ -238,29 +238,41 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
 }
 
-static void buddyStatusChanged(PurpleBuddy *buddy, PurpleStatus *status_, PurpleStatus *old_status) {
+// static void buddyStatusChanged(PurpleBuddy *buddy, PurpleStatus *status_, PurpleStatus *old_status) {
+// 	PurpleAccount *account = purple_buddy_get_account(buddy);
+// 
+// 	Swift::StatusShow status;
+// 	std::string message;
+// 	getStatus(buddy, status, message);
+// 
+// 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
+// }
+// 
+// static void buddySignedOn(PurpleBuddy *buddy) {
+// 	PurpleAccount *account = purple_buddy_get_account(buddy);
+// 
+// 	Swift::StatusShow status;
+// 	std::string message;
+// 	getStatus(buddy, status, message);
+// 
+// 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
+// }
+// 
+// static void buddySignedOff(PurpleBuddy *buddy) {
+// 	PurpleAccount *account = purple_buddy_get_account(buddy);
+// 
+// 	Swift::StatusShow status;
+// 	std::string message;
+// 	getStatus(buddy, status, message);
+// 
+// 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
+// }
+
+void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
-
-	Swift::StatusShow status;
-	std::string message;
-	getStatus(buddy, status, message);
-
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
-}
-
-static void buddySignedOn(PurpleBuddy *buddy) {
-	PurpleAccount *account = purple_buddy_get_account(buddy);
-
-	Swift::StatusShow status;
-	std::string message;
-	getStatus(buddy, status, message);
-
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
-}
-
-static void buddySignedOff(PurpleBuddy *buddy) {
-	PurpleAccount *account = purple_buddy_get_account(buddy);
-
 	Swift::StatusShow status;
 	std::string message;
 	getStatus(buddy, status, message);
@@ -279,7 +291,7 @@ static PurpleBlistUiOps blistUiOps =
 	NULL,
 	buddyListNewNode,
 	NULL,
-	NULL, // buddyListUpdate,
+	buddyListUpdate,
 	NULL, //NodeRemoved,
 	NULL,
 	NULL,
@@ -543,9 +555,9 @@ static bool initPurple(Config &cfg) {
 // 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
 		purple_signal_connect(purple_connections_get_handle(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
-		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
-		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);
-		purple_signal_connect(purple_blist_get_handle(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
+// 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
+// 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);
+// 		purple_signal_connect(purple_blist_get_handle(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
 		purple_signal_connect(purple_blist_get_handle(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
 // 		purple_signal_connect(purple_conversations_get_handle(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
 // 

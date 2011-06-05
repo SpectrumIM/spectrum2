@@ -69,6 +69,8 @@ class NetworkFactory : public Factory {
 			buddy->setSubscription(buddyInfo.subscription);
 			buddy->setGroups(buddyInfo.groups);
 			buddy->setFlags((BuddyFlag) buddyInfo.flags);
+			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
+				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
 		}
 	private:

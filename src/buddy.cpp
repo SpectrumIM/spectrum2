@@ -109,9 +109,9 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 		// caps
 // 		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo (CONFIG().caps)));
 
-		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
+// 		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));
-		}
+// 		}
 	}
 
 	if (only_new) {

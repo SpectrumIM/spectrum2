@@ -47,6 +47,14 @@ RosterManager::RosterManager(User *user, Component *component){
 RosterManager::~RosterManager() {
 	m_setBuddyTimer->stop();
 	m_RIETimer->stop();
+	if (m_rosterStorage) {
+		for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+			Buddy *buddy = (*it).second;
+			m_rosterStorage->storeBuddy(buddy);
+		}
+		m_rosterStorage->storeBuddies();
+	}
+
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		delete buddy;
