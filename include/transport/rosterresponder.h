@@ -27,18 +27,16 @@
 
 namespace Transport {
 
-class StorageBackend;
 class UserManager;
 
 class RosterResponder : public Swift::Responder<Swift::RosterPayload> {
 	public:
-		RosterResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager);
+		RosterResponder(Swift::IQRouter *router, UserManager *userManager);
 		~RosterResponder();
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload);
 		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload);
-		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
 };
 

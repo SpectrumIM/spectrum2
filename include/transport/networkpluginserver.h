@@ -38,6 +38,7 @@ class LocalBuddy;
 class Config;
 class NetworkConversation;
 class VCardResponder;
+class RosterResponder;
 
 class NetworkPluginServer {
 	public:
@@ -83,6 +84,7 @@ class NetworkPluginServer {
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
+		RosterResponder *m_rosterResponder;
 		Config *m_config;
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Client *>  m_clients;

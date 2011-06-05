@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "rosterresponder.h"
+#include "transport/rosterresponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
@@ -33,8 +33,7 @@ using namespace boost;
 
 namespace Transport {
 
-RosterResponder::RosterResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::Responder<RosterPayload>(router) {
-	m_storageBackend = storageBackend;
+RosterResponder::RosterResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<RosterPayload>(router) {
 	m_userManager = userManager;
 }
 

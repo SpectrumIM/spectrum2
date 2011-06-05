@@ -29,6 +29,7 @@
 #include "transport/config.h"
 #include "transport/conversation.h"
 #include "transport/vcardresponder.h"
+#include "transport/rosterresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -126,6 +127,9 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
 	m_vcardResponder->start();
 
+	m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
+	m_rosterResponder->start();
+
 	m_server = component->getFactories()->getConnectionFactory()->createConnectionServer(10000);
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
@@ -138,6 +142,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 NetworkPluginServer::~NetworkPluginServer() {
 	m_pingTimer->stop();
 	delete m_vcardResponder;
+	delete m_rosterResponder;
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
