@@ -30,12 +30,12 @@ namespace Transport {
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
-	m_conversationManager->setConversation(this);
+	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
 }
 
 Conversation::~Conversation() {
-	m_conversationManager->unsetConversation(this);
+	m_conversationManager->removeConversation(this);
 }
 
 void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {

@@ -53,23 +53,30 @@ class Config {
 		/// Destructor
 		virtual ~Config() {}
 
-		/// Loads data from config file. You can pass your extra options which will be recognized by
+		/// Loads data from config file.
+		
+		/// You can pass your extra options which will be recognized by
 		/// the parser using opts parameter.
 		/// \param configfile path to config file
 		/// \param opts extra options which will be recognized by a parser
 		bool load(const std::string &configfile, boost::program_options::options_description &opts);
 
-		/// Loads data from config file. This function loads only config variables needed by libtransport.
+		/// Loads data from config file.
+		
+		/// This function loads only config variables needed by libtransport.
 		/// \see load(const std::string &, boost::program_options::options_description &)
 		/// \param configfile path to config file
 		bool load(const std::string &configfile);
 
-		/// Returns value of variable defined by key. For variables in sections you can use "section.variable" key format.
+		/// Returns value of variable defined by key.
+		
+		/// For variables in sections you can use "section.variable" key format.
 		/// \param key config variable name
 		const boost::program_options::variable_value &operator[] (const std::string &key) {
 			return m_variables[key];
 		}
 
+		/// Returns path to config file from which data were loaded.
 		const std::string &getConfigFile() { return m_file; }
 
 		/// This signal is emitted when config is loaded/reloaded.

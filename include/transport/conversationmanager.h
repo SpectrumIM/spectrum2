@@ -31,29 +31,45 @@ class Conversation;
 class User;
 class Component;
 
+/// Manages all Conversations of particular User.
 class ConversationManager {
 	public:
 		/// Creates new ConversationManager.
+
 		/// \param user User associated with this ConversationManager.
-		/// \param component Transport instance associated with this roster.
+		/// \param component Transport instance associated with this ConversationManager.
 		ConversationManager(User *user, Component *component);
 
 		/// Destructor.
 		virtual ~ConversationManager();
 
 		/// Returns user associated with this manager.
+
 		/// \return User
 		User *getUser() { return m_user; }
 
+		/// Returns component associated with this ConversationManager.
+
+		/// \return component associated with this ConversationManager.
 		Component *getComponent() { return m_component; }
 
+		/// Returns Conversation by its legacy network name (for example by UIN in case of ICQ).
+
+		/// \param name legacy network name.
+		/// \return Conversation or NULL.
 		Conversation *getConversation(const std::string &name) {
 			return m_convs[name];
 		}
 
-		void setConversation(Conversation *conv);
+		/// Adds new Conversation to the manager.
 
-		void unsetConversation(Conversation *conv);
+		/// \param conv Conversation.
+		void addConversation(Conversation *conv);
+
+		/// Removes Conversation from the manager.
+
+		/// \param conv Conversation.
+		void removeConversation(Conversation *conv);
 
 	private:
 		void handleMessageReceived(Swift::Message::ref message);

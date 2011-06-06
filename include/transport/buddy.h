@@ -39,12 +39,18 @@ typedef enum { 	BUDDY_NO_FLAG = 0,
 class Buddy {
 	public:
 		/// Constructor.
+
+		/// \param rosterManager RosterManager associated with this buddy.
+		/// \param id ID which identifies the buddy in database or -1 if it's new buddy which is
+		/// not in database yet.
 		Buddy(RosterManager *rosterManager, long id = -1);
 
 		/// Destructor
 		virtual ~Buddy();
 		
-		/// Sets unique ID used to identify this buddy by StorageBackend. This is set
+		/// Sets unique ID used to identify this buddy by StorageBackend.
+		
+		/// This is set
 		/// by RosterStorage class once the buddy is stored into database or when the
 		/// buddy is loaded from database.
 		/// You should not need to set this ID manually.
@@ -52,16 +58,19 @@ class Buddy {
 		void setID(long id);
 
 		/// Returns unique ID used to identify this buddy by StorageBackend.
-		/// \see Buddy::setID(long)
-		/// \return ID
+
+		/// \return ID which identifies the buddy in database or -1 if it's new buddy which is
+		/// not in database yet.
 		long getID();
 
 		/// Returns full JID of this buddy.
+
 		/// \param hostname hostname used as domain in returned JID
 		/// \return full JID of this buddy
 		const Swift::JID &getJID();
 
 		/// Generates whole Presennce stanza with current status/show for this buddy.
+
 		/// Presence stanza does not containt "to" attribute, it has to be added manually.
 		/// \param features features used in returned stanza
 		/// \param only_new if True, this function returns Presence stanza only if it's different
@@ -76,65 +85,84 @@ class Buddy {
 		void setOffline();
 
 		/// Returns true if this buddy is marked as available/online.
+
 		/// \return true if this buddy is marked as available/online.
 		bool isOnline();
 
 		/// Sets current subscription.
+
 		/// \param subscription "to", "from", "both", "ask"
 		void setSubscription(const std::string &subscription);
 
 		/// Returns current subscription
+
 		/// \return subscription "to", "from", "both", "ask"
 		const std::string &getSubscription();
 
 		/// Sets this buddy's flags.
+
 		/// \param flags flags
 		void setFlags(BuddyFlag flags);
 
 		/// Returns this buddy's flags.
+
 		/// \param flags flags
 		BuddyFlag getFlags();
 
-		/// Returns RosterManager associated with this buddy
-		/// \return rosterManager
+		/// Returns RosterManager associated with this buddy.
+
+		/// \return RosterManager associated with this buddy.
 		RosterManager *getRosterManager() { return m_rosterManager; }
 
 		/// Returns legacy network username which does not contain unsafe characters,
 		/// so it can be used in JIDs.
 		std::string getSafeName();
 
-		void buddyChanged();
+		/// This method should be called whenever some information returned by virtual functions changes.
 
-		void handleVCardReceived(const std::string &id, const Swift::JID &to, Swift::VCard::ref vcard);
+		/// This method sends presence to XMPP user.
+		void handleBuddyChanged();
 
+		/// Handles VCard from legacy network and forwards it to XMPP user.
+
+		/// \param id ID used in IQ-result.
+		/// \param vcard VCard which will be sent.
+		void handleVCardReceived(const std::string &id, Swift::VCard::ref vcard);
+
+		/// This signal is emitted when buddyChanged method is called. 
 		boost::signal<void ()> onBuddyChanged;
 
-		virtual void getVCard(const std::string &id, const Swift::JID &to) = 0;
+		/// Returns legacy network username of this buddy. (for example UIN for ICQ, JID for Jabber, ...).
 
-		/// Returns legacy network username of this buddy. (for example UIN for ICQ,
-		/// JID for Jabber, ...).
 		/// \return legacy network username
 		virtual std::string getName() = 0;
 
 		/// Returns alias (nickname) of this buddy.
+
 		/// \return alias (nickname)
 		virtual std::string getAlias() = 0;
 
 		/// Returns list of groups this buddy is in.
+
 		/// \return groups
 		virtual std::vector<std::string> getGroups() = 0;
 
 		/// Returns current legacy network status and statuMessage of this buddy.
+
 		/// \param status current status/show is stored here
 		/// \param statusMessage current status message is stored here
 		/// \return true if status was stored successfully
 		virtual bool getStatus(Swift::StatusShow &status, std::string &statusMessage) = 0;
 
-		/// Returns SHA-1 hash of buddy icon (avatar) or empty string if there is no avatar
-		/// for this buddy.
+		/// Returns SHA-1 hash of buddy icon (avatar) or empty string if there is no avatar for this buddy.
+
 		/// \return avatar hash or empty string.
 		virtual std::string getIconHash() = 0;
 
+		/// Returns legacy name of buddy from JID.
+
+		/// \param jid Jabber ID.
+		/// \return legacy name of buddy from JID.
 		static std::string JIDToLegacyName(const Swift::JID &jid);
 
 	private:

@@ -120,7 +120,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
 
-	m_pingTimer = component->getFactories()->getTimerFactory()->createTimer(10000);
+	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this)); 
 
 	m_vcardResponder = new VCardResponder(component->getIQRouter(), userManager);
@@ -130,7 +130,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
 	m_rosterResponder->start();
 
-	m_server = component->getFactories()->getConnectionFactory()->createConnectionServer(10000);
+	m_server = component->getNetworkFactories()->getConnectionFactory()->createConnectionServer(10000);
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
 
@@ -234,7 +234,7 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
-		buddy->buddyChanged();
+		buddy->handleBuddyChanged();
 	}
 	else {
 		buddy = new LocalBuddy(user->getRosterManager(), -1);

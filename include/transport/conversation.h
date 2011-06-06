@@ -31,38 +31,79 @@ namespace Transport {
 
 class ConversationManager;
 
+/// Represents one XMPP-Legacy network conversation.
 class Conversation {
 	public:
+		/// Type of participants in MUC rooms.
 		enum ParticipantFlag {None, Moderator};
 
-		/// Constructor.
-		Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool m_muc = false);
+		/// Creates new conversation.
 
-		/// Destructor
+		/// \param conversationManager ConversationManager associated with this Conversation.
+		/// \param legacyName Legacy network name of recipient.
+		/// \param muc True if this conversation is Multi-user chat.
+		Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool muc = false);
+
+		/// Destructor.
 		virtual ~Conversation();
 
+		/// Returns legacy network name of this conversation.
+
+		/// \return legacy network name of this conversation.
 		const std::string &getLegacyName() { return m_legacyName; }
 
+		/// Handles new message from Legacy network and forwards it to XMPP.
+
+		/// \param message Message received from legacy network.
+		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
 		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
+
+		/// Handles participant change in MUC.
+
+		/// \param nickname Nickname of participant which changed.
+		/// \param flag ParticipantFlag.
+		/// \param status Current status of this participant.
+		/// \param statusMessage Current status message of this participant.
+		/// \param newname If participant was renamed, this variable contains his new name.
 		void handleParticipantChanged(const std::string &nickname, int flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
+
+		/// Sets XMPP user nickname in MUC rooms.
+
+		/// \param nickname XMPP user nickname in MUC rooms.
 		void setNickname(const std::string &nickname) {
 			m_nickname = nickname;
 		}
 
+		/// Sends message to Legacy network.
+
+		/// \param message Message.
 		virtual void sendMessage(boost::shared_ptr<Swift::Message> &message) = 0;
 
+		/// Returns ConversationManager associated with this Conversation.
+
+		/// \return  ConversationManager associated with this Conversation.
 		ConversationManager *getConversationManager() {
 			return m_conversationManager;
 		}
 
+		/// Returns True if this conversation is MUC room.
+
+		/// \return  True if this conversation is MUC room.
 		bool isMUC() {
 			return m_muc;
 		}
 
+		/// Sets room name associated with this Conversation.
+
+		/// This is used to detect Private messages associated with particular room.
+		/// \param room room name associated with this Conversation.
 		void setRoom(const std::string &room) {
 			m_room = room;
 		}
 
+		/// Returns room name associated with this Conversation.
+
+		/// \return room name associated with this Conversation.
 		const std::string &getRoom() {
 			return m_room;
 		}

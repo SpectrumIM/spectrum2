@@ -41,11 +41,11 @@ ConversationManager::~ConversationManager() {
 	}
 }
 
-void ConversationManager::setConversation(Conversation *conv) {
+void ConversationManager::addConversation(Conversation *conv) {
 	m_convs[conv->getLegacyName()] = conv;
 }
 
-void ConversationManager::unsetConversation(Conversation *conv) {
+void ConversationManager::removeConversation(Conversation *conv) {
 	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
 		if ((*it).second->getRoom() == conv->getLegacyName()) {
 			(*it).second->setRoom("");

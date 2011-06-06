@@ -36,8 +36,8 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
 	m_user = user;
 	m_component = component;
-	m_setBuddyTimer = m_component->getFactories()->getTimerFactory()->createTimer(1000);
-	m_RIETimer = m_component->getFactories()->getTimerFactory()->createTimer(5000);
+	m_setBuddyTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
+	m_RIETimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
 
 	
@@ -121,7 +121,7 @@ void RosterManager::unsetBuddy(Buddy *buddy) {
 
 void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key) {
 	if (m_buddies[key] != NULL) {
-		m_buddies[key]->buddyChanged();
+		m_buddies[key]->handleBuddyChanged();
 	}
 }
 

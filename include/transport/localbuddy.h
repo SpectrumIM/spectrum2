@@ -56,8 +56,6 @@ class LocalBuddy : public Buddy {
 		std::vector<std::string> getGroups() { return m_groups; }
 		void setGroups(const std::vector<std::string> &groups) { m_groups = groups; }
 
-		void getVCard(const std::string &id, const Swift::JID &to) {}
-
 	private:
 		std::string m_name;
 		std::string m_alias;

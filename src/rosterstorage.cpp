@@ -77,7 +77,7 @@ namespace Transport {
 RosterStorage::RosterStorage(User *user, StorageBackend *storageBackend) {
 	m_user = user;
 	m_storageBackend = storageBackend;
-	m_storageTimer = m_user->getComponent()->getFactories()->getTimerFactory()->createTimer(5000);
+	m_storageTimer = m_user->getComponent()->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_storageTimer->onTick.connect(boost::bind(&RosterStorage::storeBuddies, this));
 }
 

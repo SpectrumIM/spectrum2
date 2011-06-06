@@ -42,7 +42,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_connected = false;
 	m_readyForConnect = false;
 
-	m_reconnectTimer = m_component->getFactories()->getTimerFactory()->createTimer(10000);
+	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
 
 	m_rosterManager = new RosterManager(this, m_component);

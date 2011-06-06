@@ -52,61 +52,92 @@ namespace Transport {
 
 	/// Represents one transport instance.
 
-	/// It's used to connect
-	/// the Jabber server and provides transaction layer between Jabber server
-	/// and other classes.
+	/// It's used to connect the Jabber server and provides transaction layer
+	/// between Jabber server and other classes.
+	///
+	/// In server mode it represents Jabber server to which users can connect and use
+	/// it as transport.
 	class Component {
 		public:
 			/// Creates new Component instance.
-			/// \param loop main event loop 
-			/// \param config cofiguration, this class uses following Config values:
+
+			/// \param loop Main event loop.
+			/// \param config Cofiguration; this class uses following Config values:
 			/// 	- service.jid
 			/// 	- service.password
 			/// 	- service.server
 			/// 	- service.port
+			/// 	- service.server_mode
+			/// \param factory Transport Abstract factory used to create basic transport structures.
 			Component(Swift::EventLoop *loop, Config *config, Factory *factory);
 
 			/// Component destructor.
 			~Component();
 
-			/// Returns Swift::Component associated with this Transport::Component.
-			/// You can use it to send presences and other stanzas.
-			/// \return Swift::Component associated with this Transport::Component
+			/// Returns Swift::StanzaChannel associated with this Transport::Component.
+
+			/// It can be used to send presences and other stanzas.
+			/// \return Swift::StanzaChannel associated with this Transport::Component.
 			Swift::StanzaChannel *getStanzaChannel();
 
+			/// Returns Swift::IQRouter associated with this Component.
+
+			/// \return Swift::IQRouter associated with this Component.
 			Swift::IQRouter *getIQRouter() { return m_iqRouter; }
 
 			/// Returns Swift::PresenceOracle associated with this Transport::Component.
+
 			/// You can use it to check current resource connected for particular user.
-			/// \return Swift::PresenceOracle associated with this Transport::Component
+			/// \return Swift::PresenceOracle associated with this Transport::Component.
 			Swift::PresenceOracle *getPresenceOracle();
 
+			/// Returns True if the component is in server mode.
+
+			/// \return True if the component is in server mode.
 			bool inServerMode() { return m_server != NULL; }
+
+			/// Returns user password from internal UserRegistry.
+
+			/// In server mode, the password user used for login can be obtained by
+			/// this method.
+			/// \param barejid User's bare JID.
+			/// \return User's password.
 			const std::string &getUserRegistryPassword(const std::string &barejid);
 
 			/// Connects the Jabber server.
-			/// \see Component()
+
+			/// In server mode this function does nothing.
 			void connect();
 
-			/// Sets disco#info features which are sent as answer to
-			/// disco#info IQ-get. This sets features of transport contact (For example "j2j.domain.tld").
+			/// Sets disco#info features which are sent as answer to disco#info IQ-get.
+			
+			/// This sets features of transport contact (For example "j2j.domain.tld").
 			/// \param features list of features as sent in disco#info response
 			void setTransportFeatures(std::list<std::string> &features);
 
-			/// Sets disco#info features which are sent as answer to
-			/// disco#info IQ-get. This sets features of legacy network buddies (For example "me\40gmail.com@j2j.domain.tld").
+			/// Sets disco#info features which are sent as answer to disco#info IQ-get.
+			
+			/// This sets features of legacy network buddies (For example "me\40gmail.com@j2j.domain.tld").
 			/// \param features list of features as sent in disco#info response
 			void setBuddyFeatures(std::list<std::string> &features);
 
 			/// Returns Jabber ID of this transport.
+
 			/// \return Jabber ID of this transport
 			Swift::JID &getJID() { return m_jid; }
 
-			Swift::BoostNetworkFactories *getFactories() { return m_factories; }
+			/// Returns Swift::NetworkFactories which can be used to create new connections.
 
+			/// \return Swift::NetworkFactories which can be used to create new connections.
+			Swift::BoostNetworkFactories *getNetworkFactories() { return m_factories; }
+
+			/// Returns Transport Factory used to create basic Transport components.
+
+			/// \return Transport Factory used to create basic Transport components.
 			Factory *getFactory() { return m_factory; }
 
 			/// This signal is emitted when server disconnects the transport because of some error.
+
 			/// \param error disconnection error
 			boost::signal<void (const Swift::ComponentError &error)> onConnectionError;
 
@@ -114,15 +145,18 @@ namespace Transport {
 			boost::signal<void ()> onConnected;
 
 			/// This signal is emitted when XML stanza is sent to server.
+
 			/// \param xml xml stanza
 			boost::signal<void (const std::string &xml)> onXMLOut;
 
 			/// This signal is emitted when XML stanza is received from server.
+
 			/// \param xml xml stanza
 			boost::signal<void (const std::string &xml)> onXMLIn;
 
-			/// This signal is emitted when presence from XMPP user (for example "user@domain.tld")
-			/// is received. It's emitted only for presences addressed to transport itself
+			/// This signal is emitted when presence from XMPP user is received.
+
+			/// It's emitted only for presences addressed to transport itself
 			/// (for example to="j2j.domain.tld").
 			/// \param presence presence data
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
