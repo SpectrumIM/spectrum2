@@ -89,6 +89,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_getUserSetting);
 		FINALIZE_STMT(m_setUserSetting);
 		FINALIZE_STMT(m_updateUserSetting);
+		FINALIZE_STMT(m_updateBuddySetting);
 		sqlite3_close(m_db);
 	}
 }
@@ -114,6 +115,8 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
 	PREP_STMT(m_getBuddies, "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
+	PREP_STMT(m_updateBuddySetting, "INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)");
+	
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
 	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
@@ -245,7 +248,19 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 		onStorageError("addBuddy query", (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return -1;
 	}
-	return (long) sqlite3_last_insert_rowid(m_db);
+
+	long id = (long) sqlite3_last_insert_rowid(m_db);
+
+// 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
+	BEGIN(m_updateBuddySetting);
+	BIND_INT(m_updateBuddySetting, userId);
+	BIND_INT(m_updateBuddySetting, id);
+	BIND_STR(m_updateBuddySetting, buddyInfo.settings.find("icon_hash")->first);
+	BIND_INT(m_updateBuddySetting, TYPE_STRING);
+	BIND_STR(m_updateBuddySetting, buddyInfo.settings.find("icon_hash")->second.s);
+
+	EXECUTE_STATEMENT(m_updateBuddySetting, "updateBuddySetting query");
+	return id;
 }
 
 void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
@@ -259,6 +274,16 @@ void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 	BIND_STR(m_updateBuddy, buddyInfo.legacyName);
 
 	EXECUTE_STATEMENT(m_updateBuddy, "updateBuddy query");
+
+// 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
+	BEGIN(m_updateBuddySetting);
+	BIND_INT(m_updateBuddySetting, userId);
+	BIND_INT(m_updateBuddySetting, buddyInfo.id);
+	BIND_STR(m_updateBuddySetting, buddyInfo.settings.find("icon_hash")->first);
+	BIND_INT(m_updateBuddySetting, TYPE_STRING);
+	BIND_STR(m_updateBuddySetting, buddyInfo.settings.find("icon_hash")->second.s);
+
+	EXECUTE_STATEMENT(m_updateBuddySetting, "updateBuddySetting query");
 }
 
 bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
@@ -292,6 +317,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		}
 
 		while(buddy_id == -1 && (ret = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+			RESET_GET_COUNTER(m_getBuddiesSettings);
 			buddy_id = GET_INT(m_getBuddiesSettings);
 			
 			var.type = GET_INT(m_getBuddiesSettings);
@@ -306,6 +332,10 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 					var.s = val;
 					break;
 				default:
+					if (buddy_id == b.id) {
+						buddy_id = -1;
+					}
+					continue;
 					break;
 			}
 			if (buddy_id == b.id) {

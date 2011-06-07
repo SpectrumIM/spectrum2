@@ -83,7 +83,6 @@ class UserManager {
 		Component *m_component;
 		StorageBackend *m_storageBackend;
 		StorageResponder *m_storageResponder;
-		RosterResponder *m_rosterResponder;
 		friend class RosterResponder;
 };
 

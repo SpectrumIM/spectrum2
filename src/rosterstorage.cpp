@@ -106,6 +106,8 @@ bool RosterStorage::storeBuddies() {
 		buddyInfo.subscription = buddy->getSubscription();
 		buddyInfo.id = buddy->getID();
 		buddyInfo.flags = buddy->getFlags();
+		buddyInfo.settings["icon_hash"].s = buddy->getIconHash();
+		buddyInfo.settings["icon_hash"].type = TYPE_STRING;
 
 		// Buddy is in DB
 		if (buddyInfo.id != -1) {

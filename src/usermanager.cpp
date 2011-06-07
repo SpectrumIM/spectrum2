@@ -25,7 +25,6 @@
 #include "transport/conversationmanager.h"
 #include "transport/rostermanager.h"
 #include "storageresponder.h"
-#include "rosterresponder.h"
 
 namespace Transport {
 
@@ -38,9 +37,6 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);
 	m_storageResponder->start();
 
-	m_rosterResponder = new RosterResponder(component->getIQRouter(), m_storageBackend, this);
-	m_rosterResponder->start();
-
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
 	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
@@ -50,7 +46,6 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 UserManager::~UserManager(){
 	m_storageResponder->stop();
 	delete m_storageResponder;
-	delete m_rosterResponder;
 }
 
 void UserManager::addUser(User *user) {

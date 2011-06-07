@@ -38,13 +38,14 @@ class LocalBuddy;
 class Config;
 class NetworkConversation;
 class VCardResponder;
+class RosterResponder;
 
 class NetworkPluginServer {
 	public:
 		struct Client {
 			bool pongReceived;
 			std::list<User *> users;
-			std::string data;
+			Swift::SafeByteArray data;
 			boost::shared_ptr<Swift::Connection> connection;
 		};
 
@@ -57,7 +58,7 @@ class NetworkPluginServer {
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Client *c);
-		void handleDataRead(Client *c, const Swift::ByteArray&);
+		void handleDataRead(Client *c, const Swift::SafeByteArray&);
 
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
@@ -83,6 +84,7 @@ class NetworkPluginServer {
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
+		RosterResponder *m_rosterResponder;
 		Config *m_config;
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Client *>  m_clients;
