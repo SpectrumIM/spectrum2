@@ -110,6 +110,7 @@ ADD_SUBDIRECTORY(include)
 ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(spectrum)
 ADD_SUBDIRECTORY(backends)
+ADD_SUBDIRECTORY(tests)
 
 if(DOXYGEN_FOUND)
 	message("Docs              : yes")
