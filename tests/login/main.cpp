@@ -2,6 +2,7 @@
 #include <boost/bind.hpp>
 
 #include <Swiften/Swiften.h>
+#include <Swiften/Client/ClientOptions.h>
 
 using namespace Swift;
 using namespace boost;
@@ -9,12 +10,12 @@ using namespace boost;
 Client* client;
 
 static void handleDisconnected(const boost::optional<ClientError> &) {
-	std::cout << "Disconnected..." << std::endl;
+// 	std::cout << "Disconnected..." << std::endl;
 	exit(1);
 }
 
 static void handleConnected() {
-	std::cout << "Connected..." << std::endl;
+// 	std::cout << "Connected..." << std::endl;
 	exit(0);
 }
 
@@ -31,11 +32,12 @@ int main(int, char **argv) {
 
 	client = new Client(argv[1], argv[2], &networkFactories);
 	client->setAlwaysTrustCertificates();
-	client->setAllowPLAINOverNonTLS(true);
 	client->onConnected.connect(&handleConnected);
 	client->onDisconnected.connect(bind(&handleDisconnected, _1));
 	client->onMessageReceived.connect(bind(&handleMessageReceived, _1));
-	client->connect();
+	ClientOptions opt;
+	opt.allowPLAINOverNonTLS = true;
+	client->connect(opt);
 
 	eventLoop.run();
 

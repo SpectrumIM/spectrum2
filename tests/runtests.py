@@ -21,12 +21,13 @@ def run_spectrum(backend):
 	" % (backend, backend)
 	)
 	f.close()
-	p = Popen("../spectrum/src/spectrum sample.cfg > /dev/null 2> /dev/null", shell=True)
-	time.sleep(1)
+	p = Popen("../spectrum/src/spectrum sample.cfg >> test.log 2> /dev/null", shell=True)
+	time.sleep(2)
 	return p
 
 
 os.system("killall spectrum 2> /dev/null")
+os.system("rm test.log")
 
 for backend in os.listdir("../backends"):
 	if not os.path.isdir("../backends/" + backend) or backend == "CMakeFiles":
@@ -40,10 +41,15 @@ for backend in os.listdir("../backends"):
 		p = run_spectrum(backend);
 
 		if backend.find("purple") >= 0:
-			ret = os.system(binary + " pyjim%jabber.cz@localhost test")
+			p = Popen(binary + " pyjim%jabber.cz@localhost test", shell=True)
+			
 		else:
-			ret = os.system(binary + " testnickname%irc.freenode.net@localhost test")
-		if ret == 0:
+			p = Popen(binary + " testnickname%irc.freenode.net@localhost test", shell=True)
+
+		time.sleep(5)
+
+		p.poll()
+		if p.returncode == 0:
 			print "[ PASS ]", backend, binary
 		else:
 			print "[ FAIL ]", backend, binary
