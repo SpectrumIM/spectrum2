@@ -90,7 +90,7 @@ static int exec_(const char *path, const char *host, const char *port, const cha
 	if ( pid == 0 ) {
 		// child process
 		execlp(path, path, "--host", host, "--port", port, config, NULL);
-		exit(1);
+		abort();
 	} else if ( pid < 0 ) {
 		// fork failed
 		status = -1;
@@ -195,13 +195,9 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 		return;
 	}
 
-	User *user = m_userManager->getUser(payload.user());
-	if (!user) {
-		return;
-	}
-
 	m_component->m_userRegistry->onPasswordInvalid(payload.user());
-	user = m_userManager->getUser(payload.user());
+
+	User *user = m_userManager->getUser(payload.user());
 	if (!user) {
 		return;
 	}
@@ -230,7 +226,7 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-
+	std::cout << payload.buddyname() << "\n";
 	User *user = m_userManager->getUser(payload.username());
 	if (!user)
 		return;
@@ -326,8 +322,8 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 }
 
 void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &data) {
-	c->data.insert(c->data.begin(), data.begin(), data.end());
-
+	c->data.insert(c->data.end(), data.begin(), data.end());
+	std::cout << "READ\n";
 	while (c->data.size() != 0) {
 		unsigned int expected_size;
 
@@ -343,11 +339,12 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &
 
 		pbnetwork::WrapperMessage wrapper;
 		if (wrapper.ParseFromArray(&c->data[4], expected_size) == false) {
+			std::cout << "PARSING ERROR " << expected_size << "\n";
 			c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
-			return;
+			continue;
 		}
 		c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
-
+		std::cout << "TYPE "  << wrapper.type() << " " << (int) pbnetwork::WrapperMessage_Type_TYPE_CONNECTED << " " << c->data.size() << "\n";
 		switch(wrapper.type()) {
 			case pbnetwork::WrapperMessage_Type_TYPE_CONNECTED:
 				handleConnectedPayload(wrapper.payload());
@@ -403,6 +400,10 @@ void NetworkPluginServer::pingTimeout() {
 
 void NetworkPluginServer::handleUserCreated(User *user) {
 	Client *c = getFreeClient();
+	if (!c) {
+		user->handleDisconnected("Internal Server Error, please reconnect.");
+		return;
+	}
 	user->setData(c);
 	c->users.push_back(user);
 

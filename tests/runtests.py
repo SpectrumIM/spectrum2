@@ -23,43 +23,46 @@ def run_spectrum(backend, test):
 	)
 	f.close()
 	p = Popen("../spectrum/src/spectrum sample.cfg > " + backend + "_" + test + ".log 2>&1", shell=True)
-	time.sleep(2)
+	time.sleep(3)
 	return p
 
+def one_test_run():
+	os.system("killall spectrum 2> /dev/null")
+	os.system("rm *.log")
 
-os.system("killall spectrum 2> /dev/null")
-os.system("rm *.log")
-
-for backend in os.listdir("../backends"):
-	if not os.path.isdir("../backends/" + backend) or backend == "CMakeFiles":
-		continue
-
-	for d in os.listdir("."):
-		binary = d + "/" + d + "_test"
-		if not os.path.exists(binary):
+	for backend in os.listdir("../backends"):
+		if not os.path.isdir("../backends/" + backend) or backend == "CMakeFiles" or backend.startswith("libirc"):
 			continue
 
-		p = run_spectrum(backend, d)
+		for d in os.listdir("."):
+			binary = d + "/" + d + "_test"
+			if not os.path.exists(binary) or d.find("bad") != -1:
+				continue
 
-		if backend.find("purple") >= 0:
-			p = Popen(binary + " pyjim%jabber.cz@localhost test", shell=True)
-			
-		else:
-			p = Popen(binary + " testnickname%irc.freenode.net@localhost test", shell=True)
+			p = run_spectrum(backend, d)
 
-		seconds = 0
-		while p.poll() is None and seconds < 20:
-			time.sleep(1)
-			seconds += 1
-
-		if p.returncode == 0:
-			print "[ PASS ]", backend, binary
-		else:
-			if seconds == 20:
-				print "[ TIME ]", backend, binary
+			if backend.find("purple") >= 0:
+				p = Popen(binary + " pyjim%jabber.cz@localhost test", shell=True)
+				
 			else:
-				print "[ FAIL ]", backend, binary
+				p = Popen(binary + " testnickname%irc.freenode.net@localhost test", shell=True)
 
-		os.system("killall spectrum 2> /dev/null")
+			seconds = 0
+			while p.poll() is None and seconds < 20:
+				time.sleep(1)
+				seconds += 1
+
+			if p.returncode == 0 and seconds < 20:
+				print "[ PASS ]", backend, binary
+			else:
+				if seconds == 20:
+					print "[ TIME ]", backend, binary
+				else:
+					print "[ FAIL ]", backend, binary
+
+			os.system("killall spectrum 2> /dev/null")
+
+while True:
+	one_test_run()
 
 

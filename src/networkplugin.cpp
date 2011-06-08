@@ -266,7 +266,7 @@ void NetworkPlugin::handleVCardPayload(const std::string &data) {
 }
 
 void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
-	m_data.insert(m_data.begin(), data.begin(), data.end());
+	m_data.insert(m_data.end(), data.begin(), data.end());
 
 	while (m_data.size() != 0) {
 		unsigned int expected_size;
