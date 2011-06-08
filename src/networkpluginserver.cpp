@@ -201,6 +201,10 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 	}
 
 	m_component->m_userRegistry->onPasswordInvalid(payload.user());
+	user = m_userManager->getUser(payload.user());
+	if (!user) {
+		return;
+	}
 	user->handleDisconnected(payload.message());
 }
 

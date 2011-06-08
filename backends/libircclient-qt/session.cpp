@@ -17,6 +17,7 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* 
 {
 	this->np = np;
 	this->user = user;
+	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
 }
 
 void MyIrcSession::on_connected(){
@@ -26,6 +27,7 @@ void MyIrcSession::on_connected(){
 void MyIrcSession::on_disconnected()
 {
     std::cout << "disconnected:\n";
+    np->handleDisconnected(user, "", 0, "");
 }
 
 void MyIrcSession::on_bufferAdded(Irc::Buffer* buffer)

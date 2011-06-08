@@ -3,7 +3,8 @@ import sys
 from subprocess import *
 import time
 
-def run_spectrum(backend):
+def run_spectrum(backend, test):
+	os.system("rm test.sql")
 	f = open("sample.cfg", "w")
 	f.write("\
 	[service]\n\
@@ -21,13 +22,13 @@ def run_spectrum(backend):
 	" % (backend, backend)
 	)
 	f.close()
-	p = Popen("../spectrum/src/spectrum sample.cfg >> test.log 2> /dev/null", shell=True)
+	p = Popen("../spectrum/src/spectrum sample.cfg > " + backend + "_" + test + ".log 2>&1", shell=True)
 	time.sleep(2)
 	return p
 
 
 os.system("killall spectrum 2> /dev/null")
-os.system("rm test.log")
+os.system("rm *.log")
 
 for backend in os.listdir("../backends"):
 	if not os.path.isdir("../backends/" + backend) or backend == "CMakeFiles":
@@ -38,7 +39,7 @@ for backend in os.listdir("../backends"):
 		if not os.path.exists(binary):
 			continue
 
-		p = run_spectrum(backend);
+		p = run_spectrum(backend, d)
 
 		if backend.find("purple") >= 0:
 			p = Popen(binary + " pyjim%jabber.cz@localhost test", shell=True)
@@ -46,13 +47,18 @@ for backend in os.listdir("../backends"):
 		else:
 			p = Popen(binary + " testnickname%irc.freenode.net@localhost test", shell=True)
 
-		time.sleep(5)
+		seconds = 0
+		while p.poll() is None and seconds < 20:
+			time.sleep(1)
+			seconds += 1
 
-		p.poll()
 		if p.returncode == 0:
 			print "[ PASS ]", backend, binary
 		else:
-			print "[ FAIL ]", backend, binary
+			if seconds == 20:
+				print "[ TIME ]", backend, binary
+			else:
+				print "[ FAIL ]", backend, binary
 
 		os.system("killall spectrum 2> /dev/null")
 

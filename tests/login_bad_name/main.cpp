@@ -9,12 +9,12 @@ using namespace boost;
 
 Client* client;
 
-static void handleDisconnected(const boost::optional<ClientError> &) {
-	exit(1);
+static void handleDisconnected(const boost::optional<ClientError> &error) {
+	exit(error->getType() != ClientError::AuthenticationFailedError);
 }
 
 static void handleConnected() {
-	exit(0);
+	exit(1);
 }
 
 static void handleMessageReceived(Message::ref message) {
@@ -28,7 +28,8 @@ int main(int, char **argv) {
 	SimpleEventLoop eventLoop;
 	BoostNetworkFactories networkFactories(&eventLoop);
 
-	client = new Client(argv[1], argv[2], &networkFactories);
+	JID jid(JID(argv[1]).getNode() + "something", JID(argv[1]).getDomain());
+	client = new Client(jid, argv[2], &networkFactories);
 	client->setAlwaysTrustCertificates();
 	client->onConnected.connect(&handleConnected);
 	client->onDisconnected.connect(bind(&handleDisconnected, _1));
