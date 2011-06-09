@@ -83,10 +83,10 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(item.getJID()));
 	if (buddy) {
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
-			std::cout << "BUDDY REMOVED\n";
+			onBuddyRemoved(buddy);
 		}
 		else {
-			std::cout << "BUDDY UPDATED\n";
+			onBuddyUpdated(buddy, item);
 		}
 	}
 	else if (item.getSubscription() != Swift::RosterItemPayload::Remove) {
@@ -100,7 +100,7 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 
 		buddy = user->getComponent()->getFactory()->createBuddy(user->getRosterManager(), buddyInfo);
 		user->getRosterManager()->setBuddy(buddy);
-		std::cout << "BUDDY ADDED\n";
+		onBuddyAdded(buddy, item);
 	}
 
 	return true;

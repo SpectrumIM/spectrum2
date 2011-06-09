@@ -64,6 +64,7 @@ class NetworkPlugin {
 		virtual void handleVCardRequest(const std::string &/*user*/, const std::string &/*legacyName*/, unsigned int /*id*/) {}
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		virtual void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/) {}
+		virtual void handleBuddyUpdatedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*alias*/, const std::string &/*groups*/) {}
 		
 
 	private:
@@ -74,6 +75,7 @@ class NetworkPlugin {
 		void handleJoinRoomPayload(const std::string &payload);
 		void handleLeaveRoomPayload(const std::string &payload);
 		void handleVCardPayload(const std::string &payload);
+		void handleBuddyChangedPayload(const std::string &payload);
 		void handleDataRead(const Swift::SafeByteArray&);
 		void _handleConnected(bool error);
 		void handleDisconnected();

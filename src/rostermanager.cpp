@@ -119,6 +119,12 @@ void RosterManager::unsetBuddy(Buddy *buddy) {
 	onBuddyUnset(buddy);
 }
 
+void RosterManager::storeBuddy(Buddy *buddy) {
+	if (m_rosterStorage) {
+		m_rosterStorage->storeBuddy(buddy);
+	}
+}
+
 void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key) {
 	if (m_buddies[key] != NULL) {
 		m_buddies[key]->buddyChanged();

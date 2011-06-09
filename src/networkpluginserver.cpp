@@ -128,6 +128,9 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_vcardResponder->start();
 
 	m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
+	m_rosterResponder->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleBuddyAdded, this, _1, _2));
+	m_rosterResponder->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleBuddyRemoved, this, _1));
+	m_rosterResponder->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
 	m_rosterResponder->start();
 
 	m_server = component->getFactories()->getConnectionFactory()->createConnectionServer(10000);
@@ -226,7 +229,7 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-	std::cout << payload.buddyname() << "\n";
+
 	User *user = m_userManager->getUser(payload.username());
 	if (!user)
 		return;
@@ -323,7 +326,6 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &data) {
 	c->data.insert(c->data.end(), data.begin(), data.end());
-	std::cout << "READ\n";
 	while (c->data.size() != 0) {
 		unsigned int expected_size;
 
@@ -344,7 +346,7 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &
 			continue;
 		}
 		c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
-		std::cout << "TYPE "  << wrapper.type() << " " << (int) pbnetwork::WrapperMessage_Type_TYPE_CONNECTED << " " << c->data.size() << "\n";
+
 		switch(wrapper.type()) {
 			case pbnetwork::WrapperMessage_Type_TYPE_CONNECTED:
 				handleConnectedPayload(wrapper.payload());
@@ -516,6 +518,36 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 	Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
 	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleBuddyRemoved(Buddy *buddy) {
+	
+}
+
+void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
+	User *user = b->getRosterManager()->getUser();
+
+	dynamic_cast<LocalBuddy *>(b)->setAlias(item.getName());
+	user->getRosterManager()->storeBuddy(b);
+
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user->getJID().toBare());
+	buddy.set_buddyname(b->getName());
+	buddy.set_alias(b->getAlias());
+	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	buddy.set_status(Swift::StatusShow::None);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
+
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item) {
+	handleBuddyUpdated(buddy, item);
 }
 
 void NetworkPluginServer::handleVCardRequired(User *user, const std::string &name, unsigned int id) {

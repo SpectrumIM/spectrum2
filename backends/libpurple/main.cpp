@@ -118,11 +118,23 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		virtual void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id) {
+		void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				serv_get_info(purple_account_get_connection(account), legacyName.c_str());
 				m_vcards[user + legacyName] = id;
+			}
+		}
+
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::string &groups) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
+				if (buddy) {
+					purple_blist_alias_buddy(buddy, alias.c_str());
+					purple_blist_server_alias_buddy(buddy, alias.c_str());
+					serv_alias_buddy(buddy);
+				}
 			}
 		}
 

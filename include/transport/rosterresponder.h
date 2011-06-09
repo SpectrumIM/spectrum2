@@ -28,11 +28,18 @@
 namespace Transport {
 
 class UserManager;
+class Buddy;
 
 class RosterResponder : public Swift::Responder<Swift::RosterPayload> {
 	public:
 		RosterResponder(Swift::IQRouter *router, UserManager *userManager);
 		~RosterResponder();
+
+		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyUpdated;
+
+		boost::signal<void (Buddy *)> onBuddyRemoved;
+
+		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyAdded;
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload);
