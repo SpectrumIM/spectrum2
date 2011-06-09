@@ -34,8 +34,8 @@ int main(int, char **argv) {
 	client->onConnected.connect(&handleConnected);
 	client->onDisconnected.connect(bind(&handleDisconnected, _1));
 	client->onMessageReceived.connect(bind(&handleMessageReceived, _1));
-	ClientOptions opt;
-	opt.allowPLAINOverNonTLS = true;
+	Swift::ClientOptions opt;
+	opt.allowPLAINWithoutTLS = true;
 	client->connect(opt);
 
 	eventLoop.run();
