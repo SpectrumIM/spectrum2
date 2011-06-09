@@ -39,6 +39,9 @@ def one_test_run():
 			if not os.path.exists(binary):
 				continue
 
+			if os.path.exists(d + "/.no" + backend):
+				continue
+
 			p = run_spectrum(backend, d)
 
 			if backend.find("purple") >= 0:
@@ -62,7 +65,6 @@ def one_test_run():
 
 			os.system("killall spectrum 2> /dev/null")
 
-while True:
-	one_test_run()
+one_test_run()
 
 
