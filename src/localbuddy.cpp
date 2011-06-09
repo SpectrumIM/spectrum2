@@ -24,6 +24,7 @@
 namespace Transport {
 
 LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id) : Buddy(rosterManager, id) {
+	m_status = Swift::StatusShow::None;
 }
 
 LocalBuddy::~LocalBuddy() {

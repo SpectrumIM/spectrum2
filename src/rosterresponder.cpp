@@ -27,6 +27,7 @@
 #include "transport/user.h"
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
+#include "transport/buddy.h"
 
 using namespace Swift;
 using namespace boost;
@@ -67,6 +68,41 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 
 bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload) {
 	sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
+
+	User *user = m_userManager->getUser(from.toBare().toString());
+	if (!user) {
+		return true;
+	}
+
+	if (payload->getItems().size() == 0) {
+		return true;
+	}
+
+	Swift::RosterItemPayload item = payload->getItems()[0];
+
+	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(item.getJID()));
+	if (buddy) {
+		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
+			std::cout << "BUDDY REMOVED\n";
+		}
+		else {
+			std::cout << "BUDDY UPDATED\n";
+		}
+	}
+	else if (item.getSubscription() != Swift::RosterItemPayload::Remove) {
+		// Roster push for this new buddy is sent by RosterManager
+		BuddyInfo buddyInfo;
+		buddyInfo.id = -1;
+		buddyInfo.alias = item.getName();
+		buddyInfo.legacyName = Buddy::JIDToLegacyName(item.getJID());
+		buddyInfo.subscription = "both";
+		buddyInfo.flags = 0;
+
+		buddy = user->getComponent()->getFactory()->createBuddy(user->getRosterManager(), buddyInfo);
+		user->getRosterManager()->setBuddy(buddy);
+		std::cout << "BUDDY ADDED\n";
+	}
+
 	return true;
 }
 
