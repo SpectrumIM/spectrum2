@@ -74,6 +74,10 @@ class NetworkPluginServer {
 		void handleUserReadyToConnect(User *user);
 		void handleUserDestroyed(User *user);
 
+		void handleBuddyUpdated(Buddy *buddy, const Swift::RosterItemPayload &item);
+		void handleBuddyRemoved(Buddy *buddy);
+		void handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item);
+
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
 
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);

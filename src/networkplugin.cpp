@@ -265,8 +265,18 @@ void NetworkPlugin::handleVCardPayload(const std::string &data) {
 	handleVCardRequest(payload.username(), payload.buddyname(), payload.id());
 }
 
+void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleBuddyUpdatedRequest(payload.username(), payload.buddyname(), payload.alias(), payload.groups());
+}
+
 void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
-	m_data.insert(m_data.begin(), data.begin(), data.end());
+	m_data.insert(m_data.end(), data.begin(), data.end());
 
 	while (m_data.size() != 0) {
 		unsigned int expected_size;
@@ -309,6 +319,9 @@ void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_VCARD:
 				handleVCardPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED:
+				handleBuddyChangedPayload(wrapper.payload());
 				break;
 			default:
 				return;

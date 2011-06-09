@@ -90,7 +90,7 @@ static int exec_(const char *path, const char *host, const char *port, const cha
 	if ( pid == 0 ) {
 		// child process
 		execlp(path, path, "--host", host, "--port", port, config, NULL);
-		exit(1);
+		abort();
 	} else if ( pid < 0 ) {
 		// fork failed
 		status = -1;
@@ -128,6 +128,9 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_vcardResponder->start();
 
 	m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
+	m_rosterResponder->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleBuddyAdded, this, _1, _2));
+	m_rosterResponder->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleBuddyRemoved, this, _1));
+	m_rosterResponder->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
 	m_rosterResponder->start();
 
 	m_server = component->getNetworkFactories()->getConnectionFactory()->createConnectionServer(10000);
@@ -195,12 +198,12 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 		return;
 	}
 
+	m_component->m_userRegistry->onPasswordInvalid(payload.user());
+
 	User *user = m_userManager->getUser(payload.user());
 	if (!user) {
 		return;
 	}
-
-	m_component->m_userRegistry->onPasswordInvalid(payload.user());
 	user->handleDisconnected(payload.message());
 }
 
@@ -322,8 +325,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 }
 
 void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &data) {
-	c->data.insert(c->data.begin(), data.begin(), data.end());
-
+	c->data.insert(c->data.end(), data.begin(), data.end());
 	while (c->data.size() != 0) {
 		unsigned int expected_size;
 
@@ -339,8 +341,9 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &
 
 		pbnetwork::WrapperMessage wrapper;
 		if (wrapper.ParseFromArray(&c->data[4], expected_size) == false) {
+			std::cout << "PARSING ERROR " << expected_size << "\n";
 			c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
-			return;
+			continue;
 		}
 		c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
 
@@ -399,6 +402,10 @@ void NetworkPluginServer::pingTimeout() {
 
 void NetworkPluginServer::handleUserCreated(User *user) {
 	Client *c = getFreeClient();
+	if (!c) {
+		user->handleDisconnected("Internal Server Error, please reconnect.");
+		return;
+	}
 	user->setData(c);
 	c->users.push_back(user);
 
@@ -511,6 +518,36 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 	Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
 	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleBuddyRemoved(Buddy *buddy) {
+	
+}
+
+void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
+	User *user = b->getRosterManager()->getUser();
+
+	dynamic_cast<LocalBuddy *>(b)->setAlias(item.getName());
+	user->getRosterManager()->storeBuddy(b);
+
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user->getJID().toBare());
+	buddy.set_buddyname(b->getName());
+	buddy.set_alias(b->getAlias());
+	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	buddy.set_status(Swift::StatusShow::None);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
+
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item) {
+	handleBuddyUpdated(buddy, item);
 }
 
 void NetworkPluginServer::handleVCardRequired(User *user, const std::string &name, unsigned int id) {

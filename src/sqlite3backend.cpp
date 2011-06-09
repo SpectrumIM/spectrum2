@@ -240,7 +240,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	BIND_INT(m_addBuddy, userId);
 	BIND_STR(m_addBuddy, buddyInfo.legacyName);
 	BIND_STR(m_addBuddy, buddyInfo.subscription);
-	BIND_STR(m_addBuddy, buddyInfo.groups[0]); // TODO: serialize groups
+	BIND_STR(m_addBuddy, buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]); // TODO: serialize groups
 	BIND_STR(m_addBuddy, buddyInfo.alias);
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
