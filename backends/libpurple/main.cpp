@@ -135,6 +135,14 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					purple_blist_server_alias_buddy(buddy, alias.c_str());
 					serv_alias_buddy(buddy);
 				}
+				else {
+					PurpleBuddy *buddy = purple_buddy_new(account, buddyName.c_str(), alias.c_str());
+
+					// Add newly created buddy to legacy network roster.
+					PurpleGroup *group = purple_find_group(groups.c_str());
+					purple_blist_add_buddy(buddy, NULL, group ,NULL);
+					purple_account_add_buddy(account, buddy);
+				}
 			}
 		}
 
