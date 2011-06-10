@@ -333,6 +333,9 @@ void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED:
 				handleBuddyChangedPayload(wrapper.payload());
 				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
+				handleBuddyRemovedPayload(wrapper.payload());
+				break;
 			default:
 				return;
 		}

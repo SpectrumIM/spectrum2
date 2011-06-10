@@ -126,6 +126,17 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::string &groups) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
+				if (buddy) {
+					purple_account_remove_buddy(account, buddy, purple_buddy_get_group(buddy));
+					purple_blist_remove_buddy(buddy);
+				}
+			}
+		}
+
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::string &groups) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
