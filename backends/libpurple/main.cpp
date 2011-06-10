@@ -45,6 +45,40 @@ static GOptionEntry options_entries[] = {
 	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
+static void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
+	std::cout << "REQUEST INPUT\n";
+	if (primary) {
+		std::string primaryString(primary);
+		std::cout << "REQUEST INPUT " << primaryString << "\n";
+		if (primaryString == "Authorization Request Message:") {
+			std::cout << "AUTHORIZING\n";
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+	}
+	return NULL;
+}
+
+static void *requestAction(const char *title, const char *primary, const char *secondary, int default_action, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data, size_t action_count, va_list actions){
+	std::string t(title ? title : "NULL");
+	if (t == "SSL Certificate Verification") {
+		Log("purple", "accepting SSL certificate");
+		va_arg(actions, char *);
+		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
+	}
+	else {
+		if (title) {
+			std::string headerString(title);
+			Log("purple", "header string: " << headerString);
+			if (headerString == "SSL Certificate Verification") {
+				va_arg(actions, char *);
+				((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
+			}
+		}
+	}
+	return NULL;
+}
+
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
 		SpectrumNetworkPlugin(Config *config, SpectrumEventLoop *loop, const std::string &host, int port) : NetworkPlugin(loop, host, port) {
@@ -147,6 +181,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					serv_alias_buddy(buddy);
 				}
 				else {
+					std::cout << "ADDING NEW BUDDY\n";
 					PurpleBuddy *buddy = purple_buddy_new(account, buddyName.c_str(), alias.c_str());
 
 					// Add newly created buddy to legacy network roster.
@@ -482,12 +517,27 @@ static PurpleNotifyUiOps notifyUiOps =
 		NULL
 };
 
+static PurpleRequestUiOps requestUiOps =
+{
+	requestInput,
+	NULL,
+	requestAction,
+	NULL,
+	NULL,
+	NULL, //requestClose,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops(&blistUiOps);
 // 	purple_accounts_set_ui_ops(&accountUiOps);
 	purple_notify_set_ui_ops(&notifyUiOps);
-// 	purple_request_set_ui_ops(&requestUiOps);
+	purple_request_set_ui_ops(&requestUiOps);
 // 	purple_xfers_set_ui_ops(getXferUiOps());
 	purple_connections_set_ui_ops(&conn_ui_ops);
 	purple_conversations_set_ui_ops(&conversation_ui_ops);
