@@ -275,6 +275,16 @@ void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
 	handleBuddyUpdatedRequest(payload.username(), payload.buddyname(), payload.alias(), payload.groups());
 }
 
+void NetworkPlugin::handleBuddyRemovedPayload(const std::string &data) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleBuddyRemovedRequest(payload.username(), payload.buddyname(), payload.groups());
+}
+
 void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 	m_data.insert(m_data.end(), data.begin(), data.end());
 

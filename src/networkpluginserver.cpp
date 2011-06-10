@@ -520,8 +520,23 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 	send(c->connection, message);
 }
 
-void NetworkPluginServer::handleBuddyRemoved(Buddy *buddy) {
-	
+void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
+	User *user = b->getRosterManager()->getUser();
+
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user->getJID().toBare());
+	buddy.set_buddyname(b->getName());
+	buddy.set_alias(b->getAlias());
+	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	buddy.set_status(Swift::StatusShow::None);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED);
+
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
 }
 
 void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
