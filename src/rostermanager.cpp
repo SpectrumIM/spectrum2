@@ -75,6 +75,7 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	item.setJID(buddy->getJID().toBare());
 	item.setName(buddy->getAlias());
 	item.setGroups(buddy->getGroups());
+	item.setSubscription(Swift::RosterItemPayload::Both);
 
 	payload->addItem(item);
 
@@ -186,6 +187,7 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 		item.setJID(buddy->getJID().toBare());
 		item.setName(buddy->getAlias());
 		item.setGroups(buddy->getGroups());
+		item.setSubscription(Swift::RosterItemPayload::Both);
 		payload->addItem(item);
 	}
 	return payload;
