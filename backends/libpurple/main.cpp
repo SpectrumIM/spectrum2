@@ -139,6 +139,58 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleStatusChangeRequest(const std::string &user, int status, const std::string &statusMessage) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				int st;
+				switch(status) {
+					case Swift::StatusShow::Away: {
+						st = PURPLE_STATUS_AWAY;
+						if (!purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AWAY))
+							st = PURPLE_STATUS_EXTENDED_AWAY;
+						else
+							st = PURPLE_STATUS_AWAY;
+						break;
+					}
+					case Swift::StatusShow::DND: {
+						st = PURPLE_STATUS_UNAVAILABLE;
+						break;
+					}
+					case Swift::StatusShow::XA: {
+						if (!purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_EXTENDED_AWAY))
+							st = PURPLE_STATUS_AWAY;
+						else
+							st = PURPLE_STATUS_EXTENDED_AWAY;
+						break;
+					}
+					case Swift::StatusShow::None: {
+						st = PURPLE_STATUS_OFFLINE;
+						break;
+					}
+					default:
+						st = PURPLE_STATUS_AVAILABLE;
+						break;
+				}
+				gchar *_markup = purple_markup_escape_text(statusMessage.c_str(), -1);
+				std::string markup(_markup);
+				g_free(_markup);
+
+				std::cout << st << " < STATUS\n";
+
+				// we are already connected so we have to change status
+				const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, (PurpleStatusPrimitive) st);
+				if (status_type != NULL) {
+					// send presence to legacy network
+					if (!markup.empty()) {
+						purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, "message", markup.c_str(), NULL);
+					}
+					else {
+						purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, NULL);
+					}
+				}
+			}
+		}
+
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {

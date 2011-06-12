@@ -104,11 +104,11 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		return;
 	}
 
-
 	if (highest) {
 		highest->setTo(presence->getFrom().toBare());
 		highest->setFrom(m_component->getJID());
 		m_component->getStanzaChannel()->sendPresence(highest);
+		onPresenceChanged(highest);
 	}
 	else {
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -116,6 +116,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		response->setFrom(m_component->getJID());
 		response->setType(Swift::Presence::Unavailable);
 		m_component->getStanzaChannel()->sendPresence(response);
+		onPresenceChanged(response);
 	}
 }
 

@@ -411,6 +411,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 
 // 	UserInfo userInfo = user->getUserInfo();
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
+	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
 }
@@ -427,6 +428,26 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 	login.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGIN);
+
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence::ref presence) {
+	if (presence->getShow() == Swift::StatusShow::None)
+		return;
+
+	UserInfo userInfo = user->getUserInfo();
+
+	pbnetwork::Status status;
+	status.set_username(user->getJID().toBare());
+	status.set_status((int) presence->getShow());
+	status.set_statusmessage(presence->getStatus());
+
+	std::string message;
+	status.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATUS_CHANGED);
 
 	Client *c = (Client *) user->getData();
 	send(c->connection, message);

@@ -225,6 +225,16 @@ void NetworkPlugin::handleLogoutPayload(const std::string &data) {
 	handleLogoutRequest(payload.user(), payload.legacyname());
 }
 
+void NetworkPlugin::handleStatusChangedPayload(const std::string &data) {
+	pbnetwork::Status payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleStatusChangeRequest(payload.username(), payload.status(), payload.statusmessage());
+}
+
 void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
 	if (payload.ParseFromString(data) == false) {
@@ -335,6 +345,9 @@ void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
 				handleBuddyRemovedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_STATUS_CHANGED:
+				handleStatusChangedPayload(wrapper.payload());
 				break;
 			default:
 				return;

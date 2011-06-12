@@ -65,6 +65,12 @@ message VCard {
 	optional bytes photo = 6;
 }
 
+message Status {
+	required string userName = 1;
+	required int32 status = 3;
+	optional string statusMessage = 4;
+}
+
 message WrapperMessage {
 	enum Type { 
 		TYPE_CONNECTED 				= 1;
@@ -81,7 +87,8 @@ message WrapperMessage {
 		TYPE_PARTICIPANT_CHANGED	= 13;
 		TYPE_ROOM_NICKNAME_CHANGED	= 14;
 		TYPE_ROOM_SUBJECT_CHANGED	= 15;
-		TYPE_VCARD			= 16;
+		TYPE_VCARD					= 16;
+		TYPE_STATUS_CHANGED			= 17;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

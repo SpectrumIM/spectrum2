@@ -64,6 +64,7 @@ class NetworkPlugin {
 		virtual void handleVCardRequest(const std::string &/*user*/, const std::string &/*legacyName*/, unsigned int /*id*/) {}
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		virtual void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/) {}
+		virtual void handleStatusChangeRequest(const std::string &/*user*/, int status, const std::string &statusMessage) {}
 		virtual void handleBuddyUpdatedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*alias*/, const std::string &/*groups*/) {}
 		virtual void handleBuddyRemovedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*groups*/) {}
 		
@@ -72,6 +73,7 @@ class NetworkPlugin {
 		void connect();
 		void handleLoginPayload(const std::string &payload);
 		void handleLogoutPayload(const std::string &payload);
+		void handleStatusChangedPayload(const std::string &payload);
 		void handleConvMessagePayload(const std::string &payload);
 		void handleJoinRoomPayload(const std::string &payload);
 		void handleLeaveRoomPayload(const std::string &payload);

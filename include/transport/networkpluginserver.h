@@ -72,6 +72,7 @@ class NetworkPluginServer {
 		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
 		void handleRoomLeft(User *user, const std::string &room);
 		void handleUserReadyToConnect(User *user);
+		void handleUserPresenceChanged(User *user, Swift::Presence::ref presence);
 		void handleUserDestroyed(User *user);
 
 		void handleBuddyUpdated(Buddy *buddy, const Swift::RosterItemPayload &item);
