@@ -684,15 +684,30 @@ void NetworkPluginServer::sendPing(Client *c) {
 }
 
 NetworkPluginServer::Client *NetworkPluginServer::getFreeClient() {
+	NetworkPluginServer::Client *c = NULL;
+	bool spawnNew = false;
 	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
 			if ((*it)->users.size() + 1 == CONFIG_INT(m_config, "service.users_per_backend")) {
-				exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+				spawnNew = true;
 			}
-			return (*it);
+			if (c == NULL) {
+				c = *it;
+			}
+			else {
+				if ((*it)->users.size() + 1 != CONFIG_INT(m_config, "service.users_per_backend")) {
+					spawnNew = false;
+					break;
+				}
+			}
 		}
 	}
-	return NULL;
+
+	if (spawnNew) {
+		exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	}
+
+	return c;
 }
 
 }
