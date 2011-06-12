@@ -172,7 +172,7 @@ void NetworkPluginServer::handleSessionFinished(Client *c) {
 
 	// Execute new session only if there's no free one after this crash/disconnection
 	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->users.size() < 1) {
+		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
 			return;
 		}
 	}
@@ -529,6 +529,8 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 	if (!conv) {
 		return;
 	}
+
+	user->getConversationManager()->removeConversation(conv);
 
 	delete conv;
 }

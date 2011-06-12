@@ -36,7 +36,6 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 }
 
 Conversation::~Conversation() {
-	m_conversationManager->removeConversation(this);
 }
 
 void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {
