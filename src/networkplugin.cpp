@@ -334,6 +334,28 @@ void NetworkPlugin::handleBuddyRemovedPayload(const std::string &data) {
 	handleBuddyRemovedRequest(payload.username(), payload.buddyname(), payload.groups());
 }
 
+void NetworkPlugin::handleChatStatePayload(const std::string &data, Swift::ChatState::ChatStateType type) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	switch(type) {
+		case Swift::ChatState::Composing:
+			handleTypingRequest(payload.username(), payload.buddyname());
+			break;
+		case Swift::ChatState::Paused:
+			handleTypedRequest(payload.username(), payload.buddyname());
+			break;
+		case Swift::ChatState::Active:
+			handleStoppedTypingRequest(payload.username(), payload.buddyname());
+			break;
+		default:
+			break;
+	}
+}
+
 void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 	m_data.insert(m_data.end(), data.begin(), data.end());
 
@@ -387,6 +409,15 @@ void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_STATUS_CHANGED:
 				handleStatusChangedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING:
+				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Composing);
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED:
+				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Paused);
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
+				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Active);
 				break;
 			default:
 				return;

@@ -244,6 +244,27 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleTypingRequest(const std::string &user, const std::string &buddyName) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				serv_send_typing(purple_account_get_connection(account), buddyName.c_str(), PURPLE_TYPING);
+			}
+		}
+
+		void handleTypedRequest(const std::string &user, const std::string &buddyName) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				serv_send_typing(purple_account_get_connection(account), buddyName.c_str(), PURPLE_TYPED);
+			}
+		}
+
+		void handleStoppedTypingRequest(const std::string &user, const std::string &buddyName) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				serv_send_typing(purple_account_get_connection(account), buddyName.c_str(), PURPLE_NOT_TYPING);
+			}
+		}
+
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;

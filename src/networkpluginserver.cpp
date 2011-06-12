@@ -560,18 +560,52 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 }
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
-	pbnetwork::ConversationMessage m;
-	m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
-	m.set_buddyname(conv->getLegacyName());
-	m.set_message(msg->getBody());
 
-	std::string message;
-	m.SerializeToString(&message);
+	boost::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
+	if (statePayload) {
+		pbnetwork::WrapperMessage_Type type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED;
+		switch (statePayload->getChatState()) {
+			case Swift::ChatState::Active:
+				type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING;
+				break;
+			case Swift::ChatState::Composing:
+				type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING;
+				break;
+			case Swift::ChatState::Paused:
+				type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED;
+				break;
+			default:
+				break;
+		}
+		if (type != pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED) {
+			pbnetwork::Buddy buddy;
+			buddy.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
+			buddy.set_buddyname(conv->getLegacyName());
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
+			std::string message;
+			buddy.SerializeToString(&message);
 
-	Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
-	send(c->connection, message);
+			WRAP(message, type);
+
+			Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+			send(c->connection, message);
+		}
+	}
+
+	if (!msg->getBody().empty()) {
+		pbnetwork::ConversationMessage m;
+		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
+		m.set_buddyname(conv->getLegacyName());
+		m.set_message(msg->getBody());
+
+		std::string message;
+		m.SerializeToString(&message);
+
+		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
+
+		Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+		send(c->connection, message);
+	}
 }
 
 void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
