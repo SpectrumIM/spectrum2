@@ -123,6 +123,45 @@ void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::strin
 	send(message);
 }
 
+void NetworkPlugin::handleBuddyTyping(const std::string &user, const std::string &buddyName) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user);
+	buddy.set_buddyname(buddyName);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING);
+
+	send(message);
+}
+
+void NetworkPlugin::handleBuddyTyped(const std::string &user, const std::string &buddyName) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user);
+	buddy.set_buddyname(buddyName);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED);
+
+	send(message);
+}
+
+void NetworkPlugin::handleBuddyStoppedTyping(const std::string &user, const std::string &buddyName) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user);
+	buddy.set_buddyname(buddyName);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING);
+
+	send(message);
+}
+
 void NetworkPlugin::handleConnected(const std::string &user) {
 	std::cout << "LOGIN SENT\n";
 	pbnetwork::Connected d;

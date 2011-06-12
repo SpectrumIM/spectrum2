@@ -645,6 +645,30 @@ static PurpleDebugUiOps debugUiOps =
 	NULL
 };
 
+static void buddyTyping(PurpleAccount *account, const char *who, gpointer null) {
+	std::string w = who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+	np->handleBuddyTyping(np->m_accounts[account], w);
+}
+
+static void buddyTyped(PurpleAccount *account, const char *who, gpointer null) {
+	std::string w = who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+	np->handleBuddyTyped(np->m_accounts[account], w);
+}
+
+static void buddyTypingStopped(PurpleAccount *account, const char *who, gpointer null){
+	std::string w = who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+	np->handleBuddyStoppedTyping(np->m_accounts[account], w);
+}
+
 static bool initPurple(Config &cfg) {
 	bool ret;
 
@@ -661,6 +685,7 @@ static bool initPurple(Config &cfg) {
 	ret = purple_core_init("spectrum");
 	if (ret) {
 		static int blist_handle;
+		static int conversation_handle;
 
 		purple_set_blist(purple_blist_new());
 		purple_blist_load();
@@ -686,9 +711,9 @@ static bool initPurple(Config &cfg) {
 
 
 // 		purple_signal_connect(purple_conversations_get_handle(), "received-im-msg", &conversation_handle, PURPLE_CALLBACK(newMessageReceived), NULL);
-// 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
-// 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
-// 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
+		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
+		purple_signal_connect(purple_conversations_get_handle(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
+		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
 		purple_signal_connect(purple_connections_get_handle(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);

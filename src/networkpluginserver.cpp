@@ -223,6 +223,30 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 	m_vcardResponder->sendVCard(payload.id(), vcard);
 }
 
+void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift::ChatState::ChatStateType type) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+	if (!conv) {
+		std::cout << "handling chatstate: NO conv with buddyname=" << payload.buddyname() << "\n";
+		return;
+	}
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->addPayload(boost::make_shared<Swift::ChatState>(type));
+
+	conv->handleMessage(msg);
+	
+}
+
 void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
@@ -374,6 +398,15 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_VCARD:
 				handleVCardPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING:
+				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Composing);
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED:
+				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Paused);
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
+				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Active);
 				break;
 			default:
 				return;

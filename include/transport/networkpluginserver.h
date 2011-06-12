@@ -67,6 +67,7 @@ class NetworkPluginServer {
 		void handleParticipantChangedPayload(const std::string &payload);
 		void handleRoomChangedPayload(const std::string &payload);
 		void handleVCardPayload(const std::string &payload);
+		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);

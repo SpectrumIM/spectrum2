@@ -25,9 +25,9 @@ message Logout {
 message Buddy {
 	required string userName = 1;
 	required string buddyName = 2;
-	required string alias = 3;
-	required string groups = 4;
-	required int32 status = 5;
+	optional string alias = 3;
+	optional string groups = 4;
+	optional int32 status = 5;
 	optional string statusMessage = 6;
 	optional string iconHash = 7;
 }
@@ -89,6 +89,9 @@ message WrapperMessage {
 		TYPE_ROOM_SUBJECT_CHANGED	= 15;
 		TYPE_VCARD					= 16;
 		TYPE_STATUS_CHANGED			= 17;
+		TYPE_BUDDY_TYPING			= 18;
+		TYPE_BUDDY_STOPPED_TYPING	= 19;
+		TYPE_BUDDY_TYPED			= 20;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
