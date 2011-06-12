@@ -32,6 +32,7 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 	m_legacyName = legacyName;
 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
+	std::cout << "new conversation " << legacyName << "\n";
 }
 
 Conversation::~Conversation() {
