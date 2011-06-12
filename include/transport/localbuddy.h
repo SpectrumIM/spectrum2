@@ -41,7 +41,7 @@ class LocalBuddy : public Buddy {
 
 		bool getStatus(Swift::StatusShow &status, std::string &statusMessage) {
 			status = m_status;
-			m_statusMessage = statusMessage;
+			statusMessage = m_statusMessage;
 			return true;
 		}
 
