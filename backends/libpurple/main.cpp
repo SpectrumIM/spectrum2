@@ -633,9 +633,6 @@ static PurpleCoreUiOps coreUiOps =
 };
 
 static void signed_on(PurpleConnection *gc, gpointer unused) {
-	for (int i = 0; i<1500; i++) {
-		std::cout << "A\n";
-	}
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleConnected(np->m_accounts[account]);
 }

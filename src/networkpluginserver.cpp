@@ -133,13 +133,13 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_rosterResponder->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
 	m_rosterResponder->start();
 
-	m_server = component->getNetworkFactories()->getConnectionFactory()->createConnectionServer(10000);
+	m_server = component->getNetworkFactories()->getConnectionFactory()->createConnectionServer(boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
 
 	signal(SIGCHLD, SigCatcher);
 
-	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
+	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
@@ -176,7 +176,7 @@ void NetworkPluginServer::handleSessionFinished(Client *c) {
 			return;
 		}
 	}
-	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
+	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 }
 
 void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
@@ -428,7 +428,7 @@ void NetworkPluginServer::pingTimeout() {
 			m_pingTimer->start();
 		}
 		else {
-			exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
+			exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 		}
 	}
 }
@@ -683,9 +683,9 @@ void NetworkPluginServer::sendPing(Client *c) {
 
 NetworkPluginServer::Client *NetworkPluginServer::getFreeClient() {
 	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->users.size() < 1) {
-			if ((*it)->users.size() + 1 == 1) {
-				exec_(CONFIG_STRING(m_config, "service.backend").c_str(), "localhost", "10000", m_config->getConfigFile().c_str());
+		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
+			if ((*it)->users.size() + 1 == CONFIG_INT(m_config, "service.users_per_backend")) {
+				exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 			}
 			return (*it);
 		}
