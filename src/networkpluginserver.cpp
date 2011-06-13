@@ -214,7 +214,7 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-	std::cout << "OMG?\n";
+
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
 	vcard->setFullName(payload.fullname());
 	vcard->setPhoto(Swift::createByteArray(payload.photo()));

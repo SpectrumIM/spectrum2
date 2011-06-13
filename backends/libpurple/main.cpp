@@ -537,6 +537,15 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		vcardEntries = vcardEntries->next;
 	}
 
+	const gchar *displayname = purple_connection_get_display_name(gc);
+	if (!displayname) {
+		displayname = purple_account_get_name_for_display(account);
+	}
+
+	if (displayname) {
+		nickname = displayname;
+	}
+
 	if ((!firstName.empty() || !lastName.empty()) && fullName.empty())
 		fullName = firstName + " " + lastName;
 
