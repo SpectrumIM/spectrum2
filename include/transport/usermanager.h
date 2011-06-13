@@ -41,7 +41,7 @@ class UserManager {
 		/// Creates new UserManager.
 		/// \param component Component which's presence will be handled
 		/// \param storageBackend Storage backend used to fetch UserInfos
-		UserManager(Component *component, StorageBackend *storageBackend);
+		UserManager(Component *component, StorageBackend *storageBackend = NULL);
 
 		/// Destroys UserManager.
 		~UserManager();

@@ -161,7 +161,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 }
 
 void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
-	if (m_rosterStorage) {
+	if (m_rosterStorage || !storageBackend) {
 		return;
 	}
 	m_rosterStorage = new RosterStorage(m_user, storageBackend);

@@ -33,9 +33,12 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_onlineBuddies = 0;
 	m_component = component;
 	m_storageBackend = storageBackend;
+	m_storageResponder = NULL;
 
-	m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);
-	m_storageResponder->start();
+	if (m_storageBackend) {
+		m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);
+		m_storageResponder->start();
+	}
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
@@ -44,8 +47,10 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 }
 
 UserManager::~UserManager(){
-	m_storageResponder->stop();
-	delete m_storageResponder;
+	if (m_storageResponder) {
+		m_storageResponder->stop();
+		delete m_storageResponder;
+	}
 }
 
 void UserManager::addUser(User *user) {
@@ -93,15 +98,17 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			m_component->getStanzaChannel()->sendPresence(response);
 
 			UserInfo res;
-			bool registered = m_storageBackend->getUser(userkey, res);
-			if (registered) {
-				m_storageBackend->setUserOnline(res.id, false);
+			if (m_storageBackend) {
+				bool registered = m_storageBackend->getUser(userkey, res);
+				if (registered) {
+					m_storageBackend->setUserOnline(res.id, false);
+				}
 			}
 			return;
 		}
 
 		UserInfo res;
-		bool registered = m_storageBackend->getUser(userkey, res);
+		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
 
 		if (m_component->inServerMode()) {
 			if (!registered) {
@@ -111,8 +118,13 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				if (res.uin.find_last_of("%") != std::string::npos) {
 					res.uin.replace(res.uin.find_last_of("%"), 1, "@");
 				}
-				m_storageBackend->setUser(res);
-				registered = m_storageBackend->getUser(userkey, res);
+				if (m_storageBackend) {
+					m_storageBackend->setUser(res);
+					registered = m_storageBackend->getUser(userkey, res);
+				}
+				else {
+					registered = true;
+				}
 			}
 			res.password = m_component->getUserRegistryPassword(userkey);
 		}

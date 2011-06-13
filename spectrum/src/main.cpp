@@ -55,15 +55,21 @@ int main(int argc, char **argv)
 	Component transport(&eventLoop, &config, NULL);
 	Logger logger(&transport);
 
-	SQLite3Backend sql(&config);
-	logger.setStorageBackend(&sql);
-	if (!sql.connect()) {
-		std::cerr << "Can't connect to database.\n";
+	StorageBackend *storageBackend = NULL;
+
+	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
+		storageBackend = new SQLite3Backend(&config);
+		logger.setStorageBackend(storageBackend);
+		if (!storageBackend->connect()) {
+			std::cerr << "Can't connect to database.\n";
+		}
 	}
 
-	UserManager userManager(&transport, &sql);
-	UserRegistration userRegistration(&transport, &userManager, &sql);
-	logger.setUserRegistration(&userRegistration);
+	UserManager userManager(&transport, storageBackend);
+	if (storageBackend) {
+		UserRegistration userRegistration(&transport, &userManager, storageBackend);
+		logger.setUserRegistration(&userRegistration);
+	}
 	logger.setUserManager(&userManager);
 
 	NetworkPluginServer plugin(&transport, &config, &userManager);
