@@ -35,6 +35,7 @@ find_package(Doxygen)
 INCLUDE(FindQt4)
 FIND_PACKAGE(Qt4 COMPONENTS QtCore)
 
+# ADD_DEFINITIONS(${SWIFTEN_CFLAGS})
 
 message("  Supported features")
 message("-----------------------")
