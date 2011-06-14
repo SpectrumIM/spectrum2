@@ -73,6 +73,17 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 }
 
 bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
+	if (!to.getNode().empty()) {
+		return false;
+	}
+
+	User *user = m_userManager->getUser(from.toBare().toString());
+	if (!user) {
+		return false;
+	}
+
+	onVCardUpdated(user, payload);
+
 	sendResponse(from, id, boost::shared_ptr<VCard>(new VCard()));
 	return true;
 }

@@ -125,6 +125,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	m_vcardResponder = new VCardResponder(component->getIQRouter(), userManager);
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
+	m_vcardResponder->onVCardUpdated.connect(boost::bind(&NetworkPluginServer::handleVCardUpdated, this, _1, _2));
 	m_vcardResponder->start();
 
 	m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
@@ -655,8 +656,23 @@ void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItem
 	handleBuddyUpdated(buddy, item);
 }
 
+void NetworkPluginServer::handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> v) {
+	pbnetwork::VCard vcard;
+	vcard.set_username(user->getJID().toBare());
+	vcard.set_buddyname("");
+	vcard.set_id(0);
+	vcard.set_photo(&v->getPhoto()[0], v->getPhoto().size());
+
+	std::string message;
+	vcard.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
+
+	Client *c = (Client *) user->getData();
+	send(c->connection, message);
+}
+
 void NetworkPluginServer::handleVCardRequired(User *user, const std::string &name, unsigned int id) {
-	std::cout << "VCARD REQUIRED " << name << " " << id << "\n";
 	pbnetwork::VCard vcard;
 	vcard.set_username(user->getJID().toBare());
 	vcard.set_buddyname(name);

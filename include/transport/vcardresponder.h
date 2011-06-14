@@ -39,6 +39,7 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 		void sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard);
 
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
+		boost::signal<void (User *, boost::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 
 	private:
 		struct VCardData {
