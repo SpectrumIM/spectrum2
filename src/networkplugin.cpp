@@ -311,7 +311,12 @@ void NetworkPlugin::handleVCardPayload(const std::string &data) {
 		return;
 	}
 
-	handleVCardRequest(payload.username(), payload.buddyname(), payload.id());
+	if (payload.has_photo()) {
+		handleVCardUpdatedRequest(payload.username(), payload.photo());
+	}
+	else if (!payload.buddyname().empty()) {
+		handleVCardRequest(payload.username(), payload.buddyname(), payload.id());
+	}
 }
 
 void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
