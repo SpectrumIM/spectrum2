@@ -30,13 +30,11 @@ using namespace Swift;
 
 namespace Transport {
 
-UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::GetResponder<Swift::InBandRegistrationPayload>(component->m_iqRouter), Swift::SetResponder<Swift::InBandRegistrationPayload>(component->m_iqRouter) {
+UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::InBandRegistrationPayload>(component->m_iqRouter) {
 	m_component = component;
 	m_config = m_component->m_config;
 	m_storageBackend = storageBackend;
 	m_userManager = userManager;
-	Swift::GetResponder<Swift::InBandRegistrationPayload>::start();
-	Swift::SetResponder<Swift::InBandRegistrationPayload>::start();
 }
 
 UserRegistration::~UserRegistration(){
@@ -121,7 +119,7 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 
 bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
-		Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
+		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
 	}
 
@@ -132,7 +130,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
-			Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
+			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
 	}
@@ -210,14 +208,14 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 
 	reg->setForm(form);
 
-	Swift::GetResponder<Swift::InBandRegistrationPayload>::sendResponse(from, id, reg);
+	sendResponse(from, id, reg);
 
 	return true;
 }
 
 bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
-		Swift::GetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
+		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
 	}
 
@@ -228,7 +226,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
 // 			Log("UserRegistration", "This user has no permissions to register an account");
-			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
+			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
 	}
@@ -284,12 +282,12 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	if (payload->isRemove()) {
 		unregisterUser(barejid);
-		Swift::SetResponder<Swift::InBandRegistrationPayload>::sendResponse(from, id, InBandRegistrationPayload::ref());
+		sendResponse(from, id, InBandRegistrationPayload::ref());
 		return true;
 	}
 
 	if (!payload->getUsername() || !payload->getPassword()) {
-		Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}
 
@@ -299,14 +297,14 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // 		|| localization.getLanguages().find(language) == localization.getLanguages().end()
 	)
 	{
-		Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}
 
 	if (CONFIG_STRING(m_config, "service.protocol") == "xmpp") {
 		// User tries to register himself.
 		if ((Swift::JID(*payload->getUsername()).toBare() == from.toBare())) {
-			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}
 
@@ -314,7 +312,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		UserInfo user_row;
 		bool registered = m_storageBackend->getUser(Swift::JID(*payload->getUsername()).toBare().toString(), user_row);
 		if (registered) {
-			Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}
 	}
@@ -330,7 +328,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 // 	if (!m_component->protocol()->isValidUsername(newUsername)) {
 // 		Log("UserRegistration", "This is not valid username: "<< newUsername);
-// 		Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+// 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 // 		return true;
 // 	}
 
@@ -338,7 +336,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // 	if (!CONFIG_STRING(m_config, "registration.reg_allowed_usernames").empty() &&
 // 		!g_regex_match_simple(CONFIG_STRING(m_config, "registration.reg_allowed_usernames"), newUsername.c_str(),(GRegexCompileFlags) (G_REGEX_CASELESS | G_REGEX_EXTENDED), (GRegexMatchFlags) 0)) {
 // 		Log("UserRegistration", "This is not valid username: "<< newUsername);
-// 		Swift::SetResponder<Swift::InBandRegistrationPayload>::sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+// 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 // 		return true;
 // 	}
 // #endif
@@ -362,7 +360,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		onUserUpdated(res);
 	}
 
-	Swift::SetResponder<Swift::InBandRegistrationPayload>::sendResponse(from, id, InBandRegistrationPayload::ref());
+	sendResponse(from, id, InBandRegistrationPayload::ref());
 	return true;
 }
 

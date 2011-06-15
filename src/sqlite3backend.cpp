@@ -63,6 +63,7 @@ SQLite3Backend::SQLite3Backend(Config *config) {
 	m_config = config;
 	m_db = NULL;
 	m_prefix = CONFIG_STRING(m_config, "database.prefix");
+	std::cout << "SQLITE3 " << this << "\n";
 }
 
 SQLite3Backend::~SQLite3Backend(){

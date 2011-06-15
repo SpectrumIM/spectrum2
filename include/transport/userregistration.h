@@ -21,8 +21,7 @@
 #pragma once
 
 #include "Swiften/Swiften.h"
-#include "Swiften/Queries/GetResponder.h"
-#include "Swiften/Queries/SetResponder.h"
+#include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 
 namespace Transport {
@@ -34,7 +33,7 @@ class UserManager;
 class Config;
 
 /// Allows users to register the transport using service discovery.
-class UserRegistration : Swift::GetResponder<Swift::InBandRegistrationPayload>, Swift::SetResponder<Swift::InBandRegistrationPayload> {
+class UserRegistration : public Swift::Responder<Swift::InBandRegistrationPayload> {
 	public:
 		/// Creates new UserRegistration handler.
 		/// \param component Component associated with this class
@@ -69,8 +68,8 @@ class UserRegistration : Swift::GetResponder<Swift::InBandRegistrationPayload>, 
 		boost::signal<void (const UserInfo &userInfo)> onUserUpdated;
 
 	private:
-		bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
-		bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
 		
 		Component *m_component;
 		StorageBackend *m_storageBackend;
