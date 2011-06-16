@@ -26,23 +26,23 @@ int main(int argc, char **argv)
 		if(vm.count("help"))
 		{
 			std::cout << desc << "\n";
-			exit(1);
+			return 1;
 		}
 	}
 	catch (std::runtime_error& e)
 	{
 		std::cout << desc << "\n";
-		exit(1);
+		return 1;
 	}
 	catch (...)
 	{
 		std::cout << desc << "\n";
-		exit(1);
+		return 1;
 	}
 
 	if (argc != 2) {
 		std::cout << desc << "\n";
-		exit(1);
+		return 1;
 	}
 
 
