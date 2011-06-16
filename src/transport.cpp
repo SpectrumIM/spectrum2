@@ -71,8 +71,10 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		m_userRegistry = new MyUserRegistry(this);
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
-		TLSServerContextFactory *f = new OpenSSLServerContextFactory();
-// 		m_server->addTLSEncryption(f, PKCS12Certificate("localhost.p12", createSafeByteArray("")));
+		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
+			m_server->addTLSEncryption(f, PKCS12Certificate(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+		}
 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
