@@ -45,6 +45,42 @@ static GOptionEntry options_entries[] = {
 	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
+static GHashTable *ui_info = NULL;
+
+static GHashTable *spectrum_ui_get_info(void)
+{
+	if(NULL == ui_info) {
+		ui_info = g_hash_table_new(g_str_hash, g_str_equal);
+
+		g_hash_table_insert(ui_info, g_strdup("name"), g_strdup("Spectrum"));
+		g_hash_table_insert(ui_info, g_strdup("version"), g_strdup("0.5"));
+		g_hash_table_insert(ui_info, g_strdup("website"), g_strdup("http://spectrum.im"));
+		g_hash_table_insert(ui_info, g_strdup("dev_website"), g_strdup("http://spectrum.im"));
+		g_hash_table_insert(ui_info, g_strdup("client_type"), g_strdup("pc"));
+
+		/*
+		 * This is the client key for "Pidgin."  It is owned by the AIM
+		 * account "markdoliner."  Please don't use this key for other
+		 * applications.  You can either not specify a client key, in
+		 * which case the default "libpurple" key will be used, or you
+		 * can register for your own client key at
+		 * http://developer.aim.com/manageKeys.jsp
+		 */
+		g_hash_table_insert(ui_info, g_strdup("prpl-aim-clientkey"), g_strdup("ma1cSASNCKFtrdv9"));
+		g_hash_table_insert(ui_info, g_strdup("prpl-icq-clientkey"), g_strdup("ma1cSASNCKFtrdv9"));
+
+		/*
+		 * This is the distid for Pidgin, given to us by AOL.  Please
+		 * don't use this for other applications.  You can just not
+		 * specify a distid and libpurple will use a default.
+		 */
+		g_hash_table_insert(ui_info, g_strdup("prpl-aim-distid"), GINT_TO_POINTER(1550));
+		g_hash_table_insert(ui_info, g_strdup("prpl-icq-distid"), GINT_TO_POINTER(1550));
+	}
+
+	return ui_info;
+}
+
 struct authRequest {
 	PurpleAccountRequestAuthorizationCb authorize_cb;
 	PurpleAccountRequestAuthorizationCb deny_cb;
@@ -768,7 +804,7 @@ static PurpleCoreUiOps coreUiOps =
 	NULL,
 	transport_core_ui_init,
 	NULL,
-	NULL,
+	spectrum_ui_get_info,
 	NULL,
 	NULL,
 	NULL
