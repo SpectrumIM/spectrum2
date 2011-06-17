@@ -3,8 +3,8 @@ FILE(GLOB SRC *.cpp)
 
 ADD_EXECUTABLE(spectrum2 ${SRC})
 
-ADD_DEPENDENCIES(spectrum2 libpurple_backend)
-ADD_DEPENDENCIES(spectrum2 libircclient-qt_backend)
+ADD_DEPENDENCIES(spectrum2 spectrum_libpurple_backend)
+ADD_DEPENDENCIES(spectrum2 spectrum_libircclient-qt_backend)
 
 target_link_libraries(spectrum2 transport)
 

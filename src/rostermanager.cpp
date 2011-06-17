@@ -39,9 +39,6 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_setBuddyTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
 	m_RIETimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
-
-	
-
 }
 
 RosterManager::~RosterManager() {
@@ -157,7 +154,131 @@ void RosterManager::sendRIE() {
 
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	std::string legacyName = Buddy::JIDToLegacyName(presence->getTo());
-	
+	// For server mode the subscription changes are handler in rosterresponder.cpp
+	// using roster pushes.
+	if (m_component->inServerMode()) {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(presence->getFrom());
+		response->setFrom(presence->getTo());
+		Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(presence->getTo()));
+		if (buddy) {
+			switch (presence->getType()) {
+				case Swift::Presence::Subscribe:
+					response->setType(Swift::Presence::Subscribed);
+					break;
+				case Swift::Presence::Unsubscribe:
+					response->setType(Swift::Presence::Unsubscribed);
+					break;
+				default:
+					return;
+			}
+			m_component->getStanzaChannel()->sendPresence(response);
+			
+		}
+		else {
+			BuddyInfo buddyInfo;
+			switch (presence->getType()) {
+				// buddy is not in roster, so add him
+				case Swift::Presence::Subscribe:
+					buddyInfo.id = -1;
+					buddyInfo.alias = "";
+					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
+					buddyInfo.subscription = "both";
+					buddyInfo.flags = 0;
+
+					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+					setBuddy(buddy);
+					onBuddyAdded(buddy);
+					response->setType(Swift::Presence::Subscribed);
+					break;
+				// buddy is already there, so nothing to do, just answer
+				case Swift::Presence::Unsubscribe:
+					response->setType(Swift::Presence::Unsubscribed);
+					break;
+				default:
+					return;
+			}
+			m_component->getStanzaChannel()->sendPresence(response);
+		}
+	}
+	else {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(presence->getFrom());
+		response->setFrom(presence->getTo());
+
+		Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(presence->getTo()));
+		if (buddy) {
+			switch (presence->getType()) {
+				// buddy is already there, so nothing to do, just answer
+				case Swift::Presence::Subscribe:
+					response->setType(Swift::Presence::Subscribed);
+					break;
+				// remove buddy
+				case Swift::Presence::Unsubscribe:
+					response->setType(Swift::Presence::Unsubscribed);
+					onBuddyRemoved(buddy);
+					break;
+				// just send response
+				case Swift::Presence::Unsubscribed:
+					response->setType(Swift::Presence::Unsubscribe);
+					break;
+				// just send response
+				case Swift::Presence::Subscribed:
+					response->setType(Swift::Presence::Subscribe);
+					break;
+				default:
+					return;
+			}
+		}
+		else {
+			BuddyInfo buddyInfo;
+			switch (presence->getType()) {
+				// buddy is not in roster, so add him
+				case Swift::Presence::Subscribe:
+					buddyInfo.id = -1;
+					buddyInfo.alias = "";
+					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
+					buddyInfo.subscription = "both";
+					buddyInfo.flags = 0;
+
+					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+					setBuddy(buddy);
+					onBuddyAdded(buddy);
+					response->setType(Swift::Presence::Subscribed);
+					break;
+				// buddy is already there, so nothing to do, just answer
+				case Swift::Presence::Unsubscribe:
+					response->setType(Swift::Presence::Unsubscribed);
+					break;
+				// just send response
+				case Swift::Presence::Unsubscribed:
+					response->setType(Swift::Presence::Unsubscribe);
+					break;
+				// just send response
+				case Swift::Presence::Subscribed:
+					response->setType(Swift::Presence::Subscribe);
+					break;
+				default:
+					return;
+			}
+		}
+
+		m_component->getStanzaChannel()->sendPresence(response);
+
+		// We have to act as buddy and send its subscribe/unsubscribe just to be sure...
+		switch (response->getType()) {
+			case Swift::Presence::Unsubscribed:
+				response->setType(Swift::Presence::Unsubscribe);
+				m_component->getStanzaChannel()->sendPresence(response);
+				break;
+			case Swift::Presence::Subscribed:
+				response->setType(Swift::Presence::Subscribe);
+				m_component->getStanzaChannel()->sendPresence(response);
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 void RosterManager::setStorageBackend(StorageBackend *storageBackend) {

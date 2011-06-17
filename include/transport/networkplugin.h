@@ -64,6 +64,8 @@ class NetworkPlugin {
 
 		void handleBuddyStoppedTyping(const std::string &user, const std::string &buddyName);
 
+		void handleAuthorization(const std::string &user, const std::string &buddyName);
+
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
 		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) = 0;

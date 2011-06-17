@@ -169,6 +169,10 @@ std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	}
 	else {
 		name = jid.getUnescapedNode();
+		// Psi sucks...
+		if (name.find_last_of("\\40") != std::string::npos) {
+			name.replace(name.find_last_of("\\40"), 1, "@");
+		}
 	}
 	return name;
 }

@@ -45,6 +45,15 @@ static GOptionEntry options_entries[] = {
 	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
+struct authRequest {
+	PurpleAccountRequestAuthorizationCb authorize_cb;
+	PurpleAccountRequestAuthorizationCb deny_cb;
+	void *user_data;
+	std::string who;
+	PurpleAccount *account;
+	std::string mainJID;	// JID of user connected with this request
+};
+
 static void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
 	std::cout << "REQUEST INPUT\n";
 	if (primary) {
@@ -294,6 +303,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::string &groups) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
+					m_authRequests[user + buddyName]->deny_cb(m_authRequests[user + buddyName]->user_data);
+					m_authRequests.erase(user + buddyName);
+				}
 				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
 				if (buddy) {
 					purple_account_remove_buddy(account, buddy, purple_buddy_get_group(buddy));
@@ -305,6 +318,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::string &groups) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+
+				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
+					m_authRequests[user + buddyName]->authorize_cb(m_authRequests[user + buddyName]->user_data);
+					m_authRequests.erase(user + buddyName);
+				}
+
 				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
 				if (buddy) {
 					purple_blist_alias_buddy(buddy, alias.c_str());
@@ -347,6 +366,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
+		std::map<std::string, authRequest *> m_authRequests;
 	private:
 		Config *config;
 };
@@ -693,10 +713,44 @@ static PurpleRequestUiOps requestUiOps =
 	NULL
 };
 
+static void * accountRequestAuth(PurpleAccount *account, const char *remote_user, const char *id, const char *alias, const char *message, gboolean on_list, PurpleAccountRequestAuthorizationCb authorize_cb, PurpleAccountRequestAuthorizationCb deny_cb, void *user_data) {
+	authRequest *req = new authRequest;
+	req->authorize_cb = authorize_cb;
+	req->deny_cb = deny_cb;
+	req->user_data = user_data;
+	req->account = account;
+	req->who = remote_user;
+	req->mainJID = np->m_accounts[account];
+	np->m_authRequests[req->mainJID + req->who] = req;
+
+	np->handleAuthorization(req->mainJID, req->who);
+
+	return req;
+}
+
+static void accountRequestClose(void *data){
+	authRequest *req = (authRequest *) data;
+	np->m_authRequests.erase(req->mainJID + req->who);
+}
+
+
+static PurpleAccountUiOps accountUiOps =
+{
+	NULL,
+	NULL,
+	NULL,
+	accountRequestAuth,
+	accountRequestClose,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops(&blistUiOps);
-// 	purple_accounts_set_ui_ops(&accountUiOps);
+	purple_accounts_set_ui_ops(&accountUiOps);
 	purple_notify_set_ui_ops(&notifyUiOps);
 	purple_request_set_ui_ops(&requestUiOps);
 // 	purple_xfers_set_ui_ops(getXferUiOps());

@@ -224,6 +224,32 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 	m_vcardResponder->sendVCard(payload.id(), vcard);
 }
 
+void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo(user->getJID());
+	std::string name = payload.buddyname();
+
+// 	name = Swift::JID::getEscapedNode(name)
+
+	if (name.find_last_of("@") != std::string::npos) {
+		name.replace(name.find_last_of("@"), 1, "%");
+	}
+
+	response->setFrom(Swift::JID(name, m_component->getJID().toString()));
+	response->setType(Swift::Presence::Subscribe);
+	m_component->getStanzaChannel()->sendPresence(response);
+}
+
 void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift::ChatState::ChatStateType type) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
@@ -245,7 +271,6 @@ void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift:
 	msg->addPayload(boost::make_shared<Swift::ChatState>(type));
 
 	conv->handleMessage(msg);
-	
 }
 
 void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
@@ -408,6 +433,9 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
 				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Active);
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_AUTH_REQUEST:
+				handleAuthorizationPayload(wrapper.payload());
 				break;
 			default:
 				return;

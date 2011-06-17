@@ -162,6 +162,19 @@ void NetworkPlugin::handleBuddyStoppedTyping(const std::string &user, const std:
 	send(message);
 }
 
+void NetworkPlugin::handleAuthorization(const std::string &user, const std::string &buddyName) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user);
+	buddy.set_buddyname(buddyName);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_AUTH_REQUEST);
+
+	send(message);
+}
+
 void NetworkPlugin::handleConnected(const std::string &user) {
 	std::cout << "LOGIN SENT\n";
 	pbnetwork::Connected d;
