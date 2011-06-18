@@ -668,17 +668,22 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			else if (label=="Full Name"){
 				fullName = purple_notify_user_info_entry_get_value(vcardEntry);
 			}
+			else {
+				std::cout << "UNHANDLED VCARD LABEL '" << vcardEntry << "' " << purple_notify_user_info_entry_get_value(vcardEntry) << "\n";
+			}
 		}
 		vcardEntries = vcardEntries->next;
 	}
 
-	const gchar *displayname = purple_connection_get_display_name(gc);
-	if (!displayname) {
-		displayname = purple_account_get_name_for_display(account);
-	}
+	if (name == purple_account_get_username(account)) {
+		const gchar *displayname = purple_connection_get_display_name(gc);
+		if (!displayname) {
+			displayname = purple_account_get_name_for_display(account);
+		}
 
-	if (displayname) {
-		nickname = displayname;
+		if (displayname) {
+			nickname = displayname;
+		}
 	}
 
 	if ((!firstName.empty() || !lastName.empty()) && fullName.empty())
