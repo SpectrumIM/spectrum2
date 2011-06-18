@@ -178,7 +178,6 @@ namespace Transport {
 			Swift::Component *m_component;
 			Swift::Server *m_server;
 			Swift::Timer::ref m_reconnectTimer;
-			Swift::BoostIOServiceThread m_boostIOServiceThread;
 			Swift::EntityCapsManager *m_entityCapsManager;
 			Swift::CapsManager *m_capsManager;
 			Swift::CapsMemoryStorage *m_capsMemoryStorage;
@@ -194,6 +193,7 @@ namespace Transport {
 			std::string m_protocol;
 			Swift::JID m_jid;
 			Factory *m_factory;
+			Swift::EventLoop *m_loop;
 
 		friend class User;
 		friend class UserRegistration;

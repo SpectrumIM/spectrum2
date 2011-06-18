@@ -24,7 +24,7 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
-#include "Swiften/Network/ConnectionServer.h"
+#include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Network/Connection.h"
 #include "storagebackend.h"
 
@@ -94,7 +94,7 @@ class NetworkPluginServer {
 		VCardResponder *m_vcardResponder;
 		RosterResponder *m_rosterResponder;
 		Config *m_config;
-		boost::shared_ptr<Swift::ConnectionServer> m_server;
+		boost::shared_ptr<Swift::BoostConnectionServer> m_server;
 		std::list<Client *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
 		Component *m_component;

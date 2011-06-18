@@ -60,6 +60,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_reconnectCount = 0;
 	m_config = config;
 	m_factory = factory;
+	m_loop = loop;
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 

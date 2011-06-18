@@ -33,6 +33,7 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#include "Swiften/Network/BoostConnectionServer.h"
 #include "pbnetwork.pb.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
@@ -134,7 +135,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_rosterResponder->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
 	m_rosterResponder->start();
 
-	m_server = component->getNetworkFactories()->getConnectionFactory()->createConnectionServer(boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
+	m_server = Swift::BoostConnectionServer::create(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")), component->getNetworkFactories()->getIOServiceThread()->getIOService(), component->m_loop);
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
 

@@ -143,7 +143,7 @@ void RosterManager::sendRIE() {
 		item.setJID(buddy->getJID().toBare());
 		item.setName(buddy->getAlias());
 		item.setAction(Swift::RosterItemExchangePayload::Item::Add);
-		item.setGroups(buddy->getGroups());
+// 		item.setGroups(buddy->getGroups());
 
 		payload->addItem(item);
 	}
