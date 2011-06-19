@@ -695,13 +695,23 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		if (displayname) {
 			nickname = displayname;
 		}
+
+		// avatar
+		PurpleStoredImage *avatar = purple_buddy_icons_find_account_icon(account);
+		if (avatar) {
+			const gchar * data = (const gchar *) purple_imgstore_get_data(avatar);
+			size_t len = purple_imgstore_get_size(avatar);
+			if (len < 300000 && data) {
+				photo = Swift::createByteArray(data, len);
+			}
+		}
 	}
 
 	if ((!firstName.empty() || !lastName.empty()) && fullName.empty())
 		fullName = firstName + " " + lastName;
 
 	PurpleBuddy *buddy = purple_find_buddy(purple_connection_get_account(gc), who);
-	if (buddy) {
+	if (buddy && photo.size() == 0) {
 		gsize len;
 		PurpleBuddyIcon *icon = NULL;
 		icon = purple_buddy_icons_find(purple_connection_get_account(gc), name.c_str());

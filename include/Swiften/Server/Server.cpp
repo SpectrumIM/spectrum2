@@ -57,7 +57,9 @@ Server::~Server() {
 }
 
 void Server::start() {
-	assert(!serverFromClientConnectionServer);
+	if (serverFromClientConnectionServer) {
+		return;
+	}
 	serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
 	serverFromClientConnectionServerSignalConnections.push_back(
 		serverFromClientConnectionServer->onNewConnection.connect(
