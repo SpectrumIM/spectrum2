@@ -56,6 +56,7 @@ void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> 
 bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
 	// Get means we're in server mode and user wants to fetch his roster.
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
+	std::cout << "VCARD\n";
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		return false;
@@ -66,12 +67,14 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	std::string name = to_.getUnescapedNode();
 	if (name.empty()) {
 		to_ = user->getComponent()->getJID();
-		std::string name = to_.getUnescapedNode();
+		name = to_.getUnescapedNode();
 	}
 
 	if (name.find_last_of("%") != std::string::npos) {
 		name.replace(name.find_last_of("%"), 1, "@");
 	}
+
+	std::cout << "VCARD1 " << name << "\n";
 
 	m_queries[m_id].from = from;
 	m_queries[m_id].to = to_;
