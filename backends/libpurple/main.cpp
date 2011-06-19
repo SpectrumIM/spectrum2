@@ -656,13 +656,13 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		vcardEntry = (PurpleNotifyUserInfoEntry *)(vcardEntries->data);
 		if (purple_notify_user_info_entry_get_label(vcardEntry) && purple_notify_user_info_entry_get_value(vcardEntry)){
 			label = purple_notify_user_info_entry_get_label(vcardEntry);
-			if (label == "Given Name") {
+			if (label == "Given Name" || label == "First Name") {
 				firstName = purple_notify_user_info_entry_get_value(vcardEntry);
 			}
-			else if (label == "Family Name") {
+			else if (label == "Family Name" || label == "Last Name") {
 				lastName = purple_notify_user_info_entry_get_value(vcardEntry);
 			}
-			else if (label=="Nickname") {
+			else if (label=="Nickname" || label == "Nick") {
 				nickname = purple_notify_user_info_entry_get_value(vcardEntry);
 			}
 			else if (label=="Full Name") {
