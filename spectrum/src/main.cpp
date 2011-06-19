@@ -74,6 +74,5 @@ int main(int argc, char **argv)
 
 	NetworkPluginServer plugin(&transport, &config, &userManager);
 
-	transport.connect();
 	eventLoop.run();
 }

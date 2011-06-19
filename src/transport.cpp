@@ -67,7 +67,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_factories = new BoostNetworkFactories(loop);
 
 	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(1000);
-	m_reconnectTimer->onTick.connect(bind(&Component::connect, this)); 
+	m_reconnectTimer->onTick.connect(bind(&Component::start, this)); 
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		m_userRegistry = new MyUserRegistry(this);
@@ -76,7 +76,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
 			m_server->addTLSEncryption(f, PKCS12Certificate(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
 		}
-		m_server->start();
+// 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
 
@@ -152,12 +152,26 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 	m_discoInfoResponder->setBuddyFeatures(features);
 }
 
-void Component::connect() {
-	if (!m_component)
-		return;
-	m_reconnectCount++;
-	m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
-	m_reconnectTimer->stop();
+void Component::start() {
+	if (m_component) {
+		m_reconnectCount++;
+		m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
+		m_reconnectTimer->stop();
+	}
+	else if (m_server) {
+		m_server->start();
+	}
+}
+
+void Component::stop() {
+	if (m_component) {
+		m_reconnectCount = 0;
+		m_component->disconnect();
+		m_reconnectTimer->stop();
+	}
+	else if (m_server) {
+		m_server->stop();
+	}
 }
 
 void Component::handleConnected() {

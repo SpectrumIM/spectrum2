@@ -107,8 +107,8 @@ namespace Transport {
 
 			/// Connects the Jabber server.
 
-			/// In server mode this function does nothing.
-			void connect();
+			void start();
+			void stop();
 
 			/// Sets disco#info features which are sent as answer to disco#info IQ-get.
 			

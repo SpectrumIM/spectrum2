@@ -155,6 +155,11 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->pongReceived = true;
 	client->connection = c;
 
+	if (m_clients.size() == 0) {
+		// first backend connected, start the server, we're ready.
+		m_component->start();
+	}
+
 	m_clients.push_back(client);
 
 	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, client));
