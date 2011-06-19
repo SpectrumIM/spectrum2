@@ -34,7 +34,7 @@ class LocalBuddy : public Buddy {
 		virtual ~LocalBuddy();
 
 		std::string getAlias() { return m_alias; }
-		void setAlias(const std::string &alias) { m_alias = alias; }
+		void setAlias(const std::string &alias);
 
 		std::string getName() { return m_name; }
 		void setName(const std::string &name) { m_name = name; }

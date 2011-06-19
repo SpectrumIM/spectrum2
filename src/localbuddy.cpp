@@ -30,4 +30,14 @@ LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id) : Buddy(rosterMana
 LocalBuddy::~LocalBuddy() {
 }
 
+void LocalBuddy::setAlias(const std::string &alias) {
+	bool changed = m_alias != alias;
+	m_alias = alias;
+
+	if (changed) {
+		getRosterManager()->sendBuddyRosterPush(this);
+		getRosterManager()->storeBuddy(this);
+	}
+}
+
 }

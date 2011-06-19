@@ -82,13 +82,13 @@ class RosterManager {
 
 		void handleSubscription(Swift::Presence::ref presence);
 
+		void sendBuddyRosterPush(Buddy *buddy);
+
 	private:
 		void setBuddyCallback(Buddy *buddy);
 
-		void sendBuddyRosterPush(Buddy *buddy);
 		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key);
-
 
 		std::map<std::string, Buddy *> m_buddies;
 		Component *m_component;

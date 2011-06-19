@@ -126,10 +126,16 @@ static void *requestAction(const char *title, const char *primary, const char *s
 
 static std::string getAlias(PurpleBuddy *m_buddy) {
 	std::string alias;
-	if (purple_buddy_get_server_alias(m_buddy))
-		alias = (std::string) purple_buddy_get_server_alias(m_buddy);
-	else
+	PurpleContact *contact = PURPLE_CONTACT(PURPLE_BLIST_NODE(m_buddy)->parent);
+	if (contact && contact->alias) {
+		alias = contact->alias;
+	}
+	else if (purple_buddy_get_alias(m_buddy)) {
 		alias = (std::string) purple_buddy_get_alias(m_buddy);
+	}
+	else {
+		alias = (std::string) purple_buddy_get_server_alias(m_buddy);
+	}
 	return alias;
 }
 
