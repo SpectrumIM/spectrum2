@@ -27,6 +27,7 @@
 #include "transport/user.h"
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
+#include "transport/transport.h"
 
 using namespace Swift;
 using namespace boost;
@@ -60,13 +61,20 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		return false;
 	}
 
-	std::string name = to.getUnescapedNode();
+	Swift::JID to_ = to;
+
+	std::string name = to_.getUnescapedNode();
+	if (name.empty()) {
+		to_ = user->getComponent()->getJID();
+		std::string name = to_.getUnescapedNode();
+	}
+
 	if (name.find_last_of("%") != std::string::npos) {
 		name.replace(name.find_last_of("%"), 1, "@");
 	}
 
 	m_queries[m_id].from = from;
-	m_queries[m_id].to = to;
+	m_queries[m_id].to = to_;
 	m_queries[m_id].id = id; 
 	onVCardRequired(user, name, m_id++);
 	return true;
