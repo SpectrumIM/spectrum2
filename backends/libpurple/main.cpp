@@ -669,7 +669,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 				fullName = purple_notify_user_info_entry_get_value(vcardEntry);
 			}
 			else {
-				std::cout << "UNHANDLED VCARD LABEL '" << vcardEntry << "' " << purple_notify_user_info_entry_get_value(vcardEntry) << "\n";
+				std::cout << "UNHANDLED VCARD LABEL '" << purple_notify_user_info_entry_get_label(vcardEntry) << "' " << purple_notify_user_info_entry_get_value(vcardEntry) << "\n";
 			}
 		}
 		vcardEntries = vcardEntries->next;
