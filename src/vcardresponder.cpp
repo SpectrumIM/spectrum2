@@ -66,7 +66,8 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 
 	std::string name = to_.getUnescapedNode();
 	if (name.empty()) {
-		to_ = user->getComponent()->getJID();
+		std::cout << "aaaa " << user->getComponent()->getJID().toString() << "\n";
+		to_ = user->getJID();
 		name = to_.getUnescapedNode();
 	}
 
