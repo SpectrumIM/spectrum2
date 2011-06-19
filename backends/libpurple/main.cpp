@@ -124,6 +124,15 @@ static void *requestAction(const char *title, const char *primary, const char *s
 	return NULL;
 }
 
+static std::string getAlias(PurpleBuddy *m_buddy) {
+	std::string alias;
+	if (purple_buddy_get_server_alias(m_buddy))
+		alias = (std::string) purple_buddy_get_server_alias(m_buddy);
+	else
+		alias = (std::string) purple_buddy_get_alias(m_buddy);
+	return alias;
+}
+
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
 		SpectrumNetworkPlugin(Config *config, SpectrumEventLoop *loop, const std::string &host, int port) : NetworkPlugin(loop, host, port) {
@@ -362,9 +371,17 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
 				if (buddy) {
-					purple_blist_alias_buddy(buddy, alias.c_str());
-					purple_blist_server_alias_buddy(buddy, alias.c_str());
-					serv_alias_buddy(buddy);
+					if (getAlias(buddy) != alias) {
+						purple_blist_alias_buddy(buddy, alias.c_str());
+						purple_blist_server_alias_buddy(buddy, alias.c_str());
+						serv_alias_buddy(buddy);
+					}
+
+					PurpleGroup *group = purple_find_group(groups.c_str());
+					if (!group) {
+						group = purple_group_new(groups.c_str());
+					}
+					purple_blist_add_contact(purple_buddy_get_contact(buddy), group ,NULL);
 				}
 				else {
 					std::cout << "ADDING NEW BUDDY\n";
@@ -372,6 +389,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 					// Add newly created buddy to legacy network roster.
 					PurpleGroup *group = purple_find_group(groups.c_str());
+					if (!group) {
+						group = purple_group_new(groups.c_str());
+					}
 					purple_blist_add_buddy(buddy, NULL, group ,NULL);
 					purple_account_add_buddy(account, buddy);
 				}
@@ -406,15 +426,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 	private:
 		Config *config;
 };
-
-static std::string getAlias(PurpleBuddy *m_buddy) {
-	std::string alias;
-	if (purple_buddy_get_server_alias(m_buddy))
-		alias = (std::string) purple_buddy_get_server_alias(m_buddy);
-	else
-		alias = (std::string) purple_buddy_get_alias(m_buddy);
-	return alias;
-}
 
 static bool getStatus(PurpleBuddy *m_buddy, Swift::StatusShow &status, std::string &statusMessage) {
 	PurplePresence *pres = purple_buddy_get_presence(m_buddy);
