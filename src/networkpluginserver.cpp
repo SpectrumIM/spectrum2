@@ -37,8 +37,13 @@
 #include "pbnetwork.pb.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("NetworkPluginServer");
 
 class NetworkConversation : public Conversation {
 	public:
@@ -85,6 +90,7 @@ class NetworkFactory : public Factory {
 	wrap.SerializeToString(&MESSAGE);
 	
 static int exec_(const char *path, const char *host, const char *port, const char *config) {
+	LOG4CXX_INFO(logger, "Starting new backend " << path);
 // 	char *argv[] = {(char*)script_name, '\0'}; 
 	int status = 0;
 	pid_t pid = fork();
@@ -139,6 +145,8 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
 
+	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
+
 	signal(SIGCHLD, SigCatcher);
 
 	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
@@ -155,6 +163,8 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->pongReceived = true;
 	client->connection = c;
 
+	LOG4CXX_INFO(logger, "New backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
+
 	if (m_clients.size() == 0) {
 		// first backend connected, start the server, we're ready.
 		m_component->start();
@@ -169,7 +179,9 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 }
 
 void NetworkPluginServer::handleSessionFinished(Client *c) {
+	LOG4CXX_INFO(logger, "Backend " << c << " disconnected. Current backend count=" << (m_clients.size() - 1));
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
+		LOG4CXX_ERROR(logger, "Backend " << c << " disconnected (probably crashed) with active user " << (*it)->getJID().toString());
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
@@ -188,14 +200,11 @@ void NetworkPluginServer::handleSessionFinished(Client *c) {
 
 void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 	pbnetwork::Connected payload;
-	std::cout << "CONNECTED LOGIN 2 " << payload.user() << "\n";
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
 		return;
 	}
-	std::cout << "CONNECTED LOGIN 3 " << payload.user() << "\n";
 	m_component->m_userRegistry->onPasswordValid(payload.user());
-// 	std::cout << payload.name() << "\n";
 }
 
 void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
@@ -269,7 +278,6 @@ void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift:
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
-		std::cout << "handling chatstate: NO conv with buddyname=" << payload.buddyname() << "\n";
 		return;
 	}
 
@@ -456,7 +464,6 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 }
 
 void NetworkPluginServer::pingTimeout() {
-	std::cout << "pingtimeout\n";
 	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->pongReceived) {
 			sendPing((*it));
@@ -471,6 +478,7 @@ void NetworkPluginServer::pingTimeout() {
 void NetworkPluginServer::handleUserCreated(User *user) {
 	Client *c = getFreeClient();
 	if (!c) {
+		LOG4CXX_ERROR(logger, "There is no backend to handle user " << user->getJID().toString());
 		user->handleDisconnected("Internal Server Error, please reconnect.");
 		return;
 	}
@@ -589,7 +597,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	send(c->connection, message);
 	c->users.remove(user);
 	if (c->users.size() == 0) {
-		std::cout << "DISCONNECTING\n";
+		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
 		c->connection->disconnect();
 		c->connection.reset();
 // 		m_clients.erase(user->connection);
@@ -731,7 +739,7 @@ void NetworkPluginServer::sendPing(Client *c) {
 
 	send(c->connection, message);
 	c->pongReceived = false;
-	std::cout << "SENDING PING\n";
+	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
 NetworkPluginServer::Client *NetworkPluginServer::getFreeClient() {

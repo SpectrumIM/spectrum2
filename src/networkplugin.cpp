@@ -29,6 +29,12 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "pbnetwork.pb.h"
+#include "log4cxx/logger.h"
+#include "log4cxx/basicconfigurator.h"
+
+using namespace log4cxx;
+
+static LoggerPtr logger = Logger::getLogger("NetworkPlugin");
 
 namespace Transport {
 
@@ -238,24 +244,24 @@ void NetworkPlugin::handleRoomChanged(const std::string &user, const std::string
 
 void NetworkPlugin::_handleConnected(bool error) {
 	if (error) {
-		std::cerr << "Connecting error\n";
+		LOG4CXX_ERROR(logger, "Connecting error. Exiting");
 		m_pingTimer->stop();
 		exit(1);
 	}
 	else {
-		std::cout << "Connected\n";
+		LOG4CXX_INFO(logger, "Connected to NetworkPluginServer");
 		m_pingTimer->start();
 	}
 }
 
 void NetworkPlugin::handleDisconnected() {
-	std::cerr << "Disconnected\n";
+	LOG4CXX_INFO(logger, "Disconnected from NetworkPluginServer. Exiting.");
 	m_pingTimer->stop();
 	exit(1);
 }
 
 void NetworkPlugin::connect() {
-	std::cout << "Trying to connect the server\n";
+	LOG4CXX_INFO(logger, "Connecting NetworkPluginServer host " << m_host << " port " << m_port);
 	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(m_host), m_port));
 }
 
@@ -457,12 +463,12 @@ void NetworkPlugin::sendPong() {
 	wrap.SerializeToString(&message);
 
 	send(message);
-	std::cout << "SENDING PONG\n";
+	LOG4CXX_INFO(logger, "PONG");
 }
 
 void NetworkPlugin::pingTimeout() {
-	std::cout << "PINGTIMEOUT " << m_pingReceived << " " << this << "\n";
 	if (m_pingReceived == false) {
+		LOG4CXX_ERROR(logger, "No PING received for long time (NetworkPluginServer crashed?). Exiting");
 		exit(1);
 	}
 	m_pingReceived = false;

@@ -15,15 +15,20 @@
 #include "transport/networkplugin.h"
 #include "spectrumeventloop.h"
 #include "geventloop.h"
+#include "log4cxx/logger.h"
+#include "log4cxx/consoleappender.h"
+#include "log4cxx/patternlayout.h"
 
-#define Log(X, STRING) std::cout << "[SPECTRUM] " << X << " " << STRING << "\n";
+using namespace log4cxx;
 
+static LoggerPtr logger_libpurple = Logger::getLogger("backend.libpurple");
+static LoggerPtr logger = Logger::getLogger("backend");
 
 using namespace Transport;
 
 class SpectrumNetworkPlugin;
 
-Logger *_logger;
+
 SpectrumNetworkPlugin *np;
 
 static gboolean nodaemon = FALSE;
@@ -107,14 +112,14 @@ static void * requestInput(const char *title, const char *primary,const char *se
 static void *requestAction(const char *title, const char *primary, const char *secondary, int default_action, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data, size_t action_count, va_list actions){
 	std::string t(title ? title : "NULL");
 	if (t == "SSL Certificate Verification") {
-		Log("purple", "accepting SSL certificate");
+		LOG4CXX_INFO(logger,  "accepting SSL certificate");
 		va_arg(actions, char *);
 		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
 	}
 	else {
 		if (title) {
 			std::string headerString(title);
-			Log("purple", "header string: " << headerString);
+			LOG4CXX_INFO(logger,  "header string: " << headerString);
 			if (headerString == "SSL Certificate Verification") {
 				va_arg(actions, char *);
 				((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
@@ -149,7 +154,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = NULL;
 			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
 			if (purple_accounts_find(legacyName.c_str(), protocol) != NULL){
-				Log(user, "this account already exists");
+// 				Log(user, "this account already exists");
 				account = purple_accounts_find(legacyName.c_str(), protocol);
 // 				User *u = (User *) account->ui_data;
 // 				if (u && u != user) {
@@ -158,7 +163,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 // 				}
 			}
 			else {
-				Log(user, "creating new account");
+// 				Log(user, "creating new account");
 				account = purple_account_new(legacyName.c_str(), protocol);
 
 				purple_accounts_add(account);
@@ -848,16 +853,17 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
-	std::string c("[LIBPURPLE");
+	std::string c("");
+	std::string args(arg_s);
+	args.erase(args.size() - 1);
 
 	if (category) {
-		c.push_back('/');
 		c.append(category);
 	}
 
-	c.push_back(']');
+	c.push_back(':');
 
-	std::cout << c << " " << arg_s;
+	LOG4CXX_INFO(logger_libpurple, c << args);
 }
 
 /*
@@ -1024,6 +1030,9 @@ int main(int argc, char **argv) {
 			std::cout << "Can't open " << argv[1] << " configuration file.\n";
 			return 1;
 		}
+
+		LoggerPtr root = log4cxx::Logger::getRootLogger();
+		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
 
 		initPurple(config);
 

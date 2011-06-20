@@ -28,8 +28,9 @@
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContextFactory.h"
-#include <log4cxx/logger.h>
-#include "log4cxx/basicconfigurator.h"
+#include "log4cxx/logger.h"
+#include "log4cxx/consoleappender.h"
+#include "log4cxx/patternlayout.h"
 
 using namespace Swift;
 using namespace boost;
@@ -38,6 +39,7 @@ using namespace log4cxx;
 namespace Transport {
 	
 static LoggerPtr logger = Logger::getLogger("Component");
+static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
 
 class MyUserRegistry : public Swift::UserRegistry {
 	public:
@@ -66,7 +68,11 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_factory = factory;
 	m_loop = loop;
 
-	BasicConfigurator::configure();
+// 	BasicConfigurator::configure();
+
+	LoggerPtr root = Logger::getRootLogger();
+	root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
@@ -201,11 +207,11 @@ void Component::handleConnectionError(const ComponentError &error) {
 }
 
 void Component::handleDataRead(const Swift::SafeByteArray &data) {
-	onXMLIn(safeByteArrayToString(data));
+	LOG4CXX_INFO(logger_xml, "XML IN " << safeByteArrayToString(data));
 }
 
 void Component::handleDataWritten(const Swift::SafeByteArray &data) {
-	onXMLOut(safeByteArrayToString(data));
+	LOG4CXX_INFO(logger_xml, "XML OUT " << safeByteArrayToString(data));
 }
 
 void Component::handlePresence(Swift::Presence::ref presence) {
