@@ -28,12 +28,16 @@
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContextFactory.h"
+#include <log4cxx/logger.h>
+#include "log4cxx/basicconfigurator.h"
 
 using namespace Swift;
 using namespace boost;
+using namespace log4cxx;
 
 namespace Transport {
-
+	
+static LoggerPtr logger = Logger::getLogger("Component");
 
 class MyUserRegistry : public Swift::UserRegistry {
 	public:
@@ -62,6 +66,8 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_factory = factory;
 	m_loop = loop;
 
+	BasicConfigurator::configure();
+
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
 	m_factories = new BoostNetworkFactories(loop);
@@ -70,11 +76,16 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_reconnectTimer->onTick.connect(bind(&Component::start, this)); 
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
+		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_userRegistry = new MyUserRegistry(this);
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
 			m_server->addTLSEncryption(f, PKCS12Certificate(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+		}
+		else {
+			LOG4CXX_WARN(logger, "No PKCS#12 certificate used. TLS is disabled.");
 		}
 // 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
@@ -159,6 +170,7 @@ void Component::start() {
 		m_reconnectTimer->stop();
 	}
 	else if (m_server) {
+		LOG4CXX_INFO(logger, "Starting component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server->start();
 	}
 }
@@ -170,6 +182,7 @@ void Component::stop() {
 		m_reconnectTimer->stop();
 	}
 	else if (m_server) {
+		LOG4CXX_INFO(logger, "Stopping component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server->stop();
 	}
 }
@@ -207,12 +220,11 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 	}
 
 	// check if we have this client's capabilities and ask for them
-	bool haveFeatures = false;
+// 	bool haveFeatures = false;
 	if (presence->getType() != Swift::Presence::Unavailable) {
 		boost::shared_ptr<CapsInfo> capsInfo = presence->getPayload<CapsInfo>();
 		if (capsInfo && capsInfo->getHash() == "sha-1") {
-			haveFeatures = m_entityCapsManager->getCaps(presence->getFrom()) != DiscoInfo::ref();
-			std::cout << "has capsInfo " << haveFeatures << "\n";
+			/*haveFeatures = */m_entityCapsManager->getCaps(presence->getFrom()) != DiscoInfo::ref();
 		}
 // 		else {
 // 			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_iqRouter);
@@ -225,8 +237,7 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 }
 
 void Component::handleCapsChanged(const Swift::JID& jid) {
-	bool haveFeatures = m_entityCapsManager->getCaps(jid) != DiscoInfo::ref();
-	std::cout << "has capsInfo " << haveFeatures << "\n";
+	m_entityCapsManager->getCaps(jid) != DiscoInfo::ref();
 }
 
 }

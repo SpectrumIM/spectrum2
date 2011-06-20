@@ -32,6 +32,7 @@
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "Swiften/Base/SafeByteArray.h"
+
 #include <boost/bind.hpp>
 #include "transport/config.h"
 #include "transport/factory.h"
