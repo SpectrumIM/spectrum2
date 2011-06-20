@@ -30,6 +30,9 @@ find_package(Protobuf REQUIRED)
 set(IRCClientQt_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(IRCClientQt)
 
+set(log4cxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(log4cxx)
+
 find_package(Doxygen)
 
 INCLUDE(FindQt4)
@@ -74,6 +77,13 @@ else()
 	message("Network plugins   : no (install Google Protocol Buffers)")
 	message("Libpurple plugin  : no (install libpurple and Google Protocol Buffers)")
 	message("IRC plugin        : no (install libircclient-qt and Google Protocol Buffers)")
+endif()
+
+if (LOG4CXX_FOUND)
+	message("Logging           : yes")
+	include_directories(${LOG4CXX_INCLUDE_DIR})
+else()
+	message(FATAL_ERROR "Logging           : no (install log4cxx-devel)")
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
