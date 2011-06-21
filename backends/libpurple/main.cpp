@@ -18,6 +18,7 @@
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
 
 using namespace log4cxx;
 
@@ -1031,8 +1032,13 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		LoggerPtr root = log4cxx::Logger::getRootLogger();
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+		if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
+			LoggerPtr root = log4cxx::Logger::getRootLogger();
+			root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+		}
+		else {
+			log4cxx::PropertyConfigurator::configure(CONFIG_STRING(&config, "logging.backend_config"));
+		}
 
 		initPurple(config);
 

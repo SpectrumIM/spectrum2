@@ -25,8 +25,13 @@
 #include "transport/conversationmanager.h"
 #include "transport/rostermanager.h"
 #include "storageresponder.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("UserManager");
 
 UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
@@ -130,6 +135,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		}
 
 		if (!registered) {
+			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");
 			// TODO: logging
 			return;
 		}

@@ -77,7 +77,6 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(m_config, "logging.config"));
 	}
 
-
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
 	m_factories = new BoostNetworkFactories(loop);

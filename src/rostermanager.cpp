@@ -29,8 +29,13 @@
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
 #include "Swiften/Elements/RosterItemExchangePayload.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("RosterManager");
 
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
@@ -88,7 +93,7 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		buddy->onBuddyChanged.connect(boost::bind(&RosterStorage::storeBuddy, m_rosterStorage, buddy));
 	}
 
-	std::cout << "ADDING " << buddy->getName() << "\n";
+	LOG4CXX_INFO(logger, "Associating buddy " << buddy->getName() << " with " << m_user->getJID().toString());
 	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
 
@@ -136,6 +141,7 @@ Buddy *RosterManager::getBuddy(const std::string &name) {
 void RosterManager::sendRIE() {
 	m_RIETimer->stop();
 
+	LOG4CXX_INFO(logger, "Sending RIE stanza to " << m_user->getJID().toString());
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
@@ -162,6 +168,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 		response->setFrom(presence->getTo());
 		Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(presence->getTo()));
 		if (buddy) {
+			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received and buddy " << Buddy::JIDToLegacyName(presence->getTo()) << " is already there => answering");
 			switch (presence->getType()) {
 				case Swift::Presence::Subscribe:
 					response->setType(Swift::Presence::Subscribed);
@@ -185,6 +192,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
 					buddyInfo.subscription = "both";
 					buddyInfo.flags = 0;
+					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
 
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 					setBuddy(buddy);
@@ -292,7 +300,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 
 	for (std::list<BuddyInfo>::const_iterator it = roster.begin(); it != roster.end(); it++) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
-		std::cout << "CREATING BUDDY FROM DATABASE CACHE " << buddy->getName() << "\n";
+		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
 		m_buddies[buddy->getName()] = buddy;
 		buddy->onBuddyChanged.connect(boost::bind(&RosterStorage::storeBuddy, m_rosterStorage, buddy));
 		onBuddySet(buddy);

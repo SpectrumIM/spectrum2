@@ -28,11 +28,16 @@
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
 #include "transport/buddy.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("RosterResponder");
 
 RosterResponder::RosterResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<RosterPayload>(router) {
 	m_userManager = userManager;
@@ -46,6 +51,7 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Sending roster");
 		// Client can send jabber:iq:roster IQ before presence, so we do little hack here to
 		// trigger logging in.
 		// UserManager should create user now, if everything is OK.
@@ -62,6 +68,9 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 			return true;
 		}
 	}
+	else {
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+	}
 	sendResponse(from, id, user->getRosterManager()->generateRosterPayload());
 	return true;
 }
@@ -71,10 +80,12 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 		return true;
 	}
 
 	if (payload->getItems().size() == 0) {
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": Roster push with no item");
 		return true;
 	}
 
@@ -83,9 +94,11 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(item.getJID()));
 	if (buddy) {
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
+			LOG4CXX_INFO(logger, from.toBare().toString() << ": Removing buddy " << buddy->getName());
 			onBuddyRemoved(buddy);
 		}
 		else {
+			LOG4CXX_INFO(logger, from.toBare().toString() << ": Updating buddy " << buddy->getName());
 			onBuddyUpdated(buddy, item);
 		}
 	}
@@ -97,6 +110,7 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		buddyInfo.legacyName = Buddy::JIDToLegacyName(item.getJID());
 		buddyInfo.subscription = "both";
 		buddyInfo.flags = 0;
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Adding buddy " << buddyInfo.legacyName);
 
 		buddy = user->getComponent()->getFactory()->createBuddy(user->getRosterManager(), buddyInfo);
 		user->getRosterManager()->setBuddy(buddy);

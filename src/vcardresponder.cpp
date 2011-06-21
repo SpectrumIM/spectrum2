@@ -28,11 +28,16 @@
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
 #include "transport/transport.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("VCardResponder");
 
 VCardResponder::VCardResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<VCard>(router) {
 	m_id = 0;
@@ -43,12 +48,13 @@ VCardResponder::~VCardResponder() {
 }
 
 void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard) {
-	std::cout << "RECEIVED VCARD FROM BACKEND\n";
 	if (m_queries.find(id) == m_queries.end()) {
-		std::cout << "ERROR\n";
+		LOG4CXX_WARN(logger, "Unexpected VCard from legacy network with id " << id);
 		return;
 	}
-	std::cout << "SENT " << m_queries[id].to << " " << m_queries[id].from << " " << m_queries[id].id << "\n";
+
+	LOG4CXX_INFO(logger, m_queries[id].from.toString() << ": Forwarding VCard of " << m_queries[id].to.toString() << " from legacy network");
+
 	sendResponse(m_queries[id].from, m_queries[id].to, m_queries[id].id, vcard);
 	m_queries.erase(id);
 }
@@ -56,9 +62,9 @@ void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> 
 bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
 	// Get means we're in server mode and user wants to fetch his roster.
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
-	std::cout << "VCARD\n";
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 		return false;
 	}
 
@@ -66,7 +72,6 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 
 	std::string name = to_.getUnescapedNode();
 	if (name.empty()) {
-		std::cout << "aaaa " << user->getComponent()->getJID().toString() << "\n";
 		to_ = user->getJID();
 		name = to_.getUnescapedNode();
 	}
@@ -75,7 +80,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		name.replace(name.find_last_of("%"), 1, "@");
 	}
 
-	std::cout << "VCARD1 " << name << "\n";
+	LOG4CXX_INFO(logger, from.toBare().toString() << ": Requested VCard of " << name);
 
 	m_queries[m_id].from = from;
 	m_queries[m_id].to = to_;
@@ -86,14 +91,17 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 
 bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
 	if (!to.getNode().empty()) {
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": Tried to set VCard of somebody else");
 		return false;
 	}
 
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 		return false;
 	}
 
+	LOG4CXX_INFO(logger, from.toBare().toString() << ": Setting VCard");
 	onVCardUpdated(user, payload);
 
 	sendResponse(from, id, boost::shared_ptr<VCard>(new VCard()));

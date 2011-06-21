@@ -28,8 +28,13 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("User");
 
 User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
 	m_jid = jid;
@@ -47,9 +52,11 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 
 	m_rosterManager = new RosterManager(this, m_component);
 	m_conversationManager = new ConversationManager(this, m_component);
+	LOG4CXX_INFO(logger, m_jid.toString() << ": Created");
 }
 
 User::~User(){
+	LOG4CXX_INFO(logger, m_jid.toString() << ": Destroying");
 	m_reconnectTimer->stop();
 	delete m_rosterManager;
 	delete m_conversationManager;
@@ -73,32 +80,35 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			boost::shared_ptr<Swift::CapsInfo> capsInfo = presence->getPayload<Swift::CapsInfo>();
 			if (capsInfo && capsInfo->getHash() == "sha-1") {
 				if (m_entityCapsManager->getCaps(presence->getFrom()) != Swift::DiscoInfo::ref()) {
+					LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
 					m_readyForConnect = true;
 					onReadyToConnect();
 				}
 			}
 			else if (m_component->inServerMode()) {
-					m_readyForConnect = true;
-					onReadyToConnect();
+				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
+				m_readyForConnect = true;
+				onReadyToConnect();
 			}
 			else {
 				m_reconnectTimer->start();
 			}
 		}
 	}
-	std::cout << "HANDLE PRESENCE\n";
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	if (isMUC) {
-		std::cout << "AAAAAAAAA\n";
 		if (presence->getType() == Swift::Presence::Unavailable) {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << presence->getTo().getNode());
 			onRoomLeft(presence->getTo().getNode());
 		}
 		else {
 			// force connection to legacy network to let backend to handle auto-join on connect.
 			if (!m_readyForConnect) {
+				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
 				m_readyForConnect = true;
 				onReadyToConnect();
 			}
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << presence->getTo().getNode() << " as " << presence->getTo().getResource());
 			onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
 		}
 		return;
@@ -108,6 +118,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		highest->setTo(presence->getFrom().toBare());
 		highest->setFrom(m_component->getJID());
 		m_component->getStanzaChannel()->sendPresence(highest);
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << highest->getType());
 		onPresenceChanged(highest);
 	}
 	else {
@@ -133,6 +144,12 @@ void User::onConnectingTimeout() {
 }
 
 void User::handleDisconnected(const std::string &error) {
+	if (error.empty()) {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network");
+	}
+	else {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network with error " << error);
+	}
 	onDisconnected();
 
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
