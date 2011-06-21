@@ -19,6 +19,8 @@
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
+#include "log4cxx/helpers/properties.h"
+#include "log4cxx/helpers/fileinputstream.h"
 
 using namespace log4cxx;
 
@@ -1037,7 +1039,12 @@ int main(int argc, char **argv) {
 			root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
 		}
 		else {
-			log4cxx::PropertyConfigurator::configure(CONFIG_STRING(&config, "logging.backend_config"));
+			log4cxx::helpers::Properties p;
+			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
+
+			p.load(istream);
+			p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
+			log4cxx::PropertyConfigurator::configure(p);
 		}
 
 		initPurple(config);
