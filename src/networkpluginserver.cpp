@@ -484,6 +484,7 @@ void NetworkPluginServer::pingTimeout() {
 			exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 		}
 	}
+	m_pingTimer->start();
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {
