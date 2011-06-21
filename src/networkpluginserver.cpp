@@ -89,24 +89,35 @@ class NetworkFactory : public Factory {
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
 	
-static int exec_(const char *path, const char *host, const char *port, const char *config) {
+static pid_t exec_(const char *path, const char *host, const char *port, const char *config) {
 	LOG4CXX_INFO(logger, "Starting new backend " << path);
 // 	char *argv[] = {(char*)script_name, '\0'}; 
-	int status = 0;
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		// child process
-		execlp(path, path, "--host", host, "--port", port, config, NULL);
-		abort();
+		exit(execlp(path, path, "--host", host, "--port", port, config, NULL));
 	} else if ( pid < 0 ) {
 		// fork failed
-		status = -1;
 	}
-	return status;
+
+	return pid;
 }
 
 static void SigCatcher(int n) {
-	wait3(NULL,WNOHANG,NULL);
+	pid_t result;
+	int status;
+	while ((result = waitpid(0, &status, WNOHANG)) > 0) {
+		if (result != 0) {
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status));
+				}
+			}
+			else {
+				LOG4CXX_ERROR(logger, "Backend can not be started");
+			}
+		}
+	}
 }
 
 static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payload) {
@@ -128,7 +139,8 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
 
 	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
-	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this)); 
+	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
+	m_pingTimer->start();
 
 	m_vcardResponder = new VCardResponder(component->getIQRouter(), userManager);
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
@@ -175,7 +187,6 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, client));
 	c->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, client, _1));
 	sendPing(client);
-	m_pingTimer->start();
 }
 
 void NetworkPluginServer::handleSessionFinished(Client *c) {
@@ -464,10 +475,10 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 }
 
 void NetworkPluginServer::pingTimeout() {
+	// check ping responses
 	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->pongReceived) {
 			sendPing((*it));
-			m_pingTimer->start();
 		}
 		else {
 			exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
