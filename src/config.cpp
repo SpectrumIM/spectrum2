@@ -53,6 +53,8 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("database.type", value<std::string>()->default_value("none"), "Database type.")
 		("database.database", value<std::string>()->default_value(""), "Database used to store data")
 		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
+		("logging.config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for Spectrum 2 instance")
+		("logging.backend_config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for backends")
 	;
 
 	store(parse_config_file(ifs, opts), m_variables);

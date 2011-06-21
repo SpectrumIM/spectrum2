@@ -31,6 +31,7 @@
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
 
 using namespace Swift;
 using namespace boost;
@@ -68,10 +69,13 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_factory = factory;
 	m_loop = loop;
 
-// 	BasicConfigurator::configure();
-
-	LoggerPtr root = Logger::getRootLogger();
-	root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+	if (CONFIG_STRING(m_config, "logging.config").empty()) {
+		LoggerPtr root = Logger::getRootLogger();
+		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+	}
+	else {
+		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(m_config, "logging.config"));
+	}
 
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
