@@ -28,6 +28,8 @@
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContextFactory.h"
+#include "Swiften/Parser/PayloadParsers/AttentionParser.h"
+#include "Swiften/Serializer/PayloadSerializers/AttentionSerializer.h"
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
@@ -101,6 +103,9 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 		m_iqRouter = m_server->getIQRouter();
 
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
+
+		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
 
 		m_server->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
 		m_server->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
