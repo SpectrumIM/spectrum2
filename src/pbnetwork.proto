@@ -93,6 +93,7 @@ message WrapperMessage {
 		TYPE_BUDDY_STOPPED_TYPING	= 19;
 		TYPE_BUDDY_TYPED			= 20;
 		TYPE_AUTH_REQUEST			= 21;
+		TYPE_ATTENTION			= 22;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

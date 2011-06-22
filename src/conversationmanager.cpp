@@ -61,9 +61,11 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 		name.replace(name.find_last_of("%"), 1, "@");
 	}
 
+	// create conversation if it does not exist.
 	if (!m_convs[name]) {
 		m_convs[name] = m_component->getFactory()->createConversation(this, name);
 	}
+	// if it exists and it's MUC, but this message is PM, get PM conversation or create new one.
 	else if (m_convs[name]->isMUC() && message->getType() != Swift::Message::Groupchat) {
 		std::string room_name = name;
 		name = message->getTo().getResource();

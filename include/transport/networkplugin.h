@@ -80,6 +80,7 @@ class NetworkPlugin {
 		virtual void handleTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleTypedRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleStoppedTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
+		virtual void handleAttentionRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*message*/) {}
 		
 
 	private:
@@ -94,6 +95,7 @@ class NetworkPlugin {
 		void handleBuddyChangedPayload(const std::string &payload);
 		void handleBuddyRemovedPayload(const std::string &payload);
 		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
+		void handleAttentionPayload(const std::string &payload);
 		void handleDataRead(const Swift::SafeByteArray&);
 		void _handleConnected(bool error);
 		void handleDisconnected();

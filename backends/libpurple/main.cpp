@@ -433,6 +433,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleAttentionRequest(const std::string &user, const std::string &buddyName, const std::string &message) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				purple_prpl_send_attention(purple_account_get_connection(account), buddyName.c_str(), 0);
+			}
+		}
+
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;

@@ -34,6 +34,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Network/BoostConnectionServer.h"
+#include "Swiften/Elements/AttentionPayload.h"
 #include "pbnetwork.pb.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
@@ -648,6 +649,24 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 			send(c->connection, message);
 		}
 	}
+
+	boost::shared_ptr<Swift::AttentionPayload> attentionPayload = msg->getPayload<Swift::AttentionPayload>();
+	if (attentionPayload) {
+		pbnetwork::ConversationMessage m;
+		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
+		m.set_buddyname(conv->getLegacyName());
+		m.set_message(msg->getBody());
+
+		std::string message;
+		m.SerializeToString(&message);
+
+		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ATTENTION);
+
+		Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+		send(c->connection, message);
+		return;
+	}
+	
 
 	if (!msg->getBody().empty()) {
 		pbnetwork::ConversationMessage m;

@@ -100,7 +100,7 @@ void Server::handleNewClientConnection(boost::shared_ptr<Connection> connection)
 
 	boost::shared_ptr<ServerFromClientSession> serverFromClientSession = boost::shared_ptr<ServerFromClientSession>(
 			new ServerFromClientSession(idGenerator.generateID(), connection, 
-					&payloadParserFactories, &payloadSerializers, userRegistry_));
+					getPayloadParserFactories(), getPayloadSerializers(), userRegistry_));
 	//serverFromClientSession->setAllowSASLEXTERNAL();
 
 	serverFromClientSession->onSessionStarted.connect(

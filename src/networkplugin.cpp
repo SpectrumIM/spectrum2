@@ -303,6 +303,16 @@ void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
 	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message());
 }
 
+void NetworkPlugin::handleAttentionPayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleAttentionRequest(payload.username(), payload.buddyname(), payload.message());
+}
+
 void NetworkPlugin::handleJoinRoomPayload(const std::string &data) {
 	pbnetwork::Room payload;
 	if (payload.ParseFromString(data) == false) {
@@ -442,6 +452,9 @@ void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
 				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Active);
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
+				handleAttentionPayload(wrapper.payload());
 				break;
 			default:
 				return;

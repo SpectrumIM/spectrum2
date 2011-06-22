@@ -67,8 +67,6 @@ namespace Swift {
 
 		private:
 			IDGenerator idGenerator;
-			FullPayloadParserFactoryCollection payloadParserFactories;
-			FullPayloadSerializerCollection payloadSerializers;
 			UserRegistry *userRegistry_;
 			int port_;
 			EventLoop* eventLoop;
