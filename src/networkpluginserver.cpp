@@ -400,6 +400,30 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	conv->handleMessage(msg, payload.nickname());
 }
 
+void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(payload.message());
+	msg->addPayload(boost::make_shared<Swift::AttentionPayload>());
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+	if (!conv) {
+		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+	}
+
+	conv->handleMessage(msg);
+}
+
 void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &data) {
 	c->data.insert(c->data.end(), data.begin(), data.end());
 	while (c->data.size() != 0) {
@@ -462,6 +486,9 @@ void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_AUTH_REQUEST:
 				handleAuthorizationPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
+				handleAttentionPayload(wrapper.payload());
 				break;
 			default:
 				return;

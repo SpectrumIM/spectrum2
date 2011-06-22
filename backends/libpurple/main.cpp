@@ -913,6 +913,14 @@ static void buddyTypingStopped(PurpleAccount *account, const char *who, gpointer
 	np->handleBuddyStoppedTyping(np->m_accounts[account], w);
 }
 
+static void gotAttention(PurpleAccount *account, const char *who, PurpleConversation *conv, guint type) {
+	std::string w = who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+	np->handleAttention(np->m_accounts[account], w, "");
+}
+
 static bool initPurple(Config &cfg) {
 	bool ret;
 
@@ -958,6 +966,7 @@ static bool initPurple(Config &cfg) {
 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
+		purple_signal_connect(purple_conversations_get_handle(), "got-attention", &conversation_handle, PURPLE_CALLBACK(gotAttention), NULL);
 		purple_signal_connect(purple_connections_get_handle(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);

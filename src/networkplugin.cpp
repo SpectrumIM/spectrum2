@@ -73,7 +73,20 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	m.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
-// 	std::cout << "SENDING MESSAGE\n";
+
+	send(message);
+}
+
+void NetworkPlugin::handleAttention(const std::string &user, const std::string &buddyName, const std::string &msg) {
+	pbnetwork::ConversationMessage m;
+	m.set_username(user);
+	m.set_buddyname(buddyName);
+	m.set_message(msg);
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ATTENTION);
 
 	send(message);
 }

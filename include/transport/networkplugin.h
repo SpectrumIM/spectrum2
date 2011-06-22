@@ -66,6 +66,8 @@ class NetworkPlugin {
 
 		void handleAuthorization(const std::string &user, const std::string &buddyName);
 
+		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
+
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
 		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) = 0;
