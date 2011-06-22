@@ -50,7 +50,7 @@ class NetworkPlugin {
 
 		void handleConnected(const std::string &user);
 
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "");
 
 		void handleSubject(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
 

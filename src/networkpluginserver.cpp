@@ -392,6 +392,10 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->setBody(payload.message());
 	}
 
+	if (!payload.xhtml().empty()) {
+		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
+	}
+
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());

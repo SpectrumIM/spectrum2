@@ -616,22 +616,39 @@ static PurpleBlistUiOps blistUiOps =
 	NULL
 };
 
-static void conv_write_im(PurpleConversation *conv, const char *who, const char *message, PurpleMessageFlags flags, time_t mtime) {
+static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
 	if (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)
 		return;
 	PurpleAccount *account = purple_conversation_get_account(conv);
 
-	char *striped = purple_markup_strip_html(message);
-	std::string msg = striped;
-	g_free(striped);
+// 	char *striped = purple_markup_strip_html(message);
+// 	std::string msg = striped;
+// 	g_free(striped);
 
 	std::string w = who;
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
 
-	np->handleMessage(np->m_accounts[account], w, msg);
+	// Escape HTML characters.
+	char *newline = purple_strdup_withhtml(msg);
+	char *strip, *xhtml, *xhtml_linkified;
+	purple_markup_html_to_xhtml(newline, &xhtml, &strip);
+	xhtml_linkified = purple_markup_linkify(xhtml);
+	std::string message_(strip);
+
+	std::string xhtml_(xhtml_linkified);
+	g_free(newline);
+	g_free(xhtml);
+	g_free(xhtml_linkified);
+	g_free(strip);
+
+	if (xhtml_ == message_) {
+		xhtml_ = "";
+	}
+
+	np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
 }
 
 static PurpleConversationUiOps conversation_ui_ops =

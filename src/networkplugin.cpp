@@ -62,12 +62,13 @@ NetworkPlugin::~NetworkPlugin() {
 	delete m_factories;
 }
 
-void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname) {
+void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
 	m.set_buddyname(legacyName);
 	m.set_message(msg);
 	m.set_nickname(nickname);
+	m.set_xhtml(xhtml);
 
 	std::string message;
 	m.SerializeToString(&message);
