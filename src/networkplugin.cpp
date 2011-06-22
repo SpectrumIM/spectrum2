@@ -313,7 +313,7 @@ void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
 		return;
 	}
 
-	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message());
+	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message(), payload.xhtml());
 }
 
 void NetworkPlugin::handleAttentionPayload(const std::string &data) {

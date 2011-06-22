@@ -37,6 +37,7 @@ message ConversationMessage {
 	required string buddyName = 2;
 	required string message = 3;
 	optional string nickname = 4;
+	optional string xhtml = 5;
 }
 
 message Room {

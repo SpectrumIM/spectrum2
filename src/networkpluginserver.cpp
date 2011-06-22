@@ -35,6 +35,7 @@
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Elements/AttentionPayload.h"
+#include "Swiften/Elements/XHTMLIMPayload.h"
 #include "pbnetwork.pb.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
@@ -645,7 +646,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 }
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
-
+	// handle ChatState
 	boost::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
 	if (statePayload) {
 		pbnetwork::WrapperMessage_Type type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED;
@@ -677,6 +678,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		}
 	}
 
+	// Handle attention requests
 	boost::shared_ptr<Swift::AttentionPayload> attentionPayload = msg->getPayload<Swift::AttentionPayload>();
 	if (attentionPayload) {
 		pbnetwork::ConversationMessage m;
@@ -693,13 +695,20 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		send(c->connection, message);
 		return;
 	}
-	
 
-	if (!msg->getBody().empty()) {
+	std::string xhtml;
+	boost::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload = msg->getPayload<Swift::XHTMLIMPayload>();
+	if (xhtmlPayload) {
+		xhtml = xhtmlPayload->getBody();
+	}
+
+	// Send normal message
+	if (!msg->getBody().empty() || !xhtml.empty()) {
 		pbnetwork::ConversationMessage m;
 		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 		m.set_buddyname(conv->getLegacyName());
 		m.set_message(msg->getBody());
+		m.set_xhtml(xhtml);
 
 		std::string message;
 		m.SerializeToString(&message);

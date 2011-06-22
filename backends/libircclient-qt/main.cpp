@@ -42,7 +42,7 @@ class IRCNetworkPlugin : public NetworkPlugin {
 			m_sessions[user]->deleteLater();
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
 			std::cout << "MESSAGE " << user << " " << legacyName << "\n";
 			if (m_sessions[user] == NULL)
 				return;

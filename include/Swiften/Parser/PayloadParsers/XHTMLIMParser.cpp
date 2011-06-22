@@ -21,7 +21,7 @@ void XHTMLIMParser::handleStartElement(const std::string& element, const std::st
 		}
 	}
 	else if (level_ >= InsideBodyLevel && bodyParser_) {
-		bodyParser_->handleStartElement(element, ns, attributes);
+		bodyParser_->handleStartElement(element, "", attributes);
 	}
 }
 

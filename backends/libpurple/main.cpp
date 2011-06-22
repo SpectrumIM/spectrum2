@@ -259,16 +259,22 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
 				if (!conv) {
 					conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
 				}
-				gchar *_markup = purple_markup_escape_text(message.c_str(), -1);
-				purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
-				g_free(_markup);
+				if (xhtml.empty()) {
+					gchar *_markup = purple_markup_escape_text(message.c_str(), -1);
+					purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+					g_free(_markup);
+				}
+				else {
+					std::cout << xhtml << "\n";
+					purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
+				}
 			}
 		}
 
