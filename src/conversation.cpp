@@ -25,14 +25,18 @@
 #include "transport/transport.h"
 #include "transport/buddy.h"
 #include "transport/rostermanager.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 namespace Transport {
+
+// static LoggerPtr logger = Logger::getLogger("Conversation");
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
-	std::cout << "new conversation " << legacyName << "\n";
 }
 
 Conversation::~Conversation() {
@@ -52,11 +56,9 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		if (nickname.empty()) {
 			Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
 			if (buddy) {
-				std::cout << m_legacyName << " 222222\n";
 				message->setFrom(buddy->getJID());
 			}
 			else {
-				std::cout << m_legacyName << " 1111111\n";
 				// TODO: escape from and setFrom
 			}
 		}
@@ -90,8 +92,10 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 
 	Swift::StatusShow s((Swift::StatusShow::Type) status);
 
-	if (s.getType() == Swift::StatusShow::None)
+	if (s.getType() == Swift::StatusShow::None) {
 		presence->setType(Swift::Presence::Unavailable);
+	}
+
 	presence->setShow(s.getType());
 
 	Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();

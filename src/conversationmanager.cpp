@@ -27,8 +27,13 @@
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("ConversationManager");
 
 ConversationManager::ConversationManager(User *user, Component *component){
 	m_user = user;
@@ -37,6 +42,7 @@ ConversationManager::ConversationManager(User *user, Component *component){
 
 ConversationManager::~ConversationManager() {
 	while(!m_convs.empty()) {
+		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
 		delete (*m_convs.begin()).second;
 		m_convs.erase(m_convs.begin());
 	}
@@ -44,6 +50,7 @@ ConversationManager::~ConversationManager() {
 
 void ConversationManager::addConversation(Conversation *conv) {
 	m_convs[conv->getLegacyName()] = conv;
+	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding conversation " << conv->getLegacyName());
 }
 
 void ConversationManager::removeConversation(Conversation *conv) {
