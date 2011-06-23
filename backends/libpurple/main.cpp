@@ -99,15 +99,19 @@ struct authRequest {
 };
 
 static void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
-	std::cout << "REQUEST INPUT\n";
 	if (primary) {
 		std::string primaryString(primary);
-		std::cout << "REQUEST INPUT " << primaryString << "\n";
 		if (primaryString == "Authorization Request Message:") {
-			std::cout << "AUTHORIZING\n";
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
 			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
 			return NULL;
 		}
+		else {
+			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
+		}
+	}
+	else {
+		LOG4CXX_WARN(logger, "Request input without primary string");
 	}
 	return NULL;
 }
@@ -243,8 +247,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				std::string markup(_markup);
 				g_free(_markup);
 
-				std::cout << st << " < STATUS\n";
-
 				// we are already connected so we have to change status
 				const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, (PurpleStatusPrimitive) st);
 				if (status_type != NULL) {
@@ -272,7 +274,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					g_free(_markup);
 				}
 				else {
-					std::cout << xhtml << "\n";
 					purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
 				}
 			}
@@ -404,7 +405,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					purple_blist_add_contact(purple_buddy_get_contact(buddy), group ,NULL);
 				}
 				else {
-					std::cout << "ADDING NEW BUDDY\n";
 					PurpleBuddy *buddy = purple_buddy_new(account, buddyName.c_str(), alias.c_str());
 
 					// Add newly created buddy to legacy network roster.
@@ -724,7 +724,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 				fullName = purple_notify_user_info_entry_get_value(vcardEntry);
 			}
 			else {
-				std::cout << "UNHANDLED VCARD LABEL '" << purple_notify_user_info_entry_get_label(vcardEntry) << "' " << purple_notify_user_info_entry_get_value(vcardEntry) << "\n";
+				LOG4CXX_WARN(logger, "Unhandled VCard Label '" << purple_notify_user_info_entry_get_label(vcardEntry) << "' " << purple_notify_user_info_entry_get_value(vcardEntry));
 			}
 		}
 		vcardEntries = vcardEntries->next;
