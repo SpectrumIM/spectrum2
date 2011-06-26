@@ -156,6 +156,8 @@ namespace Transport {
 			/// \param xml xml stanza
 			boost::signal<void (const std::string &xml)> onXMLIn;
 
+			Config *getConfig() { return m_config; }
+
 			/// This signal is emitted when presence from XMPP user is received.
 
 			/// It's emitted only for presences addressed to transport itself
