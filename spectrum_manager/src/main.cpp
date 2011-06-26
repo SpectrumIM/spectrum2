@@ -10,6 +10,7 @@
 using namespace Transport;
 
 static int finished;
+static std::string *m;
 
 static void handleDisconnected(Swift::Client *client, const boost::optional<Swift::ClientError> &) {
 	std::cout << "[ DISCONNECTED ] " << client->getJID().getDomain() << "\n";
@@ -19,7 +20,16 @@ static void handleDisconnected(Swift::Client *client, const boost::optional<Swif
 }
 
 static void handleConnected(Swift::Client *client) {
-	std::cout << "[      OK      ] " << client->getJID().getDomain() << "\n";
+	boost::shared_ptr<Swift::Message> message(new Swift::Message());
+	message->setTo(client->getJID().getDomain());
+	message->setFrom(client->getJID());
+	message->setBody(*m);
+
+	client->sendMessage(message);
+}
+
+static void handleMessageReceived(Swift::Client *client, Swift::Message::ref message) {
+	std::cout << "[      OK      ] " << client->getJID().getDomain() << ": " << message->getBody() <<  "\n";
 	if (--finished == 0) {
 		exit(0);
 	}
@@ -29,7 +39,7 @@ int main(int argc, char **argv)
 {
 	ManagerConfig config;
 
-	boost::program_options::options_description desc("Usage: spectrum_manager <config_file.cfg>\nAllowed options");
+	boost::program_options::options_description desc("Usage: spectrum_manager <config_file.cfg> <command>\nAllowed options");
 	desc.add_options()
 		("help,h", "help")
 		;
@@ -55,7 +65,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (argc != 2) {
+	if (argc != 3) {
 		std::cout << desc << "\n";
 		return 1;
 	}
@@ -69,6 +79,9 @@ int main(int argc, char **argv)
 	Swift::SimpleEventLoop eventLoop;
 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
+	std::string message = argv[2];
+	m = &message;
+
 	std::vector<std::string> servers = CONFIG_VECTOR(&config, "servers.server");
 	for (std::vector<std::string>::const_iterator it = servers.begin(); it != servers.end(); it++) {
 		finished++;
@@ -76,7 +89,7 @@ int main(int argc, char **argv)
 		client->setAlwaysTrustCertificates();
  		client->onConnected.connect(boost::bind(&handleConnected, client));
 		client->onDisconnected.connect(bind(&handleDisconnected, client, _1));
-// 		client->onMessageReceived.connect(bind(&handleMessageReceived, _1));
+		client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1));
 		Swift::ClientOptions opt;
 		opt.allowPLAINWithoutTLS = true;
 		client->connect(opt);

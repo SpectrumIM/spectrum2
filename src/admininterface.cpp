@@ -46,10 +46,19 @@ AdminInterface::~AdminInterface() {
 void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	if (!message->getTo().getNode().empty())
 		return;
-	if (message->getFrom().getNode() != CONFIG_STRING(m_component->getConfig(), "service.admin_username"))
+
+	if (message->getFrom().getNode() != CONFIG_STRING(m_component->getConfig(), "service.admin_username")) {
+		LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().getNode());
 		return;
+	}
 
 	LOG4CXX_INFO(logger, "Message from admin received");
+	message->setTo(message->getFrom());
+	message->setFrom(m_component->getJID());
+
+	message->setBody("Unknown command");
+
+	m_component->getStanzaChannel()->sendMessage(message);
 }
 
 }

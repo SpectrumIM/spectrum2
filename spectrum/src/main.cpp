@@ -5,6 +5,7 @@
 #include "transport/sqlite3backend.h"
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
+#include "transport/admininterface.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 
 using namespace Transport;
@@ -71,6 +72,8 @@ int main(int argc, char **argv)
 		logger.setUserRegistration(&userRegistration);
 	}
 	logger.setUserManager(&userManager);
+
+	AdminInterface adminInterface(&transport, storageBackend);
 
 	NetworkPluginServer plugin(&transport, &config, &userManager);
 
