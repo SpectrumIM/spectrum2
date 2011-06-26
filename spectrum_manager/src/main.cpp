@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 		finished++;
 		Swift::Client *client = new Swift::Client(CONFIG_STRING(&config, "service.admin_username") + "@" + (*it), CONFIG_STRING(&config, "service.admin_password"), &networkFactories);
 		client->setAlwaysTrustCertificates();
-// 		client->onConnected.connect(bind(&handleConnected, client));
+ 		client->onConnected.connect(boost::bind(&handleConnected, client));
 		client->onDisconnected.connect(bind(&handleDisconnected, client, _1));
 // 		client->onMessageReceived.connect(bind(&handleMessageReceived, _1));
 		Swift::ClientOptions opt;
