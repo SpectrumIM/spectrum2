@@ -123,6 +123,7 @@ ADD_SUBDIRECTORY(include)
 ADD_SUBDIRECTORY(spectrum)
 ADD_SUBDIRECTORY(backends)
 #ADD_SUBDIRECTORY(tests)
+ADD_SUBDIRECTORY(spectrum_manager)
 
 if(DOXYGEN_FOUND)
 	message("Docs              : yes")

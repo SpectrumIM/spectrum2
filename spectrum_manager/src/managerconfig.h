@@ -28,31 +28,22 @@
 #include <boost/bind.hpp>
 #include <boost/signal.hpp>
 
-
-#define CONFIG_STRING(PTR, KEY) (*PTR)[KEY].as<std::string>()
-#define CONFIG_INT(PTR, KEY) (*PTR)[KEY].as<int>()
-#define CONFIG_BOOL(PTR, KEY) (*PTR)[KEY].as<bool>()
-#define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
-#define CONFIG_VECTOR(PTR, KEY) (*PTR)[KEY].as<std::vector<std::string> >()
-
-namespace Transport {
-
 /// Represents variable:value pairs.
 typedef boost::program_options::variables_map Variables;
 
 /// Represents config file.
 
 /// It's used to load config file and allows others parts of libtransport to be configured
-/// properly. Config files are text files which use "ini" format. Variables are divided into multiple
+/// properly. ManagerConfig files are text files which use "ini" format. Variables are divided into multiple
 /// sections. Every class is configurable with some variables which change its behavior. Check particular
 /// class documentation to get a list of all relevant variables for that class.
-class Config {
+class ManagerConfig {
 	public:
 		/// Constructor.
-		Config() {}
+		ManagerConfig() {}
 
 		/// Destructor
-		virtual ~Config() {}
+		virtual ~ManagerConfig() {}
 
 		/// Loads data from config file.
 		
@@ -78,14 +69,12 @@ class Config {
 		}
 
 		/// Returns path to config file from which data were loaded.
-		const std::string &getConfigFile() { return m_file; }
+		const std::string &getManagerConfigFile() { return m_file; }
 
 		/// This signal is emitted when config is loaded/reloaded.
-		boost::signal<void ()> onConfigReloaded;
+		boost::signal<void ()> onManagerConfigReloaded;
 	
 	private:
 		Variables m_variables;
 		std::string m_file;
 };
-
-}
