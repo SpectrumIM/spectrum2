@@ -56,7 +56,12 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
 
-	message->setBody("Unknown command");
+	if (message->getBody() == "status") {
+		message->setBody("Running");
+	}
+	else {
+		message->setBody("Unknown command");
+	}
 
 	m_component->getStanzaChannel()->sendMessage(message);
 }
