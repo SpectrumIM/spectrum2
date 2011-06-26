@@ -48,20 +48,31 @@ static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
 
 class MyUserRegistry : public Swift::UserRegistry {
 	public:
-		MyUserRegistry(Component *c) {component = c;}
+		MyUserRegistry(Component *c, Config *cfg) {component = c; config = cfg;}
 		~MyUserRegistry() {}
 		bool isValidUserPassword(const JID& user, const Swift::SafeByteArray& password) const {
+			if (!CONFIG_STRING(config, "service.admin_username").empty() && user.getNode() == CONFIG_STRING(config, "service.admin_username")) {
+				LOG4CXX_INFO(logger, "Admin is trying to login");
+				if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
+					onPasswordValid(user);
+				}
+				else {
+					onPasswordInvalid(user);
+				}
+				return true;
+			}
+			
 			users[user.toBare().toString()] = Swift::safeByteArrayToString(password);
 			Swift::Presence::ref response = Swift::Presence::create();
 			response->setTo(component->getJID());
 			response->setFrom(user);
 			response->setType(Swift::Presence::Available);
 			component->onUserPresenceReceived(response);
-			std::cout << "CONNECTED LOGIN 1" << user.toString() << "\n";
 			return true;
 		}
 		mutable std::map<std::string, std::string> users;
 		mutable Component *component;
+		mutable Config *config;
 };
 
 Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
@@ -90,7 +101,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
-		m_userRegistry = new MyUserRegistry(this);
+		m_userRegistry = new MyUserRegistry(this, m_config);
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));

@@ -44,6 +44,8 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("service.backend_port", value<std::string>()->default_value("10000"), "Port to bind backend server to")
 		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
+		("service.admin_username", value<std::string>()->default_value(""), "Administrator username.")
+		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
 		("registration.enable_public_registration", value<bool>()->default_value(true), "True if users should be able to register.")
 		("registration.language", value<std::string>()->default_value("en"), "Default language for registration form")
 		("registration.instructions", value<std::string>()->default_value(""), "Instructions showed to user in registration form")

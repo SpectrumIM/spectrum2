@@ -80,8 +80,8 @@ void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) 
 				}
 				else {
 					PLAINMessage plainMessage(authRequest->getMessage() ? *authRequest->getMessage() : createSafeByteArray(""));
+					user_ = plainMessage.getAuthenticationID();
 					if (userRegistry_->isValidUserPassword(JID(plainMessage.getAuthenticationID(), getLocalJID().getDomain()), plainMessage.getPassword())) {
-						user_ = plainMessage.getAuthenticationID();
 						// we're waiting for usermanager signal now
 // 						authenticated_ = true;
 // 						getXMPPLayer()->resetParser();
