@@ -24,6 +24,8 @@
 #include "transport/storagebackend.h"
 #include "transport/conversationmanager.h"
 #include "transport/rostermanager.h"
+#include "transport/usermanager.h"
+#include "transport/networkpluginserver.h"
 #include "storageresponder.h"
 #include "log4cxx/logger.h"
 
@@ -33,9 +35,11 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("AdminInterface");
 
-AdminInterface::AdminInterface(Component *component, StorageBackend *storageBackend) {
+AdminInterface::AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend) {
 	m_component = component;
 	m_storageBackend = storageBackend;
+	m_userManager = userManager;
+	m_server = server;
 
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
 }
@@ -57,7 +61,9 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	message->setFrom(m_component->getJID());
 
 	if (message->getBody() == "status") {
-		message->setBody("Running");
+		int users = m_userManager->getUserCount();
+		int backends = m_server->getBackendCount() - 1;
+		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
 	}
 	else {
 		message->setBody("Unknown command");

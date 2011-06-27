@@ -73,9 +73,9 @@ int main(int argc, char **argv)
 	}
 	logger.setUserManager(&userManager);
 
-	AdminInterface adminInterface(&transport, storageBackend);
-
 	NetworkPluginServer plugin(&transport, &config, &userManager);
+
+	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
 
 	eventLoop.run();
 }

@@ -53,6 +53,10 @@ class NetworkPluginServer {
 
 		virtual ~NetworkPluginServer();
 
+		int getBackendCount() {
+			return m_clients.size();
+		}
+
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
 	private:

@@ -28,10 +28,12 @@ namespace Transport {
 
 class Component;
 class StorageBackend;
+class UserManager;
+class NetworkPluginServer;
 
 class AdminInterface {
 	public:
-		AdminInterface(Component *component, StorageBackend *storageBackend = NULL);
+		AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server = NULL, StorageBackend *storageBackend = NULL);
 
 		~AdminInterface();
 
@@ -40,6 +42,8 @@ class AdminInterface {
 
 		Component *m_component;
 		StorageBackend *m_storageBackend;
+		UserManager *m_userManager;
+		NetworkPluginServer *m_server;
 };
 
 }
