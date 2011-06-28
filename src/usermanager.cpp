@@ -24,6 +24,7 @@
 #include "transport/storagebackend.h"
 #include "transport/conversationmanager.h"
 #include "transport/rostermanager.h"
+#include "transport/userregistry.h"
 #include "storageresponder.h"
 #include "log4cxx/logger.h"
 
@@ -33,12 +34,13 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("UserManager");
 
-UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
+UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;
+	m_userRegistry = userRegistry;
 
 	if (m_storageBackend) {
 		m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);
@@ -48,6 +50,8 @@ UserManager::UserManager(Component *component, StorageBackend *storageBackend) {
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
 	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
+
+	m_userRegistry->onConnectUser.connect(bind(&UserManager::connectUser, this, _1));
 // 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
 }
 
@@ -131,7 +135,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 					registered = true;
 				}
 			}
-			res.password = m_component->getUserRegistryPassword(userkey);
+			res.password = m_userRegistry->getUserPassword(userkey);
 		}
 
 		if (!registered) {

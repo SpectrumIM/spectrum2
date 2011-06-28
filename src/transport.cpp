@@ -22,6 +22,7 @@
 #include <boost/bind.hpp>
 #include "transport/storagebackend.h"
 #include "transport/factory.h"
+#include "transport/userregistry.h"
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "storageparser.h"
@@ -46,36 +47,7 @@ namespace Transport {
 static LoggerPtr logger = Logger::getLogger("Component");
 static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
 
-class MyUserRegistry : public Swift::UserRegistry {
-	public:
-		MyUserRegistry(Component *c, Config *cfg) {component = c; config = cfg;}
-		~MyUserRegistry() {}
-		bool isValidUserPassword(const JID& user, const Swift::SafeByteArray& password) const {
-			if (!CONFIG_STRING(config, "service.admin_username").empty() && user.getNode() == CONFIG_STRING(config, "service.admin_username")) {
-				LOG4CXX_INFO(logger, "Admin is trying to login");
-				if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
-					onPasswordValid(user);
-				}
-				else {
-					onPasswordInvalid(user);
-				}
-				return true;
-			}
-			
-			users[user.toBare().toString()] = Swift::safeByteArrayToString(password);
-			Swift::Presence::ref response = Swift::Presence::create();
-			response->setTo(component->getJID());
-			response->setFrom(user);
-			response->setType(Swift::Presence::Available);
-			component->onUserPresenceReceived(response);
-			return true;
-		}
-		mutable std::map<std::string, std::string> users;
-		mutable Component *component;
-		mutable Config *config;
-};
-
-Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
+Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
 	m_component = NULL;
 	m_userRegistry = NULL;
 	m_server = NULL;
@@ -83,6 +55,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 	m_config = config;
 	m_factory = factory;
 	m_loop = loop;
+	m_userRegistry = userRegistry;
 
 	if (CONFIG_STRING(m_config, "logging.config").empty()) {
 		LoggerPtr root = Logger::getRootLogger();
@@ -101,7 +74,6 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory) {
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
-		m_userRegistry = new MyUserRegistry(this, m_config);
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
@@ -165,14 +137,7 @@ Component::~Component() {
 		delete m_component;
 	if (m_server)
 		delete m_server;
-	if (m_userRegistry)
-		delete m_userRegistry;
 	delete m_factories;
-}
-
-const std::string &Component::getUserRegistryPassword(const std::string &barejid) {
-	MyUserRegistry *registry = dynamic_cast<MyUserRegistry *>(m_userRegistry);
-	return registry->users[barejid];
 }
 
 Swift::StanzaChannel *Component::getStanzaChannel() {

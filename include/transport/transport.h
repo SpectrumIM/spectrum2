@@ -51,6 +51,7 @@ namespace Transport {
 	class DiscoInfoResponder;
 	class DiscoItemsResponder;
 	class Factory;
+	class UserRegistry;
 
 	/// Represents one transport instance.
 
@@ -71,7 +72,7 @@ namespace Transport {
 			/// 	- service.port
 			/// 	- service.server_mode
 			/// \param factory Transport Abstract factory used to create basic transport structures.
-			Component(Swift::EventLoop *loop, Config *config, Factory *factory);
+			Component(Swift::EventLoop *loop, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
 
 			/// Component destructor.
 			~Component();
@@ -97,14 +98,6 @@ namespace Transport {
 
 			/// \return True if the component is in server mode.
 			bool inServerMode() { return m_server != NULL; }
-
-			/// Returns user password from internal UserRegistry.
-
-			/// In server mode, the password user used for login can be obtained by
-			/// this method.
-			/// \param barejid User's bare JID.
-			/// \return User's password.
-			const std::string &getUserRegistryPassword(const std::string &barejid);
 
 			/// Connects the Jabber server.
 

@@ -11,7 +11,7 @@ namespace Swift {
 SimpleUserRegistry::SimpleUserRegistry() {
 }
 
-bool SimpleUserRegistry::isValidUserPassword(const JID& user, const SafeByteArray& password) const {
+bool SimpleUserRegistry::isValidUserPassword(const JID& user, const SafeByteArray& password) {
 	std::map<JID,SafeByteArray>::const_iterator i = users.find(user);
 	return i != users.end() ? i->second == password : false;
 }

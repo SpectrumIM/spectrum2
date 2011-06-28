@@ -17,7 +17,7 @@ namespace Swift {
 		public:
 			virtual ~UserRegistry();
 
-			virtual bool isValidUserPassword(const JID& user, const SafeByteArray& password) const = 0;
+			virtual bool isValidUserPassword(const JID& user, const SafeByteArray& password) = 0;
 
 			boost::signal<void (const std::string &user)> onPasswordValid;
 			boost::signal<void (const std::string &user)> onPasswordInvalid;

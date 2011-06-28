@@ -67,8 +67,7 @@ const Swift::JID &User::getJID() {
 }
 
 void User::handlePresence(Swift::Presence::ref presence) {
-	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
-
+	std::cout << "PRESENCE " << presence->getFrom().toString() << "\n";
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {
@@ -114,6 +113,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		return;
 	}
 
+	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
 	if (highest) {
 		highest->setTo(presence->getFrom().toBare());
 		highest->setFrom(m_component->getJID());

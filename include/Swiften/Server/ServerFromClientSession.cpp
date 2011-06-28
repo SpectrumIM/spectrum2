@@ -54,16 +54,20 @@ ServerFromClientSession::~ServerFromClientSession() {
 void ServerFromClientSession::handlePasswordValid(const std::string &user) {
 	if (user != JID(user_, getLocalJID().getDomain()).toString())
 		return;
-	getXMPPLayer()->writeElement(boost::shared_ptr<AuthSuccess>(new AuthSuccess()));
-	authenticated_ = true;
-	getXMPPLayer()->resetParser();
+	if (!isInitialized()) {
+		getXMPPLayer()->writeElement(boost::shared_ptr<AuthSuccess>(new AuthSuccess()));
+		authenticated_ = true;
+		getXMPPLayer()->resetParser();
+	}
 }
 
 void ServerFromClientSession::handlePasswordInvalid(const std::string &user) {
 	if (user != JID(user_, getLocalJID().getDomain()).toString() || authenticated_)
 		return;
-	getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
-	finishSession(AuthenticationFailedError);
+	if (!isInitialized()) {
+		getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
+		finishSession(AuthenticationFailedError);
+	}
 }
 
 void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) {

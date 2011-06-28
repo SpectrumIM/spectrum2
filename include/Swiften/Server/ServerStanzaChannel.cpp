@@ -107,7 +107,7 @@ void ServerStanzaChannel::handleSessionFinished(const boost::optional<Session::S
 	removeSession(session);
 
 	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(JID(session->getUser(), session->getLocalJID().getDomain()).toString());
+	presence->setFrom(session->getRemoteJID());
 	presence->setType(Swift::Presence::Unavailable);
 	onPresenceReceived(presence);
 }

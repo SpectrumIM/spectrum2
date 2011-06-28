@@ -52,8 +52,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	UserRegistry userRegistry(&config);
+
 	Swift::SimpleEventLoop eventLoop;
-	Component transport(&eventLoop, &config, NULL);
+	Component transport(&eventLoop, &config, NULL, &userRegistry);
 	Logger logger(&transport);
 
 	StorageBackend *storageBackend = NULL;
@@ -66,7 +68,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	UserManager userManager(&transport, storageBackend);
+	UserManager userManager(&transport, &userRegistry, storageBackend);
 	if (storageBackend) {
 		UserRegistration userRegistration(&transport, &userManager, storageBackend);
 		logger.setUserRegistration(&userRegistration);

@@ -23,6 +23,7 @@
 #include <string>
 #include <map>
 #include "Swiften/Swiften.h"
+#include "transport/userregistry.h"
 
 namespace Transport {
 
@@ -41,7 +42,7 @@ class UserManager {
 		/// Creates new UserManager.
 		/// \param component Component which's presence will be handled
 		/// \param storageBackend Storage backend used to fetch UserInfos
-		UserManager(Component *component, StorageBackend *storageBackend = NULL);
+		UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
 
 		/// Destroys UserManager.
 		~UserManager();
@@ -68,6 +69,23 @@ class UserManager {
 		/// \param user removed User class
 		boost::signal<void (User *user)> onUserDestroyed;
 
+		bool isUserConnected(const std::string &barejid) const {
+			return m_users.find(barejid) != m_users.end();
+		}
+
+		void connectUser(const Swift::JID &user) {
+			if (m_users.find(user.toBare().toString()) != m_users.end()) {
+				m_userRegistry->onPasswordValid(user);
+			}
+			else {
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(m_component->getJID());
+				response->setFrom(user);
+				response->setType(Swift::Presence::Available);
+				m_component->onUserPresenceReceived(response);
+			}
+		}
+
 	private:
 		void handlePresence(Swift::Presence::ref presence);
 		void handleMessageReceived(Swift::Message::ref message);
@@ -83,6 +101,7 @@ class UserManager {
 		Component *m_component;
 		StorageBackend *m_storageBackend;
 		StorageResponder *m_storageResponder;
+		UserRegistry *m_userRegistry;
 		friend class RosterResponder;
 };
 
