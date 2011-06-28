@@ -116,9 +116,7 @@ void ServerStanzaChannel::handleElement(boost::shared_ptr<Element> element, cons
 		return;
 	}
 
-	if (stanza->getFrom().toString().empty()) {
-		stanza->setFrom(session->getRemoteJID());
-	}
+	stanza->setFrom(session->getRemoteJID());
 
 	if (!stanza->getFrom().isValid())
 		return;
