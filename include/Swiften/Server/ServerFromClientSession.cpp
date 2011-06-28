@@ -109,7 +109,12 @@ void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) 
 		}
 		else if (IQ* iq = dynamic_cast<IQ*>(element.get())) {
 			if (boost::shared_ptr<ResourceBind> resourceBind = iq->getPayload<ResourceBind>()) {
-				setRemoteJID(JID(user_, getLocalJID().getDomain(), resourceBind->getResource()));
+				std::string bucket = "abcdefghijklmnopqrstuvwxyz";
+				std::string uuid;
+				for (int i = 0; i < 10; i++) {
+					uuid += bucket[rand() % bucket.size()];
+				}
+				setRemoteJID(JID(user_, getLocalJID().getDomain(), uuid));
 				boost::shared_ptr<ResourceBind> resultResourceBind(new ResourceBind());
 				resultResourceBind->setJID(getRemoteJID());
 				getXMPPLayer()->writeElement(IQ::createResult(JID(), iq->getID(), resultResourceBind));

@@ -322,4 +322,15 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 	return payload;
 }
 
+void RosterManager::sendCurrentPresences(const Swift::JID &to) {
+	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		Buddy *buddy = (*it).second;
+		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
+		if (presence) {
+			presence->setTo(to);
+			m_component->getStanzaChannel()->sendPresence(presence);
+		}
+	}
+}
+
 }

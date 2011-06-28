@@ -250,4 +250,18 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 // 	}
 }
 
+void UserManager::connectUser(const Swift::JID &user) {
+	if (m_users.find(user.toBare().toString()) != m_users.end()) {
+		m_userRegistry->onPasswordValid(user);
+	}
+	else {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(m_component->getJID());
+		response->setFrom(user);
+		response->setType(Swift::Presence::Available);
+		m_component->onUserPresenceReceived(response);
+	}
+}
+
+
 }

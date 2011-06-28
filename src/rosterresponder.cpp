@@ -72,6 +72,7 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 	}
 	sendResponse(from, id, user->getRosterManager()->generateRosterPayload());
+	user->getRosterManager()->sendCurrentPresences(from);
 	return true;
 }
 
