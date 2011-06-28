@@ -28,7 +28,7 @@ namespace {
 }
 
 void ServerStanzaChannel::addSession(boost::shared_ptr<ServerFromClientSession> session) {
-	sessions.push_back(session);
+	sessions[session->getRemoteJID().toBare().toString()].push_back(session);
 	session->onSessionFinished.connect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.connect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
 }
@@ -36,7 +36,8 @@ void ServerStanzaChannel::addSession(boost::shared_ptr<ServerFromClientSession> 
 void ServerStanzaChannel::removeSession(boost::shared_ptr<ServerFromClientSession> session) {
 	session->onSessionFinished.disconnect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.disconnect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
-	sessions.erase(std::remove(sessions.begin(), sessions.end(), session), sessions.end());
+	std::list<boost::shared_ptr<ServerFromClientSession> > &lst = sessions[session->getRemoteJID().toBare().toString()];
+	lst.erase(std::remove(lst.begin(), lst.end(), session), lst.end());
 }
 
 void ServerStanzaChannel::sendIQ(boost::shared_ptr<IQ> iq) {
@@ -53,7 +54,7 @@ void ServerStanzaChannel::sendPresence(boost::shared_ptr<Presence> presence) {
 
 void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element) {
 	std::vector<boost::shared_ptr<ServerFromClientSession> > candidateSessions;
-	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions.begin(); i != sessions.end(); ++i) {
+	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
 		if ((*i)->getRemoteJID().equals(to, JID::WithoutResource)) {
 			(*i)->sendElement(element);
 			candidateSessions.push_back(*i);
@@ -62,6 +63,7 @@ void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element
 
 	for (std::vector<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = candidateSessions.begin(); i != candidateSessions.end(); ++i) {
 		(*i)->finishSession();
+		sessions[to.toBare().toString()].remove(*i);
 	}
 }
 
@@ -75,8 +77,8 @@ void ServerStanzaChannel::send(boost::shared_ptr<Stanza> stanza) {
 
 	// For a full JID, first try to route to a session with the full JID
 	if (!to.isBare()) {
-		std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions.begin(), sessions.end(), HasJID(to));
-		if (i != sessions.end()) {
+		std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions[stanza->getTo().toBare().toString()].begin(), sessions[stanza->getTo().toBare().toString()].end(), HasJID(to));
+		if (i != sessions[stanza->getTo().toBare().toString()].end()) {
 			(*i)->sendElement(stanza);
 			return;
 		}
@@ -85,7 +87,7 @@ void ServerStanzaChannel::send(boost::shared_ptr<Stanza> stanza) {
 	// Look for candidate sessions
 	to = to.toBare();
 	std::vector<boost::shared_ptr<ServerFromClientSession> > candidateSessions;
-	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions.begin(); i != sessions.end(); ++i) {
+	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[stanza->getTo().toBare().toString()].begin(); i != sessions[stanza->getTo().toBare().toString()].end(); ++i) {
 		if ((*i)->getRemoteJID().equals(to, JID::WithoutResource)) {
 			candidateSessions.push_back(*i);
 			(*i)->sendElement(stanza);

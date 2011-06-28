@@ -45,7 +45,8 @@ namespace Swift {
 
 		private:
 			IDGenerator idGenerator;
-			std::list<boost::shared_ptr<ServerFromClientSession> > sessions;
+			// [JID][resources][ServerFromClientSession]
+			std::map<std::string, std::list<boost::shared_ptr<ServerFromClientSession> > > sessions;
 	};
 
 }

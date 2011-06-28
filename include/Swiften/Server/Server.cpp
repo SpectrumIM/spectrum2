@@ -111,8 +111,6 @@ void Server::handleNewClientConnection(boost::shared_ptr<Connection> connection)
 	serverFromClientSession->onDataRead.connect(boost::bind(&Server::handleDataRead, this, _1));
 	serverFromClientSession->onDataWritten.connect(boost::bind(&Server::handleDataWritten, this, _1));
 
-	dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->addSession(serverFromClientSession);
-
 	if (tlsFactory) {
 		serverFromClientSession->addTLSEncryption(tlsFactory, cert);
 	}
@@ -130,8 +128,8 @@ void Server::handleDataWritten(const SafeByteArray& data) {
 	onDataWritten(data);
 }
 
-void Server::handleSessionStarted(boost::shared_ptr<ServerFromClientSession>) {
-// 	onSelfConnected(true);
+void Server::handleSessionStarted(boost::shared_ptr<ServerFromClientSession> session) {
+	dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->addSession(session);
 }
 
 void Server::handleSessionFinished(boost::shared_ptr<ServerFromClientSession> session) {
