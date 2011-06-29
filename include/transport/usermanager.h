@@ -52,6 +52,10 @@ class UserManager {
 		/// \return User class associated with this user
 		User *getUser(const std::string &barejid);
 
+		const std::map<std::string, User *> &getUsers() {
+			return m_users;
+		}
+
 		/// Returns number of online users.
 		/// \return number of online users
 		int getUserCount();

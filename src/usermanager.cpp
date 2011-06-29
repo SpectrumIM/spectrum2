@@ -98,6 +98,10 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 	User *user = getUser(userkey);
 	if (!user) {
+		if (CONFIG_STRING(m_component->getConfig(), "service.admin_username") == presence->getFrom().getNode()) {
+			return;
+		}
+
 		// No user and unavailable presence -> answer with unavailable
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			Swift::Presence::ref response = Swift::Presence::create();
