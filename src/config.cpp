@@ -74,4 +74,12 @@ bool Config::load(const std::string &configfile) {
 	return load(configfile, opts);
 }
 
+bool Config::reload() {
+	if (m_file.empty()) {
+		return false;
+	}
+
+	return load(m_file);
+}
+
 }

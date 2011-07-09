@@ -89,6 +89,15 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int users = m_userManager->getUserCount();
 		message->setBody(boost::lexical_cast<std::string>(users));
 	}
+	else if (message->getBody() == "reload") {
+		bool done = m_component->getConfig()->reload();
+		if (done) {
+			message->setBody("Config reloaded");
+		}
+		else {
+			message->setBody("Error during config reload");
+		}
+	}
 	else if (message->getBody() == "online_users_per_backend") {
 		std::string lst;
 		int id = 1;
@@ -125,8 +134,10 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		help += "status - shows instance status\n";
 		help += "online_users - returns list of all online users\n";
 		help += "online_users_count - number of online users\n";
+		help += "online_users_per_backend - shows online users per backends\n";
 		help += "has_online_user <bare_JID> - returns 1 if user is online\n";
 		help += "backends_count - number of active backends\n";
+		help += "reload - Reloads config file\n";
 		message->setBody(help);
 	}
 	else {

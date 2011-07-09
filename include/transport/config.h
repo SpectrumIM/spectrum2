@@ -69,6 +69,8 @@ class Config {
 		/// \param configfile path to config file
 		bool load(const std::string &configfile);
 
+		bool reload();
+
 		/// Returns value of variable defined by key.
 		
 		/// For variables in sections you can use "section.variable" key format.

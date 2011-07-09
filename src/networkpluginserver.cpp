@@ -519,7 +519,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	Backend *c = getFreeClient();
 	if (!c) {
 		LOG4CXX_ERROR(logger, "There is no backend to handle user " << user->getJID().toString());
-		user->handleDisconnected("Internal Server Error, please reconnect.");
+		user->handleDisconnected("Internal Server Error (no free backend to handle your session), please reconnect.");
 		return;
 	}
 	user->setData(c);
@@ -804,10 +804,13 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	NetworkPluginServer::Backend *c = NULL;
 	bool spawnNew = false;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		// This backend is free.
 		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
-			if ((*it)->users.size() + 1 == CONFIG_INT(m_config, "service.users_per_backend")) {
+			// After this user, this backend could be full, so we have to spawn new one...
+			if ((*it)->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
 				spawnNew = true;
 			}
+
 			if (c == NULL) {
 				c = *it;
 			}
