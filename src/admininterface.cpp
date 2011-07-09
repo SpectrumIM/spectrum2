@@ -73,20 +73,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int backends = m_server->getBackendCount() - 1;
 		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
 	}
-	else if (message->getBody() == "online_users_count") {
-		int users = m_userManager->getUserCount();
-		message->setBody(boost::lexical_cast<std::string>(users));
-	}
-	else if (message->getBody() == "backends_count") {
-		int backends = m_server->getBackendCount() - 1;
-		message->setBody(boost::lexical_cast<std::string>(backends));
-	}
-	else if (message->getBody().find("has_online_user") == 0) {
-		User *user = m_userManager->getUser(getArg(message->getBody()));
-		std::cout << getArg(message->getBody()) << "\n";
-		message->setBody(boost::lexical_cast<std::string>(user != NULL));
-	}
-	else if (message->getBody().find("online_users") == 0) {
+	else if (message->getBody() == "online_users") {
 		std::string lst;
 		const std::map<std::string, User *> &users = m_userManager->getUsers();
 		if (users.size() == 0)
@@ -97,6 +84,41 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		}
 
 		message->setBody(lst);
+	}
+	else if (message->getBody() == "online_users_count") {
+		int users = m_userManager->getUserCount();
+		message->setBody(boost::lexical_cast<std::string>(users));
+	}
+	else if (message->getBody() == "online_users_per_backend") {
+		std::string lst;
+		int id = 1;
+
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
+			NetworkPluginServer::Backend *backend = *b;
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + ":\n";
+			if (backend->users.size() == 0) {
+				lst += "   waiting for users\n";
+			}
+			else {
+				for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
+					User *user = *u;
+					lst += "   " + user->getJID().toBare().toString() + "\n";
+				}
+			}
+			id++;
+		}
+
+		message->setBody(lst);
+	}
+	else if (message->getBody().find("has_online_user") == 0) {
+		User *user = m_userManager->getUser(getArg(message->getBody()));
+		std::cout << getArg(message->getBody()) << "\n";
+		message->setBody(boost::lexical_cast<std::string>(user != NULL));
+	}
+	else if (message->getBody() == "backends_count") {
+		int backends = m_server->getBackendCount() - 1;
+		message->setBody(boost::lexical_cast<std::string>(backends));
 	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;

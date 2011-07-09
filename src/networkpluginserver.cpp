@@ -172,7 +172,7 @@ NetworkPluginServer::~NetworkPluginServer() {
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
-	Client *client = new Client;
+	Backend *client = new Backend;
 	client->pongReceived = true;
 	client->connection = c;
 
@@ -190,7 +190,7 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	sendPing(client);
 }
 
-void NetworkPluginServer::handleSessionFinished(Client *c) {
+void NetworkPluginServer::handleSessionFinished(Backend *c) {
 	LOG4CXX_INFO(logger, "Backend " << c << " disconnected. Current backend count=" << (m_clients.size() - 1));
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
 		LOG4CXX_ERROR(logger, "Backend " << c << " disconnected (probably crashed) with active user " << (*it)->getJID().toString());
@@ -202,7 +202,7 @@ void NetworkPluginServer::handleSessionFinished(Client *c) {
 	delete c;
 
 	// Execute new session only if there's no free one after this crash/disconnection
-	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
 			return;
 		}
@@ -424,7 +424,7 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	conv->handleMessage(msg);
 }
 
-void NetworkPluginServer::handleDataRead(Client *c, const Swift::SafeByteArray &data) {
+void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray &data) {
 	c->data.insert(c->data.end(), data.begin(), data.end());
 	while (c->data.size() != 0) {
 		unsigned int expected_size;
@@ -504,7 +504,7 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 
 void NetworkPluginServer::pingTimeout() {
 	// check ping responses
-	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->pongReceived) {
 			sendPing((*it));
 		}
@@ -516,7 +516,7 @@ void NetworkPluginServer::pingTimeout() {
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {
-	Client *c = getFreeClient();
+	Backend *c = getFreeClient();
 	if (!c) {
 		LOG4CXX_ERROR(logger, "There is no backend to handle user " << user->getJID().toString());
 		user->handleDisconnected("Internal Server Error, please reconnect.");
@@ -545,7 +545,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGIN);
 
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 }
 
@@ -565,7 +565,7 @@ void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence:
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATUS_CHANGED);
 
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 }
 
@@ -583,7 +583,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, con
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM);
  
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 
 	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
@@ -605,7 +605,7 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM);
  
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(r);
@@ -630,7 +630,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGOUT);
  
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	if (!c) {
 		return;
 	}
@@ -672,7 +672,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 			WRAP(message, type);
 
-			Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+			Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
 			send(c->connection, message);
 		}
 	}
@@ -689,7 +689,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ATTENTION);
 
-		Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
 		send(c->connection, message);
 		return;
 	}
@@ -706,7 +706,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
 
-		Client *c = (Client *) conv->getConversationManager()->getUser()->getData();
+		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
 		send(c->connection, message);
 	}
 }
@@ -726,7 +726,7 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED);
 
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 }
 
@@ -749,7 +749,7 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
 
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 }
 
@@ -769,7 +769,7 @@ void NetworkPluginServer::handleVCardUpdated(User *user, boost::shared_ptr<Swift
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
 
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 }
 
@@ -784,11 +784,11 @@ void NetworkPluginServer::handleVCardRequired(User *user, const std::string &nam
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
 
-	Client *c = (Client *) user->getData();
+	Backend *c = (Backend *) user->getData();
 	send(c->connection, message);
 }
 
-void NetworkPluginServer::sendPing(Client *c) {
+void NetworkPluginServer::sendPing(Backend *c) {
 
 	std::string message;
 	pbnetwork::WrapperMessage wrap;
@@ -800,10 +800,10 @@ void NetworkPluginServer::sendPing(Client *c) {
 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
-NetworkPluginServer::Client *NetworkPluginServer::getFreeClient() {
-	NetworkPluginServer::Client *c = NULL;
+NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
+	NetworkPluginServer::Backend *c = NULL;
 	bool spawnNew = false;
-	for (std::list<Client *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
 			if ((*it)->users.size() + 1 == CONFIG_INT(m_config, "service.users_per_backend")) {
 				spawnNew = true;
