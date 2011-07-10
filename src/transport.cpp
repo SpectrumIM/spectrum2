@@ -117,7 +117,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, T
 	m_presenceOracle = new PresenceOracle(m_stanzaChannel);
 	m_presenceOracle->onPresenceChange.connect(bind(&Component::handlePresence, this, _1));
 
-	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter);
+	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
 	m_discoInfoResponder->start();
 
 	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
