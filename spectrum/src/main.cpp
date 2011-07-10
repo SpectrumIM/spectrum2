@@ -70,7 +70,8 @@ int main(int argc, char **argv)
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	if (storageBackend) {
-		UserRegistration userRegistration(&transport, &userManager, storageBackend);
+		UserRegistration *userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
+		userRegistration->start();
 // 		logger.setUserRegistration(&userRegistration);
 	}
 // 	logger.setUserManager(&userManager);

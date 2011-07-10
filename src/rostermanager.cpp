@@ -59,6 +59,9 @@ RosterManager::~RosterManager() {
 
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
+		if (!buddy) {
+			continue;
+		}
 		delete buddy;
 	}
 	if (m_rosterStorage)
@@ -141,7 +144,10 @@ Buddy *RosterManager::getBuddy(const std::string &name) {
 void RosterManager::sendRIE() {
 	m_RIETimer->stop();
 
-	LOG4CXX_INFO(logger, "Sending RIE stanza to " << m_user->getJID().toString());
+	Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(m_user->getJID().toBare());
+
+	LOG4CXX_INFO(logger, "Sending RIE stanza to " << highest->getFrom().toString());
+
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
@@ -154,7 +160,7 @@ void RosterManager::sendRIE() {
 		payload->addItem(item);
 	}
 
-	boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, m_user->getJID(), payload, m_component->getIQRouter()));
+	boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, highest->getFrom(), payload, m_component->getIQRouter()));
 	request->send();
 }
 
@@ -211,6 +217,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	}
 	else {
 		Swift::Presence::ref response = Swift::Presence::create();
+		Swift::Presence::ref presence;
 		response->setTo(presence->getFrom());
 		response->setFrom(presence->getTo());
 
@@ -220,6 +227,11 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Subscribe:
 					response->setType(Swift::Presence::Subscribed);
+					presence = buddy->generatePresenceStanza(255);
+					if (presence) {
+						presence->setTo(presence->getFrom());
+						m_component->getStanzaChannel()->sendPresence(presence);
+					}
 					break;
 				// remove buddy
 				case Swift::Presence::Unsubscribe:
@@ -228,11 +240,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					break;
 				// just send response
 				case Swift::Presence::Unsubscribed:
-					response->setType(Swift::Presence::Unsubscribe);
-					break;
-				// just send response
-				case Swift::Presence::Subscribed:
-					response->setType(Swift::Presence::Subscribe);
+// 					response->setType(Swift::Presence::Unsubscribe);
 					break;
 				default:
 					return;
@@ -263,9 +271,6 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					response->setType(Swift::Presence::Unsubscribe);
 					break;
 				// just send response
-				case Swift::Presence::Subscribed:
-					response->setType(Swift::Presence::Subscribe);
-					break;
 				default:
 					return;
 			}
@@ -312,6 +317,9 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
+		if (!buddy) {
+			continue;
+		}
 		Swift::RosterItemPayload item;
 		item.setJID(buddy->getJID().toBare());
 		item.setName(buddy->getAlias());
@@ -325,6 +333,9 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 void RosterManager::sendCurrentPresences(const Swift::JID &to) {
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
+		if (!buddy) {
+			continue;
+		}
 		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
 		if (presence) {
 			presence->setTo(to);

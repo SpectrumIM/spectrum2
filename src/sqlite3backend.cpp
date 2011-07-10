@@ -272,7 +272,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?
 	BEGIN(m_updateBuddy);
-	BIND_STR(m_updateBuddy, buddyInfo.groups[0]); // TODO: serialize groups
+	BIND_STR(m_updateBuddy, buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]); // TODO: serialize groups
 	BIND_STR(m_updateBuddy, buddyInfo.alias);
 	BIND_INT(m_updateBuddy, buddyInfo.flags);
 	BIND_STR(m_updateBuddy, buddyInfo.subscription);

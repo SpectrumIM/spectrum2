@@ -229,11 +229,11 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 		response->setType(Swift::Presence::Subscribed);
 		m_component->getStanzaChannel()->sendPresence(response);
 
-		response = Swift::Presence::create();
-		response->setFrom(presence->getTo());
-		response->setTo(presence->getFrom());
-		response->setType(Swift::Presence::Subscribe);
-		m_component->getStanzaChannel()->sendPresence(response);
+// 		response = Swift::Presence::create();
+// 		response->setFrom(presence->getTo());
+// 		response->setTo(presence->getFrom());
+// 		response->setType(Swift::Presence::Subscribe);
+// 		m_component->getStanzaChannel()->sendPresence(response);
 		return;
 	}
 
