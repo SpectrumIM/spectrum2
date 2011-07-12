@@ -159,7 +159,7 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 }
 
 void Component::start() {
-	if (m_component) {
+	if (m_component && !m_component->isAvailable()) {
 		LOG4CXX_INFO(logger, "Connecting XMPP server " << CONFIG_STRING(m_config, "service.server") << " port " << CONFIG_INT(m_config, "service.port"));
 		m_reconnectCount++;
 		m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));

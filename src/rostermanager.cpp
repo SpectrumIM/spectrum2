@@ -151,6 +151,9 @@ void RosterManager::sendRIE() {
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
+		if (!buddy) {
+			continue;
+		}
 		Swift::RosterItemExchangePayload::Item item;
 		item.setJID(buddy->getJID().toBare());
 		item.setName(buddy->getAlias());
@@ -217,7 +220,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	}
 	else {
 		Swift::Presence::ref response = Swift::Presence::create();
-		Swift::Presence::ref presence;
+		Swift::Presence::ref currentPresence;
 		response->setTo(presence->getFrom());
 		response->setFrom(presence->getTo());
 
@@ -227,10 +230,10 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Subscribe:
 					response->setType(Swift::Presence::Subscribed);
-					presence = buddy->generatePresenceStanza(255);
-					if (presence) {
-						presence->setTo(presence->getFrom());
-						m_component->getStanzaChannel()->sendPresence(presence);
+					currentPresence = buddy->generatePresenceStanza(255);
+					if (currentPresence) {
+						currentPresence->setTo(presence->getFrom());
+						m_component->getStanzaChannel()->sendPresence(currentPresence);
 					}
 					break;
 				// remove buddy
