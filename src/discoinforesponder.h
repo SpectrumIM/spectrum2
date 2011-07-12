@@ -28,9 +28,11 @@
 
 namespace Transport {
 
+class Config;
+
 class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 	public:
-		DiscoInfoResponder(Swift::IQRouter *router);
+		DiscoInfoResponder(Swift::IQRouter *router, Config *config);
 		~DiscoInfoResponder();
 
 		void setTransportFeatures(std::list<std::string> &features);
@@ -43,6 +45,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 		Swift::DiscoInfo m_transportInfo;
 		Swift::DiscoInfo m_buddyInfo;
+		Config *m_config;
 };
 
 }

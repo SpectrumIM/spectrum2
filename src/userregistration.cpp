@@ -25,10 +25,14 @@
 #include "transport/user.h"
 #include "Swiften/Elements/ErrorPayload.h"
 #include <boost/shared_ptr.hpp>
+#include "log4cxx/logger.h"
 
 using namespace Swift;
+using namespace log4cxx;
 
 namespace Transport {
+
+static LoggerPtr logger = Logger::getLogger("UserRegistration");
 
 UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::InBandRegistrationPayload>(component->m_iqRouter) {
 	m_component = component;

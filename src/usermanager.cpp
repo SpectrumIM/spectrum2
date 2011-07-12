@@ -98,6 +98,10 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 	User *user = getUser(userkey);
 	if (!user) {
+		if (CONFIG_STRING(m_component->getConfig(), "service.admin_username") == presence->getFrom().getNode()) {
+			return;
+		}
+
 		// No user and unavailable presence -> answer with unavailable
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			Swift::Presence::ref response = Swift::Presence::create();
@@ -225,11 +229,11 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 		response->setType(Swift::Presence::Subscribed);
 		m_component->getStanzaChannel()->sendPresence(response);
 
-		response = Swift::Presence::create();
-		response->setFrom(presence->getTo());
-		response->setTo(presence->getFrom());
-		response->setType(Swift::Presence::Subscribe);
-		m_component->getStanzaChannel()->sendPresence(response);
+// 		response = Swift::Presence::create();
+// 		response->setFrom(presence->getTo());
+// 		response->setTo(presence->getFrom());
+// 		response->setType(Swift::Presence::Subscribe);
+// 		m_component->getStanzaChannel()->sendPresence(response);
 		return;
 	}
 

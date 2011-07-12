@@ -46,6 +46,9 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
 		("service.admin_username", value<std::string>()->default_value(""), "Administrator username.")
 		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
+		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
+		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
+		("identity.type", value<std::string>()->default_value(""), "Type of transport ('icq','msn','gg','irc', ...)")
 		("registration.enable_public_registration", value<bool>()->default_value(true), "True if users should be able to register.")
 		("registration.language", value<std::string>()->default_value("en"), "Default language for registration form")
 		("registration.instructions", value<std::string>()->default_value(""), "Instructions showed to user in registration form")
@@ -72,6 +75,14 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 bool Config::load(const std::string &configfile) {
 	options_description opts("Transport options");
 	return load(configfile, opts);
+}
+
+bool Config::reload() {
+	if (m_file.empty()) {
+		return false;
+	}
+
+	return load(m_file);
 }
 
 }

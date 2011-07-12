@@ -29,7 +29,9 @@ static void handleConnected(Swift::Client *client) {
 }
 
 static void handleMessageReceived(Swift::Client *client, Swift::Message::ref message) {
-	std::cout << "[      OK      ] " << client->getJID().getDomain() << ": " << message->getBody() <<  "\n";
+	std::string body = message->getBody();
+	boost::replace_all(body, "\n", "\n[      OK      ] " + client->getJID().getDomain() + ": ");
+	std::cout << "[      OK      ] " << client->getJID().getDomain() << ": " << body <<  "\n";
 	if (--finished == 0) {
 		exit(0);
 	}

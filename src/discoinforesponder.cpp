@@ -26,16 +26,20 @@
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Swiften.h"
+#include "transport/config.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router) : Swift::GetResponder<DiscoInfo>(router) {
-	m_transportInfo.addIdentity(DiscoInfo::Identity("libtransport", "gateway", "identity"));
+DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) : Swift::GetResponder<DiscoInfo>(router) {
+	m_config = config;
+	m_transportInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"),
+													CONFIG_STRING(m_config, "identity.category"),
+													CONFIG_STRING(m_config, "identity.type")));
 
-	m_buddyInfo.addIdentity(DiscoInfo::Identity("libtransport", "client", "pc"));
+	m_buddyInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"), "client", "pc"));
 	std::list<std::string> features;
 	features.push_back("jabber:iq:register");
 	features.push_back("jabber:iq:gateway");

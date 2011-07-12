@@ -35,6 +35,14 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("AdminInterface");
 
+static std::string getArg(const std::string &body) {
+	std::string ret;
+	if (body.find(" ") == std::string::npos)
+		return ret;
+
+	return body.substr(body.find(" ") + 1);
+}
+
 AdminInterface::AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend) {
 	m_component = component;
 	m_storageBackend = storageBackend;
@@ -65,8 +73,75 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int backends = m_server->getBackendCount() - 1;
 		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
 	}
+	else if (message->getBody() == "online_users") {
+		std::string lst;
+		const std::map<std::string, User *> &users = m_userManager->getUsers();
+		if (users.size() == 0)
+			lst = "0";
+
+		for (std::map<std::string, User *>::const_iterator it = users.begin(); it != users.end(); it ++) {
+			lst += (*it).first + "\n";
+		}
+
+		message->setBody(lst);
+	}
+	else if (message->getBody() == "online_users_count") {
+		int users = m_userManager->getUserCount();
+		message->setBody(boost::lexical_cast<std::string>(users));
+	}
+	else if (message->getBody() == "reload") {
+		bool done = m_component->getConfig()->reload();
+		if (done) {
+			message->setBody("Config reloaded");
+		}
+		else {
+			message->setBody("Error during config reload");
+		}
+	}
+	else if (message->getBody() == "online_users_per_backend") {
+		std::string lst;
+		int id = 1;
+
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
+			NetworkPluginServer::Backend *backend = *b;
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + ":\n";
+			if (backend->users.size() == 0) {
+				lst += "   waiting for users\n";
+			}
+			else {
+				for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
+					User *user = *u;
+					lst += "   " + user->getJID().toBare().toString() + "\n";
+				}
+			}
+			id++;
+		}
+
+		message->setBody(lst);
+	}
+	else if (message->getBody().find("has_online_user") == 0) {
+		User *user = m_userManager->getUser(getArg(message->getBody()));
+		std::cout << getArg(message->getBody()) << "\n";
+		message->setBody(boost::lexical_cast<std::string>(user != NULL));
+	}
+	else if (message->getBody() == "backends_count") {
+		int backends = m_server->getBackendCount() - 1;
+		message->setBody(boost::lexical_cast<std::string>(backends));
+	}
+	else if (message->getBody().find("help") == 0) {
+		std::string help;
+		help += "status - shows instance status\n";
+		help += "online_users - returns list of all online users\n";
+		help += "online_users_count - number of online users\n";
+		help += "online_users_per_backend - shows online users per backends\n";
+		help += "has_online_user <bare_JID> - returns 1 if user is online\n";
+		help += "backends_count - number of active backends\n";
+		help += "reload - Reloads config file\n";
+		message->setBody(help);
+	}
 	else {
-		message->setBody("Unknown command");
+		message->setBody("Unknown command. Try \"help\"");
 	}
 
 	m_component->getStanzaChannel()->sendMessage(message);

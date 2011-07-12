@@ -69,7 +69,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, T
 
 	m_factories = new BoostNetworkFactories(loop);
 
-	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(1000);
+	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(3000);
 	m_reconnectTimer->onTick.connect(bind(&Component::start, this)); 
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
@@ -98,6 +98,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, T
 		m_server->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
 	}
 	else {
+		LOG4CXX_INFO(logger, "Creating component in gateway mode");
 		m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
 		m_component->setSoftwareVersion("", "");
 		m_component->onConnected.connect(bind(&Component::handleConnected, this));
@@ -116,7 +117,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, T
 	m_presenceOracle = new PresenceOracle(m_stanzaChannel);
 	m_presenceOracle->onPresenceChange.connect(bind(&Component::handlePresence, this, _1));
 
-	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter);
+	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
 	m_discoInfoResponder->start();
 
 	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
@@ -159,6 +160,7 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 
 void Component::start() {
 	if (m_component) {
+		LOG4CXX_INFO(logger, "Connecting XMPP server " << CONFIG_STRING(m_config, "service.server") << " port " << CONFIG_INT(m_config, "service.port"));
 		m_reconnectCount++;
 		m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		m_reconnectTimer->stop();
@@ -190,6 +192,17 @@ void Component::handleConnectionError(const ComponentError &error) {
 	onConnectionError(error);
 // 	if (m_reconnectCount == 2)
 // 		Component::instance()->userManager()->removeAllUsers();
+	std::string str = "Unknown error";
+	switch (error.getType()) {
+		case ComponentError::UnknownError: str = "Unknown error"; break;
+		case ComponentError::ConnectionError: str = "Connection error"; break;
+		case ComponentError::ConnectionReadError: str = "Connection read error"; break;
+		case ComponentError::ConnectionWriteError: str = "Connection write error"; break;
+		case ComponentError::XMLError: str = "XML Error"; break;
+		case ComponentError::AuthenticationFailedError: str = "Authentication failed error"; break;
+		case ComponentError::UnexpectedElementError: str = "Unexpected element error"; break;
+	}
+	LOG4CXX_INFO(logger, "Disconnected from XMPP server. Error: " << str);
 
 	m_reconnectTimer->start();
 }

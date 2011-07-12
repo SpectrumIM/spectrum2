@@ -42,7 +42,7 @@ class RosterResponder;
 
 class NetworkPluginServer {
 	public:
-		struct Client {
+		struct Backend {
 			bool pongReceived;
 			std::list<User *> users;
 			Swift::SafeByteArray data;
@@ -57,12 +57,16 @@ class NetworkPluginServer {
 			return m_clients.size();
 		}
 
+		const std::list<Backend *> &getBackends() {
+			return m_clients;
+		}
+
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
-		void handleSessionFinished(Client *c);
-		void handleDataRead(Client *c, const Swift::SafeByteArray&);
+		void handleSessionFinished(Backend *c);
+		void handleDataRead(Backend *c, const Swift::SafeByteArray&);
 
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
@@ -92,15 +96,15 @@ class NetworkPluginServer {
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
-		void sendPing(Client *c);
-		Client *getFreeClient();
+		void sendPing(Backend *c);
+		Backend *getFreeClient();
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
 		RosterResponder *m_rosterResponder;
 		Config *m_config;
 		boost::shared_ptr<Swift::BoostConnectionServer> m_server;
-		std::list<Client *>  m_clients;
+		std::list<Backend *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
 		Component *m_component;
 };

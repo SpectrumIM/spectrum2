@@ -56,13 +56,13 @@ int main(int argc, char **argv)
 
 	Swift::SimpleEventLoop eventLoop;
 	Component transport(&eventLoop, &config, NULL, &userRegistry);
-	Logger logger(&transport);
+// 	Logger logger(&transport);
 
 	StorageBackend *storageBackend = NULL;
 
 	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
 		storageBackend = new SQLite3Backend(&config);
-		logger.setStorageBackend(storageBackend);
+// 		logger.setStorageBackend(storageBackend);
 		if (!storageBackend->connect()) {
 			std::cerr << "Can't connect to database.\n";
 		}
@@ -70,10 +70,11 @@ int main(int argc, char **argv)
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	if (storageBackend) {
-		UserRegistration userRegistration(&transport, &userManager, storageBackend);
-		logger.setUserRegistration(&userRegistration);
+		UserRegistration *userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
+		userRegistration->start();
+// 		logger.setUserRegistration(&userRegistration);
 	}
-	logger.setUserManager(&userManager);
+// 	logger.setUserManager(&userManager);
 
 	NetworkPluginServer plugin(&transport, &config, &userManager);
 
