@@ -648,6 +648,8 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		xhtml_ = "";
 	}
 
+// 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
+
 	np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
 }
 
