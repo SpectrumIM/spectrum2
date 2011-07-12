@@ -86,6 +86,8 @@ class RosterManager {
 
 		void sendCurrentPresences(const Swift::JID &to);
 
+		void sendUnavailablePresences(const Swift::JID &to);
+
 	private:
 		void setBuddyCallback(Buddy *buddy);
 

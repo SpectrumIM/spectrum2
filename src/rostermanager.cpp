@@ -57,6 +57,8 @@ RosterManager::~RosterManager() {
 		m_rosterStorage->storeBuddies();
 	}
 
+	sendUnavailablePresences(m_user->getJID().toBare());
+
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
@@ -64,6 +66,7 @@ RosterManager::~RosterManager() {
 		}
 		delete buddy;
 	}
+
 	if (m_rosterStorage)
 		delete m_rosterStorage;
 }
@@ -342,6 +345,21 @@ void RosterManager::sendCurrentPresences(const Swift::JID &to) {
 		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
 		if (presence) {
 			presence->setTo(to);
+			m_component->getStanzaChannel()->sendPresence(presence);
+		}
+	}
+}
+
+void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
+	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		Buddy *buddy = (*it).second;
+		if (!buddy) {
+			continue;
+		}
+		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
+		if (presence) {
+			presence->setTo(to);
+			presence->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(presence);
 		}
 	}
