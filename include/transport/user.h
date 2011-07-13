@@ -51,6 +51,11 @@ class User {
 		/// \return full JID
 		const Swift::JID &getJID();
 
+		/// Returns full JID which supports particular feature or invalid JID.
+		/// \param feature disco#info feature.
+		/// \return full JID which supports particular feature or invalid JID.
+		Swift::JID getJIDWithFeature(const std::string &feature);
+
 		/// Returns UserInfo struct with informations needed to connect the legacy network.
 		/// \return UserInfo struct
 		UserInfo &getUserInfo() { return m_userInfo; }

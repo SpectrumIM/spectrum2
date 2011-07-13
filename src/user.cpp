@@ -29,8 +29,12 @@
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "log4cxx/logger.h"
+#include <boost/foreach.hpp>
 
 using namespace log4cxx;
+using namespace boost;
+
+#define foreach         BOOST_FOREACH
 
 namespace Transport {
 
@@ -64,6 +68,28 @@ User::~User(){
 
 const Swift::JID &User::getJID() {
 	return m_jid;
+}
+
+Swift::JID User::getJIDWithFeature(const std::string &feature) {
+	Swift::JID jid;
+	std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
+
+	foreach(Swift::Presence::ref presence, presences) {
+		if (presence->getType() == Swift::Presence::Unavailable)
+			continue;
+
+		Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(presence->getFrom());
+		if (discoInfo)
+			continue;
+
+		if (discoInfo->hasFeature(feature)) {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << "feature: " << presence->getFrom().toString());
+			return presence->getFrom();
+		}
+	}
+
+	LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << "feature");
+	return jid;
 }
 
 void User::handlePresence(Swift::Presence::ref presence) {
