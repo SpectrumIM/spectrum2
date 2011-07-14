@@ -79,7 +79,7 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 			continue;
 
 		Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(presence->getFrom());
-		if (discoInfo)
+		if (!discoInfo)
 			continue;
 
 		if (discoInfo->hasFeature(feature)) {

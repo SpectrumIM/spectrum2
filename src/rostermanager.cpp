@@ -50,10 +50,6 @@ RosterManager::~RosterManager() {
 	m_setBuddyTimer->stop();
 	m_RIETimer->stop();
 	if (m_rosterStorage) {
-// 		for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
-// 			Buddy *buddy = (*it).second;
-// 			m_rosterStorage->storeBuddy(buddy);
-// 		}
 		m_rosterStorage->storeBuddies();
 	}
 
@@ -92,6 +88,15 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	request->send();
 }
 
+void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo(m_user->getJID());
+	response->setFrom(buddy->getJID());
+	response->setType(Swift::Presence::Subscribe);
+// 	TODO: NICKNAME
+	m_component->getStanzaChannel()->sendPresence(response);
+}
+
 void RosterManager::setBuddyCallback(Buddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
 
@@ -111,8 +116,14 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 	else {
 		if (m_setBuddyTimer->onTick.empty()) {
 			m_setBuddyTimer->stop();
-			if (true /*&& rie_is_supported*/) {
+
+			// Send RIE only if there's resource which supports it.
+			Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
+			if (jidWithRIE.isValid()) {
 				m_RIETimer->start();
+			}
+			else {
+				sendBuddySubscribePresence(buddy);
 			}
 		}
 	}
@@ -147,9 +158,22 @@ Buddy *RosterManager::getBuddy(const std::string &name) {
 void RosterManager::sendRIE() {
 	m_RIETimer->stop();
 
-	Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(m_user->getJID().toBare());
+	// Check the feature, because proper resource could logout during RIETimer.
+	Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
 
-	LOG4CXX_INFO(logger, "Sending RIE stanza to " << highest->getFrom().toString());
+	// fallback to normal subscribe
+	if (!jidWithRIE.isValid()) {
+		for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+			Buddy *buddy = (*it).second;
+			if (!buddy) {
+				continue;
+			}
+			sendBuddySubscribePresence(buddy);
+		}
+		return;
+	}
+
+	LOG4CXX_INFO(logger, "Sending RIE stanza to " << jidWithRIE.toString());
 
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
@@ -166,7 +190,7 @@ void RosterManager::sendRIE() {
 		payload->addItem(item);
 	}
 
-	boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, highest->getFrom(), payload, m_component->getIQRouter()));
+	boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jidWithRIE, payload, m_component->getIQRouter()));
 	request->send();
 }
 
