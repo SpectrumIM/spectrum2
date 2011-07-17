@@ -522,6 +522,7 @@ void NetworkPluginServer::pingTimeout() {
 
 void NetworkPluginServer::handleUserCreated(User *user) {
 	Backend *c = getFreeClient();
+
 	if (!c) {
 		LOG4CXX_ERROR(logger, "There is no backend to handle user " << user->getJID().toString());
 		user->handleDisconnected("Internal Server Error (no free backend to handle your session), please reconnect.");
@@ -624,6 +625,7 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {
+	std::cout << "HANDLE_DESTROYED\n";
 	UserInfo userInfo = user->getUserInfo();
 
 	pbnetwork::Logout logout;

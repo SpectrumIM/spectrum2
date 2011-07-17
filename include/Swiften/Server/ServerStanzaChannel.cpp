@@ -55,10 +55,8 @@ void ServerStanzaChannel::sendPresence(boost::shared_ptr<Presence> presence) {
 void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element) {
 	std::vector<boost::shared_ptr<ServerFromClientSession> > candidateSessions;
 	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
-		if ((*i)->getRemoteJID().equals(to, JID::WithoutResource)) {
-			(*i)->sendElement(element);
-			candidateSessions.push_back(*i);
-		}
+		(*i)->sendElement(element);
+		candidateSessions.push_back(*i);
 	}
 
 	for (std::vector<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = candidateSessions.begin(); i != candidateSessions.end(); ++i) {

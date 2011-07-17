@@ -167,6 +167,14 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 // // // 
 			addUser(user);
 	}
+
+	// User can be handleDisconnected in addUser callbacks...
+	user = getUser(userkey);
+	if (!user) {
+		m_userRegistry->onPasswordInvalid(presence->getFrom());
+		return;
+	}
+
 	user->handlePresence(presence);
 
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
@@ -256,9 +264,11 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 
 void UserManager::connectUser(const Swift::JID &user) {
 	if (m_users.find(user.toBare().toString()) != m_users.end()) {
+		std::cout << "FOUND\n";
 		m_userRegistry->onPasswordValid(user);
 	}
 	else {
+		std::cout << "NOT FOUND - PRESENCe\n";
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo(m_component->getJID());
 		response->setFrom(user);

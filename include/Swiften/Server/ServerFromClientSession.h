@@ -42,6 +42,7 @@ namespace Swift {
 			~ServerFromClientSession();
 
 			boost::signal<void ()> onSessionStarted;
+			boost::signal<void ()> onPasswordInvalid;
 			void setAllowSASLEXTERNAL();
 			const std::string &getUser() {
 				return user_;

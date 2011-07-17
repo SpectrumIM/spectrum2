@@ -28,6 +28,7 @@
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Queries/IQRouter.h"
+#include <iostream>
 
 
 namespace Swift {
@@ -106,6 +107,9 @@ void Server::handleNewClientConnection(boost::shared_ptr<Connection> connection)
 	serverFromClientSession->onSessionStarted.connect(
 			boost::bind(&Server::handleSessionStarted, this, serverFromClientSession));
 	serverFromClientSession->onSessionFinished.connect(
+			boost::bind(&Server::handleSessionFinished, this, 
+			serverFromClientSession));
+	serverFromClientSession->onPasswordInvalid.connect(
 			boost::bind(&Server::handleSessionFinished, this, 
 			serverFromClientSession));
 	serverFromClientSession->onDataRead.connect(boost::bind(&Server::handleDataRead, this, _1));

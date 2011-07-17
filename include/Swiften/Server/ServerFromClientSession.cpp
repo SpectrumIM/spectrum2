@@ -24,6 +24,7 @@
 #include <Swiften/StreamStack/TLSServerLayer.h>
 #include <Swiften/Elements/StartTLSRequest.h>
 #include <Swiften/Elements/TLSProceed.h>
+#include <iostream>
 
 namespace Swift {
 
@@ -65,8 +66,10 @@ void ServerFromClientSession::handlePasswordInvalid(const std::string &user) {
 	if (user != JID(user_, getLocalJID().getDomain()).toString() || authenticated_)
 		return;
 	if (!isInitialized()) {
+		user_ = "/././";
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
 		finishSession(AuthenticationFailedError);
+		onPasswordInvalid();
 	}
 }
 
