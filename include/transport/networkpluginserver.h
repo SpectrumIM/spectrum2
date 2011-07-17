@@ -107,6 +107,7 @@ class NetworkPluginServer {
 		std::list<Backend *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
 		Component *m_component;
+		std::list<User *> m_waitingUsers;
 };
 
 }

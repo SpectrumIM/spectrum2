@@ -172,6 +172,7 @@ void User::onConnectingTimeout() {
 }
 
 void User::handleDisconnected(const std::string &error) {
+
 	if (error.empty()) {
 		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network");
 	}
@@ -186,12 +187,12 @@ void User::handleDisconnected(const std::string &error) {
 	msg->setFrom(m_component->getJID());
 	m_component->getStanzaChannel()->sendMessage(msg);
 
-	// In server mode, server finishes the session and pass unavailable session to userManager,
+	// In server mode, server finishes the session and pass unavailable session to userManager if we're connected to legacy network,
 	// so we can't removeUser() in server mode, because it would be removed twice.
 	// Once in finishSession and once in m_userManager->removeUser.
 	if (m_component->inServerMode()) {
 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
-		if (!m_readyForConnect) {
+		if (!m_connected) {
 			m_userManager->removeUser(this);
 		}
 	}

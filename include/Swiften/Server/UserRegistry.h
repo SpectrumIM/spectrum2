@@ -19,6 +19,8 @@ namespace Swift {
 
 			virtual bool isValidUserPassword(const JID& user, const SafeByteArray& password) = 0;
 
+			virtual void stopLogin(const JID &/*user*/) {};
+
 			boost::signal<void (const std::string &user)> onPasswordValid;
 			boost::signal<void (const std::string &user)> onPasswordInvalid;
 

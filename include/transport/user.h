@@ -81,6 +81,18 @@ class User {
 
 		void handleDisconnected(const std::string &error);
 
+		bool isReadyToConnect() {
+			return m_readyForConnect;
+		}
+
+		void setConnected(bool connected) {
+			m_connected = connected;
+		}
+
+		bool isConnected() {
+			return m_connected;
+		}
+
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
 		boost::signal<void (const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;

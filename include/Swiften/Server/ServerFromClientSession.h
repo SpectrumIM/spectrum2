@@ -50,6 +50,10 @@ namespace Swift {
 
 			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, const PKCS12Certificate& cert);
 
+			Swift::JID getBareJID() {
+				return Swift::JID(user_, getLocalJID().getDomain());
+			}
+
 		private:
 			void handleElement(boost::shared_ptr<Element>);
 			void handleStreamStart(const ProtocolHeader& header);

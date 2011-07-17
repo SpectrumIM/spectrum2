@@ -47,6 +47,7 @@ ServerFromClientSession::ServerFromClientSession(
 }
 
 ServerFromClientSession::~ServerFromClientSession() {
+	std::cout << "DESTRUCTOR;\n";
 	if (tlsLayer) {
 		delete tlsLayer;
 	}
@@ -56,6 +57,8 @@ void ServerFromClientSession::handlePasswordValid(const std::string &user) {
 	if (user != JID(user_, getLocalJID().getDomain()).toString())
 		return;
 	if (!isInitialized()) {
+		userRegistry_->onPasswordValid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
+		userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthSuccess>(new AuthSuccess()));
 		authenticated_ = true;
 		getXMPPLayer()->resetParser();
@@ -66,7 +69,8 @@ void ServerFromClientSession::handlePasswordInvalid(const std::string &user) {
 	if (user != JID(user_, getLocalJID().getDomain()).toString() || authenticated_)
 		return;
 	if (!isInitialized()) {
-		user_ = "/././";
+		userRegistry_->onPasswordValid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
+		userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
 		finishSession(AuthenticationFailedError);
 		onPasswordInvalid();
