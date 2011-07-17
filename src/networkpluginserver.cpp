@@ -112,11 +112,11 @@ static void SigCatcher(int n) {
 		if (result != 0) {
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
-					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status));
+// 					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status));
 				}
 			}
 			else {
-				LOG4CXX_ERROR(logger, "Backend can not be started");
+// 				LOG4CXX_ERROR(logger, "Backend can not be started");
 			}
 		}
 	}
