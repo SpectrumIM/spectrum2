@@ -191,7 +191,9 @@ void User::handleDisconnected(const std::string &error) {
 	// Once in finishSession and once in m_userManager->removeUser.
 	if (m_component->inServerMode()) {
 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
-		m_userManager->removeUser(this);
+		if (!m_readyForConnect) {
+			m_userManager->removeUser(this);
+		}
 	}
 	else {
 		m_userManager->removeUser(this);

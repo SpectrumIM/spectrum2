@@ -77,6 +77,10 @@ class UserManager {
 			return m_users.find(barejid) != m_users.end();
 		}
 
+		UserRegistry *getUserRegistry() {
+			return m_userRegistry;
+		}
+
 		void connectUser(const Swift::JID &user);
 
 	private:
