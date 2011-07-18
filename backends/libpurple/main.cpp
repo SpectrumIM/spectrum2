@@ -21,6 +21,8 @@
 #include "log4cxx/propertyconfigurator.h"
 #include "log4cxx/helpers/properties.h"
 #include "log4cxx/helpers/fileinputstream.h"
+#include "sys/wait.h"
+#include "sys/signal.h"
 
 using namespace log4cxx;
 
@@ -1006,6 +1008,21 @@ static bool initPurple(Config &cfg) {
 	return ret;
 }
 
+static void spectrum_sigchld_handler(int sig)
+{
+	int status;
+	pid_t pid;
+
+	do {
+		pid = waitpid(-1, &status, WNOHANG);
+	} while (pid != 0 && pid != (pid_t)-1);
+
+	if ((pid == (pid_t) - 1) && (errno != ECHILD)) {
+		char errmsg[BUFSIZ];
+		snprintf(errmsg, BUFSIZ, "Warning: waitpid() returned %d", pid);
+		perror(errmsg);
+	}
+}
 
 int main(int argc, char **argv) {
 	GError *error = NULL;
@@ -1040,13 +1057,13 @@ int main(int argc, char **argv) {
 	}
 	else {
 #ifndef WIN32
-// 		signal(SIGPIPE, SIG_IGN);
-// 
-// 		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
-// 			std::cout << "SIGCHLD handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-// 		}
+		signal(SIGPIPE, SIG_IGN);
+
+		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
+			std::cout << "SIGCHLD handler can't be set\n";
+			g_option_context_free(context);
+			return -1;
+		}
 // 
 // 		if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
 // 			std::cout << "SIGINT handler can't be set\n";
