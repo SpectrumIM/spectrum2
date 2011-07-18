@@ -28,6 +28,8 @@
 #include "transport/networkpluginserver.h"
 #include "storageresponder.h"
 #include "log4cxx/logger.h"
+#include "memoryusage.h"
+#include <boost/foreach.hpp>
 
 using namespace log4cxx;
 
@@ -129,15 +131,135 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int backends = m_server->getBackendCount() - 1;
 		message->setBody(boost::lexical_cast<std::string>(backends));
 	}
+	else if (message->getBody() == "res_memory") {
+		double shared = 0;
+		double rss = 0;
+#ifndef WIN32
+		process_mem_usage(shared, rss);
+#endif
+
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			rss += backend->res;
+		}
+
+		message->setBody(boost::lexical_cast<std::string>(rss));
+	}
+	else if (message->getBody() == "shr_memory") {
+		double shared = 0;
+		double rss = 0;
+#ifndef WIN32
+		process_mem_usage(shared, rss);
+#endif
+
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			shared += backend->shared;
+		}
+
+		message->setBody(boost::lexical_cast<std::string>(shared));
+	}
+	else if (message->getBody() == "used_memory") {
+		double shared = 0;
+		double rss = 0;
+#ifndef WIN32
+		process_mem_usage(shared, rss);
+#endif
+		rss -= shared;
+
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			rss += backend->res - backend->shared;
+		}
+
+		message->setBody(boost::lexical_cast<std::string>(rss));
+	}
+	else if (message->getBody() == "average_memory_per_user") {
+		if (m_userManager->getUserCount() == 0) {
+			message->setBody(boost::lexical_cast<std::string>(0));
+		}
+		else {
+			unsigned long per_user = 0;
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				per_user += (backend->res - backend->init_res);
+			}
+
+			message->setBody(boost::lexical_cast<std::string>(per_user / m_userManager->getUserCount()));
+		}
+	}
+	else if (message->getBody() == "res_memory_per_backend") {
+		std::string lst;
+		int id = 1;
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>(backend->res) + "\n";
+			id++;
+		}
+
+		message->setBody(lst);
+	}
+	else if (message->getBody() == "shr_memory_per_backend") {
+		std::string lst;
+		int id = 1;
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>(backend->shared) + "\n";
+			id++;
+		}
+
+		message->setBody(lst);
+	}
+	else if (message->getBody() == "used_memory_per_backend") {
+		std::string lst;
+		int id = 1;
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>(backend->res - backend->shared) + "\n";
+			id++;
+		}
+
+		message->setBody(lst);
+	}
+	else if (message->getBody() == "average_memory_per_user_per_backend") {
+		std::string lst;
+		int id = 1;
+		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			if (backend->users.size() == 0) {
+				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": 0\n";
+			}
+			else {
+				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>((backend->init_res - backend->shared) / backend->users.size()) + "\n";
+			}
+			id++;
+		}
+
+		message->setBody(lst);
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
-		help += "status - shows instance status\n";
-		help += "online_users - returns list of all online users\n";
-		help += "online_users_count - number of online users\n";
-		help += "online_users_per_backend - shows online users per backends\n";
-		help += "has_online_user <bare_JID> - returns 1 if user is online\n";
-		help += "backends_count - number of active backends\n";
-		help += "reload - Reloads config file\n";
+		help += "General:\n";
+		help += "    status - shows instance status\n";
+		help += "    reload - Reloads config file\n";
+		help += "Users:\n";
+		help += "    online_users - returns list of all online users\n";
+		help += "    online_users_count - number of online users\n";
+		help += "    online_users_per_backend - shows online users per backends\n";
+		help += "    has_online_user <bare_JID> - returns 1 if user is online\n";
+		help += "Backends:\n";
+		help += "    backends_count - number of active backends\n";
+		help += "Memory:\n";
+		help += "    res_memory - Total RESident memory spectrum2 and its backends use in KB\n";
+		help += "    shr_memory - Total SHaRed memory spectrum2 backends share together in KB\n";
+		help += "    used_memory - (res_memory - shr_memory)\n";
+		help += "    average_memory_per_user - (memory_used_without_any_user - res_memory)\n";
+		help += "    res_memory_per_backend - RESident memory used by backends in KB\n";
+		help += "    shr_memory_per_backend - SHaRed memory used by backends in KB\n";
+		help += "    used_memory_per_backend - (res_memory - shr_memory) per backend\n";
+		help += "    average_memory_per_user_per_backend - (memory_used_without_any_user - res_memory) per backend\n";
+		
+		
 		message->setBody(help);
 	}
 	else {

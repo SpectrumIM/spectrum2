@@ -47,6 +47,9 @@ class NetworkPluginServer {
 			std::list<User *> users;
 			Swift::SafeByteArray data;
 			boost::shared_ptr<Swift::Connection> connection;
+			unsigned long res;
+			unsigned long init_res;
+			unsigned long shared;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
@@ -78,6 +81,7 @@ class NetworkPluginServer {
 		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
 		void handleAuthorizationPayload(const std::string &payload);
 		void handleAttentionPayload(const std::string &payload);
+		void handleStatsPayload(Backend *c, const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);

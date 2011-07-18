@@ -31,6 +31,7 @@
 #include "pbnetwork.pb.h"
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
+#include "memoryusage.h"
 
 using namespace log4cxx;
 
@@ -56,6 +57,9 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 	m_pingTimer = m_factories->getTimerFactory()->createTimer(30000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPlugin::pingTimeout, this)); 
 	connect();
+
+	double shared;
+	process_mem_usage(shared, m_init_res);
 }
 
 NetworkPlugin::~NetworkPlugin() {
@@ -491,6 +495,25 @@ void NetworkPlugin::sendPong() {
 
 	send(message);
 	LOG4CXX_INFO(logger, "PONG");
+	sendMemoryUsage();
+}
+
+void NetworkPlugin::sendMemoryUsage() {
+	pbnetwork::Stats stats;
+
+	stats.set_init_res(m_init_res);
+	double res;
+	double shared;
+	process_mem_usage(shared, res);
+	stats.set_res(res);
+	stats.set_shared(shared);
+
+	std::string message;
+	stats.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATS);
+
+	send(message);
 }
 
 void NetworkPlugin::pingTimeout() {

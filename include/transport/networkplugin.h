@@ -104,6 +104,7 @@ class NetworkPlugin {
 
 		void send(const std::string &data);
 		void sendPong();
+		void sendMemoryUsage();
 		void pingTimeout();
 
 		Swift::SafeByteArray m_data;
@@ -114,6 +115,7 @@ class NetworkPlugin {
 		boost::shared_ptr<Swift::Connection> m_conn;
 		Swift::Timer::ref m_pingTimer;
 		bool m_pingReceived;
+		double m_init_res;
 
 };
 

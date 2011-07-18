@@ -176,6 +176,9 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	Backend *client = new Backend;
 	client->pongReceived = true;
 	client->connection = c;
+	client->res = 0;
+	client->init_res = 0;
+	client->shared = 0;
 
 	LOG4CXX_INFO(logger, "New backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
@@ -458,6 +461,17 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	conv->handleMessage(msg);
 }
 
+void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data) {
+	pbnetwork::Stats payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+	c->res = payload.res();
+	c->init_res = payload.init_res();
+	c->shared = payload.shared();
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray &data) {
 	c->data.insert(c->data.end(), data.begin(), data.end());
 	while (c->data.size() != 0) {
@@ -523,6 +537,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray 
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
 				handleAttentionPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_STATS:
+				handleStatsPayload(c, wrapper.payload());
 				break;
 			default:
 				return;

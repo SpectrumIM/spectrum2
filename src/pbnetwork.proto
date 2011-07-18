@@ -72,6 +72,12 @@ message Status {
 	optional string statusMessage = 4;
 }
 
+message Stats {
+	required int32 res = 1;
+	required int32 init_res = 2;
+	required int32 shared = 3;
+}
+
 message WrapperMessage {
 	enum Type { 
 		TYPE_CONNECTED 				= 1;
@@ -95,6 +101,7 @@ message WrapperMessage {
 		TYPE_BUDDY_TYPED			= 20;
 		TYPE_AUTH_REQUEST			= 21;
 		TYPE_ATTENTION			= 22;
+		TYPE_STATS					= 23;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
