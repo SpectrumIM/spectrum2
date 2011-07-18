@@ -889,7 +889,7 @@ void NetworkPluginServer::sendPing(Backend *c) {
 
 	send(c->connection, message);
 	c->pongReceived = false;
-	LOG4CXX_INFO(logger, "PING to " << c);
+// 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
 NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {

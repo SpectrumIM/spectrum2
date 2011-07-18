@@ -58,6 +58,8 @@ class ConversationManager {
 		/// \param name legacy network name.
 		/// \return Conversation or NULL.
 		Conversation *getConversation(const std::string &name) {
+			if (m_convs.find(name) == m_convs.end())
+				return NULL;
 			return m_convs[name];
 		}
 
