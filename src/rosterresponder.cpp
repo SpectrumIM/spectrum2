@@ -65,11 +65,9 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 		user = m_userManager->getUser(from.toBare().toString());
 		if (!user) {
 			sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
+			LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 			return true;
 		}
-	}
-	else {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 	}
 	sendResponse(from, id, user->getRosterManager()->generateRosterPayload());
 	user->getRosterManager()->sendCurrentPresences(from);
