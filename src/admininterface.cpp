@@ -72,7 +72,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 
 	if (message->getBody() == "status") {
 		int users = m_userManager->getUserCount();
-		int backends = m_server->getBackendCount() - 1;
+		int backends = m_server->getBackendCount();
 		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
 	}
 	else if (message->getBody() == "online_users") {
@@ -128,7 +128,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		message->setBody(boost::lexical_cast<std::string>(user != NULL));
 	}
 	else if (message->getBody() == "backends_count") {
-		int backends = m_server->getBackendCount() - 1;
+		int backends = m_server->getBackendCount();
 		message->setBody(boost::lexical_cast<std::string>(backends));
 	}
 	else if (message->getBody() == "res_memory") {
@@ -230,7 +230,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": 0\n";
 			}
 			else {
-				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>((backend->init_res - backend->shared) / backend->users.size()) + "\n";
+				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>((backend->res - backend->init_res) / backend->users.size()) + "\n";
 			}
 			id++;
 		}
