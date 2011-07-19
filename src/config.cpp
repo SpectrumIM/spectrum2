@@ -60,6 +60,8 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
 		("logging.config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for Spectrum 2 instance")
 		("logging.backend_config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for backends")
+		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")
+		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
 	;
 
 	store(parse_config_file(ifs, opts), m_variables);

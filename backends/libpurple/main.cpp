@@ -179,6 +179,19 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			m_sessions[user] = account;
+
+			// Default avatar
+			if (!CONFIG_STRING(config, "backend.default_avatar").empty()) {
+				char* contents;
+				gsize length;
+
+				gboolean ret = g_file_get_contents (CONFIG_STRING(config, "backend.default_avatar").c_str(),
+													&contents, &length, NULL);
+				if (ret) {
+					purple_buddy_icons_set_account_icon(account, (guchar *) contents, length);
+				}
+			}
+
 			purple_account_set_password(account, password.c_str());
 			purple_account_set_enabled(account, "spectrum", TRUE);
 			
