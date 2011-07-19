@@ -191,8 +191,12 @@ void User::handleDisconnected(const std::string &error) {
 	// so we can't removeUser() in server mode, because it would be removed twice.
 	// Once in finishSession and once in m_userManager->removeUser.
 	if (m_component->inServerMode()) {
+		// Remove user later just to be sure there won't be double-free.
+		// We can't be sure finishSession sends unavailable presence everytime, so check if user gets removed
+		// in finishSession(...) call and if not, remove it here.
+		std::string jid = m_jid.toBare().toString();
 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
-		if (!m_connected) {
+		if (m_userManager->getUser(jid) != NULL) {
 			m_userManager->removeUser(this);
 		}
 	}
