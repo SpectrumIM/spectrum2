@@ -7,12 +7,33 @@
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
+#include "sys/signal.h"
 
 using namespace Transport;
+
+Swift::SimpleEventLoop *eventLoop_ = NULL;
+
+static void spectrum_sigint_handler(int sig) {
+	eventLoop_->stop();
+}
+
+static void spectrum_sigterm_handler(int sig) {
+	eventLoop_->stop();
+}
 
 int main(int argc, char **argv)
 {
 	Config config;
+
+	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
+		std::cout << "SIGINT handler can't be set\n";
+		return -1;
+	}
+
+	if (signal(SIGTERM, spectrum_sigterm_handler) == SIG_ERR) {
+		std::cout << "SIGTERM handler can't be set\n";
+		return -1;
+	}
 
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
@@ -69,8 +90,9 @@ int main(int argc, char **argv)
 	}
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
+	UserRegistration *userRegistration = NULL;
 	if (storageBackend) {
-		UserRegistration *userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
+		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
 		userRegistration->start();
 // 		logger.setUserRegistration(&userRegistration);
 	}
@@ -80,5 +102,12 @@ int main(int argc, char **argv)
 
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
 
+	eventLoop_ = &eventLoop;
+
 	eventLoop.run();
+	if (userRegistration) {
+		userRegistration->stop();
+		delete userRegistration;
+	}
+	delete storageBackend;
 }

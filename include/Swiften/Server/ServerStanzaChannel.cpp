@@ -6,6 +6,7 @@
 
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Base/Error.h"
+#include <iostream>
 
 #include <boost/bind.hpp>
 
@@ -55,13 +56,17 @@ void ServerStanzaChannel::sendPresence(boost::shared_ptr<Presence> presence) {
 void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element) {
 	std::vector<boost::shared_ptr<ServerFromClientSession> > candidateSessions;
 	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
-		(*i)->sendElement(element);
+		if (element) {
+			(*i)->sendElement(element);
+		}
 		candidateSessions.push_back(*i);
 	}
 
 	for (std::vector<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = candidateSessions.begin(); i != candidateSessions.end(); ++i) {
+		
 		(*i)->finishSession();
 		sessions[to.toBare().toString()].remove(*i);
+		std::cout << "FINISH SESSION " << sessions[to.toBare().toString()].size() << "\n";
 	}
 }
 

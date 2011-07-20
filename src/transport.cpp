@@ -134,10 +134,13 @@ Component::~Component() {
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
 	delete m_discoInfoResponder;
+	delete m_discoItemsResponder;
 	if (m_component)
 		delete m_component;
-	if (m_server)
+	if (m_server) {
+		m_server->stop();
 		delete m_server;
+	}
 	delete m_factories;
 }
 

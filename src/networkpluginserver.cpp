@@ -168,6 +168,9 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 NetworkPluginServer::~NetworkPluginServer() {
 	m_pingTimer->stop();
+	m_server->stop();
+	m_server.reset();
+	delete m_component->m_factory;
 	delete m_vcardResponder;
 	delete m_rosterResponder;
 }

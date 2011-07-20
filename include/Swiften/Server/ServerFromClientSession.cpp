@@ -48,6 +48,8 @@ ServerFromClientSession::ServerFromClientSession(
 
 ServerFromClientSession::~ServerFromClientSession() {
 	std::cout << "DESTRUCTOR;\n";
+	userRegistry_->onPasswordValid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
+	userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 	if (tlsLayer) {
 		delete tlsLayer;
 	}
