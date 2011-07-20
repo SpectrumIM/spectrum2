@@ -229,6 +229,34 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				g_free(account->ui_data);
 				account->ui_data = NULL;
 				m_accounts.erase(account);
+
+				purple_notify_close_with_handle(account);
+				purple_request_close_with_handle(account);
+
+				purple_accounts_remove(account);
+
+				GSList *buddies = purple_find_buddies(account, NULL);
+				while(buddies) {
+					PurpleBuddy *b = (PurpleBuddy *) buddies->data;
+					purple_blist_remove_buddy(b);
+					buddies = g_slist_delete_link(buddies, buddies);
+				}
+
+				/* Remove any open conversation for this account */
+				for (GList *it = purple_get_conversations(); it; ) {
+					PurpleConversation *conv = (PurpleConversation *) it->data;
+					it = it->next;
+					if (purple_conversation_get_account(conv) == account)
+						purple_conversation_destroy(conv);
+				}
+
+				/* Remove this account's pounces */
+					// purple_pounce_destroy_all_by_account(account);
+
+				/* This will cause the deletion of an old buddy icon. */
+				purple_buddy_icons_set_account_icon(account, NULL, 0);
+
+				purple_account_destroy(account);
 			}
 		}
 
