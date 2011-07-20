@@ -140,7 +140,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
 
-	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
+	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
 	m_pingTimer->start();
 
@@ -177,7 +177,7 @@ NetworkPluginServer::~NetworkPluginServer() {
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
 	Backend *client = new Backend;
-	client->pongReceived = true;
+	client->pongReceived = -1;
 	client->connection = c;
 	client->res = 0;
 	client->init_res = 0;
@@ -195,6 +195,7 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, client));
 	c->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, client, _1));
 	sendPing(client);
+	client->pongReceived = -1;
 
 	// some users are in queue waiting for this backend
 	while(!m_waitingUsers.empty()) {
@@ -562,12 +563,15 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 void NetworkPluginServer::pingTimeout() {
 	// check ping responses
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->pongReceived) {
+		if ((*it)->pongReceived || (*it)->pongReceived == -1) {
 			sendPing((*it));
 		}
 		else {
-			exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
+			(*it)->connection->disconnect();
+			(*it)->connection.reset();
 		}
+		
 	}
 	m_pingTimer->start();
 }
@@ -904,24 +908,12 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// This backend is free.
 		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
-			// After this user, this backend could be full, so we have to spawn new one...
-			if ((*it)->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
-				spawnNew = true;
-			}
-
-			if (c == NULL) {
-				c = *it;
-			}
-			else {
-				if ((*it)->users.size() + 1 != CONFIG_INT(m_config, "service.users_per_backend")) {
-					spawnNew = false;
-					break;
-				}
-			}
+			c = *it;
+			break;
 		}
 	}
 
-	if (spawnNew || c == NULL) {
+	if (c == NULL) {
 		exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 	}
 

@@ -188,7 +188,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
 			// There's no presence for this user, so disconnect
 			if (!highest || (highest && highest->getType() == Swift::Presence::Unavailable)) {
-				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user)); 
+				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user->getJID().toBare().toString())); 
 				m_removeTimer->start();
 			}
 		}
@@ -199,8 +199,11 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	}
 }
 
-void UserManager::handleRemoveTimeout(User *user) {
-	removeUser(user);
+void UserManager::handleRemoveTimeout(const std::string jid) {
+	User *user = getUser(jid);
+	if (user) {
+		removeUser(user);
+	}
 }
 
 void UserManager::handleMessageReceived(Swift::Message::ref message) {

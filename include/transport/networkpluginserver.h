@@ -43,7 +43,7 @@ class RosterResponder;
 class NetworkPluginServer {
 	public:
 		struct Backend {
-			bool pongReceived;
+			int pongReceived;
 			std::list<User *> users;
 			Swift::SafeByteArray data;
 			boost::shared_ptr<Swift::Connection> connection;
