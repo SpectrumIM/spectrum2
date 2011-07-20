@@ -89,6 +89,7 @@ class UserManager {
 		void handleGeneralPresenceReceived(Swift::Presence::ref presence);
 		void handleProbePresence(Swift::Presence::ref presence);
 		void handleSubscription(Swift::Presence::ref presence);
+		void handleRemoveTimeout(User *user);
 // 		void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 		void addUser(User *user);
 
@@ -99,6 +100,7 @@ class UserManager {
 		StorageBackend *m_storageBackend;
 		StorageResponder *m_storageResponder;
 		UserRegistry *m_userRegistry;
+		Swift::Timer::ref m_removeTimer;
 		friend class RosterResponder;
 };
 

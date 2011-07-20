@@ -227,6 +227,9 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
 
+// 	c->connection->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, c));
+// 	c->connection->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, c, _1));
+
 	m_clients.remove(c);
 	delete c;
 

@@ -53,6 +53,8 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 
 	m_userRegistry->onConnectUser.connect(bind(&UserManager::connectUser, this, _1));
 // 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
+
+	m_removeTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1);
 }
 
 UserManager::~UserManager(){
@@ -186,7 +188,8 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
 			// There's no presence for this user, so disconnect
 			if (!highest || (highest && highest->getType() == Swift::Presence::Unavailable)) {
-				removeUser(user);
+				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user)); 
+				m_removeTimer->start();
 			}
 		}
 		// TODO: HANDLE MUC SOMEHOW
@@ -194,6 +197,10 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 // 			Transport::instance()->userManager()->removeUser(user);
 // 		}
 	}
+}
+
+void UserManager::handleRemoveTimeout(User *user) {
+	removeUser(user);
 }
 
 void UserManager::handleMessageReceived(Swift::Message::ref message) {
