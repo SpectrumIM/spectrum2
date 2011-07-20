@@ -75,7 +75,6 @@ void ServerFromClientSession::handlePasswordInvalid(const std::string &user) {
 		userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
 		finishSession(AuthenticationFailedError);
-		onPasswordInvalid();
 	}
 }
 
