@@ -74,6 +74,9 @@ void RosterManager::setBuddy(Buddy *buddy) {
 }
 
 void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
+	if (!m_user->isConnected())
+		return;
+
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 	Swift::RosterItemPayload item;
 	item.setJID(buddy->getJID().toBare());
