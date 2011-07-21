@@ -228,8 +228,8 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
 
-// 	c->connection->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, c));
-// 	c->connection->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, c, _1));
+	c->connection->onDisconnected.disconnect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, c));
+	c->connection->onDataRead.disconnect(boost::bind(&NetworkPluginServer::handleDataRead, this, c, _1));
 
 	m_clients.remove(c);
 	delete c;
@@ -569,7 +569,7 @@ void NetworkPluginServer::pingTimeout() {
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
 			(*it)->connection->disconnect();
-			(*it)->connection.reset();
+			handleSessionFinished((*it));
 		}
 		
 	}
@@ -715,7 +715,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	if (c->users.size() == 0) {
 		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
 		c->connection->disconnect();
-		c->connection.reset();
+		handleSessionFinished(c);
 // 		m_clients.erase(user->connection);
 	}
 }
