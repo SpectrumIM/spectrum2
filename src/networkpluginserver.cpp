@@ -569,7 +569,8 @@ void NetworkPluginServer::pingTimeout() {
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
 			(*it)->connection->disconnect();
-			handleSessionFinished((*it));
+			(*it)->connection.reset();
+// 			handleSessionFinished((*it));
 		}
 		
 	}
@@ -715,7 +716,9 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	if (c->users.size() == 0) {
 		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
 		c->connection->disconnect();
-		handleSessionFinished(c);
+		c->connection.reset();
+		
+// 		handleSessionFinished(c);
 // 		m_clients.erase(user->connection);
 	}
 }
