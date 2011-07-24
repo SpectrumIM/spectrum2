@@ -3,7 +3,7 @@ FILE(GLOB SRC *.cpp)
 
 ADD_EXECUTABLE(spectrum_libpurple_backend ${SRC})
 
-target_link_libraries(spectrum_libpurple_backend ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport)
+target_link_libraries(spectrum_libpurple_backend ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport pthread)
 
 INSTALL(TARGETS spectrum_libpurple_backend RUNTIME DESTINATION bin)
 

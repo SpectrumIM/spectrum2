@@ -4,7 +4,7 @@ FILE(GLOB HEADERS *.h)
 QT4_WRAP_CPP(SRC ${HEADERS})
 ADD_EXECUTABLE(spectrum_libircclient-qt_backend ${SRC})
 
-target_link_libraries(spectrum_libircclient-qt_backend ${IRC_LIBRARY} ${QT_LIBRARIES} transport)
+target_link_libraries(spectrum_libircclient-qt_backend ${IRC_LIBRARY} ${QT_LIBRARIES} transport pthread)
 
 INSTALL(TARGETS spectrum_libircclient-qt_backend RUNTIME DESTINATION bin)
 
