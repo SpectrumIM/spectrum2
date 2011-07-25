@@ -900,8 +900,10 @@ void NetworkPluginServer::sendPing(Backend *c) {
 	wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_PING);
 	wrap.SerializeToString(&message);
 
-	send(c->connection, message);
-	c->pongReceived = false;
+	if (c->connection) {
+		send(c->connection, message);
+		c->pongReceived = false;
+	}
 // 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
@@ -910,7 +912,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	bool spawnNew = false;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// This backend is free.
-		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
+		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && c->connection) {
 			c = *it;
 			break;
 		}
