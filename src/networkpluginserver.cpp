@@ -912,7 +912,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	bool spawnNew = false;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// This backend is free.
-		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && c->connection) {
+		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection) {
 			c = *it;
 			break;
 		}
