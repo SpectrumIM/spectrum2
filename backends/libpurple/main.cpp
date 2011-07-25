@@ -155,8 +155,14 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
+		SpectrumEventLoop *m_loop;
 		SpectrumNetworkPlugin(Config *config, SpectrumEventLoop *loop, const std::string &host, int port) : NetworkPlugin(loop, host, port) {
 			this->config = config;
+			m_loop = loop;
+		}
+
+		void handleExit() {
+			m_loop->stop();
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {

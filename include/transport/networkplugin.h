@@ -83,6 +83,8 @@ class NetworkPlugin {
 		virtual void handleTypedRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleStoppedTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleAttentionRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*message*/) {}
+
+		virtual void handleExit() { std::cout << "EXITING\n"; exit(1); }
 		
 
 	private:
@@ -113,6 +115,7 @@ class NetworkPlugin {
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
+		Swift::EventLoop *m_loop;
 		Swift::Timer::ref m_pingTimer;
 		bool m_pingReceived;
 		double m_init_res;

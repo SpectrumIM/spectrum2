@@ -49,6 +49,7 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 	m_host = host;
 	m_port = port;
 	m_pingReceived = false;
+	m_loop = loop;
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
 	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::_handleConnected, this, _1));
@@ -262,20 +263,20 @@ void NetworkPlugin::handleRoomChanged(const std::string &user, const std::string
 
 void NetworkPlugin::_handleConnected(bool error) {
 	if (error) {
-		LOG4CXX_ERROR(logger, "Connecting error. Exiting");
+// 		LOG4CXX_ERROR(logger, "Connecting error. Exiting");
 		m_pingTimer->stop();
-		exit(1);
+		handleExit();
 	}
 	else {
-		LOG4CXX_INFO(logger, "Connected to NetworkPluginServer");
+// 		LOG4CXX_INFO(logger, "Connected to NetworkPluginServer");
 		m_pingTimer->start();
 	}
 }
 
 void NetworkPlugin::handleDisconnected() {
-	LOG4CXX_INFO(logger, "Disconnected from NetworkPluginServer. Exiting.");
+// 	LOG4CXX_INFO(logger, "Disconnected from NetworkPluginServer. Exiting.");
 	m_pingTimer->stop();
-	exit(1);
+	handleExit();
 }
 
 void NetworkPlugin::connect() {
@@ -518,8 +519,8 @@ void NetworkPlugin::sendMemoryUsage() {
 
 void NetworkPlugin::pingTimeout() {
 	if (m_pingReceived == false) {
-		LOG4CXX_ERROR(logger, "No PING received for long time (NetworkPluginServer crashed?). Exiting");
-		exit(1);
+// 		LOG4CXX_ERROR(logger, "No PING received for long time. Exiting");
+		handleExit();
 	}
 	m_pingReceived = false;
 	m_pingTimer->start();

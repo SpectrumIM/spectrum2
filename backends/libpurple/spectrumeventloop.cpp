@@ -68,6 +68,7 @@ void SpectrumEventLoop::run() {
 }
 
 void SpectrumEventLoop::stop() {
+	std::cout << "stopped loop\n";
 	if (!m_isRunning)
 		return;
 	if (m_loop) {
