@@ -183,7 +183,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			// Default avatar
 			char* contents;
 			gsize length;
-			gboolean ret;
+			gboolean ret = false;
 			if (!CONFIG_STRING(config, "backend.avatars_directory").empty()) {
 				std::string f = CONFIG_STRING(config, "backend.avatars_directory") + "/" + legacyName;
 				ret = g_file_get_contents (f.c_str(), &contents, &length, NULL);

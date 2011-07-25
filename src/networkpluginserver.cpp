@@ -182,6 +182,7 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->res = 0;
 	client->init_res = 0;
 	client->shared = 0;
+	client->acceptUsers = true;
 
 	LOG4CXX_INFO(logger, "New backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
@@ -190,7 +191,7 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 		m_component->start();
 	}
 
-	m_clients.push_back(client);
+	m_clients.push_front(client);
 
 	c->onDisconnected.connect(boost::bind(&NetworkPluginServer::handleSessionFinished, this, client));
 	c->onDataRead.connect(boost::bind(&NetworkPluginServer::handleDataRead, this, client, _1));
@@ -912,8 +913,11 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	bool spawnNew = false;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// This backend is free.
-		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection) {
+		if ((*it)->acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection) {
 			c = *it;
+			if (c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
+				c->acceptUsers = false;
+			}
 			break;
 		}
 	}

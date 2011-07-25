@@ -50,6 +50,7 @@ class NetworkPluginServer {
 			unsigned long res;
 			unsigned long init_res;
 			unsigned long shared;
+			bool acceptUsers;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
