@@ -571,6 +571,7 @@ static std::string getIconHash(PurpleBuddy *m_buddy) {
 	PurpleBuddyIcon *icon = purple_buddy_icons_find(purple_buddy_get_account(m_buddy), purple_buddy_get_name(m_buddy));
 	if (icon) {
 		avatarHash = purple_buddy_icon_get_full_path(icon);
+		purple_buddy_icon_unref(icon);
 	}
 
 	if (avatarHash) {
@@ -817,6 +818,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			if (len < 300000 && data) {
 				photo = Swift::createByteArray(data, len);
 			}
+			purple_imgstore_unref(avatar);
 		}
 	}
 
@@ -846,6 +848,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 // 					}
 // 				}
 			}
+			purple_buddy_icon_unref(icon);
 		}
 	}
 
