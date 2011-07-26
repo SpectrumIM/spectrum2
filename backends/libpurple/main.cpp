@@ -23,6 +23,9 @@
 #include "log4cxx/helpers/fileinputstream.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
+// #include "valgrind/memcheck.h"
+#include "malloc.h"
+
 
 using namespace log4cxx;
 
@@ -218,6 +221,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
 			PurpleAccount *account = purple_accounts_find(legacyName.c_str(), protocol);
 			if (account) {
+// 				VALGRIND_DO_LEAK_CHECK;
 				m_sessions[user] = NULL;
 				purple_account_set_enabled(account, "spectrum", FALSE);
 
@@ -263,6 +267,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_buddy_icons_set_account_icon(account, NULL, 0);
 
 				purple_account_destroy(account);
+// 				VALGRIND_DO_LEAK_CHECK;
 			}
 		}
 
@@ -940,6 +945,8 @@ static PurpleCoreUiOps coreUiOps =
 static void signed_on(PurpleConnection *gc, gpointer unused) {
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleConnected(np->m_accounts[account]);
+	// force returning of memory chunks allocated by libxml2 to kernel
+	malloc_trim(0);
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
