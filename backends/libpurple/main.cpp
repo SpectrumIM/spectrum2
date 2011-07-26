@@ -170,10 +170,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			PurpleAccount *account = NULL;
-			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
-			if (purple_accounts_find(legacyName.c_str(), protocol) != NULL){
+			
+			std::string name = legacyName;
+			std::string protocol = CONFIG_STRING(config, "service.protocol");
+			if (CONFIG_STRING(config, "service.protocol") == "any") {
+				protocol = name.substr(0, name.find("."));
+				name = name.substr(name.find(".") + 1);
+			}
+
+			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
+			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
 // 				Log(user, "this account already exists");
-				account = purple_accounts_find(legacyName.c_str(), protocol);
+				account = purple_accounts_find(name.c_str(), protocol.c_str());
 // 				User *u = (User *) account->ui_data;
 // 				if (u && u != user) {
 // 					Log(userInfo.jid, "This account is already connected by another jid " << user->getJID());
@@ -182,7 +190,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 			else {
 // 				Log(user, "creating new account");
-				account = purple_account_new(legacyName.c_str(), protocol);
+				account = purple_account_new(name.c_str(), protocol.c_str());
 
 				purple_accounts_add(account);
 			}
@@ -218,8 +226,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
-			const char *protocol = CONFIG_STRING(config, "service.protocol").c_str();
-			PurpleAccount *account = purple_accounts_find(legacyName.c_str(), protocol);
+			PurpleAccount *account = m_sessions[user];
 			if (account) {
 // 				VALGRIND_DO_LEAK_CHECK;
 				m_sessions[user] = NULL;
