@@ -274,6 +274,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_buddy_icons_set_account_icon(account, NULL, 0);
 
 				purple_account_destroy(account);
+				// force returning of memory chunks allocated by libxml2 to kernel
+				malloc_trim(0);
 // 				VALGRIND_DO_LEAK_CHECK;
 			}
 		}
