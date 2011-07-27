@@ -39,6 +39,7 @@ class Config;
 class NetworkConversation;
 class VCardResponder;
 class RosterResponder;
+class BlockResponder;
 
 class NetworkPluginServer {
 	public:
@@ -95,6 +96,8 @@ class NetworkPluginServer {
 		void handleBuddyRemoved(Buddy *buddy);
 		void handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item);
 
+		void handleBlockToggled(Buddy *buddy);
+
 		void handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> vcard);
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
 
@@ -107,6 +110,7 @@ class NetworkPluginServer {
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
 		RosterResponder *m_rosterResponder;
+		BlockResponder *m_blockResponder;
 		Config *m_config;
 		boost::shared_ptr<Swift::BoostConnectionServer> m_server;
 		std::list<Backend *>  m_clients;

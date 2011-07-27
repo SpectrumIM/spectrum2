@@ -41,7 +41,8 @@ class NetworkPlugin {
 		virtual ~NetworkPlugin();
 
 		void handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, int status, const std::string &statusMessage = "", const std::string &iconHash = ""
+			const std::string &groups, int status, const std::string &statusMessage = "", const std::string &iconHash = "",
+			bool blocked = false
 		);
 
 		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
@@ -78,6 +79,7 @@ class NetworkPlugin {
 		virtual void handleStatusChangeRequest(const std::string &/*user*/, int status, const std::string &statusMessage) {}
 		virtual void handleBuddyUpdatedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*alias*/, const std::string &/*groups*/) {}
 		virtual void handleBuddyRemovedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*groups*/) {}
+		virtual void handleBuddyBlockToggled(const std::string &/*user*/, const std::string &/*buddyName*/, bool /*blocked*/) {}
 
 		virtual void handleTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleTypedRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}

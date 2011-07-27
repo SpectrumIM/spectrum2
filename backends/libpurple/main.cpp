@@ -485,6 +485,16 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				if (blocked)
+					purple_privacy_deny(account, buddyName.c_str(), FALSE, FALSE);
+				else
+					purple_privacy_allow(account, buddyName.c_str(), FALSE, FALSE);
+			}
+		}
+
 		void handleTypingRequest(const std::string &user, const std::string &buddyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
@@ -657,7 +667,8 @@ static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
 	std::string message;
 	getStatus(buddy, status, message);
 
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
+	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy),
+		purple_privacy_check(account, purple_buddy_get_name(buddy)) == false);
 }
 
 static void NodeRemoved(PurpleBlistNode *node, void *data) {

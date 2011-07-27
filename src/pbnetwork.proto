@@ -30,6 +30,7 @@ message Buddy {
 	optional int32 status = 5;
 	optional string statusMessage = 6;
 	optional string iconHash = 7;
+	optional bool blocked = 8;
 }
 
 message ConversationMessage {

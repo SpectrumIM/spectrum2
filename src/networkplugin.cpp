@@ -130,7 +130,7 @@ void NetworkPlugin::handleSubject(const std::string &user, const std::string &le
 }
 
 void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, int status, const std::string &statusMessage, const std::string &iconHash) {
+			const std::string &groups, int status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user);
 	buddy.set_buddyname(buddyName);
@@ -139,6 +139,7 @@ void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::strin
 	buddy.set_status(status);
 	buddy.set_statusmessage(statusMessage);
 	buddy.set_iconhash(iconHash);
+	buddy.set_blocked(blocked);
 
 	std::string message;
 	buddy.SerializeToString(&message);
@@ -373,8 +374,12 @@ void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-
-	handleBuddyUpdatedRequest(payload.username(), payload.buddyname(), payload.alias(), payload.groups());
+	if (payload.has_blocked()) {
+		handleBuddyBlockToggled(payload.username(), payload.buddyname(), payload.blocked());
+	}
+	else {
+		handleBuddyUpdatedRequest(payload.username(), payload.buddyname(), payload.alias(), payload.groups());
+	}
 }
 
 void NetworkPlugin::handleBuddyRemovedPayload(const std::string &data) {

@@ -30,6 +30,7 @@
 #include "transport/conversation.h"
 #include "transport/vcardresponder.h"
 #include "transport/rosterresponder.h"
+#include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -130,6 +131,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	buddy->setGroups(groups);
 	buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
 	buddy->setIconHash(payload.iconhash());
+	buddy->setBlocked(payload.blocked());
 }
 
 NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
@@ -155,6 +157,10 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_rosterResponder->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
 	m_rosterResponder->start();
 
+	m_blockResponder = new BlockResponder(component->getIQRouter(), userManager);
+	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
+	m_blockResponder->start();
+
 	m_server = Swift::BoostConnectionServer::create(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")), component->getNetworkFactories()->getIOServiceThread()->getIOService(), component->m_loop);
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 	m_server->start();
@@ -173,6 +179,7 @@ NetworkPluginServer::~NetworkPluginServer() {
 	delete m_component->m_factory;
 	delete m_vcardResponder;
 	delete m_rosterResponder;
+	delete m_blockResponder;
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
@@ -856,6 +863,30 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item) {
 	handleBuddyUpdated(buddy, item);
 }
+
+void NetworkPluginServer::handleBlockToggled(Buddy *b) {
+	User *user = b->getRosterManager()->getUser();
+
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user->getJID().toBare());
+	buddy.set_buddyname(b->getName());
+	buddy.set_alias(b->getAlias());
+	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	buddy.set_status(Swift::StatusShow::None);
+	buddy.set_blocked(not b->isBlocked());
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+	send(c->connection, message);
+}
+
 
 void NetworkPluginServer::handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> v) {
 	pbnetwork::VCard vcard;

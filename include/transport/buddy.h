@@ -84,6 +84,14 @@ class Buddy {
 		/// Marks this buddy as offline.
 		void setOffline();
 
+		void setBlocked(bool block) {
+			m_blocked = block;
+		}
+
+		bool isBlocked() {
+			return m_blocked;
+		}
+
 		/// Returns true if this buddy is marked as available/online.
 
 		/// \return true if this buddy is marked as available/online.
@@ -170,6 +178,7 @@ class Buddy {
 
 		long m_id;
 		bool m_online;
+		bool m_blocked;
 		std::string m_subscription;
 		Swift::Presence::ref m_lastPresence;
 		Swift::JID m_jid;

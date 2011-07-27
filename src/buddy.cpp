@@ -22,10 +22,11 @@
 #include "transport/rostermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
+#include "Swiften/Elements/BlockPayload.h"
 
 namespace Transport {
 
-Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
+Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false), m_blocked(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
 // 	m_rosterManager->setBuddy(this);
 }
 
@@ -112,6 +113,9 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 // 		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));
 // 		}
+		if (m_blocked) {
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::BlockPayload ()));
+		}
 	}
 
 	if (only_new) {
