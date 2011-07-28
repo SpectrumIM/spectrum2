@@ -104,6 +104,7 @@ class NetworkPluginServer {
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
+		void collectBackend();
 		void sendPing(Backend *c);
 		Backend *getFreeClient();
 
@@ -115,6 +116,7 @@ class NetworkPluginServer {
 		boost::shared_ptr<Swift::BoostConnectionServer> m_server;
 		std::list<Backend *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
+		Swift::Timer::ref m_collectTimer;
 		Component *m_component;
 		std::list<User *> m_waitingUsers;
 };

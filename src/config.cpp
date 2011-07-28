@@ -46,6 +46,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
 		("service.admin_username", value<std::string>()->default_value(""), "Administrator username.")
 		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
+		("service.reuse_old_backends", value<bool>()->default_value(true), "True if Spectrum should use old backends which were full in the past.")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
 		("identity.type", value<std::string>()->default_value(""), "Type of transport ('icq','msn','gg','irc', ...)")

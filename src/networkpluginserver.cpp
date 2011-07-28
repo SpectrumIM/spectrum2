@@ -146,6 +146,10 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
 	m_pingTimer->start();
 
+	m_collectTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(3600000);
+	m_collectTimer->onTick.connect(boost::bind(&NetworkPluginServer::collectBackend, this));
+	m_collectTimer->start();
+
 	m_vcardResponder = new VCardResponder(component->getIQRouter(), userManager);
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
 	m_vcardResponder->onVCardUpdated.connect(boost::bind(&NetworkPluginServer::handleVCardUpdated, this, _1, _2));
@@ -585,6 +589,23 @@ void NetworkPluginServer::pingTimeout() {
 	m_pingTimer->start();
 }
 
+void NetworkPluginServer::collectBackend() {
+	LOG4CXX_INFO(logger, "Collect backend called, finding backend which will be set to die");
+	unsigned long max = 0;
+	Backend *backend = NULL;
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		if ((*it)->res > max) {
+			max = (*it)->res;
+			backend = (*it);
+		}
+	}
+
+	if (backend) {
+		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
+		backend->acceptUsers = false;
+	}
+}
+
 void NetworkPluginServer::handleUserCreated(User *user) {
 	Backend *c = getFreeClient();
 
@@ -946,8 +967,10 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 		// This backend is free.
 		if ((*it)->acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection) {
 			c = *it;
-			if (c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
-				c->acceptUsers = false;
+			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
+				if (c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
+					c->acceptUsers = false;
+				}
 			}
 			break;
 		}
