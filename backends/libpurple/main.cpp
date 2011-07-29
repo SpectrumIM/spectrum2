@@ -217,7 +217,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			purple_account_set_password(account, password.c_str());
 			purple_account_set_enabled(account, "spectrum", TRUE);
-			purple_account_set_bool(account, "custom_smileys", FALSE));
+			purple_account_set_bool(account, "custom_smileys", FALSE);
 			
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);
 			if (status_type != NULL) {

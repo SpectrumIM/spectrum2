@@ -237,6 +237,9 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
+	else if (message->getBody() == "collect_backend") {
+		m_server->collectBackend();
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";

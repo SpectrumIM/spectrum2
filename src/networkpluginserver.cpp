@@ -146,7 +146,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
 	m_pingTimer->start();
 
-	m_collectTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(3600000);
+	m_collectTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(2*3600000);
 	m_collectTimer->onTick.connect(boost::bind(&NetworkPluginServer::collectBackend, this));
 	m_collectTimer->start();
 
@@ -601,6 +601,7 @@ void NetworkPluginServer::collectBackend() {
 	}
 
 	if (backend) {
+		m_collectTimer->start();
 		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
 		backend->acceptUsers = false;
 	}
@@ -962,7 +963,7 @@ void NetworkPluginServer::sendPing(Backend *c) {
 
 NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	NetworkPluginServer::Backend *c = NULL;
-	bool spawnNew = false;
+// 	bool spawnNew = false;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// This backend is free.
 		if ((*it)->acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection) {

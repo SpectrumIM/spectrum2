@@ -66,6 +66,8 @@ class NetworkPluginServer {
 			return m_clients;
 		}
 
+		void collectBackend();
+
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
 	private:
@@ -104,7 +106,6 @@ class NetworkPluginServer {
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
-		void collectBackend();
 		void sendPing(Backend *c);
 		Backend *getFreeClient();
 
