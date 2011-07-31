@@ -584,7 +584,7 @@ static std::string getIconHash(PurpleBuddy *m_buddy) {
 	PurpleBuddyIcon *icon = purple_buddy_icons_find(purple_buddy_get_account(m_buddy), purple_buddy_get_name(m_buddy));
 	if (icon) {
 		avatarHash = purple_buddy_icon_get_full_path(icon);
-		purple_buddy_icon_unref(icon);
+// 		purple_buddy_icon_unref(icon);
 	}
 
 	if (avatarHash) {
@@ -614,7 +614,7 @@ static std::string getIconHash(PurpleBuddy *m_buddy) {
 
 static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 	std::vector<std::string> groups;
-	groups.push_back(purple_group_get_name(purple_buddy_get_group(m_buddy)) ? std::string(purple_group_get_name(purple_buddy_get_group(m_buddy))) : std::string("Buddies"));
+	groups.push_back((purple_buddy_get_group(m_buddy) && purple_group_get_name(purple_buddy_get_group(m_buddy))) ? std::string(purple_group_get_name(purple_buddy_get_group(m_buddy))) : std::string("Buddies"));
 	return groups;
 }
 
@@ -832,7 +832,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			if (len < 300000 && data) {
 				photo = Swift::createByteArray(data, len);
 			}
-			purple_imgstore_unref(avatar);
+// 			purple_imgstore_unref(avatar);
 		}
 	}
 
@@ -862,7 +862,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 // 					}
 // 				}
 			}
-			purple_buddy_icon_unref(icon);
+// 			purple_buddy_icon_unref(icon);
 		}
 	}
 
