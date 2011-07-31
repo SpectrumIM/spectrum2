@@ -356,8 +356,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				if (CONFIG_STRING(config, "service.protocol") == "any") {
 					name = name.substr(name.find(".") + 1);
 				}
-				serv_get_info(purple_account_get_connection(account), legacyName.c_str());
-				m_vcards[user + legacyName] = id;
+				serv_get_info(purple_account_get_connection(account), name.c_str());
+				m_vcards[user + name] = id;
 			}
 		}
 
@@ -534,8 +534,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
-	private:
 		Config *config;
+		
 };
 
 static bool getStatus(PurpleBuddy *m_buddy, Swift::StatusShow &status, std::string &statusMessage) {
@@ -818,7 +818,10 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		vcardEntries = vcardEntries->next;
 	}
 
-	if (name == purple_account_get_username(account)) {
+	bool ownInfo = name == purple_account_get_username(account);
+	std::cout << "RECEIVED " << name << " " << purple_account_get_username(account) << "\n";
+
+	if (ownInfo) {
 		const gchar *displayname = purple_connection_get_display_name(gc);
 		if (!displayname) {
 			displayname = purple_account_get_name_for_display(account);
@@ -870,7 +873,6 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		}
 	}
 
-	
 	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, Swift::byteArrayToString(photo));
 	np->m_vcards.erase(np->m_accounts[account] + name);
 
