@@ -353,7 +353,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				std::string name = legacyName;
-				if (CONFIG_STRING(config, "service.protocol") == "any") {
+				if (CONFIG_STRING(config, "service.protocol") == "any" && legacyName.find("prpl-") == 0) {
 					name = name.substr(name.find(".") + 1);
 				}
 				serv_get_info(purple_account_get_connection(account), name.c_str());
