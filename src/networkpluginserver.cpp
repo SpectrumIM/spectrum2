@@ -47,6 +47,8 @@ using namespace log4cxx;
 
 namespace Transport {
 
+static unsigned long backend_id;
+
 static LoggerPtr logger = Logger::getLogger("NetworkPluginServer");
 
 class NetworkConversation : public Conversation {
@@ -94,6 +96,7 @@ class NetworkFactory : public Factory {
 	wrap.SerializeToString(&MESSAGE);
 
 static pid_t exec_(std::string path, const char *host, const char *port, const char *config) {
+	boost::replace_all(path, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));
 	path += std::string(" --host ") + host + " --port " + port + " " + config;
 	LOG4CXX_INFO(logger, "Starting new backend " << path);
 	char *p = (char *) malloc(path.size() + 1);
