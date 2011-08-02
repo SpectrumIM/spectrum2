@@ -92,16 +92,63 @@ class NetworkFactory : public Factory {
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
 	
-static pid_t exec_(const char *path, const char *host, const char *port, const char *config) {
+static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while(std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+
+static std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    return split(s, delim, elems);
+}
+	
+static pid_t exec_(std::string path, const char *host, const char *port, const char *config) {
 	LOG4CXX_INFO(logger, "Starting new backend " << path);
+	std::vector<std::string> cmd = split(path, ' ');
+	char **argv = (char **) malloc(sizeof(char *) * (cmd.size() + 6));
+	int i = 0;
+	BOOST_FOREACH(std::string c, cmd) {
+		argv[i] = (char *) malloc(c.size() + 1);
+		strcpy(argv[i++], c.c_str());
+// 		std::cout << i << "\n";
+	}
+
+	argv[i] = (char *) malloc(100);
+	strcpy(argv[i++], "--host");
+
+	argv[i] = (char *) malloc(100);
+	strcpy(argv[i++], host);
+
+	argv[i] = (char *) malloc(100);
+	strcpy(argv[i++], "--port");
+
+	argv[i] = (char *) malloc(100);
+	strcpy(argv[i++], port);
+
+	argv[i] = (char *) malloc(100);
+	strcpy(argv[i++], config);
+
+	argv[i] = 0;
+
 // 	char *argv[] = {(char*)script_name, '\0'}; 
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		// child process
-		exit(execlp(path, path, "--host", host, "--port", port, config, NULL));
+		exit(execv(cmd[0].c_str(), argv));
 	} else if ( pid < 0 ) {
 		// fork failed
 	}
+
+	i = 0;
+	while (argv[i] != 0) {
+		free(argv[i++]);
+	}
+	free(argv);
 
 	return pid;
 }
@@ -173,7 +220,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	signal(SIGCHLD, SigCatcher);
 
-	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
@@ -252,7 +299,7 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 			return;
 		}
 	}
-	exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 }
 
 void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
@@ -978,7 +1025,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	}
 
 	if (c == NULL) {
-		exec_(CONFIG_STRING(m_config, "service.backend").c_str(), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 	}
 
 	return c;
