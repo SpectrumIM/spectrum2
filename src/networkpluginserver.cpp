@@ -137,10 +137,15 @@ static void SigCatcher(int n) {
 
 static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payload) {
 	buddy->setName(payload.buddyname());
-	buddy->setAlias(payload.alias());
-	std::vector<std::string> groups;
-	groups.push_back(payload.groups());
-	buddy->setGroups(groups);
+	if (!payload.alias().empty()) {
+		buddy->setAlias(payload.alias());
+	}
+	if (!payload.groups().empty()) {
+		std::vector<std::string> groups;
+		groups.push_back(payload.groups());
+		buddy->setGroups(groups);
+	}
+
 	buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
 	buddy->setIconHash(payload.iconhash());
 	buddy->setBlocked(payload.blocked());
