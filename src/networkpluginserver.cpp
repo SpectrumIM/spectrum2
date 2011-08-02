@@ -41,6 +41,7 @@
 #include "sys/wait.h"
 #include "sys/signal.h"
 #include "log4cxx/logger.h"
+#include "popt.h"
 
 using namespace log4cxx;
 
@@ -91,64 +92,25 @@ class NetworkFactory : public Factory {
 	wrap.set_type(TYPE); \
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
-	
-static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
-    std::stringstream ss(s);
-    std::string item;
-    while(std::getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
-}
 
-
-static std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    return split(s, delim, elems);
-}
-	
 static pid_t exec_(std::string path, const char *host, const char *port, const char *config) {
+	path += std::string(" --host ") + host + " --port " + port + " " + config;
 	LOG4CXX_INFO(logger, "Starting new backend " << path);
-	std::vector<std::string> cmd = split(path, ' ');
-	char **argv = (char **) malloc(sizeof(char *) * (cmd.size() + 6));
-	int i = 0;
-	BOOST_FOREACH(std::string c, cmd) {
-		argv[i] = (char *) malloc(c.size() + 1);
-		strcpy(argv[i++], c.c_str());
-// 		std::cout << i << "\n";
-	}
-
-	argv[i] = (char *) malloc(100);
-	strcpy(argv[i++], "--host");
-
-	argv[i] = (char *) malloc(100);
-	strcpy(argv[i++], host);
-
-	argv[i] = (char *) malloc(100);
-	strcpy(argv[i++], "--port");
-
-	argv[i] = (char *) malloc(100);
-	strcpy(argv[i++], port);
-
-	argv[i] = (char *) malloc(100);
-	strcpy(argv[i++], config);
-
-	argv[i] = 0;
+	char *p = (char *) malloc(path.size() + 1);
+	strcpy(p, path.c_str());
+	int argc;
+	char **argv;
+	poptParseArgvString(p, &argc, (const char ***) &argv);
 
 // 	char *argv[] = {(char*)script_name, '\0'}; 
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		// child process
-		exit(execv(cmd[0].c_str(), argv));
+		exit(execv(argv[0], argv));
 	} else if ( pid < 0 ) {
 		// fork failed
 	}
-
-	i = 0;
-	while (argv[i] != 0) {
-		free(argv[i++]);
-	}
-	free(argv);
+	free(p);
 
 	return pid;
 }
