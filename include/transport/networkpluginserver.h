@@ -69,7 +69,7 @@ class NetworkPluginServer {
 
 		void collectBackend();
 
-		void moveToLongRunBackend(User *user);
+		bool moveToLongRunBackend(User *user);
 
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 

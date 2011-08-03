@@ -612,7 +612,8 @@ void NetworkPluginServer::pingTimeout() {
 
 	BOOST_FOREACH(User *u, usersToMove) {
 		LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
-		moveToLongRunBackend(u);
+		if (!moveToLongRunBackend(u))
+			break;
 	}
 	
 
@@ -655,18 +656,18 @@ void NetworkPluginServer::collectBackend() {
 	}
 }
 
-void NetworkPluginServer::moveToLongRunBackend(User *user) {
+bool NetworkPluginServer::moveToLongRunBackend(User *user) {
 	// Check if user has already some backend
 	Backend *old = (Backend *) user->getData();
 	if (!old) {
 		LOG4CXX_INFO(logger, "User " << user->getJID().toString() << " does not have old backend. Not moving.");
-		return;
+		return true;
 	}
 
 	// if he's already on long run, do nothing
 	if (old->longRun) {
 		LOG4CXX_INFO(logger, "User " << user->getJID().toString() << " is already on long-running backend. Not moving.");
-		return;
+		return true;
 	}
 
 	// Get free longrun backend, if there's no longrun backend, create one and wait
@@ -674,7 +675,7 @@ void NetworkPluginServer::moveToLongRunBackend(User *user) {
 	Backend *backend = getFreeClient(false, true);
 	if (!backend) {
 		LOG4CXX_INFO(logger, "No free long-running backend for user " << user->getJID().toString() << ". Will try later");
-		return;
+		return false;
 	}
 
 	// old backend will trigger disconnection which has to be ignored to keep user online
@@ -690,6 +691,7 @@ void NetworkPluginServer::moveToLongRunBackend(User *user) {
 
 	// connect him
 	handleUserReadyToConnect(user);
+	return true;
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {

@@ -107,14 +107,20 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
 			NetworkPluginServer::Backend *backend = *b;
-			lst += "Backend " + boost::lexical_cast<std::string>(id) + ":\n";
+			lst += "Backend " + boost::lexical_cast<std::string>(id);
+			lst += backend->acceptUsers ? "" : " - not-accepting";
+			lst += backend->longRun ? " - long-running" : "";
+			lst += ":\n";
 			if (backend->users.size() == 0) {
 				lst += "   waiting for users\n";
 			}
 			else {
+				time_t now = time(NULL);
 				for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
 					User *user = *u;
-					lst += "   " + user->getJID().toBare().toString() + "\n";
+					lst += "   " + user->getJID().toBare().toString();
+					lst += " - non-active for " + boost::lexical_cast<std::string>(now - user->getLastActivity()) + " seconds";
+					lst += "\n";
 				}
 			}
 			id++;
