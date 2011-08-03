@@ -51,6 +51,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_userInfo = userInfo;
 	m_connected = false;
 	m_readyForConnect = false;
+	m_ignoreDisconnect = false;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
@@ -58,6 +59,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_rosterManager = new RosterManager(this, m_component);
 	m_conversationManager = new ConversationManager(this, m_component);
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Created");
+	updateLastActivity();
 }
 
 User::~User(){
@@ -175,7 +177,16 @@ void User::onConnectingTimeout() {
 	onReadyToConnect();
 }
 
+void User::setIgnoreDisconnect(bool ignoreDisconnect) {
+	m_ignoreDisconnect = ignoreDisconnect;
+	LOG4CXX_INFO(logger, m_jid.toString() << ": Setting ignoreDisconnect=" << m_ignoreDisconnect);
+}
+
 void User::handleDisconnected(const std::string &error) {
+	if (m_ignoreDisconnect) {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network ignored (probably moving between backends)");
+		return;
+	}
 
 	if (error.empty()) {
 		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network");

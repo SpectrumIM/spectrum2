@@ -75,6 +75,14 @@ class User {
 
 		void handleSubscription(Swift::Presence::ref presence);
 
+		time_t &getLastActivity() {
+			return m_lastActivity;
+		}
+
+		void updateLastActivity() {
+			m_lastActivity = time(NULL);
+		}
+
 		/// Returns language.
 		/// \return language
 		const char *getLang() { return "en"; }
@@ -87,7 +95,11 @@ class User {
 
 		void setConnected(bool connected) {
 			m_connected = connected;
+			setIgnoreDisconnect(false);
+			updateLastActivity();
 		}
+
+		void setIgnoreDisconnect(bool ignoreDisconnect);
 
 		bool isConnected() {
 			return m_connected;
@@ -113,8 +125,10 @@ class User {
 		void *m_data;
 		bool m_connected;
 		bool m_readyForConnect;
+		bool m_ignoreDisconnect;
 		Swift::Timer::ref m_reconnectTimer;
 		boost::shared_ptr<Swift::Connection> connection;
+		time_t m_lastActivity;
 };
 
 }

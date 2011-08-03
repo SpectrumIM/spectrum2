@@ -155,6 +155,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_userManager = userManager;
 	m_config = config;
 	m_component = component;
+	m_isNextLongRun = false;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -210,9 +211,10 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->res = 0;
 	client->init_res = 0;
 	client->shared = 0;
-	client->acceptUsers = true;
+	client->acceptUsers = !m_isNextLongRun;
+	client->longRun = m_isNextLongRun;
 
-	LOG4CXX_INFO(logger, "New backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
+	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
 	if (m_clients.size() == 0) {
 		// first backend connected, start the server, we're ready.
@@ -264,12 +266,12 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 	delete c;
 
 	// Execute new session only if there's no free one after this crash/disconnection
-	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
-			return;
-		}
-	}
-	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+// 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+// 		if ((*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend")) {
+// 			return;
+// 		}
+// 	}
+// 	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 }
 
 void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
@@ -452,6 +454,8 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	if (!user)
 		return;
 
+	user->updateLastActivity();
+
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 	if (subject) {
 		msg->setSubject(payload.message());
@@ -590,6 +594,28 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 }
 
 void NetworkPluginServer::pingTimeout() {
+	// TODO: move to separate timer, those 2 loops could be expensive
+	time_t now = time(NULL);
+	std::vector<User *> usersToMove;
+	unsigned long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		if ((*it)->longRun) {
+			continue;
+		}
+
+		BOOST_FOREACH(User *u, (*it)->users) {
+			if (now - u->getLastActivity() > diff) {
+				usersToMove.push_back(u);
+			}
+		}
+	}
+
+	BOOST_FOREACH(User *u, usersToMove) {
+		LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
+		moveToLongRunBackend(u);
+	}
+	
+
 	// check ping responses
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		if ((*it)->pongReceived || (*it)->pongReceived == -1) {
@@ -601,7 +627,12 @@ void NetworkPluginServer::pingTimeout() {
 			(*it)->connection.reset();
 // 			handleSessionFinished((*it));
 		}
-		
+
+		if ((*it)->users.size() == 0) {
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". There are no users.");
+			(*it)->connection->disconnect();
+			(*it)->connection.reset();
+		}
 	}
 	m_pingTimer->start();
 }
@@ -622,6 +653,43 @@ void NetworkPluginServer::collectBackend() {
 		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
 		backend->acceptUsers = false;
 	}
+}
+
+void NetworkPluginServer::moveToLongRunBackend(User *user) {
+	// Check if user has already some backend
+	Backend *old = (Backend *) user->getData();
+	if (!old) {
+		LOG4CXX_INFO(logger, "User " << user->getJID().toString() << " does not have old backend. Not moving.");
+		return;
+	}
+
+	// if he's already on long run, do nothing
+	if (old->longRun) {
+		LOG4CXX_INFO(logger, "User " << user->getJID().toString() << " is already on long-running backend. Not moving.");
+		return;
+	}
+
+	// Get free longrun backend, if there's no longrun backend, create one and wait
+	// for its connection
+	Backend *backend = getFreeClient(false, true);
+	if (!backend) {
+		LOG4CXX_INFO(logger, "No free long-running backend for user " << user->getJID().toString() << ". Will try later");
+		return;
+	}
+
+	// old backend will trigger disconnection which has to be ignored to keep user online
+	user->setIgnoreDisconnect(true);
+
+	// remove user from the old backend
+	// If backend is empty, it will be collected by pingTimeout
+	old->users.remove(user);
+
+	// switch to new backend and connect
+	user->setData(backend);
+	backend->users.push_back(user);
+
+	// connect him
+	handleUserReadyToConnect(user);
 }
 
 void NetworkPluginServer::handleUserCreated(User *user) {
@@ -771,7 +839,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 }
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
-
+	conv->getConversationManager()->getUser()->updateLastActivity();
 	boost::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
 	if (statePayload) {
 		pbnetwork::WrapperMessage_Type type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED;
@@ -978,12 +1046,12 @@ void NetworkPluginServer::sendPing(Backend *c) {
 // 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
-NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
+NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUsers, bool longRun) {
 	NetworkPluginServer::Backend *c = NULL;
 // 	bool spawnNew = false;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// This backend is free.
-		if ((*it)->acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection) {
+		if ((*it)->acceptUsers == acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
 			c = *it;
 			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
 				if (c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
@@ -995,6 +1063,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient() {
 	}
 
 	if (c == NULL) {
+		m_isNextLongRun = longRun;
 		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 	}
 

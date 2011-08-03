@@ -52,6 +52,7 @@ class NetworkPluginServer {
 			unsigned long init_res;
 			unsigned long shared;
 			bool acceptUsers;
+			bool longRun;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
@@ -67,6 +68,8 @@ class NetworkPluginServer {
 		}
 
 		void collectBackend();
+
+		void moveToLongRunBackend(User *user);
 
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
@@ -107,7 +110,7 @@ class NetworkPluginServer {
 
 		void pingTimeout();
 		void sendPing(Backend *c);
-		Backend *getFreeClient();
+		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false);
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
@@ -120,6 +123,7 @@ class NetworkPluginServer {
 		Swift::Timer::ref m_collectTimer;
 		Component *m_component;
 		std::list<User *> m_waitingUsers;
+		bool m_isNextLongRun;
 };
 
 }
