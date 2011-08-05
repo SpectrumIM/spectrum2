@@ -236,7 +236,18 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 }
 
 void UserManager::handleProbePresence(Swift::Presence::ref presence) {
-	
+	User *user = getUser(presence->getFrom().toBare().toString());
+
+ 	if (user) {
+ 		user->getRosterManager()->sendCurrentPresence(presence->getTo(), presence->getFrom());
+ 	}
+ 	else {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setFrom(presence->getTo());
+		response->setTo(presence->getFrom());
+		response->setType(Swift::Presence::Unavailable);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
 }
 
 void UserManager::handleSubscription(Swift::Presence::ref presence) {

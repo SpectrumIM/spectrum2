@@ -90,12 +90,12 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 			continue;
 
 		if (discoInfo->hasFeature(feature)) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << "feature: " << presence->getFrom().toString());
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
 			return presence->getFrom();
 		}
 	}
 
-	LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << "feature");
+	LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature");
 	return jid;
 }
 

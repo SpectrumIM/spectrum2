@@ -377,6 +377,24 @@ void RosterManager::sendCurrentPresences(const Swift::JID &to) {
 	}
 }
 
+void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID &to) {
+	Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(from));
+	if (buddy) {
+		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
+		if (presence) {
+			presence->setTo(to);
+			m_component->getStanzaChannel()->sendPresence(presence);
+		}
+	}
+	else {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(to);
+		response->setFrom(from);
+		response->setType(Swift::Presence::Unavailable);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
+}
+
 void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
