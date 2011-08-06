@@ -98,20 +98,20 @@ class MySQLBackend : public StorageBackend
 		std::string m_prefix;
 
 		// statements
-// 		sqlite3_stmt *m_setUser;
-// 		sqlite3_stmt *m_getUser;
-// 		sqlite3_stmt *m_getUserSetting;
-// 		sqlite3_stmt *m_setUserSetting;
-// 		sqlite3_stmt *m_updateUserSetting;
-// 		sqlite3_stmt *m_removeUser;
-// 		sqlite3_stmt *m_removeUserBuddies;
-// 		sqlite3_stmt *m_removeUserSettings;
-// 		sqlite3_stmt *m_removeUserBuddiesSettings;
-// 		sqlite3_stmt *m_addBuddy;
-// 		sqlite3_stmt *m_updateBuddy;
-// 		sqlite3_stmt *m_updateBuddySetting;
-// 		sqlite3_stmt *m_getBuddies;
-// 		sqlite3_stmt *m_getBuddiesSettings;
+		MYSQL_STMT *m_setUser;
+		MYSQL_STMT *m_getUser;
+		MYSQL_STMT *m_getUserSetting;
+		MYSQL_STMT *m_setUserSetting;
+		MYSQL_STMT *m_updateUserSetting;
+		MYSQL_STMT *m_removeUser;
+		MYSQL_STMT *m_removeUserBuddies;
+		MYSQL_STMT *m_removeUserSettings;
+		MYSQL_STMT *m_removeUserBuddiesSettings;
+		MYSQL_STMT *m_addBuddy;
+		MYSQL_STMT *m_updateBuddy;
+		MYSQL_STMT *m_updateBuddySetting;
+		MYSQL_STMT *m_getBuddies;
+		MYSQL_STMT *m_getBuddiesSettings;
 };
 
 }
