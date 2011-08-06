@@ -3,6 +3,7 @@
 #include "transport/usermanager.h"
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
+#include "transport/mysqlbackend.h"
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
@@ -83,7 +84,12 @@ int main(int argc, char **argv)
 
 	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
 		storageBackend = new SQLite3Backend(&config);
-// 		logger.setStorageBackend(storageBackend);
+		if (!storageBackend->connect()) {
+			std::cerr << "Can't connect to database.\n";
+		}
+	}
+	else if (CONFIG_STRING(&config, "database.type") == "mysql") {
+		storageBackend = new MySQLBackend(&config);
 		if (!storageBackend->connect()) {
 			std::cerr << "Can't connect to database.\n";
 		}
