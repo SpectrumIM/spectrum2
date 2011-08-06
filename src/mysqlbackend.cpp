@@ -66,24 +66,26 @@ static LoggerPtr logger = Logger::getLogger("MySQLBackend");
 
 MySQLBackend::MySQLBackend(Config *config) {
 	m_config = config;
-	m_conn = NULL;
+	mysql_init(&m_conn);
 	m_prefix = CONFIG_STRING(m_config, "database.prefix");
 }
 
 MySQLBackend::~MySQLBackend(){
-	if (m_conn) {
-		mysql_close(m_conn);
-	}
+	mysql_close(&m_conn);
 }
 
 bool MySQLBackend::connect() {
-	LOG4CXX_INFO(logger, "Connecting database " << CONFIG_STRING(m_config, "database.database"));
-	if (!mysql_real_connect(m_conn, CONFIG_STRING(m_config, "database.server").c_str(),
+	LOG4CXX_INFO(logger, "Connecting MySQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
+		CONFIG_STRING(m_config, "database.user") << ", database " << CONFIG_STRING(m_config, "database.database") <<
+		", port " << CONFIG_INT(m_config, "database.port")
+	);
+	
+	if (!mysql_real_connect(&m_conn, CONFIG_STRING(m_config, "database.server").c_str(),
 					   CONFIG_STRING(m_config, "database.user").c_str(),
 					   CONFIG_STRING(m_config, "database.password").c_str(),
 					   CONFIG_STRING(m_config, "database.database").c_str(),
 					   CONFIG_INT(m_config, "database.port"), NULL, 0)) {
-		LOG4CXX_ERROR(logger, "Can't connect database: " << mysql_error(m_conn));
+		LOG4CXX_ERROR(logger, "Can't connect database: " << mysql_error(&m_conn));
 		return false;
 	}
 

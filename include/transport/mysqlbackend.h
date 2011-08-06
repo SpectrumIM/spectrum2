@@ -93,7 +93,7 @@ class MySQLBackend : public StorageBackend
 	private:
 		bool exec(const std::string &query);
 
-		MYSQL *m_conn;
+		MYSQL m_conn;
 		Config *m_config;
 		std::string m_prefix;
 
