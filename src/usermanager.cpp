@@ -100,7 +100,7 @@ int UserManager::getUserCount() {
 void UserManager::handlePresence(Swift::Presence::ref presence) {
 	std::string barejid = presence->getTo().toBare().toString();
 	std::string userkey = presence->getFrom().toBare().toString();
-
+	std::cout << "PRESENCE " << presence->getType() << "\n";
 	User *user = getUser(userkey);
 	if (!user) {
 		if (CONFIG_STRING(m_component->getConfig(), "service.admin_username") == presence->getFrom().getNode()) {
@@ -212,9 +212,11 @@ void UserManager::handleRemoveTimeout(const std::string jid, bool reconnect) {
 			msg->setTo(user->getJID().toBare());
 			msg->setFrom(m_component->getJID());
 			m_component->getStanzaChannel()->sendMessage(msg);
-			if (m_component->inServerMode()) {
-				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user->getJID().toBare(), boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
-			}
+			m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
+ 			if (m_component->inServerMode()) {
+ 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user->getJID().toBare(), boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
+ 			}
+ 			m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 		}
 		removeUser(user);
 	}
