@@ -27,6 +27,9 @@
 #include "transport/userregistry.h"
 #include "storageresponder.h"
 #include "log4cxx/logger.h"
+#include "Swiften/Swiften.h"
+#include "Swiften/Server/ServerStanzaChannel.h"
+#include "Swiften/Elements/StreamError.h"
 
 using namespace log4cxx;
 
@@ -209,6 +212,9 @@ void UserManager::handleRemoveTimeout(const std::string jid, bool reconnect) {
 			msg->setTo(user->getJID().toBare());
 			msg->setFrom(m_component->getJID());
 			m_component->getStanzaChannel()->sendMessage(msg);
+			if (m_component->inServerMode()) {
+				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user->getJID().toBare(), boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
+			}
 		}
 		removeUser(user);
 	}
