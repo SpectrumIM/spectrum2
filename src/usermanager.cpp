@@ -188,7 +188,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
 			// There's no presence for this user, so disconnect
 			if (!highest || (highest && highest->getType() == Swift::Presence::Unavailable)) {
-				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user->getJID().toBare().toString()));
+				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user->getJID().toBare().toString(), false));
 				m_removeTimer->start();
 			}
 		}
@@ -199,11 +199,15 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	}
 }
 
-void UserManager::handleRemoveTimeout(const std::string jid) {
-	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid));
+void UserManager::handleRemoveTimeout(const std::string jid, bool reconnect) {
+	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid, reconnect));
 	User *user = getUser(jid);
 	if (user) {
 		removeUser(user);
+	}
+
+	if (reconnect) {
+		connectUser(jid);
 	}
 }
 
@@ -286,11 +290,15 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 
 void UserManager::connectUser(const Swift::JID &user) {
 	if (m_users.find(user.toBare().toString()) != m_users.end()) {
-		std::cout << "FOUND\n";
-		m_userRegistry->onPasswordValid(user);
+		if (CONFIG_BOOL(m_component->getConfig(), "service.more_resources")) {
+			m_userRegistry->onPasswordValid(user);
+		}
+		else {
+			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), true));
+			m_removeTimer->start();
+		}
 	}
 	else {
-		std::cout << "NOT FOUND - PRESENCe\n";
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo(m_component->getJID());
 		response->setFrom(user);

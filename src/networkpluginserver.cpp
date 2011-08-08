@@ -631,7 +631,7 @@ void NetworkPluginServer::pingTimeout() {
 
 		if ((*it)->users.size() == 0) {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". There are no users.");
-			(*it)->connection->disconnect();
+// 			(*it)->connection->disconnect();
 			(*it)->connection.reset();
 		}
 	}

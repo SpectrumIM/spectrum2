@@ -42,8 +42,6 @@ ServerFromClientSession::ServerFromClientSession(
 			allowSASLEXTERNAL(false),
 			tlsLayer(0),
 			tlsConnected(false) {
-	userRegistry->onPasswordValid.connect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
-	userRegistry->onPasswordInvalid.connect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 }
 
 ServerFromClientSession::~ServerFromClientSession() {
@@ -93,6 +91,9 @@ void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) 
 				else {
 					PLAINMessage plainMessage(authRequest->getMessage() ? *authRequest->getMessage() : createSafeByteArray(""));
 					user_ = plainMessage.getAuthenticationID();
+					userRegistry_->onPasswordInvalid(JID(plainMessage.getAuthenticationID(), getLocalJID().getDomain()).toBare().toString());
+					userRegistry_->onPasswordValid.connect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
+					userRegistry_->onPasswordInvalid.connect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 					if (userRegistry_->isValidUserPassword(JID(plainMessage.getAuthenticationID(), getLocalJID().getDomain()), plainMessage.getPassword())) {
 						// we're waiting for usermanager signal now
 // 						authenticated_ = true;

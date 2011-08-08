@@ -89,7 +89,7 @@ class UserManager {
 		void handleGeneralPresenceReceived(Swift::Presence::ref presence);
 		void handleProbePresence(Swift::Presence::ref presence);
 		void handleSubscription(Swift::Presence::ref presence);
-		void handleRemoveTimeout(const std::string jid);
+		void handleRemoveTimeout(const std::string jid, bool reconnect);
 // 		void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 		void addUser(User *user);
 
