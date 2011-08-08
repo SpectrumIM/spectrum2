@@ -203,6 +203,13 @@ void UserManager::handleRemoveTimeout(const std::string jid, bool reconnect) {
 	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid, reconnect));
 	User *user = getUser(jid);
 	if (user) {
+		if (reconnect) {
+			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+			msg->setBody("You have signed on from another location.");
+			msg->setTo(user->getJID().toBare());
+			msg->setFrom(m_component->getJID());
+			m_component->getStanzaChannel()->sendMessage(msg);
+		}
 		removeUser(user);
 	}
 
