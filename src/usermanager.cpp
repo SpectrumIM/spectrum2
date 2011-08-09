@@ -100,9 +100,11 @@ int UserManager::getUserCount() {
 void UserManager::handlePresence(Swift::Presence::ref presence) {
 	std::string barejid = presence->getTo().toBare().toString();
 	std::string userkey = presence->getFrom().toBare().toString();
-	std::cout << "PRESENCE " << presence->getType() << "\n";
+
 	User *user = getUser(userkey);
+	// Create user class if it's not there
 	if (!user) {
+		// Admin user is not legacy network user, so do not create User class instance for him
 		if (CONFIG_STRING(m_component->getConfig(), "service.admin_username") == presence->getFrom().getNode()) {
 			return;
 		}
@@ -115,8 +117,9 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			response->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(response);
 
-			UserInfo res;
+			// Set user offline in database
 			if (m_storageBackend) {
+				UserInfo res;
 				bool registered = m_storageBackend->getUser(userkey, res);
 				if (registered) {
 					m_storageBackend->setUserOnline(res.id, false);
@@ -128,6 +131,9 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		UserInfo res;
 		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
 
+		// In server mode, there's no registration, but we store users into database
+		// (if storagebackend is available) because of caching. Passwords are not stored
+		// in server mode.
 		if (m_component->inServerMode()) {
 			if (!registered) {
 				res.password = "";
@@ -137,6 +143,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 					res.uin.replace(res.uin.find_last_of("%"), 1, "@");
 				}
 				if (m_storageBackend) {
+					// store user and getUser again to get user ID.
 					m_storageBackend->setUser(res);
 					registered = m_storageBackend->getUser(userkey, res);
 				}
@@ -147,45 +154,34 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			res.password = m_userRegistry->getUserPassword(userkey);
 		}
 
+		// Unregistered users are not able to login
 		if (!registered) {
 			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");
-			// TODO: logging
 			return;
 		}
 
-		// TODO: isVIP
-// // 			bool isVip = res.vip;
-// // 			std::list<std::string> const &x = CONFIG().allowedServers;
-// // 			if (CONFIG().onlyForVIP && !isVip && std::find(x.begin(), x.end(), presence->getFrom().getDomain().getUTF8String()) == x.end()) {
-// // 				Log(presence->getFrom().toString().getUTF8String(), "This user is not VIP, can't login...");
-// // 				return;
-// // 			}
-// // 
-// // 
-				user = new User(presence->getFrom(), res, m_component, this);
-				user->getRosterManager()->setStorageBackend(m_storageBackend);
-				// TODO: handle features somehow
-// // 			user->setFeatures(isVip ? CONFIG().VIPFeatures : CONFIG().transportFeatures);
-// // // 				if (c != NULL)
-// // // 					if (Transport::instance()->hasClientCapabilities(c->findAttribute("ver")))
-// // // 						user->setResource(stanza.from().resource(), stanza.priority(), Transport::instance()->getCapabilities(c->findAttribute("ver")));
-// // // 
-			addUser(user);
+		// Create new user class and set storagebackend
+		user = new User(presence->getFrom(), res, m_component, this);
+		user->getRosterManager()->setStorageBackend(m_storageBackend);
+		addUser(user);
 	}
 
-	// User can be handleDisconnected in addUser callbacks...
+	// User can be handleDisconnected in addUser callback, so refresh the pointer
 	user = getUser(userkey);
 	if (!user) {
 		m_userRegistry->onPasswordInvalid(presence->getFrom());
 		return;
 	}
 
+	// Handle this presence
 	user->handlePresence(presence);
 
+	// Unavailable MUC presence should not trigger whole account disconnection, so block it here.
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	if (isMUC)
 		return;
 
+	// Unavailable presence could remove this user, because he could be unavailable
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		if (user) {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
@@ -195,10 +191,6 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				m_removeTimer->start();
 			}
 		}
-		// TODO: HANDLE MUC SOMEHOW
-// 		else if (user && Transport::instance()->protocol()->tempAccountsAllowed() && !((User *) user)->hasOpenedMUC()) {
-// 			Transport::instance()->userManager()->removeUser(user);
-// 		}
 	}
 }
 
@@ -206,21 +198,32 @@ void UserManager::handleRemoveTimeout(const std::string jid, bool reconnect) {
 	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid, reconnect));
 	User *user = getUser(jid);
 	if (user) {
+		// Reconnect means that we're disconnecting this User instance from legacy network backend,
+		// but we're going to connect it again in this call. Currently it's used only when
+		// "service.more_resources==false".
 		if (reconnect) {
+			// Send message about reason
 			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 			msg->setBody("You have signed on from another location.");
 			msg->setTo(user->getJID().toBare());
 			msg->setFrom(m_component->getJID());
 			m_component->getStanzaChannel()->sendMessage(msg);
+
+			// finishSession generates unavailable presence which ruins the second session which is waiting
+			// to be connected later in this function, so don't handle that unavailable presence by disconnecting
+			// the signal. TODO: < This can be fixed by ServerFromClientSession.cpp rewrite...
 			m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
+			// Finish session
  			if (m_component->inServerMode()) {
  				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user->getJID().toBare(), boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
  			}
+ 			// connect disconnected signal again
  			m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 		}
 		removeUser(user);
 	}
 
+	// Connect the user again when we're reconnecting.
 	if (reconnect) {
 		connectUser(jid);
 	}
@@ -304,16 +307,20 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 }
 
 void UserManager::connectUser(const Swift::JID &user) {
+	// Called by UserRegistry in server mode when user connects the server and wants
+	// to connect legacy network
 	if (m_users.find(user.toBare().toString()) != m_users.end()) {
 		if (CONFIG_BOOL(m_component->getConfig(), "service.more_resources")) {
 			m_userRegistry->onPasswordValid(user);
 		}
 		else {
+			// Reconnect the user if more resources per one legacy network account are not allowed
 			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), true));
 			m_removeTimer->start();
 		}
 	}
 	else {
+		// simulate initial available presence to start connecting this user.
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo(m_component->getJID());
 		response->setFrom(user);
