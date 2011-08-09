@@ -1064,6 +1064,7 @@ static bool initPurple(Config &cfg) {
 
 // 	if (m_configuration.logAreas & LOG_AREA_PURPLE)
 		purple_debug_set_ui_ops(&debugUiOps);
+		purple_debug_set_verbose(true);
 
 	purple_core_set_ui_ops(&coreUiOps);
 	purple_eventloop_set_ui_ops(getEventLoopUiOps());
