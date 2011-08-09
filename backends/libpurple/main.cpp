@@ -738,6 +738,14 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	g_free(xhtml_linkified);
 	g_free(strip);
 
+	// AIM and XMPP adds <body>...</body> here...
+	if (xhtml_.find("<body>") == 0) {
+		xhtml_ = xhtml_.substr(6);
+		if (xhtml_.find("</body>") != std::string::npos) {
+			xhtml_ = xhtml_.substr(0, xhtml_.find("</body>"));
+		}
+	}
+
 	if (xhtml_ == message_) {
 		xhtml_ = "";
 	}
