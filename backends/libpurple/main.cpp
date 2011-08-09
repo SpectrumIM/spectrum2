@@ -800,6 +800,7 @@ static PurpleConnectionUiOps conn_ui_ops =
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info) {
 	std::string name(who);
+	std::transform(name.begin(), name.end(), name.begin(),(int(*)(int)) std::tolower);
 	PurpleAccount *account = purple_connection_get_account(gc);
 	GList *vcardEntries = purple_notify_user_info_get_entries(user_info);
 	PurpleNotifyUserInfoEntry *vcardEntry;
