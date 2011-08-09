@@ -24,7 +24,7 @@
 
 using namespace log4cxx;
 
-#define SQLITE_DB_VERSION 3
+#define MYSQL_DB_VERSION 2
 #define CHECK_DB_RESPONSE(stmt) \
 	if(stmt) { \
 		sqlite3_exec(m_db, "ROLLBACK;", NULL, NULL, NULL); \
@@ -137,10 +137,68 @@ bool MySQLBackend::connect() {
 }
 
 bool MySQLBackend::createDatabase() {
+	int not_exist = exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "buddies` ("
+							"`id` int(10) unsigned NOT NULL auto_increment,"
+							"`user_id` int(10) unsigned NOT NULL,"
+							"`uin` varchar(255) collate utf8_bin NOT NULL,"
+							"`subscription` enum('to','from','both','ask','none') collate utf8_bin NOT NULL,"
+							"`nickname` varchar(255) collate utf8_bin NOT NULL,"
+							"`groups` varchar(255) collate utf8_bin NOT NULL,"
+							"`flags` smallint(4) NOT NULL DEFAULT '0',"
+							"PRIMARY KEY (`id`),"
+							"UNIQUE KEY `user_id` (`user_id`,`uin`)"
+						") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+
+	if (not_exist) {
+		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "buddies_settings` ("
+				"`user_id` int(10) unsigned NOT NULL,"
+				"`buddy_id` int(10) unsigned NOT NULL,"
+				"`var` varchar(50) collate utf8_bin NOT NULL,"
+				"`type` smallint(4) unsigned NOT NULL,"
+				"`value` varchar(255) collate utf8_bin NOT NULL,"
+				"PRIMARY KEY (`buddy_id`,`var`),"
+				"KEY `user_id` (`user_id`)"
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+ 
+		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "users` ("
+				"`id` int(10) unsigned NOT NULL auto_increment,"
+				"`jid` varchar(255) collate utf8_bin NOT NULL,"
+				"`uin` varchar(4095) collate utf8_bin NOT NULL,"
+				"`password` varchar(255) collate utf8_bin NOT NULL,"
+				"`language` varchar(25) collate utf8_bin NOT NULL,"
+				"`encoding` varchar(50) collate utf8_bin NOT NULL default 'utf8',"
+				"`last_login` datetime,"
+				"`vip` tinyint(1) NOT NULL  default '0',"
+				"`online` tinyint(1) NOT NULL  default '0',"
+				"PRIMARY KEY (`id`),"
+				"UNIQUE KEY `jid` (`jid`)"
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+
+		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "users_settings` ("
+				"`user_id` int(10) unsigned NOT NULL,"
+				"`var` varchar(50) collate utf8_bin NOT NULL,"
+				"`type` smallint(4) unsigned NOT NULL,"
+				"`value` varchar(255) collate utf8_bin NOT NULL,"
+				"PRIMARY KEY (`user_id`,`var`),"
+				"KEY `user_id` (`user_id`)"
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+
+		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "db_version` ("
+				"`ver` int(10) unsigned NOT NULL default '1',"
+				"UNIQUE KEY `ver` (`ver`)"
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+
+		exec("INSERT INTO db_version (ver) VALUES ('2');");
+	}
+
 	return true;
 }
 
 bool MySQLBackend::exec(const std::string &query) {
+	if (mysql_query(&m_conn, query.c_str())) {
+		LOG4CXX_ERROR(logger, query << " " << mysql_error(&m_conn));
+		return false;
+	}
 	return true;
 }
 
