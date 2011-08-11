@@ -56,7 +56,7 @@ bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& 
 	}
 
 	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(to));
-	if (buddy) {
+	if (!buddy) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": Buddy " << Buddy::JIDToLegacyName(to) << " does not exist");
 		return true;
 	}
