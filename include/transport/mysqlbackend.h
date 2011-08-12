@@ -93,12 +93,37 @@ class MySQLBackend : public StorageBackend
 	private:
 		bool exec(const std::string &query);
 
+		class Statement {
+			public:
+				Statement(MYSQL *conn, const std::string &format, const std::string &statement);
+				~Statement();
+
+				bool execute();
+
+				// Pushes new data used as input for the statement.
+				template <typename T>
+				Statement& operator << (const T& t);
+
+				Statement& operator << (const std::string& str);
+
+				// Pulls fetched data by previous execute(); call.
+				template <typename T>
+				Statement& operator >> (T& t);
+			private:
+				MYSQL_STMT *m_stmt;
+				std::vector<MYSQL_BIND> m_params;
+				int m_resultOffset;
+				int m_offset;
+				int m_error;
+		};
+
 		MYSQL m_conn;
 		Config *m_config;
 		std::string m_prefix;
 
 		// statements
-		MYSQL_STMT *m_setUser;
+// 		MYSQL_STMT *m_setUser;
+		Statement * m_setUser;
 		MYSQL_STMT *m_getUser;
 		MYSQL_STMT *m_getUserSetting;
 		MYSQL_STMT *m_setUserSetting;

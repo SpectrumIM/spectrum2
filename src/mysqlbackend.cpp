@@ -76,6 +76,116 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("MySQLBackend");
 
+MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const std::string &statement) {
+	m_resultOffset = -1;
+	m_offset = 0;
+	m_stmt = mysql_stmt_init(conn);
+	if (mysql_stmt_prepare(m_stmt, statement.c_str(), statement.size())) {
+		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+		return;
+	}
+
+	for (int i = 0; i < format.length(); i++) {
+		switch (format.at(i)) {
+			case 's':
+				m_params.resize(m_params.size() + 1);
+				memset(&m_params.back(), 0, sizeof(MYSQL_BIND));
+
+				m_params.back().buffer_type= MYSQL_TYPE_STRING;
+				m_params.back().buffer= (char *) malloc(sizeof(char) * 4096);
+				m_params.back().buffer_length= 4096;
+				m_params.back().is_null= 0;
+				m_params.back().length= (unsigned long *) malloc(sizeof(unsigned long));
+				break;
+			case 'i':
+				m_params.resize(m_params.size() + 1);
+				memset(&m_params.back(), 0, sizeof(MYSQL_BIND));
+
+				m_params.back().buffer_type= MYSQL_TYPE_LONG;
+				m_params.back().buffer= (unsigned long *) malloc(sizeof(unsigned long));
+				m_params.back().is_null= 0;
+				m_params.back().length= (unsigned long *) malloc(sizeof(unsigned long));
+				break;
+			case 'b':
+				m_params.resize(m_params.size() + 1);
+				memset(&m_params.back(), 0, sizeof(MYSQL_BIND));
+
+				m_params.back().buffer_type= MYSQL_TYPE_TINY;
+				m_params.back().buffer= (bool *) malloc(sizeof(bool));
+				m_params.back().is_null= 0;
+				m_params.back().length= (unsigned long *) malloc(sizeof(unsigned long));
+				break;
+// 			case 'b':
+// 				m_params.push_back(NULL);
+// 				break;
+			case '|':
+				m_resultOffset = i;
+				break;
+		}
+	}
+
+	if (m_resultOffset < 0)
+		m_resultOffset = format.size();
+
+	if (mysql_stmt_bind_param(m_stmt, &m_params.front())) {
+		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+	}
+}
+
+MySQLBackend::Statement::~Statement() {
+	for (int i = 0; i < m_params.size(); i++) {
+		free(m_params[i].buffer);
+		free(m_params[i].length);
+	}
+	FINALIZE_STMT(m_stmt);
+}
+
+bool MySQLBackend::Statement::execute() {
+	// If statement has some input and doesn't have any output, we have
+	// to clear the offset now, because operator>> will not be called.
+	if (m_resultOffset != 0 && m_offset + 1 == m_params.size()) {
+		m_offset = 0;
+	}
+
+	if (mysql_stmt_execute(m_stmt)) {
+		return false;
+	}
+	return true;
+}
+
+template <typename T>
+MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
+	if (m_offset >= m_resultOffset)
+		return *this;
+	T *data = (T *) m_params[m_offset].buffer;
+	*data = t;
+
+	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << t);
+	m_offset++;
+	return *this;
+}
+
+MySQLBackend::Statement& MySQLBackend::Statement::operator << (const std::string& str) {
+	if (m_offset >= m_resultOffset)
+		return *this;
+	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << str << "(" << str.size() << ")");
+	strncpy((char*) m_params[m_offset].buffer, str.c_str(), 4096);
+	*m_params[m_offset].length = str.size();
+	m_offset++;
+	return *this;
+}
+
+template <typename T>
+MySQLBackend::Statement& MySQLBackend::Statement::operator >> (T& t) {
+	if (m_offset < m_resultOffset)
+		return *this;
+
+	std::swap(t, *(T *) m_params[m_offset]);
+	if (++m_offset == m_params.size())
+		m_offset = 0;
+	return *this;
+}
+
 MySQLBackend::MySQLBackend(Config *config) {
 	m_config = config;
 	mysql_init(&m_conn);
@@ -83,7 +193,8 @@ MySQLBackend::MySQLBackend(Config *config) {
 }
 
 MySQLBackend::~MySQLBackend(){
-	FINALIZE_STMT(m_setUser);
+// 	FINALIZE_STMT(m_setUser);
+	delete m_setUser;
 	FINALIZE_STMT(m_getUser);
 	FINALIZE_STMT(m_removeUser);
 	FINALIZE_STMT(m_removeUserBuddies);
@@ -117,7 +228,7 @@ bool MySQLBackend::connect() {
 
 	createDatabase();
 
-	PREP_STMT(m_setUser, "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?)");
+	m_setUser = new Statement(&m_conn, "sssssb", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?)");
 	PREP_STMT(m_getUser, "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
 	PREP_STMT(m_removeUser, "DELETE FROM " + m_prefix + "users WHERE id=?");
@@ -205,6 +316,8 @@ bool MySQLBackend::exec(const std::string &query) {
 }
 
 void MySQLBackend::setUser(const UserInfo &user) {
+	*m_setUser << user.jid << user.uin << user.password << user.language << user.encoding << user.vip;
+	m_setUser->execute();
 }
 
 bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
