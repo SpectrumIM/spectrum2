@@ -111,10 +111,12 @@ class MySQLBackend : public StorageBackend
 				Statement& operator >> (T& t);
 			private:
 				MYSQL_STMT *m_stmt;
+				MYSQL *m_conn;
 				std::vector<MYSQL_BIND> m_params;
 				int m_resultOffset;
 				int m_offset;
 				int m_error;
+				std::string m_string;
 		};
 
 		MYSQL m_conn;

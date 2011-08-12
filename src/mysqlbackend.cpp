@@ -78,7 +78,9 @@ static LoggerPtr logger = Logger::getLogger("MySQLBackend");
 
 MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const std::string &statement) {
 	m_resultOffset = -1;
+	m_conn = conn;
 	m_offset = 0;
+	m_string = statement;
 	m_stmt = mysql_stmt_init(conn);
 	if (mysql_stmt_prepare(m_stmt, statement.c_str(), statement.size())) {
 		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
@@ -148,6 +150,7 @@ bool MySQLBackend::Statement::execute() {
 	}
 
 	if (mysql_stmt_execute(m_stmt)) {
+		LOG4CXX_ERROR(logger, m_string << " " << mysql_error(m_conn));
 		return false;
 	}
 	return true;
