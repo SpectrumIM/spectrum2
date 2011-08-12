@@ -497,10 +497,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				if (blocked)
+				if (blocked) {
 					purple_privacy_deny(account, buddyName.c_str(), FALSE, FALSE);
-				else
+				}
+				else {
 					purple_privacy_allow(account, buddyName.c_str(), FALSE, FALSE);
+				}
 			}
 		}
 
@@ -630,12 +632,49 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
 
+	// Status
 	Swift::StatusShow status;
 	std::string message;
 	getStatus(buddy, status, message);
+
+	// Tooltip
+	PurplePlugin *prpl = purple_find_prpl(purple_account_get_protocol_id(account));
+	PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
+
+	bool blocked = false;
+	if (prpl_info && prpl_info->tooltip_text) {
+		PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
+		prpl_info->tooltip_text(buddy, user_info, true);
+		GList *entries = purple_notify_user_info_get_entries(user_info);
+
+		while (entries) {
+			PurpleNotifyUserInfoEntry *entry = (PurpleNotifyUserInfoEntry *)(entries->data);
+			if (purple_notify_user_info_entry_get_label(entry) && purple_notify_user_info_entry_get_value(entry)) {
+				std::string label = purple_notify_user_info_entry_get_label(entry);
+				if (label == "Blocked" ) {
+					if (std::string(purple_notify_user_info_entry_get_value(entry)) == "Yes") {
+						blocked = true;
+						break;
+					}
+				}
+			}
+			entries = entries->next;
+		}
+	}
+
+	if (!blocked) {
+		blocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
+	}
+	else {
+		bool purpleBlocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
+		if (blocked != purpleBlocked) {
+			purple_privacy_deny(account, purple_buddy_get_name(buddy), FALSE, FALSE);
+		}
+	}
+
 	std::cout << "BLOCKED?" << (purple_privacy_check(account, purple_buddy_get_name(buddy)) == false) << "\n";
 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy),
-		purple_privacy_check(account, purple_buddy_get_name(buddy)) == false
+		blocked
 	);
 }
 
@@ -672,17 +711,11 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
 		return;
-	PurpleBuddy *buddy = (PurpleBuddy *) node;
-	PurpleAccount *account = purple_buddy_get_account(buddy);
-	Swift::StatusShow status;
-	std::string message;
-	getStatus(buddy, status, message);
-	std::cout << "BLOCKED?" << (purple_privacy_check(account, purple_buddy_get_name(buddy)) == false) << "\n";
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy),
-		purple_privacy_check(account, purple_buddy_get_name(buddy)) == false);
+	buddyListNewNode(node);
 }
 
 static void buddyPrivacyChanged(PurpleBlistNode *node, void *data) {
+	std::cout << "PRIVACY CHANGED\n";
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
 		return;
 	buddyListUpdate(NULL, node);
@@ -1103,7 +1136,7 @@ static bool initPurple(Config &cfg) {
 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
 		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
-		purple_signal_connect(purple_conversations_get_handle(), "buddy-privacy-changed", &conversation_handle, PURPLE_CALLBACK(buddyPrivacyChanged), NULL);
+		purple_signal_connect(purple_blist_get_handle(), "buddy-privacy-changed", &conversation_handle, PURPLE_CALLBACK(buddyPrivacyChanged), NULL);
 		purple_signal_connect(purple_conversations_get_handle(), "got-attention", &conversation_handle, PURPLE_CALLBACK(gotAttention), NULL);
 		purple_signal_connect(purple_connections_get_handle(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);

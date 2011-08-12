@@ -61,6 +61,13 @@ bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& 
 		return true;
 	}
 
+	if (buddy->isBlocked()) {
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unblocking buddy " << Buddy::JIDToLegacyName(to));
+	}
+	else {
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Blocking buddy " << Buddy::JIDToLegacyName(to));
+	}
+
 	onBlockToggled(buddy);
 
 	return true;
