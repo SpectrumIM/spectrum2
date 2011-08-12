@@ -100,6 +100,8 @@ class MySQLBackend : public StorageBackend
 
 				bool execute();
 
+				bool fetch();
+
 				// Pushes new data used as input for the statement.
 				template <typename T>
 				Statement& operator << (const T& t);
@@ -109,10 +111,13 @@ class MySQLBackend : public StorageBackend
 				// Pulls fetched data by previous execute(); call.
 				template <typename T>
 				Statement& operator >> (T& t);
+				
+				Statement& operator >> (std::string& t);
 			private:
 				MYSQL_STMT *m_stmt;
 				MYSQL *m_conn;
 				std::vector<MYSQL_BIND> m_params;
+				std::vector<MYSQL_BIND> m_results;
 				int m_resultOffset;
 				int m_offset;
 				int m_error;
@@ -125,8 +130,8 @@ class MySQLBackend : public StorageBackend
 
 		// statements
 // 		MYSQL_STMT *m_setUser;
-		Statement * m_setUser;
-		MYSQL_STMT *m_getUser;
+		Statement *m_setUser;
+		Statement *m_getUser;
 		MYSQL_STMT *m_getUserSetting;
 		MYSQL_STMT *m_setUserSetting;
 		MYSQL_STMT *m_updateUserSetting;
