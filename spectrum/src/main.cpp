@@ -86,12 +86,14 @@ int main(int argc, char **argv)
 		storageBackend = new SQLite3Backend(&config);
 		if (!storageBackend->connect()) {
 			std::cerr << "Can't connect to database.\n";
+			return -1;
 		}
 	}
 	else if (CONFIG_STRING(&config, "database.type") == "mysql") {
 		storageBackend = new MySQLBackend(&config);
 		if (!storageBackend->connect()) {
 			std::cerr << "Can't connect to database.\n";
+			return -1;
 		}
 	}
 

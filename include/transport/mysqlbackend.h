@@ -100,7 +100,7 @@ class MySQLBackend : public StorageBackend
 
 				bool execute();
 
-				bool fetch();
+				int fetch();
 
 				// Pushes new data used as input for the statement.
 				template <typename T>
@@ -135,13 +135,13 @@ class MySQLBackend : public StorageBackend
 		MYSQL_STMT *m_getUserSetting;
 		MYSQL_STMT *m_setUserSetting;
 		MYSQL_STMT *m_updateUserSetting;
-		MYSQL_STMT *m_removeUser;
-		MYSQL_STMT *m_removeUserBuddies;
-		MYSQL_STMT *m_removeUserSettings;
-		MYSQL_STMT *m_removeUserBuddiesSettings;
-		MYSQL_STMT *m_addBuddy;
+		Statement *m_removeUser;
+		Statement *m_removeUserBuddies;
+		Statement *m_removeUserSettings;
+		Statement *m_removeUserBuddiesSettings;
+		Statement *m_addBuddy;
 		MYSQL_STMT *m_updateBuddy;
-		MYSQL_STMT *m_updateBuddySetting;
+		Statement *m_updateBuddySetting;
 		MYSQL_STMT *m_getBuddies;
 		MYSQL_STMT *m_getBuddiesSettings;
 };

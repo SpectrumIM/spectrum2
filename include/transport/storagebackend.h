@@ -27,7 +27,7 @@ namespace Transport {
 
 /// Represents all data needed to be stored in database.
 struct UserInfo {
-	long id;				///< id of user used as primary key in database
+	int id;				///< id of user used as primary key in database
 	std::string jid;		///< barejid of XMPP user
 	std::string uin;		///< legacy network username
 	std::string password;	///< password for legacy network
