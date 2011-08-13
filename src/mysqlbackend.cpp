@@ -187,9 +187,10 @@ bool MySQLBackend::Statement::execute() {
 	// to clear the offset now, because operator>> will not be called.
 	m_offset = 0;
 	m_resultOffset = 0;
+	int ret;
 
-	if (mysql_stmt_execute(m_stmt)) {
-		LOG4CXX_ERROR(logger, m_string << " " << mysql_error(m_conn));
+	if ((ret = mysql_stmt_execute(m_stmt)) != 0) {
+		LOG4CXX_ERROR(logger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
 		return false;
 	}
 	return true;
@@ -386,17 +387,18 @@ void MySQLBackend::setUser(const UserInfo &user) {
 }
 
 bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
-	user.id = -1;
 	*m_getUser << barejid;
 	if (!m_getUser->execute())
 		return false;
 
-	if (m_getUser->fetch() == MYSQL_NO_DATA)
-		return false;
+	int ret = false;
+	while (m_getUser->fetch() == 0) {
+		ret = true;
+		*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
+		std::cout << user.id << " " << user.jid << " " <<  user.uin << " " <<  user.password << " " <<  user.encoding << " " <<  user.language << " " <<  user.vip << "\n";
+	}
 
-	*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
-	std::cout << user.id << " " << user.jid << " " <<  user.uin << " " <<  user.password << " " <<  user.encoding << " " <<  user.language << " " <<  user.vip << "\n";
-	return true;
+	return ret;
 }
 
 void MySQLBackend::setUserOnline(long id, bool online) {
