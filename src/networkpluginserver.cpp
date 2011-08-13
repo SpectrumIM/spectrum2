@@ -37,6 +37,7 @@
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Elements/AttentionPayload.h"
 #include "Swiften/Elements/XHTMLIMPayload.h"
+#include "Swiften/Elements/InvisiblePayload.h"
 #include "pbnetwork.pb.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
@@ -785,7 +786,16 @@ void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence:
 
 	pbnetwork::Status status;
 	status.set_username(user->getJID().toBare());
-	status.set_status((int) presence->getShow());
+
+	bool isInvisible = presence->getPayload<Swift::InvisiblePayload>() != NULL;
+	if (isInvisible) {
+		LOG4CXX_INFO(logger, "This presence is invisible");
+		status.set_status(255);
+	}
+	else {
+		status.set_status((int) presence->getShow());
+	}
+
 	status.set_statusmessage(presence->getStatus());
 
 	std::string message;
