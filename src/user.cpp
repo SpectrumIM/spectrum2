@@ -153,7 +153,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		response->setFrom(m_component->getJID());
 		m_component->getStanzaChannel()->sendPresence(response);
 		LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
-		onPresenceChanged(response);
+		onPresenceChanged(highest);
 	}
 	else {
 		Swift::Presence::ref response = Swift::Presence::create();

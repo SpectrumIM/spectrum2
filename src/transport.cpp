@@ -95,7 +95,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, T
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::BlockParser>("block", "urn:xmpp:block:0"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("block", "urn:xmpp:invisible:0"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 
 		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_server->addPayloadSerializer(new Swift::XHTMLIMSerializer());
