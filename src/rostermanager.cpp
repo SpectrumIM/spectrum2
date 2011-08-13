@@ -210,10 +210,15 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received and buddy " << Buddy::JIDToLegacyName(presence->getTo()) << " is already there => answering");
 			switch (presence->getType()) {
 				case Swift::Presence::Subscribe:
+					onBuddyAdded(buddy);
 					response->setType(Swift::Presence::Subscribed);
 					break;
 				case Swift::Presence::Unsubscribe:
+					onBuddyRemoved(buddy);
 					response->setType(Swift::Presence::Unsubscribed);
+					break;
+				case Swift::Presence::Subscribed:
+					onBuddyAdded(buddy);
 					break;
 				default:
 					return;
@@ -238,6 +243,9 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					onBuddyAdded(buddy);
 					response->setType(Swift::Presence::Subscribed);
 					break;
+				case Swift::Presence::Subscribed:
+					onBuddyAdded(buddy);
+					break;
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
 					response->setType(Swift::Presence::Unsubscribed);
@@ -259,6 +267,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 			switch (presence->getType()) {
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Subscribe:
+					onBuddyAdded(buddy);
 					response->setType(Swift::Presence::Subscribed);
 					currentPresence = buddy->generatePresenceStanza(255);
 					if (currentPresence) {
@@ -298,6 +307,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
 					response->setType(Swift::Presence::Unsubscribed);
+					onBuddyRemoved(buddy);
 					break;
 				// just send response
 				case Swift::Presence::Unsubscribed:
