@@ -218,6 +218,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_password(account, password.c_str());
 			purple_account_set_enabled(account, "spectrum", TRUE);
 			purple_account_set_bool(account, "custom_smileys", FALSE);
+			purple_account_set_bool(account, "direct_connect", FALSE);
 
 			purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
 
