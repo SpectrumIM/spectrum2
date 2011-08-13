@@ -175,6 +175,10 @@ MySQLBackend::Statement::~Statement() {
 		free(m_params[i].buffer);
 		free(m_params[i].length);
 	}
+	for (int i = 0; i < m_results.size(); i++) {
+		free(m_results[i].buffer);
+		free(m_results[i].length);
+	}
 	FINALIZE_STMT(m_stmt);
 }
 
@@ -198,7 +202,7 @@ bool MySQLBackend::Statement::fetch() {
 
 template <typename T>
 MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
-	if (m_offset >= m_resultOffset)
+	if (m_offset >= m_params.size())
 		return *this;
 	T *data = (T *) m_params[m_offset].buffer;
 	*data = t;
@@ -209,7 +213,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 }
 
 MySQLBackend::Statement& MySQLBackend::Statement::operator << (const std::string& str) {
-	if (m_offset >= m_resultOffset)
+	if (m_offset >= m_params.size())
 		return *this;
 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << str << "(" << str.size() << ")");
 	strncpy((char*) m_params[m_offset].buffer, str.c_str(), 4096);
@@ -220,30 +224,30 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator << (const std::string
 
 template <typename T>
 MySQLBackend::Statement& MySQLBackend::Statement::operator >> (T& t) {
-	if (m_offset < m_resultOffset)
+	if (m_resultOffset > m_results.size())
 		return *this;
 
-	if (!m_params[m_offset].is_null) {
-		T *data = (T *) m_params[m_offset].buffer;
+	if (!m_results[m_resultOffset].is_null) {
+		T *data = (T *) m_results[m_resultOffset].buffer;
 		t = *data;
 	}
 
-	if (++m_offset == m_params.size())
-		m_offset = 0;
+	if (++m_resultOffset == m_results.size())
+		m_resultOffset = 0;
 	return *this;
 }
 
 MySQLBackend::Statement& MySQLBackend::Statement::operator >> (std::string& t) {
 	std::cout << "getting " << m_offset << " " << m_resultOffset << "\n";
-	if (m_offset < m_resultOffset)
+	if (m_resultOffset > m_results.size())
 		return *this;
 
-	if (!m_params[m_offset].is_null) {
-		t = (char *) m_params[m_offset].buffer;
+	if (!m_results[m_resultOffset].is_null) {
+		t = (char *) m_results[m_resultOffset].buffer;
 	}
 
-	if (++m_offset == m_params.size())
-		m_offset = 0;
+	if (++m_resultOffset == m_results.size())
+		m_resultOffset = 0;
 	return *this;
 }
 
