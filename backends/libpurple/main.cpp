@@ -178,6 +178,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				name = name.substr(name.find(".") + 1);
 			}
 
+			if (password.empty()) {
+				np->handleDisconnected(user, name, 0, "Empty password.");
+				return;
+			}
+
 			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
 // 				Log(user, "this account already exists");
@@ -196,6 +201,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			m_sessions[user] = account;
+			m_accounts[account] = user;
 
 			// Default avatar
 			char* contents;
@@ -226,7 +232,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (status_type != NULL) {
 				purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, NULL);
 			}
-			m_accounts[account] = user;
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
