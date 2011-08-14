@@ -183,6 +183,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
+			if (!purple_find_prpl(protocol.c_str())) {
+				np->handleDisconnected(user, name, 0, "Invalid protocol " + protocol);
+				return;
+			}
+
 			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
 // 				Log(user, "this account already exists");
