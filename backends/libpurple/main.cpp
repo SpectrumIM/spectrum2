@@ -674,6 +674,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 			}
 			entries = entries->next;
 		}
+		purple_notify_user_info_destroy(user_info);
 	}
 
 	if (!blocked) {
