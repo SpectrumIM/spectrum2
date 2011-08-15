@@ -918,22 +918,20 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		PurpleBuddyIcon *icon = NULL;
 		icon = purple_buddy_icons_find(purple_connection_get_account(gc), name.c_str());
 		if (icon) {
-			const gchar * data = (gchar*)purple_buddy_icon_get_data(icon, &len);
-			// Sometimes libpurple returns really broken pointers here
-			// They weren't able to do anything with that and I don't know what to do too,
-			// so it's better to hack through it by not trying to forward really broken things...
-			if (len < 300000 && data) {
-				photo = Swift::createByteArray(data, len);
-// 				const gchar *ext = (gchar*)purple_buddy_icon_get_extension(icon);
-// 				if (ext) {
-// 					std::string extension(ext);
-// 					if (extension != "icon") {
-// 						if (extension == "jpg") {
-// 							extension = "jpeg";
-// 						}
-// 						photo->addChild( new Tag("TYPE", "image/" + extension) );
-// 					}
-// 				}
+			if (true) {
+				gchar *data;
+				gchar *path = purple_buddy_icon_get_full_path(icon);
+				if (g_file_get_contents (path, &data, &len, NULL)) {
+					photo = Swift::createByteArray(data, len);
+					free(data);
+				}
+				free(path);
+			}
+			else {
+				const gchar * data = (gchar*)purple_buddy_icon_get_data(icon, &len);
+				if (len < 300000 && data) {
+					photo = Swift::createByteArray(data, len);
+				}
 			}
 			purple_buddy_icon_unref(icon);
 		}
