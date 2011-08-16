@@ -894,6 +894,10 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		vcardEntries = vcardEntries->next;
 	}
 
+	if (nickname.empty() && !fullName.empty()) {
+		nickname = fullName;
+	}
+
 	bool ownInfo = name == purple_account_get_username(account);
 	std::cout << "RECEIVED " << name << " " << purple_account_get_username(account) << "\n";
 
@@ -903,7 +907,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			displayname = purple_account_get_name_for_display(account);
 		}
 
-		if (displayname) {
+		if (displayname && nickname.empty()) {
 			nickname = displayname;
 		}
 
