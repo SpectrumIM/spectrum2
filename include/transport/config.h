@@ -82,11 +82,16 @@ class Config {
 		/// Returns path to config file from which data were loaded.
 		const std::string &getConfigFile() { return m_file; }
 
+		const std::map<std::string, std::string> &getUnregistered() {
+			return m_unregistered;
+		}
+
 		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
 	
 	private:
 		Variables m_variables;
+		std::map<std::string, std::string> m_unregistered;
 		std::string m_file;
 };
 

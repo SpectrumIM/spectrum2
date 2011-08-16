@@ -231,6 +231,15 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool(account, "custom_smileys", FALSE);
 			purple_account_set_bool(account, "direct_connect", FALSE);
 
+			for (std::map<std::string,std::string>::const_iterator it = config->getUnregistered().begin();
+				it != config->getUnregistered().end(); it++) {
+				if ((*it).first.find("purple.") == 0) {
+					std::string key = (*it).first.substr((*it).first.find(".") + 1);
+					LOG4CXX_INFO(logger, "Setting account string '" << key << "'='" << (*it).second << "'");
+					purple_account_set_string(account, key.c_str(), (*it).second.c_str());
+				}
+			}
+
 			purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
 
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);

@@ -26,6 +26,7 @@ using namespace boost::program_options;
 namespace Transport {
 
 bool Config::load(const std::string &configfile, boost::program_options::options_description &opts) {
+	m_unregistered.clear();
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
 		return false;
@@ -71,7 +72,15 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
 	;
 
-	store(parse_config_file(ifs, opts), m_variables);
+	parsed_options parsed = parse_config_file(ifs, opts, true);
+
+	BOOST_FOREACH(option opt, parsed.options) {
+		if (opt.unregistered) {
+			m_unregistered[opt.string_key] = opt.value[0];
+		}
+	}
+
+	store(parsed, m_variables);
 	notify(m_variables);
 
 	m_file = configfile;
