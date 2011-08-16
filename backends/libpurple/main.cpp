@@ -894,6 +894,9 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		vcardEntries = vcardEntries->next;
 	}
 
+	if ((!firstName.empty() || !lastName.empty()) && fullName.empty())
+		fullName = firstName + " " + lastName;
+
 	if (nickname.empty() && !fullName.empty()) {
 		nickname = fullName;
 	}
@@ -922,9 +925,6 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			purple_imgstore_unref(avatar);
 		}
 	}
-
-	if ((!firstName.empty() || !lastName.empty()) && fullName.empty())
-		fullName = firstName + " " + lastName;
 
 	PurpleBuddy *buddy = purple_find_buddy(purple_connection_get_account(gc), who);
 	if (buddy && photo.size() == 0) {
