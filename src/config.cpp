@@ -70,6 +70,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		("logging.backend_config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for backends")
 		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")
 		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
+		("backend.no_vcard_fetch", value<bool>()->default_value(false), "True if VCards for buddies should not be fetched. Only avatars will be forwarded.")
 	;
 
 	parsed_options parsed = parse_config_file(ifs, opts, true);

@@ -58,6 +58,7 @@ static GOptionEntry options_entries[] = {
 	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
+static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
 static GHashTable *ui_info = NULL;
 
 static GHashTable *spectrum_ui_get_info(void)
@@ -381,8 +382,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				if (CONFIG_STRING(config, "service.protocol") == "any" && legacyName.find("prpl-") == 0) {
 					name = name.substr(name.find(".") + 1);
 				}
-				serv_get_info(purple_account_get_connection(account), name.c_str());
 				m_vcards[user + name] = id;
+
+				std::cout << name << " " << purple_account_get_username(account) << "\n";
+				if (CONFIG_BOOL(config, "backend.no_vcard_fetch") && name != purple_account_get_username(account)) {
+					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
+					notify_user_info(purple_account_get_connection(account), name.c_str(), user_info);
+					purple_notify_user_info_destroy(user_info);
+				}
+				else {
+					serv_get_info(purple_account_get_connection(account), name.c_str());
+				}
+				
 			}
 		}
 
