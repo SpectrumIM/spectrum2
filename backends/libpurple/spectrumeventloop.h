@@ -38,6 +38,8 @@ class SpectrumEventLoop : public Swift::EventLoop {
 		// Stops tht eventloop.
 		void stop();
 
+		void handle(Swift::Event *event);
+
 		// Posts new Swift::Event to main thread.
 		virtual void post(const Swift::Event& event);
 

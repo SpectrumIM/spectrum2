@@ -30,16 +30,18 @@
 
 using namespace Swift;
 
+static SpectrumEventLoop *loop;
+
 // Fires the event's callback and frees the event
 static gboolean processEvent(void *data) {
 	Event *ev = (Event *) data;
-	ev->callback();
-	delete ev;
+	loop->handle(ev);
 	return FALSE;
 }
 
 SpectrumEventLoop::SpectrumEventLoop() : m_isRunning(false) {
 	m_loop = NULL;
+	loop = this;
 	if (true) {
 		m_loop = g_main_loop_new(NULL, FALSE);
 	}
@@ -67,6 +69,11 @@ void SpectrumEventLoop::run() {
 #endif
 }
 
+void SpectrumEventLoop::handle(Swift::Event *event) {
+	handleEvent(*event);
+	delete event;
+}
+
 void SpectrumEventLoop::stop() {
 	std::cout << "stopped loop\n";
 	if (!m_isRunning)
@@ -85,6 +92,6 @@ void SpectrumEventLoop::stop() {
 
 void SpectrumEventLoop::post(const Event& event) {
 	// pass copy of event to main thread
-	Event *ev = new Event(event.owner, event.callback);
+	Event *ev = new Event(event);
 	purple_timeout_add(0, processEvent, ev);
 }
