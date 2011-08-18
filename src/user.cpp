@@ -30,6 +30,9 @@
 #include "Swiften/Elements/MUCPayload.h"
 #include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
+#include <execinfo.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 using namespace log4cxx;
 using namespace boost;
@@ -99,8 +102,28 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 	return jid;
 }
 
+static void
+print_trace (void)
+{
+void *array[80];
+size_t size;
+char **strings;
+size_t i;
+
+size = backtrace (array, 80);
+strings = backtrace_symbols (array, size);
+
+printf ("Obtained %zd stack frames.\n", size);
+
+for (i = 0; i < size; i++)
+	printf ("%s\n", strings[i]);
+
+free (strings);
+}
+
 void User::handlePresence(Swift::Presence::ref presence) {
 	std::cout << "PRESENCE " << presence->getFrom().toString() << "\n";
+// 	print_trace();
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {

@@ -29,6 +29,7 @@ namespace {
 }
 
 void ServerStanzaChannel::addSession(boost::shared_ptr<ServerFromClientSession> session) {
+	std::cout << "ADDING SESSION\n";
 	sessions[session->getRemoteJID().toBare().toString()].push_back(session);
 	session->onSessionFinished.connect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.connect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
@@ -53,20 +54,30 @@ void ServerStanzaChannel::sendPresence(boost::shared_ptr<Presence> presence) {
 	send(presence);
 }
 
-void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element) {
+void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element, bool last) {
 	std::vector<boost::shared_ptr<ServerFromClientSession> > candidateSessions;
 	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
-		if (element) {
-			(*i)->sendElement(element);
-		}
 		candidateSessions.push_back(*i);
 	}
 
 	for (std::vector<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = candidateSessions.begin(); i != candidateSessions.end(); ++i) {
-		
+		removeSession(*i);
+		if (element) {
+			(*i)->sendElement(element);
+		}
+
+		if (last && (*i)->getRemoteJID().isValid()) {
+			Swift::Presence::ref presence = Swift::Presence::create();
+			presence->setFrom((*i)->getRemoteJID());
+			presence->setType(Swift::Presence::Unavailable);
+			onPresenceReceived(presence);
+		}
+
 		(*i)->finishSession();
-		sessions[to.toBare().toString()].remove(*i);
 		std::cout << "FINISH SESSION " << sessions[to.toBare().toString()].size() << "\n";
+		if (last) {
+			break;
+		}
 	}
 }
 
@@ -109,10 +120,12 @@ void ServerStanzaChannel::send(boost::shared_ptr<Stanza> stanza) {
 void ServerStanzaChannel::handleSessionFinished(const boost::optional<Session::SessionError>&, const boost::shared_ptr<ServerFromClientSession>& session) {
 	removeSession(session);
 
-	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(session->getRemoteJID());
-	presence->setType(Swift::Presence::Unavailable);
-	onPresenceReceived(presence);
+// 	if (!session->initiatedFinish()) {
+		Swift::Presence::ref presence = Swift::Presence::create();
+		presence->setFrom(session->getRemoteJID());
+		presence->setType(Swift::Presence::Unavailable);
+		onPresenceReceived(presence);
+// 	}
 }
 
 void ServerStanzaChannel::handleElement(boost::shared_ptr<Element> element, const boost::shared_ptr<ServerFromClientSession>& session) {

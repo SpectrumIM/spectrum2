@@ -9,6 +9,7 @@
 #include <string>
 #include <Swiften/Base/SafeByteArray.h>
 #include <boost/signal.hpp>
+#include "Swiften/Server/ServerFromClientSession.h"
 
 namespace Swift {
 	class JID;
@@ -17,12 +18,8 @@ namespace Swift {
 		public:
 			virtual ~UserRegistry();
 
-			virtual bool isValidUserPassword(const JID& user, const SafeByteArray& password) = 0;
+			virtual void isValidUserPassword(const JID& user, ServerFromClientSession *session, const SafeByteArray& password) = 0;
 
-			virtual void stopLogin(const JID &/*user*/) {};
-
-			boost::signal<void (const std::string &user)> onPasswordValid;
-			boost::signal<void (const std::string &user)> onPasswordInvalid;
-
+			virtual void stopLogin(const JID &/*user*/, ServerFromClientSession *) {};
 	};
 }

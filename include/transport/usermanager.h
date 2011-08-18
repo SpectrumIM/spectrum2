@@ -82,6 +82,7 @@ class UserManager {
 		}
 
 		void connectUser(const Swift::JID &user);
+		void disconnectUser(const Swift::JID &user);
 
 	private:
 		void handlePresence(Swift::Presence::ref presence);
@@ -89,7 +90,7 @@ class UserManager {
 		void handleGeneralPresenceReceived(Swift::Presence::ref presence);
 		void handleProbePresence(Swift::Presence::ref presence);
 		void handleSubscription(Swift::Presence::ref presence);
-		void handleRemoveTimeout(const std::string jid, bool reconnect);
+		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
 // 		void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 		void addUser(User *user);
 

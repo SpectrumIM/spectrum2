@@ -180,7 +180,7 @@ namespace Transport {
 			Swift::PresenceOracle *m_presenceOracle;
 			Swift::StanzaChannel *m_stanzaChannel;
 			Swift::IQRouter *m_iqRouter;
-			Swift::UserRegistry *m_userRegistry;
+			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;
 			DiscoItemsResponder *m_discoItemsResponder;

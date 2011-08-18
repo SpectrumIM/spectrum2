@@ -134,12 +134,12 @@ void Server::handleSessionStarted(boost::shared_ptr<ServerFromClientSession> ses
 }
 
 void Server::handleSessionFinished(boost::shared_ptr<ServerFromClientSession> session) {
-	if (!session->getRemoteJID().isValid()) {
-		Swift::Presence::ref presence = Swift::Presence::create();
-		presence->setFrom(session->getBareJID());
-		presence->setType(Swift::Presence::Unavailable);
-		dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->onPresenceReceived(presence);
-	}
+// 	if (!session->getRemoteJID().isValid()) {
+// 		Swift::Presence::ref presence = Swift::Presence::create();
+// 		presence->setFrom(session->getBareJID());
+// 		presence->setType(Swift::Presence::Unavailable);
+// 		dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->onPresenceReceived(presence);
+// 	}
 	serverFromClientSessions.erase(std::remove(serverFromClientSessions.begin(), serverFromClientSessions.end(), session), serverFromClientSessions.end());
 	std::cout << "FINISH SESSION2 " << serverFromClientSessions.size() << "\n";
 	session->onSessionStarted.disconnect(

@@ -55,6 +55,7 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
 
 	m_userRegistry->onConnectUser.connect(bind(&UserManager::connectUser, this, _1));
+	m_userRegistry->onDisconnectUser.connect(bind(&UserManager::disconnectUser, this, _1));
 // 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
 
 	m_removeTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1);
@@ -187,16 +188,20 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
 			// There's no presence for this user, so disconnect
 			if (!highest || (highest && highest->getType() == Swift::Presence::Unavailable)) {
-				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user->getJID().toBare().toString(), false));
+				m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user->getJID().toBare().toString(), user, false));
 				m_removeTimer->start();
 			}
 		}
 	}
 }
 
-void UserManager::handleRemoveTimeout(const std::string jid, bool reconnect) {
-	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid, reconnect));
+void UserManager::handleRemoveTimeout(const std::string jid, User *u, bool reconnect) {
+	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid, u, reconnect));
 	User *user = getUser(jid);
+	if (user != u) {
+		return;
+	}
+
 	if (user) {
 		// Reconnect means that we're disconnecting this User instance from legacy network backend,
 		// but we're going to connect it again in this call. Currently it's used only when
@@ -310,14 +315,28 @@ void UserManager::connectUser(const Swift::JID &user) {
 	// Called by UserRegistry in server mode when user connects the server and wants
 	// to connect legacy network
 	if (m_users.find(user.toBare().toString()) != m_users.end()) {
-		if (CONFIG_BOOL(m_component->getConfig(), "service.more_resources")) {
-			m_userRegistry->onPasswordValid(user);
+		if (m_users[user.toBare().toString()]->isConnected()) {
+			if (CONFIG_BOOL(m_component->getConfig(), "service.more_resources")) {
+				m_userRegistry->onPasswordValid(user);
+			}
+			else {
+				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+				msg->setBody("You have signed on from another location.");
+				msg->setTo(user);
+				msg->setFrom(m_component->getJID());
+				m_component->getStanzaChannel()->sendMessage(msg);
+				m_userRegistry->onPasswordValid(user);
+				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
+				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
+				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
+			}
 		}
-		else {
-			// Reconnect the user if more resources per one legacy network account are not allowed
-			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), true));
-			m_removeTimer->start();
-		}
+// 		}
+// 		else {
+// 			// Reconnect the user if more resources per one legacy network account are not allowed
+// 			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), true));
+// 			m_removeTimer->start();
+// 		}
 	}
 	else {
 		// simulate initial available presence to start connecting this user.
@@ -325,9 +344,17 @@ void UserManager::connectUser(const Swift::JID &user) {
 		response->setTo(m_component->getJID());
 		response->setFrom(user);
 		response->setType(Swift::Presence::Available);
-		m_component->onUserPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->onPresenceReceived(response);
 	}
 }
 
+
+void UserManager::disconnectUser(const Swift::JID &user) {
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo(m_component->getJID());
+	response->setFrom(user);
+	response->setType(Swift::Presence::Unavailable);
+	dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->onPresenceReceived(response);
+}
 
 }

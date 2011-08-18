@@ -45,32 +45,21 @@ ServerFromClientSession::ServerFromClientSession(
 }
 
 ServerFromClientSession::~ServerFromClientSession() {
-	std::cout << "DESTRUCTOR;\n";
-	userRegistry_->onPasswordValid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
-	userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 	if (tlsLayer) {
 		delete tlsLayer;
 	}
 }
 
-void ServerFromClientSession::handlePasswordValid(const std::string &user) {
-	if (user != JID(user_, getLocalJID().getDomain()).toString())
-		return;
+void ServerFromClientSession::handlePasswordValid() {
 	if (!isInitialized()) {
-		userRegistry_->onPasswordValid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
-		userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthSuccess>(new AuthSuccess()));
 		authenticated_ = true;
 		getXMPPLayer()->resetParser();
 	}
 }
 
-void ServerFromClientSession::handlePasswordInvalid(const std::string &user) {
-	if (user != JID(user_, getLocalJID().getDomain()).toString() || authenticated_)
-		return;
+void ServerFromClientSession::handlePasswordInvalid() {
 	if (!isInitialized()) {
-		userRegistry_->onPasswordValid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
-		userRegistry_->onPasswordInvalid.disconnect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
 		finishSession(AuthenticationFailedError);
 	}
@@ -91,18 +80,7 @@ void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) 
 				else {
 					PLAINMessage plainMessage(authRequest->getMessage() ? *authRequest->getMessage() : createSafeByteArray(""));
 					user_ = plainMessage.getAuthenticationID();
-					userRegistry_->onPasswordInvalid(JID(plainMessage.getAuthenticationID(), getLocalJID().getDomain()).toBare().toString());
-					userRegistry_->onPasswordValid.connect(boost::bind(&ServerFromClientSession::handlePasswordValid, this, _1));
-					userRegistry_->onPasswordInvalid.connect(boost::bind(&ServerFromClientSession::handlePasswordInvalid, this, _1));
-					if (userRegistry_->isValidUserPassword(JID(plainMessage.getAuthenticationID(), getLocalJID().getDomain()), plainMessage.getPassword())) {
-						// we're waiting for usermanager signal now
-// 						authenticated_ = true;
-// 						getXMPPLayer()->resetParser();
-					}
-					else {
-						getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
-						finishSession(AuthenticationFailedError);
-					}
+					userRegistry_->isValidUserPassword(JID(plainMessage.getAuthenticationID(), getLocalJID().getDomain()), this, plainMessage.getPassword());
 				}
 			}
 			else {
@@ -168,6 +146,10 @@ void ServerFromClientSession::setInitialized() {
 
 void ServerFromClientSession::setAllowSASLEXTERNAL() {
 	allowSASLEXTERNAL = true;
+}
+
+void ServerFromClientSession::handleSessionFinished(const boost::optional<SessionError>&) {
+	userRegistry_->stopLogin(JID(user_, getLocalJID().getDomain()), this);
 }
 
 void ServerFromClientSession::addTLSEncryption(TLSServerContextFactory* tlsContextFactory, const PKCS12Certificate& cert) {

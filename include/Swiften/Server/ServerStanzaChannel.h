@@ -26,7 +26,7 @@ namespace Swift {
 			void sendMessage(boost::shared_ptr<Message> message);
 			void sendPresence(boost::shared_ptr<Presence> presence);
 
-			void finishSession(const JID& to, boost::shared_ptr<Element> element);
+			void finishSession(const JID& to, boost::shared_ptr<Element> element, bool last = false);
 
 			bool getStreamManagementEnabled() const {
 				return false;

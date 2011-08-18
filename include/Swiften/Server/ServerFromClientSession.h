@@ -53,11 +53,13 @@ namespace Swift {
 				return Swift::JID(user_, getLocalJID().getDomain());
 			}
 
+			void handlePasswordValid();
+			void handlePasswordInvalid();
+
 		private:
 			void handleElement(boost::shared_ptr<Element>);
 			void handleStreamStart(const ProtocolHeader& header);
-			void handlePasswordValid(const std::string &user);
-			void handlePasswordInvalid(const std::string &user);
+			void handleSessionFinished(const boost::optional<SessionError>&);
 
 			void setInitialized();
 			bool isInitialized() const { 
