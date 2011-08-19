@@ -70,7 +70,7 @@ void Buddy::setOnline() {
 
 void Buddy::setOffline() {
 	m_online = false;
-	m_lastPresence = Swift::Presence::ref();
+// 	m_lastPresence = Swift::Presence::ref();
 }
 
 bool Buddy::isOnline() {
@@ -118,14 +118,14 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 		}
 	}
 
-	if (only_new) {
-		if (m_lastPresence)
-			m_lastPresence->setTo(Swift::JID(""));
-		if (m_lastPresence == presence) {
-			return Swift::Presence::ref();
-		}
-		m_lastPresence = presence;
-	}
+// 	if (only_new) {
+// 		if (m_lastPresence)
+// 			m_lastPresence->setTo(Swift::JID(""));
+// 		if (m_lastPresence == presence) {
+// 			return Swift::Presence::ref();
+// 		}
+// 		m_lastPresence = presence;
+// 	}
 
 	return presence;
 }

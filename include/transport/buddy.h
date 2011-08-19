@@ -180,7 +180,7 @@ class Buddy {
 		bool m_online;
 		bool m_blocked;
 		std::string m_subscription;
-		Swift::Presence::ref m_lastPresence;
+// 		Swift::Presence::ref m_lastPresence;
 		Swift::JID m_jid;
 		BuddyFlag m_flags;
 		RosterManager *m_rosterManager;
