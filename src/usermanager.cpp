@@ -30,6 +30,7 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#include "malloc.h"
 
 using namespace log4cxx;
 
@@ -92,6 +93,7 @@ void UserManager::removeUser(User *user) {
 		m_cachedUser = NULL;
 	onUserDestroyed(user);
 	delete user;
+	malloc_trim(0);
 }
 
 int UserManager::getUserCount() {
