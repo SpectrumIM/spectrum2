@@ -92,6 +92,11 @@ void UserManager::removeUser(User *user) {
 	m_users.erase(user->getJID().toBare().toString());
 	if (m_cachedUser == user)
 		m_cachedUser = NULL;
+
+	if (m_component->inServerMode()) {
+		disconnectUser(user->getJID());
+	}
+
 	onUserDestroyed(user);
 	delete user;
 	malloc_trim(0);
