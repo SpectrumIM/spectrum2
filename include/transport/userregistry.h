@@ -30,74 +30,18 @@ namespace Transport {
 	
 class UserRegistry : public Swift::UserRegistry {
 	public:
-		UserRegistry(Config *cfg) {config = cfg;}
-		~UserRegistry() {}
-		void isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password) {
-			if (!CONFIG_STRING(config, "service.admin_username").empty() && user.getNode() == CONFIG_STRING(config, "service.admin_username")) {
-				if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
-					session->handlePasswordValid();
-				}
-				else {
-					session->handlePasswordInvalid();
-				}
-				return;
-			}
+		UserRegistry(Config *cfg);
+		virtual ~UserRegistry();
 
-			std::string key = user.toBare().toString();
+		void isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password);
 
-			// Users try to connect twice
-			if (users.find(key) != users.end()) {
-				// Kill the first session if the second password is same
-				if (Swift::safeByteArrayToString(password) == users[key].password) {
-					Swift::ServerFromClientSession *tmp = users[key].session;
-					users[key].session = session;
-					tmp->handlePasswordInvalid();
-				}
-				else {
-					session->handlePasswordInvalid();
-					std::cout << "invalid " << session << "\n";
-					return;
-				}
-			}
-			std::cout << "adding " << session << "\n";
-			users[key].password = Swift::safeByteArrayToString(password);
-			users[key].session = session;
-			onConnectUser(user);
+		void stopLogin(const Swift::JID& user, Swift::ServerFromClientSession *session);
 
-			return;
-		}
+		void onPasswordValid(const Swift::JID &user);
 
-		void stopLogin(const Swift::JID& user, Swift::ServerFromClientSession *session) {
-			std::cout << "stopping " << session << "\n";
-			std::string key = user.toBare().toString();
-			if (users.find(key) != users.end()) {
-				if (users[key].session == session) {
-					std::cout << "DISCONNECT USER\n";
-					onDisconnectUser(user);
-					users.erase(key);
-				}
-			}
-		}
+		void onPasswordInvalid(const Swift::JID &user);
 
-		void onPasswordValid(const Swift::JID &user) {
-			std::string key = user.toBare().toString();
-			if (users.find(key) != users.end()) {
-				users[key].session->handlePasswordValid();
-				users.erase(key);
-			}
-		}
-
-		void onPasswordInvalid(const Swift::JID &user) {
-			std::string key = user.toBare().toString();
-			if (users.find(key) != users.end()) {
-				users[key].session->handlePasswordInvalid();
-				users.erase(key);
-			}
-		}
-
-		const std::string &getUserPassword(const std::string &barejid) {
-			return users[barejid].password;
-		}
+		const std::string &getUserPassword(const std::string &barejid);
 
 		boost::signal<void (const Swift::JID &user)> onConnectUser;
 		boost::signal<void (const Swift::JID &user)> onDisconnectUser;
