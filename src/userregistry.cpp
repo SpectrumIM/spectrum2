@@ -80,7 +80,6 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 	if (users.find(key) != users.end()) {
 		if (users[key].session == session) {
 			LOG4CXX_INFO(logger, key << ": Stopping login process (user probably disconnected while logging in)");
-			onDisconnectUser(user);
 			users.erase(key);
 		}
 		else {
@@ -90,6 +89,7 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 	else {
 		LOG4CXX_WARN(logger, key << ": Stopping login process (user probably disconnected while logging in) for invalid user");
 	}
+	onDisconnectUser(user);
 }
 
 void UserRegistry::onPasswordValid(const Swift::JID &user) {
