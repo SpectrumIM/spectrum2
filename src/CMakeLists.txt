@@ -7,6 +7,14 @@ if (PROTOBUF_FOUND)
 	PROTOBUF_GENERATE_CPP(PROTOBUF_SRC PROTOBUF_HDRS "pbnetwork.proto")
 endif()
 
+if (CPPUNIT_FOUND)
+	FILE(GLOB SRC_TEST tests/*.cpp)
+
+	ADD_EXECUTABLE(libtransport_test ${SRC_TEST})
+
+	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARIES} ${Boost_LIBRARIES})
+endif()
+
 # SOURCE_GROUP(headers FILES ${HEADERS})
 
 ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS})

@@ -62,6 +62,10 @@ class Config {
 		/// \param opts extra options which will be recognized by a parser
 		bool load(const std::string &configfile, boost::program_options::options_description &opts);
 
+		bool load(std::istream &ifs, boost::program_options::options_description &opts);
+
+		bool load(std::istream &ifs);
+
 		/// Loads data from config file.
 		
 		/// This function loads only config variables needed by libtransport.

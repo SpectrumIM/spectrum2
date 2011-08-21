@@ -137,6 +137,13 @@ ADD_SUBDIRECTORY(backends)
 #ADD_SUBDIRECTORY(tests)
 ADD_SUBDIRECTORY(spectrum_manager)
 
+if (CPPUNIT_FOUND)
+	message("tests             : yes")
+	include_directories(${CPPUNIT_INCLUDE_DIR})
+else()
+	message("tests             : no (install CPPUnit)")
+endif()
+
 if(DOXYGEN_FOUND)
 	message("Docs              : yes")
 	ADD_SUBDIRECTORY(docs)

@@ -26,11 +26,19 @@ using namespace boost::program_options;
 namespace Transport {
 
 bool Config::load(const std::string &configfile, boost::program_options::options_description &opts) {
-	m_unregistered.clear();
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
 		return false;
 
+	m_file = configfile;
+	bool ret = load(ifs, opts);
+	ifs.close();
+
+	return ret;
+}
+
+bool Config::load(std::istream &ifs, boost::program_options::options_description &opts) {
+	m_unregistered.clear();
 	opts.add_options()
 		("service.jid", value<std::string>()->default_value(""), "Transport Jabber ID")
 		("service.server", value<std::string>()->default_value(""), "Server to connect to")
@@ -84,11 +92,14 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 	store(parsed, m_variables);
 	notify(m_variables);
 
-	m_file = configfile;
-
 	onConfigReloaded();
 
 	return true;
+}
+
+bool Config::load(std::istream &ifs) {
+	options_description opts("Transport options");
+	return load(ifs, opts);
 }
 
 bool Config::load(const std::string &configfile) {
