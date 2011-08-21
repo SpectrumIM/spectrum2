@@ -51,23 +51,9 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Sending roster");
-		// Client can send jabber:iq:roster IQ before presence, so we do little hack here to
-		// trigger logging in.
-		// UserManager should create user now, if everything is OK.
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(to);
-		response->setFrom(from);
-		response->setType(Swift::Presence::Available);
-		m_userManager->handlePresence(response);
-
-		// if it's not created, lets finish this get
-		user = m_userManager->getUser(from.toBare().toString());
-		if (!user) {
-			sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
-			LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
-			return true;
-		}
+		sendResponse(from, id, boost::shared_ptr<RosterPayload>(new RosterPayload()));
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+		return true;
 	}
 	sendResponse(from, id, user->getRosterManager()->generateRosterPayload());
 	user->getRosterManager()->sendCurrentPresences(from);
