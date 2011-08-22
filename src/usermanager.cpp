@@ -31,7 +31,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "malloc.h"
-#include "valgrind/memcheck.h"
+// #include "valgrind/memcheck.h"
 
 using namespace log4cxx;
 
@@ -100,7 +100,7 @@ void UserManager::removeUser(User *user) {
 	onUserDestroyed(user);
 	delete user;
 	malloc_trim(0);
-	VALGRIND_DO_LEAK_CHECK;
+// 	VALGRIND_DO_LEAK_CHECK;
 }
 
 int UserManager::getUserCount() {
