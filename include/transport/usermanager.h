@@ -52,6 +52,8 @@ class UserManager {
 		/// \return User class associated with this user
 		User *getUser(const std::string &barejid);
 
+		/// Returns map with all connected users.
+		/// \return All connected users.
 		const std::map<std::string, User *> &getUsers() {
 			return m_users;
 		}

@@ -27,25 +27,72 @@
 #include "transport/config.h"
 
 namespace Transport {
-	
+
+/// Validates passwords in Server mode.
+
+/// Normal login workflow could work like following:
+/**
+	\msc
+	UserManager,UserRegistry,ServerFromClientSession;
+	ServerFromClientSession->UserRegistry [label="isValidUserPassword(...)", URL="\ref UserRegistry::isValidUserPassword()"];
+	UserManager<-UserRegistry [label="onConnectUser(...)", URL="\ref UserRegistry::onConnectUser()"];
+	---  [ label = "UserManager logins user and validates password"];
+	UserManager->UserRegistry [label="onPasswordValid(...)", URL="\ref UserRegistry::onPasswordValid()"];
+	ServerFromClientSession<-UserRegistry [label="handlePasswordValid(...)", URL="\ref ServerFromClientSession::handlePasswordValid()"];
+	\endmsc
+*/
+/// User can of course disconnect during login process. In this case, stopLogin() method is called which informs upper layer
+/// that user disconnected:
+/**
+	\msc
+	UserManager,UserRegistry,ServerFromClientSession;
+	ServerFromClientSession->UserRegistry [label="isValidUserPassword(...)", URL="\ref UserRegistry::isValidUserPassword()"];
+	UserManager<-UserRegistry [label="onConnectUser(...)", URL="\ref UserRegistry::onConnectUser()"];
+	---  [ label = "UserManager is logging in the user, but he disconnected"];
+	ServerFromClientSession->UserRegistry [label="stopLogin(...)", URL="\ref UserRegistry::stopLogin()"];
+	UserManager<-UserRegistry [label="onDisconnectUser(...)", URL="\ref UserRegistry::onDisconnectUser()"];
+	---  [ label = "UserManager disconnects the user"];
+	\endmsc
+*/
 class UserRegistry : public Swift::UserRegistry {
 	public:
+		/// Creates new UserRegistry.
+		/// \param cfg Config file
+		/// 	- service.admin_username - username for admin account
+		/// 	- service.admin_password - password for admin account
 		UserRegistry(Config *cfg);
+
+		/// Destructor.
 		virtual ~UserRegistry();
 
+		/// Called to detect wheter the password is valid.
+		/// \param user JID of user who is logging in.
+		/// \param session Session associated with this user.
+		/// \param password Password used for this session.
 		void isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password);
 
+		/// Called when user disconnects during login process. Disconnects user from legacy network.
+		/// \param user JID.
+		/// \param session Session.
 		void stopLogin(const Swift::JID& user, Swift::ServerFromClientSession *session);
 
+		/// Informs user that the password is valid and finishes login process.
+		/// \param user JID.
 		void onPasswordValid(const Swift::JID &user);
 
+		/// Informs user that the password is invalid and disconnects him.
+		/// \param user JID.
 		void onPasswordInvalid(const Swift::JID &user);
 
+		/// Returns current password for particular user
+		/// \param barejid JID.
 		const std::string &getUserPassword(const std::string &barejid);
 
+		/// Emitted when user wants to connect legacy network to validate the password.
 		boost::signal<void (const Swift::JID &user)> onConnectUser;
-		boost::signal<void (const Swift::JID &user)> onDisconnectUser;
 
+		/// Emitted when user disconnected XMPP server and therefore should disconnect legacy network.
+		boost::signal<void (const Swift::JID &user)> onDisconnectUser;
 
 	private:
 		typedef struct {
