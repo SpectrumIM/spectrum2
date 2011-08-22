@@ -39,9 +39,12 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("VCardResponder");
 
-VCardResponder::VCardResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<VCard>(router) {
+VCardResponder::VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager) : Swift::Responder<VCard>(router) {
 	m_id = 0;
 	m_userManager = userManager;
+	m_collectTimer = factories->getTimerFactory()->createTimer(20);
+	m_collectTimer->onTick.connect(boost::bind(&VCardResponder::collectTimeouted, this));
+	m_collectTimer->start();
 }
 
 VCardResponder::~VCardResponder() {
@@ -57,6 +60,26 @@ void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> 
 
 	sendResponse(m_queries[id].from, m_queries[id].to, m_queries[id].id, vcard);
 	m_queries.erase(id);
+}
+
+void VCardResponder::collectTimeouted() {
+	time_t now = time(NULL);
+
+	std::vector<unsigned int> candidates;
+	for(std::map<unsigned int, VCardData>::iterator it = m_queries.begin(); it != m_queries.end(); it++) {
+		if (now - (*it).second.received > 40) {
+			candidates.push_back((*it).first);
+		}
+	}
+
+	if (candidates.size() != 0) {
+		LOG4CXX_INFO(logger, "Removing " << candidates.size() << " timeouted VCard requests");
+	}
+
+	BOOST_FOREACH(unsigned int id, candidates) {
+		sendVCard(id, boost::shared_ptr<Swift::VCard>(new Swift::VCard()));
+	}
+	m_collectTimer->start();
 }
 
 bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
@@ -85,6 +108,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	m_queries[m_id].from = from;
 	m_queries[m_id].to = to_;
 	m_queries[m_id].id = id; 
+	m_queries[m_id].received = time(NULL);
 	onVCardRequired(user, name, m_id++);
 	return true;
 }

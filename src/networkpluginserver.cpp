@@ -186,7 +186,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_collectTimer->onTick.connect(boost::bind(&NetworkPluginServer::collectBackend, this));
 	m_collectTimer->start();
 
-	m_vcardResponder = new VCardResponder(component->getIQRouter(), userManager);
+	m_vcardResponder = new VCardResponder(component->getIQRouter(), component->getNetworkFactories(), userManager);
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
 	m_vcardResponder->onVCardUpdated.connect(boost::bind(&NetworkPluginServer::handleVCardUpdated, this, _1, _2));
 	m_vcardResponder->start();

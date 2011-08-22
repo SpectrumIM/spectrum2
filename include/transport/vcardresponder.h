@@ -33,7 +33,7 @@ class User;
 
 class VCardResponder : public Swift::Responder<Swift::VCard> {
 	public:
-		VCardResponder(Swift::IQRouter *router, UserManager *userManager);
+		VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager);
 		~VCardResponder();
 
 		void sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard);
@@ -41,11 +41,14 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
 		boost::signal<void (User *, boost::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 
+		void collectTimeouted();
+
 	private:
 		struct VCardData {
 			Swift::JID from;
 			Swift::JID to;
 			std::string id;
+			time_t received;
 		};
 
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload);
@@ -53,6 +56,7 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 		UserManager *m_userManager;
 		std::map<unsigned int, VCardData> m_queries;
 		unsigned int m_id;
+		Swift::Timer::ref m_collectTimer;
 };
 
 }
