@@ -25,7 +25,8 @@ set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Swiften REQUIRED)
 
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(Boost COMPONENTS date_time system filesystem program_options regex thread signals REQUIRED)
+find_package(Boost COMPONENTS date_time system filesystem regex thread signals REQUIRED)
+message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
 set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Protobuf REQUIRED)
