@@ -37,6 +37,19 @@ class RosterResponder;
 
 /// This class handles presences and creates User classes when new user connects.
 /// It also removes the User class once the last user's resource disconnected.
+
+/// Basic user creation process:
+/**
+	\msc
+	Component,UserManager,User,StorageBackend,Slot;
+	---  [ label = "Available presence received"];
+	Component->UserManager [label="handlePresence(...)", URL="\ref UserManager::handlePresence()"];
+	UserManager->StorageBackend [label="getUser(...)", URL="\ref StorageBackend::getUser()"];
+	UserManager->User [label="User::User(...)", URL="\ref User"];
+	UserManager->Slot [label="onUserCreated(...)", URL="\ref UserManager::onUserCreated()"];
+	UserManager->User [label="handlePresence(...)", URL="\ref User::handlePresence()"];
+	\endmsc
+*/
 class UserManager {
 	public:
 		/// Creates new UserManager.
