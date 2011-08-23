@@ -180,12 +180,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			if (password.empty()) {
-				np->handleDisconnected(user, name, 0, "Empty password.");
+				np->handleDisconnected(user, 0, "Empty password.");
 				return;
 			}
 
 			if (!purple_find_prpl(protocol.c_str())) {
-				np->handleDisconnected(user, name, 0, "Invalid protocol " + protocol);
+				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
 				return;
 			}
 
@@ -708,7 +708,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	}
 
 	std::cout << "BLOCKED?" << (purple_privacy_check(account, purple_buddy_get_name(buddy)) == false) << "\n";
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy),
+	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], status.getType(), message, getIconHash(buddy),
 		blocked
 	);
 }
@@ -850,7 +850,7 @@ static PurpleConversationUiOps conversation_ui_ops =
 
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account(gc);
-	np->handleDisconnected(np->m_accounts[account], purple_account_get_username(account), (int) reason, text ? text : "");
+	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
 	np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
 }
 

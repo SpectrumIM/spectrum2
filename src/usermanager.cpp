@@ -324,6 +324,10 @@ void UserManager::connectUser(const Swift::JID &user) {
 	// Called by UserRegistry in server mode when user connects the server and wants
 	// to connect legacy network
 	if (m_users.find(user.toBare().toString()) != m_users.end()) {
+		if (!m_component->inServerMode()) {
+			return;
+		}
+
 		if (m_users[user.toBare().toString()]->isConnected()) {
 			if (CONFIG_BOOL(m_component->getConfig(), "service.more_resources")) {
 				m_userRegistry->onPasswordValid(user);

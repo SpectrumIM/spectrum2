@@ -37,9 +37,6 @@
 #include "transport/config.h"
 #include "transport/factory.h"
 
-#define tr(lang,STRING)    (STRING)
-#define _(STRING)    (STRING)
-
 namespace Transport {
 	// typedef enum { 	CLIENT_FEATURE_ROSTERX = 2,
 	// 				CLIENT_FEATURE_XHTML_IM = 4,

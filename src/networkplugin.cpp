@@ -130,13 +130,13 @@ void NetworkPlugin::handleSubject(const std::string &user, const std::string &le
 }
 
 void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, int status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
+			const std::string &groups, Swift::StatusShow::Type status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user);
 	buddy.set_buddyname(buddyName);
 	buddy.set_alias(alias);
 	buddy.set_groups(groups);
-	buddy.set_status(status);
+	buddy.set_status((int)status);
 	buddy.set_statusmessage(statusMessage);
 	buddy.set_iconhash(iconHash);
 	buddy.set_blocked(blocked);
@@ -214,10 +214,9 @@ void NetworkPlugin::handleConnected(const std::string &user) {
 	send(message);	
 }
 
-void NetworkPlugin::handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &msg) {
+void NetworkPlugin::handleDisconnected(const std::string &user, int error, const std::string &msg) {
 	pbnetwork::Disconnected d;
 	d.set_user(user);
-	d.set_name(legacyName);
 	d.set_error(error);
 	d.set_message(msg);
 
@@ -229,7 +228,7 @@ void NetworkPlugin::handleDisconnected(const std::string &user, const std::strin
 	send(message);
 }
 
-void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, int status, const std::string &statusMessage, const std::string &newname) {
+void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, Conversation::ParticipantFlag flags, Swift::StatusShow::Type status, const std::string &statusMessage, const std::string &newname) {
 	pbnetwork::Participant d;
 	d.set_username(user);
 	d.set_nickname(nickname);

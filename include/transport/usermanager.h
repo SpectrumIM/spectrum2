@@ -76,7 +76,7 @@ class UserManager {
 		int getUserCount();
 
 		/// Removes user. This function disconnects user and safely removes
-		/// User class. This does *not* remove user from database.
+		/// User class. This does *not* remove user from StorageBackend.
 		/// \param user User class to remove
 		void removeUser(User *user);
 
@@ -88,15 +88,24 @@ class UserManager {
 		/// \param user removed User class
 		boost::signal<void (User *user)> onUserDestroyed;
 
+		/// Returns true if user is connected.
+		/// \return True if user is connected.
 		bool isUserConnected(const std::string &barejid) const {
 			return m_users.find(barejid) != m_users.end();
 		}
 
+		/// Returns pointer to UserRegistry.
+		/// \return Pointer to UserRegistry.
 		UserRegistry *getUserRegistry() {
 			return m_userRegistry;
 		}
 
+		/// Connects user manually.
+		/// \param user JID of user.
 		void connectUser(const Swift::JID &user);
+
+		/// Disconnects user manually.
+		/// \param user JID of user.
 		void disconnectUser(const Swift::JID &user);
 
 	private:

@@ -157,8 +157,8 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	std::string usernameField = CONFIG_STRING(m_config, "registration.username_field");
 
 	Form::ref form(new Form(Form::FormType));
-	form->setTitle(tr(_language, _("Registration")));
-	form->setInstructions(tr(_language, instructions));
+	form->setTitle((("Registration")));
+	form->setInstructions((instructions));
 
 	HiddenFormField::ref type = HiddenFormField::create();
 	type->setName("FORM_TYPE");
@@ -167,7 +167,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 
 	TextSingleFormField::ref username = TextSingleFormField::create();
 	username->setName("username");
-	username->setLabel(tr(_language, usernameField));
+	username->setLabel((usernameField));
 	username->setValue(res.uin);
 	username->setRequired(true);
 	form->addField(username);
@@ -175,14 +175,14 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour") {
 		TextPrivateFormField::ref password = TextPrivateFormField::create();
 		password->setName("password");
-		password->setLabel(tr(_language, _("Password")));
+		password->setLabel((("Password")));
 		password->setRequired(true);
 		form->addField(password);
 	}
 
 	ListSingleFormField::ref language = ListSingleFormField::create();
 	language->setName("language");
-	language->setLabel(tr(_language, _("Language")));
+	language->setLabel((("Language")));
 	if (registered)
 		language->setValue(res.language);
 	else
@@ -195,7 +195,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 
 	TextSingleFormField::ref encoding = TextSingleFormField::create();
 	encoding->setName("encoding");
-	encoding->setLabel(tr(_language, _("Encoding")));
+	encoding->setLabel((("Encoding")));
 	if (registered)
 		encoding->setValue(res.encoding);
 	else
@@ -205,7 +205,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	if (registered) {
 		BooleanFormField::ref boolean = BooleanFormField::create();
 		boolean->setName("unregister");
-		boolean->setLabel(tr(_language, _("Remove your registration")));
+		boolean->setLabel((("Remove your registration")));
 		boolean->setValue(0);
 		form->addField(boolean);
 	}

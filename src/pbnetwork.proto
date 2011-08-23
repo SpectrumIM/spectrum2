@@ -6,9 +6,8 @@ message Connected {
 
 message Disconnected {
 	required string user = 1;
-	required string name = 2;
-	required int32 error = 3;
-	optional string message = 4;
+	required int32 error = 2;
+	optional string message = 3;
 }
 
 message Login {

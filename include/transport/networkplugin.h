@@ -31,44 +31,132 @@
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Network/Connection.h"
 #include "storagebackend.h"
+#include "conversation.h"
 
 namespace Transport {
 
+/// Represents Spectrum2 legacy network plugin.
+
+/// This class is base class for all C++ legacy network plugins. It provides a way to connect 
+/// Spectrum2 NetworkPluginServer and allows to use high-level API for legacy network plugins
+/// development.
 class NetworkPlugin {
 	public:
+		/// Creates new NetworkPlugin and connects the Spectrum2 NetworkPluginServer.
+		/// \param loop Event loop.
+		/// \param host Host where Spectrum2 NetworkPluginServer runs.
+		/// \param port Port.
 		NetworkPlugin(Swift::EventLoop *loop, const std::string &host, int port);
 
+		/// Destructor.
 		virtual ~NetworkPlugin();
 
+		/// Call this function when legacy network buddy changed.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
+		/// \param alias Alias of legacy network buddy. If empty, then it's not changed on XMPP side.
+		/// \param groups Groups in which buddy currently is. If empty, then it's not changed on XMPP side.
+		/// \param status Status of this buddy.
+		/// \param statusMessage Status message of this buddy.
+		/// \param iconHash MD5 hash of buddy icon. Empty if none buddy icon.
+		/// \param blocked True if this buddy is blocked in privacy lists in legacy network.
 		void handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, int status, const std::string &statusMessage = "", const std::string &iconHash = "",
+			const std::string &groups, Swift::StatusShow::Type status, const std::string &statusMessage = "", const std::string &iconHash = "",
 			bool blocked = false
 		);
 
-		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
+		/// Call this function when participant in room changed.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param nickname Nickname of participant. If participant renamed, this is old name of participant. (eg. "HanzZ")
+		/// \param room Room in which participant changed. (eg. #spectrum)
+		/// \param flags Participant flags.
+		/// \param status Current status of participant. Swift::StatusShow::None if participant left the room.
+		/// \param statusMessage Current status message of participant.
+		/// \param newname New name of participant if he changed the nickname. Otherwise empty.
+		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, Conversation::ParticipantFlag flags = Conversation::None,
+			Swift::StatusShow::Type status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
 
-		void handleDisconnected(const std::string &user, const std::string &legacyName, int error, const std::string &message);
+		/// Call this function when user disconnected the legacy network because of some legacy network error.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param error Reserved for future use, currently keep it on 0.
+		/// \param message XMPP message which is sent to XMPP user.
+		void handleDisconnected(const std::string &user, int error = 0, const std::string &message = "");
 
+		/// Call this function when user connected the legacy network and is logged in.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		void handleConnected(const std::string &user);
 
+		/// Call this function when new message is received from legacy network for user.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param legacyName Name of legacy network buddy or name of room. (eg. "user2@gmail.com")
+		/// \param message Plain text message.
+		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
+		/// \param xhtml XHTML message.
 		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "");
 
+		/// Call this function when subject in room changed.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param legacyName Name of room. (eg. "#spectrum")
+		/// \param message Subject message.
+		/// \param nickname Nickname of user who changed subject.
 		void handleSubject(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "");
 
-		void handleRoomChanged(const std::string &user, const std::string &room, const std::string &nickname);
+		/// Call this function XMPP user's nickname changed.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param room Room in which participant changed. (eg. #spectrum)
+		/// \param nickname New nickname.
+		void handleRoomNicknameChanged(const std::string &user, const std::string &room, const std::string &nickname);
 
+		/// Call this function when requested VCard arrived.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param id VCard ID.
+		/// \param legacyName Name of legacy network buddy. (eg. "user2@gmail.com")
+		/// \param fullName Name of legacy network buddy. (eg. "Monty Python")
+		/// \param nickname Nickname.
+		/// \param photo Raw photo.
 		void handleVCard(const std::string &user, unsigned int id, const std::string &legacyName, const std::string &fullName, const std::string &nickname, const std::string &photo);
 
+		/// Call this function when buddy started typing.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		void handleBuddyTyping(const std::string &user, const std::string &buddyName);
-		
+
+		/// Call this function when buddy typed, but is not typing anymore.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		void handleBuddyTyped(const std::string &user, const std::string &buddyName);
 
+		/// Call this function when buddy has been typing, but paused for a while.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		void handleBuddyStoppedTyping(const std::string &user, const std::string &buddyName);
 
+		/// Call this function when new authorization request arrived form legacy network
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		void handleAuthorization(const std::string &user, const std::string &buddyName);
 
+		/// Call this function when attention request arrived from legacy network.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
+		/// \param message Message.
 		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
 
+		/// Called when XMPP user wants to connect legacy network.
+		/// You should connect it to legacy network and call handleConnected or handleDisconnected function later.
+		/**
+			\msc
+			NetworkPlugin,YourNetworkPlugin,LegacyNetwork;
+			NetworkPlugin->YourNetworkPlugin [label="handleLoginRequest(...)", URL="\ref NetworkPlugin::handleLoginRequest()"];
+			YourNetworkPlugin->LegacyNetwork [label="connect the legacy network"];
+			--- [label="If password was valid and user is connected and logged in"];
+			YourNetworkPlugin<-LegacyNetwork [label="connected"];
+			YourNetworkPlugin->NetworkPlugin [label="handleConnected()", URL="\ref NetworkPlugin::handleConnected()"];
+			--- [label="else"];
+			YourNetworkPlugin<-LegacyNetwork [label="disconnected"];
+			YourNetworkPlugin->NetworkPlugin [label="handleDisconnected()", URL="\ref NetworkPlugin::handleDisconnected()"];
+			\endmsc
+		*/
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
 		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") = 0;
