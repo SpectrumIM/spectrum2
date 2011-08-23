@@ -102,6 +102,7 @@ class UserRegistry : public Swift::UserRegistry {
 
 		mutable std::map<std::string, Sess> users;
 		mutable Config *config;
+		std::string empty;
 };
 
 }

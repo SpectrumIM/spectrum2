@@ -117,7 +117,9 @@ void UserRegistry::onPasswordInvalid(const Swift::JID &user) {
 }
 
 const std::string &UserRegistry::getUserPassword(const std::string &barejid) {
-	return users[barejid].password;
+	if (users.find(barejid) != users.end())
+		return users[barejid].password;
+	return empty;
 }
 
 }
