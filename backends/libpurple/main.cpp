@@ -848,16 +848,29 @@ static PurpleConversationUiOps conversation_ui_ops =
 	NULL
 };
 
+struct Dis {
+	std::string name;
+	std::string protocol;
+};
+
 static gboolean disconnectMe(void *data) {
-	PurpleAccount *account = (PurpleAccount *) data;
-	np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
+	Dis *d = (Dis *) data;
+	PurpleAccount *account = purple_accounts_find(d->name.c_str(), d->protocol.c_str());
+	delete d;
+
+	if (account) {
+		np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
+	}
 	return FALSE;
 }
 
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
-	purple_timeout_add(1, disconnectMe, account);
+	Dis *d = new Dis;
+	d->name = purple_account_get_username(account);
+	d->protocol = purple_account_get_protocol_id(account);
+	purple_timeout_add_seconds(10, disconnectMe, d);
 }
 
 static PurpleConnectionUiOps conn_ui_ops =
