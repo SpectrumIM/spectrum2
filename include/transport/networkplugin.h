@@ -143,7 +143,10 @@ class NetworkPlugin {
 		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
 
 		/// Called when XMPP user wants to connect legacy network.
-		/// You should connect it to legacy network and call handleConnected or handleDisconnected function later.
+		/// You should connect him to legacy network and call handleConnected or handleDisconnected function later.
+		/// \param user XMPP JID of user for which this event occurs.
+		/// \param legacyName Legacy network name of this user used for login.
+		/// \param password Legacy network password of this user.
 		/**
 			\msc
 			NetworkPlugin,YourNetworkPlugin,LegacyNetwork;
@@ -158,10 +161,42 @@ class NetworkPlugin {
 			\endmsc
 		*/
 		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
+
+		/// Called when XMPP user wants to disconnect legacy network.
+		/// You should disconnect him from legacy network.
+		/// \param user XMPP JID of user for which this event occurs.
+		/// \param legacyName Legacy network name of this user used for login.
 		virtual void handleLogoutRequest(const std::string &user, const std::string &legacyName) = 0;
+
+		/// Called when XMPP user sends message to legacy network.
+		/// \param user XMPP JID of user for which this event occurs.
+		/// \param legacyName Legacy network name of buddy or room.
+		/// \param message Plain text message.
+		/// \param xhtml XHTML message.
 		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") = 0;
+
+		/// Called when XMPP user requests VCard of buddy.
+		/// \param user XMPP JID of user for which this event occurs.
+		/// \param legacyName Legacy network name of buddy whose VCard is requested.
+		/// \param id ID which is associated with this request. You have to pass it to handleVCard function when you receive VCard.
+		/**
+			\msc
+			NetworkPlugin,YourNetworkPlugin,LegacyNetwork;
+			NetworkPlugin->YourNetworkPlugin [label="handleVCardRequest(...)", URL="\ref NetworkPlugin::handleVCardRequest()"];
+			YourNetworkPlugin->LegacyNetwork [label="start VCard fetching"];
+			YourNetworkPlugin<-LegacyNetwork [label="VCard fetched"];
+			YourNetworkPlugin->NetworkPlugin [label="handleVCard()", URL="\ref NetworkPlugin::handleVCard()"];
+			\endmsc
+		*/
 		virtual void handleVCardRequest(const std::string &/*user*/, const std::string &/*legacyName*/, unsigned int /*id*/) {}
+
+		/// Called when XMPP user updates his own VCard.
+		/// You should update the VCard in legacy network too.
+		/// \param user XMPP JID of user for which this event occurs.
+		/// \param photo Raw photo data.
 		virtual void handleVCardUpdatedRequest(const std::string &/*user*/, const std::string &/*photo*/) {}
+
+
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		virtual void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/) {}
 		virtual void handleStatusChangeRequest(const std::string &/*user*/, int status, const std::string &statusMessage) {}
