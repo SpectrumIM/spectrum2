@@ -86,7 +86,7 @@ class UserRegistry : public Swift::UserRegistry {
 
 		/// Returns current password for particular user
 		/// \param barejid JID.
-		const std::string &getUserPassword(const std::string &barejid);
+		const std::string getUserPassword(const std::string &barejid);
 
 		/// Emitted when user wants to connect legacy network to validate the password.
 		boost::signal<void (const Swift::JID &user)> onConnectUser;
@@ -102,7 +102,6 @@ class UserRegistry : public Swift::UserRegistry {
 
 		mutable std::map<std::string, Sess> users;
 		mutable Config *config;
-		std::string empty;
 };
 
 }
