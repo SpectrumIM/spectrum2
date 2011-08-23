@@ -848,10 +848,16 @@ static PurpleConversationUiOps conversation_ui_ops =
 	NULL
 };
 
+static gboolean disconnectMe(void *data) {
+	PurpleAccount *account = (PurpleAccount *) data;
+	np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
+	return FALSE;
+}
+
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
-	np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
+	purple_timeout_add(1, disconnectMe, account);
 }
 
 static PurpleConnectionUiOps conn_ui_ops =
