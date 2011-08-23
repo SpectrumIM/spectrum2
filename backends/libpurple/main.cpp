@@ -253,7 +253,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 // 				VALGRIND_DO_LEAK_CHECK;
-				m_sessions[user] = NULL;
+				m_sessions.erase(user);
 				purple_account_set_enabled(account, "spectrum", FALSE);
 
 				// Remove conversations.
@@ -851,6 +851,7 @@ static PurpleConversationUiOps conversation_ui_ops =
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleDisconnected(np->m_accounts[account], purple_account_get_username(account), (int) reason, text ? text : "");
+	np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
 }
 
 static PurpleConnectionUiOps conn_ui_ops =

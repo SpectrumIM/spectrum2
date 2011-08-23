@@ -100,12 +100,14 @@ void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	m_component->getStanzaChannel()->sendPresence(response);
 }
 
+void RosterManager::handleBuddyChanged(Buddy *buddy) {
+	if (m_rosterStorage) {
+		m_rosterStorage->storeBuddy(buddy);
+	}
+}
+
 void RosterManager::setBuddyCallback(Buddy *buddy) {
 	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
-
-	if (m_rosterStorage) {
-		buddy->onBuddyChanged.connect(boost::bind(&RosterStorage::storeBuddy, m_rosterStorage, buddy));
-	}
 
 	LOG4CXX_INFO(logger, "Associating buddy " << buddy->getName() << " with " << m_user->getJID().toString());
 	m_buddies[buddy->getName()] = buddy;
@@ -350,7 +352,6 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
 		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
 		m_buddies[buddy->getName()] = buddy;
-		buddy->onBuddyChanged.connect(boost::bind(&RosterStorage::storeBuddy, m_rosterStorage, buddy));
 		onBuddySet(buddy);
 	}
 }

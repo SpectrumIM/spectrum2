@@ -170,6 +170,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 }
 
 NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
+	std::cout << "BUDDY " << sizeof(Buddy) << "\n";
 	m_userManager = userManager;
 	m_config = config;
 	m_component = component;

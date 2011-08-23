@@ -26,7 +26,7 @@
 
 namespace Transport {
 
-Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_online(false), m_blocked(false), m_subscription("ask"), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
+Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
 // 	m_rosterManager->setBuddy(this);
 }
 
@@ -64,25 +64,12 @@ const Swift::JID &Buddy::getJID() {
 	return m_jid;
 }
 
-void Buddy::setOnline() {
-	m_online = true;
-}
-
-void Buddy::setOffline() {
-	m_online = false;
-// 	m_lastPresence = Swift::Presence::ref();
-}
-
-bool Buddy::isOnline() {
-	return m_online;
-}
-
 void Buddy::setSubscription(const std::string &subscription) {
-	m_subscription = subscription;
+// 	m_subscription = subscription;
 }
 
-const std::string &Buddy::getSubscription() {
-	return m_subscription;
+const std::string Buddy::getSubscription() {
+	return "ask";
 }
 
 Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) {
@@ -113,7 +100,7 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 // 		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));
 // 		}
-		if (m_blocked) {
+		if (isBlocked()) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::BlockPayload ()));
 		}
 	}
@@ -155,7 +142,7 @@ void Buddy::handleBuddyChanged() {
 	if (presence) {
 		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
 	}
-	onBuddyChanged();
+	m_rosterManager->handleBuddyChanged(this);
 }
 
 void Buddy::handleVCardReceived(const std::string &id, Swift::VCard::ref vcard) {

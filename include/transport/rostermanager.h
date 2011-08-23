@@ -80,6 +80,8 @@ class RosterManager {
 		
 		boost::signal<void (Buddy *buddy)> onBuddyRemoved;
 
+		void handleBuddyChanged(Buddy *buddy);
+
 		void handleSubscription(Swift::Presence::ref presence);
 
 		void sendBuddyRosterPush(Buddy *buddy);

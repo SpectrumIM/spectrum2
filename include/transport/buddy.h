@@ -32,7 +32,8 @@ class RosterManager;
 
 typedef enum { 	BUDDY_NO_FLAG = 0,
 				BUDDY_JID_ESCAPING = 2,
-				BUDDY_IGNORE = 4
+				BUDDY_IGNORE = 4,
+				BUDDY_BLOCKED = 8,
 			} BuddyFlag;
 
 /// Represents one legacy network Buddy.
@@ -78,24 +79,16 @@ class Buddy {
 		/// \return Presence stanza or NULL.
 		Swift::Presence::ref generatePresenceStanza(int features, bool only_new = false);
 
-		/// Marks this buddy as available.
-		void setOnline();
-
-		/// Marks this buddy as offline.
-		void setOffline();
-
 		void setBlocked(bool block) {
-			m_blocked = block;
+			if (block)
+				m_flags = (BuddyFlag) (m_flags | BUDDY_BLOCKED);
+			else
+				m_flags = (BuddyFlag) (m_flags & ~BUDDY_BLOCKED);
 		}
 
 		bool isBlocked() {
-			return m_blocked;
+			return m_flags & BUDDY_BLOCKED;
 		}
-
-		/// Returns true if this buddy is marked as available/online.
-
-		/// \return true if this buddy is marked as available/online.
-		bool isOnline();
 
 		/// Sets current subscription.
 
@@ -105,7 +98,7 @@ class Buddy {
 		/// Returns current subscription
 
 		/// \return subscription "to", "from", "both", "ask"
-		const std::string &getSubscription();
+		const std::string getSubscription();
 
 		/// Sets this buddy's flags.
 
@@ -136,9 +129,6 @@ class Buddy {
 		/// \param id ID used in IQ-result.
 		/// \param vcard VCard which will be sent.
 		void handleVCardReceived(const std::string &id, Swift::VCard::ref vcard);
-
-		/// This signal is emitted when buddyChanged method is called. 
-		boost::signal<void ()> onBuddyChanged;
 
 		/// Returns legacy network username of this buddy. (for example UIN for ICQ, JID for Jabber, ...).
 
@@ -177,9 +167,6 @@ class Buddy {
 		void generateJID();
 
 		long m_id;
-		bool m_online;
-		bool m_blocked;
-		std::string m_subscription;
 // 		Swift::Presence::ref m_lastPresence;
 		Swift::JID m_jid;
 		BuddyFlag m_flags;
