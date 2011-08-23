@@ -57,7 +57,7 @@ class IRCNetworkPlugin : public NetworkPlugin {
 			m_sessions[user]->addAutoJoinChannel(QString::fromStdString(room));
 			m_sessions[user]->join(QString::fromStdString(room), QString::fromStdString(password));
 			// update nickname, because we have nickname per session, no nickname per room.
-			handleRoomChanged(user, room, m_sessions[user]->nick().toStdString());
+			handleRoomNicknameChanged(user, room, m_sessions[user]->nick().toStdString());
 		}
 
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {

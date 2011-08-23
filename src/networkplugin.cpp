@@ -246,7 +246,7 @@ void NetworkPlugin::handleParticipantChanged(const std::string &user, const std:
 	send(message);
 }
 
-void NetworkPlugin::handleRoomChanged(const std::string &user, const std::string &r, const std::string &nickname) {
+void NetworkPlugin::handleRoomNicknameChanged(const std::string &user, const std::string &r, const std::string &nickname) {
 	pbnetwork::Room room;
 	room.set_username(user);
 	room.set_nickname(nickname);
