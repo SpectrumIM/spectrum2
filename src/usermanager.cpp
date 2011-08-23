@@ -164,6 +164,10 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			res.password = m_userRegistry->getUserPassword(userkey);
 		}
 
+		if (res.password.empty()) {
+			m_userRegistry->onPasswordInvalid(presence->getFrom());
+		}
+
 		// Unregistered users are not able to login
 		if (!registered) {
 			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");
