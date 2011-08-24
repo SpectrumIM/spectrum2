@@ -16,11 +16,11 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			std::istringstream ifs;
 			cfg = new Config();
 			cfg->load(ifs);
-			userRegistry = new UserRegistry(cfg);
+// 			userRegistry = new UserRegistry(cfg);
 		}
 
 		void tearDown (void) {
-			delete userRegistry;
+// 			delete userRegistry;
 			delete cfg;
 		}
 

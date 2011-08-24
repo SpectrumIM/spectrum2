@@ -85,6 +85,8 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 		LOG4CXX_WARN(logger, key << ": Stopping login process (user probably disconnected while logging in) for invalid user");
 	}
 
+	// ::removeLater can be called only by libtransport, not by Swift and libtransport
+	// takes care about user disconnecting itself, so don't call our signal.
 	if (!m_inRemoveLater)
 		onDisconnectUser(user);
 }

@@ -206,11 +206,15 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 void UserManager::handleRemoveTimeout(const std::string jid, User *u, bool reconnect) {
 	m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, jid, u, reconnect));
+
+	// Maybe this User instance has been deleted in mean time and we would remove new one,
+	// so better check for it and ignore deletion if "u" does not exist anymore.
 	User *user = getUser(jid);
 	if (user != u) {
 		return;
 	}
 
+	// Remove user
 	if (user) {
 		removeUser(user);
 	}
@@ -308,6 +312,9 @@ void UserManager::connectUser(const Swift::JID &user) {
 
 		User *u = m_users[user.toBare().toString()];
 		if (u->isConnected()) {
+			// User is already logged in, so his password is OK, but this new user has different password => bad password.
+			// We can't call m_userRegistry->onPasswordInvalid() here, because this fuction is called from Swift::Parser
+			// and onPasswordInvalid destroys whole session together with parser itself, which leads to crash.
 			if (m_userRegistry->getUserPassword(user.toBare().toString()) != u->getUserInfo().password) {
 				m_userRegistry->removeLater(user);
 				return;
@@ -316,11 +323,15 @@ void UserManager::connectUser(const Swift::JID &user) {
 				m_userRegistry->onPasswordValid(user);
 			}
 			else {
+				// Send message to currently logged in session
 				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody("You have signed on from another location.");
 				msg->setTo(user);
 				msg->setFrom(m_component->getJID());
 				m_component->getStanzaChannel()->sendMessage(msg);
+
+				// Switch the session = accept new one, disconnect old one.
+				// Unavailable presence from old session has to be ignored, otherwise it would disconnect the user from legacy network.
 				m_userRegistry->onPasswordValid(user);
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
@@ -328,16 +339,14 @@ void UserManager::connectUser(const Swift::JID &user) {
 			}
 		}
 		else {
+			// User is created, but not connected => he's loggin in or he just logged out, but hasn't been deleted yet.
+			// Stop deletion process if there's any
 			m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), m_users[user.toBare().toString()], false));
+
+			// Delete old User instance but create new one immediatelly
 			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), m_users[user.toBare().toString()], true));
 			m_removeTimer->start();
 		}
-// 		}
-// 		else {
-// 			// Reconnect the user if more resources per one legacy network account are not allowed
-// 			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), true));
-// 			m_removeTimer->start();
-// 		}
 	}
 	else {
 		// simulate initial available presence to start connecting this user.
