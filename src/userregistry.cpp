@@ -31,11 +31,13 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("UserRegistry");
 
-UserRegistry::UserRegistry(Config *cfg) {
+UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 	config = cfg;
+	m_removeTimer = factories->getTimerFactory()->createTimer(1);
+	m_inRemoveLater = false;
 }
 
-UserRegistry::~UserRegistry() { }
+UserRegistry::~UserRegistry() { m_removeTimer->stop(); }
 
 void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password) {
 	if (!CONFIG_STRING(config, "service.admin_username").empty() && user.getNode() == CONFIG_STRING(config, "service.admin_username")) {
@@ -52,18 +54,11 @@ void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFrom
 
 	// Users try to connect twice
 	if (users.find(key) != users.end()) {
-		// Kill the first session if the second password is same
-		if (Swift::safeByteArrayToString(password) == users[key].password) {
-			LOG4CXX_INFO(logger, key << ": Removing previous session and making this one active");
-			Swift::ServerFromClientSession *tmp = users[key].session;
-			users[key].session = session;
-			tmp->handlePasswordInvalid();
-		}
-		else {
-			LOG4CXX_INFO(logger, key << ": Possible break-in attemp (user logged as different one with bad password)");
-			session->handlePasswordInvalid();
-			return;
-		}
+		// Kill the first session
+		LOG4CXX_INFO(logger, key << ": Removing previous session and making this one active");
+		Swift::ServerFromClientSession *tmp = users[key].session;
+		users[key].session = session;
+		tmp->handlePasswordInvalid();
 	}
 
 	LOG4CXX_INFO(logger, key << ": Connecting this user to find if password is valid");
@@ -89,7 +84,9 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 	else {
 		LOG4CXX_WARN(logger, key << ": Stopping login process (user probably disconnected while logging in) for invalid user");
 	}
-	onDisconnectUser(user);
+
+	if (!m_inRemoveLater)
+		onDisconnectUser(user);
 }
 
 void UserRegistry::onPasswordValid(const Swift::JID &user) {
@@ -114,6 +111,17 @@ void UserRegistry::onPasswordInvalid(const Swift::JID &user) {
 	else {
 		LOG4CXX_INFO(logger, key << ": onPasswordInvalid called for invalid user");
 	}
+}
+
+void UserRegistry::handleRemoveTimeout(const Swift::JID &user) {
+	m_inRemoveLater = true;
+	onPasswordInvalid(user);
+	m_inRemoveLater = false;
+}
+
+void UserRegistry::removeLater(const Swift::JID &user) {
+	m_removeTimer->onTick.connect(boost::bind(&UserRegistry::handleRemoveTimeout, this, user));
+	m_removeTimer->start();
 }
 
 const std::string UserRegistry::getUserPassword(const std::string &barejid) {

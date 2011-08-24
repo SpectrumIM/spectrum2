@@ -60,7 +60,7 @@ class UserRegistry : public Swift::UserRegistry {
 		/// \param cfg Config file
 		/// 	- service.admin_username - username for admin account
 		/// 	- service.admin_password - password for admin account
-		UserRegistry(Config *cfg);
+		UserRegistry(Config *cfg, Swift::NetworkFactories *factories);
 
 		/// Destructor.
 		virtual ~UserRegistry();
@@ -84,6 +84,10 @@ class UserRegistry : public Swift::UserRegistry {
 		/// \param user JID.
 		void onPasswordInvalid(const Swift::JID &user);
 
+		/// Removes session later.
+		/// \param user JID.
+		void removeLater(const Swift::JID &user);
+
 		/// Returns current password for particular user
 		/// \param barejid JID.
 		const std::string getUserPassword(const std::string &barejid);
@@ -100,8 +104,12 @@ class UserRegistry : public Swift::UserRegistry {
 			Swift::ServerFromClientSession *session;
 		} Sess;
 
+		void handleRemoveTimeout(const Swift::JID &user);
+
 		mutable std::map<std::string, Sess> users;
 		mutable Config *config;
+		Swift::Timer::ref m_removeTimer;
+		bool m_inRemoveLater;
 };
 
 }

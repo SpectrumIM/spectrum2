@@ -69,7 +69,7 @@ namespace Transport {
 			/// 	- service.port
 			/// 	- service.server_mode
 			/// \param factory Transport Abstract factory used to create basic transport structures.
-			Component(Swift::EventLoop *loop, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
+			Component(Swift::EventLoop *loop, Swift::BoostNetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
 
 			/// Component destructor.
 			~Component();

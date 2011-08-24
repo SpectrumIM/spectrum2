@@ -212,28 +212,6 @@ void UserManager::handleRemoveTimeout(const std::string jid, User *u, bool recon
 	}
 
 	if (user) {
-		// Reconnect means that we're disconnecting this User instance from legacy network backend,
-		// but we're going to connect it again in this call. Currently it's used only when
-		// "service.more_resources==false".
-		if (reconnect) {
-			// Send message about reason
-			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-			msg->setBody("You have signed on from another location.");
-			msg->setTo(user->getJID().toBare());
-			msg->setFrom(m_component->getJID());
-			m_component->getStanzaChannel()->sendMessage(msg);
-
-			// finishSession generates unavailable presence which ruins the second session which is waiting
-			// to be connected later in this function, so don't handle that unavailable presence by disconnecting
-			// the signal. TODO: < This can be fixed by ServerFromClientSession.cpp rewrite...
-			m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
-			// Finish session
- 			if (m_component->inServerMode()) {
- 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user->getJID().toBare(), boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
- 			}
- 			// connect disconnected signal again
- 			m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
-		}
 		removeUser(user);
 	}
 
@@ -328,7 +306,12 @@ void UserManager::connectUser(const Swift::JID &user) {
 			return;
 		}
 
-		if (m_users[user.toBare().toString()]->isConnected()) {
+		User *u = m_users[user.toBare().toString()];
+		if (u->isConnected()) {
+			if (m_userRegistry->getUserPassword(user.toBare().toString()) != u->getUserInfo().password) {
+				m_userRegistry->removeLater(user);
+				return;
+			}
 			if (CONFIG_BOOL(m_component->getConfig(), "service.more_resources")) {
 				m_userRegistry->onPasswordValid(user);
 			}
@@ -343,6 +326,11 @@ void UserManager::connectUser(const Swift::JID &user) {
 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}
+		}
+		else {
+			m_removeTimer->onTick.disconnect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), m_users[user.toBare().toString()], false));
+			m_removeTimer->onTick.connect(boost::bind(&UserManager::handleRemoveTimeout, this, user.toBare().toString(), m_users[user.toBare().toString()], true));
+			m_removeTimer->start();
 		}
 // 		}
 // 		else {

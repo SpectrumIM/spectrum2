@@ -51,7 +51,7 @@ namespace Transport {
 static LoggerPtr logger = Logger::getLogger("Component");
 static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
 
-Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
+Component::Component(Swift::EventLoop *loop, Swift::BoostNetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
 	m_component = NULL;
 	m_userRegistry = NULL;
 	m_server = NULL;
@@ -71,7 +71,7 @@ Component::Component(Swift::EventLoop *loop, Config *config, Factory *factory, T
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
-	m_factories = new BoostNetworkFactories(loop);
+	m_factories = factories;
 
 	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(3000);
 	m_reconnectTimer->onTick.connect(bind(&Component::start, this)); 
@@ -149,7 +149,6 @@ Component::~Component() {
 		m_server->stop();
 		delete m_server;
 	}
-	delete m_factories;
 }
 
 Swift::StanzaChannel *Component::getStanzaChannel() {

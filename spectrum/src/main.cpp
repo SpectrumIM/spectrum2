@@ -74,10 +74,12 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	UserRegistry userRegistry(&config);
-
 	Swift::SimpleEventLoop eventLoop;
-	Component transport(&eventLoop, &config, NULL, &userRegistry);
+
+	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
+	UserRegistry userRegistry(&config, factories);
+
+	Component transport(&eventLoop, factories, &config, NULL, &userRegistry);
 // 	Logger logger(&transport);
 
 	StorageBackend *storageBackend = NULL;
@@ -118,4 +120,5 @@ int main(int argc, char **argv)
 		delete userRegistration;
 	}
 	delete storageBackend;
+	delete factories;
 }
