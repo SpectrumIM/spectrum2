@@ -69,7 +69,7 @@ namespace Transport {
 			/// 	- service.port
 			/// 	- service.server_mode
 			/// \param factory Transport Abstract factory used to create basic transport structures.
-			Component(Swift::EventLoop *loop, Swift::BoostNetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
+			Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
 
 			/// Component destructor.
 			~Component();
@@ -121,7 +121,7 @@ namespace Transport {
 			/// Returns Swift::NetworkFactories which can be used to create new connections.
 
 			/// \return Swift::NetworkFactories which can be used to create new connections.
-			Swift::BoostNetworkFactories *getNetworkFactories() { return m_factories; }
+			Swift::NetworkFactories *getNetworkFactories() { return m_factories; }
 
 			/// Returns Transport Factory used to create basic Transport components.
 
@@ -167,7 +167,7 @@ namespace Transport {
 // 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
-			Swift::BoostNetworkFactories *m_factories;
+			Swift::NetworkFactories *m_factories;
 			Swift::Component *m_component;
 			Swift::Server *m_server;
 			Swift::Timer::ref m_reconnectTimer;

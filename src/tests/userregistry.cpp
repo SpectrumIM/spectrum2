@@ -89,10 +89,21 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			CPPUNIT_ASSERT_EQUAL(std::string(""), userRegistry->getUserPassword("unknown@localhost"));
 		}
 
+		void bindSession(boost::shared_ptr<Swift::Connection> conn) {
+			std::vector<std::string> &received = conn == client1 ? received1 : received2;
+
+			send(conn, "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+			CPPUNIT_ASSERT(received[0].find("<?xml version=\"1.0\"?>") == 0);
+			CPPUNIT_ASSERT(received[1].find("urn:ietf:params:xml:ns:xmpp-bind") != std::string::npos);
+			CPPUNIT_ASSERT(received[1].find("urn:ietf:params:xml:ns:xmpp-session") != std::string::npos);
+			
+		}
+
 		void handleDataReceived(const Swift::SafeByteArray &data, boost::shared_ptr<Swift::Connection> conn) {
 			if (conn == client1) {
 				received1.push_back(safeByteArrayToString(data));
-// 				std::cout << received1.back() << "\n";
+				std::cout << received1.back() << "\n";
 			}
 			else {
 				received2.push_back(safeByteArrayToString(data));
@@ -116,9 +127,10 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			CPPUNIT_ASSERT_EQUAL(std::string(""), userRegistry->getUserPassword("username@localhost"));
 			CPPUNIT_ASSERT_EQUAL(1, (int) received1.size());
 			CPPUNIT_ASSERT_EQUAL(std::string("<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"></success>"), received1[0]);
+			received1.clear();
+
+			bindSession(client1);
 			
-			// TODO: resource binding
-// 			AHVzZXJuYW1lMgB0ZXN0 username2:test
 		}
 
 		void loginInvalidPassword() {

@@ -9,6 +9,12 @@
 #include "transport/admininterface.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "sys/signal.h"
+#include "log4cxx/logger.h"
+#include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
+#include "log4cxx/consoleappender.h"
+
+using namespace log4cxx;
 
 using namespace Transport;
 
@@ -72,6 +78,14 @@ int main(int argc, char **argv)
 	if (!config.load(argv[1])) {
 		std::cerr << "Can't load configuration file.\n";
 		return 1;
+	}
+
+	if (CONFIG_STRING(&config, "logging.config").empty()) {
+		LoggerPtr root = log4cxx::Logger::getRootLogger();
+		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+	}
+	else {
+		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(&config, "logging.config"));
 	}
 
 	Swift::SimpleEventLoop eventLoop;

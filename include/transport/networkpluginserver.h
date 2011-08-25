@@ -117,7 +117,7 @@ class NetworkPluginServer {
 		RosterResponder *m_rosterResponder;
 		BlockResponder *m_blockResponder;
 		Config *m_config;
-		boost::shared_ptr<Swift::BoostConnectionServer> m_server;
+		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Backend *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
 		Swift::Timer::ref m_collectTimer;

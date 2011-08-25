@@ -51,7 +51,7 @@ namespace Transport {
 static LoggerPtr logger = Logger::getLogger("Component");
 static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
 
-Component::Component(Swift::EventLoop *loop, Swift::BoostNetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
+Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
 	m_component = NULL;
 	m_userRegistry = NULL;
 	m_server = NULL;
@@ -60,14 +60,6 @@ Component::Component(Swift::EventLoop *loop, Swift::BoostNetworkFactories *facto
 	m_factory = factory;
 	m_loop = loop;
 	m_userRegistry = userRegistry;
-
-	if (CONFIG_STRING(m_config, "logging.config").empty()) {
-		LoggerPtr root = Logger::getRootLogger();
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-	}
-	else {
-		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(m_config, "logging.config"));
-	}
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
