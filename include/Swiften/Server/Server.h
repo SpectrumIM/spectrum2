@@ -52,6 +52,10 @@ namespace Swift {
 				return iqRouter_;
 			}
 
+			boost::shared_ptr<ConnectionServer> getConnectionServer() const {
+				return serverFromClientConnectionServer;
+			}
+
 			boost::signal<void (const SafeByteArray&)> onDataRead;
 			boost::signal<void (const SafeByteArray&)> onDataWritten;
 

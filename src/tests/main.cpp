@@ -5,9 +5,19 @@
 #include <cppunit/TestResultCollector.h>
 #include <cppunit/TestRunner.h>
 #include <cppunit/BriefTestProgressListener.h>
+#include "log4cxx/logger.h"
+#include "log4cxx/fileappender.h"
+#include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
+
+using namespace log4cxx;
+
 
 int main (int argc, char* argv[])
 {
+	LoggerPtr root = Logger::getRootLogger();
+	root->addAppender(new FileAppender(new PatternLayout("%d %-5p %c: %m%n"), "libtransport_test.log", false));
+
 	// informs test-listener about testresults
 	CPPUNIT_NS :: TestResult testresult;
 

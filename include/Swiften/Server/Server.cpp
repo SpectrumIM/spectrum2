@@ -79,9 +79,9 @@ void Server::stop() {
 
 	stopping = true;
 
-	foreach(boost::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
-		session->finishSession();
-	}
+// 	foreach(boost::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
+// 		session->finishSession();
+// 	}
 	serverFromClientSessions.clear();
 
 	if (serverFromClientConnectionServer) {
@@ -141,7 +141,6 @@ void Server::handleSessionFinished(boost::shared_ptr<ServerFromClientSession> se
 // 		dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->onPresenceReceived(presence);
 // 	}
 	serverFromClientSessions.erase(std::remove(serverFromClientSessions.begin(), serverFromClientSessions.end(), session), serverFromClientSessions.end());
-	std::cout << "FINISH SESSION2 " << serverFromClientSessions.size() << "\n";
 	session->onSessionStarted.disconnect(
 			boost::bind(&Server::handleSessionStarted, this, session));
 	session->onSessionFinished.disconnect(
