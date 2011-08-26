@@ -63,6 +63,8 @@ RosterManager::~RosterManager() {
 		delete buddy;
 	}
 
+	boost::singleton_pool<boost::pool_allocator_tag, sizeof(unsigned int)>::release_memory();
+
 	if (m_rosterStorage)
 		delete m_rosterStorage;
 }

@@ -23,6 +23,8 @@
 #include <string>
 #include <algorithm>
 #include <map>
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/pool/object_pool.hpp>
 #include "Swiften/Swiften.h"
 // #include "rosterstorage.h"
 
@@ -100,7 +102,7 @@ class RosterManager {
 		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key);
 
-		std::map<std::string, Buddy *> m_buddies;
+		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > m_buddies;
 		Component *m_component;
 		RosterStorage *m_rosterStorage;
 		User *m_user;
