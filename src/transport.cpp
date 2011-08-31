@@ -73,6 +73,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
+			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
 			m_server->addTLSEncryption(f, PKCS12Certificate(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
 		}

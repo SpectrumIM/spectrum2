@@ -30,14 +30,14 @@ static void freeX509Stack(STACK_OF(X509)* stack) {
 	sk_X509_free(stack);
 }
 
-static int _sx_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
-	return 1;
-}
+// static int _sx_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
+// 	return 1;
+// }
 
 OpenSSLServerContext::OpenSSLServerContext() : state_(Start), context_(0), handle_(0), readBIO_(0), writeBIO_(0) {
 	ensureLibraryInitialized();
 	context_ = SSL_CTX_new(SSLv23_server_method());
-	SSL_CTX_set_verify(context_, SSL_VERIFY_PEER, _sx_ssl_verify_callback);
+// 	SSL_CTX_set_verify(context_, SSL_VERIFY_PEER, _sx_ssl_verify_callback);
 
 	// Load system certs
 #if defined(SWIFTEN_PLATFORM_WINDOWS)
