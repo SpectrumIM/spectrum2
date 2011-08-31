@@ -100,7 +100,7 @@ class RosterManager {
 		void setBuddyCallback(Buddy *buddy);
 
 		void sendRIE();
-		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key);
+		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key);
 
 		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > m_buddies;
 		Component *m_component;
@@ -108,6 +108,7 @@ class RosterManager {
 		User *m_user;
 		Swift::Timer::ref m_setBuddyTimer;
 		Swift::Timer::ref m_RIETimer;
+		std::list <Swift::SetRosterRequest::ref> m_requests;
 };
 
 }

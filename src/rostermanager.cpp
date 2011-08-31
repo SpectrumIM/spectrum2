@@ -30,6 +30,7 @@
 #include "Swiften/Elements/RosterItemPayload.h"
 #include "Swiften/Elements/RosterItemExchangePayload.h"
 #include "log4cxx/logger.h"
+#include <boost/foreach.hpp>
 
 using namespace log4cxx;
 
@@ -63,6 +64,11 @@ RosterManager::~RosterManager() {
 		delete buddy;
 	}
 
+	BOOST_FOREACH(Swift::SetRosterRequest::ref request, m_requests) {
+		request->onResponse.disconnect_all_slots();
+	}
+	m_requests.clear();
+
 	boost::singleton_pool<boost::pool_allocator_tag, sizeof(unsigned int)>::release_memory();
 
 	if (m_rosterStorage)
@@ -89,8 +95,9 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	payload->addItem(item);
 
 	Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_user->getJID().toBare(), m_component->getIQRouter());
-	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, buddy->getName()));
+	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, request, buddy->getName()));
 	request->send();
+	m_requests.push_back(request);
 }
 
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
@@ -152,10 +159,13 @@ void RosterManager::storeBuddy(Buddy *buddy) {
 	}
 }
 
-void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, const std::string &key) {
+void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key) {
 	if (m_buddies[key] != NULL) {
 		m_buddies[key]->handleBuddyChanged();
 	}
+
+	m_requests.remove(request);
+	request->onResponse.disconnect_all_slots();
 }
 
 Buddy *RosterManager::getBuddy(const std::string &name) {
