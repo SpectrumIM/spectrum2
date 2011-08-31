@@ -36,7 +36,7 @@ static int _sx_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
 
 OpenSSLServerContext::OpenSSLServerContext() : state_(Start), context_(0), handle_(0), readBIO_(0), writeBIO_(0) {
 	ensureLibraryInitialized();
-	context_ = SSL_CTX_new(TLSv1_server_method());
+	context_ = SSL_CTX_new(SSLv23_server_method());
 	SSL_CTX_set_verify(context_, SSL_VERIFY_PEER, _sx_ssl_verify_callback);
 
 	// Load system certs
