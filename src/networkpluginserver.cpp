@@ -287,8 +287,10 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
 
-// 	c->connection->onDisconnected.disconnect_all_slots();
-// 	c->connection->onDataRead.disconnect_all_slots();
+	c->connection->onDisconnected.disconnect_all_slots();
+	c->connection->onDataRead.disconnect_all_slots();
+	c->connection->disconnect();
+	c->connection.reset();
 
 	m_clients.remove(c);
 	delete c;
@@ -656,7 +658,9 @@ void NetworkPluginServer::pingTimeout() {
 	}
 	
 
+
 	// check ping responses
+	std::vector<Backend *> toRemove;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		// pong has been received OR backend just connected and did not have time to answer the ping
 		// request.
@@ -665,21 +669,19 @@ void NetworkPluginServer::pingTimeout() {
 		}
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
-			if ((*it)->connection) {
-				(*it)->connection->disconnect();
-				(*it)->connection.reset();
-			}
-// 			handleSessionFinished((*it));
+			toRemove.push_back(*it);
 		}
 
 		if ((*it)->users.size() == 0) {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". There are no users.");
-			if ((*it)->connection) {
-				(*it)->connection->disconnect();
-				(*it)->connection.reset();
-			}
+			toRemove.push_back(*it);
 		}
 	}
+
+	BOOST_FOREACH(Backend *b, toRemove) {
+		handleSessionFinished(b);
+	}
+
 	m_pingTimer->start();
 }
 
@@ -892,10 +894,8 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	c->users.remove(user);
 	if (c->users.size() == 0) {
 		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
-		c->connection->disconnect();
-		c->connection.reset();
-		
-// 		handleSessionFinished(c);
+
+		handleSessionFinished(c);
 // 		m_clients.erase(user->connection);
 	}
 }
