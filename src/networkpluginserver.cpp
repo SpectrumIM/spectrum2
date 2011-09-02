@@ -892,12 +892,12 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	}
 	send(c->connection, message);
 	c->users.remove(user);
-	if (c->users.size() == 0) {
-		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
+// 	if (c->users.size() == 0) {
+// 		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
 
-		handleSessionFinished(c);
+// 		handleSessionFinished(c);
 // 		m_clients.erase(user->connection);
-	}
+// 	}
 }
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {

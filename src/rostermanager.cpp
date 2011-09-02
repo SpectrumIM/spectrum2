@@ -64,6 +64,7 @@ RosterManager::~RosterManager() {
 		delete buddy;
 	}
 
+	LOG4CXX_INFO(logger, "Removing " << m_requests.size() << " unresponded IQs");
 	BOOST_FOREACH(Swift::SetRosterRequest::ref request, m_requests) {
 		request->onResponse.disconnect_all_slots();
 	}
