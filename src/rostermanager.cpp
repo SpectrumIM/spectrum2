@@ -64,11 +64,14 @@ RosterManager::~RosterManager() {
 		delete buddy;
 	}
 
-	LOG4CXX_INFO(logger, "Removing " << m_requests.size() << " unresponded IQs");
-	BOOST_FOREACH(Swift::SetRosterRequest::ref request, m_requests) {
-		request->onResponse.disconnect_all_slots();
+	if (m_requests.size() != 0) {
+		LOG4CXX_INFO(logger, m_user->getJID().toString() <<  ": Removing " << m_requests.size() << " unresponded IQs");
+		BOOST_FOREACH(Swift::SetRosterRequest::ref request, m_requests) {
+			request->onResponse.disconnect_all_slots();
+			m_component->getIQRouter()->removeHandler(request);
+		}
+		m_requests.clear();
 	}
-	m_requests.clear();
 
 	boost::singleton_pool<boost::pool_allocator_tag, sizeof(unsigned int)>::release_memory();
 
