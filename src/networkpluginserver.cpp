@@ -39,10 +39,15 @@
 #include "Swiften/Elements/XHTMLIMPayload.h"
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "pbnetwork.pb.h"
+#include "log4cxx/logger.h"
+
+#ifdef _WIN32
+#include "windows.h"
+#else
 #include "sys/wait.h"
 #include "sys/signal.h"
-#include "log4cxx/logger.h"
 #include "popt.h"
+#endif
 
 using namespace log4cxx;
 
@@ -102,7 +107,8 @@ class NetworkFactory : public Factory {
 	wrap.SerializeToString(&MESSAGE);
 
 // Executes new backend
-static pid_t exec_(std::string path, const char *host, const char *port, const char *config) {
+static unsigned long exec_(std::string path, const char *host, const char *port, const char *config) {
+	std::string original_path = path;
 	// BACKEND_ID is replaced with unique ID. The ID is increasing for every backend.
 	boost::replace_all(path, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));
 
@@ -110,6 +116,31 @@ static pid_t exec_(std::string path, const char *host, const char *port, const c
 	path += std::string(" --host ") + host + " --port " + port + " " + config;
 	LOG4CXX_INFO(logger, "Starting new backend " << path);
 
+#ifdef _WIN32
+	STARTUPINFO         si;
+	PROCESS_INFORMATION pi;
+
+	ZeroMemory (&si, sizeof(si));
+	si.cb=sizeof (si);
+
+	if (! CreateProcess(
+	original_path.c_str(),
+	path.c_str(),         // command line
+	0,                    // process attributes
+	0,                    // thread attributes
+	0,                    // inherit handles
+	0,                    // creation flags
+	0,                    // environment
+	0,                    // cwd
+	&si,
+	&pi
+	)
+	)  {
+		LOG4CXX_ERROR(logger, "Could not start process");
+	}
+
+	return 0;
+#else
 	// Create array of char * from string using -lpopt library
 	char *p = (char *) malloc(path.size() + 1);
 	strcpy(p, path.c_str());
@@ -127,9 +158,11 @@ static pid_t exec_(std::string path, const char *host, const char *port, const c
 	}
 	free(p);
 
-	return pid;
+	return (unsigned long) pid;
+#endif
 }
 
+#ifndef _WIN32
 static void SigCatcher(int n) {
 	pid_t result;
 	int status;
@@ -148,6 +181,7 @@ static void SigCatcher(int n) {
 		}
 	}
 }
+#endif
 
 static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payload) {
 	buddy->setName(payload.buddyname());
@@ -208,7 +242,9 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
+#ifndef _WIN32
 	signal(SIGCHLD, SigCatcher);
+#endif
 
 	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 }
