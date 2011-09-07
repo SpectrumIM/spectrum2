@@ -107,6 +107,7 @@ int main(int argc, char **argv)
 
 	StorageBackend *storageBackend = NULL;
 
+#ifdef WITH_SQLITE
 	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
 		storageBackend = new SQLite3Backend(&config);
 		if (!storageBackend->connect()) {
@@ -114,15 +115,17 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	}
-/*
-	else if (CONFIG_STRING(&config, "database.type") == "mysql") {
+#endif
+#ifdef WITH_MYSQL
+	if (CONFIG_STRING(&config, "database.type") == "mysql") {
 		storageBackend = new MySQLBackend(&config);
 		if (!storageBackend->connect()) {
 			std::cerr << "Can't connect to database.\n";
 			return -1;
 		}
 	}
-*/
+#endif
+
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	UserRegistration *userRegistration = NULL;
 	if (storageBackend) {

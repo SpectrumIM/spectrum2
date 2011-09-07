@@ -20,6 +20,8 @@
 
 #pragma once
 
+#ifdef WITH_MYSQL
+
 #include <string>
 #include <map>
 #include "Swiften/Swiften.h"
@@ -147,3 +149,5 @@ class MySQLBackend : public StorageBackend
 };
 
 }
+
+#endif

@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
+#ifdef WITH_MYSQL
+
 #include "transport/mysqlbackend.h"
 #include <boost/bind.hpp>
 #include "log4cxx/logger.h"
@@ -468,3 +470,5 @@ void MySQLBackend::commitTransaction() {
 }
 
 }
+
+#endif

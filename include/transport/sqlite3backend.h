@@ -20,6 +20,8 @@
 
 #pragma once
 
+#ifdef WITH_SQLITE
+
 #include <string>
 #include <map>
 #include "Swiften/Swiften.h"
@@ -115,3 +117,5 @@ class SQLite3Backend : public StorageBackend
 };
 
 }
+
+#endif
