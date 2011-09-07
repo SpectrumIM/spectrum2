@@ -60,7 +60,9 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 	connect();
 
 	double shared;
+#ifndef WIN32
 	process_mem_usage(shared, m_init_res);
+#endif
 }
 
 NetworkPlugin::~NetworkPlugin() {
@@ -509,7 +511,9 @@ void NetworkPlugin::sendMemoryUsage() {
 	stats.set_init_res(m_init_res);
 	double res;
 	double shared;
+#ifndef WIN32
 	process_mem_usage(shared, res);
+#endif
 	stats.set_res(res);
 	stats.set_shared(shared);
 

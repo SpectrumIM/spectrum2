@@ -87,7 +87,7 @@ class Buddy {
 		}
 
 		bool isBlocked() {
-			return m_flags & BUDDY_BLOCKED;
+			return (m_flags & BUDDY_BLOCKED)  != 0;
 		}
 
 		/// Sets current subscription.

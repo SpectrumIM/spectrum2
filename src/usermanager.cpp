@@ -99,7 +99,9 @@ void UserManager::removeUser(User *user) {
 
 	onUserDestroyed(user);
 	delete user;
+#ifndef WIN32
 	malloc_trim(0);
+#endif
 // 	VALGRIND_DO_LEAK_CHECK;
 }
 

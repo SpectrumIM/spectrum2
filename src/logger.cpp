@@ -33,33 +33,33 @@ using namespace boost;
 namespace Transport {
 
 Logger::Logger(Component *component) {
-	component->onConnected.connect(bind(&Logger::handleConnected, this));
-	component->onConnectionError.connect(bind(&Logger::handleConnectionError, this, _1));
-	component->onXMLIn.connect(bind(&Logger::handleXMLIn, this, _1));
-	component->onXMLOut.connect(bind(&Logger::handleXMLOut, this, _1));
+	component->onConnected.connect(boost::bind(&Logger::handleConnected, this));
+	component->onConnectionError.connect(boost::bind(&Logger::handleConnectionError, this, _1));
+	component->onXMLIn.connect(boost::bind(&Logger::handleXMLIn, this, _1));
+	component->onXMLOut.connect(boost::bind(&Logger::handleXMLOut, this, _1));
 }
 
 Logger::~Logger(){
 }
 
 void Logger::setStorageBackend(StorageBackend *storage) {
-	storage->onStorageError.connect(bind(&Logger::handleStorageError, this, _1, _2));
+	storage->onStorageError.connect(boost::bind(&Logger::handleStorageError, this, _1, _2));
 }
 
 void Logger::setUserRegistration(UserRegistration *userRegistration) {
-	userRegistration->onUserRegistered.connect(bind(&Logger::handleUserRegistered, this, _1));
-	userRegistration->onUserUnregistered.connect(bind(&Logger::handleUserUnregistered, this, _1));
-	userRegistration->onUserUpdated.connect(bind(&Logger::handleUserUpdated, this, _1));
+	userRegistration->onUserRegistered.connect(boost::bind(&Logger::handleUserRegistered, this, _1));
+	userRegistration->onUserUnregistered.connect(boost::bind(&Logger::handleUserUnregistered, this, _1));
+	userRegistration->onUserUpdated.connect(boost::bind(&Logger::handleUserUpdated, this, _1));
 }
 
 void Logger::setUserManager(UserManager *userManager) {
-	userManager->onUserCreated.connect(bind(&Logger::handleUserCreated, this, _1));
-	userManager->onUserDestroyed.connect(bind(&Logger::handleUserDestroyed, this, _1));
+	userManager->onUserCreated.connect(boost::bind(&Logger::handleUserCreated, this, _1));
+	userManager->onUserDestroyed.connect(boost::bind(&Logger::handleUserDestroyed, this, _1));
 }
 
 void Logger::setRosterManager(RosterManager *rosterManager) {
-	rosterManager->onBuddySet.connect(bind(&Logger::handleBuddySet, this, _1));
-	rosterManager->onBuddyUnset.connect(bind(&Logger::handleBuddyUnset, this, _1));
+	rosterManager->onBuddySet.connect(boost::bind(&Logger::handleBuddySet, this, _1));
+	rosterManager->onBuddyUnset.connect(boost::bind(&Logger::handleBuddyUnset, this, _1));
 }
 
 void Logger::handleConnected() {

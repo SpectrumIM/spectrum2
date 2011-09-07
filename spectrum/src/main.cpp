@@ -3,12 +3,17 @@
 #include "transport/usermanager.h"
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
-#include "transport/mysqlbackend.h"
+//#include "transport/mysqlbackend.h"
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
+#ifndef WIN32
 #include "sys/signal.h"
+#else
+#include <Windows.h>
+#include <tchar.h>
+#endif
 #include "log4cxx/logger.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
@@ -31,7 +36,7 @@ static void spectrum_sigterm_handler(int sig) {
 int main(int argc, char **argv)
 {
 	Config config;
-
+#ifndef WIN32
 	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
 		std::cout << "SIGINT handler can't be set\n";
 		return -1;
@@ -41,7 +46,7 @@ int main(int argc, char **argv)
 		std::cout << "SIGTERM handler can't be set\n";
 		return -1;
 	}
-
+#endif
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
 		("help,h", "help")
@@ -82,7 +87,11 @@ int main(int argc, char **argv)
 
 	if (CONFIG_STRING(&config, "logging.config").empty()) {
 		LoggerPtr root = log4cxx::Logger::getRootLogger();
+#ifdef WIN32
+		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
+#else
 		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+#endif
 	}
 	else {
 		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(&config, "logging.config"));
@@ -105,6 +114,7 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	}
+/*
 	else if (CONFIG_STRING(&config, "database.type") == "mysql") {
 		storageBackend = new MySQLBackend(&config);
 		if (!storageBackend->connect()) {
@@ -112,7 +122,7 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	}
-
+*/
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	UserRegistration *userRegistration = NULL;
 	if (storageBackend) {

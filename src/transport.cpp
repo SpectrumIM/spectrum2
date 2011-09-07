@@ -95,17 +95,17 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadSerializer(new Swift::BlockSerializer());
 		m_server->addPayloadSerializer(new Swift::InvisibleSerializer());
 
-		m_server->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
-		m_server->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
+		m_server->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
+		m_server->onDataWritten.connect(boost::bind(&Component::handleDataWritten, this, _1));
 	}
 	else {
 		LOG4CXX_INFO(logger, "Creating component in gateway mode");
 		m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
 		m_component->setSoftwareVersion("", "");
 		m_component->onConnected.connect(bind(&Component::handleConnected, this));
-		m_component->onError.connect(bind(&Component::handleConnectionError, this, _1));
-		m_component->onDataRead.connect(bind(&Component::handleDataRead, this, _1));
-		m_component->onDataWritten.connect(bind(&Component::handleDataWritten, this, _1));
+		m_component->onError.connect(boost::bind(&Component::handleConnectionError, this, _1));
+		m_component->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
+		m_component->onDataWritten.connect(boost::bind(&Component::handleDataWritten, this, _1));
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
 	}

@@ -124,8 +124,8 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	si.cb=sizeof (si);
 
 	if (! CreateProcess(
-	original_path.c_str(),
-	path.c_str(),         // command line
+	NULL,
+	(LPSTR)path.c_str(),         // command line
 	0,                    // process attributes
 	0,                    // thread attributes
 	0,                    // inherit handles
@@ -1078,7 +1078,7 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 	buddy.set_alias(b->getAlias());
 	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
 	buddy.set_status(Swift::StatusShow::None);
-	buddy.set_blocked(not b->isBlocked());
+	buddy.set_blocked(!b->isBlocked());
 
 	std::string message;
 	buddy.SerializeToString(&message);

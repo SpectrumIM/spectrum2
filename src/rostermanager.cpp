@@ -32,6 +32,9 @@
 #include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
 
+#include <map>
+#include <iterator>
+
 using namespace log4cxx;
 
 namespace Transport {
@@ -56,7 +59,7 @@ RosterManager::~RosterManager() {
 
 	sendUnavailablePresences(m_user->getJID().toBare());
 
-	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -184,7 +187,7 @@ void RosterManager::sendRIE() {
 
 	// fallback to normal subscribe
 	if (!jidWithRIE.isValid()) {
-		for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 			Buddy *buddy = (*it).second;
 			if (!buddy) {
 				continue;
@@ -197,7 +200,7 @@ void RosterManager::sendRIE() {
 	LOG4CXX_INFO(logger, "Sending RIE stanza to " << jidWithRIE.toString());
 
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
-	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -375,7 +378,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 
-	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -391,7 +394,7 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 }
 
 void RosterManager::sendCurrentPresences(const Swift::JID &to) {
-	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -423,7 +426,7 @@ void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID
 }
 
 void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
-	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;

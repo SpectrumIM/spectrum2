@@ -25,7 +25,9 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#ifndef WIN32
 #include <sys/param.h>
+#endif
 #ifdef BSD
 #include <sys/types.h>
 #include <sys/sysctl.h>

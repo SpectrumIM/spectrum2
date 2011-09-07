@@ -25,7 +25,7 @@
 #include "Swiften/Swiften.h"
 #include "transport/storagebackend.h"
 #include "transport/config.h"
-#include <sqlite3.h>
+#include "sqlite3.h"
 
 namespace Transport {
 

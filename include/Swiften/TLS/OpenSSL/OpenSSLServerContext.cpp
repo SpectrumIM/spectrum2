@@ -18,9 +18,9 @@
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLCertificate.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
-
+#ifndef _MSC_VER
 #pragma GCC diagnostic ignored "-Wold-style-cast"
-
+#endif
 namespace Swift {
 
 static const int MAX_FINISHED_SIZE = 4096;
@@ -50,7 +50,7 @@ OpenSSLServerContext::OpenSSLServerContext() : state_(Start), context_(0), handl
 			if (!certContext) {
 				break;
 			}
-			ByteArray certData(certContext->pbCertEncoded, certContext->cbCertEncoded);
+			ByteArray certData(createByteArray(certContext->pbCertEncoded, certContext->cbCertEncoded));
 			OpenSSLCertificate cert(certData);
 			if (store && cert.getInternalX509()) {
 				X509_STORE_add_cert(store, cert.getInternalX509().get());

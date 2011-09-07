@@ -225,7 +225,7 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 		user.password = (const char *) sqlite3_column_text(m_getUser, 3);
 		user.encoding = (const char *) sqlite3_column_text(m_getUser, 4);
 		user.language = (const char *) sqlite3_column_text(m_getUser, 5);
-		user.vip = sqlite3_column_int(m_getUser, 6);
+		user.vip = sqlite3_column_int(m_getUser, 6) != 0;
 		return true;
 	}
 
