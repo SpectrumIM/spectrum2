@@ -3,7 +3,7 @@
 #include "transport/usermanager.h"
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
-//#include "transport/mysqlbackend.h"
+#include "transport/mysqlbackend.h"
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
