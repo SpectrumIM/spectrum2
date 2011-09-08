@@ -34,6 +34,12 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 	bool ret = load(ifs, opts);
 	ifs.close();
 
+	char path[PATH_MAX] = "";
+	if (m_file.find_first_of("/") != 0) {
+		getcwd(path, PATH_MAX);
+		m_file = std::string(path) + "/" + m_file;
+	}
+
 	return ret;
 }
 

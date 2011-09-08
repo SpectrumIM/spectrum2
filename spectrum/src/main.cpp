@@ -33,9 +33,74 @@ static void spectrum_sigterm_handler(int sig) {
 	eventLoop_->stop();
 }
 
+#ifndef WIN32
+static void daemonize(const char *cwd, const char *lock_file) {
+	pid_t pid, sid;
+	FILE* lock_file_f;
+	char process_pid[20];
+
+	/* already a daemon */
+	if ( getppid() == 1 ) return;
+
+	/* Fork off the parent process */
+	pid = fork();
+	if (pid < 0) {
+		exit(1);
+	}
+	/* If we got a good PID, then we can exit the parent process. */
+	if (pid > 0) {
+		exit(0);
+	}
+
+	/* At this point we are executing as the child process */
+
+	/* Change the file mode mask */
+	umask(0);
+
+	/* Create a new SID for the child process */
+	sid = setsid();
+	if (sid < 0) {
+		exit(1);
+	}
+
+	/* Change the current working directory.  This prevents the current
+		directory from being locked; hence not being able to remove it. */
+	if ((chdir(cwd)) < 0) {
+		exit(1);
+	}
+
+	if (lock_file) {
+		/* write our pid into it & close the file. */
+		lock_file_f = fopen(lock_file, "w+");
+		if (lock_file_f == NULL) {
+			std::cout << "EE cannot create lock file " << lock_file << ". Exiting\n";
+			exit(1);
+		}
+		sprintf(process_pid,"%d\n",getpid());
+		if (fwrite(process_pid,1,strlen(process_pid),lock_file_f) < strlen(process_pid)) {
+			std::cout << "EE cannot write to lock file " << lock_file << ". Exiting\n";
+			exit(1);
+		}
+		fclose(lock_file_f);
+	}
+	
+	if (freopen( "/dev/null", "r", stdin) == NULL) {
+		std::cout << "EE cannot open /dev/null. Exiting\n";
+		exit(1);
+	}
+}
+
+#endif
+
 int main(int argc, char **argv)
 {
 	Config config;
+
+	boost::program_options::variables_map vm;
+	bool no_daemon = false;
+	std::string config_file;
+	
+
 #ifndef WIN32
 	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
 		std::cout << "SIGINT handler can't be set\n";
@@ -51,16 +116,31 @@ int main(int argc, char **argv)
 	desc.add_options()
 		("help,h", "help")
 		("no-daemonize,n", "Do not run spectrum as daemon")
+		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
 		;
 	try
 	{
-		boost::program_options::variables_map vm;
-		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+		boost::program_options::positional_options_description p;
+		p.add("config", -1);
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+          options(desc).positional(p).run(), vm);
 		boost::program_options::notify(vm);
+
+		
+
 		if(vm.count("help"))
 		{
 			std::cout << desc << "\n";
 			return 1;
+		}
+
+		if(vm.count("config") == 0) {
+			std::cout << desc << "\n";
+			return 1;
+		}
+
+		if(vm.count("no-daemonize")) {
+			no_daemon = true;
 		}
 	}
 	catch (std::runtime_error& e)
@@ -74,16 +154,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (argc != 2) {
-		std::cout << desc << "\n";
-		return 1;
-	}
-
-
-	if (!config.load(argv[1])) {
+	if (!config.load(vm["config"].as<std::string>())) {
 		std::cerr << "Can't load configuration file.\n";
 		return 1;
 	}
+
+#ifndef WIN32
+	if (!no_daemon) {
+		daemonize("/", NULL);
+	}
+#endif
 
 	if (CONFIG_STRING(&config, "logging.config").empty()) {
 		LoggerPtr root = log4cxx::Logger::getRootLogger();
