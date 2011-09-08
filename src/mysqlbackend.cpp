@@ -269,9 +269,9 @@ MySQLBackend::~MySQLBackend(){
 	delete m_removeUserSettings;
 	delete m_removeUserBuddiesSettings;
 	delete m_addBuddy;
-	FINALIZE_STMT(m_updateBuddy);
-	FINALIZE_STMT(m_getBuddies);
-	FINALIZE_STMT(m_getBuddiesSettings);
+	delete m_updateBuddy;
+	delete m_getBuddies;
+	delete m_getBuddiesSettings;
 	FINALIZE_STMT(m_getUserSetting);
 	FINALIZE_STMT(m_setUserSetting);
 	FINALIZE_STMT(m_updateUserSetting);
@@ -305,9 +305,9 @@ bool MySQLBackend::connect() {
 	m_removeUserBuddiesSettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
 
 	m_addBuddy = new Statement(&m_conn, "issssi", "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
-	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
-	PREP_STMT(m_getBuddies, "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
-	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
+	m_updateBuddy = new Statement(&m_conn, "ssisis", "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
+	m_getBuddies = new Statement(&m_conn, "i|issssi", "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
+	m_getBuddiesSettings = new Statement(&m_conn, "i|iiss", "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	m_updateBuddySetting = new Statement(&m_conn, "iisiss", "INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value=?");
 	
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
@@ -397,7 +397,6 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 	while (m_getUser->fetch() == 0) {
 		ret = true;
 		*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
-		std::cout << user.id << " " << user.jid << " " <<  user.uin << " " <<  user.password << " " <<  user.encoding << " " <<  user.language << " " <<  user.vip << "\n";
 	}
 
 	return ret;
@@ -418,17 +417,89 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	long id = (long) mysql_insert_id(&m_conn);
 
 // 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
-	*m_updateBuddySetting << userId << id << buddyInfo.settings.find("icon_hash")->first << (int) TYPE_STRING << buddyInfo.settings.find("icon_hash")->second.s;
-	m_updateBuddySetting->execute();
+	if (!buddyInfo.settings.find("icon_hash")->second.s.empty()) {
+		*m_updateBuddySetting << userId << id << buddyInfo.settings.find("icon_hash")->first << (int) TYPE_STRING << buddyInfo.settings.find("icon_hash")->second.s << buddyInfo.settings.find("icon_hash")->second.s;
+		m_updateBuddySetting->execute();
+	}
 
 	return id;
 }
 
 void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
+// 	"UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?"
+	*m_updateBuddy << (buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]);
+	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
+	*m_updateBuddy << userId << buddyInfo.legacyName;
+
+	m_updateBuddy->execute();
 }
 
 bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
+//	SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC
+	*m_getBuddies << id;
 
+// 	"SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC"
+	*m_getBuddiesSettings << id;
+
+	SettingVariableInfo var;
+	long buddy_id = -1;
+	std::string key;
+
+	if (!m_getBuddies->execute())
+		return false;
+
+	while (m_getBuddies->fetch() == 0) {
+		BuddyInfo b;
+
+		std::string group;
+		*m_getBuddies >> b.id >> b.legacyName >> b.subscription >> b.alias >> group >> b.flags;
+
+		if (!group.empty())
+			b.groups.push_back(group);
+
+		roster.push_back(b);
+	}
+
+	if (!m_getBuddiesSettings->execute())
+		return false;
+
+	BOOST_FOREACH(BuddyInfo &b, roster) {
+		if (buddy_id == b.id) {
+			std::cout << "Adding buddy info setting " << key << "\n";
+			b.settings[key] = var;
+			buddy_id = -1;
+		}
+
+		while(buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
+			std::string val;
+			*m_getBuddiesSettings >> buddy_id >> var.type >> key >> val;
+
+			switch (var.type) {
+				case TYPE_BOOLEAN:
+					var.b = atoi(val.c_str());
+					break;
+				case TYPE_STRING:
+					var.s = val;
+					break;
+				default:
+					if (buddy_id == b.id) {
+						buddy_id = -1;
+					}
+					continue;
+					break;
+			}
+			if (buddy_id == b.id) {
+				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
+				b.settings[key] = var;
+				buddy_id = -1;
+			}
+		}
+	}
+
+	while(m_getBuddiesSettings->fetch() == 0) {
+		
+	}
+	
 	return true;
 }
 

@@ -142,10 +142,10 @@ class MySQLBackend : public StorageBackend
 		Statement *m_removeUserSettings;
 		Statement *m_removeUserBuddiesSettings;
 		Statement *m_addBuddy;
-		MYSQL_STMT *m_updateBuddy;
+		Statement *m_updateBuddy;
 		Statement *m_updateBuddySetting;
-		MYSQL_STMT *m_getBuddies;
-		MYSQL_STMT *m_getBuddiesSettings;
+		Statement *m_getBuddies;
+		Statement *m_getBuddiesSettings;
 };
 
 }
