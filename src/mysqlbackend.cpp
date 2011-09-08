@@ -209,7 +209,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 	int *data = (int *) m_params[m_offset].buffer;
 	*data = (int) t;
 
-	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << (int) t);
+// 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << (int) t);
 	m_offset++;
 	return *this;
 }
@@ -217,7 +217,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 MySQLBackend::Statement& MySQLBackend::Statement::operator << (const std::string& str) {
 	if (m_offset >= m_params.size())
 		return *this;
-	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << str << "(" << str.size() << ")");
+// 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << str << "(" << str.size() << ")");
 	strncpy((char*) m_params[m_offset].buffer, str.c_str(), 4096);
 	*m_params[m_offset].length = str.size();
 	m_offset++;
@@ -232,7 +232,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator >> (T& t) {
 	if (!m_results[m_resultOffset].is_null) {
 		T *data = (T *) m_results[m_resultOffset].buffer;
 		t = *data;
-		std::cout << "getting " << m_resultOffset << " " << (int) t << "\n";
+// 		std::cout << "getting " << m_resultOffset << " " << (int) t << "\n";
 	}
 
 	if (++m_resultOffset == m_results.size())
@@ -241,7 +241,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator >> (T& t) {
 }
 
 MySQLBackend::Statement& MySQLBackend::Statement::operator >> (std::string& t) {
-	std::cout << "getting " << m_resultOffset << "\n";
+// 	std::cout << "getting " << m_resultOffset << "\n";
 	if (m_resultOffset > m_results.size())
 		return *this;
 

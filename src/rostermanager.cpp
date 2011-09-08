@@ -41,6 +41,16 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("RosterManager");
 
+// TODO: Once Swiften GetRosterRequest will support setting to="", this can be removed
+class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload> {
+	public:
+		typedef boost::shared_ptr<AddressedRosterRequest> ref;
+
+		AddressedRosterRequest(Swift::IQRouter* router, Swift::JID to) :
+				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
+		}
+};
+
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
 	m_user = user;
@@ -48,6 +58,14 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_setBuddyTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
 	m_RIETimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
+
+	m_supportRemoteRoster = false;
+
+	if (!m_component->inServerMode()) {
+		AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), m_user->getJID().toBare()));
+		request->onResponse.connect(boost::bind(&RosterManager::handleRemoteRosterResponse, this, _1, _2));
+		request->send();
+	}
 }
 
 RosterManager::~RosterManager() {
@@ -89,7 +107,9 @@ void RosterManager::setBuddy(Buddy *buddy) {
 }
 
 void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
-	if (!m_user->isConnected())
+	// user can't receive anything in server mode if he's not logged in.
+	// He will ask for roster later (handled in rosterreponsder.cpp)
+	if (m_component->inServerMode() && !m_user->isConnected())
 		return;
 
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
@@ -138,13 +158,18 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		if (m_setBuddyTimer->onTick.empty()) {
 			m_setBuddyTimer->stop();
 
-			// Send RIE only if there's resource which supports it.
-			Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
-			if (jidWithRIE.isValid()) {
-				m_RIETimer->start();
+			if (m_supportRemoteRoster) {
+				sendBuddyRosterPush(buddy);
 			}
 			else {
-				sendBuddySubscribePresence(buddy);
+				// Send RIE only if there's resource which supports it.
+				Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
+				if (jidWithRIE.isValid()) {
+					m_RIETimer->start();
+				}
+				else {
+					sendBuddySubscribePresence(buddy);
+				}
 			}
 		}
 	}
@@ -173,6 +198,34 @@ void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error
 
 	m_requests.remove(request);
 	request->onResponse.disconnect_all_slots();
+}
+
+void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
+	if (error) {
+		m_supportRemoteRoster = false;
+		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server does not support remote roster protoXEP");
+		return;
+	}
+
+	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
+	m_supportRemoteRoster = true;
+
+	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
+		std::string legacyName = Buddy::JIDToLegacyName(item.getJID());
+		if (m_buddies.find(legacyName) == m_buddies.end()) {
+			continue;
+		}
+
+		BuddyInfo buddyInfo;
+		buddyInfo.id = -1;
+		buddyInfo.alias = item.getName();
+		buddyInfo.legacyName = legacyName;
+		buddyInfo.subscription = "both";
+		buddyInfo.flags = 0;
+
+		Buddy *buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+		setBuddy(buddy);
+	}
 }
 
 Buddy *RosterManager::getBuddy(const std::string &name) {
@@ -209,7 +262,7 @@ void RosterManager::sendRIE() {
 		item.setJID(buddy->getJID().toBare());
 		item.setName(buddy->getAlias());
 		item.setAction(Swift::RosterItemExchangePayload::Item::Add);
-// 		item.setGroups(buddy->getGroups());
+		item.setGroups(buddy->getGroups());
 
 		payload->addItem(item);
 	}

@@ -35,7 +35,9 @@ void LocalBuddy::setAlias(const std::string &alias) {
 	m_alias = alias;
 
 	if (changed) {
-		getRosterManager()->sendBuddyRosterPush(this);
+		if (getRosterManager()->getUser()->getComponent()->inServerMode() || getRosterManager()->isRemoteRosterSupported()) {
+			getRosterManager()->sendBuddyRosterPush(this);
+		}
 		getRosterManager()->storeBuddy(this);
 	}
 }

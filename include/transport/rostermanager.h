@@ -70,6 +70,10 @@ class RosterManager {
 		/// \return User
 		User *getUser() { return m_user; }
 
+		bool isRemoteRosterSupported() {
+			return m_supportRemoteRoster;
+		}
+
 		/// Called when new Buddy is added to this roster.
 		/// \param buddy newly added Buddy
 		boost::signal<void (Buddy *buddy)> onBuddySet;
@@ -101,6 +105,7 @@ class RosterManager {
 
 		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key);
+		void handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> roster, Swift::ErrorPayload::ref error);
 
 		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > m_buddies;
 		Component *m_component;
@@ -109,6 +114,7 @@ class RosterManager {
 		Swift::Timer::ref m_setBuddyTimer;
 		Swift::Timer::ref m_RIETimer;
 		std::list <Swift::SetRosterRequest::ref> m_requests;
+		bool m_supportRemoteRoster;
 };
 
 }
