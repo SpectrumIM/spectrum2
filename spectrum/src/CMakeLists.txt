@@ -15,3 +15,15 @@ INSTALL(FILES
 	RENAME spectrum.cfg.example
 	DESTINATION /etc/spectrum2
 	)
+
+INSTALL(FILES
+	backend-logging.cfg
+	DESTINATION /etc/spectrum2
+	)
+
+INSTALL(FILES
+	logging.cfg
+	DESTINATION /etc/spectrum2
+	)
+
+
