@@ -261,7 +261,6 @@ MySQLBackend::MySQLBackend(Config *config) {
 }
 
 MySQLBackend::~MySQLBackend(){
-// 	FINALIZE_STMT(m_setUser);
 	delete m_setUser;
 	delete m_getUser;
 	delete m_removeUser;
@@ -272,9 +271,9 @@ MySQLBackend::~MySQLBackend(){
 	delete m_updateBuddy;
 	delete m_getBuddies;
 	delete m_getBuddiesSettings;
-	FINALIZE_STMT(m_getUserSetting);
-	FINALIZE_STMT(m_setUserSetting);
-	FINALIZE_STMT(m_updateUserSetting);
+	delete m_getUserSetting;
+	delete m_setUserSetting;
+	delete m_updateUserSetting;
 	delete m_updateBuddySetting;
 	mysql_close(&m_conn);
 }
@@ -310,9 +309,9 @@ bool MySQLBackend::connect() {
 	m_getBuddiesSettings = new Statement(&m_conn, "i|iiss", "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	m_updateBuddySetting = new Statement(&m_conn, "iisiss", "INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value=?");
 	
-	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
-	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
-	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
+	m_getUserSetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
+	m_setUserSetting = new Statement(&m_conn, "isis", "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
+	m_updateUserSetting = new Statement(&m_conn, "sis", "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
 
 	return true;
 }
@@ -497,14 +496,14 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	}
 
 	while(m_getBuddiesSettings->fetch() == 0) {
-		
+		// TODO: probably remove those settings, because there's no buddy for them.
+		// It should not happend, but one never know...
 	}
 	
 	return true;
 }
 
 bool MySQLBackend::removeUser(long id) {
-	
 	*m_removeUser << (int) id;
 	if (!m_removeUser->execute())
 		return false;
@@ -525,11 +524,23 @@ bool MySQLBackend::removeUser(long id) {
 }
 
 void MySQLBackend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {
-
+// 	"SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?"
+	*m_getUserSetting << id << variable;
+	m_getUserSetting->execute();
+	if (m_getUserSetting->fetch() != 0) {
+// 		"INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)"
+		*m_setUserSetting << id << variable << type << value;
+		m_setUserSetting->execute();
+	}
+	else {
+		*m_getUserSetting >> type >> value;
+	}
 }
 
 void MySQLBackend::updateUserSetting(long id, const std::string &variable, const std::string &value) {
-
+// 	"UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?"
+	*m_updateUserSetting << value << id << variable;
+	m_updateUserSetting->execute();
 }
 
 void MySQLBackend::beginTransaction() {

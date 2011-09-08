@@ -134,9 +134,9 @@ class MySQLBackend : public StorageBackend
 // 		MYSQL_STMT *m_setUser;
 		Statement *m_setUser;
 		Statement *m_getUser;
-		MYSQL_STMT *m_getUserSetting;
-		MYSQL_STMT *m_setUserSetting;
-		MYSQL_STMT *m_updateUserSetting;
+		Statement *m_getUserSetting;
+		Statement *m_setUserSetting;
+		Statement *m_updateUserSetting;
 		Statement *m_removeUser;
 		Statement *m_removeUserBuddies;
 		Statement *m_removeUserSettings;
