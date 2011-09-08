@@ -8,6 +8,7 @@
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
+#include <boost/filesystem.hpp>
 #ifndef WIN32
 #include "sys/signal.h"
 #else
@@ -18,6 +19,7 @@
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
 #include "log4cxx/consoleappender.h"
+#include "libgen.h"
 
 using namespace log4cxx;
 
@@ -161,7 +163,23 @@ int main(int argc, char **argv)
 
 #ifndef WIN32
 	if (!no_daemon) {
-		daemonize("/", NULL);
+		try {
+			boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+		}
+		catch (...) {
+			std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+			return 1;
+		}
+		try {
+			boost::filesystem::create_directories(
+				boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
+			);
+		}
+		catch (...) {
+			std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
+			return 1;
+		}
+		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
 	}
 #endif
 
