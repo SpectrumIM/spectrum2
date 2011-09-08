@@ -669,30 +669,32 @@ void NetworkPluginServer::pingTimeout() {
 	// Some users are connected for weeks and they are blocking backend to be destroyed and its memory
 	// to be freed. We are finding users who are inactive for more than "idle_reconnect_time" seconds and
 	// reconnect them to long-running backend, where they can idle hapilly till the end of ages.
-	time_t now = time(NULL);
-	std::vector<User *> usersToMove;
 	unsigned long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
-	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		// Users from long-running backends can't be moved
-		if ((*it)->longRun) {
-			continue;
-		}
+	if (diff != 0) {
+		time_t now = time(NULL);
+		std::vector<User *> usersToMove;
+		
+		for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+			// Users from long-running backends can't be moved
+			if ((*it)->longRun) {
+				continue;
+			}
 
-		// Find users which are inactive for more than 'diff'
-		BOOST_FOREACH(User *u, (*it)->users) {
-			if (now - u->getLastActivity() > diff) {
-				usersToMove.push_back(u);
+			// Find users which are inactive for more than 'diff'
+			BOOST_FOREACH(User *u, (*it)->users) {
+				if (now - u->getLastActivity() > diff) {
+					usersToMove.push_back(u);
+				}
 			}
 		}
-	}
 
-	// Move inactive users to long-running backend.
-	BOOST_FOREACH(User *u, usersToMove) {
-		LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
-		if (!moveToLongRunBackend(u))
-			break;
+		// Move inactive users to long-running backend.
+		BOOST_FOREACH(User *u, usersToMove) {
+			LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
+			if (!moveToLongRunBackend(u))
+				break;
+		}
 	}
-	
 
 
 	// check ping responses
