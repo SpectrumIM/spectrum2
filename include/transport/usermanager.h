@@ -80,6 +80,8 @@ class UserManager {
 		/// \param user User class to remove
 		void removeUser(User *user);
 
+		void removeAllUsers();
+
 		/// Called when new User class is created.
 		/// \param user newly created User class
 		boost::signal<void (User *user)> onUserCreated;

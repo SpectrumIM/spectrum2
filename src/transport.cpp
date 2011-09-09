@@ -177,7 +177,8 @@ void Component::start() {
 void Component::stop() {
 	if (m_component) {
 		m_reconnectCount = 0;
-		m_component->disconnect();
+		// TODO: Call this once swiften will fix assert(!session_);
+// 		m_component->disconnect();
 		m_reconnectTimer->stop();
 	}
 	else if (m_server) {

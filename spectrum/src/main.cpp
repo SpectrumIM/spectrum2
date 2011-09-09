@@ -30,13 +30,21 @@ using namespace Transport;
 static LoggerPtr logger = log4cxx::Logger::getLogger("Spectrum");
 
 Swift::SimpleEventLoop *eventLoop_ = NULL;
+Component *component_ = NULL;
+UserManager *userManager_ = NULL;
 
-static void spectrum_sigint_handler(int sig) {
+static void stop_spectrum() {
+	userManager_->removeAllUsers();
+	component_->stop();
 	eventLoop_->stop();
 }
 
+static void spectrum_sigint_handler(int sig) {
+	eventLoop_->postEvent(&stop_spectrum);
+}
+
 static void spectrum_sigterm_handler(int sig) {
-	eventLoop_->stop();
+	eventLoop_->postEvent(&stop_spectrum);
 }
 
 #ifndef WIN32
@@ -236,6 +244,7 @@ int main(int argc, char **argv)
 	UserRegistry userRegistry(&config, factories);
 
 	Component transport(&eventLoop, factories, &config, NULL, &userRegistry);
+	component_ = &transport;
 // 	Logger logger(&transport);
 
 	StorageBackend *storageBackend = NULL;
@@ -260,6 +269,7 @@ int main(int argc, char **argv)
 #endif
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
+	userManager_ = &userManager;
 	UserRegistration *userRegistration = NULL;
 	if (storageBackend) {
 		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
@@ -275,6 +285,7 @@ int main(int argc, char **argv)
 	eventLoop_ = &eventLoop;
 
 	eventLoop.run();
+
 	if (userRegistration) {
 		userRegistration->stop();
 		delete userRegistration;

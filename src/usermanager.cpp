@@ -105,6 +105,12 @@ void UserManager::removeUser(User *user) {
 // 	VALGRIND_DO_LEAK_CHECK;
 }
 
+void UserManager::removeAllUsers() {
+	while(m_users.begin() != m_users.end()) {
+		removeUser((*m_users.begin()).second);
+	}
+}
+
 int UserManager::getUserCount() {
 	return m_users.size();
 }
