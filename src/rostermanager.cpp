@@ -212,7 +212,7 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 
 	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
 		std::string legacyName = Buddy::JIDToLegacyName(item.getJID());
-		if (m_buddies.find(legacyName) == m_buddies.end()) {
+		if (m_buddies.find(legacyName) != m_buddies.end()) {
 			continue;
 		}
 
