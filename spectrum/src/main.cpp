@@ -11,6 +11,8 @@
 #include <boost/filesystem.hpp>
 #ifndef WIN32
 #include "sys/signal.h"
+#include <pwd.h>
+#include <grp.h>
 #else
 #include <Windows.h>
 #include <tchar.h>
@@ -24,6 +26,8 @@
 using namespace log4cxx;
 
 using namespace Transport;
+
+static LoggerPtr logger = log4cxx::Logger::getLogger("Spectrum");
 
 Swift::SimpleEventLoop *eventLoop_ = NULL;
 
@@ -163,6 +167,7 @@ int main(int argc, char **argv)
 
 #ifndef WIN32
 	if (!no_daemon) {
+		// create directories
 		try {
 			boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
 		}
@@ -179,8 +184,10 @@ int main(int argc, char **argv)
 			std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
 			return 1;
 		}
+
+		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
-	}
+    }
 #endif
 
 	if (CONFIG_STRING(&config, "logging.config").empty()) {
@@ -194,6 +201,34 @@ int main(int argc, char **argv)
 	else {
 		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(&config, "logging.config"));
 	}
+
+#ifndef WIN32
+	if (!CONFIG_STRING(&config, "service.group").empty()) {
+		struct group *gr;
+		if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
+			LOG4CXX_ERROR(logger, "Invalid service.group name " << CONFIG_STRING(&config, "service.group"));
+			return 1;
+		}
+
+		if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
+			LOG4CXX_ERROR(logger, "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno));
+			return 1;
+		}
+	}
+
+	if (!CONFIG_STRING(&config, "service.user").empty()) {
+		struct passwd *pw;
+		if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
+			LOG4CXX_ERROR(logger, "Invalid service.user name " << CONFIG_STRING(&config, "service.user"));
+			return 1;
+		}
+
+		if ((setuid(pw->pw_uid)) != 0) {
+			LOG4CXX_ERROR(logger, "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno));
+			return 1;
+		}
+	}
+#endif
 
 	Swift::SimpleEventLoop eventLoop;
 
