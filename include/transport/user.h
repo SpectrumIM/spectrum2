@@ -93,11 +93,9 @@ class User {
 			return m_readyForConnect;
 		}
 
-		void setConnected(bool connected) {
-			m_connected = connected;
-			setIgnoreDisconnect(false);
-			updateLastActivity();
-		}
+		void setConnected(bool connected);
+
+		void sendCurrentPresence();
 
 		void setIgnoreDisconnect(bool ignoreDisconnect);
 
