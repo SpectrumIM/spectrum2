@@ -72,6 +72,9 @@ UserManager::~UserManager(){
 
 void UserManager::addUser(User *user) {
 	m_users[user->getJID().toBare().toString()] = user;
+	if (m_storageBackend) {
+		m_storageBackend->setUserOnline(user->getUserInfo().id, true);
+	}
 	onUserCreated(user);
 }
 
@@ -95,6 +98,10 @@ void UserManager::removeUser(User *user) {
 
 	if (m_component->inServerMode()) {
 		disconnectUser(user->getJID());
+	}
+
+	if (m_storageBackend) {
+		m_storageBackend->setUserOnline(user->getUserInfo().id, false);
 	}
 
 	onUserDestroyed(user);
