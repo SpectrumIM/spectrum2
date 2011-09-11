@@ -59,7 +59,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(buddy->getJID());
 			}
 			else {
-				// TODO: escape from and setFrom
+				std::string name = nickname;
+				if (name.find_last_of("@") != std::string::npos) {
+					name.replace(name.find_last_of("@"), 1, "%");
+				}
+				message->setFrom(name);
 			}
 		}
 		// PM message
