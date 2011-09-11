@@ -491,6 +491,14 @@ void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
 			m_component->getStanzaChannel()->sendPresence(presence);
 		}
 	}
+
+	// in gateway mode, we have to send unavailable presence for transport
+	// contact
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo(to);
+	response->setFrom(m_component->getJID());
+	response->setType(Swift::Presence::Unavailable);
+	m_component->getStanzaChannel()->sendPresence(response);
 }
 
 }

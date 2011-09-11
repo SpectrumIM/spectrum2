@@ -97,6 +97,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_setUserSetting);
 		FINALIZE_STMT(m_updateUserSetting);
 		FINALIZE_STMT(m_updateBuddySetting);
+		FINALIZE_STMT(m_setUserOnline);
 		sqlite3_close(m_db);
 	}
 }
@@ -128,6 +129,8 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
 	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
+
+	PREP_STMT(m_setUserOnline, "UPDATE " + m_prefix + "users SET online=?, last_login=DATETIME('NOW') WHERE id=?");
 
 	return true;
 }
@@ -239,7 +242,10 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 }
 
 void SQLite3Backend::setUserOnline(long id, bool online) {
-	
+	BEGIN(m_setUserOnline);
+	BIND_INT(m_setUserOnline, (int)online);
+	BIND_INT(m_setUserOnline, id);
+	EXECUTE_STATEMENT(m_setUserOnline, "setUserOnline query");
 }
 
 long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {

@@ -146,6 +146,7 @@ class MySQLBackend : public StorageBackend
 		Statement *m_updateBuddySetting;
 		Statement *m_getBuddies;
 		Statement *m_getBuddiesSettings;
+		Statement *m_setUserOnline;
 };
 
 }

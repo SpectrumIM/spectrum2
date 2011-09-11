@@ -275,6 +275,7 @@ MySQLBackend::~MySQLBackend(){
 	delete m_setUserSetting;
 	delete m_updateUserSetting;
 	delete m_updateBuddySetting;
+	delete m_setUserOnline;
 	mysql_close(&m_conn);
 }
 
@@ -312,6 +313,8 @@ bool MySQLBackend::connect() {
 	m_getUserSetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	m_setUserSetting = new Statement(&m_conn, "isis", "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
 	m_updateUserSetting = new Statement(&m_conn, "sis", "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
+
+	m_setUserOnline = new Statement(&m_conn, "bi", "UPDATE " + m_prefix + "users SET online=?, last_login=NOW()  WHERE id=?");
 
 	return true;
 }
@@ -402,7 +405,8 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 }
 
 void MySQLBackend::setUserOnline(long id, bool online) {
-	
+	*m_setUserOnline << online << id;
+	m_setUserOnline->execute();
 }
 
 long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {

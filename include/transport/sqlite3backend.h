@@ -114,6 +114,7 @@ class SQLite3Backend : public StorageBackend
 		sqlite3_stmt *m_updateBuddySetting;
 		sqlite3_stmt *m_getBuddies;
 		sqlite3_stmt *m_getBuddiesSettings;
+		sqlite3_stmt *m_setUserOnline;
 };
 
 }
