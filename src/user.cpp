@@ -113,8 +113,6 @@ void User::sendCurrentPresence() {
 			response->setTo(m_jid);
 			response->setFrom(m_component->getJID());
 			m_component->getStanzaChannel()->sendPresence(response);
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
-			onPresenceChanged(highest);
 		}
 		else {
 			Swift::Presence::ref response = Swift::Presence::create();
@@ -122,7 +120,6 @@ void User::sendCurrentPresence() {
 			response->setFrom(m_component->getJID());
 			response->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(response);
-			onPresenceChanged(response);
 		}
 	}
 	else {
@@ -132,7 +129,6 @@ void User::sendCurrentPresence() {
 		response->setType(Swift::Presence::Unavailable);
 		response->setStatus("Connecting");
 		m_component->getStanzaChannel()->sendPresence(response);
-		onPresenceChanged(response);
 	}
 }
 
@@ -192,6 +188,23 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	}
 
 	sendCurrentPresence();
+
+	// Change legacy network presence
+	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
+	if (highest) {
+		Swift::Presence::ref response = Swift::Presence::create(highest);
+		response->setTo(m_jid);
+		response->setFrom(m_component->getJID());
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
+		onPresenceChanged(highest);
+	}
+	else {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo(m_jid.toBare());
+		response->setFrom(m_component->getJID());
+		response->setType(Swift::Presence::Unavailable);
+		onPresenceChanged(response);
+	}
 }
 
 void User::handleSubscription(Swift::Presence::ref presence) {
