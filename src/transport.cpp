@@ -20,6 +20,7 @@
 
 #include "transport/transport.h"
 #include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include "transport/storagebackend.h"
 #include "transport/factory.h"
 #include "transport/userregistry.h"
@@ -212,7 +213,10 @@ void Component::handleConnectionError(const ComponentError &error) {
 }
 
 void Component::handleDataRead(const Swift::SafeByteArray &data) {
-	LOG4CXX_INFO(logger_xml, "XML IN " << safeByteArrayToString(data));
+	std::string d = safeByteArrayToString(data);
+	if (!boost::starts_with(d, "<auth")) {
+		LOG4CXX_INFO(logger_xml, "XML IN " << d);
+	}
 }
 
 void Component::handleDataWritten(const Swift::SafeByteArray &data) {
