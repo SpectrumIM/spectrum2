@@ -254,6 +254,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (account) {
 // 				VALGRIND_DO_LEAK_CHECK;
 				m_sessions.erase(user);
+				purple_account_disconnect(account);
 				purple_account_set_enabled(account, "spectrum", FALSE);
 
 				// Remove conversations.
