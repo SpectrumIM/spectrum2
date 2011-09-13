@@ -7,6 +7,7 @@
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
+#include "transport/util.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #ifndef WIN32
@@ -45,6 +46,13 @@ static void spectrum_sigint_handler(int sig) {
 
 static void spectrum_sigterm_handler(int sig) {
 	eventLoop_->postEvent(&stop_spectrum);
+}
+
+static void removeOldIcons(std::string iconDir) {
+	std::vector<std::string> dirs;
+	dirs.push_back(iconDir);
+
+	boost::thread thread(boost::bind(Util::removeEverythingOlderThan, dirs, time(NULL) - 3600*24*14));
 }
 
 #ifndef WIN32
@@ -195,6 +203,7 @@ int main(int argc, char **argv)
 
 		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
+// 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
     }
 #endif
 

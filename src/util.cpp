@@ -48,16 +48,21 @@ void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t) {
 			directory_iterator end_itr;
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 				if (last_write_time(itr->path()) < t) {
-					if (is_regular(itr->path())) {
-						remove(itr->path());
-					}
-					else if (is_directory(itr->path())) {
-						std::vector<std::string> nextDirs;
-						nextDirs.push_back(itr->path().string());
-						removeEverythingOlderThan(nextDirs, t);
-						if (is_empty(itr->path())) {
-							remove_all(itr->path());
+					try {
+						if (is_regular(itr->path())) {
+							remove(itr->path());
 						}
+						else if (is_directory(itr->path())) {
+							std::vector<std::string> nextDirs;
+							nextDirs.push_back(itr->path().string());
+							removeEverythingOlderThan(nextDirs, t);
+							if (is_empty(itr->path())) {
+								remove_all(itr->path());
+							}
+						}
+					}
+					catch (const filesystem_error& ex) {
+						
 					}
 				}
 			}
