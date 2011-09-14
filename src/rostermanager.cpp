@@ -41,16 +41,6 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("RosterManager");
 
-// TODO: Once Swiften GetRosterRequest will support setting to="", this can be removed
-class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload> {
-	public:
-		typedef boost::shared_ptr<AddressedRosterRequest> ref;
-
-		AddressedRosterRequest(Swift::IQRouter* router, Swift::JID to) :
-				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
-		}
-};
-
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
 	m_user = user;

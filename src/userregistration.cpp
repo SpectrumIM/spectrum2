@@ -22,6 +22,7 @@
 #include "transport/usermanager.h"
 #include "transport/storagebackend.h"
 #include "transport/transport.h"
+#include "transport/rostermanager.h"
 #include "transport/user.h"
 #include "Swiften/Elements/ErrorPayload.h"
 #include <boost/shared_ptr.hpp>
@@ -45,7 +46,6 @@ UserRegistration::~UserRegistration(){
 }
 
 bool UserRegistration::registerUser(const UserInfo &row) {
-	// TODO: move this check to sql()->addUser(...) and let it return bool
 	UserInfo user;
 	bool registered = m_storageBackend->getUser(row.jid, user);
 	// This user is already registered
@@ -58,8 +58,7 @@ bool UserRegistration::registerUser(const UserInfo &row) {
 	response->setFrom(m_component->getJID());
 	response->setTo(Swift::JID(row.jid));
 	response->setType(Swift::Presence::Subscribe);
-
-	m_component->m_component->sendPresence(response);
+	m_component->getStanzaChannel()->sendPresence(response);
 
 	onUserRegistered(row);
 	return true;
@@ -74,54 +73,90 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 
 	onUserUnregistered(userInfo);
 
-	Swift::Presence::ref response;
+	// We have to check if server supports remoteroster XEP and use it if it's supported or fallback to unsubscribe otherwise
+	AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), barejid));
+	request->onResponse.connect(boost::bind(&UserRegistration::handleUnregisterRemoteRosterResponse, this, _1, _2, barejid));
+	request->send();
 
-	User *user = m_userManager->getUser(barejid);
+	return true;
+}
 
-	// roster contains already escaped jids
+void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported /*error*/, const std::string &barejid) {
+	UserInfo userInfo;
+	bool registered = m_storageBackend->getUser(barejid, userInfo);
+	// This user is not registered
+	if (!registered)
+		return;
+
 	std::list <BuddyInfo> roster;
 	m_storageBackend->getBuddies(userInfo.id, roster);
-
 	for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
 		std::string name = (*u).legacyName;
 
-		response = Swift::Presence::create();
-		response->setTo(Swift::JID(barejid));
-		response->setFrom(Swift::JID(name + "@" + m_component->getJID().toString()));
-		response->setType(Swift::Presence::Unsubscribe);
-		m_component->m_component->sendPresence(response);
+		if (remoteRosterNotSupported) {
+			Swift::Presence::ref response;
+			response = Swift::Presence::create();
+			response->setTo(Swift::JID(barejid));
+			response->setFrom(Swift::JID(name + "@" + m_component->getJID().toString()));
+			response->setType(Swift::Presence::Unsubscribe);
+			m_component->getStanzaChannel()->sendPresence(response);
 
-		response = Swift::Presence::create();
-		response->setTo(Swift::JID(barejid));
-		response->setFrom(Swift::JID(name + "@" + m_component->getJID().toString()));
-		response->setType(Swift::Presence::Unsubscribed);
-		m_component->m_component->sendPresence(response);
+			response = Swift::Presence::create();
+			response->setTo(Swift::JID(barejid));
+			response->setFrom(Swift::JID(name + "@" + m_component->getJID().toString()));
+			response->setType(Swift::Presence::Unsubscribed);
+			m_component->getStanzaChannel()->sendPresence(response);
+		}
+		else {
+			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+			Swift::RosterItemPayload item;
+			item.setJID(Swift::JID(name + "@" + m_component->getJID().toString()));
+			item.setSubscription(Swift::RosterItemPayload::Remove);
+
+			payload->addItem(item);
+
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, barejid, m_component->getIQRouter());
+			request->send();
+		}
 	}
 
 	// Remove user from database
 	m_storageBackend->removeUser(userInfo.id);
 
 	// Disconnect the user
+	User *user = m_userManager->getUser(barejid);
 	if (user) {
 		m_userManager->removeUser(user);
 	}
 
-	response = Swift::Presence::create();
-	response->setTo(Swift::JID(barejid));
-	response->setFrom(m_component->getJID());
-	response->setType(Swift::Presence::Unsubscribe);
-	m_component->m_component->sendPresence(response);
+	if (remoteRosterNotSupported) {
+		Swift::Presence::ref response;
+		response = Swift::Presence::create();
+		response->setTo(Swift::JID(barejid));
+		response->setFrom(m_component->getJID());
+		response->setType(Swift::Presence::Unsubscribe);
+		m_component->getStanzaChannel()->sendPresence(response);
 
-	response = Swift::Presence::create();
-	response->setTo(Swift::JID(barejid));
-	response->setFrom(m_component->getJID());
-	response->setType(Swift::Presence::Unsubscribed);
-	m_component->m_component->sendPresence(response);
+		response = Swift::Presence::create();
+		response->setTo(Swift::JID(barejid));
+		response->setFrom(m_component->getJID());
+		response->setType(Swift::Presence::Unsubscribed);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
+	else {
+		Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+		Swift::RosterItemPayload item;
+		item.setJID(m_component->getJID());
+		item.setSubscription(Swift::RosterItemPayload::Remove);
+		payload->addItem(item);
 
-	return true;
+		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, barejid, m_component->getIQRouter());
+		request->send();
+	}
 }
 
 bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
@@ -129,17 +164,14 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 
 	std::string barejid = from.toBare().toString();
 
-// 	User *user = m_userManager->getUserByJID(barejid);
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-// 			Log("UserRegistration", "This user has no permissions to register an account");
+			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
 	}
-
-// 	const char *_language = user ? user->getLang() : CONFIG_STRING(m_config, "registration.language").c_str();
 
 	boost::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
 
@@ -147,15 +179,17 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	bool registered = m_storageBackend->getUser(barejid, res);
 
 	std::string instructions = CONFIG_STRING(m_config, "registration.instructions");
+	std::string usernameField = CONFIG_STRING(m_config, "registration.username_field");
 
+	// normal jabber:iq:register
 	reg->setInstructions(instructions);
 	reg->setRegistered(registered);
 	reg->setUsername(res.uin);
 	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
 		reg->setPassword(res.password);
 
-	std::string usernameField = CONFIG_STRING(m_config, "registration.username_field");
 
+	// form
 	Form::ref form(new Form(Form::FormType));
 	form->setTitle((("Registration")));
 	form->setInstructions((instructions));
@@ -187,10 +221,6 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		language->setValue(res.language);
 	else
 		language->setValue(CONFIG_STRING(m_config, "registration.language"));
-// 	std::map <std::string, std::string> languages = localization.getLanguages();
-// 	for (std::map <std::string, std::string>::iterator it = languages.begin(); it != languages.end(); it++) {
-// 		language->addOption(FormField::Option((*it).second, (*it).first));
-// 	}
 	form->addField(language);
 
 	TextSingleFormField::ref encoding = TextSingleFormField::create();
@@ -218,6 +248,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 }
 
 bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 		return true;
@@ -225,11 +256,10 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	std::string barejid = from.toBare().toString();
 
-// 	AbstractUser *user = m_component->userManager()->getUserByJID(barejid);
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-// 			Log("UserRegistration", "This user has no permissions to register an account");
+			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -298,14 +328,14 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	// Register or change password
 	if (payload->getUsername()->empty() ||
 		(payload->getPassword()->empty() && CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
-// 		|| localization.getLanguages().find(language) == localization.getLanguages().end()
 	)
 	{
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}
 
-	if (CONFIG_STRING(m_config, "service.protocol") == "xmpp") {
+	// TODO: Move this check to backend somehow
+	if (CONFIG_STRING(m_config, "service.protocol") == "prpl-jabber") {
 		// User tries to register himself.
 		if ((Swift::JID(*payload->getUsername()).toBare() == from.toBare())) {
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
@@ -322,20 +352,21 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	}
 
 	std::string username = *payload->getUsername();
-// 	m_component->protocol()->prepareUsername(username);
 
 	std::string newUsername(username);
 	if (!CONFIG_STRING(m_config, "registration.username_mask").empty()) {
 		newUsername = CONFIG_STRING(m_config, "registration.username_mask");
-// 		replace(newUsername, "$username", username.c_str());
+		boost::replace_all(newUsername, "$username", username);
 	}
 
+//TODO: Part of spectrum1 registration stuff, this should be potentially rewritten for S2 too
 // 	if (!m_component->protocol()->isValidUsername(newUsername)) {
 // 		Log("UserRegistration", "This is not valid username: "<< newUsername);
 // 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 // 		return true;
 // 	}
 
+//TODO: Part of spectrum1 registration stuff, this should be potentially rewritten for S2 too
 // #if GLIB_CHECK_VERSION(2,14,0)
 // 	if (!CONFIG_STRING(m_config, "registration.reg_allowed_usernames").empty() &&
 // 		!g_regex_match_simple(CONFIG_STRING(m_config, "registration.reg_allowed_usernames"), newUsername.c_str(),(GRegexCompileFlags) (G_REGEX_CASELESS | G_REGEX_EXTENDED), (GRegexMatchFlags) 0)) {
@@ -354,8 +385,6 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		registerUser(res);
 	}
 	else {
-		// change passwordhttp://soumar.jabbim.cz/phpmyadmin/index.php
-// 		Log("UserRegistration", "changing user password: "<< barejid << ", " << username);
 		res.jid = barejid;
 		res.password = *payload->getPassword();
 		res.language = language;
