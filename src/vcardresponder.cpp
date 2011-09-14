@@ -96,12 +96,9 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	std::string name = to_.getUnescapedNode();
 	if (name.empty()) {
 		to_ = user->getJID();
-		name = to_.getUnescapedNode();
 	}
 
-	if (name.find_last_of("%") != std::string::npos) {
-		name.replace(name.find_last_of("%"), 1, "@");
-	}
+	name = Buddy::JIDToLegacyName(to_);
 
 	LOG4CXX_INFO(logger, from.toBare().toString() << ": Requested VCard of " << name);
 
