@@ -41,16 +41,6 @@ namespace Transport {
 
 static LoggerPtr logger = Logger::getLogger("RosterManager");
 
-// TODO: Once Swiften GetRosterRequest will support setting to="", this can be removed
-class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload> {
-	public:
-		typedef boost::shared_ptr<AddressedRosterRequest> ref;
-
-		AddressedRosterRequest(Swift::IQRouter* router, Swift::JID to) :
-				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
-		}
-};
-
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
 	m_user = user;
@@ -221,7 +211,7 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 		buddyInfo.alias = item.getName();
 		buddyInfo.legacyName = legacyName;
 		buddyInfo.subscription = "both";
-		buddyInfo.flags = 0;
+		buddyInfo.flags = Buddy::buddFlagsFromJID(item.getJID());
 
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 		setBuddy(buddy);
@@ -309,7 +299,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddyInfo.alias = "";
 					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
 					buddyInfo.subscription = "both";
-					buddyInfo.flags = 0;
+					buddyInfo.flags = Buddy::buddFlagsFromJID(presence->getTo());
 					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
 
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
@@ -371,7 +361,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddyInfo.alias = "";
 					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
 					buddyInfo.subscription = "both";
-					buddyInfo.flags = 0;
+					buddyInfo.flags = Buddy::buddFlagsFromJID(presence->getTo());
 
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 					setBuddy(buddy);

@@ -90,7 +90,7 @@ class NetworkFactory : public Factory {
 			buddy->setName(buddyInfo.legacyName);
 			buddy->setSubscription(buddyInfo.subscription);
 			buddy->setGroups(buddyInfo.groups);
-			buddy->setFlags((BuddyFlag) buddyInfo.flags);
+			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
@@ -396,12 +396,11 @@ void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
 	response->setTo(user->getJID());
 	std::string name = payload.buddyname();
 
-	// TODO:
-// 	name = Swift::JID::getEscapedNode(name)
+	name = Swift::JID::getEscapedNode(name);
 
-	if (name.find_last_of("@") != std::string::npos) {
-		name.replace(name.find_last_of("@"), 1, "%");
-	}
+// 	if (name.find_last_of("@") != std::string::npos) { // OK when commented
+// 		name.replace(name.find_last_of("@"), 1, "%"); // OK when commented
+// 	}
 
 	response->setFrom(Swift::JID(name, m_component->getJID().toString()));
 	response->setType(Swift::Presence::Subscribe);
@@ -451,6 +450,7 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	}
 	else {
 		buddy = new LocalBuddy(user->getRosterManager(), -1);
+		buddy->setFlags(BUDDY_JID_ESCAPING);
 		handleBuddyPayload(buddy, payload);
 		user->getRosterManager()->setBuddy(buddy);
 	}
@@ -669,11 +669,10 @@ void NetworkPluginServer::pingTimeout() {
 	// Some users are connected for weeks and they are blocking backend to be destroyed and its memory
 	// to be freed. We are finding users who are inactive for more than "idle_reconnect_time" seconds and
 	// reconnect them to long-running backend, where they can idle hapilly till the end of ages.
+	time_t now = time(NULL);
+	std::vector<User *> usersToMove;
 	unsigned long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
 	if (diff != 0) {
-		time_t now = time(NULL);
-		std::vector<User *> usersToMove;
-		
 		for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 			// Users from long-running backends can't be moved
 			if ((*it)->longRun) {

@@ -164,8 +164,8 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				res.password = "";
 				res.uin = presence->getFrom().getNode();
 				res.jid = userkey;
-				if (res.uin.find_last_of("%") != std::string::npos) {
-					res.uin.replace(res.uin.find_last_of("%"), 1, "@");
+				if (res.uin.find_last_of("%") != std::string::npos) { // OK
+					res.uin.replace(res.uin.find_last_of("%"), 1, "@"); // OK
 				}
 				if (m_storageBackend) {
 					// store user and getUser again to get user ID.

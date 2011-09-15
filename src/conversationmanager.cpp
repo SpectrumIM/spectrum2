@@ -63,10 +63,11 @@ void ConversationManager::removeConversation(Conversation *conv) {
 }
 
 void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
-	std::string name = message->getTo().getUnescapedNode();
-	if (name.find_last_of("%") != std::string::npos) {
-		name.replace(name.find_last_of("%"), 1, "@");
-	}
+// 	std::string name = message->getTo().getUnescapedNode();
+// 	if (name.find_last_of("%") != std::string::npos) { // OK when commented
+// 		name.replace(name.find_last_of("%"), 1, "@"); // OK when commented
+// 	}
+	std::string name = Buddy::JIDToLegacyName(message->getTo());
 
 	// create conversation if it does not exist.
 	if (!m_convs[name]) {

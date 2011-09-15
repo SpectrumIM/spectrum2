@@ -50,7 +50,7 @@ long Buddy::getID() {
 void Buddy::setFlags(BuddyFlag flags) {
 	m_flags = flags;
 
-	generateJID();
+// 	generateJID();
 }
 
 BuddyFlag Buddy::getFlags() {
@@ -125,10 +125,11 @@ std::string Buddy::getSafeName() {
 // 	Transport::instance()->protocol()->prepareUsername(name, purple_buddy_get_account(m_buddy));
 	if (getFlags() & BUDDY_JID_ESCAPING) {
 		name = Swift::JID::getEscapedNode(name);
+		std::cout << "OUT '" << getName() << "' '" << name << "'\n";
 	}
 	else {
 		if (name.find_last_of("@") != std::string::npos) {
-			name.replace(name.find_last_of("@"), 1, "%");
+			name.replace(name.find_last_of("@"), 1, "%"); // OK
 		}
 	}
 // 	if (name.empty()) {
@@ -155,17 +156,24 @@ std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	if (jid.getUnescapedNode() == jid.getNode()) {
 		name = jid.getNode();
 		if (name.find_last_of("%") != std::string::npos) {
-			name.replace(name.find_last_of("%"), 1, "@");
+			name.replace(name.find_last_of("%"), 1, "@"); // OK
 		}
 	}
 	else {
 		name = jid.getUnescapedNode();
 		// Psi sucks...
 		if (name.find_last_of("\\40") != std::string::npos) {
-			name.replace(name.find_last_of("\\40"), 1, "@");
+			name.replace(name.find_last_of("\\40"), 1, "@"); // OK
 		}
 	}
 	return name;
+}
+
+BuddyFlag Buddy::buddFlagsFromJID(const Swift::JID &jid) {
+	if (jid.getUnescapedNode() == jid.getNode()) {
+		return BUDDY_NO_FLAG;
+	}
+	return BUDDY_JID_ESCAPING;
 }
 
 }
