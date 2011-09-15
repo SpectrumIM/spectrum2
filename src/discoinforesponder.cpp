@@ -75,8 +75,9 @@ void DiscoInfoResponder::setBuddyFeatures(std::list<std::string> &f) {
 		}
 	}
 
-	CapsInfoGenerator caps("");
-	onBuddyCapsInfoChanged(caps.generateCapsInfo(m_buddyInfo));
+	CapsInfoGenerator caps("spectrum");
+	m_capsInfo = caps.generateCapsInfo(m_buddyInfo);
+	onBuddyCapsInfoChanged(m_capsInfo);
 }
 
 bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> info) {

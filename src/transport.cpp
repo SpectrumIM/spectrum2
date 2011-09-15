@@ -157,6 +157,10 @@ void Component::setTransportFeatures(std::list<std::string> &features) {
 	m_discoInfoResponder->setTransportFeatures(features);
 }
 
+Swift::CapsInfo &Component::getBuddyCapsInfo() {
+		return m_discoInfoResponder->getBuddyCapsInfo();
+}
+
 void Component::setBuddyFeatures(std::list<std::string> &features) {
 	// TODO: handle caps change
 	m_discoInfoResponder->setBuddyFeatures(features);

@@ -40,12 +40,17 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 		boost::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
 
+		Swift::CapsInfo &getBuddyCapsInfo() {
+				return m_capsInfo;
+		}
+
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> payload);
 
 		Swift::DiscoInfo m_transportInfo;
 		Swift::DiscoInfo m_buddyInfo;
 		Config *m_config;
+		Swift::CapsInfo m_capsInfo;
 };
 
 }

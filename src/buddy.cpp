@@ -95,7 +95,8 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 
 	if (presence->getType() != Swift::Presence::Unavailable) {
 		// caps
-// 		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo (CONFIG().caps)));
+		
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo(m_rosterManager->getUser()->getComponent()->getBuddyCapsInfo())));
 
 // 		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));

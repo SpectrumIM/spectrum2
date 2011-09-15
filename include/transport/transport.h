@@ -80,6 +80,8 @@ namespace Transport {
 			/// \return Swift::StanzaChannel associated with this Transport::Component.
 			Swift::StanzaChannel *getStanzaChannel();
 
+			Swift::CapsInfo &getBuddyCapsInfo();
+
 			/// Returns Swift::IQRouter associated with this Component.
 
 			/// \return Swift::IQRouter associated with this Component.
