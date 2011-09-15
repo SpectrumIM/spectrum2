@@ -672,27 +672,28 @@ void NetworkPluginServer::pingTimeout() {
 	time_t now = time(NULL);
 	std::vector<User *> usersToMove;
 	unsigned long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
-	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		// Users from long-running backends can't be moved
-		if ((*it)->longRun) {
-			continue;
-		}
+	if (diff != 0) {
+		for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+			// Users from long-running backends can't be moved
+			if ((*it)->longRun) {
+				continue;
+			}
 
-		// Find users which are inactive for more than 'diff'
-		BOOST_FOREACH(User *u, (*it)->users) {
-			if (now - u->getLastActivity() > diff) {
-				usersToMove.push_back(u);
+			// Find users which are inactive for more than 'diff'
+			BOOST_FOREACH(User *u, (*it)->users) {
+				if (now - u->getLastActivity() > diff) {
+					usersToMove.push_back(u);
+				}
 			}
 		}
-	}
 
-	// Move inactive users to long-running backend.
-	BOOST_FOREACH(User *u, usersToMove) {
-		LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
-		if (!moveToLongRunBackend(u))
-			break;
+		// Move inactive users to long-running backend.
+		BOOST_FOREACH(User *u, usersToMove) {
+			LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
+			if (!moveToLongRunBackend(u))
+				break;
+		}
 	}
-	
 
 
 	// check ping responses

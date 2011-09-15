@@ -7,4 +7,6 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libircclient-qt)
 	endif()
 
+	ADD_SUBDIRECTORY(frotz)
+
 endif()
