@@ -92,7 +92,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 	}
 	// presence for buddy
 	else {
-		sendResponse(from, id, boost::shared_ptr<DiscoInfo>(new DiscoInfo(m_buddyInfo)));
+		sendResponse(from, to, id, boost::shared_ptr<DiscoInfo>(new DiscoInfo(m_buddyInfo)));
 	}
 	return true;
 }
