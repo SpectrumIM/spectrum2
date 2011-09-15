@@ -177,9 +177,12 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			np->handleConnected(user);
 			Swift::StatusShow status;
 			np->handleBuddyChanged(user, "zork", "Zork", "Games", status.getType());
+			sleep(1);
+			np->handleMessage(np->m_user, "zork", first_msg);
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
+			exit(0);
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
@@ -193,15 +196,19 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
 		}
-std::string m_user;
+
+		std::string m_user;
+		std::string first_msg;
 	private:
 		
 		Config *config;
 };
 
 void send_array() {
-	np->handleMessage(np->m_user, "zork", frotz_get_array());
-	std::cout << "sending " << frotz_get_array() << "\n";
+	if (np->first_msg.empty())
+		np->first_msg = frotz_get_array();
+	else
+		np->handleMessage(np->m_user, "zork", frotz_get_array());
 	frotz_reset_array();
 }
 
@@ -259,29 +266,17 @@ int main (int argc, char* argv[]) {
 	np = new FrotzNetworkPlugin(&config, &eventLoop, host, port);
 
 	os_init_setup ();
-
 	os_process_arguments (argc, argv);
-
 	init_buffer ();
-
 	init_err ();
-
 	init_memory ();
-
 	init_process ();
-
 	init_sound ();
-
 	os_init_screen ();
-
 	init_undo ();
-
 	z_restart ();
-
 	interpret ();
-
 	reset_memory ();
-
 	os_reset_screen ();
 
 	return 0;
