@@ -51,6 +51,8 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) 
 	features.clear();
 	features.push_back("http://jabber.org/protocol/disco#items");
 	features.push_back("http://jabber.org/protocol/disco#info");
+	features.push_back("http://jabber.org/protocol/chatstates");
+	features.push_back("http://jabber.org/protocol/xhtml-im");
 	setBuddyFeatures(features);
 }
 
