@@ -228,7 +228,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			purple_account_set_password(account, password.c_str());
-			purple_account_set_enabled(account, "spectrum", TRUE);
 			purple_account_set_bool(account, "custom_smileys", FALSE);
 			purple_account_set_bool(account, "direct_connect", FALSE);
 
@@ -236,10 +235,47 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				it != config->getUnregistered().end(); it++) {
 				if ((*it).first.find("purple.") == 0) {
 					std::string key = (*it).first.substr((*it).first.find(".") + 1);
-					LOG4CXX_INFO(logger, "Setting account string '" << key << "'='" << (*it).second << "'");
-					purple_account_set_string(account, key.c_str(), (*it).second.c_str());
+
+					PurplePlugin *plugin = purple_find_prpl(protocol.c_str());
+					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+					bool found = false;
+					for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
+						PurpleAccountOption *option = (PurpleAccountOption *) l->data;
+						PurplePrefType type = purple_account_option_get_type(option);
+						std::string key2(purple_account_option_get_setting(option));
+						std::cout << key << " " << key2 << " " << (*it).second << "\n";
+						if (key != key2)
+							continue;
+						
+						found = true;
+						switch (type) {
+							case PURPLE_PREF_BOOLEAN:
+								purple_account_set_bool(account, key.c_str(), boost::lexical_cast<bool>((*it).second));
+								break;
+
+							case PURPLE_PREF_INT:
+								std::cout << "setting int\n";
+								purple_account_set_int(account, key.c_str(), boost::lexical_cast<int>((*it).second));
+								break;
+
+							case PURPLE_PREF_STRING:
+							case PURPLE_PREF_STRING_LIST:
+								purple_account_set_string(account, key.c_str(), (*it).second.c_str());
+								break;
+							default:
+								continue;
+						}
+						break;
+					}
+
+					if (!found) {
+						std::cout << "setting string\n";
+						purple_account_set_string(account, key.c_str(), (*it).second.c_str());
+					}
 				}
 			}
+
+			purple_account_set_enabled(account, "spectrum", TRUE);
 
 			purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
 
