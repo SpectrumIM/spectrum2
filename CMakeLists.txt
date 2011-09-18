@@ -86,10 +86,13 @@ if (PROTOBUF_FOUND)
 		message("IRC plugin        : no (install libircclient-qt and libprotobuf-dev)")
 	endif()
 
+	message("Frotz plugin      : yes")
+
 else()
 	message("Network plugins   : no (install libprotobuf-dev)")
 	message("Libpurple plugin  : no (install libpurple and libprotobuf-dev)")
 	message("IRC plugin        : no (install libircclient-qt and libprotobuf-dev)")
+	message("Frotz plugin      : no (install libprotobuf-dev)")
 endif()
 
 if (LOG4CXX_FOUND)
