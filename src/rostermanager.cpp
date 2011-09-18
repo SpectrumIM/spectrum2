@@ -199,12 +199,14 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 
 	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
 	m_supportRemoteRoster = true;
+	return;
 
 	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
 		std::string legacyName = Buddy::JIDToLegacyName(item.getJID());
 		if (m_buddies.find(legacyName) != m_buddies.end()) {
 			continue;
 		}
+		std::cout << "LEGACYNAME " << legacyName << "\n";
 
 		BuddyInfo buddyInfo;
 		buddyInfo.id = -1;

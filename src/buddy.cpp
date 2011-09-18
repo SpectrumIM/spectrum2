@@ -58,7 +58,7 @@ BuddyFlag Buddy::getFlags() {
 }
 
 const Swift::JID &Buddy::getJID() {
-	if (!m_jid.isValid()) {
+	if (!m_jid.isValid() || m_jid.getNode().empty()) {
 		generateJID();
 	}
 	return m_jid;
@@ -80,6 +80,10 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 	std::string statusMessage;
 	if (!getStatus(s, statusMessage))
 		return Swift::Presence::ref();
+
+	if (m_jid.getNode().empty()) {
+		generateJID();
+	}
 
 	Swift::Presence::ref presence = Swift::Presence::create();
  	presence->setFrom(m_jid);
@@ -163,9 +167,9 @@ std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	else {
 		name = jid.getUnescapedNode();
 		// Psi sucks...
-		if (name.find_last_of("\\40") != std::string::npos) {
-			name.replace(name.find_last_of("\\40"), 1, "@"); // OK
-		}
+// 		if (name.find_last_of("\\40") != std::string::npos) {
+// 			name.replace(name.find_last_of("\\40"), 1, "@"); // OK
+// 		}
 	}
 	return name;
 }

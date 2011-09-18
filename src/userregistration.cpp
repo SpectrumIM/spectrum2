@@ -88,34 +88,36 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 	if (!registered)
 		return;
 
-	std::list <BuddyInfo> roster;
-	m_storageBackend->getBuddies(userInfo.id, roster);
-	for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
-		std::string name = (*u).legacyName;
+	if (remoteRosterNotSupported) {
+		std::list <BuddyInfo> roster;
+		m_storageBackend->getBuddies(userInfo.id, roster);
+		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
+			std::string name = Swift::JID::getEscapedNode((*u).legacyName);
 
-		if (remoteRosterNotSupported) {
 			Swift::Presence::ref response;
 			response = Swift::Presence::create();
 			response->setTo(Swift::JID(barejid));
-			response->setFrom(Swift::JID(name + "@" + m_component->getJID().toString()));
+			response->setFrom(Swift::JID(name, m_component->getJID().toString()));
 			response->setType(Swift::Presence::Unsubscribe);
 			m_component->getStanzaChannel()->sendPresence(response);
 
 			response = Swift::Presence::create();
 			response->setTo(Swift::JID(barejid));
-			response->setFrom(Swift::JID(name + "@" + m_component->getJID().toString()));
+			response->setFrom(Swift::JID(name, m_component->getJID().toString()));
 			response->setType(Swift::Presence::Unsubscribed);
 			m_component->getStanzaChannel()->sendPresence(response);
 		}
-		else {
-			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+	}
+	else {
+		BOOST_FOREACH(Swift::RosterItemPayload it, payload->getItems()) {
+			Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
 			Swift::RosterItemPayload item;
-			item.setJID(Swift::JID(name + "@" + m_component->getJID().toString()));
+			item.setJID(it.getJID());
 			item.setSubscription(Swift::RosterItemPayload::Remove);
 
-			payload->addItem(item);
+			p->addItem(item);
 
-			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, barejid, m_component->getIQRouter());
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, barejid, m_component->getIQRouter());
 			request->send();
 		}
 	}
