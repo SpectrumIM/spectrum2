@@ -9,11 +9,11 @@
 
 f_setup_t f_setup;
 
-static int show_line_numbers = FALSE;
-static int show_line_types = -1;
-static int show_pictures = TRUE;
-static int visual_bell = TRUE;
-static int plain_ascii = FALSE;
+static bool show_line_numbers = FALSE;
+static bool show_line_types = -1;
+static bool show_pictures = TRUE;
+static bool visual_bell = TRUE;
+static bool plain_ascii = FALSE;
 
 static char latin1_to_ascii[] =
   "    !   c   L   >o< Y   |   S   ''  C   a   <<  not -   R   _   "
@@ -70,24 +70,6 @@ static cell *dumb_row(int r) {return screen_data + r * h_screen_cols;}
 static char *dumb_changes_row(int r)
 {
   return screen_changes + r * h_screen_cols;
-}
-
-static char array[15000];
-static char *array_ptr = &array;
-
-char *frotz_get_array() {
-	return &array;
-}
-
-void frotz_reset_array() {
-	array_ptr = &array;
-	*array_ptr = 0;
-}
-
-static void myputchar(char c) {
-	*array_ptr = c;
-	array_ptr++;
-	*array_ptr = 0;
 }
 
 int os_char_width (zchar z)
@@ -257,26 +239,26 @@ static void show_cell(cell cel)
   char c = cell_char(cel);
   switch (cell_style(cel)) {
   case 0:
-    myputchar(c);
+    putchar(c);
     break;
   case PICTURE_STYLE:
-    myputchar(show_pictures ? c : ' ');
+    putchar(show_pictures ? c : ' ');
     break;
   case REVERSE_STYLE:
     if (c == ' ')
-      myputchar(rv_blank_char);
+      putchar(rv_blank_char);
     else
       switch (rv_mode) {
-      case RV_NONE: myputchar(c); break;
-      case RV_CAPS: myputchar(toupper(c)); break;
-      case RV_UNDERLINE: myputchar('_'); myputchar('\b'); myputchar(c); break;
-      case RV_DOUBLESTRIKE: myputchar(c); myputchar('\b'); myputchar(c); break;
+      case RV_NONE: putchar(c); break;
+      case RV_CAPS: putchar(toupper(c)); break;
+      case RV_UNDERLINE: putchar('_'); putchar('\b'); putchar(c); break;
+      case RV_DOUBLESTRIKE: putchar(c); putchar('\b'); putchar(c); break;
       }
     break;
   }
 }
 
-static int will_print_blank(cell c)
+static bool will_print_blank(cell c)
 {
   return (((cell_style(c) == PICTURE_STYLE) && !show_pictures)
 	  || ((cell_char(c) == ' ')
@@ -288,10 +270,10 @@ static void show_line_prefix(int row, char c)
   if (show_line_numbers)
     printf((row == -1) ? ".." : "%02d", (row + 1) % 100);
   if (show_line_types)
-    myputchar(c);
+    putchar(c);
   /* Add a separator char (unless there's nothing to separate).  */
   if (show_line_numbers || show_line_types)
-    myputchar(' ');
+    putchar(' ');
 }
 
 /* Print a row to stdout.  */
@@ -311,13 +293,12 @@ static void show_row(int r)
     for (c = 0; c <= last; c++)
       show_cell(dumb_row(r)[c]);
   }
-  myputchar('\n');
+  putchar('\n');
 }
 
 /* Print the part of the cursor row before the cursor.  */
-void dumb_show_prompt(int show_cursor, char line_type)
+void dumb_show_prompt(bool show_cursor, char line_type)
 {
-return;
   int i;
   show_line_prefix(show_cursor ? cursor_row : -1, line_type);
   if (show_cursor)
@@ -332,7 +313,7 @@ static void mark_all_unchanged(void)
 
 /* Check if a cell is a blank or will display as one.
  * (Used to help decide if contents are worth printing.)  */
-static int is_blank(cell c)
+static bool is_blank(cell c)
 {
   return ((cell_char(c) == ' ')
 	  || ((cell_style(c) == PICTURE_STYLE) && !show_pictures));
@@ -345,11 +326,11 @@ static int is_blank(cell c)
  * last nonblank character on the last line that would be shown, then
  * don't show that line (because it will be redundant with the prompt
  * line just below it).  */
-void dumb_show_screen(int show_cursor)
+void dumb_show_screen(bool show_cursor)
 {
   int r, c, first, last;
   char changed_rows[0x100]; 
-  printf("show_screen\n");
+
   /* Easy case */
   if (compression_mode == COMPRESSION_NONE) {
     for (r = hide_lines; r < h_screen_rows; r++)
@@ -434,7 +415,7 @@ void os_beep (int volume)
   if (visual_bell)
     printf("[%s-PITCHED BEEP]\n", (volume == 1) ? "HIGH" : "LOW");
   else
-    myputchar('\a'); /* so much for dumb.  */
+    putchar('\a'); /* so much for dumb.  */
 }
 
 
@@ -447,13 +428,13 @@ void os_stop_sample (int a) {}
 
 
 /* if val is '0' or '1', set *var accordingly, else toggle it.  */
-static void toggle(int *var, char val)
+static void toggle(bool *var, char val)
 {
   *var = val == '1' || (val != '0' && !*var);
 }
 
-int dumb_output_handle_setting(const char *setting, int show_cursor,
-				int startup)
+bool dumb_output_handle_setting(const char *setting, bool show_cursor,
+				bool startup)
 {
   char *p;
   int i;
@@ -504,7 +485,7 @@ int dumb_output_handle_setting(const char *setting, int show_cursor,
 	   rv_names[rv_mode], rv_blank_char);
     for (p = "sample reverse text"; *p; p++)
       show_cell(make_cell(REVERSE_STYLE, *p));
-    myputchar('\n');
+    putchar('\n');
     for (i = 0; i < screen_cells; i++)
       screen_changes[i] = (cell_style(screen_data[i]) == REVERSE_STYLE);
     dumb_show_screen(show_cursor);
@@ -521,7 +502,7 @@ int dumb_output_handle_setting(const char *setting, int show_cursor,
 	   rv_names[rv_mode], rv_blank_char);
     for (p = "sample reverse text"; *p; p++)
       show_cell(make_cell(REVERSE_STYLE, *p));
-    myputchar('\n');
+    putchar('\n');
   } else
     return FALSE;
   return TRUE;

@@ -10,161 +10,138 @@
 
 #include "transport/config.h"
 #include "transport/networkplugin.h"
-#include "frotz.h"
-
-#ifndef MSDOS_16BIT
-#define cdecl
-#endif
-
+#include <boost/filesystem.hpp>
+#include "unistd.h"
+#include "signal.h"
+#include "sys/wait.h"
+#include "sys/signal.h"
 Swift::SimpleEventLoop *loop_;
-
-extern "C" void spectrum_get_line(char *s);
-
-char input[15000];
-
-void send_array();
-
-void spectrum_get_line(char *s) {
-	std::cout << "running event loop\n";
-	dumb_show_screen(FALSE);
-	send_array();
-// 	while(strlen(input) == 0) {
-		loop_->run();
-// 	}
-	strcpy(s, input);
-	strcpy(input, "");
-	std::cout << "got message " << s << "\n";
-}
 
 using namespace boost::program_options;
 using namespace Transport;
 
-extern void interpret (void);
-extern void init_memory (void);
-extern void init_undo (void);
-extern void reset_memory (void);
-
-/* Story file name, id number and size */
-
-char *story_name = "zork.z5";
-
-enum story story_id = UNKNOWN;
-long story_size = 0;
-
-/* Story file header data */
-
-zbyte h_version = 0;
-zbyte h_config = 0;
-zword h_release = 0;
-zword h_resident_size = 0;
-zword h_start_pc = 0;
-zword h_dictionary = 0;
-zword h_objects = 0;
-zword h_globals = 0;
-zword h_dynamic_size = 0;
-zword h_flags = 0;
-zbyte h_serial[6] = { 0, 0, 0, 0, 0, 0 };
-zword h_abbreviations = 0;
-zword h_file_size = 0;
-zword h_checksum = 0;
-zbyte h_interpreter_number = 0;
-zbyte h_interpreter_version = 0;
-zbyte h_screen_rows = 0;
-zbyte h_screen_cols = 0;
-zword h_screen_width = 0;
-zword h_screen_height = 0;
-zbyte h_font_height = 1;
-zbyte h_font_width = 1;
-zword h_functions_offset = 0;
-zword h_strings_offset = 0;
-zbyte h_default_background = 0;
-zbyte h_default_foreground = 0;
-zword h_terminating_keys = 0;
-zword h_line_width = 0;
-zbyte h_standard_high = 1;
-zbyte h_standard_low = 0;
-zword h_alphabet = 0;
-zword h_extension_table = 0;
-zbyte h_user_name[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-zword hx_table_size = 0;
-zword hx_mouse_x = 0;
-zword hx_mouse_y = 0;
-zword hx_unicode_table = 0;
-
-/* Stack data */
-
-zword stack[STACK_SIZE];
-zword *sp = 0;
-zword *fp = 0;
-zword frame_count = 0;
-
-/* IO streams */
-
-int ostream_screen = TRUE;
-int ostream_script = FALSE;
-int ostream_memory = FALSE;
-int ostream_record = FALSE;
-int istream_replay = FALSE;
-int message = FALSE;
-
-/* Current window and mouse data */
-
-int cwin = 0;
-int mwin = 0;
-
-int mouse_y = 0;
-int mouse_x = 0;
-
-/* Window attributes */
-
-int enable_wrapping = FALSE;
-int enable_scripting = FALSE;
-int enable_scrolling = FALSE;
-int enable_buffering = FALSE;
-
-/* User options */
-
-/*
-int option_attribute_assignment = 0;
-int option_attribute_testing = 0;
-int option_context_lines = 0;
-int option_object_locating = 0;
-int option_object_movement = 0;
-int option_left_margin = 0;
-int option_right_margin = 0;
-int option_ignore_errors = 0;
-int option_piracy = 0;
-int option_undo_slots = MAX_UNDO_SLOTS;
-int option_expand_abbreviations = 0;
-int option_script_cols = 80;
-int option_save_quetzal = 1;
-*/
-
-int option_sound = 1;
-char *option_zcode_path;
-
-
-/* Size of memory to reserve (in bytes) */
-
-long reserve_mem = 0;
-
-/*
- * z_piracy, branch if the story file is a legal copy.
- *
- *	no zargs used
- *
- */
-
-void z_piracy (void)
-{
-
-    branch (!f_setup.piracy);
-
-}/* z_piracy */
-
 class FrotzNetworkPlugin;
 FrotzNetworkPlugin * np = NULL;
+
+#define	PARENT_READ	p.readpipe[0]
+#define	CHILD_WRITE	p.readpipe[1]
+#define CHILD_READ	p.writepipe[0]
+#define PARENT_WRITE	p.writepipe[1]
+
+typedef struct dfrotz_ {
+	pid_t pid;
+	std::string game;
+	int readpipe[2];
+	int writepipe[2];
+} dfrotz;
+
+using namespace boost::filesystem;
+
+static const char *howtoplay = "To move around, just type the direction you want to go.  Directions can be\n"
+"abbreviated:  NORTH to N, SOUTH to S, EAST to E, WEST to W, NORTHEAST to\n"
+"NE, NORTHWEST to NW, SOUTHEAST to SE, SOUTHWEST to SW, UP to U, and DOWN\n"
+"to D.  IN and OUT will also work in certain places.\n"
+"\n"
+"There are many differnet kinds of sentences used in Interactive Fiction.\n"
+"Here are some examples:\n"
+"\n"
+"> WALK TO THE NORTH\n"
+"> WEST\n"
+"> NE\n"
+"> DOWN\n"
+"> TAKE THE BIRDCAGE\n"
+"> READ ABOUT DIMWIT FLATHEAD\n"
+"> LOOK UP MEGABOZ IN THE ENCYCLOPEDIA\n"
+"> LIE DOWN IN THE PINK SOFA\n"
+"> EXAMINE THE SHINY COIN\n"
+"> PUT THE RUSTY KEY IN THE CARDBOARD BOX\n"
+"> SHOW MY BOW TIE TO THE BOUNCER\n"
+"> HIT THE CRAWLING CRAB WITH THE GIANT NUTCRACKER\n"
+"> ASK THE COWARDLY KING ABOUT THE CROWN JEWELS\n"
+"\n"
+"You can use multiple objects with certain verbs if you separate them by\n"
+"the word \"AND\" or by a comma.  Here are some examples:\n"
+"\n"
+"> TAKE THE BOOK AND THE FROG\n"
+"> DROP THE JAR OF PEANUT BUTTER, THE SPOON, AND THE LEMMING FOOD\n"
+"> PUT THE EGG AND THE PENCIL IN THE CABINET\n"
+"\n"
+"You can include several inputs on one line if you separate them by the\n"
+"word \"THEN\" or by a period.  Each input will be handled in order, as\n"
+"though you had typed them individually at seperate prompts.  For example,\n"
+"you could type all of the following at once, before pressing the ENTER (or\n"
+"RETURN) key:\n"
+"\n"
+"> TURN ON THE LIGHT. TAKE THE BOOK THEN READ ABOUT THE JESTER IN THE BOOK\n"
+"\n"
+"If the story doesn't understand one of the sentences on your input line,\n"
+"or if an unusual event occurs, it will ignore the rest of your input line.\n"
+"\n"
+"The words \"IT\" and \"ALL\" can be very useful.  For example:\n"
+"\n"
+"> EXAMINE THE APPLE.  TAKE IT.  EAT IT\n"
+"> CLOSE THE HEAVY METAL DOOR.  LOCK IT\n"
+"> PICK UP THE GREEN BOOT.  SMELL IT.  PUT IT ON.\n"
+"> TAKE ALL\n"
+"> TAKE ALL THE TOOLS\n"
+"> DROP ALL THE TOOLS EXCEPT THE WRENCH AND MINIATURE HAMMER\n"
+"> TAKE ALL FROM THE CARTON\n"
+"> GIVE ALL BUT THE RUBY SLIPPERS TO THE WICKED WITCH\n"
+"\n"
+"The word \"ALL\" refers to every visible object except those inside\n"
+"something else.  If there were an apple on the ground and an orange inside\n"
+"a cabinet, \"TAKE ALL\" would take the apple but not the orange.\n"
+"\n"
+"There are three kinds of questions you can ask:  \"WHERE IS (something)\",\n"
+"\"WHAT IS (something)\", and \"WHO IS (someone)\".  For example:\n"
+"\n"
+"> WHO IS LORD DIMWIT?\n"
+"> WHAT IS A GRUE?\n"
+"> WHERE IS EVERYBODY?\n"
+"\n"
+"When you meet intelligent creatures, you can talk to them by typing their\n"
+"name, then a comma, then whatever you want to say to them.  Here are some\n"
+"examples:\n"
+"\n"
+"> JESTER, HELLO\n"
+"> GUSTAR WOOMAX, TELL ME ABOUT THE COCONUT\n"
+"> UNCLE OTTO, GIVE ME YOUR WALLET\n"
+"> HORSE, WHERE IS YOUR SADDLE?\n"
+"> BOY, RUN HOME THEN CALL THE POLICE\n"
+"> MIGHTY WIZARD, TAKE THIS POISONED APPLE.  EAT IT\n"
+"\n"
+"Notice that in the last two examples, you are giving the characters more\n"
+"than one command on the same input line.  Keep in mind, however, that many\n"
+"creatures don't care for idle chatter; your actions will speak louder than\n"
+"your words.  \n";
+
+
+static void start_dfrotz(dfrotz &p, const std::string &game) {
+// 	p.writepipe[0] = -1;
+
+	if (pipe(p.readpipe) < 0 || pipe(p.writepipe) < 0) {
+	}
+
+	std::cout << "dfrotz -p " << game << "\n";
+
+	if ((p.pid = fork()) < 0) {
+		/* FATAL: cannot fork child */
+	}
+	else if (p.pid == 0) {
+		close(PARENT_WRITE);
+		close(PARENT_READ);
+
+		dup2(CHILD_READ,  0);  close(CHILD_READ);
+		dup2(CHILD_WRITE, 1);  close(CHILD_WRITE);
+
+		execlp("dfrotz", "-p", game.c_str(), NULL);
+
+	}
+	else {
+		close(CHILD_READ);
+		close(CHILD_WRITE);
+	}
+}
 
 class FrotzNetworkPlugin : public NetworkPlugin {
 	public:
@@ -173,22 +150,128 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-			m_user = user;
 			np->handleConnected(user);
 			Swift::StatusShow status;
-			np->handleBuddyChanged(user, "zork", "Zork", "Games", status.getType());
-			sleep(1);
-			np->handleMessage(np->m_user, "zork", first_msg);
+			np->handleBuddyChanged(user, "zcode", "ZCode", "ZCode", status.getType());
+// 			sleep(1);
+// 			np->handleMessage(np->m_user, "zork", first_msg);
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
-			exit(0);
+			if (games.find(user) != games.end()) {
+				kill(games[user].pid, SIGTERM);
+				games.erase(user);
+			}
+// 			exit(0);
+		}
+
+		void readMessage(const std::string &user) {
+			static char buf[15000];
+			buf[0] = 0;
+			int repeated = 0;
+			while (strlen(buf) == 0) {
+				ssize_t len = read(games[user].readpipe[0], buf, 15000);
+				if (len > 0) {
+					buf[len] = 0;
+				}
+				usleep(1000);
+				repeated++;
+				if (repeated > 30)
+					return;
+			}
+			np->handleMessage(user, "zcode", buf);
+
+			std::string msg = "save\n";
+			write(games[user].writepipe[1], msg.c_str(), msg.size());
+
+			msg = user + "_" + games[user].game + ".save\n";
+			write(games[user].writepipe[1], msg.c_str(), msg.size());
+			ignoreMessage(user);
+		}
+
+		void ignoreMessage(const std::string &user) {
+			usleep(1000000);
+			static char buf[15000];
+			buf[0] = 0;
+			int repeated = 0;
+			while (strlen(buf) == 0) {
+				ssize_t len = read(games[user].readpipe[0], buf, 15000);
+				if (len > 0) {
+					buf[len] = 0;
+				}
+				usleep(1000);
+				repeated++;
+				if (repeated > 30)
+					return;
+			}
+
+			std::cout << "ignoring: " << buf << "\n";
+		}
+
+		std::vector<std::string> getGames() {
+			std::vector<std::string> games;
+			path p(".");
+			directory_iterator end_itr;
+			for (directory_iterator itr(p); itr != end_itr; ++itr) {
+				if (extension(itr->path()) == ".z5") {
+					games.push_back(itr->path().leaf().string());
+				}
+			}
+			return games;
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
-			std::string msg = message + "\n";
-			strcpy(input, msg.c_str());
-			loop_->stop();
+			if (message.find("start") == 0) {
+				std::string game = message.substr(6);
+				std::vector<std::string> lst = getGames();
+				if (std::find(lst.begin(), lst.end(), game) == lst.end()) {
+					np->handleMessage(user, "zcode", "Unknown game");
+					return;
+				}
+				np->handleMessage(user, "zcode", "Starting the game");
+
+				dfrotz d;
+				d.game = game;
+				start_dfrotz(d, game);
+				games[user] = d;
+				fcntl(games[user].readpipe[0], F_SETFL, O_NONBLOCK);
+
+				if (boost::filesystem::exists(user + "_" + games[user].game + ".save")) {
+
+					std::string msg = "restore\n";
+					write(games[user].writepipe[1], msg.c_str(), msg.size());
+
+					msg = user + "_" + games[user].game + ".save\n";
+					write(games[user].writepipe[1], msg.c_str(), msg.size());
+
+					ignoreMessage(user);
+
+					msg = "l\n";
+					write(games[user].writepipe[1], msg.c_str(), msg.size());
+				}
+
+				readMessage(user);
+			}
+			else if (message == "stop" && games.find(user) != games.end()) {
+				kill(games[user].pid, SIGTERM);
+				games.erase(user);
+				np->handleMessage(user, "zcode", "Game stopped");
+			}
+			else if (message == "howtoplay") {
+				np->handleMessage(user, "zcode", howtoplay);
+			}
+			else if (games.find(user) != games.end()) {
+				std::string msg = message + "\n";
+				write(games[user].writepipe[1], msg.c_str(), msg.size());
+				readMessage(user);
+			}
+			else {
+				std::string games;
+				BOOST_FOREACH(const std::string &game, getGames()) {
+					games += game + "\n";
+				}
+				np->handleMessage(user, "zcode", "Games are saved/loaded automatically. Use \"restart\" to restart existing game. Emulator commands are:\nstart <game>\nstop\nhowtoplay\n\nList of games:\n" + games);
+			}
 		}
 
 		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
@@ -197,25 +280,38 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
 		}
 
-		std::string m_user;
+		std::map<std::string, dfrotz> games;
 		std::string first_msg;
 	private:
 		
 		Config *config;
 };
 
-void send_array() {
-	if (np->first_msg.empty())
-		np->first_msg = frotz_get_array();
-	else
-		np->handleMessage(np->m_user, "zork", frotz_get_array());
-	frotz_reset_array();
+static void spectrum_sigchld_handler(int sig)
+{
+	int status;
+	pid_t pid;
+
+	do {
+		pid = waitpid(-1, &status, WNOHANG);
+	} while (pid != 0 && pid != (pid_t)-1);
+
+	if ((pid == (pid_t) - 1) && (errno != ECHILD)) {
+		char errmsg[BUFSIZ];
+		snprintf(errmsg, BUFSIZ, "Warning: waitpid() returned %d", pid);
+		perror(errmsg);
+	}
 }
+
 
 int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
 
+	if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
+		std::cout << "SIGCHLD handler can't be set\n";
+		return -1;
+	}
 
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
@@ -264,20 +360,7 @@ int main (int argc, char* argv[]) {
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
 	np = new FrotzNetworkPlugin(&config, &eventLoop, host, port);
-
-	os_init_setup ();
-	os_process_arguments (argc, argv);
-	init_buffer ();
-	init_err ();
-	init_memory ();
-	init_process ();
-	init_sound ();
-	os_init_screen ();
-	init_undo ();
-	z_restart ();
-	interpret ();
-	reset_memory ();
-	os_reset_screen ();
+	loop_->run();
 
 	return 0;
 }

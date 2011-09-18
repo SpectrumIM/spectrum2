@@ -38,7 +38,7 @@ static zchar prev_c = 0;
 
 void flush_buffer (void)
 {
-    static int locked = FALSE;
+    static bool locked = FALSE;
 
     /* Make sure we stop when flush_buffer is called from flush_buffer.
        Note that this is difficult to avoid as we might print a newline
@@ -79,7 +79,7 @@ void flush_buffer (void)
 
 void print_char (zchar c)
 {
-    static int flag = FALSE;
+    static bool flag = FALSE;
 
     if (message || ostream_memory || enable_buffering) {
 

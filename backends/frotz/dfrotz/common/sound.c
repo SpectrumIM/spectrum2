@@ -36,8 +36,8 @@ static zword routine = 0;
 static int next_sample = 0;
 static int next_volume = 0;
 
-static int locked = FALSE;
-static int playing = FALSE;
+static bool locked = FALSE;
+static bool playing = FALSE;
 
 /*
  * init_sound

@@ -24,7 +24,7 @@ extern int restore_undo (void);
 
 extern int read_number (void);
 
-extern int read_yes_or_no (const char *);
+extern bool read_yes_or_no (const char *);
 
 extern void replay_open (void);
 extern void replay_close (void);
@@ -40,7 +40,7 @@ extern void seed_random (int);
  *
  */
 
-static int hot_key_debugging (void)
+static bool hot_key_debugging (void)
 {
 
     print_string ("Debugging options\n");
@@ -62,7 +62,7 @@ static int hot_key_debugging (void)
  *
  */
 
-static int hot_key_help (void) {
+static bool hot_key_help (void) {
 
     print_string ("Help\n");
 
@@ -88,7 +88,7 @@ static int hot_key_help (void) {
  *
  */
 
-static int hot_key_playback (void)
+static bool hot_key_playback (void)
 {
 
     print_string ("Playback on\n");
@@ -107,7 +107,7 @@ static int hot_key_playback (void)
  *
  */
 
-static int hot_key_recording (void)
+static bool hot_key_recording (void)
 {
 
     if (istream_replay) {
@@ -132,7 +132,7 @@ static int hot_key_recording (void)
  *
  */
 
-static int hot_key_seed (void)
+static bool hot_key_seed (void)
 {
 
     print_string ("Seed random numbers\n");
@@ -151,7 +151,7 @@ static int hot_key_seed (void)
  *
  */
 
-static int hot_key_undo (void)
+static bool hot_key_undo (void)
 {
 
     print_string ("Undo one turn\n");
@@ -181,7 +181,7 @@ static int hot_key_undo (void)
  *
  */
 
-static int hot_key_restart (void)
+static bool hot_key_restart (void)
 {
 
     print_string ("New game\n");
@@ -202,7 +202,7 @@ static int hot_key_restart (void)
  *
  */
 
-static int hot_key_quit (void)
+static bool hot_key_quit (void)
 {
 
     print_string ("Exit game\n");
@@ -224,12 +224,12 @@ static int hot_key_quit (void)
  *
  */
 
-int handle_hot_key (zchar key)
+bool handle_hot_key (zchar key)
 {
 
     if (cwin == 0) {
 
-	int aborting;
+	bool aborting;
 
 	aborting = FALSE;
 

@@ -42,10 +42,10 @@ static struct {
 static int font_height = 1;
 static int font_width = 1;
 
-static int input_redraw = FALSE;
-static int more_prompts = TRUE;
-static int discarding = FALSE;
-static int cursor = TRUE;
+static bool input_redraw = FALSE;
+static bool more_prompts = TRUE;
+static bool discarding = FALSE;
+static bool cursor = TRUE;
 
 static int input_window = 0;
 
@@ -157,7 +157,7 @@ static void reset_cursor (zword win)
  *
  */
 
-void set_more_prompts (int flag)
+void set_more_prompts (bool flag)
 {
 
     if (flag && !more_prompts)
@@ -439,7 +439,7 @@ void screen_erase_input (const zchar *buf)
  *
  */
 
-zchar console_read_input (int max, zchar *buf, zword timeout, int continued)
+zchar console_read_input (int max, zchar *buf, zword timeout, bool continued)
 {
     zchar key;
     int i;
@@ -795,7 +795,7 @@ void restart_screen (void)
  *
  */
 
-int validate_click (void)
+bool validate_click (void)
 {
 
     if (mwin >= 0) {
@@ -1156,7 +1156,7 @@ void z_picture_data (void)
     int height, width;
     int i;
 
-    int avail = os_picture_data (pic, &height, &width);
+    bool avail = os_picture_data (pic, &height, &width);
 
     for (i = 0; mapper[i].story_id != UNKNOWN; i++)
 
@@ -1581,7 +1581,7 @@ void z_show_status (void)
     zword global2;
     zword addr;
 
-    int brief = FALSE;
+    bool brief = FALSE;
 
     /* One V5 game (Wishbringer Solid Gold) contains this opcode by
        accident, so just return if the version number does not fit */

@@ -7,8 +7,6 @@
 
 #include "dumb_frotz.h"
 
-#define VERSION 1.0
-
 f_setup_t f_setup;
 
 #define INFORMATION "\
@@ -96,16 +94,15 @@ error:
 }/* zgetopt */
 
 static int user_screen_width = 75;
-static int user_screen_height = 100;
+static int user_screen_height = 24;
 static int user_interpreter_number = -1;
 static int user_random_seed = -1;
 static int user_tandy_bit = 0;
 static char *graphics_filename = NULL;
-static int plain_ascii = FALSE;
+static bool plain_ascii = FALSE;
 
 void os_process_arguments(int argc, char *argv[]) 
 {
-	return;
     int c;
 
     /* Parse the options */
@@ -198,7 +195,7 @@ void os_restart_game (int stage) {}
 void os_fatal (const char *s)
 {
   fprintf(stderr, "\nFatal error: %s\n", s);
-//   exit(1);
+  exit(1);
 }
 
 FILE *os_path_open(const char *name, const char *mode)

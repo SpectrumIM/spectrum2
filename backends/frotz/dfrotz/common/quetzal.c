@@ -99,7 +99,7 @@ static zword frames[STACK_SIZE/4+1];
     (write_byte (fp, 0)         && write_byte (fp, (run)))
 
 /* Read one word from file; return TRUE if OK. */
-static int read_word (FILE *f, zword *result)
+static bool read_word (FILE *f, zword *result)
 {
     int a, b;
 
@@ -111,7 +111,7 @@ static int read_word (FILE *f, zword *result)
 }
 
 /* Read one long from file; return TRUE if OK. */
-static int read_long (FILE *f, zlong *result)
+static bool read_long (FILE *f, zlong *result)
 {
     int a, b, c, d;
 

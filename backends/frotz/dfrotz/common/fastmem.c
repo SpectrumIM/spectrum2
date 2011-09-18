@@ -524,7 +524,7 @@ void storew (zword addr, zword value)
 
 void z_restart (void)
 {
-    static int first_restart = TRUE;
+    static bool first_restart = TRUE;
 
     flush_buffer ();
 

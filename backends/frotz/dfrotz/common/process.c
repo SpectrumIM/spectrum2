@@ -446,7 +446,7 @@ void ret (zword value)
  *
  */
 
-void branch (int flag)
+void branch (bool flag)
 {
     long pc;
     zword offset;

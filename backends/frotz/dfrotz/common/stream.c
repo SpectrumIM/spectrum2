@@ -20,13 +20,13 @@
 
 #include "frotz.h"
 
-extern int handle_hot_key (zchar);
+extern bool handle_hot_key (zchar);
 
-extern int validate_click (void);
+extern bool validate_click (void);
 
 extern void replay_open (void);
 extern void replay_close (void);
-extern void memory_open (zword, zword, int);
+extern void memory_open (zword, zword, bool);
 extern void memory_close (void);
 extern void record_open (void);
 extern void record_close (void);
@@ -55,7 +55,7 @@ extern void screen_mssg_off (void);
 extern zchar replay_read_key (void);
 extern zchar replay_read_input (zchar *);
 extern zchar console_read_key (zword);
-extern zchar console_read_input (int, zchar *, zword, int);
+extern zchar console_read_input (int, zchar *, zword, bool);
 
 extern int direct_call (zword);
 
@@ -232,7 +232,7 @@ void z_input_stream (void)
  */
 
 zchar stream_read_key ( zword timeout, zword routine,
-			int hot_keys )
+			bool hot_keys )
 {
     zchar key = ZC_BAD;
 
@@ -296,8 +296,8 @@ continue_input:
 
 zchar stream_read_input ( int max, zchar *buf,
 			  zword timeout, zword routine,
-			  int hot_keys,
-			  int no_scripting )
+			  bool hot_keys,
+			  bool no_scripting )
 {
     zchar key = ZC_BAD;
 

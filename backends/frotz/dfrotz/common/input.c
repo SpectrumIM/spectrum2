@@ -22,10 +22,10 @@
 
 extern int save_undo (void);
 
-extern zchar stream_read_key (zword, zword, int);
-extern zchar stream_read_input (int, zchar *, zword, zword, int, int);
+extern zchar stream_read_key (zword, zword, bool);
+extern zchar stream_read_input (int, zchar *, zword, zword, bool, bool);
 
-extern void tokenise_line (zword, zword, zword, int);
+extern void tokenise_line (zword, zword, zword, bool);
 
 /*
  * is_terminator
@@ -34,7 +34,7 @@ extern void tokenise_line (zword, zword, zword, int);
  *
  */
 
-int is_terminator (zchar key)
+bool is_terminator (zchar key)
 {
 
     if (key == ZC_TIME_OUT)
@@ -90,7 +90,7 @@ void z_make_menu (void)
  *
  */
 
-int read_yes_or_no (const char *s)
+bool read_yes_or_no (const char *s)
 {
     zchar key;
 

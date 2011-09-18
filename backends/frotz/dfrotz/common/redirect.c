@@ -40,7 +40,7 @@ static struct {
  *
  */
 
-void memory_open (zword table, zword xsize, int buffering)
+void memory_open (zword table, zword xsize, bool buffering)
 {
 
     if (++depth < MAX_NESTING) {

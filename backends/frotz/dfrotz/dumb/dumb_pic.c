@@ -101,7 +101,7 @@ static int z_num_to_index(int n)
   return -1;
 }
 
-int os_picture_data(int num, int *height, int *width)
+bool os_picture_data(int num, int *height, int *width)
 {
   int index;
 

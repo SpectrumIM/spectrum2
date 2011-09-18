@@ -54,7 +54,7 @@ static char runtime_usage[] =
 ;
 
 static float speed = 1;
-static int do_more_prompts = FALSE;
+static bool do_more_prompts = FALSE;
 
 enum input_type {
   INPUT_CHAR,
@@ -81,7 +81,19 @@ static int xgetchar(void)
  * other places where I'm not so careful).  */
 static void getline_(char *s)
 {
- spectrum_get_line(s);
+	fflush(stdout);
+  int c;
+  char *p = s;
+  while (p < s + INPUT_BUFFER_SIZE - 1)
+    if ((*p++ = xgetchar()) == '\n') {
+      *p = '\0';
+      return;
+    }
+  p[-1] = '\n';
+  p[0] = '\0';
+  while ((c = xgetchar()) != '\n')
+    ;
+  printf("Line too long, truncated to %s\n", s - INPUT_BUFFER_SIZE);
 }
 
 /* Translate in place all the escape characters in s.  */
@@ -131,7 +143,7 @@ static int time_ahead = 0;
  * a previous call to dumb_read_line.
  * Returns TRUE if we should timeout rather than use the read-ahead.
  * (because the user is further ahead than the timeout).  */
-static int check_timeout(int timeout)
+static bool check_timeout(int timeout)
 {
   if ((timeout == 0) || (timeout > time_ahead))
     time_ahead = 0;
@@ -141,13 +153,13 @@ static int check_timeout(int timeout)
 }
 
 /* If val is '0' or '1', set *var accordingly, otherwise toggle it.  */
-static void toggle(int *var, char val)
+static void toggle(bool *var, char val)
 {
   *var = val == '1' || (val != '0' && !*var);
 }
 
 /* Handle input-related user settings and call dumb_output_handle_setting.  */
-int dumb_handle_setting(const char *setting, int show_cursor, int startup)
+bool dumb_handle_setting(const char *setting, bool show_cursor, bool startup)
 {
   if (!strncmp(setting, "sf", 2)) {
     speed = atof(&setting[2]);
@@ -169,12 +181,12 @@ int dumb_handle_setting(const char *setting, int show_cursor, int startup)
  * (that isn't the start of a special character)), and write the
  * first non-command to s.
  * Return true if timed-out.  */
-static int dumb_read_line(char *s, char *prompt, int show_cursor,
+static bool dumb_read_line(char *s, char *prompt, bool show_cursor,
 			   int timeout, enum input_type type,
 			   zchar *continued_line_chars)
 {
   time_t start_time;
-  
+
   if (timeout) {
     if (time_ahead >= timeout) {
       time_ahead -= timeout;
@@ -185,6 +197,7 @@ static int dumb_read_line(char *s, char *prompt, int show_cursor,
   }
   time_ahead = 0;
 
+  dumb_show_screen(show_cursor);
   for (;;) {
     char *command;
     if (prompt)
@@ -284,7 +297,7 @@ static char read_key_buffer[INPUT_BUFFER_SIZE];
 /* Similar.  Useful for using function key abbreviations.  */
 static char read_line_buffer[INPUT_BUFFER_SIZE];
 
-zchar os_read_key (int timeout, int show_cursor)
+zchar os_read_key (int timeout, bool show_cursor)
 {
   char c;
   int timed_out;
@@ -318,7 +331,7 @@ zchar os_read_line (int max, zchar *buf, int timeout, int width, int continued)
 {
   char *p;
   int terminator;
-  static int timed_out_last_time;
+  static bool timed_out_last_time;
   int timed_out;
 
   /* Discard any keys read for single key input.  */
@@ -370,7 +383,6 @@ zchar os_read_line (int max, zchar *buf, int timeout, int width, int continued)
 
 int os_read_file_name (char *file_name, const char *default_name, int flag)
 {
-	return FALSE;
   char buf[INPUT_BUFFER_SIZE], prompt[INPUT_BUFFER_SIZE];
   FILE *fp;
 
@@ -384,12 +396,12 @@ int os_read_file_name (char *file_name, const char *default_name, int flag)
   strcpy (file_name, buf[0] ? buf : default_name);
 
   /* Warn if overwriting a file.  */
-  if ((flag == FILE_SAVE || flag == FILE_SAVE_AUX || flag == FILE_RECORD)
-      && ((fp = fopen(file_name, "rb")) != NULL)) {
-    fclose (fp);
-    dumb_read_misc_line(buf, "Overwrite existing file? ");
-    return(tolower(buf[0]) == 'y');
-  }
+//   if ((flag == FILE_SAVE || flag == FILE_SAVE_AUX || flag == FILE_RECORD)
+//       && ((fp = fopen(file_name, "rb")) != NULL)) {
+//     fclose (fp);
+//     dumb_read_misc_line(buf, "Overwrite existing file? ");
+//     return(tolower(buf[0]) == 'y');
+//   }
   return TRUE;
 }
 

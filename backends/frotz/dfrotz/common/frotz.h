@@ -5,7 +5,7 @@
  *
  */
 
-/* Unfortunately, frotz's int definition conflicts with that of curses.
+/* Unfortunately, frotz's bool definition conflicts with that of curses.
    But since no os_* function uses it, it's safe to let the frotz core see
    this definition, but have the unix port see the curses version. */
 
@@ -13,10 +13,7 @@
 
 #ifndef __UNIX_PORT_FILE
 #include <signal.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef int bool;
 
 #ifndef TRUE
 #define TRUE 1
@@ -355,12 +352,12 @@ extern zword frame_count;
 extern zword zargs[8];
 extern int zargc;
 
-extern int ostream_screen;
-extern int ostream_script;
-extern int ostream_memory;
-extern int ostream_record;
-extern int istream_replay;
-extern int message;
+extern bool ostream_screen;
+extern bool ostream_script;
+extern bool ostream_memory;
+extern bool ostream_record;
+extern bool istream_replay;
+extern bool message;
 
 extern int cwin;
 extern int mwin;
@@ -368,10 +365,10 @@ extern int mwin;
 extern int mouse_x;
 extern int mouse_y;
 
-extern int enable_wrapping;
-extern int enable_scripting;
-extern int enable_scrolling;
-extern int enable_buffering;
+extern bool enable_wrapping;
+extern bool enable_scripting;
+extern bool enable_scrolling;
+extern bool enable_buffering;
 
 
 extern char *option_zcode_path;	/* dg */
@@ -578,7 +575,7 @@ void 	stream_mssg_off (void);
 
 void	ret (zword);
 void 	store (zword);
-void 	branch (int);
+void 	branch (bool);
 
 void	storeb (zword, zbyte);
 void	storew (zword, zword);
@@ -617,20 +614,4 @@ int  	os_string_width (const zchar *);
 void	os_init_setup (void);
 int	os_speech_output(const zchar *);
 
-void init_buffer(void);
-void init_process(void);
-void init_sound(void);
-void init_memory(void);
-void init_undo(void);
-void interpret(void);
-void reset_memory(void);
-
-char *frotz_get_array();
-void frotz_reset_array();
-void dumb_show_screen(int show_cursor);
-
 #include "setup.h"
-
-#ifdef __cplusplus
-}
-#endif

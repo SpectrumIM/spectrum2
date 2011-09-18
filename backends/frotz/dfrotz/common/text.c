@@ -572,7 +572,6 @@ void z_print_addr (void)
 void z_print_char (void)
 {
 
-
     print_char (translate_from_zscii (zargs[0]));
 
 }/* z_print_char */
@@ -589,7 +588,7 @@ void z_print_form (void)
     zword count;
     zword addr = zargs[0];
 
-    int first = TRUE;
+    bool first = TRUE;
 
     for (;;) {
 
@@ -791,7 +790,7 @@ static zword lookup_text (int padding, zword dct)
     int entry_number;
     int lower, upper;
     int i;
-    int sorted;
+    bool sorted;
 
     encode_text (padding);
 
@@ -873,7 +872,7 @@ static zword lookup_text (int padding, zword dct)
  *
  */
 
-static void tokenise_text (zword text, zword length, zword from, zword parse, zword dct, int flag)
+static void tokenise_text (zword text, zword length, zword from, zword parse, zword dct, bool flag)
 {
     zword addr;
     zbyte token_max, token_count;
@@ -911,7 +910,7 @@ static void tokenise_text (zword text, zword length, zword from, zword parse, zw
  *
  */
 
-void tokenise_line (zword text, zword token, zword dct, int flag)
+void tokenise_line (zword text, zword token, zword dct, bool flag)
 {
     zword addr1;
     zword addr2;

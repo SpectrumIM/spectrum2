@@ -28,11 +28,11 @@
 #define SEEK_END 2
 #endif
 
-extern void set_more_prompts (int);
+extern void set_more_prompts (bool);
 
-extern int is_terminator (zchar);
+extern bool is_terminator (zchar);
 
-extern int read_yes_or_no (const char *);
+extern bool read_yes_or_no (const char *);
 
 char script_name[MAX_FILE_NAME + 1] = DEFAULT_SCRIPT_NAME;
 char command_name[MAX_FILE_NAME + 1] = DEFAULT_COMMAND_NAME;
@@ -63,7 +63,7 @@ static FILE *pfp = NULL;
 
 void script_open (void)
 {
-    static int script_valid = FALSE;
+    static bool script_valid = FALSE;
 
     char new_name[MAX_FILE_NAME + 1];
 
@@ -325,7 +325,7 @@ void record_close (void)
  *
  */
 
-static void record_code (int c, int force_encoding)
+static void record_code (int c, bool force_encoding)
 {
 
     if (force_encoding || c == '[' || c < 0x20 || c > 0x7e) {
