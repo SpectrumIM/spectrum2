@@ -117,7 +117,7 @@ class UserManager {
 		void handleProbePresence(Swift::Presence::ref presence);
 		void handleSubscription(Swift::Presence::ref presence);
 		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
-// 		void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+		void handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info);
 		void addUser(User *user);
 
 		long m_onlineBuddies;

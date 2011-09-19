@@ -43,6 +43,7 @@ INCLUDE(FindQt4)
 FIND_PACKAGE(Qt4 COMPONENTS QtCore)
 
 # ADD_DEFINITIONS(${SWIFTEN_CFLAGS})
+ADD_DEFINITIONS(-DSUPPORT_LEGACY_CAPS)
 
 message("  Supported features")
 message("-----------------------")

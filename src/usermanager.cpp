@@ -53,12 +53,12 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	}
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
+	component->onUserDiscoInfoReceived.connect(bind(&UserManager::handleDiscoInfo, this, _1, _2));
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
 	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
 
 	m_userRegistry->onConnectUser.connect(bind(&UserManager::connectUser, this, _1));
 	m_userRegistry->onDisconnectUser.connect(bind(&UserManager::disconnectUser, this, _1));
-// 	component->onDiscoInfoResponse.connect(bind(&UserManager::handleDiscoInfoResponse, this, _1, _2, _3));
 
 	m_removeTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1);
 }
@@ -120,6 +120,15 @@ void UserManager::removeAllUsers() {
 
 int UserManager::getUserCount() {
 	return m_users.size();
+}
+
+void UserManager::handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
+	User *user = getUser(jid.toBare().toString());
+	if (!user) {
+		return;
+	}
+
+	user->handleDiscoInfo(jid, info);
 }
 
 void UserManager::handlePresence(Swift::Presence::ref presence) {

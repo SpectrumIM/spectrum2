@@ -88,8 +88,18 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 			continue;
 
 		Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(presence->getFrom());
-		if (!discoInfo)
+		if (!discoInfo) {
+#ifdef SUPPORT_LEGACY_CAPS
+			if (m_legacyCaps.find(presence->getFrom()) != m_legacyCaps.end()) {
+				discoInfo = m_legacyCaps[presence->getFrom()];
+			}
+			else {
+				continue;
+			}
+#else
 			continue;
+#endif
+		}
 
 		if (discoInfo->hasFeature(feature)) {
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
@@ -97,7 +107,7 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 		}
 	}
 
-	LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature");
+	LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
 	return jid;
 }
 
@@ -189,26 +199,44 @@ void User::handlePresence(Swift::Presence::ref presence) {
 
 	sendCurrentPresence();
 
+
 	// Change legacy network presence
-	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
-	if (highest) {
-		Swift::Presence::ref response = Swift::Presence::create(highest);
-		response->setTo(m_jid);
-		response->setFrom(m_component->getJID());
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
-		onPresenceChanged(highest);
-	}
-	else {
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(m_jid.toBare());
-		response->setFrom(m_component->getJID());
-		response->setType(Swift::Presence::Unavailable);
-		onPresenceChanged(response);
+	if (m_readyForConnect) {
+		Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
+		if (highest) {
+			Swift::Presence::ref response = Swift::Presence::create(highest);
+			response->setTo(m_jid);
+			response->setFrom(m_component->getJID());
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
+			onPresenceChanged(highest);
+		}
+		else {
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setTo(m_jid.toBare());
+			response->setFrom(m_component->getJID());
+			response->setType(Swift::Presence::Unavailable);
+			onPresenceChanged(response);
+		}
 	}
 }
 
 void User::handleSubscription(Swift::Presence::ref presence) {
 	m_rosterManager->handleSubscription(presence);
+}
+
+void User::handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
+	LOG4CXX_INFO(logger, jid.toString() << ": got disco#info");
+#ifdef SUPPORT_LEGACY_CAPS
+	Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(jid);
+	// This is old legacy cap which is not stored in entityCapsManager,
+	// we have to store it in our user class.
+	if (!discoInfo) {
+		LOG4CXX_INFO(logger, jid.toString() << ": LEGACY");
+		m_legacyCaps[jid] = info;
+	}
+#endif
+
+	onConnectingTimeout();
 }
 
 void User::onConnectingTimeout() {
@@ -217,6 +245,12 @@ void User::onConnectingTimeout() {
 	m_reconnectTimer->stop();
 	m_readyForConnect = true;
 	onReadyToConnect();
+
+	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
+	if (highest) {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << highest->getType());
+		onPresenceChanged(highest);
+	}
 }
 
 void User::setIgnoreDisconnect(bool ignoreDisconnect) {

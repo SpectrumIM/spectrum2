@@ -112,7 +112,7 @@ bool SQLite3Backend::connect() {
 	if (createDatabase() == false)
 		return false;
 
-	PREP_STMT(m_setUser, "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, DATETIME('NOW'), ?)");
+	PREP_STMT(m_setUser, "INSERT OR REPLACE INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, DATETIME('NOW'), ?)");
 	PREP_STMT(m_getUser, "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
 	PREP_STMT(m_removeUser, "DELETE FROM " + m_prefix + "users WHERE id=?");

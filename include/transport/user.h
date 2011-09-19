@@ -75,6 +75,8 @@ class User {
 
 		void handleSubscription(Swift::Presence::ref presence);
 
+		void handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info);
+
 		time_t &getLastActivity() {
 			return m_lastActivity;
 		}
@@ -127,6 +129,7 @@ class User {
 		Swift::Timer::ref m_reconnectTimer;
 		boost::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
+		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
 };
 
 }

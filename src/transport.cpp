@@ -245,18 +245,26 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 		if (capsInfo && capsInfo->getHash() == "sha-1") {
 			/*haveFeatures = */m_entityCapsManager->getCaps(presence->getFrom()) != DiscoInfo::ref();
 		}
-// 		else {
-// 			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_iqRouter);
-// 			discoInfoRequest->onResponse.connect(boost::bind(&Component::handleDiscoInfoResponse, this, _1, _2, presence->getFrom()));
-// 			discoInfoRequest->send();
-// 		}
+#ifdef SUPPORT_LEGACY_CAPS
+		else {
+			GetDiscoInfoRequest::ref discoInfoRequest = GetDiscoInfoRequest::create(presence->getFrom(), m_iqRouter);
+			discoInfoRequest->onResponse.connect(boost::bind(&Component::handleDiscoInfoResponse, this, _1, _2, presence->getFrom()));
+			discoInfoRequest->send();
+		}
+#endif
 	}
 
 	onUserPresenceReceived(presence);
 }
 
+void Component::handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
+#ifdef SUPPORT_LEGACY_CAPS
+	onUserDiscoInfoReceived(jid, info);
+#endif
+}
+
 void Component::handleCapsChanged(const Swift::JID& jid) {
-	m_entityCapsManager->getCaps(jid) != DiscoInfo::ref();
+	onUserDiscoInfoReceived(jid, m_entityCapsManager->getCaps(jid));
 }
 
 }

@@ -157,6 +157,8 @@ namespace Transport {
 			/// \param presence presence data
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
+			boost::signal<void (const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info)> onUserDiscoInfoReceived;
+
 // 			boost::signal<void (boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid)> onDiscoInfoResponse;
 
 		private:
@@ -166,7 +168,7 @@ namespace Transport {
 			void handleDataRead(const Swift::SafeByteArray &data);
 			void handleDataWritten(const Swift::SafeByteArray &data);
 
-// 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
 			Swift::NetworkFactories *m_factories;

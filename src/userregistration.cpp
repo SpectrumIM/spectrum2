@@ -388,6 +388,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	}
 	else {
 		res.jid = barejid;
+		res.uin = username;
 		res.password = *payload->getPassword();
 		res.language = language;
 		res.encoding = encoding;

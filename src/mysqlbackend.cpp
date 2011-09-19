@@ -296,7 +296,7 @@ bool MySQLBackend::connect() {
 
 	createDatabase();
 
-	m_setUser = new Statement(&m_conn, "sssssb", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?)");
+	m_setUser = new Statement(&m_conn, "sssssbs", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?) ON DUPLICATE KEY UPDATE password=?");
 	m_getUser = new Statement(&m_conn, "s|isssssb", "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
 	m_removeUser = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "users WHERE id=?");
@@ -386,7 +386,7 @@ bool MySQLBackend::exec(const std::string &query) {
 }
 
 void MySQLBackend::setUser(const UserInfo &user) {
-	*m_setUser << user.jid << user.uin << user.password << user.language << user.encoding << user.vip;
+	*m_setUser << user.jid << user.uin << user.password << user.language << user.encoding << user.vip << user.password;
 	m_setUser->execute();
 }
 
