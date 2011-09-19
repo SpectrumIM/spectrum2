@@ -198,7 +198,7 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 	}
 
 	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
-// 	m_supportRemoteRoster = true;
+	m_supportRemoteRoster = true;
 	return;
 
 	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
