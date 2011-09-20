@@ -214,7 +214,7 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			directory_iterator end_itr;
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 				if (extension(itr->path()) == ".z5") {
-					games.push_back(itr->path().leaf().string());
+					games.push_back(itr->path().leaf());
 				}
 			}
 			return games;
