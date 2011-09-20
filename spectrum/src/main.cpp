@@ -23,6 +23,7 @@
 #include "log4cxx/propertyconfigurator.h"
 #include "log4cxx/consoleappender.h"
 #include "libgen.h"
+#include <sys/stat.h>
 
 using namespace log4cxx;
 
