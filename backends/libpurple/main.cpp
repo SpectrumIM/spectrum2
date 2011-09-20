@@ -169,47 +169,16 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			m_loop->stop();
 		}
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-			PurpleAccount *account = NULL;
-			
-			std::string name = legacyName;
-			std::string protocol = CONFIG_STRING(config, "service.protocol");
-			if (CONFIG_STRING(config, "service.protocol") == "any") {
+		void getProtocolAndName(const std::string &legacyName, std::string &name, std::string &protocol) {
+			name = legacyName;
+			protocol = CONFIG_STRING(config, "service.protocol");
+			if (protocol == "any") {
 				protocol = name.substr(0, name.find("."));
 				name = name.substr(name.find(".") + 1);
 			}
+		}
 
-			if (password.empty()) {
-				np->handleDisconnected(user, 0, "Empty password.");
-				return;
-			}
-
-			if (!purple_find_prpl(protocol.c_str())) {
-				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
-				return;
-			}
-
-			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
-			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
-// 				Log(user, "this account already exists");
-				account = purple_accounts_find(name.c_str(), protocol.c_str());
-// 				User *u = (User *) account->ui_data;
-// 				if (u && u != user) {
-// 					Log(userInfo.jid, "This account is already connected by another jid " << user->getJID());
-// 					return;
-// 				}
-			}
-			else {
-// 				Log(user, "creating new account");
-				account = purple_account_new(name.c_str(), protocol.c_str());
-
-				purple_accounts_add(account);
-			}
-
-			m_sessions[user] = account;
-			m_accounts[account] = user;
-
-			// Default avatar
+		void setDefaultAvatar(PurpleAccount *account, const std::string &legacyName) {
 			char* contents;
 			gsize length;
 			gboolean ret = false;
@@ -226,17 +195,15 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (ret) {
 				purple_buddy_icons_set_account_icon(account, (guchar *) contents, length);
 			}
+		}
 
-			purple_account_set_password(account, password.c_str());
-			purple_account_set_bool(account, "custom_smileys", FALSE);
-			purple_account_set_bool(account, "direct_connect", FALSE);
-
+		void setDefaultAccountOptions(PurpleAccount *account) {
 			for (std::map<std::string,std::string>::const_iterator it = config->getUnregistered().begin();
 				it != config->getUnregistered().end(); it++) {
 				if ((*it).first.find("purple.") == 0) {
 					std::string key = (*it).first.substr((*it).first.find(".") + 1);
 
-					PurplePlugin *plugin = purple_find_prpl(protocol.c_str());
+					PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
 					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
 					bool found = false;
 					for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
@@ -254,7 +221,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 								break;
 
 							case PURPLE_PREF_INT:
-								std::cout << "setting int\n";
 								purple_account_set_int(account, key.c_str(), boost::lexical_cast<int>((*it).second));
 								break;
 
@@ -269,14 +235,51 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					}
 
 					if (!found) {
-						std::cout << "setting string\n";
 						purple_account_set_string(account, key.c_str(), (*it).second.c_str());
 					}
 				}
 			}
+		}
+
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+			PurpleAccount *account = NULL;
+			
+			std::string name;
+			std::string protocol;
+			getProtocolAndName(legacyName, name, protocol);
+
+			if (password.empty()) {
+				np->handleDisconnected(user, 0, "Empty password.");
+				return;
+			}
+
+			if (!purple_find_prpl(protocol.c_str())) {
+				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
+				return;
+			}
+
+			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
+			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
+				account = purple_accounts_find(name.c_str(), protocol.c_str());
+			}
+			else {
+				account = purple_account_new(name.c_str(), protocol.c_str());
+				purple_accounts_add(account);
+			}
+
+			m_sessions[user] = account;
+			m_accounts[account] = user;
+
+			// Default avatar
+			setDefaultAvatar(account, legacyName);
+
+			purple_account_set_password(account, password.c_str());
+			purple_account_set_bool(account, "custom_smileys", FALSE);
+			purple_account_set_bool(account, "direct_connect", FALSE);
+
+			setDefaultAccountOptions(account);
 
 			purple_account_set_enabled(account, "spectrum", TRUE);
-
 			purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
 
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);
@@ -434,78 +437,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleVCardUpdatedRequest(const std::string &user, const std::string &p) {
+		void handleVCardUpdatedRequest(const std::string &user, const std::string &image) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				gssize size = p.size();
+				gssize size = image.size();
 				// this will be freed by libpurple
 				guchar *photo = (guchar *) g_malloc(size * sizeof(guchar));
-				memcpy(photo, p.c_str(), size);
-
-#ifdef WITH_IMAGEMAGICK
-				if (size != 0) {
-					PurplePlugin *plugin = purple_find_prpl(Transport::instance()->protocol()->protocol().c_str());
-					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
-					if (prpl_info->icon_spec.format == NULL) {
-						g_free(photo);
-						return;
-					}
-					try {
-						Magick::Blob blob(photo, size);
-						g_free(photo);
-						photo = NULL;
-						Magick::Image img(blob);
-
-						std::string format;
-						gchar **strlist = g_strsplit(prpl_info->icon_spec.format, ",", 10);
-						for (gchar **f = strlist; *f != NULL; f++) {
-							// jpeg is the best
-							if (strcmp(*f, "jpeg") == 0 || strcmp(*f, "jpg") == 0) {
-								format = "jpg";
-							}
-							// png is number two
-							else if (strcmp(*f, "png") == 0 && format != "jpg") {
-								format = *f;
-							}
-							// gif is alright if there's not jpeg or png
-							else if (strcmp(*f, "gif") == 0 && format != "jpg" && format != "png") {
-								format = *f;
-							}
-							else if (format.empty()) {
-								format = *f;
-							}
-						}
-						g_strfreev(strlist);
-						img.magick(format);
-
-						int width, height;
-						if (CONFIG().protocol == "icq") {
-							width = 48;
-							height = 48;
-						}
-						else {
-							purple_buddy_icon_get_scale_size(&prpl_info->icon_spec, &width, &height);
-						}
-
-						if (img.size().width() != width || img.size().height() != height) {
-							Magick::Geometry g = Magick::Geometry(width,height);
-							g.aspect(CONFIG().protocol == "icq");
-							img.scale(g);
-						}
-
-						Magick::Blob output;
-						img.write(&output);
-						size = output.length();
-						// this will be freed by libpurple
-						photo = (guchar *) g_malloc(size * sizeof(guchar));
-						memcpy(photo, output.data(), size);
-					}
-					catch ( Magick::Exception & error) {
-						Log("handleVCard","Caught Magick++ exception: " << error.what());
-					} catch(...) {   // catch all other exceptions
-					}
-				}
-#endif /* WITH_IMAGEMAGICK */
+				memcpy(photo, image.c_str(), size);
 
 				if (!photo)
 					return;
@@ -749,36 +687,6 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		blocked
 	);
 }
-
-// static void buddyStatusChanged(PurpleBuddy *buddy, PurpleStatus *status_, PurpleStatus *old_status) {
-// 	PurpleAccount *account = purple_buddy_get_account(buddy);
-// 
-// 	Swift::StatusShow status;
-// 	std::string message;
-// 	getStatus(buddy, status, message);
-// 
-// 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
-// }
-// 
-// static void buddySignedOn(PurpleBuddy *buddy) {
-// 	PurpleAccount *account = purple_buddy_get_account(buddy);
-// 
-// 	Swift::StatusShow status;
-// 	std::string message;
-// 	getStatus(buddy, status, message);
-// 
-// 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
-// }
-// 
-// static void buddySignedOff(PurpleBuddy *buddy) {
-// 	PurpleAccount *account = purple_buddy_get_account(buddy);
-// 
-// 	Swift::StatusShow status;
-// 	std::string message;
-// 	getStatus(buddy, status, message);
-// 
-// 	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], (int) status.getType(), message, getIconHash(buddy));
-// }
 
 static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
