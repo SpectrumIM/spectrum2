@@ -735,7 +735,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 // 	std::string msg = striped;
 // 	g_free(striped);
 
-	std::string w = who;
+	std::string w = purple_normalize(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -834,14 +834,15 @@ static PurpleConnectionUiOps conn_ui_ops =
 };
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info) {
-	std::string name(who);
+	PurpleAccount *account = purple_connection_get_account(gc);
+	std::string name(purple_normalize(account, who));
 	std::transform(name.begin(), name.end(), name.begin(),(int(*)(int)) std::tolower);
 
 	size_t pos = name.find("/");
 	if (pos != std::string::npos)
 		name.erase((int) pos, name.length() - (int) pos);
 
-	PurpleAccount *account = purple_connection_get_account(gc);
+	
 	GList *vcardEntries = purple_notify_user_info_get_entries(user_info);
 	PurpleNotifyUserInfoEntry *vcardEntry;
 	std::string firstName;
@@ -1066,7 +1067,7 @@ static PurpleDebugUiOps debugUiOps =
 };
 
 static void buddyTyping(PurpleAccount *account, const char *who, gpointer null) {
-	std::string w = who;
+	std::string w = purple_normalize(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1074,7 +1075,7 @@ static void buddyTyping(PurpleAccount *account, const char *who, gpointer null) 
 }
 
 static void buddyTyped(PurpleAccount *account, const char *who, gpointer null) {
-	std::string w = who;
+	std::string w = purple_normalize(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1082,7 +1083,7 @@ static void buddyTyped(PurpleAccount *account, const char *who, gpointer null) {
 }
 
 static void buddyTypingStopped(PurpleAccount *account, const char *who, gpointer null){
-	std::string w = who;
+	std::string w = purple_normalize(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1090,7 +1091,7 @@ static void buddyTypingStopped(PurpleAccount *account, const char *who, gpointer
 }
 
 static void gotAttention(PurpleAccount *account, const char *who, PurpleConversation *conv, guint type) {
-	std::string w = who;
+	std::string w = purple_normalize(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
