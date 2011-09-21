@@ -280,7 +280,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			setDefaultAccountOptions(account);
 
 			purple_account_set_enabled(account, "spectrum", TRUE);
-			purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
+			if (CONFIG_BOOL(np->config, "service.enable_privacy_lists")) {
+				purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
+			}
 
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);
 			if (status_type != NULL) {
@@ -504,13 +506,15 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
-			PurpleAccount *account = m_sessions[user];
-			if (account) {
-				if (blocked) {
-					purple_privacy_deny(account, buddyName.c_str(), FALSE, FALSE);
-				}
-				else {
-					purple_privacy_allow(account, buddyName.c_str(), FALSE, FALSE);
+			if (CONFIG_BOOL(np->config, "service.enable_privacy_lists")) {
+				PurpleAccount *account = m_sessions[user];
+				if (account) {
+					if (blocked) {
+						purple_privacy_deny(account, buddyName.c_str(), FALSE, FALSE);
+					}
+					else {
+						purple_privacy_allow(account, buddyName.c_str(), FALSE, FALSE);
+					}
 				}
 			}
 		}
@@ -651,34 +655,36 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
 
 	bool blocked = false;
-	if (prpl_info && prpl_info->tooltip_text) {
-		PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
-		prpl_info->tooltip_text(buddy, user_info, true);
-		GList *entries = purple_notify_user_info_get_entries(user_info);
+	if (CONFIG_BOOL(np->config, "service.enable_privacy_lists")) {
+		if (prpl_info && prpl_info->tooltip_text) {
+			PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
+			prpl_info->tooltip_text(buddy, user_info, true);
+			GList *entries = purple_notify_user_info_get_entries(user_info);
 
-		while (entries) {
-			PurpleNotifyUserInfoEntry *entry = (PurpleNotifyUserInfoEntry *)(entries->data);
-			if (purple_notify_user_info_entry_get_label(entry) && purple_notify_user_info_entry_get_value(entry)) {
-				std::string label = purple_notify_user_info_entry_get_label(entry);
-				if (label == "Blocked" ) {
-					if (std::string(purple_notify_user_info_entry_get_value(entry)) == "Yes") {
-						blocked = true;
-						break;
+			while (entries) {
+				PurpleNotifyUserInfoEntry *entry = (PurpleNotifyUserInfoEntry *)(entries->data);
+				if (purple_notify_user_info_entry_get_label(entry) && purple_notify_user_info_entry_get_value(entry)) {
+					std::string label = purple_notify_user_info_entry_get_label(entry);
+					if (label == "Blocked" ) {
+						if (std::string(purple_notify_user_info_entry_get_value(entry)) == "Yes") {
+							blocked = true;
+							break;
+						}
 					}
 				}
+				entries = entries->next;
 			}
-			entries = entries->next;
+			purple_notify_user_info_destroy(user_info);
 		}
-		purple_notify_user_info_destroy(user_info);
-	}
 
-	if (!blocked) {
-		blocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
-	}
-	else {
-		bool purpleBlocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
-		if (blocked != purpleBlocked) {
-			purple_privacy_deny(account, purple_buddy_get_name(buddy), FALSE, FALSE);
+		if (!blocked) {
+			blocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
+		}
+		else {
+			bool purpleBlocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
+			if (blocked != purpleBlocked) {
+				purple_privacy_deny(account, purple_buddy_get_name(buddy), FALSE, FALSE);
+			}
 		}
 	}
 
