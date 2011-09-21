@@ -103,7 +103,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 		void handleDataReceived(const Swift::SafeByteArray &data, boost::shared_ptr<Swift::Connection> conn) {
 			if (conn == client1) {
 				received1.push_back(safeByteArrayToString(data));
-				std::cout << received1.back() << "\n";
+// 				std::cout << received1.back() << "\n";
 			}
 			else {
 				received2.push_back(safeByteArrayToString(data));

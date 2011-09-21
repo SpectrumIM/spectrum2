@@ -59,7 +59,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(buddy->getJID());
 			}
 			else {
-				message->setFrom(Swift::JID(Swift::JID::getEscapedNode(nickname), m_conversationManager->getComponent()->getJID().toBare()));
+				message->setFrom(Swift::JID(Swift::JID::getEscapedNode(m_legacyName), m_conversationManager->getComponent()->getJID().toBare()));
 			}
 		}
 		// PM message
