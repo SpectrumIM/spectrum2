@@ -18,6 +18,9 @@ find_package(purple)
 set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(glib)
 
+set(popt_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(popt)
+
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
