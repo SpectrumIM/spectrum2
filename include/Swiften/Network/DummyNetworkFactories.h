@@ -32,6 +32,10 @@ namespace Swift {
 				return connectionServerFactory;
 			}
 
+			virtual Swift::NATTraverser* getNATTraverser() const {
+				return 0;
+			}
+
 		private:
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;

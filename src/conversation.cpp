@@ -106,10 +106,14 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 	}
 
 	
-	Swift::MUCUserPayload::Item item(Swift::MUCOccupant::Member, Swift::MUCOccupant::Participant);
+	Swift::MUCItem item;
+	
+	item.affiliation = Swift::MUCOccupant::Member;
+	item.role = Swift::MUCOccupant::Participant;
 
 	if (flag & Moderator) {
-		item = Swift::MUCUserPayload::Item(Swift::MUCOccupant::Admin, Swift::MUCOccupant::Moderator);
+		item.affiliation = Swift::MUCOccupant::Admin;
+		item.role = Swift::MUCOccupant::Moderator;
 	}
 
 	if (!newname.empty()) {

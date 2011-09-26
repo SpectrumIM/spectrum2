@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp)
 
-ADD_EXECUTABLE(spectrum_manager ${SRC})
+ADD_EXECUTABLE(spectrum2_manager ${SRC})
 
-target_link_libraries(spectrum_manager transport)
+target_link_libraries(spectrum2_manager transport)
 
-INSTALL(TARGETS spectrum_manager RUNTIME DESTINATION bin)
+INSTALL(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 
 INSTALL(FILES
 	spectrum_manager.cfg
