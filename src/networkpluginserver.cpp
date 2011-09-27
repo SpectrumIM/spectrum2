@@ -838,10 +838,10 @@ void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence:
 	bool isInvisible = presence->getPayload<Swift::InvisiblePayload>() != NULL;
 	if (isInvisible) {
 		LOG4CXX_INFO(logger, "This presence is invisible");
-		status.set_status(255);
+		status.set_status((pbnetwork::STATUS_INVISIBLE));
 	}
 	else {
-		status.set_status((int) presence->getShow());
+		status.set_status((pbnetwork::StatusType) presence->getShow());
 	}
 
 	status.set_statusmessage(presence->getStatus());
@@ -1030,7 +1030,7 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
-	buddy.set_status(Swift::StatusShow::None);
+	buddy.set_status(pbnetwork::STATUS_NONE);
 
 	std::string message;
 	buddy.SerializeToString(&message);
@@ -1056,7 +1056,7 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
-	buddy.set_status(Swift::StatusShow::None);
+	buddy.set_status(pbnetwork::STATUS_NONE);
 
 	std::string message;
 	buddy.SerializeToString(&message);
@@ -1082,7 +1082,7 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
-	buddy.set_status(Swift::StatusShow::None);
+	buddy.set_status(pbnetwork::STATUS_NONE);
 	buddy.set_blocked(!b->isBlocked());
 
 	std::string message;

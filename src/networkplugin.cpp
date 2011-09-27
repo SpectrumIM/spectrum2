@@ -138,7 +138,7 @@ void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::strin
 	buddy.set_buddyname(buddyName);
 	buddy.set_alias(alias);
 	buddy.set_groups(groups);
-	buddy.set_status((int)status);
+	buddy.set_status((pbnetwork::StatusType) status);
 	buddy.set_statusmessage(statusMessage);
 	buddy.set_iconhash(iconHash);
 	buddy.set_blocked(blocked);
@@ -237,7 +237,7 @@ void NetworkPlugin::handleParticipantChanged(const std::string &user, const std:
 	d.set_room(room);
 	d.set_flag(flags);
 	d.set_newname(newname);
-	d.set_status(status);
+	d.set_status((pbnetwork::StatusType) status);
 	d.set_statusmessage(statusMessage);
 
 	std::string message;

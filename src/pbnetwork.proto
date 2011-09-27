@@ -1,5 +1,15 @@
 package pbnetwork;
 
+enum StatusType {
+	STATUS_ONLINE		= 0;
+	STATUS_AWAY			= 1;
+	STATUS_FFC			= 2;
+	STATUS_XA			= 3;
+	STATUS_DND			= 4;
+	STATUS_NONE			= 5;
+	STATUS_INVISIBLE	= 6;
+}
+
 message Connected {
 	required string user = 1;
 }
@@ -26,7 +36,7 @@ message Buddy {
 	required string buddyName = 2;
 	optional string alias = 3;
 	optional string groups = 4;
-	optional int32 status = 5;
+	optional StatusType status = 5;
 	optional string statusMessage = 6;
 	optional string iconHash = 7;
 	optional bool blocked = 8;
@@ -52,7 +62,7 @@ message Participant {
 	required string room = 2;
 	required string nickname = 3;
 	required int32 flag = 4;
-	required int32 status = 5;
+	required StatusType status = 5;
 	optional string statusMessage = 6;
 	optional string newname = 7;
 }
@@ -68,7 +78,7 @@ message VCard {
 
 message Status {
 	required string userName = 1;
-	required int32 status = 3;
+	required StatusType status = 3;
 	optional string statusMessage = 4;
 }
 
