@@ -95,6 +95,253 @@ static GHashTable *spectrum_ui_get_info(void)
 	return ui_info;
 }
 
+static gboolean
+badchar(char c)
+{
+	switch (c) {
+	case ' ':
+	case ',':
+	case '\0':
+	case '\n':
+	case '\r':
+	case '<':
+	case '>':
+	case '"':
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static gboolean
+badentity(const char *c)
+{
+	if (!g_ascii_strncasecmp(c, "&lt;", 4) ||
+		!g_ascii_strncasecmp(c, "&gt;", 4) ||
+		!g_ascii_strncasecmp(c, "&quot;", 6)) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static const char *
+process_link(GString *ret,
+		const char *start, const char *c,
+		int matchlen,
+		const char *urlprefix,
+		int inside_paren)
+{
+	char *url_buf;
+	const char *t;
+
+	for (t = c;; t++) {
+		if (!badchar(*t) && !badentity(t))
+			continue;
+
+		if (t - c == matchlen)
+			break;
+
+		if (*t == ',' && *(t + 1) != ' ') {
+			continue;
+		}
+
+		if (t > start && *(t - 1) == '.')
+			t--;
+		if (t > start && *(t - 1) == ')' && inside_paren > 0)
+			t--;
+
+		url_buf = g_strndup(c, t - c);
+// 		tmpurlbuf = purple_unescape_html(url_buf);
+// 		std::cout << url_buf << "\n";
+		g_string_append_printf(ret, "<A HREF=\"%s%s\">%s</A>",
+				urlprefix,
+				url_buf, url_buf);
+// 		g_free(tmpurlbuf);
+		g_free(url_buf);
+		return t;
+	}
+
+	return c;
+}
+
+static char *
+spectrum_markup_linkify(const char *text)
+{
+	const char *c, *t, *q = NULL;
+	char *tmpurlbuf, *url_buf;
+	gunichar g;
+	gboolean inside_html = FALSE;
+	int inside_paren = 0;
+	GString *ret;
+
+	if (text == NULL)
+		return NULL;
+
+	ret = g_string_new("");
+
+	c = text;
+	while (*c) {
+
+		if(*c == '(' && !inside_html) {
+			inside_paren++;
+			ret = g_string_append_c(ret, *c);
+			c++;
+		}
+
+		if(inside_html) {
+			if(*c == '>') {
+				inside_html = FALSE;
+			} else if(!q && (*c == '\"' || *c == '\'')) {
+				q = c;
+			} else if(q) {
+				if(*c == *q)
+					q = NULL;
+			}
+		} else if(*c == '<') {
+			inside_html = TRUE;
+			if (!g_ascii_strncasecmp(c, "<A", 2)) {
+				while (1) {
+					if (!g_ascii_strncasecmp(c, "/A>", 3)) {
+						inside_html = FALSE;
+						break;
+					}
+					ret = g_string_append_c(ret, *c);
+					c++;
+					if (!(*c))
+						break;
+				}
+			}
+		} else if (!g_ascii_strncasecmp(c, "http://", 7)) {
+			c = process_link(ret, text, c, 7, "", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "https://", 8)) {
+			c = process_link(ret, text, c, 8, "", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "ftp://", 6)) {
+			c = process_link(ret, text, c, 6, "", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "sftp://", 7)) {
+			c = process_link(ret, text, c, 7, "", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "file://", 7)) {
+			c = process_link(ret, text, c, 7, "", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "www.", 4) && c[4] != '.' && (c == text || badchar(c[-1]) || badentity(c-1))) {
+			c = process_link(ret, text, c, 4, "http://", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "ftp.", 4) && c[4] != '.' && (c == text || badchar(c[-1]) || badentity(c-1))) {
+			c = process_link(ret, text, c, 4, "ftp://", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "xmpp:", 5) && (c == text || badchar(c[-1]) || badentity(c-1))) {
+			c = process_link(ret, text, c, 5, "", inside_paren);
+		} else if (!g_ascii_strncasecmp(c, "mailto:", 7)) {
+			t = c;
+			while (1) {
+				if (badchar(*t) || badentity(t)) {
+					const char *d;
+					if (t - c == 7) {
+						break;
+					}
+					if (t > text && *(t - 1) == '.')
+						t--;
+					if ((d = strstr(c + 7, "?")) != NULL && d < t)
+						url_buf = g_strndup(c + 7, d - c - 7);
+					else
+						url_buf = g_strndup(c + 7, t - c - 7);
+					if (!purple_email_is_valid(url_buf)) {
+						g_free(url_buf);
+						break;
+					}
+					g_free(url_buf);
+					url_buf = g_strndup(c, t - c);
+// 					tmpurlbuf = purple_unescape_html(url_buf);
+					g_string_append_printf(ret, "<A HREF=\"%s\">%s</A>",
+							  url_buf, url_buf);
+					g_free(url_buf);
+// 					g_free(tmpurlbuf);
+					c = t;
+					break;
+				}
+				t++;
+			}
+		} else if (c != text && (*c == '@')) {
+			int flag;
+			GString *gurl_buf = NULL;
+			const char illegal_chars[] = "!@#$%^&*()[]{}/|\\<>\":;\r\n \0";
+
+			if (strchr(illegal_chars,*(c - 1)) || strchr(illegal_chars, *(c + 1)))
+				flag = 0;
+			else {
+				flag = 1;
+				gurl_buf = g_string_new("");
+			}
+
+			t = c;
+			while (flag) {
+				/* iterate backwards grabbing the local part of an email address */
+				g = g_utf8_get_char(t);
+				if (badchar(*t) || (g >= 127) || (*t == '(') ||
+					((*t == ';') && ((t > (text+2) && (!g_ascii_strncasecmp(t - 3, "&lt;", 4) ||
+				                                       !g_ascii_strncasecmp(t - 3, "&gt;", 4))) ||
+				                     (t > (text+4) && (!g_ascii_strncasecmp(t - 5, "&quot;", 6)))))) {
+					/* local part will already be part of ret, strip it out */
+					ret = g_string_truncate(ret, ret->len - (c - t));
+					ret = g_string_append_unichar(ret, g);
+					break;
+				} else {
+					g_string_prepend_unichar(gurl_buf, g);
+					t = g_utf8_find_prev_char(text, t);
+					if (t < text) {
+						ret = g_string_assign(ret, "");
+						break;
+					}
+				}
+			}
+
+			t = g_utf8_find_next_char(c, NULL);
+
+			while (flag) {
+				/* iterate forwards grabbing the domain part of an email address */
+				g = g_utf8_get_char(t);
+				if (badchar(*t) || (g >= 127) || (*t == ')') || badentity(t)) {
+					char *d;
+
+					url_buf = g_string_free(gurl_buf, FALSE);
+
+					/* strip off trailing periods */
+					if (strlen(url_buf) > 0) {
+						for (d = url_buf + strlen(url_buf) - 1; *d == '.'; d--, t--)
+							*d = '\0';
+					}
+
+					tmpurlbuf = purple_unescape_html(url_buf);
+					if (purple_email_is_valid(tmpurlbuf)) {
+						g_string_append_printf(ret, "<A HREF=\"mailto:%s\">%s</A>",
+								url_buf, url_buf);
+					} else {
+						g_string_append(ret, url_buf);
+					}
+					g_free(url_buf);
+					g_free(tmpurlbuf);
+					c = t;
+
+					break;
+				} else {
+					g_string_append_unichar(gurl_buf, g);
+					t = g_utf8_find_next_char(t, NULL);
+				}
+			}
+		}
+
+		if(*c == ')' && !inside_html) {
+			inside_paren--;
+			ret = g_string_append_c(ret, *c);
+			c++;
+		}
+
+		if (*c == 0)
+			break;
+
+		ret = g_string_append_c(ret, *c);
+		c++;
+
+	}
+	return g_string_free(ret, FALSE);
+}
+
 struct authRequest {
 	PurpleAccountRequestAuthorizationCb authorize_cb;
 	PurpleAccountRequestAuthorizationCb deny_cb;
@@ -767,7 +1014,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	char *newline = purple_strdup_withhtml(msg);
 	char *strip, *xhtml, *xhtml_linkified;
 	purple_markup_html_to_xhtml(newline, &xhtml, &strip);
-	xhtml_linkified = purple_markup_linkify(xhtml);
+	xhtml_linkified = spectrum_markup_linkify(xhtml);
 	std::string message_(strip);
 
 	std::string xhtml_(xhtml_linkified);
