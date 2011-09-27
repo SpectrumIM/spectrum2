@@ -116,6 +116,17 @@ static void * requestInput(const char *title, const char *primary,const char *se
 			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
 		}
 	}
+	else if (title) {
+		std::string titleString(title);
+		if (titleString == "Xfire Invitation Message") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else {
+			LOG4CXX_WARN(logger, "Unhandled request input. title=" << titleString);
+		}
+	}
 	else {
 		LOG4CXX_WARN(logger, "Request input without primary string");
 	}
