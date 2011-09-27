@@ -217,9 +217,11 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
 	m_pingTimer->start();
 
-	m_collectTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(2*3600000);
-	m_collectTimer->onTick.connect(boost::bind(&NetworkPluginServer::collectBackend, this));
-	m_collectTimer->start();
+	if (CONFIG_INT(m_config, "service.memory_collector_time") != 0) {
+		m_collectTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(CONFIG_INT(m_config, "service.memory_collector_time"));
+		m_collectTimer->onTick.connect(boost::bind(&NetworkPluginServer::collectBackend, this));
+		m_collectTimer->start();
+	}
 
 	m_vcardResponder = new VCardResponder(component->getIQRouter(), component->getNetworkFactories(), userManager);
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
@@ -736,7 +738,9 @@ void NetworkPluginServer::collectBackend() {
 	}
 
 	if (backend) {
-		m_collectTimer->start();
+		if (m_collectTimer) {
+			m_collectTimer->start();
+		}
 		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
 		backend->acceptUsers = false;
 	}
