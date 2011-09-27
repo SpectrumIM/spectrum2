@@ -1012,15 +1012,15 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 	// Escape HTML characters.
 	char *newline = purple_strdup_withhtml(msg);
-	char *strip, *xhtml, *xhtml_linkified;
+	char *strip, *xhtml;
 	purple_markup_html_to_xhtml(newline, &xhtml, &strip);
-	xhtml_linkified = spectrum_markup_linkify(xhtml);
+// 	xhtml_linkified = spectrum_markup_linkify(xhtml);
 	std::string message_(strip);
 
-	std::string xhtml_(xhtml_linkified);
+	std::string xhtml_(xhtml);
 	g_free(newline);
 	g_free(xhtml);
-	g_free(xhtml_linkified);
+// 	g_free(xhtml_linkified);
 	g_free(strip);
 
 	// AIM and XMPP adds <body>...</body> here...
