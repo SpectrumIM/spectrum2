@@ -81,6 +81,10 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
 			LOG4CXX_INFO(logger, from.toBare().toString() << ": Removing buddy " << buddy->getName());
 			onBuddyRemoved(buddy);
+
+			// send roster push here
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, user->getJID().toBare(), user->getComponent()->getIQRouter());
+			request->send();
 		}
 		else {
 			LOG4CXX_INFO(logger, from.toBare().toString() << ": Updating buddy " << buddy->getName());
