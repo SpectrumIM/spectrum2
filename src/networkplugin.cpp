@@ -263,6 +263,21 @@ void NetworkPlugin::handleRoomNicknameChanged(const std::string &user, const std
 	send(message);
 }
 
+void NetworkPlugin::handleFTStart(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size) {
+	pbnetwork::File room;
+	room.set_username(user);
+	room.set_buddyname(buddyName);
+	room.set_filename(fileName);
+	room.set_size(size);
+
+	std::string message;
+	room.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_START);
+ 
+	send(message);
+}
+
 void NetworkPlugin::_handleConnected(bool error) {
 	if (error) {
 // 		LOG4CXX_ERROR(logger, "Connecting error. Exiting");
@@ -332,6 +347,16 @@ void NetworkPlugin::handleAttentionPayload(const std::string &data) {
 	}
 
 	handleAttentionRequest(payload.username(), payload.buddyname(), payload.message());
+}
+
+void NetworkPlugin::handleFTStartPayload(const std::string &data) {
+	pbnetwork::File payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleFTStartRequest(payload.username(), payload.buddyname(), payload.filename(), payload.size(), payload.ftid());
 }
 
 void NetworkPlugin::handleJoinRoomPayload(const std::string &data) {
@@ -480,6 +505,9 @@ void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
 				handleAttentionPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
+				handleFTStartPayload(wrapper.payload());
 				break;
 			default:
 				return;

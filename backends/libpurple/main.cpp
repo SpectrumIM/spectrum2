@@ -811,10 +811,20 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
+			PurpleXfer *xfer = m_xfers[user + fileName + buddyName];
+			if (xfer) {
+				xfer->ui_data = (void *) ftID;
+				purple_xfer_request_accepted(xfer, fileName.c_str());
+				purple_xfer_ui_ready(xfer);
+			}
+		}
+
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
+		std::map<std::string, PurpleXfer *> m_xfers;
 		Config *config;
 		
 };
@@ -1275,13 +1285,109 @@ static PurpleAccountUiOps accountUiOps =
 	NULL
 };
 
+static void XferCreated(PurpleXfer *xfer) {
+	if (!xfer) {
+		return;
+	}
+
+// 	PurpleAccount *account = purple_xfer_get_account(xfer);
+// 	np->handleFTStart(np->m_accounts[account], xfer->who, xfer, "", xhtml_);
+}
+
+static void XferDestroyed(PurpleXfer *xfer) {
+}
+
+static void xferCanceled(PurpleXfer *xfer) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	if (!repeater)
+// 		return;
+// 	GlooxMessageHandler::instance()->ftManager->removeSID(repeater->getSID());
+// 	repeater->handleXferCanceled();
+	purple_xfer_unref(xfer);
+}
+
+static void fileSendStart(PurpleXfer *xfer) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	repeater->fileSendStart();
+}
+
+static gboolean ft_ui_ready(void *data) {
+	purple_xfer_ui_ready((PurpleXfer *) data);
+	return FALSE;
+}
+
+static void fileRecvStart(PurpleXfer *xfer) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	repeater->fileRecvStart();
+	purple_timeout_add(1, ft_ui_ready, xfer);
+}
+
+static void newXfer(PurpleXfer *xfer) {
+// 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveRequest(xfer);
+	PurpleAccount *account = purple_xfer_get_account(xfer);
+	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
+	purple_xfer_ref(xfer);
+	np->m_xfers[np->m_accounts[account] + filename + xfer->who] = xfer;
+	np->handleFTStart(np->m_accounts[account], xfer->who, filename, purple_xfer_get_size(xfer));
+}
+
+static void XferReceiveComplete(PurpleXfer *xfer) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	repeater->_tryToDeleteMe();
+// 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveComplete(xfer);
+	purple_xfer_unref(xfer);
+}
+
+static void XferSendComplete(PurpleXfer *xfer) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	repeater->_tryToDeleteMe();
+	purple_xfer_unref(xfer);
+}
+
+static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	return repeater->handleLibpurpleData(buffer, size);
+	std::cout << "DATA " << std::string((const char *) buffer, (size_t) size) << "\n";
+	purple_xfer_ui_ready(xfer);
+	return size;
+}
+
+static void XferNotSent(PurpleXfer *xfer, const guchar *buffer, gsize size) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	repeater->handleDataNotSent(buffer, size);
+}
+
+static gssize XferRead(PurpleXfer *xfer, guchar **buffer, gssize size) {
+// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
+// 	int data_size = repeater->getDataToSend(buffer, size);
+// 	if (data_size == 0)
+// 		return 0;
+// 	
+// 	return data_size;
+	return 0;
+}
+
+static PurpleXferUiOps xferUiOps =
+{
+	XferCreated,
+	XferDestroyed,
+	NULL,
+	NULL,
+	xferCanceled,
+	xferCanceled,
+	XferWrite,
+	XferRead,
+	XferNotSent,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops(&blistUiOps);
 	purple_accounts_set_ui_ops(&accountUiOps);
 	purple_notify_set_ui_ops(&notifyUiOps);
 	purple_request_set_ui_ops(&requestUiOps);
-// 	purple_xfers_set_ui_ops(getXferUiOps());
+	purple_xfers_set_ui_ops(&xferUiOps);
 	purple_connections_set_ui_ops(&conn_ui_ops);
 	purple_conversations_set_ui_ops(&conversation_ui_ops);
 // #ifndef WIN32
@@ -1423,6 +1529,12 @@ static bool initPurple(Config &cfg) {
 // 		purple_signal_connect(purple_blist_get_handle(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
 		purple_signal_connect(purple_blist_get_handle(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
 // 		purple_signal_connect(purple_conversations_get_handle(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
+		static int xfer_handle;
+		purple_signal_connect(purple_xfers_get_handle(), "file-send-start", &xfer_handle, PURPLE_CALLBACK(fileSendStart), NULL);
+		purple_signal_connect(purple_xfers_get_handle(), "file-recv-start", &xfer_handle, PURPLE_CALLBACK(fileRecvStart), NULL);
+		purple_signal_connect(purple_xfers_get_handle(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
+		purple_signal_connect(purple_xfers_get_handle(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
+		purple_signal_connect(purple_xfers_get_handle(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
 // 
 // 		purple_commands_init();
 

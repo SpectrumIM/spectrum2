@@ -572,6 +572,21 @@ void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data
 	c->shared = payload.shared();
 }
 
+void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
+	pbnetwork::File payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	LOG4CXX_INFO(logger, "handleFTStartPayload " << payload.filename());
+	handleFTAccepted(user, payload.buddyname(), payload.filename(), payload.size(), 255);
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray &data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data.begin(), data.end());
@@ -650,6 +665,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray 
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_STATS:
 				handleStatsPayload(c, wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
+				handleFTStartPayload(wrapper.payload());
 				break;
 			default:
 				return;
@@ -1127,6 +1145,46 @@ void NetworkPluginServer::handleVCardRequired(User *user, const std::string &nam
 	vcard.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleFTAccepted(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
+	pbnetwork::File f;
+	f.set_username(user->getJID().toBare());
+	f.set_buddyname(buddyName);
+	f.set_filename(fileName);
+	f.set_size(size);
+	f.set_ftid(ftID);
+
+	std::string message;
+	f.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_START);
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
+	pbnetwork::File f;
+	f.set_username(user->getJID().toBare());
+	f.set_buddyname(buddyName);
+	f.set_filename(fileName);
+	f.set_size(size);
+	f.set_ftid(ftID);
+
+	std::string message;
+	f.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH);
 
 	Backend *c = (Backend *) user->getData();
 	if (!c) {

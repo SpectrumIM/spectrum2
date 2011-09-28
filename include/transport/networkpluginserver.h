@@ -89,6 +89,7 @@ class NetworkPluginServer {
 		void handleAuthorizationPayload(const std::string &payload);
 		void handleAttentionPayload(const std::string &payload);
 		void handleStatsPayload(Backend *c, const std::string &payload);
+		void handleFTStartPayload(const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
@@ -105,6 +106,9 @@ class NetworkPluginServer {
 
 		void handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> vcard);
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
+
+		void handleFTAccepted(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID);
+		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID);
 
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 

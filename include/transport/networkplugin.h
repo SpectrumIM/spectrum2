@@ -142,6 +142,8 @@ class NetworkPlugin {
 		/// \param message Message.
 		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
 
+		void handleFTStart(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size);
+
 		/// Called when XMPP user wants to connect legacy network.
 		/// You should connect him to legacy network and call handleConnected or handleDisconnected function later.
 		/// \param user XMPP JID of user for which this event occurs.
@@ -209,6 +211,8 @@ class NetworkPlugin {
 		virtual void handleStoppedTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleAttentionRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*message*/) {}
 
+		virtual void handleFTStartRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
+
 		virtual void handleExit() { std::cout << "EXITING\n"; exit(1); }
 		
 
@@ -225,6 +229,7 @@ class NetworkPlugin {
 		void handleBuddyRemovedPayload(const std::string &payload);
 		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
 		void handleAttentionPayload(const std::string &payload);
+		void handleFTStartPayload(const std::string &payload);
 		void handleDataRead(const Swift::SafeByteArray&);
 		void _handleConnected(bool error);
 		void handleDisconnected();
