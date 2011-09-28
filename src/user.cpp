@@ -111,6 +111,19 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 	return jid;
 }
 
+Swift::DiscoInfo::ref User::getCaps(const Swift::JID &jid) const {
+	Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(jid);
+#ifdef SUPPORT_LEGACY_CAPS
+	if (!discoInfo) {
+		std::map<Swift::JID, Swift::DiscoInfo::ref>::const_iterator it = m_legacyCaps.find(jid);
+		if (it != m_legacyCaps.end()) {
+			discoInfo = it->second;
+		}
+	}
+#endif
+	return discoInfo;
+}
+
 void User::sendCurrentPresence() {
 	if (m_component->inServerMode()) {
 		return;

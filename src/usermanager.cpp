@@ -91,6 +91,16 @@ User *UserManager::getUser(const std::string &barejid){
 	return NULL;
 }
 
+Swift::DiscoInfo::ref UserManager::getCaps(const Swift::JID &jid) const {
+	std::map<std::string, User *>::const_iterator it = m_users.find(jid.toBare().toString());
+	if (it == m_users.end()) {
+		return Swift::DiscoInfo::ref();
+	}
+
+	User *user = it->second;
+	return user->getCaps(jid);
+}
+
 void UserManager::removeUser(User *user) {
 	m_users.erase(user->getJID().toBare().toString());
 	if (m_cachedUser == user)

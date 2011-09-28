@@ -50,7 +50,7 @@ class RosterResponder;
 	UserManager->User [label="handlePresence(...)", URL="\ref User::handlePresence()"];
 	\endmsc
 */
-class UserManager {
+class UserManager : public Swift::EntityCapsProvider {
 	public:
 		/// Creates new UserManager.
 		/// \param component Component which's presence will be handled
@@ -81,6 +81,8 @@ class UserManager {
 		void removeUser(User *user);
 
 		void removeAllUsers();
+
+		Swift::DiscoInfo::ref getCaps(const Swift::JID&) const;
 
 		/// Called when new User class is created.
 		/// \param user newly created User class

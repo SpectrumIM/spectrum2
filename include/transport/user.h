@@ -24,6 +24,7 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
+#include "Swiften/Disco/EntityCapsProvider.h"
 #include "storagebackend.h"
 
 namespace Transport {
@@ -35,7 +36,7 @@ class UserManager;
 struct UserInfo;
 
 /// Represents online XMPP user.
-class User {
+class User : public Swift::EntityCapsProvider {
 	public:
 		/// Creates new User class.
 		/// \param jid XMPP JID associated with this user
@@ -55,6 +56,8 @@ class User {
 		/// \param feature disco#info feature.
 		/// \return full JID which supports particular feature or invalid JID.
 		Swift::JID getJIDWithFeature(const std::string &feature);
+
+		Swift::DiscoInfo::ref getCaps(const Swift::JID &jid) const;
 
 		/// Returns UserInfo struct with informations needed to connect the legacy network.
 		/// \return UserInfo struct

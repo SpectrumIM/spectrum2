@@ -32,6 +32,7 @@
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "Swiften/Base/SafeByteArray.h"
+#include "Swiften/Jingle/JingleSessionManager.h"
 
 #include <boost/bind.hpp>
 #include "transport/config.h"
@@ -92,6 +93,8 @@ namespace Transport {
 			/// You can use it to check current resource connected for particular user.
 			/// \return Swift::PresenceOracle associated with this Transport::Component.
 			Swift::PresenceOracle *getPresenceOracle();
+
+			Swift::JingleSessionManager *getJingleSessionManager() { return m_jingleSessionManager; }
 
 			/// Returns True if the component is in server mode.
 
@@ -181,6 +184,7 @@ namespace Transport {
 			Swift::PresenceOracle *m_presenceOracle;
 			Swift::StanzaChannel *m_stanzaChannel;
 			Swift::IQRouter *m_iqRouter;
+			Swift::JingleSessionManager *m_jingleSessionManager;
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;

@@ -638,7 +638,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 						st = PURPLE_STATUS_OFFLINE;
 						break;
 					}
-					case 255:
+					case 6:
 						st = PURPLE_STATUS_INVISIBLE;
 						break;
 					default:
