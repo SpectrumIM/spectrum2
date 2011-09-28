@@ -820,11 +820,24 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void readyForData() {
+			if (m_waitingXfers.empty())
+				return;
+			std::vector<PurpleXfer *> tmp;
+			tmp.swap(m_waitingXfers);
+
+			LOG4CXX_INFO(logger, "readyForData " << tmp.size());
+			BOOST_FOREACH(PurpleXfer *xfer, tmp) {
+				purple_xfer_ui_ready(xfer);
+			}
+		}
+
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
 		std::map<std::string, PurpleXfer *> m_xfers;
+		std::vector<PurpleXfer *> m_waitingXfers;
 		Config *config;
 		
 };
@@ -1345,10 +1358,11 @@ static void XferSendComplete(PurpleXfer *xfer) {
 }
 
 static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	return repeater->handleLibpurpleData(buffer, size);
-	std::cout << "DATA " << std::string((const char *) buffer, (size_t) size) << "\n";
-	purple_xfer_ui_ready(xfer);
+	LOG4CXX_INFO(logger, "before_xfer_write " << size);
+	std::string data((const char *) buffer, (size_t) size);
+	np->m_waitingXfers.push_back(xfer);
+	np->handleFTData((unsigned long) xfer->ui_data, data);
+	LOG4CXX_INFO(logger, "xfer_write " << size);
 	return size;
 }
 
@@ -1559,6 +1573,7 @@ static void spectrum_sigchld_handler(int sig)
 }
 
 int main(int argc, char **argv) {
+	Swift::logging = true;
 	GError *error = NULL;
 	GOptionContext *context;
 	context = g_option_context_new("config_file_name or profile name");

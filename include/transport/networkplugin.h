@@ -50,6 +50,8 @@ class NetworkPlugin {
 
 		/// Destructor.
 		virtual ~NetworkPlugin();
+		
+		virtual void readyForData() {}
 
 		/// Call this function when legacy network buddy changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -143,6 +145,8 @@ class NetworkPlugin {
 		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
 
 		void handleFTStart(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size);
+
+		void handleFTData(unsigned long ftID, const std::string &data);
 
 		/// Called when XMPP user wants to connect legacy network.
 		/// You should connect him to legacy network and call handleConnected or handleDisconnected function later.

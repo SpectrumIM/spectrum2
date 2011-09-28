@@ -587,6 +587,20 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	handleFTAccepted(user, payload.buddyname(), payload.filename(), payload.size(), 255);
 }
 
+void NetworkPluginServer::handleFTDataPayload(const std::string &data) {
+	pbnetwork::FileTransferData payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+// 	User *user = m_userManager->getUser(payload.username());
+// 	if (!user)
+// 		return;
+
+	LOG4CXX_INFO(logger, "handleFTDataPayload size=" << payload.data().size());
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray &data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data.begin(), data.end());
@@ -668,6 +682,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray 
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
 				handleFTStartPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
+				handleFTDataPayload(wrapper.payload());
 				break;
 			default:
 				return;

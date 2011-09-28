@@ -52,6 +52,7 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 	m_loop = loop;
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
+	m_conn->onDataWritten.connect(boost::bind(&NetworkPlugin::readyForData, this));
 	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::_handleConnected, this, _1));
 	m_conn->onDisconnected.connect(boost::bind(&NetworkPlugin::handleDisconnected, this));
 
@@ -274,6 +275,19 @@ void NetworkPlugin::handleFTStart(const std::string &user, const std::string &bu
 	room.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_START);
+ 
+	send(message);
+}
+
+void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
+	pbnetwork::FileTransferData d;
+	d.set_ftid(ftID);
+	d.set_data(data);
+
+	std::string message;
+	d.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_DATA);
  
 	send(message);
 }
