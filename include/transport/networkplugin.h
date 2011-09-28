@@ -234,7 +234,7 @@ class NetworkPlugin {
 		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
 		void handleAttentionPayload(const std::string &payload);
 		void handleFTStartPayload(const std::string &payload);
-		void handleDataRead(const Swift::SafeByteArray&);
+		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
 		void _handleConnected(bool error);
 		void handleDisconnected();
 

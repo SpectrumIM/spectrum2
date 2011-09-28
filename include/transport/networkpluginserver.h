@@ -76,7 +76,7 @@ class NetworkPluginServer {
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Backend *c);
-		void handleDataRead(Backend *c, const Swift::SafeByteArray&);
+		void handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data);
 
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);

@@ -601,9 +601,9 @@ void NetworkPluginServer::handleFTDataPayload(const std::string &data) {
 	LOG4CXX_INFO(logger, "handleFTDataPayload size=" << payload.data().size());
 }
 
-void NetworkPluginServer::handleDataRead(Backend *c, const Swift::SafeByteArray &data) {
+void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
-	c->data.insert(c->data.end(), data.begin(), data.end());
+	c->data.insert(c->data.end(), data->begin(), data->end());
 
 	// Parse data while there are some
 	while (c->data.size() != 0) {

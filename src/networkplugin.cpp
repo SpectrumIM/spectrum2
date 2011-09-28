@@ -454,8 +454,8 @@ void NetworkPlugin::handleChatStatePayload(const std::string &data, Swift::ChatS
 	}
 }
 
-void NetworkPlugin::handleDataRead(const Swift::SafeByteArray &data) {
-	m_data.insert(m_data.end(), data.begin(), data.end());
+void NetworkPlugin::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
+	m_data.insert(m_data.end(), data->begin(), data->end());
 
 	while (m_data.size() != 0) {
 		unsigned int expected_size;
