@@ -22,7 +22,7 @@
 #include "transport/rostermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
-#include "Swiften/Elements/BlockPayload.h"
+#include "transport/BlockPayload.h"
 
 namespace Transport {
 
@@ -106,7 +106,7 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));
 // 		}
 		if (isBlocked()) {
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::BlockPayload ()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Transport::BlockPayload ()));
 		}
 	}
 

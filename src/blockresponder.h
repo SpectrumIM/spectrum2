@@ -23,14 +23,14 @@
 #include <vector>
 #include "Swiften/Swiften.h"
 #include "Swiften/Queries/SetResponder.h"
-#include "Swiften/Elements/BlockPayload.h"
+#include "transport/BlockPayload.h"
 
 namespace Transport {
 
 class UserManager;
 class Buddy;
 
-class BlockResponder : public Swift::SetResponder<Swift::BlockPayload> {
+class BlockResponder : public Swift::SetResponder<Transport::BlockPayload> {
 	public:
 		BlockResponder(Swift::IQRouter *router, UserManager *userManager);
 		~BlockResponder();
@@ -38,7 +38,7 @@ class BlockResponder : public Swift::SetResponder<Swift::BlockPayload> {
 		boost::signal<void (Buddy *)> onBlockToggled;
 
 	private:
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::BlockPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Transport::BlockPayload> payload);
 
 		UserManager *m_userManager;
 };

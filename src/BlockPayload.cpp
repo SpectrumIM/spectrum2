@@ -4,9 +4,9 @@
  * See Documentation/Licenses/BSD-simplified.txt for more information.
  */
 
-#include <Swiften/Elements/BlockPayload.h>
+#include <transport/BlockPayload.h>
 
-namespace Swift {
+namespace Transport {
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.

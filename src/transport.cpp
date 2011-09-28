@@ -34,8 +34,8 @@
 #include "Swiften/Serializer/PayloadSerializers/AttentionSerializer.h"
 #include "Swiften/Parser/PayloadParsers/XHTMLIMParser.h"
 #include "Swiften/Serializer/PayloadSerializers/XHTMLIMSerializer.h"
-#include "Swiften/Parser/PayloadParsers/BlockParser.h"
-#include "Swiften/Serializer/PayloadSerializers/BlockSerializer.h"
+#include "transport/BlockParser.h"
+#include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 #include "log4cxx/logger.h"
@@ -88,12 +88,12 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::BlockParser>("block", "urn:xmpp:block:0"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 
 		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_server->addPayloadSerializer(new Swift::XHTMLIMSerializer());
-		m_server->addPayloadSerializer(new Swift::BlockSerializer());
+		m_server->addPayloadSerializer(new Transport::BlockSerializer());
 		m_server->addPayloadSerializer(new Swift::InvisibleSerializer());
 
 		m_server->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));

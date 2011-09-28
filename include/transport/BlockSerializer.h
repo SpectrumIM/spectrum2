@@ -7,12 +7,12 @@
 #pragma once
 
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
-#include <Swiften/Elements/BlockPayload.h>
+#include <transport/BlockPayload.h>
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
-namespace Swift {
-	class BlockSerializer : public GenericPayloadSerializer<BlockPayload> {
+namespace Transport {
+	class BlockSerializer : public Swift::GenericPayloadSerializer<BlockPayload> {
 		public:
 			BlockSerializer();
 

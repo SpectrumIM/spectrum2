@@ -14,8 +14,8 @@
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
-namespace Swift {
-	class BlockPayload : public Payload {
+namespace Transport {
+	class BlockPayload : public Swift::Payload {
 		public:
 			typedef boost::shared_ptr<BlockPayload> ref;
 
