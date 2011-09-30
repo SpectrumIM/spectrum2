@@ -125,8 +125,6 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
 	m_discoItemsResponder->start();
 
-	m_jingleSessionManager = new Swift::JingleSessionManager(m_iqRouter);
-
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();

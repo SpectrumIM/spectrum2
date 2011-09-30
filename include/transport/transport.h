@@ -94,8 +94,6 @@ namespace Transport {
 			/// \return Swift::PresenceOracle associated with this Transport::Component.
 			Swift::PresenceOracle *getPresenceOracle();
 
-			Swift::JingleSessionManager *getJingleSessionManager() { return m_jingleSessionManager; }
-
 			/// Returns True if the component is in server mode.
 
 			/// \return True if the component is in server mode.
@@ -184,7 +182,7 @@ namespace Transport {
 			Swift::PresenceOracle *m_presenceOracle;
 			Swift::StanzaChannel *m_stanzaChannel;
 			Swift::IQRouter *m_iqRouter;
-			Swift::JingleSessionManager *m_jingleSessionManager;
+			
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;

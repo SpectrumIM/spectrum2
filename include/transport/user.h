@@ -26,6 +26,7 @@
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
 #include "storagebackend.h"
+#include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 
 namespace Transport {
 
@@ -108,14 +109,18 @@ class User : public Swift::EntityCapsProvider {
 			return m_connected;
 		}
 
+		void sendFile(const Swift::JID& from, boost::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info, unsigned long id);
+
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
 		boost::signal<void (const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
 		boost::signal<void (const std::string &room)> onRoomLeft;
 		boost::signal<void ()> onDisconnected;
+		boost::signal<void (const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id)> onFTAccepted;
 
 	private:
 		void onConnectingTimeout();
+		void handleFTStateChanged(Swift::FileTransfer::State state, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id);
 
 		Swift::JID m_jid;
 		Component *m_component;
@@ -133,6 +138,7 @@ class User : public Swift::EntityCapsProvider {
 		boost::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
+		std::vector<boost::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 };
 
 }

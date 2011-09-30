@@ -25,6 +25,17 @@
 #include "Swiften/Swiften.h"
 #include "transport/userregistry.h"
 
+// FT STUFF TODO: move me
+#include <Swiften/Elements/StreamInitiationFileInfo.h>
+#include <Swiften/FileTransfer/ConnectivityManager.h>
+#include <Swiften/FileTransfer/CombinedOutgoingFileTransferManager.h>
+#include <Swiften/FileTransfer/IncomingFileTransferManager.h>
+#include <Swiften/FileTransfer/DefaultLocalJingleTransportCandidateGeneratorFactory.h>
+#include <Swiften/FileTransfer/DefaultRemoteJingleTransportCandidateSelectorFactory.h>
+#include <Swiften/FileTransfer/SOCKS5BytestreamRegistry.h>
+#include <Swiften/FileTransfer/SOCKS5BytestreamServer.h>
+#include <Swiften/FileTransfer/SOCKS5BytestreamProxy.h>
+
 namespace Transport {
 
 class User;
@@ -112,6 +123,10 @@ class UserManager : public Swift::EntityCapsProvider {
 		/// \param user JID of user.
 		void disconnectUser(const Swift::JID &user);
 
+		Swift::CombinedOutgoingFileTransferManager *getOutgoingFileTransferManager() {
+			return m_outgoingFTManager;
+		}
+
 	private:
 		void handlePresence(Swift::Presence::ref presence);
 		void handleMessageReceived(Swift::Message::ref message);
@@ -131,6 +146,17 @@ class UserManager : public Swift::EntityCapsProvider {
 		UserRegistry *m_userRegistry;
 		Swift::Timer::ref m_removeTimer;
 		friend class RosterResponder;
+
+		// FT stuff TODO: move to separate class once we will now what will be here
+		Swift::CombinedOutgoingFileTransferManager* m_outgoingFTManager;
+		Swift::RemoteJingleTransportCandidateSelectorFactory* m_remoteCandidateSelectorFactory;
+		Swift::LocalJingleTransportCandidateGeneratorFactory* m_localCandidateGeneratorFactory;
+		Swift::JingleSessionManager *m_jingleSessionManager;
+		Swift::SOCKS5BytestreamRegistry* m_bytestreamRegistry;
+		Swift::SOCKS5BytestreamServer* m_bytestreamServer;
+		Swift::SOCKS5BytestreamProxy* m_bytestreamProxy;
+		Swift::SOCKS5BytestreamServer *bytestreamServer;
+		Swift::ConnectivityManager* m_connectivityManager;
 };
 
 }

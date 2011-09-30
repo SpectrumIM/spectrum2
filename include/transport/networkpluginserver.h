@@ -41,6 +41,35 @@ class VCardResponder;
 class RosterResponder;
 class BlockResponder;
 
+class DummyReadBytestream : public Swift::ReadBytestream {
+	public:
+		DummyReadBytestream() {m_finished = false;}
+		virtual ~DummyReadBytestream() {}
+		void appendData(const std::string &data) {
+			m_data += data;
+			onDataAvailable();
+		}
+
+		virtual std::vector<unsigned char> read(size_t size) {
+			if (m_data.empty()) {
+				return std::vector<unsigned char>();
+			}
+
+			if (m_data.size() < size) {
+				m_finished = true;
+				return std::vector<unsigned char>(m_data.begin(), m_data.end());
+			}
+			std::string ret = m_data.substr(0, size);
+			m_data.erase(m_data.begin(), m_data.begin() + size);
+			return std::vector<unsigned char>(ret.begin(), ret.end());
+		}
+		virtual bool isFinished() const { return m_finished; }
+
+	private:
+		bool m_finished;
+		std::string m_data;
+};
+
 class NetworkPluginServer {
 	public:
 		struct Backend {
@@ -129,6 +158,7 @@ class NetworkPluginServer {
 		Component *m_component;
 		std::list<User *> m_waitingUsers;
 		bool m_isNextLongRun;
+		std::map<unsigned long, boost::shared_ptr<DummyReadBytestream> > m_bytestreams;
 };
 
 }

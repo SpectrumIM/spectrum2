@@ -61,6 +61,24 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	m_userRegistry->onDisconnectUser.connect(bind(&UserManager::disconnectUser, this, _1));
 
 	m_removeTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1);
+
+	// FT STUFF
+	m_jingleSessionManager = new Swift::JingleSessionManager(m_component->getIQRouter());
+	m_connectivityManager = new Swift::ConnectivityManager(m_component->getNetworkFactories()->getNATTraverser());
+	m_bytestreamRegistry = new Swift::SOCKS5BytestreamRegistry();
+	m_bytestreamProxy = new Swift::SOCKS5BytestreamProxy(m_component->getNetworkFactories()->getConnectionFactory(), m_component->getNetworkFactories()->getTimerFactory());
+
+	m_localCandidateGeneratorFactory = new Swift::DefaultLocalJingleTransportCandidateGeneratorFactory(m_connectivityManager, m_bytestreamRegistry, m_bytestreamProxy, "thishouldnotbeused");
+	m_remoteCandidateSelectorFactory = new Swift::DefaultRemoteJingleTransportCandidateSelectorFactory(m_component->getNetworkFactories()->getConnectionFactory(), m_component->getNetworkFactories()->getTimerFactory());
+
+	boost::shared_ptr<Swift::ConnectionServer> server = m_component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(19645);
+	server->start();
+	bytestreamServer = new Swift::SOCKS5BytestreamServer(server, m_bytestreamRegistry);
+	bytestreamServer->start();
+
+	m_outgoingFTManager = new Swift::CombinedOutgoingFileTransferManager(m_jingleSessionManager, m_component->getIQRouter(), this, m_remoteCandidateSelectorFactory, m_localCandidateGeneratorFactory, m_bytestreamRegistry, m_bytestreamProxy, m_component->getPresenceOracle(), bytestreamServer);
+
+// 	m_connectivityManager->addListeningPort(19645);
 }
 
 UserManager::~UserManager(){

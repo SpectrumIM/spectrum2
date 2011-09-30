@@ -1340,8 +1340,12 @@ static void newXfer(PurpleXfer *xfer) {
 	PurpleAccount *account = purple_xfer_get_account(xfer);
 	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
 	purple_xfer_ref(xfer);
-	np->m_xfers[np->m_accounts[account] + filename + xfer->who] = xfer;
-	np->handleFTStart(np->m_accounts[account], xfer->who, filename, purple_xfer_get_size(xfer));
+	std::string w = xfer->who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+	np->m_xfers[np->m_accounts[account] + filename + w] = xfer;
+	np->handleFTStart(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer));
 }
 
 static void XferReceiveComplete(PurpleXfer *xfer) {

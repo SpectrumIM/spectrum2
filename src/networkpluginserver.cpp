@@ -41,6 +41,9 @@
 #include "pbnetwork.pb.h"
 #include "log4cxx/logger.h"
 
+#include <Swiften/FileTransfer/ReadBytestream.h>
+#include <Swiften/Elements/StreamInitiationFileInfo.h>
+
 #ifdef _WIN32
 #include "windows.h"
 #else
@@ -54,6 +57,7 @@ using namespace log4cxx;
 namespace Transport {
 
 static unsigned long backend_id;
+static unsigned long bytestream_id;
 
 static LoggerPtr logger = Logger::getLogger("NetworkPluginServer");
 
@@ -583,8 +587,26 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	LOG4CXX_INFO(logger, "handleFTStartPayload " << payload.filename());
-	handleFTAccepted(user, payload.buddyname(), payload.filename(), payload.size(), 255);
+	LOG4CXX_INFO(logger, "handleFTStartPayload " << payload.filename() << " " << payload.buddyname());
+	
+	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
+	if (!buddy) {
+		// TODO: escape? reject?
+		return;
+	}
+
+	Swift::StreamInitiationFileInfo fileInfo;
+	fileInfo.setSize(payload.size());
+	fileInfo.setName(payload.filename());
+
+	boost::shared_ptr<DummyReadBytestream> bytestream(new DummyReadBytestream());
+
+	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());
+
+	m_bytestreams[++bytestream_id] = bytestream;
+
+	user->sendFile(buddy->getJID(), bytestream, fileInfo, bytestream_id);
+// 	handleFTAccepted(user, payload.buddyname(), payload.filename(), payload.size());
 }
 
 void NetworkPluginServer::handleFTDataPayload(const std::string &data) {
@@ -597,6 +619,8 @@ void NetworkPluginServer::handleFTDataPayload(const std::string &data) {
 // 	User *user = m_userManager->getUser(payload.username());
 // 	if (!user)
 // 		return;
+
+	m_bytestreams[payload.ftid()]->appendData(payload.data());
 
 	LOG4CXX_INFO(logger, "handleFTDataPayload size=" << payload.data().size());
 }
@@ -839,6 +863,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+	user->onFTAccepted.connect(boost::bind(&NetworkPluginServer::handleFTAccepted, this, user, _1, _2, _3, _4));
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
