@@ -128,6 +128,8 @@ message WrapperMessage {
 		TYPE_FT_START				= 24;
 		TYPE_FT_FINISH				= 25;
 		TYPE_FT_DATA				= 26;
+		TYPE_FT_PAUSE				= 27;
+		TYPE_FT_CONTINUE			= 28;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

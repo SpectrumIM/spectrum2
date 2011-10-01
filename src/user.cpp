@@ -309,19 +309,4 @@ void User::handleDisconnected(const std::string &error) {
 	}
 }
 
-void User::handleFTStateChanged(Swift::FileTransfer::State state, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id) {
-	if (state.state == Swift::FileTransfer::State::Transferring) {
-		onFTAccepted(buddyName, fileName, size, id);
-	}
-}
-
-void User::sendFile(const Swift::JID& from, boost::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info, unsigned long id) {
-	boost::shared_ptr<Swift::OutgoingFileTransfer> ft = m_userManager->getOutgoingFileTransferManager()->createOutgoingFileTransfer(from, m_jid, byteStream, info);
-	if (ft) {
-		m_filetransfers.push_back(ft);
-		ft->onStateChange.connect(boost::bind(&User::handleFTStateChanged, this, _1, Buddy::JIDToLegacyName(from), info.getName(), info.getSize(), id));
-		ft->start();
-	}
-}
-
 }

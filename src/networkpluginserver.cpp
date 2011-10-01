@@ -207,8 +207,8 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	buddy->setBlocked(payload.blocked());
 }
 
-NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
-	std::cout << "BUDDY " << sizeof(LocalBuddy) << "\n";
+NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager) {
+	m_ftManager = ftManager;
 	m_userManager = userManager;
 	m_config = config;
 	m_component = component;
@@ -599,17 +599,24 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	fileInfo.setSize(payload.size());
 	fileInfo.setName(payload.filename());
 
-	boost::shared_ptr<DummyReadBytestream> bytestream(new DummyReadBytestream());
+	Backend *c = (Backend *) user->getData();
+	boost::shared_ptr<DummyReadBytestream> bytestream(new DummyReadBytestream(c, bytestream_id + 1));
+	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, _1, _2));
 
 	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());
 
-	m_bytestreams[++bytestream_id] = bytestream;
+	FileTransferManager::Transfer transfer = m_ftManager->sendFile(user, buddy, bytestream, fileInfo);
+	if (!transfer.ft) {
+		handleFTRejected(user, payload.buddyname(), payload.filename(), payload.size());
+		return;
+	}
 
-	user->sendFile(buddy->getJID(), bytestream, fileInfo, bytestream_id);
-// 	handleFTAccepted(user, payload.buddyname(), payload.filename(), payload.size());
+	m_filetransfers[++bytestream_id] = transfer;
+	transfer.ft->onStateChange.connect(boost::bind(&NetworkPluginServer::handleFTStateChanged, this, _1, payload.username(), payload.buddyname(), payload.filename(), payload.size(), bytestream_id));
+	transfer.ft->start();
 }
 
-void NetworkPluginServer::handleFTDataPayload(const std::string &data) {
+void NetworkPluginServer::handleFTDataPayload(Backend *b, const std::string &data) {
 	pbnetwork::FileTransferData payload;
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
@@ -620,9 +627,34 @@ void NetworkPluginServer::handleFTDataPayload(const std::string &data) {
 // 	if (!user)
 // 		return;
 
-	m_bytestreams[payload.ftid()]->appendData(payload.data());
+	FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
+	DummyReadBytestream *bytestream = (DummyReadBytestream *) transfer.readByteStream.get();
 
-	LOG4CXX_INFO(logger, "handleFTDataPayload size=" << payload.data().size());
+	if (bytestream->appendData(payload.data()) > 5000000) {
+		pbnetwork::FileTransferData f;
+		f.set_ftid(payload.ftid());
+		f.set_data("");
+
+		std::string message;
+		f.SerializeToString(&message);
+
+		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_PAUSE);
+
+		send(b->connection, message);
+	}
+}
+
+void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
+	pbnetwork::FileTransferData f;
+	f.set_ftid(ftid);
+	f.set_data("");
+
+	std::string message;
+	f.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_CONTINUE);
+
+	send(b->connection, message);
 }
 
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
@@ -708,7 +740,7 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				handleFTStartPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
-				handleFTDataPayload(wrapper.payload());
+				handleFTDataPayload(c, wrapper.payload());
 				break;
 			default:
 				return;
@@ -863,7 +895,6 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
-	user->onFTAccepted.connect(boost::bind(&NetworkPluginServer::handleFTAccepted, this, user, _1, _2, _3, _4));
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
@@ -1215,13 +1246,12 @@ void NetworkPluginServer::handleFTAccepted(User *user, const std::string &buddyN
 	send(c->connection, message);
 }
 
-void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
+void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size) {
 	pbnetwork::File f;
 	f.set_username(user->getJID().toBare());
 	f.set_buddyname(buddyName);
 	f.set_filename(fileName);
 	f.set_size(size);
-	f.set_ftid(ftID);
 
 	std::string message;
 	f.SerializeToString(&message);
@@ -1233,6 +1263,16 @@ void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyN
 		return;
 	}
 	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleFTStateChanged(Swift::FileTransfer::State state, const std::string &userName, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id) {
+	User *user = m_userManager->getUser(userName);
+	if (!user) {
+		// TODO: reject and remove filetransfer
+	}
+	if (state.state == Swift::FileTransfer::State::Transferring) {
+		handleFTAccepted(user, buddyName, fileName, size, id);
+	}
 }
 
 void NetworkPluginServer::sendPing(Backend *c) {

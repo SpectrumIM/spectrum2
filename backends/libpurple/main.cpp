@@ -47,6 +47,11 @@ static int port = 10000;
 static gboolean ver = FALSE;
 static gboolean list_purple_settings = FALSE;
 
+struct FTData {
+	unsigned long id;
+	bool paused;
+};
+
 static GOptionEntry options_entries[] = {
 	{ "nodaemon", 'n', 0, G_OPTION_ARG_NONE, &nodaemon, "Disable background daemon mode", NULL },
 	{ "logfile", 'l', 0, G_OPTION_ARG_STRING, &logfile, "Set file to log", NULL },
@@ -812,12 +817,33 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
-			PurpleXfer *xfer = m_xfers[user + fileName + buddyName];
+			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
 			if (xfer) {
-				xfer->ui_data = (void *) ftID;
+				m_unhandledXfers.erase(user + fileName + buddyName);
+				FTData *ftData = (FTData *) xfer->ui_data;
+				
+				ftData->id = ftID;
+				m_xfers[ftID] = xfer;
 				purple_xfer_request_accepted(xfer, fileName.c_str());
 				purple_xfer_ui_ready(xfer);
 			}
+		}
+
+		void handleFTPauseRequest(unsigned long ftID) {
+			PurpleXfer *xfer = m_xfers[ftID];
+			if (!xfer)
+				return;
+			FTData *ftData = (FTData *) xfer->ui_data;
+			ftData->paused = true;
+		}
+
+		void handleFTContinueRequest(unsigned long ftID) {
+			PurpleXfer *xfer = m_xfers[ftID];
+			if (!xfer)
+				return;
+			FTData *ftData = (FTData *) xfer->ui_data;
+			ftData->paused = false;
+			purple_xfer_ui_ready(xfer);
 		}
 
 		void readyForData() {
@@ -826,7 +852,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			std::vector<PurpleXfer *> tmp;
 			tmp.swap(m_waitingXfers);
 
-			LOG4CXX_INFO(logger, "readyForData " << tmp.size());
 			BOOST_FOREACH(PurpleXfer *xfer, tmp) {
 				purple_xfer_ui_ready(xfer);
 			}
@@ -836,10 +861,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
-		std::map<std::string, PurpleXfer *> m_xfers;
+		std::map<unsigned long, PurpleXfer *> m_xfers;
+		std::map<std::string, PurpleXfer *> m_unhandledXfers;
 		std::vector<PurpleXfer *> m_waitingXfers;
 		Config *config;
-		
 };
 
 static bool getStatus(PurpleBuddy *m_buddy, Swift::StatusShow &status, std::string &statusMessage) {
@@ -1344,7 +1369,11 @@ static void newXfer(PurpleXfer *xfer) {
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
-	np->m_xfers[np->m_accounts[account] + filename + w] = xfer;
+
+	xfer->ui_data = (void *) new FTData;
+
+	np->m_unhandledXfers[np->m_accounts[account] + filename + w] = xfer;
+
 	np->handleFTStart(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer));
 }
 
@@ -1362,11 +1391,12 @@ static void XferSendComplete(PurpleXfer *xfer) {
 }
 
 static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
-	LOG4CXX_INFO(logger, "before_xfer_write " << size);
+	FTData *ftData = (FTData *) xfer->ui_data;
 	std::string data((const char *) buffer, (size_t) size);
-	np->m_waitingXfers.push_back(xfer);
-	np->handleFTData((unsigned long) xfer->ui_data, data);
-	LOG4CXX_INFO(logger, "xfer_write " << size);
+	if (ftData->paused) {
+		np->m_waitingXfers.push_back(xfer);
+	}
+	np->handleFTData(ftData->id, data);
 	return size;
 }
 

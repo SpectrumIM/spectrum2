@@ -1,5 +1,6 @@
 #include "transport/config.h"
 #include "transport/transport.h"
+#include "transport/filetransfermanager.h"
 #include "transport/usermanager.h"
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
@@ -288,7 +289,9 @@ int main(int argc, char **argv)
 	}
 // 	logger.setUserManager(&userManager);
 
-	NetworkPluginServer plugin(&transport, &config, &userManager);
+	FileTransferManager ftManager(&transport, &userManager);
+
+	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
 
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
 

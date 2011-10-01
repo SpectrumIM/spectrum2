@@ -27,6 +27,7 @@
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Network/Connection.h"
 #include "storagebackend.h"
+#include "transport/filetransfermanager.h"
 
 namespace Transport {
 
@@ -40,35 +41,7 @@ class NetworkConversation;
 class VCardResponder;
 class RosterResponder;
 class BlockResponder;
-
-class DummyReadBytestream : public Swift::ReadBytestream {
-	public:
-		DummyReadBytestream() {m_finished = false;}
-		virtual ~DummyReadBytestream() {}
-		void appendData(const std::string &data) {
-			m_data += data;
-			onDataAvailable();
-		}
-
-		virtual std::vector<unsigned char> read(size_t size) {
-			if (m_data.empty()) {
-				return std::vector<unsigned char>();
-			}
-
-			if (m_data.size() < size) {
-				m_finished = true;
-				return std::vector<unsigned char>(m_data.begin(), m_data.end());
-			}
-			std::string ret = m_data.substr(0, size);
-			m_data.erase(m_data.begin(), m_data.begin() + size);
-			return std::vector<unsigned char>(ret.begin(), ret.end());
-		}
-		virtual bool isFinished() const { return m_finished; }
-
-	private:
-		bool m_finished;
-		std::string m_data;
-};
+class DummyReadBytestream;
 
 class NetworkPluginServer {
 	public:
@@ -84,7 +57,7 @@ class NetworkPluginServer {
 			bool longRun;
 		};
 
-		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
+		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
 
 		virtual ~NetworkPluginServer();
 
@@ -119,7 +92,7 @@ class NetworkPluginServer {
 		void handleAttentionPayload(const std::string &payload);
 		void handleStatsPayload(Backend *c, const std::string &payload);
 		void handleFTStartPayload(const std::string &payload);
-		void handleFTDataPayload(const std::string &payload);
+		void handleFTDataPayload(Backend *b ,const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
@@ -137,8 +110,10 @@ class NetworkPluginServer {
 		void handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> vcard);
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
 
+		void handleFTStateChanged(Swift::FileTransfer::State state, const std::string &userName, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id);
 		void handleFTAccepted(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID);
-		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID);
+		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size);
+		void handleFTDataNeeded(Backend *b, unsigned long ftid);
 
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
@@ -158,7 +133,49 @@ class NetworkPluginServer {
 		Component *m_component;
 		std::list<User *> m_waitingUsers;
 		bool m_isNextLongRun;
-		std::map<unsigned long, boost::shared_ptr<DummyReadBytestream> > m_bytestreams;
+		std::map<unsigned long, FileTransferManager::Transfer> m_filetransfers;
+		FileTransferManager *m_ftManager;
+};
+
+class DummyReadBytestream : public Swift::ReadBytestream {
+	public:
+		DummyReadBytestream(NetworkPluginServer::Backend *b, unsigned long ftid) {neededData = false; m_finished = false; this->b = b; this->ftid = ftid;}
+		virtual ~DummyReadBytestream() {}
+		unsigned long appendData(const std::string &data) {
+			m_data += data;
+			onDataAvailable();
+			neededData = false;
+			return m_data.size();
+		}
+
+		virtual boost::shared_ptr<std::vector<unsigned char> > read(size_t size) {
+			if (m_data.empty()) {
+				return boost::shared_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>());
+			}
+
+			if (m_data.size() < size) {
+				boost::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.end()));
+				m_data.clear();
+				onDataNeeded(b, ftid);
+				return ptr;
+			}
+			boost::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.begin() + size));
+			m_data.erase(m_data.begin(), m_data.begin() + size);
+			if (m_data.size() < 500000 && !neededData) {
+				neededData = true;
+				onDataNeeded(b, ftid);
+			}
+			return ptr;
+		}
+		boost::signal<void (NetworkPluginServer::Backend *b, unsigned long ftid)> onDataNeeded;
+		virtual bool isFinished() const { return m_finished; }
+
+	private:
+		bool m_finished;
+		NetworkPluginServer::Backend *b;
+		unsigned long ftid;
+		std::string m_data;
+		bool neededData;
 };
 
 }
