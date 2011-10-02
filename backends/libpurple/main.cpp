@@ -829,6 +829,14 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleFTFinishRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
+			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
+			if (xfer) {
+				m_unhandledXfers.erase(user + fileName + buddyName);
+				purple_xfer_request_denied(xfer);
+			}
+		}
+
 		void handleFTPauseRequest(unsigned long ftID) {
 			PurpleXfer *xfer = m_xfers[ftID];
 			if (!xfer)

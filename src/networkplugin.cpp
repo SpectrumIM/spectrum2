@@ -373,6 +373,16 @@ void NetworkPlugin::handleFTStartPayload(const std::string &data) {
 	handleFTStartRequest(payload.username(), payload.buddyname(), payload.filename(), payload.size(), payload.ftid());
 }
 
+void NetworkPlugin::handleFTFinishPayload(const std::string &data) {
+	pbnetwork::File payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleFTFinishRequest(payload.username(), payload.buddyname(), payload.filename(), payload.size(), payload.ftid());
+}
+
 void NetworkPlugin::handleFTPausePayload(const std::string &data) {
 	pbnetwork::FileTransferData payload;
 	if (payload.ParseFromString(data) == false) {
@@ -542,6 +552,9 @@ void NetworkPlugin::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data)
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
 				handleFTStartPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH:
+				handleFTFinishPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_PAUSE:
 				handleFTPausePayload(wrapper.payload());

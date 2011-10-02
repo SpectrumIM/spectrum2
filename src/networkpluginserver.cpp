@@ -1252,6 +1252,7 @@ void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyN
 	f.set_buddyname(buddyName);
 	f.set_filename(fileName);
 	f.set_size(size);
+	f.set_ftid(0);
 
 	std::string message;
 	f.SerializeToString(&message);
@@ -1272,6 +1273,9 @@ void NetworkPluginServer::handleFTStateChanged(Swift::FileTransfer::State state,
 	}
 	if (state.state == Swift::FileTransfer::State::Transferring) {
 		handleFTAccepted(user, buddyName, fileName, size, id);
+	}
+	else if (state.state == Swift::FileTransfer::State::Canceled) {
+		handleFTRejected(user, buddyName, fileName, size);
 	}
 }
 

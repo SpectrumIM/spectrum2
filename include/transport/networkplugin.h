@@ -216,6 +216,7 @@ class NetworkPlugin {
 		virtual void handleAttentionRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*message*/) {}
 
 		virtual void handleFTStartRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
+		virtual void handleFTFinishRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
 		virtual void handleFTPauseRequest(unsigned long ftID) {}
 		virtual void handleFTContinueRequest(unsigned long ftID) {}
 
@@ -236,6 +237,7 @@ class NetworkPlugin {
 		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
 		void handleAttentionPayload(const std::string &payload);
 		void handleFTStartPayload(const std::string &payload);
+		void handleFTFinishPayload(const std::string &payload);
 		void handleFTPausePayload(const std::string &payload);
 		void handleFTContinuePayload(const std::string &payload);
 		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
