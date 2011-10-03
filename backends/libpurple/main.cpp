@@ -169,6 +169,11 @@ process_link(GString *ret,
 	return c;
 }
 
+static gboolean ft_ui_ready(void *data) {
+	purple_xfer_ui_ready((PurpleXfer *) data);
+	return FALSE;
+}
+
 static char *
 spectrum_markup_linkify(const char *text)
 {
@@ -861,7 +866,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			tmp.swap(m_waitingXfers);
 
 			BOOST_FOREACH(PurpleXfer *xfer, tmp) {
-				purple_xfer_ui_ready(xfer);
+				purple_timeout_add(1, ft_ui_ready, xfer);
+// 				purple_xfer_ui_ready(xfer);
 			}
 		}
 
@@ -1363,11 +1369,6 @@ static void fileSendStart(PurpleXfer *xfer) {
 // 	repeater->fileSendStart();
 }
 
-static gboolean ft_ui_ready(void *data) {
-	purple_xfer_ui_ready((PurpleXfer *) data);
-	return FALSE;
-}
-
 static void fileRecvStart(PurpleXfer *xfer) {
 // 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
 // 	repeater->fileRecvStart();
@@ -1383,7 +1384,10 @@ static void newXfer(PurpleXfer *xfer) {
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
 
-	xfer->ui_data = (void *) new FTData;
+	FTData *ftdata = new FTData;
+	ftdata->paused = false;
+	ftdata->id = 0;
+	xfer->ui_data = (void *) ftdata;
 
 	np->m_unhandledXfers[np->m_accounts[account] + filename + w] = xfer;
 
@@ -1406,7 +1410,9 @@ static void XferSendComplete(PurpleXfer *xfer) {
 static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
 	FTData *ftData = (FTData *) xfer->ui_data;
 	std::string data((const char *) buffer, (size_t) size);
-	if (ftData->paused) {
+// 	std::cout << "xferwrite\n";
+	if (!ftData->paused) {
+// 		std::cout << "adding xfer to waitingXfers queue\n";
 		np->m_waitingXfers.push_back(xfer);
 	}
 	np->handleFTData(ftData->id, data);
