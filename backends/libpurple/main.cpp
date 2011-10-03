@@ -708,9 +708,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleVCardUpdatedRequest(const std::string &user, const std::string &image) {
+		void handleVCardUpdatedRequest(const std::string &user, const std::string &image, const std::string &nickname) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				purple_account_set_alias(account, nickname.c_str());
+				purple_account_set_public_alias(account, nickname.c_str(), NULL, NULL);
 				gssize size = image.size();
 				// this will be freed by libpurple
 				guchar *photo = (guchar *) g_malloc(size * sizeof(guchar));

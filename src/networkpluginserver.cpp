@@ -1218,6 +1218,7 @@ void NetworkPluginServer::handleVCardUpdated(User *user, boost::shared_ptr<Swift
 	vcard.set_buddyname("");
 	vcard.set_id(0);
 	vcard.set_photo(&v->getPhoto()[0], v->getPhoto().size());
+	vcard.set_nickname(v->getNickname());
 
 	std::string message;
 	vcard.SerializeToString(&message);

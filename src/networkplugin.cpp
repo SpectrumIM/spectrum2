@@ -449,7 +449,7 @@ void NetworkPlugin::handleVCardPayload(const std::string &data) {
 	}
 
 	if (payload.has_photo()) {
-		handleVCardUpdatedRequest(payload.username(), payload.photo());
+		handleVCardUpdatedRequest(payload.username(), payload.photo(), payload.nickname());
 	}
 	else if (!payload.buddyname().empty()) {
 		handleVCardRequest(payload.username(), payload.buddyname(), payload.id());

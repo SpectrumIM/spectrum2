@@ -201,7 +201,7 @@ class NetworkPlugin {
 		/// You should update the VCard in legacy network too.
 		/// \param user XMPP JID of user for which this event occurs.
 		/// \param photo Raw photo data.
-		virtual void handleVCardUpdatedRequest(const std::string &/*user*/, const std::string &/*photo*/) {}
+		virtual void handleVCardUpdatedRequest(const std::string &/*user*/, const std::string &/*photo*/, const std::string &nickname) {}
 
 
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
