@@ -1344,11 +1344,17 @@ static void XferDestroyed(PurpleXfer *xfer) {
 }
 
 static void xferCanceled(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	if (!repeater)
-// 		return;
-// 	GlooxMessageHandler::instance()->ftManager->removeSID(repeater->getSID());
-// 	repeater->handleXferCanceled();
+	PurpleAccount *account = purple_xfer_get_account(xfer);
+	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
+	purple_xfer_ref(xfer);
+	std::string w = xfer->who;
+	size_t pos = w.find("/");
+	if (pos != std::string::npos)
+		w.erase((int) pos, w.length() - (int) pos);
+
+	FTData *ftdata = (FTData *) xfer->ui_data;
+
+	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer), ftdata ? ftdata->id : 0);
 	purple_xfer_unref(xfer);
 }
 
@@ -1369,7 +1375,6 @@ static void fileRecvStart(PurpleXfer *xfer) {
 }
 
 static void newXfer(PurpleXfer *xfer) {
-// 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveRequest(xfer);
 	PurpleAccount *account = purple_xfer_get_account(xfer);
 	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
 	purple_xfer_ref(xfer);

@@ -601,7 +601,7 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	fileInfo.setName(payload.filename());
 
 	Backend *c = (Backend *) user->getData();
-	boost::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream());
+	boost::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream(payload.size()));
 	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, c, bytestream_id + 1));
 
 	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());
@@ -615,6 +615,25 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	m_filetransfers[++bytestream_id] = transfer;
 	transfer.ft->onStateChange.connect(boost::bind(&NetworkPluginServer::handleFTStateChanged, this, _1, payload.username(), payload.buddyname(), payload.filename(), payload.size(), bytestream_id));
 	transfer.ft->start();
+}
+
+void NetworkPluginServer::handleFTFinishPayload(const std::string &data) {
+	pbnetwork::File payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	if (payload.has_ftid()) {
+		if (m_filetransfers.find(payload.ftid()) != m_filetransfers.end()) {
+			FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
+			transfer.ft->cancel();
+		}
+		else {
+			LOG4CXX_ERROR(logger, "FTFinishPayload for unknown ftid=" << payload.ftid());
+		}
+	}
+
 }
 
 void NetworkPluginServer::handleFTDataPayload(Backend *b, const std::string &data) {
@@ -739,6 +758,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
 				handleFTStartPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH:
+				handleFTFinishPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
 				handleFTDataPayload(c, wrapper.payload());

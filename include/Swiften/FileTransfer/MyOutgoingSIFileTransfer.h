@@ -30,7 +30,7 @@ namespace Swift {
 
 			virtual void start();
 			virtual void stop();
-			virtual void cancel() {}
+			virtual void cancel();
 
 			boost::signal<void (const boost::optional<FileTransferError>&)> onFinished;
 

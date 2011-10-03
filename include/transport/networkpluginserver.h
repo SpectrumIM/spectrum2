@@ -92,6 +92,7 @@ class NetworkPluginServer {
 		void handleAttentionPayload(const std::string &payload);
 		void handleStatsPayload(Backend *c, const std::string &payload);
 		void handleFTStartPayload(const std::string &payload);
+		void handleFTFinishPayload(const std::string &payload);
 		void handleFTDataPayload(Backend *b ,const std::string &payload);
 
 		void handleUserCreated(User *user);

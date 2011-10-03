@@ -279,6 +279,24 @@ void NetworkPlugin::handleFTStart(const std::string &user, const std::string &bu
 	send(message);
 }
 
+void NetworkPlugin::handleFTFinish(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size, unsigned long ftid) {
+	pbnetwork::File room;
+	room.set_username(user);
+	room.set_buddyname(buddyName);
+	room.set_filename(fileName);
+	room.set_size(size);
+	if (ftid) {
+		room.set_ftid(ftid);
+	}
+
+	std::string message;
+	room.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH);
+ 
+	send(message);
+}
+
 void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
 	pbnetwork::FileTransferData d;
 	d.set_ftid(ftID);

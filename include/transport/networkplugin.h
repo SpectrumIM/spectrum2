@@ -145,6 +145,7 @@ class NetworkPlugin {
 		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
 
 		void handleFTStart(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size);
+		void handleFTFinish(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size, unsigned long ftid);
 
 		void handleFTData(unsigned long ftID, const std::string &data);
 

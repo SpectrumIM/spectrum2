@@ -33,6 +33,21 @@ void MyOutgoingSIFileTransfer::start() {
 void MyOutgoingSIFileTransfer::stop() {
 }
 
+void MyOutgoingSIFileTransfer::cancel() {
+	// TODO
+// 	session->sendTerminate(JinglePayload::Reason::Cancel);
+
+	if (ibbSession) {
+		ibbSession->stop();
+	}
+	SOCKS5BytestreamServerSession *serverSession = registry->getConnectedSession(SOCKS5BytestreamRegistry::getHostname(id, from, to));
+	if (serverSession) {
+		serverSession->stop();
+	}
+
+	onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
+}
+
 void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamInitiation::ref response, ErrorPayload::ref error) {
 	if (error) {
 		finish(FileTransferError());

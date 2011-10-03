@@ -27,9 +27,11 @@ using namespace log4cxx;
 
 namespace Transport {
 	
-MemoryReadBytestream::MemoryReadBytestream() {
+MemoryReadBytestream::MemoryReadBytestream(unsigned long size) {
 	neededData = false;
 	m_finished = false;
+	m_sent = 0;
+	m_size = size;
 }
 
 MemoryReadBytestream::~MemoryReadBytestream() {
@@ -51,12 +53,18 @@ boost::shared_ptr<std::vector<unsigned char> > MemoryReadBytestream::read(size_t
 
 	if (m_data.size() < size) {
 		boost::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.end()));
+		m_sent += m_data.size();
 		m_data.clear();
+		if (m_sent == m_size)
+			m_finished = true;
 		onDataNeeded();
 		return ptr;
 	}
 	boost::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.begin() + size));
 	m_data.erase(m_data.begin(), m_data.begin() + size);
+	m_sent += size;
+	if (m_sent == m_size)
+		m_finished = true;
 	if (m_data.size() < 500000 && !neededData) {
 		neededData = true;
 		onDataNeeded();

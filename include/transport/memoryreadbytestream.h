@@ -28,13 +28,14 @@ namespace Transport {
 
 class MemoryReadBytestream : public Swift::ReadBytestream {
 	public:
-		MemoryReadBytestream();
+		MemoryReadBytestream(unsigned long size);
 		virtual ~MemoryReadBytestream();
 
 		unsigned long appendData(const std::string &data);
 
 		virtual boost::shared_ptr<std::vector<unsigned char> > read(size_t size);
 
+		void setFinished() { m_finished = true; }
 		bool isFinished() const;
 
 		boost::signal<void ()> onDataNeeded;
@@ -43,6 +44,8 @@ class MemoryReadBytestream : public Swift::ReadBytestream {
 		bool m_finished;
 		std::string m_data;
 		bool neededData;
+		unsigned long m_sent;
+		unsigned long m_size;
 };
 
 }
