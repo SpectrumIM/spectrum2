@@ -137,45 +137,4 @@ class NetworkPluginServer {
 		FileTransferManager *m_ftManager;
 };
 
-class DummyReadBytestream : public Swift::ReadBytestream {
-	public:
-		DummyReadBytestream(NetworkPluginServer::Backend *b, unsigned long ftid) {neededData = false; m_finished = false; this->b = b; this->ftid = ftid;}
-		virtual ~DummyReadBytestream() {}
-		unsigned long appendData(const std::string &data) {
-			m_data += data;
-			onDataAvailable();
-			neededData = false;
-			return m_data.size();
-		}
-
-		virtual boost::shared_ptr<std::vector<unsigned char> > read(size_t size) {
-			if (m_data.empty()) {
-				return boost::shared_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>());
-			}
-
-			if (m_data.size() < size) {
-				boost::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.end()));
-				m_data.clear();
-				onDataNeeded(b, ftid);
-				return ptr;
-			}
-			boost::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.begin() + size));
-			m_data.erase(m_data.begin(), m_data.begin() + size);
-			if (m_data.size() < 500000 && !neededData) {
-				neededData = true;
-				onDataNeeded(b, ftid);
-			}
-			return ptr;
-		}
-		boost::signal<void (NetworkPluginServer::Backend *b, unsigned long ftid)> onDataNeeded;
-		virtual bool isFinished() const { return m_finished; }
-
-	private:
-		bool m_finished;
-		NetworkPluginServer::Backend *b;
-		unsigned long ftid;
-		std::string m_data;
-		bool neededData;
-};
-
 }

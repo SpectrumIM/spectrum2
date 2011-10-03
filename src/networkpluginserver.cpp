@@ -30,6 +30,7 @@
 #include "transport/conversation.h"
 #include "transport/vcardresponder.h"
 #include "transport/rosterresponder.h"
+#include "transport/memoryreadbytestream.h"
 #include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -600,8 +601,8 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	fileInfo.setName(payload.filename());
 
 	Backend *c = (Backend *) user->getData();
-	boost::shared_ptr<DummyReadBytestream> bytestream(new DummyReadBytestream(c, bytestream_id + 1));
-	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, _1, _2));
+	boost::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream());
+	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, c, bytestream_id + 1));
 
 	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());
 
@@ -628,7 +629,7 @@ void NetworkPluginServer::handleFTDataPayload(Backend *b, const std::string &dat
 // 		return;
 
 	FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
-	DummyReadBytestream *bytestream = (DummyReadBytestream *) transfer.readByteStream.get();
+	MemoryReadBytestream *bytestream = (MemoryReadBytestream *) transfer.readByteStream.get();
 
 	if (bytestream->appendData(payload.data()) > 5000000) {
 		pbnetwork::FileTransferData f;
