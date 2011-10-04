@@ -16,7 +16,7 @@ namespace Transport {
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
-BlockSerializer::BlockSerializer() : GenericPayloadSerializer<BlockPayload>() {
+BlockSerializer::BlockSerializer() : Swift::GenericPayloadSerializer<BlockPayload>() {
 }
 
 std::string BlockSerializer::serializePayload(boost::shared_ptr<BlockPayload> attention)  const {
