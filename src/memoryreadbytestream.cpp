@@ -73,6 +73,7 @@ boost::shared_ptr<std::vector<unsigned char> > MemoryReadBytestream::read(size_t
 }
 
 bool MemoryReadBytestream::isFinished() const {
+// 	std::cout << "finished? " << m_finished << "\n";
 	return m_finished;
 }
 
