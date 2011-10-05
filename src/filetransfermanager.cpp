@@ -67,7 +67,6 @@ FileTransferManager::~FileTransferManager() {
 	delete m_bytestreamRegistry;
 	delete m_bytestreamServer;
 	delete m_bytestreamProxy;
-	delete bytestreamServer;
 	delete m_connectivityManager;
 }
 
