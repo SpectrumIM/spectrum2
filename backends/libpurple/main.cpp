@@ -1361,6 +1361,9 @@ static void XferDestroyed(PurpleXfer *xfer) {
 	if (ftdata && ftdata->timer) {
 		purple_timeout_remove(ftdata->timer);
 	}
+	if (ftdata) {
+		np->m_xfers.erase(ftdata->id);
+	}
 }
 
 static void xferCanceled(PurpleXfer *xfer) {
@@ -1389,7 +1392,10 @@ static void fileSendStart(PurpleXfer *xfer) {
 static void fileRecvStart(PurpleXfer *xfer) {
 // 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
 // 	repeater->fileRecvStart();
-	purple_timeout_add(1, ft_ui_ready, xfer);
+	FTData *ftData = (FTData *) xfer->ui_data;
+	if (ftData->timer == 0) {
+		ftData->timer = purple_timeout_add(1, ft_ui_ready, xfer);
+	}
 }
 
 static void newXfer(PurpleXfer *xfer) {
