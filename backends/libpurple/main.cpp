@@ -1356,6 +1356,11 @@ static void XferCreated(PurpleXfer *xfer) {
 }
 
 static void XferDestroyed(PurpleXfer *xfer) {
+	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
+	FTData *ftdata = (FTData *) xfer->ui_data;
+	if (ftdata && ftdata->timer) {
+		purple_timeout_remove(ftdata->timer);
+	}
 }
 
 static void xferCanceled(PurpleXfer *xfer) {
