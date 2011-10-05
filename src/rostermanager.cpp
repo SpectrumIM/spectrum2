@@ -111,10 +111,13 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 
 	payload->addItem(item);
 
-	Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_user->getJID().toBare(), m_component->getIQRouter());
-	request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, request, buddy->getName()));
-	request->send();
-	m_requests.push_back(request);
+	std::vector<Swift::Presence::ref> presences = m_component->getPresenceOracle()->getAllPresence(m_user->getJID().toBare());
+	BOOST_FOREACH(Swift::Presence::ref presence, presences) {
+		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
+		request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, request, buddy->getName()));
+		request->send();
+		m_requests.push_back(request);
+	}
 }
 
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
