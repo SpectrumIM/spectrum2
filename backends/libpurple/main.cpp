@@ -1361,7 +1361,6 @@ static void XferDestroyed(PurpleXfer *xfer) {
 static void xferCanceled(PurpleXfer *xfer) {
 	PurpleAccount *account = purple_xfer_get_account(xfer);
 	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
-	purple_xfer_ref(xfer);
 	std::string w = xfer->who;
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
@@ -1371,6 +1370,9 @@ static void xferCanceled(PurpleXfer *xfer) {
 
 	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer), ftdata ? ftdata->id : 0);
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
+	if (ftdata && ftdata->timer) {
+		purple_timeout_remove(ftdata->timer);
+	}
 	purple_xfer_unref(xfer);
 }
 
@@ -1410,6 +1412,10 @@ static void XferReceiveComplete(PurpleXfer *xfer) {
 // 	repeater->_tryToDeleteMe();
 // 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveComplete(xfer);
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
+	FTData *ftdata = (FTData *) xfer->ui_data;
+	if (ftdata && ftdata->timer) {
+		purple_timeout_remove(ftdata->timer);
+	}
 	purple_xfer_unref(xfer);
 }
 
@@ -1417,6 +1423,10 @@ static void XferSendComplete(PurpleXfer *xfer) {
 // 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
 // 	repeater->_tryToDeleteMe();
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
+	FTData *ftdata = (FTData *) xfer->ui_data;
+	if (ftdata && ftdata->timer) {
+		purple_timeout_remove(ftdata->timer);
+	}
 	purple_xfer_unref(xfer);
 }
 
