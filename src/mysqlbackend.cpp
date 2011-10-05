@@ -371,7 +371,7 @@ bool MySQLBackend::createDatabase() {
 				"UNIQUE KEY `ver` (`ver`)"
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
 
-		exec("INSERT INTO db_version (ver) VALUES ('2');");
+		exec("INSERT IGNORE INTO db_version (ver) VALUES ('2');");
 	}
 
 	return true;
