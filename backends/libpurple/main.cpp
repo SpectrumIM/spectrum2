@@ -49,6 +49,7 @@ static gboolean list_purple_settings = FALSE;
 
 struct FTData {
 	unsigned long id;
+	unsigned long timer;
 	bool paused;
 };
 
@@ -170,6 +171,9 @@ process_link(GString *ret,
 }
 
 static gboolean ft_ui_ready(void *data) {
+	PurpleXfer *xfer = (PurpleXfer *) data;
+	FTData *ftdata = (FTData *) xfer->ui_data;
+	ftdata->timer = 0;
 	purple_xfer_ui_ready((PurpleXfer *) data);
 	return FALSE;
 }
@@ -868,7 +872,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			tmp.swap(m_waitingXfers);
 
 			BOOST_FOREACH(PurpleXfer *xfer, tmp) {
-				purple_timeout_add(1, ft_ui_ready, xfer);
+				FTData *ftData = (FTData *) xfer->ui_data;
+				if (ftData->timer == 0) {
+					ftData->timer = purple_timeout_add(1, ft_ui_ready, xfer);
+				}
 // 				purple_xfer_ui_ready(xfer);
 			}
 		}
@@ -1363,6 +1370,7 @@ static void xferCanceled(PurpleXfer *xfer) {
 	FTData *ftdata = (FTData *) xfer->ui_data;
 
 	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer), ftdata ? ftdata->id : 0);
+	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	purple_xfer_unref(xfer);
 }
 
@@ -1389,6 +1397,7 @@ static void newXfer(PurpleXfer *xfer) {
 	FTData *ftdata = new FTData;
 	ftdata->paused = false;
 	ftdata->id = 0;
+	ftdata->timer = 0;
 	xfer->ui_data = (void *) ftdata;
 
 	np->m_unhandledXfers[np->m_accounts[account] + filename + w] = xfer;
@@ -1400,12 +1409,14 @@ static void XferReceiveComplete(PurpleXfer *xfer) {
 // 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
 // 	repeater->_tryToDeleteMe();
 // 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveComplete(xfer);
+	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	purple_xfer_unref(xfer);
 }
 
 static void XferSendComplete(PurpleXfer *xfer) {
 // 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
 // 	repeater->_tryToDeleteMe();
+	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	purple_xfer_unref(xfer);
 }
 
