@@ -1706,6 +1706,7 @@ int main(int argc, char **argv) {
 
 			p.load(istream);
 			p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
+			p.setProperty("jid", CONFIG_STRING(&config, "service.jid"));
 			log4cxx::PropertyConfigurator::configure(p);
 		}
 

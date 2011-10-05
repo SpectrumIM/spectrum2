@@ -20,9 +20,11 @@
 #include <tchar.h>
 #endif
 #include "log4cxx/logger.h"
+#include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/consoleappender.h"
+#include "log4cxx/helpers/properties.h"
+#include "log4cxx/helpers/fileinputstream.h"
 #include "libgen.h"
 #include <sys/stat.h>
 
@@ -218,7 +220,13 @@ int main(int argc, char **argv)
 #endif
 	}
 	else {
-		log4cxx::PropertyConfigurator::configure(CONFIG_STRING(&config, "logging.config"));
+		log4cxx::helpers::Properties p;
+		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.config"));
+
+		p.load(istream);
+		p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
+		p.setProperty("jid", CONFIG_STRING(&config, "service.jid"));
+		log4cxx::PropertyConfigurator::configure(p);
 	}
 
 #ifndef WIN32
