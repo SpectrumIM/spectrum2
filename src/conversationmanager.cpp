@@ -68,6 +68,10 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 // 		name.replace(name.find_last_of("%"), 1, "@"); // OK when commented
 // 	}
 	std::string name = Buddy::JIDToLegacyName(message->getTo());
+	if (name.empty()) {
+		LOG4CXX_WARN(logger, m_user->getJID().toString() << ": Tried to create empty conversation");
+		return;
+	}
 
 	// create conversation if it does not exist.
 	if (!m_convs[name]) {
