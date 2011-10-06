@@ -1311,6 +1311,7 @@ void NetworkPluginServer::sendPing(Backend *c) {
 	wrap.SerializeToString(&message);
 
 	if (c->connection) {
+		LOG4CXX_INFO(logger, "PING to " << c);
 		send(c->connection, message);
 		c->pongReceived = false;
 	}
