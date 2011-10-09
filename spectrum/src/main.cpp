@@ -15,6 +15,7 @@
 #include "sys/signal.h"
 #include <pwd.h>
 #include <grp.h>
+#include <sys/resource.h>
 #else
 #include <Windows.h>
 #include <tchar.h>
@@ -230,30 +231,36 @@ int main(int argc, char **argv)
 	}
 
 #ifndef WIN32
-	if (!CONFIG_STRING(&config, "service.group").empty()) {
-		struct group *gr;
-		if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-			LOG4CXX_ERROR(logger, "Invalid service.group name " << CONFIG_STRING(&config, "service.group"));
-			return 1;
+	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
+		struct rlimit limit;
+		getrlimit(RLIMIT_CORE, &limit);
+
+		if (!CONFIG_STRING(&config, "service.group").empty()) {
+			struct group *gr;
+			if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
+				LOG4CXX_ERROR(logger, "Invalid service.group name " << CONFIG_STRING(&config, "service.group"));
+				return 1;
+			}
+
+			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
+				LOG4CXX_ERROR(logger, "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno));
+				return 1;
+			}
 		}
 
-		if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
-			LOG4CXX_ERROR(logger, "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno));
-			return 1;
-		}
-	}
+		if (!CONFIG_STRING(&config, "service.user").empty()) {
+			struct passwd *pw;
+			if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
+				LOG4CXX_ERROR(logger, "Invalid service.user name " << CONFIG_STRING(&config, "service.user"));
+				return 1;
+			}
 
-	if (!CONFIG_STRING(&config, "service.user").empty()) {
-		struct passwd *pw;
-		if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-			LOG4CXX_ERROR(logger, "Invalid service.user name " << CONFIG_STRING(&config, "service.user"));
-			return 1;
+			if ((setuid(pw->pw_uid)) != 0) {
+				LOG4CXX_ERROR(logger, "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno));
+				return 1;
+			}
 		}
-
-		if ((setuid(pw->pw_uid)) != 0) {
-			LOG4CXX_ERROR(logger, "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno));
-			return 1;
-		}
+		setrlimit(RLIMIT_CORE, &limit);
 	}
 #endif
 

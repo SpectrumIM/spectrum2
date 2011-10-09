@@ -206,8 +206,8 @@ template <typename T>
 MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 	if (m_offset >= m_params.size())
 		return *this;
-	int *data = (int *) m_params[m_offset].buffer;
-	*data = (int) t;
+	T *data = (T *) m_params[m_offset].buffer;
+	*data = (T) t;
 
 // 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << (int) t);
 	m_offset++;
