@@ -27,6 +27,11 @@
 #include <event.h>
 #endif
 
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
+
+static LoggerPtr logger = Logger::getLogger("SpectrumEventLoop");
 
 using namespace Swift;
 
@@ -35,6 +40,7 @@ static SpectrumEventLoop *loop;
 // Fires the event's callback and frees the event
 static gboolean processEvent(void *data) {
 	Event *ev = (Event *) data;
+	LOG4CXX_INFO(logger, "got event in main thread " << ev);
 	loop->handle(ev);
 	return FALSE;
 }
@@ -93,5 +99,6 @@ void SpectrumEventLoop::stop() {
 void SpectrumEventLoop::post(const Event& event) {
 	// pass copy of event to main thread
 	Event *ev = new Event(event);
+	LOG4CXX_INFO(logger, "posting event to main thread " << ev);
 	purple_timeout_add(0, processEvent, ev);
 }
