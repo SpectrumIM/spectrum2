@@ -101,5 +101,5 @@ void SpectrumEventLoop::post(const Event& event) {
 	Event *ev = new Event(event);
 	LOG4CXX_INFO(logger, "posting event to main thread " << ev);
 // 	g_main_context_invoke(g_main_loop_get_context(m_loop), processEvent, ev);
-	purple_timeout_add(0, processEvent, ev);
+	purple_timeout_add(100, processEvent, ev);
 }
