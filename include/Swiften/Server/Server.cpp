@@ -49,12 +49,14 @@ Server::Server(
 	stanzaChannel_ = new ServerStanzaChannel();
 	iqRouter_ = new IQRouter(stanzaChannel_);
 	tlsFactory = NULL;
+	parserFactory_ = new PlatformXMLParserFactory();
 }
 
 Server::~Server() {
 	stop();
 	delete iqRouter_;
 	delete stanzaChannel_;
+	delete parserFactory_;
 }
 
 void Server::start() {
@@ -101,7 +103,7 @@ void Server::handleNewClientConnection(boost::shared_ptr<Connection> connection)
 
 	boost::shared_ptr<ServerFromClientSession> serverFromClientSession = boost::shared_ptr<ServerFromClientSession>(
 			new ServerFromClientSession(idGenerator.generateID(), connection, 
-					getPayloadParserFactories(), getPayloadSerializers(), userRegistry_));
+					getPayloadParserFactories(), getPayloadSerializers(), userRegistry_, parserFactory_));
 	//serverFromClientSession->setAllowSASLEXTERNAL();
 
 	serverFromClientSession->onSessionStarted.connect(

@@ -22,6 +22,7 @@
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
+#include <Swiften/Parser/PlatformXMLParserFactory.h>
 
 namespace Swift {
 	class ConnectionServer;
@@ -84,5 +85,6 @@ namespace Swift {
 			IQRouter *iqRouter_;
 			TLSServerContextFactory *tlsFactory;
 			PKCS12Certificate cert;
+			PlatformXMLParserFactory *parserFactory_;
 	};
 }

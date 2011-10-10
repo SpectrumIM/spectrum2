@@ -38,7 +38,8 @@ namespace Swift {
 					boost::shared_ptr<Connection> connection, 
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
-					UserRegistry* userRegistry);
+					UserRegistry* userRegistry,
+					XMLParserFactory* factory);
 			~ServerFromClientSession();
 
 			boost::signal<void ()> onSessionStarted;

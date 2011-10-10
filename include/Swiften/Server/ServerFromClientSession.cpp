@@ -33,8 +33,9 @@ ServerFromClientSession::ServerFromClientSession(
 		boost::shared_ptr<Connection> connection, 
 		PayloadParserFactoryCollection* payloadParserFactories, 
 		PayloadSerializerCollection* payloadSerializers,
-		UserRegistry* userRegistry) : 
-			Session(connection, payloadParserFactories, payloadSerializers),
+		UserRegistry* userRegistry,
+		XMLParserFactory* factory) : 
+			Session(connection, payloadParserFactories, payloadSerializers, factory),
 			id_(id),
 			userRegistry_(userRegistry),
 			authenticated_(false),
