@@ -115,7 +115,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 				memset(&m_params.back(), 0, sizeof(MYSQL_BIND));
 
 				m_params.back().buffer_type= MYSQL_TYPE_TINY;
-				m_params.back().buffer= (bool *) malloc(sizeof(bool));
+				m_params.back().buffer= (int *) malloc(sizeof(int));
 				m_params.back().is_null= 0;
 				m_params.back().length= (unsigned long *) malloc(sizeof(unsigned long));
 				break;
@@ -151,7 +151,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 				memset(&m_results.back(), 0, sizeof(MYSQL_BIND));
 
 				m_results.back().buffer_type= MYSQL_TYPE_TINY;
-				m_results.back().buffer= (bool *) malloc(sizeof(bool));
+				m_results.back().buffer= (int *) malloc(sizeof(int));
 				m_results.back().is_null= 0;
 				m_results.back().length= (unsigned long *) malloc(sizeof(unsigned long));
 				break;
@@ -206,8 +206,8 @@ template <typename T>
 MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 	if (m_offset >= m_params.size())
 		return *this;
-	T *data = (T *) m_params[m_offset].buffer;
-	*data = (T) t;
+	int *data = (int *) m_params[m_offset].buffer;
+	*data = (int) t;
 
 // 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << (int) t);
 	m_offset++;
@@ -230,8 +230,8 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator >> (T& t) {
 		return *this;
 
 	if (!m_results[m_resultOffset].is_null) {
-		T *data = (T *) m_results[m_resultOffset].buffer;
-		t = *data;
+		int *data = (int *) m_results[m_resultOffset].buffer;
+		t = (int) *data;
 // 		std::cout << "getting " << m_resultOffset << " " << (int) t << "\n";
 	}
 
