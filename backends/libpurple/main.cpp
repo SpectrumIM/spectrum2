@@ -1587,7 +1587,10 @@ static bool initPurple(Config &cfg) {
 		purple_debug_set_verbose(true);
 
 	purple_core_set_ui_ops(&coreUiOps);
-	purple_eventloop_set_ui_ops(getEventLoopUiOps());
+	std::map<std::string, std::string> unregistered = cfg.getUnregistered();
+	if (unregistered.find("service.eventloop") != unregistered.end()) {
+		purple_eventloop_set_ui_ops(getEventLoopUiOps(unregistered["service.eventloop"] == "libev"));
+	}
 
 	ret = purple_core_init("spectrum");
 	if (ret) {
@@ -1744,7 +1747,8 @@ int main(int argc, char **argv) {
 
 		initPurple(config);
 
-		SpectrumEventLoop eventLoop;
+		std::map<std::string, std::string> unregistered = config.getUnregistered();
+		SpectrumEventLoop eventLoop(unregistered["service.eventloop"] == "libev");
 		np = new SpectrumNetworkPlugin(&config, &eventLoop, host, port);
 		eventLoop.run();
 	}

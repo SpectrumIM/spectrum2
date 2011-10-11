@@ -29,7 +29,7 @@
 class SpectrumEventLoop : public Swift::EventLoop {
 	public:
 		// Creates event loop according to CONFIG().eventloop settings.
-		SpectrumEventLoop();
+		SpectrumEventLoop(bool libev);
 		~SpectrumEventLoop();
 
 		// Executes the eventloop.

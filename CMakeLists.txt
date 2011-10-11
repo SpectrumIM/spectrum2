@@ -40,6 +40,9 @@ find_package(IRCClientQt)
 set(log4cxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(log4cxx)
 
+set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(event)
+
 find_package(Doxygen)
 
 INCLUDE(FindQt4)
@@ -80,6 +83,14 @@ if (PROTOBUF_FOUND)
 		include_directories(${GLIB2_INCLUDE_DIR})
 	else()
 		message("Libpurple plugin  : no (install libpurple)")
+	endif()
+
+	if (HAVE_EVENT)
+		ADD_DEFINITIONS(-DWITH_LIBEVENT)
+		include_directories(${EVENT_INCLUDE_DIRS})
+		message("  libev eventloop : yes")
+	else()
+		message("  libev eventloop : no (install libev-devel)")
 	endif()
 
 	if(IRC_FOUND)

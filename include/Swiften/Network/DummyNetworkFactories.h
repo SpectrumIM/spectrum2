@@ -36,6 +36,10 @@ namespace Swift {
 				return 0;
 			}
 
+			Swift::XMLParserFactory* getXMLParserFactory() const {
+				return 0;
+			}
+
 		private:
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;

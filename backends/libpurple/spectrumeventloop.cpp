@@ -45,18 +45,16 @@ static gboolean processEvent(void *data) {
 	return FALSE;
 }
 
-SpectrumEventLoop::SpectrumEventLoop() : m_isRunning(false) {
+SpectrumEventLoop::SpectrumEventLoop(bool libev) : m_isRunning(false) {
 	m_loop = NULL;
 	loop = this;
-	if (true) {
+#ifdef WITH_LIBEVENT
+	if (!libev) {
 		m_loop = g_main_loop_new(NULL, FALSE);
 	}
-#ifdef WITH_LIBEVENT
-	else {
-		/*struct event_base *base = (struct event_base *)*/
-		event_init();
-	}
+	return;
 #endif
+	m_loop = g_main_loop_new(NULL, FALSE);
 }
 
 SpectrumEventLoop::~SpectrumEventLoop() {

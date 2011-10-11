@@ -239,11 +239,16 @@ static PurpleEventLoopUiOps libEventLoopOps =
 
 #endif /* WITH_LIBEVENT*/
 
-PurpleEventLoopUiOps * getEventLoopUiOps(void){
-	return &eventLoopOps;
+PurpleEventLoopUiOps * getEventLoopUiOps(bool libev){
 #ifdef WITH_LIBEVENT
-	std::cout << "EPOLL\n";
-	events = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, NULL);
-	return &libEventLoopOps;
+	if (libev) {
+		event_init();
+		events = g_hash_table_new_full(g_int_hash, g_int_equal, g_free, NULL);
+		return &libEventLoopOps;
+	}
+	else {
+		return &eventLoopOps;
+	}
 #endif
+	return &eventLoopOps;
 }
