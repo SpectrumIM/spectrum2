@@ -1589,14 +1589,16 @@ static bool initPurple(Config &cfg) {
 	purple_core_set_ui_ops(&coreUiOps);
 	std::map<std::string, std::string> unregistered = cfg.getUnregistered();
 	if (unregistered.find("service.eventloop") != unregistered.end()) {
-		if (unregistered["service.eventloop"] == "libev")
-			LOG4CXX_INFO(logger, "Will use libev based event loop";
-		else
-			LOG4CXX_INFO(logger, "Will use glib based event loop";
+		if (unregistered["service.eventloop"] == "libev") {
+			LOG4CXX_INFO(logger, "Will use libev based event loop");
+		}
+		else {
+			LOG4CXX_INFO(logger, "Will use glib based event loop");
+		}
 		purple_eventloop_set_ui_ops(getEventLoopUiOps(unregistered["service.eventloop"] == "libev"));
 	}
 	else {
-		LOG4CXX_INFO(logger, "Will use glib based event loop";
+		LOG4CXX_INFO(logger, "Will use glib based event loop");
 		purple_eventloop_set_ui_ops(getEventLoopUiOps(false));
 	}
 
