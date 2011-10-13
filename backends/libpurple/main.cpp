@@ -31,6 +31,7 @@ using namespace log4cxx;
 
 static LoggerPtr logger_libpurple = Logger::getLogger("backend.libpurple");
 static LoggerPtr logger = Logger::getLogger("backend");
+int m_sock;
 
 using namespace Transport;
 
@@ -865,6 +866,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_xfer_ui_ready(xfer);
 		}
 
+		void sendData(const std::string &string) {
+			write(m_sock, string.c_str(), string.size());
+		}
+
 		void readyForData() {
 			if (m_waitingXfers.empty())
 				return;
@@ -1672,6 +1677,14 @@ static void spectrum_sigchld_handler(int sig)
 	}
 }
 
+static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond) {
+	char buffer[65535];
+	char *ptr = buffer;
+	ssize_t n = read(source, ptr, sizeof(buffer));
+	Swift::SafeByteArray d = Swift::createSafeByteArray(buffer, n);
+	np->handleDataRead(d);
+}
+
 int main(int argc, char **argv) {
 	Swift::logging = true;
 	GError *error = NULL;
@@ -1756,6 +1769,33 @@ int main(int argc, char **argv) {
 		}
 
 		initPurple(config);
+
+		int portno = port;
+		struct sockaddr_in serv_addr;
+
+		m_sock = socket(AF_INET, SOCK_STREAM, 0);
+		memset((char *) &serv_addr, 0, sizeof(serv_addr));
+		serv_addr.sin_family = AF_INET;
+		serv_addr.sin_port = htons(portno);
+
+		hostent *hos;  // Resolve name
+		if ((hos = gethostbyname(host)) == NULL) {
+			// strerror() will not work for gethostbyname() and hstrerror() 
+			// is supposedly obsolete
+			exit(1);
+		}
+		serv_addr.sin_addr.s_addr = *((unsigned long *) hos->h_addr_list[0]);
+
+		if (connect(m_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+			close(m_sock);
+			m_sock = 0;
+		}
+
+		int flags = fcntl(m_sock, F_GETFL);
+		flags |= O_NONBLOCK;
+		fcntl(m_sock, F_SETFL, flags);
+
+		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
 
 		std::map<std::string, std::string> unregistered = config.getUnregistered();
 		SpectrumEventLoop eventLoop(unregistered["service.eventloop"] == "libev");

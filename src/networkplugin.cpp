@@ -45,19 +45,19 @@ namespace Transport {
 	wrap.SerializeToString(&MESSAGE);
 
 NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, int port) {
-	m_factories = new Swift::BoostNetworkFactories(loop);
+// 	m_factories = new Swift::BoostNetworkFactories(loop);
 	m_host = host;
 	m_port = port;
 	m_pingReceived = false;
 	m_loop = loop;
-	m_conn = m_factories->getConnectionFactory()->createConnection();
-	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
-	m_conn->onDataWritten.connect(boost::bind(&NetworkPlugin::readyForData, this));
-	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::_handleConnected, this, _1));
-	m_conn->onDisconnected.connect(boost::bind(&NetworkPlugin::handleDisconnected, this));
+// 	m_conn = m_factories->getConnectionFactory()->createConnection();
+// 	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
+// 	m_conn->onDataWritten.connect(boost::bind(&NetworkPlugin::readyForData, this));
+// 	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::_handleConnected, this, _1));
+// 	m_conn->onDisconnected.connect(boost::bind(&NetworkPlugin::handleDisconnected, this));
 
-	m_pingTimer = m_factories->getTimerFactory()->createTimer(30000);
-	m_pingTimer->onTick.connect(boost::bind(&NetworkPlugin::pingTimeout, this)); 
+// 	m_pingTimer = m_factories->getTimerFactory()->createTimer(30000);
+// 	m_pingTimer->onTick.connect(boost::bind(&NetworkPlugin::pingTimeout, this)); 
 	connect();
 
 	double shared;
@@ -313,24 +313,24 @@ void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
 void NetworkPlugin::_handleConnected(bool error) {
 	if (error) {
 // 		LOG4CXX_ERROR(logger, "Connecting error. Exiting");
-		m_pingTimer->stop();
+// 		m_pingTimer->stop();
 		handleExit();
 	}
 	else {
 // 		LOG4CXX_INFO(logger, "Connected to NetworkPluginServer");
-		m_pingTimer->start();
+// 		m_pingTimer->start();
 	}
 }
 
 void NetworkPlugin::handleDisconnected() {
 // 	LOG4CXX_INFO(logger, "Disconnected from NetworkPluginServer. Exiting.");
-	m_pingTimer->stop();
+// 	m_pingTimer->stop();
 	handleExit();
 }
 
 void NetworkPlugin::connect() {
 	LOG4CXX_INFO(logger, "Connecting NetworkPluginServer host " << m_host << " port " << m_port);
-	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(m_host), m_port));
+// 	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(m_host), m_port));
 }
 
 void NetworkPlugin::handleLoginPayload(const std::string &data) {
@@ -502,8 +502,8 @@ void NetworkPlugin::handleChatStatePayload(const std::string &data, Swift::ChatS
 	}
 }
 
-void NetworkPlugin::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
-	m_data.insert(m_data.end(), data->begin(), data->end());
+void NetworkPlugin::handleDataRead(Swift::SafeByteArray &data) {
+	m_data.insert(m_data.end(), data.begin(), data.end());
 
 	while (m_data.size() != 0) {
 		unsigned int expected_size;
@@ -590,7 +590,7 @@ void NetworkPlugin::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data)
 void NetworkPlugin::send(const std::string &data) {
 	char header[4];
 	*((int*)(header)) = htonl(data.size());
-	m_conn->write(Swift::createSafeByteArray(std::string(header, 4) + data));
+	sendData(std::string(header, 4) + data);
 }
 
 void NetworkPlugin::sendPong() {
@@ -631,7 +631,7 @@ void NetworkPlugin::pingTimeout() {
 		handleExit();
 	}
 	m_pingReceived = false;
-	m_pingTimer->start();
+// 	m_pingTimer->start();
 }
 
 }

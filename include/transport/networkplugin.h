@@ -222,6 +222,8 @@ class NetworkPlugin {
 		virtual void handleFTContinueRequest(unsigned long ftID) {}
 
 		virtual void handleExit() { std::cout << "EXITING\n"; exit(1); }
+		void handleDataRead(Swift::SafeByteArray &data);
+		virtual void sendData(const std::string &string) {}
 		
 
 	private:
@@ -241,7 +243,6 @@ class NetworkPlugin {
 		void handleFTFinishPayload(const std::string &payload);
 		void handleFTPausePayload(const std::string &payload);
 		void handleFTContinuePayload(const std::string &payload);
-		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
 		void _handleConnected(bool error);
 		void handleDisconnected();
 
