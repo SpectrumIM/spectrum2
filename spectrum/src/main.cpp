@@ -16,17 +16,17 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/resource.h>
+#include "libgen.h"
 #else
-#include <Windows.h>
-#include <tchar.h>
+#include <windows.h>
 #endif
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
 #include "log4cxx/helpers/properties.h"
+#include "log4cxx/helpers/transcoder.h"
 #include "log4cxx/helpers/fileinputstream.h"
-#include "libgen.h"
 #include <sys/stat.h>
 
 using namespace log4cxx;
@@ -225,8 +225,11 @@ int main(int argc, char **argv)
 		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.config"));
 
 		p.load(istream);
-		p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
-		p.setProperty("jid", CONFIG_STRING(&config, "service.jid"));
+		LogString pid, jid;
+		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
+		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
+		p.setProperty(L"pid", pid);
+		p.setProperty(L"jid", jid);
 		log4cxx::PropertyConfigurator::configure(p);
 	}
 

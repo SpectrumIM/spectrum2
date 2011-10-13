@@ -20,6 +20,12 @@
 
 #include "transport/config.h"
 #include <fstream>
+#ifdef _MSC_VER
+#include <direct.h>
+#define getcwd _getcwd
+#include <windows.h>
+#define PATH_MAX MAX_PATH
+#endif
 
 using namespace boost::program_options;
 
