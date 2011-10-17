@@ -500,47 +500,48 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void setDefaultAccountOptions(PurpleAccount *account) {
-// 			for (std::map<std::string,std::string>::const_iterator it = config->getUnregistered().begin();
-// 				it != config->getUnregistered().end(); it++) {
-// 				if ((*it).first.find("purple.") == 0) {
-// 					std::string key = (*it).first.substr((*it).first.find(".") + 1);
-// 
-// 					PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
-// 					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
-// 					bool found = false;
-// 					for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
-// 						PurpleAccountOption *option = (PurpleAccountOption *) l->data;
-// 						PurplePrefType type = purple_account_option_get_type(option);
-// 						std::string key2(purple_account_option_get_setting(option));
-// 						std::cout << key << " " << key2 << " " << (*it).second << "\n";
-// 						if (key != key2)
-// 							continue;
-// 						
-// 						found = true;
-// 						switch (type) {
-// 							case PURPLE_PREF_BOOLEAN:
-// 								purple_account_set_bool(account, key.c_str(), fromString<bool>((*it).second));
-// 								break;
-// 
-// 							case PURPLE_PREF_INT:
-// 								purple_account_set_int(account, key.c_str(), fromString<int>((*it).second));
-// 								break;
-// 
-// 							case PURPLE_PREF_STRING:
-// 							case PURPLE_PREF_STRING_LIST:
-// 								purple_account_set_string(account, key.c_str(), (*it).second.c_str());
-// 								break;
-// 							default:
-// 								continue;
-// 						}
-// 						break;
-// 					}
-// 
-// 					if (!found) {
-// 						purple_account_set_string(account, key.c_str(), (*it).second.c_str());
-// 					}
-// 				}
-// 			}
+			int i;
+			gchar **keys = g_key_file_get_keys (keyfile, "purple", NULL, NULL);
+			while (keys[i] != NULL) {
+				std::string key = keys[i];
+
+				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
+				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+				bool found = false;
+				for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
+					PurpleAccountOption *option = (PurpleAccountOption *) l->data;
+					PurplePrefType type = purple_account_option_get_type(option);
+					std::string key2(purple_account_option_get_setting(option));
+					if (key != key2) {
+						continue;
+					}
+					
+					found = true;
+					switch (type) {
+						case PURPLE_PREF_BOOLEAN:
+							purple_account_set_bool(account, key.c_str(), fromString<bool>(KEYFILE_STRING("purple", key)));
+							break;
+
+						case PURPLE_PREF_INT:
+							purple_account_set_int(account, key.c_str(), fromString<int>(KEYFILE_STRING("purple", key)));
+							break;
+
+						case PURPLE_PREF_STRING:
+						case PURPLE_PREF_STRING_LIST:
+							purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+							break;
+						default:
+							continue;
+					}
+					break;
+				}
+
+				if (!found) {
+					purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+				}
+				i++;
+			}
+			g_strfreev (keys);
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
