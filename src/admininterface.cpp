@@ -28,7 +28,7 @@
 #include "transport/networkpluginserver.h"
 #include "storageresponder.h"
 #include "log4cxx/logger.h"
-#include "memoryusage.h"
+#include "transport/memoryusage.h"
 #include <boost/foreach.hpp>
 
 using namespace log4cxx;

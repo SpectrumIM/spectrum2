@@ -23,7 +23,7 @@ class MyIrcSession : public Irc::Session
 
 public:
     MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent = 0);
-	std::map<std::string, Conversation::ParticipantFlag> m_modes;
+	std::map<std::string, bool> m_modes;
 
 protected Q_SLOTS:
     void on_connected();
@@ -67,7 +67,7 @@ protected Q_SLOTS:
     void on_numericMessageReceived(const QString& origin, uint code, const QStringList& params);
     void on_unknownMessageReceived(const QString& origin, const QStringList& params);
 
-	Conversation::ParticipantFlag correctNickname(std::string &nickname);
+	bool correctNickname(std::string &nickname);
 };
 
 #endif // SESSION_H

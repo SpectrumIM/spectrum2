@@ -43,7 +43,7 @@ Logger::~Logger(){
 }
 
 void Logger::setStorageBackend(StorageBackend *storage) {
-	storage->onStorageError.connect(boost::bind(&Logger::handleStorageError, this, _1, _2));
+// 	storage->onStorageError.connect(boost::bind(&Logger::handleStorageError, this, _1, _2));
 }
 
 void Logger::setUserRegistration(UserRegistration *userRegistration) {

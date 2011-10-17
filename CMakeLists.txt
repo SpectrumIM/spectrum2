@@ -164,6 +164,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(plugin)
 ADD_SUBDIRECTORY(include)
 #ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(spectrum)

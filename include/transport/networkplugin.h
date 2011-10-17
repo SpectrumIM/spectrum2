@@ -21,17 +21,9 @@
 #pragma once
 
 #include <time.h>
-#include "Swiften/Swiften.h"
-#include "Swiften/Presence/PresenceOracle.h"
-#include "Swiften/Disco/EntityCapsManager.h"
-#include "Swiften/Network/ConnectionServer.h"
-#include "Swiften/Network/Connection.h"
-#include "Swiften/Network/BoostTimerFactory.h"
-#include "Swiften/Network/BoostNetworkFactories.h"
-#include "Swiften/Network/BoostIOServiceThread.h"
-#include "Swiften/Network/Connection.h"
-#include "storagebackend.h"
-#include "conversation.h"
+#include "transport/protocol.pb.h"
+// #include "conversation.h"
+#include <iostream>
 
 namespace Transport {
 
@@ -46,12 +38,10 @@ class NetworkPlugin {
 		/// \param loop Event loop.
 		/// \param host Host where Spectrum2 NetworkPluginServer runs.
 		/// \param port Port.
-		NetworkPlugin(Swift::EventLoop *loop, const std::string &host, int port);
+		NetworkPlugin();
 
 		/// Destructor.
 		virtual ~NetworkPlugin();
-		
-		virtual void readyForData() {}
 
 		/// Call this function when legacy network buddy changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -63,7 +53,7 @@ class NetworkPlugin {
 		/// \param iconHash MD5 hash of buddy icon. Empty if none buddy icon.
 		/// \param blocked True if this buddy is blocked in privacy lists in legacy network.
 		void handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, Swift::StatusShow::Type status, const std::string &statusMessage = "", const std::string &iconHash = "",
+			const std::string &groups, pbnetwork::StatusType status, const std::string &statusMessage = "", const std::string &iconHash = "",
 			bool blocked = false
 		);
 
@@ -75,8 +65,8 @@ class NetworkPlugin {
 		/// \param status Current status of participant. Swift::StatusShow::None if participant left the room.
 		/// \param statusMessage Current status message of participant.
 		/// \param newname New name of participant if he changed the nickname. Otherwise empty.
-		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, Conversation::ParticipantFlag flags = Conversation::None,
-			Swift::StatusShow::Type status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
+		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags,
+			pbnetwork::StatusType = pbnetwork::STATUS_NONE, const std::string &statusMessage = "", const std::string &newname = "");
 
 		/// Call this function when user disconnected the legacy network because of some legacy network error.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -221,7 +211,9 @@ class NetworkPlugin {
 		virtual void handleFTPauseRequest(unsigned long ftID) {}
 		virtual void handleFTContinueRequest(unsigned long ftID) {}
 
-		virtual void handleExit() { std::cout << "EXITING\n"; exit(1); }
+		virtual void handleExitRequest() { exit(1); }
+		void handleDataRead(std::string &data);
+		virtual void sendData(const std::string &string) {}
 		
 
 	private:
@@ -235,29 +227,18 @@ class NetworkPlugin {
 		void handleVCardPayload(const std::string &payload);
 		void handleBuddyChangedPayload(const std::string &payload);
 		void handleBuddyRemovedPayload(const std::string &payload);
-		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
+		void handleChatStatePayload(const std::string &payload, int type);
 		void handleAttentionPayload(const std::string &payload);
 		void handleFTStartPayload(const std::string &payload);
 		void handleFTFinishPayload(const std::string &payload);
 		void handleFTPausePayload(const std::string &payload);
 		void handleFTContinuePayload(const std::string &payload);
-		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
-		void _handleConnected(bool error);
-		void handleDisconnected();
 
 		void send(const std::string &data);
 		void sendPong();
 		void sendMemoryUsage();
-		void pingTimeout();
 
-		Swift::SafeByteArray m_data;
-		std::string m_host;
-		int m_port;
-		Swift::BoostNetworkFactories *m_factories;
-		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		boost::shared_ptr<Swift::Connection> m_conn;
-		Swift::EventLoop *m_loop;
-		Swift::Timer::ref m_pingTimer;
+		std::string m_data;
 		bool m_pingReceived;
 		double m_init_res;
 

@@ -3,10 +3,6 @@ FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 FILE(GLOB HEADERS ../include/transport/*.h)
 
-if (PROTOBUF_FOUND)
-	PROTOBUF_GENERATE_CPP(PROTOBUF_SRC PROTOBUF_HDRS "pbnetwork.proto")
-endif()
-
 if (CPPUNIT_FOUND)
 	FILE(GLOB SRC_TEST tests/*.cpp)
 
@@ -21,11 +17,20 @@ endif()
 
 # SOURCE_GROUP(headers FILES ${HEADERS})
 
+
+if (PROTOBUF_FOUND)
 if (CMAKE_COMPILER_IS_GNUCXX)
-ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS})
-ADD_DEFINITIONS(-fPIC)
+	ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ../include/transport/protocol.pb.cc)
 else()
-ADD_LIBRARY(transport STATIC ${HEADERS} ${SRC} ${SWIFTEN_SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS})
+	ADD_LIBRARY(transport STATIC ${HEADERS} ${SRC} ${SWIFTEN_SRC} ../include/transport/protocol.pb.cc)
+endif()
+	ADD_DEPENDENCIES(transport pb)
+else()
+	ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC})
+endif()
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+ADD_DEFINITIONS(-fPIC)
 endif()
 
 if (WIN32)
