@@ -150,6 +150,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 
 ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(plugin)
 ADD_SUBDIRECTORY(include)
 #ADD_SUBDIRECTORY(examples)
 ADD_SUBDIRECTORY(spectrum)

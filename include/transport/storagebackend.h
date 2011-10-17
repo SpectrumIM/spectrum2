@@ -22,6 +22,10 @@
 
 #include <string>
 #include <map>
+#include <list>
+#include <vector>
+#include <boost/bind.hpp>
+// #include <boost/signal.hpp>
 
 namespace Transport {
 
@@ -115,7 +119,7 @@ class StorageBackend
 		virtual void commitTransaction() = 0;
 
 		/// onStorageError
-		boost::signal<void (const std::string &statement, const std::string &error)> onStorageError;
+// 		boost::signal<void (const std::string &statement, const std::string &error)> onStorageError;
 
 };
 

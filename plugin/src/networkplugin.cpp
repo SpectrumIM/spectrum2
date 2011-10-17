@@ -19,19 +19,11 @@
  */
 
 #include "transport/networkplugin.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/storagebackend.h"
-#include "transport/rostermanager.h"
-#include "transport/usermanager.h"
-#include "transport/conversationmanager.h"
-#include "Swiften/Swiften.h"
-#include "Swiften/Server/ServerStanzaChannel.h"
-#include "Swiften/Elements/StreamError.h"
-#include "pbnetwork.pb.h"
 #include "log4cxx/logger.h"
 #include "log4cxx/basicconfigurator.h"
-#include "memoryusage.h"
+#include "transport/memoryusage.h"
+
+#include <arpa/inet.h>
 
 using namespace log4cxx;
 
@@ -44,21 +36,8 @@ namespace Transport {
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
 
-NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, int port) {
-// 	m_factories = new Swift::BoostNetworkFactories(loop);
-	m_host = host;
-	m_port = port;
+NetworkPlugin::NetworkPlugin() {
 	m_pingReceived = false;
-	m_loop = loop;
-// 	m_conn = m_factories->getConnectionFactory()->createConnection();
-// 	m_conn->onDataRead.connect(boost::bind(&NetworkPlugin::handleDataRead, this, _1));
-// 	m_conn->onDataWritten.connect(boost::bind(&NetworkPlugin::readyForData, this));
-// 	m_conn->onConnectFinished.connect(boost::bind(&NetworkPlugin::_handleConnected, this, _1));
-// 	m_conn->onDisconnected.connect(boost::bind(&NetworkPlugin::handleDisconnected, this));
-
-// 	m_pingTimer = m_factories->getTimerFactory()->createTimer(30000);
-// 	m_pingTimer->onTick.connect(boost::bind(&NetworkPlugin::pingTimeout, this)); 
-	connect();
 
 	double shared;
 #ifndef WIN32
@@ -67,7 +46,6 @@ NetworkPlugin::NetworkPlugin(Swift::EventLoop *loop, const std::string &host, in
 }
 
 NetworkPlugin::~NetworkPlugin() {
-	delete m_factories;
 }
 
 void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml) {
@@ -133,7 +111,7 @@ void NetworkPlugin::handleSubject(const std::string &user, const std::string &le
 }
 
 void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, Swift::StatusShow::Type status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
+			const std::string &groups, pbnetwork::StatusType status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user);
 	buddy.set_buddyname(buddyName);
@@ -205,7 +183,6 @@ void NetworkPlugin::handleAuthorization(const std::string &user, const std::stri
 }
 
 void NetworkPlugin::handleConnected(const std::string &user) {
-	std::cout << "LOGIN SENT\n";
 	pbnetwork::Connected d;
 	d.set_user(user);
 
@@ -231,7 +208,7 @@ void NetworkPlugin::handleDisconnected(const std::string &user, int error, const
 	send(message);
 }
 
-void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, Conversation::ParticipantFlag flags, Swift::StatusShow::Type status, const std::string &statusMessage, const std::string &newname) {
+void NetworkPlugin::handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags, pbnetwork::StatusType status, const std::string &statusMessage, const std::string &newname) {
 	pbnetwork::Participant d;
 	d.set_username(user);
 	d.set_nickname(nickname);
@@ -308,29 +285,6 @@ void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_DATA);
  
 	send(message);
-}
-
-void NetworkPlugin::_handleConnected(bool error) {
-	if (error) {
-// 		LOG4CXX_ERROR(logger, "Connecting error. Exiting");
-// 		m_pingTimer->stop();
-		handleExit();
-	}
-	else {
-// 		LOG4CXX_INFO(logger, "Connected to NetworkPluginServer");
-// 		m_pingTimer->start();
-	}
-}
-
-void NetworkPlugin::handleDisconnected() {
-// 	LOG4CXX_INFO(logger, "Disconnected from NetworkPluginServer. Exiting.");
-// 	m_pingTimer->stop();
-	handleExit();
-}
-
-void NetworkPlugin::connect() {
-	LOG4CXX_INFO(logger, "Connecting NetworkPluginServer host " << m_host << " port " << m_port);
-// 	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(m_host), m_port));
 }
 
 void NetworkPlugin::handleLoginPayload(const std::string &data) {
@@ -480,7 +434,7 @@ void NetworkPlugin::handleBuddyRemovedPayload(const std::string &data) {
 	handleBuddyRemovedRequest(payload.username(), payload.buddyname(), payload.groups());
 }
 
-void NetworkPlugin::handleChatStatePayload(const std::string &data, Swift::ChatState::ChatStateType type) {
+void NetworkPlugin::handleChatStatePayload(const std::string &data, int type) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
@@ -488,13 +442,13 @@ void NetworkPlugin::handleChatStatePayload(const std::string &data, Swift::ChatS
 	}
 
 	switch(type) {
-		case Swift::ChatState::Composing:
+		case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING:
 			handleTypingRequest(payload.username(), payload.buddyname());
 			break;
-		case Swift::ChatState::Paused:
+		case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED:
 			handleTypedRequest(payload.username(), payload.buddyname());
 			break;
-		case Swift::ChatState::Active:
+		case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
 			handleStoppedTypingRequest(payload.username(), payload.buddyname());
 			break;
 		default:
@@ -502,7 +456,7 @@ void NetworkPlugin::handleChatStatePayload(const std::string &data, Swift::ChatS
 	}
 }
 
-void NetworkPlugin::handleDataRead(Swift::SafeByteArray &data) {
+void NetworkPlugin::handleDataRead(std::string &data) {
 	m_data.insert(m_data.end(), data.begin(), data.end());
 
 	while (m_data.size() != 0) {
@@ -558,13 +512,13 @@ void NetworkPlugin::handleDataRead(Swift::SafeByteArray &data) {
 				handleStatusChangedPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING:
-				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Composing);
+				handleChatStatePayload(wrapper.payload(), pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED:
-				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Paused);
+				handleChatStatePayload(wrapper.payload(), pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
-				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Active);
+				handleChatStatePayload(wrapper.payload(), pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
 				handleAttentionPayload(wrapper.payload());
@@ -580,6 +534,9 @@ void NetworkPlugin::handleDataRead(Swift::SafeByteArray &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_CONTINUE:
 				handleFTContinuePayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_EXIT:
+				handleExitRequest();
 				break;
 			default:
 				return;
@@ -623,15 +580,6 @@ void NetworkPlugin::sendMemoryUsage() {
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATS);
 
 	send(message);
-}
-
-void NetworkPlugin::pingTimeout() {
-	if (m_pingReceived == false) {
-// 		LOG4CXX_ERROR(logger, "No PING received for long time. Exiting");
-		handleExit();
-	}
-	m_pingReceived = false;
-// 	m_pingTimer->start();
 }
 
 }

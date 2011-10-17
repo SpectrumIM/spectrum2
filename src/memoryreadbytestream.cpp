@@ -20,7 +20,6 @@
 
 #include "transport/memoryreadbytestream.h"
 #include "log4cxx/logger.h"
-#include "memoryusage.h"
 #include <boost/foreach.hpp>
 
 using namespace log4cxx;

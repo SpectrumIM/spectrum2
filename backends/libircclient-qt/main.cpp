@@ -22,16 +22,15 @@ IRCNetworkPlugin * np = NULL;
 
 class IRCNetworkPlugin : public NetworkPlugin {
 	public:
-		IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) : NetworkPlugin(loop, host, port) {
+		IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-			Swift::JID jid(legacyName);
 			MyIrcSession *session = new MyIrcSession(user, this);
-			session->setNick(QString::fromStdString(jid.getNode()));
-			session->connectToServer(QString::fromStdString(jid.getDomain()), 6667);
-			std::cout << "CONNECTING IRC NETWORK " << jid.getNode() << " " << jid.getDomain() << "\n";
+			session->setNick(QString::fromStdString(user.substr(0, user.find("@"))));
+			session->connectToServer(QString::fromStdString(user.substr(user.find("@") + 1)), 6667);
+// 			std::cout << "CONNECTING IRC NETWORK " << jid.getNode() << " " << jid.getDomain() << "\n";
 			m_sessions[user] = session;
 		}
 

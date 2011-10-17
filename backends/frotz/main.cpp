@@ -10,6 +10,7 @@
 
 #include "transport/config.h"
 #include "transport/networkplugin.h"
+#include "Swiften/Swiften.h"
 #include <boost/filesystem.hpp>
 #include "unistd.h"
 #include "signal.h"
@@ -145,14 +146,13 @@ static void start_dfrotz(dfrotz &p, const std::string &game) {
 
 class FrotzNetworkPlugin : public NetworkPlugin {
 	public:
-		FrotzNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin(loop, host, port) {
+		FrotzNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			np->handleConnected(user);
-			Swift::StatusShow status;
-			np->handleBuddyChanged(user, "zcode", "ZCode", "ZCode", status.getType());
+			np->handleBuddyChanged(user, "zcode", "ZCode", "ZCode", pbnetwork::STATUS_ONLINE);
 // 			sleep(1);
 // 			np->handleMessage(np->m_user, "zork", first_msg);
 		}

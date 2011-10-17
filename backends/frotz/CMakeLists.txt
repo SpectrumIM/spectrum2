@@ -6,7 +6,7 @@ FILE(GLOB SRC *.c *.cpp)
 
 ADD_EXECUTABLE(spectrum2_frotz_backend ${SRC})
 
-target_link_libraries(spectrum2_frotz_backend transport pthread)
+target_link_libraries(spectrum2_frotz_backend transport pthread transport-plugin)
 
 INSTALL(TARGETS spectrum2_frotz_backend RUNTIME DESTINATION bin)
 

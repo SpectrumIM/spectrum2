@@ -39,7 +39,7 @@
 #include "Swiften/Elements/AttentionPayload.h"
 #include "Swiften/Elements/XHTMLIMPayload.h"
 #include "Swiften/Elements/InvisiblePayload.h"
-#include "pbnetwork.pb.h"
+#include "transport/protocol.pb.h"
 #include "log4cxx/logger.h"
 
 #include <Swiften/FileTransfer/ReadBytestream.h>
@@ -329,6 +329,13 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
+
+	std::string message;
+	pbnetwork::WrapperMessage wrap;
+	wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_EXIT);
+	wrap.SerializeToString(&message);
+
+	send(c->connection, message);
 
 	c->connection->onDisconnected.disconnect_all_slots();
 	c->connection->onDataRead.disconnect_all_slots();
