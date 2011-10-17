@@ -1700,15 +1700,20 @@ static void spectrum_sigchld_handler(int sig)
 }
 
 static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond) {
-	char buffer[65535];
-	char *ptr = buffer;
-	ssize_t n = read(source, ptr, sizeof(buffer));
-	if (n <= 0) {
-		LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
-		exit(errno);
+	if (cond & PURPLE_INPUT_READ) {
+		char buffer[65535];
+		char *ptr = buffer;
+		ssize_t n = read(source, ptr, sizeof(buffer));
+		if (n <= 0) {
+			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
+			exit(errno);
+		}
+		std::string d = std::string(buffer, n);
+		np->handleDataRead(d);
 	}
-	std::string d = std::string(buffer, n);
-	np->handleDataRead(d);
+	else {
+		np->readyForData();
+	}
 }
 
 int main(int argc, char **argv) {
@@ -1821,6 +1826,7 @@ int main(int argc, char **argv) {
 		fcntl(m_sock, F_SETFL, flags);
 
 		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+		purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 
 		np = new SpectrumNetworkPlugin(host, port);
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
