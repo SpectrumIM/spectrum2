@@ -55,7 +55,7 @@ namespace Swift {
 			}
 
 			void handlePasswordValid();
-			void handlePasswordInvalid();
+			void handlePasswordInvalid(const std::string &error = "");
 
 		private:
 			void handleElement(boost::shared_ptr<Element>);

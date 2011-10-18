@@ -103,11 +103,11 @@ void UserRegistry::onPasswordValid(const Swift::JID &user) {
 	}
 }
 
-void UserRegistry::onPasswordInvalid(const Swift::JID &user) {
+void UserRegistry::onPasswordInvalid(const Swift::JID &user, const std::string &error) {
 	std::string key = user.toBare().toString();
 	if (users.find(key) != users.end()) {
 		LOG4CXX_INFO(logger, key << ": Password is invalid");
-		users[key].session->handlePasswordInvalid();
+		users[key].session->handlePasswordInvalid(error);
 		users.erase(key);
 	}
 	else {

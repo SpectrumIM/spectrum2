@@ -299,7 +299,7 @@ void User::handleDisconnected(const std::string &error) {
 		// We can't be sure finishSession sends unavailable presence everytime, so check if user gets removed
 		// in finishSession(...) call and if not, remove it here.
 		std::string jid = m_jid.toBare().toString();		
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError()));
+		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, "test")));
 		if (m_userManager->getUser(jid) != NULL) {
 			m_userManager->removeUser(this);
 		}
