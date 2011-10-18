@@ -500,7 +500,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void setDefaultAccountOptions(PurpleAccount *account) {
-			int i;
+			int i = 0;
 			gchar **keys = g_key_file_get_keys (keyfile, "purple", NULL, NULL);
 			while (keys[i] != NULL) {
 				std::string key = keys[i];
@@ -1017,7 +1017,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurpleAccount *account = purple_buddy_get_account(buddy);
 
 	// Status
-	pbnetwork::StatusType status;
+	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
 	std::string message;
 	getStatus(buddy, status, message);
 
