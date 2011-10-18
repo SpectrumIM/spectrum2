@@ -130,7 +130,6 @@ std::string Buddy::getSafeName() {
 // 	Transport::instance()->protocol()->prepareUsername(name, purple_buddy_get_account(m_buddy));
 	if (getFlags() & BUDDY_JID_ESCAPING) {
 		name = Swift::JID::getEscapedNode(name);
-		std::cout << "OUT '" << getName() << "' '" << name << "'\n";
 	}
 	else {
 		if (name.find_last_of("@") != std::string::npos) {

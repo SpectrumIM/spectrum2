@@ -164,7 +164,6 @@ void User::setConnected(bool connected) {
 }
 
 void User::handlePresence(Swift::Presence::ref presence) {
-	std::cout << "PRESENCE " << presence->getFrom().toString() << "\n";
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {

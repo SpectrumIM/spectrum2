@@ -468,7 +468,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 
 	BOOST_FOREACH(BuddyInfo &b, roster) {
 		if (buddy_id == b.id) {
-			std::cout << "Adding buddy info setting " << key << "\n";
+// 			std::cout << "Adding buddy info setting " << key << "\n";
 			b.settings[key] = var;
 			buddy_id = -1;
 		}
@@ -492,7 +492,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 					break;
 			}
 			if (buddy_id == b.id) {
-				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
+// 				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
 				b.settings[key] = var;
 				buddy_id = -1;
 			}

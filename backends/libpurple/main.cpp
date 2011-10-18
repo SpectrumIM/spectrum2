@@ -735,7 +735,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 				m_vcards[user + name] = id;
 
-				std::cout << name << " " << purple_account_get_username(account) << "\n";
 				if (KEYFILE_BOOL("backend", "no_vcard_fetch") && name != purple_account_get_username(account)) {
 					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
 					notify_user_info(purple_account_get_connection(account), name.c_str(), user_info);
@@ -1071,7 +1070,6 @@ static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
 }
 
 static void buddyPrivacyChanged(PurpleBlistNode *node, void *data) {
-	std::cout << "PRIVACY CHANGED\n";
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
 		return;
 	buddyListUpdate(NULL, node);
@@ -1260,7 +1258,6 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	}
 
 	bool ownInfo = name == purple_account_get_username(account);
-	std::cout << "RECEIVED " << name << " " << purple_account_get_username(account) << "\n";
 
 	if (ownInfo) {
 		const gchar *displayname = purple_connection_get_display_name(gc);
