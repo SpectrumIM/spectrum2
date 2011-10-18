@@ -487,7 +487,6 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 				handleLogoutPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PING:
-				LOG4CXX_INFO(logger, "PING RECEIVED");
 				sendPong();
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE:
@@ -558,7 +557,6 @@ void NetworkPlugin::sendPong() {
 	wrap.SerializeToString(&message);
 
 	send(message);
-	LOG4CXX_INFO(logger, "PONG");
 	sendMemoryUsage();
 }
 

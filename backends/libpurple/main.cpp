@@ -502,7 +502,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void setDefaultAccountOptions(PurpleAccount *account) {
 			int i = 0;
 			gchar **keys = g_key_file_get_keys (keyfile, "purple", NULL, NULL);
-			while (keys[i] != NULL) {
+			while (keys && keys[i] != NULL) {
 				std::string key = keys[i];
 
 				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
