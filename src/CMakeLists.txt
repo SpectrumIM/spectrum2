@@ -17,12 +17,11 @@ include_directories(${POPT_INCLUDE_DIR})
 
 
 
-
 if (PROTOBUF_FOUND)
-	ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ../include/transport/protocol.pb.cc)
-	ADD_DEPENDENCIES(transport pb)
+    ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ../include/transport/protocol.pb.cc)
+    ADD_DEPENDENCIES(transport pb) 
 else()
-	ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC})
+    ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC})
 endif()
 
 ADD_DEFINITIONS(-fPIC)

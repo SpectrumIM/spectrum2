@@ -40,6 +40,14 @@ namespace Swift {
 				return 0;
 			}
 
+            Swift::TLSContextFactory* getTLSContextFactory() const {
+                return 0;
+            }
+
+            Swift::ProxyProvider* getProxyProvider() const {
+                return 0;
+            }
+
 		private:
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
