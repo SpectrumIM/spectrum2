@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB HEADERS ../include/transport/*.h)
 
-ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ../../src/memoryusage.cpp ../../include/transport/protocol.pb.cc)
+ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ../../src/memoryusage.cpp ${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.pb.cc)
 ADD_DEPENDENCIES(transport-plugin pb)
+SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 ADD_DEFINITIONS(-fPIC)
 
 TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES})

@@ -18,7 +18,8 @@ include_directories(${POPT_INCLUDE_DIR})
 
 
 if (PROTOBUF_FOUND)
-    ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ../include/transport/protocol.pb.cc)
+    ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC} ${CMAKE_CURRENT_BINARY_DIR}/../include/transport/protocol.pb.cc)
+	SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
     ADD_DEPENDENCIES(transport pb) 
 else()
     ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC})
