@@ -39,7 +39,8 @@ namespace Swift {
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
 					UserRegistry* userRegistry,
-					XMLParserFactory* factory);
+					XMLParserFactory* factory,
+					Swift::JID remoteJID = Swift::JID());
 			~ServerFromClientSession();
 
 			boost::signal<void ()> onSessionStarted;

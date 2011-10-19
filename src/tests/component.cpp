@@ -5,10 +5,14 @@
 #include "transport/localbuddy.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
+#include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
+#include "Swiften/Server/ServerStanzaChannel.h"
+#include "Swiften/Server/ServerFromClientSession.h"
+#include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 
 using namespace Transport;
 
@@ -48,9 +52,9 @@ class TestingFactory : public Factory {
 		}
 };
 
-class ComponentTest : public CPPUNIT_NS :: TestFixture {
+class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParserClient {
 	CPPUNIT_TEST_SUITE(ComponentTest);
-	CPPUNIT_TEST(presence);
+	CPPUNIT_TEST(handlePresenceWithNode);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -69,24 +73,64 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture {
 			component = new Component(loop, factories, cfg, factory, userRegistry);
 			component->start();
 
+			payloadSerializers = new Swift::FullPayloadSerializerCollection();
+			payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
+			parser = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
+
+			serverFromClientSession = boost::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(), 
+					payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource")));
+			serverFromClientSession->startSession();
+
+			serverFromClientSession->onDataWritten.connect(boost::bind(&ComponentTest::handleDataReceived, this, _1));
+
+			dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->addSession(serverFromClientSession);
+			parser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
+			received.clear();
 			loop->processEvents();
 		}
 
 		void tearDown (void) {
+			dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->removeSession(serverFromClientSession);
 			delete component;
 			delete userRegistry;
 			delete factories;
 			delete factory;
 			delete loop;
 			delete cfg;
+			delete parser;
 			received.clear();
 		}
 
-	void presence() {
+	void handleDataReceived(const Swift::SafeByteArray &data) {
+		parser->parse(safeByteArrayToString(data));
+	}
+
+	void handleStreamStart(const Swift::ProtocolHeader&) {
 		
 	}
 
+	void handleElement(boost::shared_ptr<Swift::Element> element) {
+		received.push_back(element);
+	}
+
+	void handleStreamEnd() {
+		
+	}
+
+	void handlePresenceWithNode() {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost/resource");
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		
+		loop->processEvents();
+	}
+
 	private:
+		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
+		Swift::FullPayloadSerializerCollection* payloadSerializers;
+		Swift::FullPayloadParserFactoryCollection* payloadParserFactories;
+		Swift::XMPPParser *parser;
 		UserRegistry *userRegistry;
 		Config *cfg;
 		Swift::Server *server;
@@ -94,7 +138,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture {
 		Swift::DummyEventLoop *loop;
 		TestingFactory *factory;
 		Component *component;
-		std::vector<std::string> received;
+		std::vector<boost::shared_ptr<Swift::Element> > received;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION (ComponentTest);

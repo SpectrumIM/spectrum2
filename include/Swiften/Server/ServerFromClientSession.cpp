@@ -36,7 +36,8 @@ ServerFromClientSession::ServerFromClientSession(
 		PayloadParserFactoryCollection* payloadParserFactories, 
 		PayloadSerializerCollection* payloadSerializers,
 		UserRegistry* userRegistry,
-		XMLParserFactory* factory) : 
+		XMLParserFactory* factory,
+		Swift::JID remoteJID) : 
 			Session(connection, payloadParserFactories, payloadSerializers, factory),
 			id_(id),
 			userRegistry_(userRegistry),
@@ -45,6 +46,7 @@ ServerFromClientSession::ServerFromClientSession(
 			allowSASLEXTERNAL(false),
 			tlsLayer(0),
 			tlsConnected(false) {
+				setRemoteJID(remoteJID);
 }
 
 ServerFromClientSession::~ServerFromClientSession() {
