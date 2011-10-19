@@ -257,6 +257,8 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator >> (std::string& t) {
 MySQLBackend::MySQLBackend(Config *config) {
 	m_config = config;
 	mysql_init(&m_conn);
+	my_bool my_true = 1;
+	mysql_options(&m_conn, MYSQL_OPT_RECONNECT, &my_true);
 	m_prefix = CONFIG_STRING(m_config, "database.prefix");
 }
 
