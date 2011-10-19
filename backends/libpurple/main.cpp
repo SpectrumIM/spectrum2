@@ -1824,7 +1824,7 @@ int main(int argc, char **argv) {
 		fcntl(m_sock, F_SETFL, flags);
 
 		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
-		purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
+// 		purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 
 		np = new SpectrumNetworkPlugin(host, port);
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
