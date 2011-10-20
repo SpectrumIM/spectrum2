@@ -8,8 +8,9 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 		execute_process(
 			COMMAND ${SWIFTEN_CONFIG_EXECUTABLE} --libs
 			OUTPUT_VARIABLE SWIFTEN_LIBRARY)
-		string(REGEX REPLACE "[\r\n]"                  " " SWIFTEN_LIBRARY "${SWIFTEN_LIBRARY}")
-		string(REGEX REPLACE " +$"                     ""  SWIFTEN_LIBRARY "${SWIFTEN_LIBRARY}")
+		string(REGEX REPLACE "[\r\n]"                  " " SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY})
+		string(REGEX REPLACE " +$"                     ""  SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY})
+		string(REGEX REPLACE " " ";" SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY})
 	else()
 		message( FATAL_ERROR "Could NOT find swiften-config" )
 	endif()
