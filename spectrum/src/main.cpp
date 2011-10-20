@@ -228,8 +228,13 @@ int main(int argc, char **argv)
 		LogString pid, jid;
 		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
+#ifdef WIN32
 		p.setProperty(L"pid", pid);
 		p.setProperty(L"jid", jid);
+#else
+		p.setProperty("pid", pid);
+		p.setProperty("jid", jid);
+#endif
 		log4cxx::PropertyConfigurator::configure(p);
 	}
 

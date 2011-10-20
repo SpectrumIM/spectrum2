@@ -27,6 +27,7 @@ find_package(event)
 set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Swiften REQUIRED)
 
+set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(openssl REQUIRED)
 
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
