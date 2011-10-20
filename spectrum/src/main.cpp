@@ -65,7 +65,6 @@ static void daemonize(const char *cwd, const char *lock_file) {
 	pid_t pid, sid;
 	FILE* lock_file_f;
 	char process_pid[20];
-
 	/* already a daemon */
 	if ( getppid() == 1 ) return;
 
@@ -76,10 +75,22 @@ static void daemonize(const char *cwd, const char *lock_file) {
 	}
 	/* If we got a good PID, then we can exit the parent process. */
 	if (pid > 0) {
+		if (lock_file) {
+			/* write our pid into it & close the file. */
+			lock_file_f = fopen(lock_file, "w+");
+			if (lock_file_f == NULL) {
+				std::cerr << "Cannot create lock file " << lock_file << ". Exiting\n";
+				exit(1);
+			}
+			sprintf(process_pid,"%d\n",pid);
+			if (fwrite(process_pid,1,strlen(process_pid),lock_file_f) < strlen(process_pid)) {
+				std::cerr << "Cannot write to lock file " << lock_file << ". Exiting\n";
+				exit(1);
+			}
+			fclose(lock_file_f);
+		}
 		exit(0);
 	}
-
-	/* At this point we are executing as the child process */
 
 	/* Change the file mode mask */
 	umask(0);
@@ -94,21 +105,6 @@ static void daemonize(const char *cwd, const char *lock_file) {
 		directory from being locked; hence not being able to remove it. */
 	if ((chdir(cwd)) < 0) {
 		exit(1);
-	}
-
-	if (lock_file) {
-		/* write our pid into it & close the file. */
-		lock_file_f = fopen(lock_file, "w+");
-		if (lock_file_f == NULL) {
-			std::cout << "EE cannot create lock file " << lock_file << ". Exiting\n";
-			exit(1);
-		}
-		sprintf(process_pid,"%d\n",getpid());
-		if (fwrite(process_pid,1,strlen(process_pid),lock_file_f) < strlen(process_pid)) {
-			std::cout << "EE cannot write to lock file " << lock_file << ". Exiting\n";
-			exit(1);
-		}
-		fclose(lock_file_f);
 	}
 	
 	if (freopen( "/dev/null", "r", stdin) == NULL) {
