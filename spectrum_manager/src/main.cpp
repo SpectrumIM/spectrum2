@@ -102,10 +102,10 @@ static unsigned long exec_(std::string path, std::string config) {
 	return (unsigned long) pid;
 }
 
-static bool isRunning(const std::string &pidfile) {
+static int isRunning(const std::string &pidfile) {
 	path p(pidfile);
 	if (!exists(p) || is_directory(p)) {
-		return false;
+		return 0;
 	}
 
 	std::ifstream f(p.string().c_str(), std::ios_base::in);
@@ -113,52 +113,87 @@ static bool isRunning(const std::string &pidfile) {
 	f >> pid;
 
 	if (pid.empty())
-		return false;
+		return 0;
 
 	if (kill(boost::lexical_cast<int>(pid), 0) != 0)
-		return false;
+		return 0;
 
-	return true;
+	return boost::lexical_cast<int>(pid);
 }
 
 static void start_all_instances(ManagerConfig *config) {
-		path p(CONFIG_STRING(config, "service.config_directory"));
+	path p(CONFIG_STRING(config, "service.config_directory"));
 
-		try {
-			if (!exists(p)) {
-				std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-				exit(6);
-			}
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
 
-			if (!is_directory(p)) {
-				std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-				exit(7);
-			}
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
 
-			std::string spectrum2_binary = searchForBinary("spectrum2");
-			if (spectrum2_binary.empty()) {
-				std::cerr << "spectrum2 binary not found in PATH\n";
-				exit(8);
-			}
+		std::string spectrum2_binary = searchForBinary("spectrum2");
+		if (spectrum2_binary.empty()) {
+			std::cerr << "spectrum2 binary not found in PATH\n";
+			exit(8);
+		}
 
-			directory_iterator end_itr;
-			for (directory_iterator itr(p); itr != end_itr; ++itr) {
-				if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
-					Config cfg;
-					if (cfg.load(itr->path().string()) == false) {
-						std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
-					}
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+				}
 
-					if (!isRunning(CONFIG_STRING(&cfg, "service.pidfile"))) {
-						exec_(spectrum2_binary, itr->path().string());
-					}
+				if (!isRunning(CONFIG_STRING(&cfg, "service.pidfile"))) {
+					exec_(spectrum2_binary, itr->path().string());
 				}
 			}
 		}
-		catch (const filesystem_error& ex) {
-			std::cerr << "error 1\n";
-			exit(5);
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "boost filesystem error\n";
+		exit(5);
+	}
+}
+
+static void stop_all_instances(ManagerConfig *config) {
+	path p(CONFIG_STRING(config, "service.config_directory"));
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
 		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+				}
+
+				int pid = isRunning(CONFIG_STRING(&cfg, "service.pidfile"));
+				if (pid) {
+					kill(pid, SIGTERM);
+				}
+			}
+		}
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "boost filesystem error\n";
+		exit(5);
+	}
 }
 
 int main(int argc, char **argv)
@@ -207,6 +242,9 @@ int main(int argc, char **argv)
 
 	if (command == "start") {
 		start_all_instances(&config);
+	}
+	else if (command == "stop") {
+		stop_all_instances(&config);
 	}
 	else {
 		Swift::SimpleEventLoop eventLoop;
