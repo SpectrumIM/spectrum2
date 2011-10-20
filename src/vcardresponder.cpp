@@ -42,7 +42,7 @@ static LoggerPtr logger = Logger::getLogger("VCardResponder");
 VCardResponder::VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager) : Swift::Responder<VCard>(router) {
 	m_id = 0;
 	m_userManager = userManager;
-	m_collectTimer = factories->getTimerFactory()->createTimer(20);
+	m_collectTimer = factories->getTimerFactory()->createTimer(20000);
 	m_collectTimer->onTick.connect(boost::bind(&VCardResponder::collectTimeouted, this));
 	m_collectTimer->start();
 }

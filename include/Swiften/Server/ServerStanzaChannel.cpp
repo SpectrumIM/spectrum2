@@ -29,7 +29,6 @@ namespace {
 }
 
 void ServerStanzaChannel::addSession(boost::shared_ptr<ServerFromClientSession> session) {
-	std::cout << "ADDING SESSION\n";
 	sessions[session->getRemoteJID().toBare().toString()].push_back(session);
 	session->onSessionFinished.connect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.connect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));

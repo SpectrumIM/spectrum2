@@ -82,7 +82,7 @@ class UserRegistry : public Swift::UserRegistry {
 
 		/// Informs user that the password is invalid and disconnects him.
 		/// \param user JID.
-		void onPasswordInvalid(const Swift::JID &user);
+		void onPasswordInvalid(const Swift::JID &user, const std::string &error = "");
 
 		/// Removes session later.
 		/// \param user JID.

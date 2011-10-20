@@ -39,7 +39,8 @@ namespace Swift {
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
 					UserRegistry* userRegistry,
-					XMLParserFactory* factory);
+					XMLParserFactory* factory,
+					Swift::JID remoteJID = Swift::JID());
 			~ServerFromClientSession();
 
 			boost::signal<void ()> onSessionStarted;
@@ -55,7 +56,7 @@ namespace Swift {
 			}
 
 			void handlePasswordValid();
-			void handlePasswordInvalid();
+			void handlePasswordInvalid(const std::string &error = "");
 
 		private:
 			void handleElement(boost::shared_ptr<Element>);

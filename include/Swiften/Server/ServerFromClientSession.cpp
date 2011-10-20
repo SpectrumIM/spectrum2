@@ -9,6 +9,8 @@
 #include <boost/bind.hpp>
 
 #include <Swiften/Elements/ProtocolHeader.h>
+#include <Swiften/Elements/StreamError.h>
+#include <Swiften/Elements/Message.h>
 #include <Swiften/Server/UserRegistry.h>
 #include <Swiften/Network/Connection.h>
 #include <Swiften/StreamStack/XMPPLayer.h>
@@ -34,7 +36,8 @@ ServerFromClientSession::ServerFromClientSession(
 		PayloadParserFactoryCollection* payloadParserFactories, 
 		PayloadSerializerCollection* payloadSerializers,
 		UserRegistry* userRegistry,
-		XMLParserFactory* factory) : 
+		XMLParserFactory* factory,
+		Swift::JID remoteJID) : 
 			Session(connection, payloadParserFactories, payloadSerializers, factory),
 			id_(id),
 			userRegistry_(userRegistry),
@@ -43,6 +46,7 @@ ServerFromClientSession::ServerFromClientSession(
 			allowSASLEXTERNAL(false),
 			tlsLayer(0),
 			tlsConnected(false) {
+				setRemoteJID(remoteJID);
 }
 
 ServerFromClientSession::~ServerFromClientSession() {
@@ -59,9 +63,14 @@ void ServerFromClientSession::handlePasswordValid() {
 	}
 }
 
-void ServerFromClientSession::handlePasswordInvalid() {
+void ServerFromClientSession::handlePasswordInvalid(const std::string &error) {
 	if (!isInitialized()) {
 		getXMPPLayer()->writeElement(boost::shared_ptr<AuthFailure>(new AuthFailure));
+		if (!error.empty()) {
+			boost::shared_ptr<StreamError> msg(new StreamError(StreamError::UndefinedCondition, error));
+			getXMPPLayer()->writeElement(msg);
+		}
+		
 		finishSession(AuthenticationFailedError);
 	}
 }

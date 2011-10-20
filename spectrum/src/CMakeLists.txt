@@ -6,7 +6,7 @@ ADD_EXECUTABLE(spectrum2 ${SRC})
 ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
 ADD_DEPENDENCIES(spectrum2 spectrum2_libircclient-qt_backend)
 
-target_link_libraries(spectrum2 transport)
+target_link_libraries(spectrum2 transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 
 INSTALL(TARGETS spectrum2 RUNTIME DESTINATION bin)
 

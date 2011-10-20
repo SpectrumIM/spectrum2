@@ -146,8 +146,27 @@ static void start_dfrotz(dfrotz &p, const std::string &game) {
 
 class FrotzNetworkPlugin : public NetworkPlugin {
 	public:
+		Swift::BoostNetworkFactories *m_factories;
+		Swift::BoostIOServiceThread m_boostIOServiceThread;
+		boost::shared_ptr<Swift::Connection> m_conn;
+
 		FrotzNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
+			m_factories = new Swift::BoostNetworkFactories(loop);
+			m_conn = m_factories->getConnectionFactory()->createConnection();
+			m_conn->onDataRead.connect(boost::bind(&FrotzNetworkPlugin::_handleDataRead, this, _1));
+			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
+// 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
+// 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
+		}
+
+		void sendData(const std::string &string) {
+			m_conn->write(Swift::createSafeByteArray(string));
+		}
+
+		void _handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
+			std::string d(data->begin(), data->end());
+			handleDataRead(d);
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
@@ -220,7 +239,8 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			return games;
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
+			std::cout << "aaa\n";
 			if (message.find("start") == 0) {
 				std::string game = message.substr(6);
 				std::vector<std::string> lst = getGames();

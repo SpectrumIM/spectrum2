@@ -7,6 +7,7 @@
 #pragma once
 
 #include <Swiften/Network/NetworkFactories.h>
+#include <Swiften/Parser/PlatformXMLParserFactory.h>
 
 namespace Swift {
 	class EventLoop;
@@ -37,10 +38,19 @@ namespace Swift {
 			}
 
 			Swift::XMLParserFactory* getXMLParserFactory() const {
-				return 0;
+				return m_platformXMLParserFactory;
 			}
 
+            Swift::TLSContextFactory* getTLSContextFactory() const {
+                return 0;
+            }
+
+            Swift::ProxyProvider* getProxyProvider() const {
+                return 0;
+            }
+
 		private:
+			PlatformXMLParserFactory *m_platformXMLParserFactory;
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
 			DomainNameResolver* domainNameResolver;

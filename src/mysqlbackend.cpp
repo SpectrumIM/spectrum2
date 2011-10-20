@@ -257,6 +257,8 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator >> (std::string& t) {
 MySQLBackend::MySQLBackend(Config *config) {
 	m_config = config;
 	mysql_init(&m_conn);
+	my_bool my_true = 1;
+	mysql_options(&m_conn, MYSQL_OPT_RECONNECT, &my_true);
 	m_prefix = CONFIG_STRING(m_config, "database.prefix");
 }
 
@@ -468,7 +470,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 
 	BOOST_FOREACH(BuddyInfo &b, roster) {
 		if (buddy_id == b.id) {
-			std::cout << "Adding buddy info setting " << key << "\n";
+// 			std::cout << "Adding buddy info setting " << key << "\n";
 			b.settings[key] = var;
 			buddy_id = -1;
 		}
@@ -492,7 +494,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 					break;
 			}
 			if (buddy_id == b.id) {
-				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
+// 				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
 				b.settings[key] = var;
 				buddy_id = -1;
 			}

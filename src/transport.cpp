@@ -107,6 +107,18 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_component->onError.connect(boost::bind(&Component::handleConnectionError, this, _1));
 		m_component->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
 		m_component->onDataWritten.connect(boost::bind(&Component::handleDataWritten, this, _1));
+
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
+
+		m_component->addPayloadSerializer(new Swift::AttentionSerializer());
+		m_component->addPayloadSerializer(new Swift::XHTMLIMSerializer());
+		m_component->addPayloadSerializer(new Transport::BlockSerializer());
+		m_component->addPayloadSerializer(new Swift::InvisibleSerializer());
+
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
 	}

@@ -500,47 +500,48 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void setDefaultAccountOptions(PurpleAccount *account) {
-// 			for (std::map<std::string,std::string>::const_iterator it = config->getUnregistered().begin();
-// 				it != config->getUnregistered().end(); it++) {
-// 				if ((*it).first.find("purple.") == 0) {
-// 					std::string key = (*it).first.substr((*it).first.find(".") + 1);
-// 
-// 					PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
-// 					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
-// 					bool found = false;
-// 					for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
-// 						PurpleAccountOption *option = (PurpleAccountOption *) l->data;
-// 						PurplePrefType type = purple_account_option_get_type(option);
-// 						std::string key2(purple_account_option_get_setting(option));
-// 						std::cout << key << " " << key2 << " " << (*it).second << "\n";
-// 						if (key != key2)
-// 							continue;
-// 						
-// 						found = true;
-// 						switch (type) {
-// 							case PURPLE_PREF_BOOLEAN:
-// 								purple_account_set_bool(account, key.c_str(), fromString<bool>((*it).second));
-// 								break;
-// 
-// 							case PURPLE_PREF_INT:
-// 								purple_account_set_int(account, key.c_str(), fromString<int>((*it).second));
-// 								break;
-// 
-// 							case PURPLE_PREF_STRING:
-// 							case PURPLE_PREF_STRING_LIST:
-// 								purple_account_set_string(account, key.c_str(), (*it).second.c_str());
-// 								break;
-// 							default:
-// 								continue;
-// 						}
-// 						break;
-// 					}
-// 
-// 					if (!found) {
-// 						purple_account_set_string(account, key.c_str(), (*it).second.c_str());
-// 					}
-// 				}
-// 			}
+			int i = 0;
+			gchar **keys = g_key_file_get_keys (keyfile, "purple", NULL, NULL);
+			while (keys && keys[i] != NULL) {
+				std::string key = keys[i];
+
+				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
+				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+				bool found = false;
+				for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
+					PurpleAccountOption *option = (PurpleAccountOption *) l->data;
+					PurplePrefType type = purple_account_option_get_type(option);
+					std::string key2(purple_account_option_get_setting(option));
+					if (key != key2) {
+						continue;
+					}
+					
+					found = true;
+					switch (type) {
+						case PURPLE_PREF_BOOLEAN:
+							purple_account_set_bool(account, key.c_str(), fromString<bool>(KEYFILE_STRING("purple", key)));
+							break;
+
+						case PURPLE_PREF_INT:
+							purple_account_set_int(account, key.c_str(), fromString<int>(KEYFILE_STRING("purple", key)));
+							break;
+
+						case PURPLE_PREF_STRING:
+						case PURPLE_PREF_STRING_LIST:
+							purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+							break;
+						default:
+							continue;
+					}
+					break;
+				}
+
+				if (!found) {
+					purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+				}
+				i++;
+			}
+			g_strfreev (keys);
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
@@ -734,7 +735,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 				m_vcards[user + name] = id;
 
-				std::cout << name << " " << purple_account_get_username(account) << "\n";
 				if (KEYFILE_BOOL("backend", "no_vcard_fetch") && name != purple_account_get_username(account)) {
 					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
 					notify_user_info(purple_account_get_connection(account), name.c_str(), user_info);
@@ -1016,7 +1016,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurpleAccount *account = purple_buddy_get_account(buddy);
 
 	// Status
-	pbnetwork::StatusType status;
+	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
 	std::string message;
 	getStatus(buddy, status, message);
 
@@ -1070,7 +1070,6 @@ static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
 }
 
 static void buddyPrivacyChanged(PurpleBlistNode *node, void *data) {
-	std::cout << "PRIVACY CHANGED\n";
 	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
 		return;
 	buddyListUpdate(NULL, node);
@@ -1259,7 +1258,6 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	}
 
 	bool ownInfo = name == purple_account_get_username(account);
-	std::cout << "RECEIVED " << name << " " << purple_account_get_username(account) << "\n";
 
 	if (ownInfo) {
 		const gchar *displayname = purple_connection_get_display_name(gc);
@@ -1700,15 +1698,20 @@ static void spectrum_sigchld_handler(int sig)
 }
 
 static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond) {
-	char buffer[65535];
-	char *ptr = buffer;
-	ssize_t n = read(source, ptr, sizeof(buffer));
-	if (n <= 0) {
-		LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
-		exit(errno);
+	if (cond & PURPLE_INPUT_READ) {
+		char buffer[65535];
+		char *ptr = buffer;
+		ssize_t n = read(source, ptr, sizeof(buffer));
+		if (n <= 0) {
+			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
+			exit(errno);
+		}
+		std::string d = std::string(buffer, n);
+		np->handleDataRead(d);
 	}
-	std::string d = std::string(buffer, n);
-	np->handleDataRead(d);
+	else {
+		np->readyForData();
+	}
 }
 
 int main(int argc, char **argv) {
@@ -1821,6 +1824,7 @@ int main(int argc, char **argv) {
 		fcntl(m_sock, F_SETFL, flags);
 
 		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+// 		purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 
 		np = new SpectrumNetworkPlugin(host, port);
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";

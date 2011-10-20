@@ -17,6 +17,7 @@ DummyNetworkFactories::DummyNetworkFactories(EventLoop* eventLoop) {
 	connectionFactory = new DummyConnectionFactory(eventLoop);
 	domainNameResolver = new PlatformDomainNameResolver(eventLoop);
 	connectionServerFactory = new DummyConnectionServerFactory(eventLoop);
+	m_platformXMLParserFactory =  new PlatformXMLParserFactory();
 }
 
 DummyNetworkFactories::~DummyNetworkFactories() {
@@ -24,6 +25,7 @@ DummyNetworkFactories::~DummyNetworkFactories() {
 	delete domainNameResolver;
 	delete connectionFactory;
 	delete timerFactory;
+	delete m_platformXMLParserFactory;
 }
 
 }
