@@ -5,7 +5,16 @@ FILE(GLOB HEADERS ../include/transport/*.h)
 ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ../../src/memoryusage.cpp ${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.pb.cc)
 ADD_DEPENDENCIES(transport-plugin pb)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
-ADD_DEFINITIONS(-fPIC)
+
+if (CMAKE_COMPILER_IS_GNUCXX)
+	ADD_DEFINITIONS(-fPIC)
+endif()
+
+if (NOT WIN32)
+	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES})
+else()
+	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES} ws2_32.lib)
+endif() 
 
 TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES})
 

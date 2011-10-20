@@ -23,7 +23,11 @@
 #include "log4cxx/basicconfigurator.h"
 #include "transport/memoryusage.h"
 
+#ifndef WIN32
 #include <arpa/inet.h>
+#else 
+#include <winsock2.h>
+#endif
 
 using namespace log4cxx;
 
