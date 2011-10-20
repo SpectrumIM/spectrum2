@@ -1,7 +1,10 @@
 #include "transport/userregistry.h"
 #include "transport/config.h"
+#include "transport/storagebackend.h"
+#include "transport/user.h"
 #include "transport/transport.h"
 #include "transport/conversation.h"
+#include "transport/usermanager.h"
 #include "transport/localbuddy.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
@@ -52,16 +55,13 @@ class TestingFactory : public Factory {
 		}
 };
 
-class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParserClient {
-	CPPUNIT_TEST_SUITE(ComponentTest);
-	CPPUNIT_TEST(handlePresenceWithNode);
-	CPPUNIT_TEST(handlePresenceWithoutNode);
+class UserManagerTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParserClient {
+	CPPUNIT_TEST_SUITE(UserManagerTest);
+	CPPUNIT_TEST(connectUser);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
 		void setUp (void) {
-			onUserPresenceReceived = false;
-			onUserDiscoInfoReceived = false;
 			std::istringstream ifs("service.server_mode = 1\n");
 			cfg = new Config();
 			cfg->load(ifs);
@@ -74,9 +74,9 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParser
 			userRegistry = new UserRegistry(cfg, factories);
 
 			component = new Component(loop, factories, cfg, factory, userRegistry);
-			component->onUserPresenceReceived.connect(boost::bind(&ComponentTest::handleUserPresenceReceived, this, _1));
-			component->onUserDiscoInfoReceived.connect(boost::bind(&ComponentTest::handleUserDiscoInfoReceived, this, _1, _2));
 			component->start();
+
+			userManager = new UserManager(component, userRegistry);
 
 			payloadSerializers = new Swift::FullPayloadSerializerCollection();
 			payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
@@ -86,7 +86,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParser
 					payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource")));
 			serverFromClientSession->startSession();
 
-			serverFromClientSession->onDataWritten.connect(boost::bind(&ComponentTest::handleDataReceived, this, _1));
+			serverFromClientSession->onDataWritten.connect(boost::bind(&UserManagerTest::handleDataReceived, this, _1));
 
 			dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->addSession(serverFromClientSession);
 			parser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
@@ -106,14 +106,6 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParser
 			received.clear();
 		}
 
-	void handleUserDiscoInfoReceived(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
-		onUserDiscoInfoReceived = true;
-	}
-
-	void handleUserPresenceReceived(Swift::Presence::ref presence) {
-		onUserPresenceReceived = true;
-	}
-
 	void handleDataReceived(const Swift::SafeByteArray &data) {
 		parser->parse(safeByteArrayToString(data));
 	}
@@ -130,26 +122,24 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParser
 		
 	}
 
-	void handlePresenceWithNode() {
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("somebody@localhost");
-		response->setFrom("user@localhost/resource");
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
-		
+	void connectUser() {
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
 		loop->processEvents();
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
+
+		User *user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(user);
+
+		UserInfo userInfo = user->getUserInfo();
+		CPPUNIT_ASSERT_EQUAL(std::string("password"), userInfo.password);
+		CPPUNIT_ASSERT(user->isReadyToConnect() == true);
+		CPPUNIT_ASSERT(user->isConnected() == false);
+
+		user->setConnected(true);
+		CPPUNIT_ASSERT(user->isConnected() == true);
 	}
 
-	void handlePresenceWithoutNode() {
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("localhost");
-		response->setFrom("user@localhost/resource");
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
-		
-		loop->processEvents();
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-		CPPUNIT_ASSERT(onUserPresenceReceived);
-	}
 
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element) {
 		Swift::Stanza *stanza = dynamic_cast<Swift::Stanza *>(element.get());
@@ -158,8 +148,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParser
 	}
 
 	private:
-		bool onUserPresenceReceived;
-		bool onUserDiscoInfoReceived;
+		UserManager *userManager;
 		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
 		Swift::FullPayloadSerializerCollection* payloadSerializers;
 		Swift::FullPayloadParserFactoryCollection* payloadParserFactories;
@@ -174,4 +163,4 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParser
 		std::vector<boost::shared_ptr<Swift::Element> > received;
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION (ComponentTest);
+CPPUNIT_TEST_SUITE_REGISTRATION (UserManagerTest);
