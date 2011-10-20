@@ -58,10 +58,13 @@ class TestingFactory : public Factory {
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPParserClient {
 	CPPUNIT_TEST_SUITE(UserManagerTest);
 	CPPUNIT_TEST(connectUser);
+	CPPUNIT_TEST(handleProbePresence);
+	CPPUNIT_TEST(disconnectUser);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
 		void setUp (void) {
+			streamEnded = false;
 			std::istringstream ifs("service.server_mode = 1\n");
 			cfg = new Config();
 			cfg->load(ifs);
@@ -119,7 +122,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPPars
 	}
 
 	void handleStreamEnd() {
-		
+		streamEnded = true;
 	}
 
 	void connectUser() {
@@ -138,8 +141,36 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPPars
 
 		user->setConnected(true);
 		CPPUNIT_ASSERT(user->isConnected() == true);
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 	}
 
+	void disconnectUser() {
+		connectUser();
+		received.clear();
+
+		userManager->disconnectUser("user@localhost");
+		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+	}
+
+	void handleProbePresence() {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Probe);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+	}
 
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element) {
 		Swift::Stanza *stanza = dynamic_cast<Swift::Stanza *>(element.get());
@@ -148,6 +179,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPPars
 	}
 
 	private:
+		bool streamEnded;
 		UserManager *userManager;
 		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
 		Swift::FullPayloadSerializerCollection* payloadSerializers;

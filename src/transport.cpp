@@ -251,7 +251,6 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 	}
 
 	// check if we have this client's capabilities and ask for them
-// 	bool haveFeatures = false;
 	if (presence->getType() != Swift::Presence::Unavailable) {
 		boost::shared_ptr<CapsInfo> capsInfo = presence->getPayload<CapsInfo>();
 		if (capsInfo && capsInfo->getHash() == "sha-1") {
