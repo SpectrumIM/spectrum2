@@ -81,9 +81,10 @@ static int xgetchar(void)
  * other places where I'm not so careful).  */
 static void getline_(char *s)
 {
-	fflush(stdout);
   int c;
-  char *p = s;
+  char *p;
+  fflush(stdout); 
+  p = s;
   while (p < s + INPUT_BUFFER_SIZE - 1)
     if ((*p++ = xgetchar()) == '\n') {
       *p = '\0';
