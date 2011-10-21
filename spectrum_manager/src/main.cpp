@@ -149,8 +149,13 @@ static void start_all_instances(ManagerConfig *config) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
 				}
 
-				if (!isRunning(CONFIG_STRING(&cfg, "service.pidfile"))) {
+				int pid = isRunning(CONFIG_STRING(&cfg, "service.pidfile"));
+				if (pid == 0) {
+					std::cout << "Starting " << itr->path() << ": OK\n";
 					exec_(spectrum2_binary, itr->path().string());
+				}
+				else {
+					std::cout << "Starting " << itr->path() << ": Already started (PID=" << pid << ")\n";
 				}
 			}
 		}
@@ -185,7 +190,11 @@ static void stop_all_instances(ManagerConfig *config) {
 
 				int pid = isRunning(CONFIG_STRING(&cfg, "service.pidfile"));
 				if (pid) {
+					std::cout << "Stopping " << itr->path() << ": OK\n";
 					kill(pid, SIGTERM);
+				}
+				else {
+					std::cout << "Stopping " << itr->path() << ": Not running\n";
 				}
 			}
 		}
