@@ -21,6 +21,8 @@
 #include "geventloop.h"
 #ifdef _WIN32
 #include "win32/win32dep.h"
+#undef read
+#undef write
 #endif
 #ifdef WITH_LIBEVENT
 #include "event.h"

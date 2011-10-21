@@ -1,5 +1,6 @@
 #include "glib.h"
 #include "purple.h"
+#include <algorithm>
 #include <iostream>
 
 #include "transport/networkplugin.h"
@@ -10,13 +11,10 @@
 #include "log4cxx/propertyconfigurator.h"
 #include "log4cxx/helpers/properties.h"
 #include "log4cxx/helpers/fileinputstream.h"
+#include "log4cxx/helpers/transcoder.h"
+#ifndef WIN32 
 #include "sys/wait.h"
 #include "sys/signal.h"
-// #include "valgrind/memcheck.h"
-#include "malloc.h"
-#include <algorithm>
-#include "errno.h"
-
 #include <netinet/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>
@@ -27,6 +25,16 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#else 
+#include <process.h>
+#define getpid _getpid 
+#define ssize_t SSIZE_T
+#include "win32/win32dep.h"
+#endif
+// #include "valgrind/memcheck.h"
+#include "malloc.h"
+#include <algorithm>
+#include "errno.h"
 
 #ifdef WITH_LIBEVENT
 #include <event.h>
@@ -650,7 +658,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 // 
 // 				purple_account_destroy(account);
 				// force returning of memory chunks allocated by libxml2 to kernel
+#ifndef WIN32
 				malloc_trim(0);
+#endif
 // 				VALGRIND_DO_LEAK_CHECK;
 			}
 		}
@@ -1210,7 +1220,7 @@ static PurpleConnectionUiOps conn_ui_ops =
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info) {
 	PurpleAccount *account = purple_connection_get_account(gc);
 	std::string name(purple_normalize(account, who));
-	std::transform(name.begin(), name.end(), name.begin(),(int(*)(int)) std::tolower);
+	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
 	size_t pos = name.find("/");
 	if (pos != std::string::npos)
@@ -1544,8 +1554,10 @@ static PurpleCoreUiOps coreUiOps =
 static void signed_on(PurpleConnection *gc, gpointer unused) {
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleConnected(np->m_accounts[account]);
+#ifndef WIN32
 	// force returning of memory chunks allocated by libxml2 to kernel
 	malloc_trim(0);
+#endif
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -1680,7 +1692,7 @@ static bool initPurple() {
 	}
 	return ret;
 }
-
+#ifndef WIN32
 static void spectrum_sigchld_handler(int sig)
 {
 	int status;
@@ -1696,6 +1708,7 @@ static void spectrum_sigchld_handler(int sig)
 		perror(errmsg);
 	}
 }
+#endif
 
 static int create_socket(char *host, int portno) {
 	struct sockaddr_in serv_addr;
@@ -1811,15 +1824,26 @@ int main(int argc, char **argv) {
 
 		if (KEYFILE_STRING("logging", "backend_config").empty()) {
 			LoggerPtr root = log4cxx::Logger::getRootLogger();
+#ifndef _MSC_VER
 			root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+#else
+			root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
+#endif
 		}
 		else {
 			log4cxx::helpers::Properties p;
 			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(KEYFILE_STRING("logging", "backend_config"));
-
 			p.load(istream);
-			p.setProperty("pid", stringOf(getpid()));
-			p.setProperty("jid", KEYFILE_STRING("service", "jid"));
+			LogString pid, jid;
+			log4cxx::helpers::Transcoder::decode(stringOf(getpid()), pid);
+			log4cxx::helpers::Transcoder::decode(KEYFILE_STRING("service", "service.jid"), jid);
+#ifdef _MSC_VER
+			p.setProperty(L"pid", pid);
+			p.setProperty(L"jid", jid);
+#else
+			p.setProperty("pid", pid);
+			p.setProperty("jid", jid);
+#endif
 			log4cxx::PropertyConfigurator::configure(p);
 		}
 

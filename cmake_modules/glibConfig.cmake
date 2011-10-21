@@ -22,13 +22,19 @@ find_library(GLIB2_LIBRARIES
 find_library(GLIB2_THREAD
              NAMES gthread-2.0
              PATHS ${PKG_GLIB_LIBRARY_DIRS} )
+find_library(GLIB2_OBJECT
+             NAMES gobject-2.0
+             PATHS ${PKG_GLIB_LIBRARY_DIRS} )
+find_library(GLIB2_MODULE
+             NAMES gmodule-2.0
+             PATHS ${PKG_GLIB_LIBRARY_DIRS} )
 
 find_path(GLIB2_INTERNAL_INCLUDE_DIR glibconfig.h
           PATH_SUFFIXES glib-2.0/include
           PATHS ${PKG_GLIB_INCLUDE_DIRS} ${PKG_GLIB_LIBRARIES} ${CMAKE_SYSTEM_LIBRARY_PATH})
 
 if(GLIB2_THREAD)
-	set(GLIB2_LIBRARIES ${GLIB2_LIBRARIES} ${GLIB2_THREAD})
+	set(GLIB2_LIBRARIES ${GLIB2_LIBRARIES} ${GLIB2_THREAD} ${GLIB2_MODULE} ${GLIB2_OBJECT})
 else(GLIB2_THREAD)
 	message( STATUS "Could NOT find gthread-2.0" )
 endif(GLIB2_THREAD)
