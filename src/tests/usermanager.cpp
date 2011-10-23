@@ -169,7 +169,10 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public Swift::XMPPPars
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+
+		Swift::Presence *presence = dynamic_cast<Swift::Presence *>(getStanza(received[1]));
+		CPPUNIT_ASSERT(presence);
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, presence->getType());
 	}
 
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element) {
