@@ -12,66 +12,14 @@
 #include "transport/networkplugin.h"
 #include "session.h"
 #include <QtCore>
+#include <QtNetwork>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
+#include "ircnetworkplugin.h"
 
 using namespace boost::program_options;
 using namespace Transport;
 
-class IRCNetworkPlugin;
 IRCNetworkPlugin * np = NULL;
-
-class IRCNetworkPlugin : public NetworkPlugin {
-	public:
-		IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
-			this->config = config;
-		}
-
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-			MyIrcSession *session = new MyIrcSession(user, this);
-			session->setNick(QString::fromStdString(user.substr(0, user.find("@"))));
-			session->connectToServer(QString::fromStdString(user.substr(user.find("@") + 1)), 6667);
-// 			std::cout << "CONNECTING IRC NETWORK " << jid.getNode() << " " << jid.getDomain() << "\n";
-			m_sessions[user] = session;
-		}
-
-		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
-			if (m_sessions[user] == NULL)
-				return;
-			m_sessions[user]->disconnectFromServer();
-			m_sessions[user]->deleteLater();
-		}
-
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
-			std::cout << "MESSAGE " << user << " " << legacyName << "\n";
-			if (m_sessions[user] == NULL)
-				return;
-			m_sessions[user]->message(QString::fromStdString(legacyName), QString::fromStdString(message));
-			std::cout << "SENT\n";
-		}
-
-		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
-			std::cout << "JOIN\n";
-			if (m_sessions[user] == NULL)
-				return;
-			m_sessions[user]->addAutoJoinChannel(QString::fromStdString(room));
-			m_sessions[user]->join(QString::fromStdString(room), QString::fromStdString(password));
-			// update nickname, because we have nickname per session, no nickname per room.
-			handleRoomNicknameChanged(user, room, m_sessions[user]->nick().toStdString());
-		}
-
-		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
-			std::cout << "PART\n";
-			if (m_sessions[user] == NULL)
-				return;
-			m_sessions[user]->part(QString::fromStdString(room));
-			m_sessions[user]->removeAutoJoinChannel(QString::fromStdString(room));
-		}
-
-		std::map<std::string, MyIrcSession *> m_sessions;
-
-	private:
-		Config *config;
-};
 
 int main (int argc, char* argv[]) {
 	std::string host;

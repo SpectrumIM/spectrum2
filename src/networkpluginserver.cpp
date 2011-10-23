@@ -355,6 +355,7 @@ void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 
 	User *user = m_userManager->getUser(payload.user());
 	if (!user) {
+		LOG4CXX_ERROR(logger, "Connected payload received for unknown user " << payload.user());
 		return;
 	}
 

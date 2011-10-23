@@ -217,7 +217,6 @@ class NetworkPlugin {
 		
 
 	private:
-		void connect();
 		void handleLoginPayload(const std::string &payload);
 		void handleLogoutPayload(const std::string &payload);
 		void handleStatusChangedPayload(const std::string &payload);
