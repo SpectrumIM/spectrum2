@@ -163,7 +163,13 @@ void MyIrcBuffer::on_messageReceived(const QString& origin, const QString& messa
 //	if (!suffix.empty()) {
 //		r = receiver().replace('@', '%').toStdString();
 //	}
-	np->handleMessage(user, r + suffix, message.toStdString(), origin.toStdString());
+
+	if (r.find("#") == 0) {
+		np->handleMessage(user, r + suffix, message.toStdString(), origin.toStdString());
+	}
+	else {
+		np->handleMessage(user, r + suffix, message.toStdString());
+	}
 }
 
 void MyIrcBuffer::on_noticeReceived(const QString& origin, const QString& notice, Irc::Buffer::MessageFlags flags)
