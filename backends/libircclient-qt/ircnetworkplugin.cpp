@@ -41,25 +41,35 @@ void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::s
 		return;
 	m_sessions[user]->disconnectFromServer();
 	m_sessions[user]->deleteLater();
+	m_sessions.erase(user);
 }
 
 void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
-	if (m_sessions[user] == NULL)
+	std::string u = user;
+	if (!CONFIG_BOOL(config, "service.server_mode")) {
+		u = user + legacyName.substr(legacyName.find("@") + 1);
+	}
+	if (m_sessions[u] == NULL)
 		return;
 
 	std::string r = legacyName;
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
 		r = legacyName.substr(0, r.find("@"));
 	}
-	std::cout << "MESSAGE " << user << " " << r << "\n";
-	m_sessions[user]->message(QString::fromStdString(r), QString::fromStdString(message));
+	std::cout << "MESSAGE " << u << " " << r << "\n";
+	m_sessions[u]->message(QString::fromStdString(r), QString::fromStdString(message));
 	std::cout << "SENT\n";
 }
 
 void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
 	std::cout << "JOIN\n";
 	std::string r = room;
-	if (m_sessions[user] == NULL) {
+	std::string u = user;
+	if (!CONFIG_BOOL(config, "service.server_mode")) {
+		u = user + room.substr(room.find("%") + 1);
+		r = room.substr(0, room.find("%"));
+	}
+	if (m_sessions[u] == NULL) {
 		// in gateway mode we want to login this user to network according to legacyName
 		if (room.find("%") != std::string::npos) {
 			// suffix is %irc.freenode.net to let MyIrcSession return #room%irc.freenode.net
@@ -68,30 +78,38 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 			session->connectToServer(QString::fromStdString(room.substr(room.find("%") + 1)), 6667);
 			std::cout << "CONNECTING IRC NETWORK " << room.substr(room.find("%") + 1) << "\n";
 			std::cout << "SUFFIX " << room.substr(room.find("%")) << "\n";
-			m_sessions[user] = session;
-			r = room.substr(0, room.find("%"));
-			std::cout << "room=" << r << "\n";
+			m_sessions[u] = session;
 		}
 		else {
 			return;
 		}
 	}
-	m_sessions[user]->addAutoJoinChannel(QString::fromStdString(r));
-	m_sessions[user]->join(QString::fromStdString(r), QString::fromStdString(password));
+	std::cout << "JOINING " << r << "\n";
+	m_sessions[u]->addAutoJoinChannel(QString::fromStdString(r));
+	m_sessions[u]->join(QString::fromStdString(r), QString::fromStdString(password));
+	m_sessions[u]->rooms += 1;
 	// update nickname, because we have nickname per session, no nickname per room.
-	handleRoomNicknameChanged(user, r, m_sessions[user]->nick().toStdString());
+	handleRoomNicknameChanged(user, r, m_sessions[u]->nick().toStdString());
 }
 
 void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std::string &room) {
-	std::cout << "PART\n";
-	if (m_sessions[user] == NULL)
-		return;
-
 	std::string r = room;
+	std::string u = user;
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
 		r = room.substr(0, room.find("%"));
+		u = user + room.substr(room.find("%") + 1);
 	}
 
-	m_sessions[user]->part(QString::fromStdString(r));
-	m_sessions[user]->removeAutoJoinChannel(QString::fromStdString(r));
+	if (m_sessions[u] == NULL)
+		return;
+
+	m_sessions[u]->part(QString::fromStdString(r));
+	m_sessions[u]->removeAutoJoinChannel(QString::fromStdString(r));
+	m_sessions[u]->rooms -= 1;
+
+	if (m_sessions[u]->rooms <= 0) {
+		m_sessions[u]->disconnectFromServer();
+		m_sessions[u]->deleteLater();
+		m_sessions.erase(u);
+	}
 }

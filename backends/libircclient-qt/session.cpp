@@ -18,6 +18,7 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std
 	this->np = np;
 	this->user = user;
 	this->suffix = suffix;
+	rooms = 0;
 	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
 }
 
