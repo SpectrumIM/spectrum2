@@ -194,7 +194,8 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	if (isMUC) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << presence->getTo().getNode());
-			onRoomLeft(presence->getTo().getNode());
+			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			onRoomLeft(room);
 		}
 		else {
 			// force connection to legacy network to let backend to handle auto-join on connect.
@@ -204,7 +205,8 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				onReadyToConnect();
 			}
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << presence->getTo().getNode() << " as " << presence->getTo().getResource());
-			onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
+			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			onRoomJoined(room, presence->getTo().getResource(), "");
 		}
 		return;
 	}

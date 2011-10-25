@@ -46,15 +46,26 @@ void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::s
 
 void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
 	std::string u = user;
+	std::cout << "AAAAA " << legacyName << "\n";
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
 		u = user + legacyName.substr(legacyName.find("@") + 1);
+		if (u.find("/") != std::string::npos) {
+			u = u.substr(0, u.find("/"));
+		}
 	}
-	if (m_sessions[u] == NULL)
+	if (m_sessions[u] == NULL) {
+		std::cout << "No session for " << u << "\n";
 		return;
+	}
 
 	std::string r = legacyName;
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
-		r = legacyName.substr(0, r.find("@"));
+		if (legacyName.find("/") == std::string::npos) {
+			r = legacyName.substr(0, r.find("@"));
+		}
+		else {
+			r = legacyName.substr(legacyName.find("/") + 1);
+		}
 	}
 	std::cout << "MESSAGE " << u << " " << r << "\n";
 	m_sessions[u]->message(QString::fromStdString(r), QString::fromStdString(message));
@@ -66,18 +77,18 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 	std::string r = room;
 	std::string u = user;
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
-		u = user + room.substr(room.find("%") + 1);
-		r = room.substr(0, room.find("%"));
+		u = user + room.substr(room.find("@") + 1);
+		r = room.substr(0, room.find("@"));
 	}
 	if (m_sessions[u] == NULL) {
 		// in gateway mode we want to login this user to network according to legacyName
-		if (room.find("%") != std::string::npos) {
+		if (room.find("@") != std::string::npos) {
 			// suffix is %irc.freenode.net to let MyIrcSession return #room%irc.freenode.net
-			MyIrcSession *session = new MyIrcSession(user, this, room.substr(room.find("%")));
+			MyIrcSession *session = new MyIrcSession(user, this, room.substr(room.find("@")));
 			session->setNick(QString::fromStdString(nickname));
-			session->connectToServer(QString::fromStdString(room.substr(room.find("%") + 1)), 6667);
-			std::cout << "CONNECTING IRC NETWORK " << room.substr(room.find("%") + 1) << "\n";
-			std::cout << "SUFFIX " << room.substr(room.find("%")) << "\n";
+			session->connectToServer(QString::fromStdString(room.substr(room.find("@") + 1)), 6667);
+			std::cout << "CONNECTING IRC NETWORK " << room.substr(room.find("@") + 1) << "\n";
+			std::cout << "SUFFIX " << room.substr(room.find("@")) << "\n";
 			m_sessions[u] = session;
 		}
 		else {
@@ -96,8 +107,8 @@ void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std
 	std::string r = room;
 	std::string u = user;
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
-		r = room.substr(0, room.find("%"));
-		u = user + room.substr(room.find("%") + 1);
+		r = room.substr(0, room.find("@"));
+		u = user + room.substr(room.find("@") + 1);
 	}
 
 	if (m_sessions[u] == NULL)
