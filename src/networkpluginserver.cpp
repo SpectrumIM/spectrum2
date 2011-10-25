@@ -1301,7 +1301,8 @@ void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyN
 void NetworkPluginServer::handleFTStateChanged(Swift::FileTransfer::State state, const std::string &userName, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id) {
 	User *user = m_userManager->getUser(userName);
 	if (!user) {
-		// TODO: reject and remove filetransfer
+		// TODO: FIXME We have to remove filetransfer when use disconnects
+		return;
 	}
 	if (state.state == Swift::FileTransfer::State::Transferring) {
 		handleFTAccepted(user, buddyName, fileName, size, id);
