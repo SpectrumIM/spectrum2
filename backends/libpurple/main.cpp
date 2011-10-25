@@ -45,6 +45,7 @@ using namespace log4cxx;
 static LoggerPtr logger_libpurple = log4cxx::Logger::getLogger("libpurple");
 static LoggerPtr logger = log4cxx::Logger::getLogger("backend");
 int m_sock;
+static int writeInput;
 
 using namespace Transport;
 
@@ -60,6 +61,8 @@ template <class T> std::string stringOf(T object) {
 	os << object;
 	return (os.str());
 }
+
+static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond);
 
 class SpectrumNetworkPlugin;
 
@@ -907,6 +910,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void sendData(const std::string &string) {
 			write(m_sock, string.c_str(), string.size());
+			if (writeInput == 0)
+				writeInput = purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
 
 		void readyForData() {
@@ -1750,6 +1755,10 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 		np->handleDataRead(d);
 	}
 	else {
+		if (writeInput != 0) {
+			purple_input_remove(writeInput);
+			writeInput = 0;
+		}
 		np->readyForData();
 	}
 }
@@ -1852,7 +1861,6 @@ int main(int argc, char **argv) {
 		m_sock = create_socket(host, port);
 
 		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
-// 		purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 
 		np = new SpectrumNetworkPlugin(host, port);
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
