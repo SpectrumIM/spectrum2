@@ -73,7 +73,7 @@ void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element
 		}
 
 		(*i)->finishSession();
-		std::cout << "FINISH SESSION " << sessions[to.toBare().toString()].size() << "\n";
+// 		std::cout << "FINISH SESSION " << sessions[to.toBare().toString()].size() << "\n";
 		if (last) {
 			break;
 		}

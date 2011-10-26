@@ -22,7 +22,7 @@ using namespace Transport;
 
 void BasicTest::setMeUp (void) {
 	streamEnded = false;
-	std::istringstream ifs("service.server_mode = 1\n");
+	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost");
 	cfg = new Config();
 	cfg->load(ifs);
 
@@ -67,7 +67,8 @@ void BasicTest::tearMeDown (void) {
 }
 
 void BasicTest::handleDataReceived(const Swift::SafeByteArray &data) {
-parser->parse(safeByteArrayToString(data));
+// 	std::cout << safeByteArrayToString(data) << "\n";
+	parser->parse(safeByteArrayToString(data));
 }
 
 void BasicTest::handleStreamStart(const Swift::ProtocolHeader&) {
@@ -80,6 +81,10 @@ received.push_back(element);
 
 void BasicTest::handleStreamEnd() {
 	streamEnded = true;
+}
+
+void BasicTest::injectPresence(boost::shared_ptr<Swift::Presence> &response) {
+	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
 }
 
 Swift::Stanza *BasicTest::getStanza(boost::shared_ptr<Swift::Element> element) {
