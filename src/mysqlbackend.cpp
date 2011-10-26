@@ -78,6 +78,7 @@ using namespace log4cxx;
 	if (ret == 0) \
 		exec_ok = true; \
 	else if (ret == 2013) { \
+		LOG4CXX_INFO(logger, "MySQL connection lost. Reconnecting...");\
 		disconnect(); \
 		connect(); \
 		return METHOD; \
