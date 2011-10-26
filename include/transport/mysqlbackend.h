@@ -127,8 +127,6 @@ class MySQLBackend : public StorageBackend
 				std::string m_string;
 		};
 
-		bool exec(Statement *stmt);
-
 		MYSQL m_conn;
 		Config *m_config;
 		std::string m_prefix;
