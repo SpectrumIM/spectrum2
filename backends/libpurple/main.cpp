@@ -76,6 +76,13 @@ static std::string KEYFILE_STRING(const std::string &cat, const std::string &key
 	}
 	std::string ret(str);
 	free(str);
+
+	if (ret.find("#") != std::string::npos) {
+		ret = ret.substr(0, ret.find("#"));
+		while(*(ret.end() - 1) == ' ') {
+			ret.erase(ret.end() - 1);
+		}
+	}
 	return ret;
 }
 
