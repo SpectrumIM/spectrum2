@@ -114,6 +114,13 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// we should get presences
 		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[2])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("status1"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getStatus());
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[3])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[3]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received[3]))->getStatus());
 	}
 
 	void disconnectUser() {
