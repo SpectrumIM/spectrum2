@@ -184,7 +184,7 @@ MySQLBackend::Statement::~Statement() {
 	FINALIZE_STMT(m_stmt);
 }
 
-bool MySQLBackend::Statement::execute() {
+int MySQLBackend::Statement::execute() {
 	// If statement has some input and doesn't have any output, we have
 	// to clear the offset now, because operator>> will not be called.
 	m_offset = 0;
@@ -193,9 +193,9 @@ bool MySQLBackend::Statement::execute() {
 
 	if ((ret = mysql_stmt_execute(m_stmt)) != 0) {
 		LOG4CXX_ERROR(logger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
-		return false;
+		return mysql_stmt_errno(m_stmt);
 	}
-	return true;
+	return 0;
 }
 
 int MySQLBackend::Statement::fetch() {
@@ -263,6 +263,10 @@ MySQLBackend::MySQLBackend(Config *config) {
 }
 
 MySQLBackend::~MySQLBackend(){
+	disconnect();
+}
+
+void MySQLBackend::disconnect() {
 	delete m_setUser;
 	delete m_getUser;
 	delete m_removeUser;
@@ -387,14 +391,30 @@ bool MySQLBackend::exec(const std::string &query) {
 	return true;
 }
 
+bool MySQLBackend::exec(Statement *stmt) {
+	for (int i = 20; i > 0; i--) {
+		int ret = stmt->execute();
+		if (ret == 0)
+			return true;
+		if (ret == 2013) {
+			disconnect();
+			connect();
+		}
+		if (i != 20) {
+			sleep(1);
+		}
+	}
+	return false;
+}
+
 void MySQLBackend::setUser(const UserInfo &user) {
 	*m_setUser << user.jid << user.uin << user.password << user.language << user.encoding << user.vip << user.password;
-	m_setUser->execute();
+	exec(m_setUser);
 }
 
 bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 	*m_getUser << barejid;
-	if (!m_getUser->execute())
+	if (!exec(m_getUser))
 		return false;
 
 	int ret = false;
@@ -408,7 +428,7 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 
 void MySQLBackend::setUserOnline(long id, bool online) {
 	*m_setUserOnline << online << id;
-	m_setUserOnline->execute();
+	exec(m_setUserOnline);
 }
 
 long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
@@ -417,14 +437,14 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	*m_addBuddy << (buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]);
 	*m_addBuddy << buddyInfo.alias << buddyInfo.flags;
 
-	m_addBuddy->execute();
+	exec(m_addBuddy);
 
 	long id = (long) mysql_insert_id(&m_conn);
 
 // 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
 	if (!buddyInfo.settings.find("icon_hash")->second.s.empty()) {
 		*m_updateBuddySetting << userId << id << buddyInfo.settings.find("icon_hash")->first << (int) TYPE_STRING << buddyInfo.settings.find("icon_hash")->second.s << buddyInfo.settings.find("icon_hash")->second.s;
-		m_updateBuddySetting->execute();
+		exec(m_updateBuddySetting);
 	}
 
 	return id;
@@ -436,7 +456,7 @@ void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
 	*m_updateBuddy << userId << buddyInfo.legacyName;
 
-	m_updateBuddy->execute();
+	exec(m_updateBuddy);
 }
 
 bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
@@ -450,7 +470,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	long buddy_id = -1;
 	std::string key;
 
-	if (!m_getBuddies->execute())
+	if (!exec(m_getBuddies))
 		return false;
 
 	while (m_getBuddies->fetch() == 0) {
@@ -465,7 +485,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		roster.push_back(b);
 	}
 
-	if (!m_getBuddiesSettings->execute())
+	if (!exec(m_getBuddiesSettings))
 		return false;
 
 	BOOST_FOREACH(BuddyInfo &b, roster) {
@@ -511,19 +531,19 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 
 bool MySQLBackend::removeUser(long id) {
 	*m_removeUser << (int) id;
-	if (!m_removeUser->execute())
+	if (!exec(m_removeUser))
 		return false;
 
 	*m_removeUserSettings << (int) id;
-	if (!m_removeUserSettings->execute())
+	if (!exec(m_removeUserSettings))
 		return false;
 
 	*m_removeUserBuddies << (int) id;
-	if (!m_removeUserBuddies->execute())
+	if (!exec(m_removeUserBuddies))
 		return false;
 
 	*m_removeUserBuddiesSettings << (int) id;
-	if (!m_removeUserBuddiesSettings->execute())
+	if (!exec(m_removeUserBuddiesSettings))
 		return false;
 
 	return true;
@@ -532,11 +552,11 @@ bool MySQLBackend::removeUser(long id) {
 void MySQLBackend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {
 // 	"SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?"
 	*m_getUserSetting << id << variable;
-	m_getUserSetting->execute();
+	exec(m_getUserSetting);
 	if (m_getUserSetting->fetch() != 0) {
 // 		"INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)"
 		*m_setUserSetting << id << variable << type << value;
-		m_setUserSetting->execute();
+		exec(m_setUserSetting);
 	}
 	else {
 		*m_getUserSetting >> type >> value;
@@ -546,7 +566,7 @@ void MySQLBackend::getUserSetting(long id, const std::string &variable, int &typ
 void MySQLBackend::updateUserSetting(long id, const std::string &variable, const std::string &value) {
 // 	"UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?"
 	*m_updateUserSetting << value << id << variable;
-	m_updateUserSetting->execute();
+	exec(m_updateUserSetting);
 }
 
 void MySQLBackend::beginTransaction() {
