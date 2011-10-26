@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\nAllowed options");
 	desc.add_options()
 		("help,h", "Show help output")
-		("config,c", boost::program_options::value<std::string>(&config_file)->default_value("/etc/spectrum2/spectrum-manager.cfg"), "Spectrum manager config file")
+		("config,c", boost::program_options::value<std::string>(&config_file)->default_value("/etc/spectrum2/spectrum_manager.cfg"), "Spectrum manager config file")
 		("command", boost::program_options::value<std::string>(&command)->default_value(""), "Command")
 		;
 	try
