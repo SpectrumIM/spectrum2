@@ -94,21 +94,26 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		add2Buddies();
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 
-		Swift::RosterPayload::ref payload = getStanza(received[0])->getPayload<Swift::RosterPayload>();
-		CPPUNIT_ASSERT(payload);
-		CPPUNIT_ASSERT_EQUAL(1, (int) payload->getItems().size());
-		Swift::RosterItemPayload item = payload->getItems()[0];
+		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT(payload1);
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
+		Swift::RosterItemPayload item = payload1->getItems()[0];
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), item.getName());
 
-		payload = getStanza(received[1])->getPayload<Swift::RosterPayload>();
-		CPPUNIT_ASSERT(payload);
-		CPPUNIT_ASSERT_EQUAL(1, (int) payload->getItems().size());
-		item = payload->getItems()[0];
+		Swift::RosterPayload::ref payload2 = getStanza(received[1])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT(payload2);
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload2->getItems().size());
+		item = payload2->getItems()[0];
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy2"), Buddy::JIDToLegacyName(item.getJID()));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 2"), item.getName());
 
-		// TODO send response and check for presence
+		// send responses back
+		injectIQ(Swift::IQ::createResult(getStanza(received[0])->getFrom(), getStanza(received[0])->getTo(), getStanza(received[0])->getID()));
+		injectIQ(Swift::IQ::createResult(getStanza(received[1])->getFrom(), getStanza(received[1])->getTo(), getStanza(received[1])->getID()));
+
+		// we should get presences
+		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
 	}
 
 	void disconnectUser() {

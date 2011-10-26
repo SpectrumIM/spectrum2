@@ -87,6 +87,10 @@ void BasicTest::injectPresence(boost::shared_ptr<Swift::Presence> &response) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
 }
 
+void BasicTest::injectIQ(boost::shared_ptr<Swift::IQ> iq) {
+	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onIQReceived(iq);
+}
+
 Swift::Stanza *BasicTest::getStanza(boost::shared_ptr<Swift::Element> element) {
 	Swift::Stanza *stanza = dynamic_cast<Swift::Stanza *>(element.get());
 	CPPUNIT_ASSERT(stanza);

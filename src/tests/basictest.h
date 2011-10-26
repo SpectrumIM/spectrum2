@@ -97,6 +97,7 @@ class BasicTest : public Swift::XMPPParserClient {
 	void handleStreamEnd();
 
 	void injectPresence(boost::shared_ptr<Swift::Presence> &response);
+	void injectIQ(boost::shared_ptr<Swift::IQ> iq);
 
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element);
 
