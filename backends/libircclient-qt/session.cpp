@@ -13,10 +13,12 @@
 #include <iostream>
 #include "Swiften/Elements/StatusShow.h"
 
-MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent) : Irc::Session(parent)
+MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix, QObject* parent) : Irc::Session(parent)
 {
 	this->np = np;
 	this->user = user;
+	this->suffix = suffix;
+	rooms = 0;
 	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
 }
 
@@ -26,8 +28,9 @@ void MyIrcSession::on_connected(){
 
 void MyIrcSession::on_disconnected()
 {
-    std::cout << "disconnected:\n";
-    np->handleDisconnected(user, 0, "");
+	std::cout << "disconnected:\n";
+	if (suffix.empty())
+		np->handleDisconnected(user, 0, "");
 }
 
 void MyIrcSession::on_bufferAdded(Irc::Buffer* buffer)
@@ -42,14 +45,15 @@ void MyIrcSession::on_bufferRemoved(Irc::Buffer* buffer)
 
 Irc::Buffer* MyIrcSession::createBuffer(const QString& receiver)
 {
-    return new MyIrcBuffer(receiver, user, np, this);
+	return new MyIrcBuffer(receiver, user, np, suffix, this);
 }
 
-MyIrcBuffer::MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, Irc::Session* parent)
+MyIrcBuffer::MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, const std::string &suffix, Irc::Session* parent)
     : Irc::Buffer(receiver, parent)
 {
 	this->np = np;
 	this->user = user;
+		this->suffix = suffix;
 	p = (MyIrcSession *) parent;
     connect(this, SIGNAL(receiverChanged(QString)), SLOT(on_receiverChanged(QString)));
     connect(this, SIGNAL(joined(QString)), SLOT(on_joined(QString)));
@@ -94,7 +98,7 @@ void MyIrcBuffer::on_joined(const QString& origin) {
 	bool flags = 0;
 	std::string nickname = origin.toStdString();
 	flags = correctNickname(nickname);
-	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString(), (int) flags, pbnetwork::STATUS_ONLINE);
+	np->handleParticipantChanged(user, origin.toStdString(), receiver().toStdString() + suffix, (int) flags, pbnetwork::STATUS_ONLINE);
 }
 
 void MyIrcBuffer::on_parted(const QString& origin, const QString& message) {
@@ -102,7 +106,7 @@ void MyIrcBuffer::on_parted(const QString& origin, const QString& message) {
 	bool flags = 0;
 	std::string nickname = origin.toStdString();
 	flags = correctNickname(nickname);
-	np->handleParticipantChanged(user, nickname, receiver().toStdString(),(int) flags, pbnetwork::STATUS_NONE, message.toStdString());
+		np->handleParticipantChanged(user, nickname, receiver().toStdString() + suffix,(int) flags, pbnetwork::STATUS_NONE, message.toStdString());
 }
 
 void MyIrcBuffer::on_quit(const QString& origin, const QString& message)
@@ -116,7 +120,7 @@ void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick) {
 	std::string nickname = origin.toStdString();
 	bool flags = p->m_modes[receiver().toStdString() + nickname];
 // 	std::cout << receiver().toStdString() + nickname << " " << flags <<  "\n";
-	np->handleParticipantChanged(user, nickname, receiver().toStdString(),(int) flags, pbnetwork::STATUS_ONLINE, "", nick.toStdString());
+		np->handleParticipantChanged(user, nickname, receiver().toStdString() + suffix,(int) flags, pbnetwork::STATUS_ONLINE, "", nick.toStdString());
 }
 
 void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, const QString& args) {
@@ -132,13 +136,13 @@ void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, con
 		p->m_modes[receiver().toStdString() + nickname] = 0;
 	}
 	bool flags = p->m_modes[receiver().toStdString() + nickname];
-	np->handleParticipantChanged(user, nickname, receiver().toStdString(),(int) flags, pbnetwork::STATUS_ONLINE, "");
+		np->handleParticipantChanged(user, nickname, receiver().toStdString() + suffix,(int) flags, pbnetwork::STATUS_ONLINE, "");
 }
 
 void MyIrcBuffer::on_topicChanged(const QString& origin, const QString& topic) {
 	//topic changed: "#testik" "HanzZ" "test"
 	qDebug() << "topic changed:" << receiver() << origin << topic;
-	np->handleSubject(user, receiver().toStdString(), topic.toStdString(), origin.toStdString());
+		np->handleSubject(user, receiver().toStdString() + suffix, topic.toStdString(), origin.toStdString());
 }
 
 void MyIrcBuffer::on_invited(const QString& origin, const QString& receiver, const QString& channel)
@@ -155,7 +159,17 @@ void MyIrcBuffer::on_messageReceived(const QString& origin, const QString& messa
 	qDebug() << "message received:" << receiver() << origin << message << (flags & Irc::Buffer::IdentifiedFlag ? "(identified!)" : "(not identified)");
 	if (!receiver().startsWith("#") && (flags & Irc::Buffer::EchoFlag))
 		return;
-	np->handleMessage(user, receiver().toStdString(), message.toStdString(), origin.toStdString());
+	std::string r = receiver().toStdString();
+//	if (!suffix.empty()) {
+//		r = receiver().replace('@', '%').toStdString();
+//	}
+
+	if (r.find("#") == 0) {
+		np->handleMessage(user, r + suffix, message.toStdString(), origin.toStdString());
+	}
+	else {
+		np->handleMessage(user, r + suffix, message.toStdString());
+	}
 }
 
 void MyIrcBuffer::on_noticeReceived(const QString& origin, const QString& notice, Irc::Buffer::MessageFlags flags)
@@ -186,13 +200,14 @@ void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, co
 {
 	switch (code) {
 		case 251:
-			np->handleConnected(user);
+			if (suffix.empty())
+				np->handleConnected(user);
 			break;
 		case 332:
 			m_topicData = params.value(2).toStdString();
 			break;
 		case 333:
-			np->handleSubject(user, params.value(1).toStdString(), m_topicData, params.value(2).toStdString());
+			 np->handleSubject(user, params.value(1).toStdString() + suffix, m_topicData, params.value(2).toStdString());
 			break;
 		case 353:
 			QString channel = params.value(2);
@@ -203,12 +218,12 @@ void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, co
 				std::string nickname = members.at(i).toStdString();
 				flags = correctNickname(nickname);
 				p->m_modes[channel.toStdString() + nickname] = flags;
-// 				std::cout << channel.toStdString() + nickname << " " << flags << "\n";
-				np->handleParticipantChanged(user, nickname, channel.toStdString(),(int) flags, pbnetwork::STATUS_ONLINE);
+				std::cout << channel.toStdString() + suffix << " " << flags << "\n";
+				np->handleParticipantChanged(user, nickname, channel.toStdString() + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
 			}
 			break;
 	}
-    qDebug() << "numeric message received:" << receiver() << origin << code << params;
+	qDebug() << "numeric message received:" << receiver() << origin << code << params;
 }
 
 void MyIrcBuffer::on_unknownMessageReceived(const QString& origin, const QStringList& params)

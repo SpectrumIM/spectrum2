@@ -42,6 +42,11 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 Conversation::~Conversation() {
 }
 
+void Conversation::setRoom(const std::string &room) {
+	m_room = room;
+	m_legacyName = m_room + "/" + m_legacyName;
+}
+
 void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {
 	if (m_muc) {
 		message->setType(Swift::Message::Groupchat);
@@ -74,8 +79,12 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}
 	else {
+		std::string legacyName = m_legacyName;
+		if (legacyName.find_last_of("@") != std::string::npos) {
+			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
+		}
 		message->setTo(m_conversationManager->getUser()->getJID().toString());
-		message->setFrom(Swift::JID(m_legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
+		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}
 }
@@ -83,7 +92,13 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 void Conversation::handleParticipantChanged(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
 	std::string nickname = nick;
 	Swift::Presence::ref presence = Swift::Presence::create();
- 	presence->setFrom(Swift::JID(m_legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
+	std::string legacyName = m_legacyName;
+	if (m_muc) {
+		if (legacyName.find_last_of("@") != std::string::npos) {
+			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
+		}
+	}
+	presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 	presence->setTo(m_conversationManager->getUser()->getJID().toString());
 	presence->setType(Swift::Presence::Available);
 

@@ -97,9 +97,7 @@ class Conversation {
 
 		/// This is used to detect Private messages associated with particular room.
 		/// \param room room name associated with this Conversation.
-		void setRoom(const std::string &room) {
-			m_room = room;
-		}
+		void setRoom(const std::string &room);
 
 		/// Returns room name associated with this Conversation.
 

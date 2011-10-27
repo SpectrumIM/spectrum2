@@ -48,6 +48,7 @@ class MySQLBackend : public StorageBackend
 		/// automatically.
 		/// \return true if database is opened successfully.
 		bool connect();
+		void disconnect();
 
 		/// Creates database structure.
 		/// \see connect()
@@ -100,7 +101,7 @@ class MySQLBackend : public StorageBackend
 				Statement(MYSQL *conn, const std::string &format, const std::string &statement);
 				~Statement();
 
-				bool execute();
+				int execute();
 
 				int fetch();
 

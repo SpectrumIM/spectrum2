@@ -194,7 +194,8 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	if (isMUC) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << presence->getTo().getNode());
-			onRoomLeft(presence->getTo().getNode());
+			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			onRoomLeft(room);
 		}
 		else {
 			// force connection to legacy network to let backend to handle auto-join on connect.
@@ -204,7 +205,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				onReadyToConnect();
 			}
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << presence->getTo().getNode() << " as " << presence->getTo().getResource());
-			onRoomJoined(presence->getTo().getNode(), presence->getTo().getResource(), "");
+			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			std::string password = "";
+			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
+				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";
+			}
+			onRoomJoined(room, presence->getTo().getResource(), password);
 		}
 		return;
 	}
@@ -298,7 +304,7 @@ void User::handleDisconnected(const std::string &error) {
 		// We can't be sure finishSession sends unavailable presence everytime, so check if user gets removed
 		// in finishSession(...) call and if not, remove it here.
 		std::string jid = m_jid.toBare().toString();		
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, "test")));
+		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
 		if (m_userManager->getUser(jid) != NULL) {
 			m_userManager->removeUser(this);
 		}

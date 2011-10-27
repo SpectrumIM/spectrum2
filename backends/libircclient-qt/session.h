@@ -22,8 +22,10 @@ class MyIrcSession : public Irc::Session
     Q_OBJECT
 
 public:
-    MyIrcSession(const std::string &user, NetworkPlugin *np, QObject* parent = 0);
+	MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	std::map<std::string, bool> m_modes;
+	std::string suffix;
+	int rooms;
 
 protected Q_SLOTS:
     void on_connected();
@@ -35,6 +37,7 @@ protected Q_SLOTS:
 protected:
 	NetworkPlugin *np;
 	std::string user;
+
     virtual Irc::Buffer* createBuffer(const QString& receiver);
 };
 
@@ -43,11 +46,12 @@ class MyIrcBuffer : public Irc::Buffer
     Q_OBJECT
 
 public:
-    MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, Irc::Session* parent);
+	MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, const std::string &suffix, Irc::Session* parent);
 	NetworkPlugin *np;
 	std::string user;
 	MyIrcSession *p;
 	std::string m_topicData;
+		std::string suffix;
 
 protected Q_SLOTS:
     void on_receiverChanged(const QString& receiver);

@@ -63,6 +63,7 @@ class LocalBuddy : public Buddy {
 		std::string m_statusMessage;
 		std::string m_iconHash;
 		Swift::StatusShow m_status;
+		bool m_firstSet;
 };
 
 }
