@@ -26,26 +26,26 @@ using namespace boost;
 static int finished;
 static std::string *m;
 
-static void handleDisconnected(Swift::Client *client, const boost::optional<Swift::ClientError> &) {
-	std::cout << "[ DISCONNECTED ] " << client->getJID().getDomain() << "\n";
+static void handleDisconnected(Swift::Client *client, const boost::optional<Swift::ClientError> &, const std::string &server) {
+	std::cout << "[ DISCONNECTED ] " << server << "\n";
 	if (--finished == 0) {
 		exit(0);
 	}
 }
 
-static void handleConnected(Swift::Client *client) {
+static void handleConnected(Swift::Client *client, const std::string &server) {
 	boost::shared_ptr<Swift::Message> message(new Swift::Message());
-	message->setTo(client->getJID().getDomain());
+	message->setTo(server);
 	message->setFrom(client->getJID());
 	message->setBody(*m);
 
 	client->sendMessage(message);
 }
 
-static void handleMessageReceived(Swift::Client *client, Swift::Message::ref message) {
+static void handleMessageReceived(Swift::Client *client, Swift::Message::ref message, const std::string &server) {
 	std::string body = message->getBody();
-	boost::replace_all(body, "\n", "\n[      OK      ] " + client->getJID().getDomain() + ": ");
-	std::cout << "[      OK      ] " << client->getJID().getDomain() << ": " << body <<  "\n";
+	boost::replace_all(body, "\n", "\n[      OK      ] " + server + ": ");
+	std::cout << "[      OK      ] " << server << ": " << body <<  "\n";
 	if (--finished == 0) {
 		exit(0);
 	}
@@ -205,6 +205,47 @@ static void stop_all_instances(ManagerConfig *config) {
 	}
 }
 
+void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
+	path p(CONFIG_STRING(config, "service.config_directory"));
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+				}
+
+				finished++;
+				Swift::Client *client = new Swift::Client(CONFIG_STRING(&cfg, "service.admin_username"), CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
+				client->setAlwaysTrustCertificates();
+				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
+				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
+				client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, CONFIG_STRING(&cfg, "service.jid")));
+				Swift::ClientOptions opt;
+				opt.allowPLAINWithoutTLS = true;
+				client->connect(opt);
+			}
+		}
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "boost filesystem error\n";
+		exit(5);
+	}
+}
+
+
 int main(int argc, char **argv)
 {
 	ManagerConfig config;
@@ -243,10 +284,14 @@ int main(int argc, char **argv)
 		return 3;
 	}
 
-
 	if (!config.load(config_file)) {
 		std::cerr << "Can't load configuration file.\n";
 		return 4;
+	}
+
+	if (command.empty()) {
+		std::cout << desc << "\n";
+		return 1;
 	}
 
 	if (command == "start") {
@@ -259,17 +304,19 @@ int main(int argc, char **argv)
 		Swift::SimpleEventLoop eventLoop;
 		Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
-		std::string message = argv[1];
+		std::string message = command;
 		m = &message;
+
+		ask_local_servers(&config, networkFactories, message);
 
 		std::vector<std::string> servers = CONFIG_VECTOR(&config, "servers.server");
 		for (std::vector<std::string>::const_iterator it = servers.begin(); it != servers.end(); it++) {
 			finished++;
-			Swift::Client *client = new Swift::Client(CONFIG_STRING(&config, "service.admin_username") + "@" + (*it), CONFIG_STRING(&config, "service.admin_password"), &networkFactories);
+			Swift::Client *client = new Swift::Client(CONFIG_STRING(&config, "service.admin_username") + "@" + *it, CONFIG_STRING(&config, "service.admin_password"), &networkFactories);
 			client->setAlwaysTrustCertificates();
-			client->onConnected.connect(boost::bind(&handleConnected, client));
-			client->onDisconnected.connect(bind(&handleDisconnected, client, _1));
-			client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1));
+			client->onConnected.connect(boost::bind(&handleConnected, client, *it));
+			client->onDisconnected.connect(bind(&handleDisconnected, client, _1, *it));
+			client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, *it));
 			Swift::ClientOptions opt;
 			opt.allowPLAINWithoutTLS = true;
 			client->connect(opt);

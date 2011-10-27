@@ -40,7 +40,7 @@ UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 UserRegistry::~UserRegistry() { m_removeTimer->stop(); }
 
 void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password) {
-	if (!CONFIG_STRING(config, "service.admin_username").empty() && user.getNode() == CONFIG_STRING(config, "service.admin_username")) {
+	if (!CONFIG_STRING(config, "service.admin_jid").empty() && user.toBare().toString() == CONFIG_STRING(config, "service.admin_jid")) {
 		if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
 			session->handlePasswordValid();
 		}

@@ -61,8 +61,8 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	if (!message->getTo().getNode().empty())
 		return;
 
-	if (message->getFrom().getNode() != CONFIG_STRING(m_component->getConfig(), "service.admin_username")) {
-		LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().getNode());
+	if (message->getFrom().toBare().toString() != CONFIG_STRING(m_component->getConfig(), "service.admin_jid")) {
+		LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
 		return;
 	}
 
