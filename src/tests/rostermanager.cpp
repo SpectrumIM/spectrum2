@@ -24,6 +24,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(RosterManagerTest);
 	CPPUNIT_TEST(setBuddy);
 	CPPUNIT_TEST(sendCurrentPresences);
+	CPPUNIT_TEST(sendCurrentPresence);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -132,13 +133,32 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		user->getRosterManager()->sendCurrentPresences("user@localhost/resource");
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
-// 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[2])));
-// 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getShow());
-// 		CPPUNIT_ASSERT_EQUAL(std::string("status1"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getStatus());
-// 
-// 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[3])));
-// 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[3]))->getShow());
-// 		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received[3]))->getStatus());
+
+		for (int i = 0; i < 2; i++) {
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[i])));
+			CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[i]))->getShow());
+			CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[i]))->getTo().toString());
+		}
+	}
+
+	void sendCurrentPresence() {
+		setBuddy();
+		received.clear();
+
+		User *user = userManager->getUser("user@localhost");
+		user->getRosterManager()->sendCurrentPresence("buddy1@localhost", "user@localhost/resource");
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
+
+		received.clear();
+		user->getRosterManager()->sendCurrentPresence("buddy_unknown@localhost", "user@localhost/resource");
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
 	}
 
 	void disconnectUser() {
