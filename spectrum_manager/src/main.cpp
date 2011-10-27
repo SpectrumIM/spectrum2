@@ -253,7 +253,11 @@ int main(int argc, char **argv)
 	std::string command;
 	boost::program_options::variables_map vm;
 
-	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\nAllowed options");
+	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\nCommands:\n"
+													 " start - start all local Spectrum2 instances\n"
+													 " stop  - stop all  local Spectrum2 instances\n"
+													 " <other> - send command to all local + remote Spectrum2 instances and print output\n"
+													 "Allowed options");
 	desc.add_options()
 		("help,h", "Show help output")
 		("config,c", boost::program_options::value<std::string>(&config_file)->default_value("/etc/spectrum2/spectrum_manager.cfg"), "Spectrum manager config file")
