@@ -69,6 +69,20 @@ class SpectrumNetworkPlugin;
 GKeyFile *keyfile;
 SpectrumNetworkPlugin *np;
 
+std::string replaceAll(
+  std::string result,
+  const std::string& replaceWhat,
+  const std::string& replaceWithWhat)
+{
+  while(1)
+  {
+	const int pos = result.find(replaceWhat);
+	if (pos==-1) break;
+	result.replace(pos,replaceWhat.size(),replaceWithWhat);
+  }
+  return result;
+}
+
 static std::string KEYFILE_STRING(const std::string &cat, const std::string &key, const std::string &def = "") {
 	gchar *str = g_key_file_get_string(keyfile, cat.c_str(), key.c_str(), 0);
 	if (!str) {
@@ -82,6 +96,11 @@ static std::string KEYFILE_STRING(const std::string &cat, const std::string &key
 		while(*(ret.end() - 1) == ' ') {
 			ret.erase(ret.end() - 1);
 		}
+	}
+
+	if (ret.find("$jid") != std::string::npos) {
+		std::string jid = KEYFILE_STRING("service", "jid");
+		ret = replaceAll(ret, "$jid", jid);
 	}
 	return ret;
 }

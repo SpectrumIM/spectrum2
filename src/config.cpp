@@ -60,8 +60,8 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.group", value<std::string>()->default_value(""), "The name of group Spectrum runs as.")
 		("service.backend", value<std::string>()->default_value("libpurple_backend"), "Backend")
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
-		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/spectrum2.pid"), "Full path to pid file")
-		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2"), "Working dir")
+		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
+		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
 		("service.allowed_servers", value<std::string>()->default_value(""), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
@@ -101,9 +101,19 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	parsed_options parsed = parse_config_file(ifs, opts, true);
 
+	std::string jid = "";
 	BOOST_FOREACH(option opt, parsed.options) {
+		if (opt.string_key == "service.jid") {
+			jid = opt.value[0];
+		}
+	}
+
+	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
 			m_unregistered[opt.string_key] = opt.value[0];
+		}
+		else if (opt.value[0].find("$jid") != std::string::npos) {
+			boost::replace_all(opt.value[0], "$jid", jid);
 		}
 	}
 
