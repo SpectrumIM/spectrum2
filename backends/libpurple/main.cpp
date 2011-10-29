@@ -1871,7 +1871,7 @@ int main(int argc, char **argv) {
 			p.load(istream);
 			LogString pid, jid;
 			log4cxx::helpers::Transcoder::decode(stringOf(getpid()), pid);
-			log4cxx::helpers::Transcoder::decode(KEYFILE_STRING("service", "service.jid"), jid);
+			log4cxx::helpers::Transcoder::decode(KEYFILE_STRING("service", "jid"), jid);
 #ifdef _MSC_VER
 			p.setProperty(L"pid", pid);
 			p.setProperty(L"jid", jid);
