@@ -13,7 +13,7 @@ INSTALL(TARGETS spectrum2 RUNTIME DESTINATION bin)
 INSTALL(FILES
 	sample2.cfg
 	RENAME spectrum.cfg.example
-	DESTINATION /etc/spectrum2
+	DESTINATION /etc/spectrum2/transports
 	)
 
 INSTALL(FILES
