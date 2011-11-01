@@ -92,6 +92,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("database.password", value<std::string>()->default_value(""), "Database Password.")
 		("database.port", value<int>()->default_value(0), "Database port.")
 		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
+		("database.encryption_key", value<std::string>()->default_value(""), "Encryption key.")
 		("logging.config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for Spectrum 2 instance")
 		("logging.backend_config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for backends")
 		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")

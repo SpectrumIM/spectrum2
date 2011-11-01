@@ -75,6 +75,34 @@ void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t) {
 	}
 }
 
+std::string encryptPassword(const std::string &password, const std::string &key) {
+	std::string encrypted;
+	encrypted.resize(password.size());
+	for (int i = 0; i < password.size(); i++) {
+		char c = password[i];
+		char keychar = key[i % key.size()];
+		c += keychar;
+		encrypted[i] = c;
+	}
+
+	encrypted = Swift::Base64::encode(Swift::createByteArray(encrypted));
+	return encrypted;
+}
+
+std::string decryptPassword(std::string &encrypted, const std::string &key) {
+	encrypted = Swift::byteArrayToString(Swift::Base64::decode(encrypted));
+	std::string password;
+	password.resize(encrypted.size());
+	for (int i = 0; i < encrypted.size(); i++) {
+		char c = encrypted[i];
+		char keychar = key[i % key.size()];
+		c -= keychar;
+		password[i] = c;
+	}
+
+	return password;
+}
+
 }
 
 }
