@@ -1,10 +1,6 @@
 #include "managerconfig.h"
-#include "transport/transport.h"
-#include "transport/usermanager.h"
-#include "transport/logger.h"
-#include "transport/sqlite3backend.h"
-#include "transport/userregistration.h"
-#include "transport/networkpluginserver.h"
+#include "transport/config.h"
+#include "Swiften/Swiften.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 
 #include <boost/foreach.hpp>
