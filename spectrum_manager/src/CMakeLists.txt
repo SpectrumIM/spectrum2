@@ -3,7 +3,7 @@ FILE(GLOB SRC *.cpp)
 
 ADD_EXECUTABLE(spectrum2_manager ${SRC} ../../src/config.cpp)
 
-target_link_libraries(spectrum2_manager ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY})
+target_link_libraries(spectrum2_manager ${SWIFTEN_LIBRARY})
 
 INSTALL(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 
