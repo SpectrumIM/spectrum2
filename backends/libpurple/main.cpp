@@ -589,11 +589,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			getProtocolAndName(legacyName, name, protocol);
 
 			if (password.empty()) {
+				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
 				np->handleDisconnected(user, 0, "Empty password.");
 				return;
 			}
 
 			if (!purple_find_prpl(protocol.c_str())) {
+				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
 				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
 				return;
 			}
@@ -1836,6 +1838,7 @@ static int create_socket(char *host, int portno) {
 }
 
 static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond) {
+	std::cout << "RECV\n";
 	if (cond & PURPLE_INPUT_READ) {
 		char buffer[65535];
 		char *ptr = buffer;

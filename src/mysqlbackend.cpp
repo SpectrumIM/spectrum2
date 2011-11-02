@@ -412,7 +412,7 @@ bool MySQLBackend::exec(const std::string &query) {
 void MySQLBackend::setUser(const UserInfo &user) {
 	std::string encrypted = user.password;
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-		encrypted = Util::decryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
+		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
 	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.password;
 	EXEC(m_setUser, setUser(user));
