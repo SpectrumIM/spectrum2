@@ -60,9 +60,9 @@ class Config {
 		/// the parser using opts parameter.
 		/// \param configfile path to config file
 		/// \param opts extra options which will be recognized by a parser
-		bool load(const std::string &configfile, boost::program_options::options_description &opts);
+		bool load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid = "");
 
-		bool load(std::istream &ifs, boost::program_options::options_description &opts);
+		bool load(std::istream &ifs, boost::program_options::options_description &opts, const std::string &jid = "");
 
 		bool load(std::istream &ifs);
 
@@ -71,7 +71,7 @@ class Config {
 		/// This function loads only config variables needed by libtransport.
 		/// \see load(const std::string &, boost::program_options::options_description &)
 		/// \param configfile path to config file
-		bool load(const std::string &configfile);
+		bool load(const std::string &configfile, const std::string &jid = "");
 
 		bool reload();
 

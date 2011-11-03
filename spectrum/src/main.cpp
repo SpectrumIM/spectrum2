@@ -122,6 +122,7 @@ int main(int argc, char **argv)
 	boost::program_options::variables_map vm;
 	bool no_daemon = false;
 	std::string config_file;
+	std::string jid;
 	
 
 #ifndef WIN32
@@ -139,6 +140,7 @@ int main(int argc, char **argv)
 	desc.add_options()
 		("help,h", "help")
 		("no-daemonize,n", "Do not run spectrum as daemon")
+		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
 		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
 		;
 	try
@@ -177,7 +179,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (!config.load(vm["config"].as<std::string>())) {
+	if (!config.load(vm["config"].as<std::string>(), jid)) {
 		std::cerr << "Can't load configuration file.\n";
 		return 1;
 	}

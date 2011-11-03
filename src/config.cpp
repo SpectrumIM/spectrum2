@@ -31,13 +31,13 @@ using namespace boost::program_options;
 
 namespace Transport {
 
-bool Config::load(const std::string &configfile, boost::program_options::options_description &opts) {
+bool Config::load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid) {
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
 		return false;
 
 	m_file = configfile;
-	bool ret = load(ifs, opts);
+	bool ret = load(ifs, opts, jid);
 	ifs.close();
 
 	char path[PATH_MAX] = "";
@@ -49,7 +49,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 	return ret;
 }
 
-bool Config::load(std::istream &ifs, boost::program_options::options_description &opts) {
+bool Config::load(std::istream &ifs, boost::program_options::options_description &opts, const std::string &_jid) {
 	m_unregistered.clear();
 	opts.add_options()
 		("service.jid", value<std::string>()->default_value(""), "Transport Jabber ID")
@@ -76,6 +76,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.memory_collector_time", value<int>()->default_value(0), "Time in seconds after which backend with most memory is set to die.")
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
+		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
 		("identity.type", value<std::string>()->default_value(""), "Type of transport ('icq','msn','gg','irc', ...)")
@@ -102,11 +103,47 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	parsed_options parsed = parse_config_file(ifs, opts, true);
 
+	bool found_working = false;
+	bool found_pidfile = false;
 	std::string jid = "";
-	BOOST_FOREACH(option opt, parsed.options) {
+	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.string_key == "service.jid") {
-			jid = opt.value[0];
+			if (_jid.empty()) {
+				jid = opt.value[0];
+			}
+			else {
+				opt.value[0] = _jid;
+				jid = _jid;
+			}
 		}
+		else if (opt.string_key == "service.backend_port") {
+			if (opt.value[0] == "0") {
+				unsigned long r = 0;
+				BOOST_FOREACH(char c, _jid) {
+					r += (int) c;
+				}
+				srand(time(NULL) + r);
+				int randomPort = 30000 + rand() % 10000;
+				opt.value[0] = boost::lexical_cast<std::string>(randomPort);
+			}
+		}
+		else if (opt.string_key == "service.working_dir") {
+			found_working = true;
+		}
+		else if (opt.string_key == "service.pidfile") {
+			found_pidfile = true;
+		}
+	}
+
+	if (!found_working) {
+		std::vector<std::string> value;
+		value.push_back("/var/lib/spectrum2/$jid");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.working_dir", value));
+	}
+	if (!found_pidfile) {
+		std::vector<std::string> value;
+		value.push_back("/var/run/spectrum2/$jid.pid");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
 	}
 
 	BOOST_FOREACH(option &opt, parsed.options) {
@@ -131,9 +168,9 @@ bool Config::load(std::istream &ifs) {
 	return load(ifs, opts);
 }
 
-bool Config::load(const std::string &configfile) {
+bool Config::load(const std::string &configfile, const std::string &jid) {
 	options_description opts("Transport options");
-	return load(configfile, opts);
+	return load(configfile, opts, jid);
 }
 
 bool Config::reload() {
