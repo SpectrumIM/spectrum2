@@ -1036,7 +1036,6 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {
-	std::cout << "HANDLE_DESTROYED\n";
 	m_waitingUsers.remove(user);
 	UserInfo userInfo = user->getUserInfo();
 
