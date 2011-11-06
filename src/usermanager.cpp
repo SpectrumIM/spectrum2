@@ -319,6 +319,11 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 		return;
 	}
 
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
+		return;
+	}
+
 	User *user = getUser(presence->getFrom().toBare().toString());
 
  	if (user) {

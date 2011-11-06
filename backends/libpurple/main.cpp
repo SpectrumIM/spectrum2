@@ -542,6 +542,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			while (keys && keys[i] != NULL) {
 				std::string key = keys[i];
 
+				if (key == "fb_api_key" || key == "fb_api_secret") {
+					purple_account_set_bool(account, "auth_fb", TRUE);
+				}
+
 				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
 				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
 				bool found = false;
