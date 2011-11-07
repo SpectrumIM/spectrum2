@@ -257,6 +257,17 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		LOG4CXX_INFO(logger, "Stopping backend " << *it);
+		std::string message;
+		pbnetwork::WrapperMessage wrap;
+		wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_EXIT);
+		wrap.SerializeToString(&message);
+
+		Backend *c = (Backend *) *it;
+		send(c->connection, message);
+	}
+
 	m_pingTimer->stop();
 	m_server->stop();
 	m_server.reset();
