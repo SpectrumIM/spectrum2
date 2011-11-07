@@ -140,6 +140,7 @@ int main(int argc, char **argv)
 	desc.add_options()
 		("help,h", "help")
 		("no-daemonize,n", "Do not run spectrum as daemon")
+		("no-debug,d", "Create coredumps on crash")
 		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
 		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
 		;
@@ -268,6 +269,11 @@ int main(int argc, char **argv)
 		}
 		setrlimit(RLIMIT_CORE, &limit);
 	}
+
+	struct rlimit limit;
+	limit.rlim_max = RLIM_INFINITY;
+	limit.rlim_cur = RLIM_INFINITY;
+	setrlimit(RLIMIT_CORE, &limit);
 #endif
 
 	Swift::SimpleEventLoop eventLoop;
