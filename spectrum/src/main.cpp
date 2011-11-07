@@ -189,13 +189,6 @@ int main(int argc, char **argv)
 	if (!no_daemon) {
 		// create directories
 		try {
-			boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
-		}
-		catch (...) {
-			std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
-			return 1;
-		}
-		try {
 			boost::filesystem::create_directories(
 				boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
 			);
@@ -274,6 +267,15 @@ int main(int argc, char **argv)
 	limit.rlim_max = RLIM_INFINITY;
 	limit.rlim_cur = RLIM_INFINITY;
 	setrlimit(RLIMIT_CORE, &limit);
+
+	// create directories
+	try {
+		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+	}
+	catch (...) {
+		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+		return 1;
+	}
 #endif
 
 	Swift::SimpleEventLoop eventLoop;
