@@ -34,6 +34,7 @@
 #define CONFIG_BOOL(PTR, KEY) (*PTR)[KEY].as<bool>()
 #define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
 #define CONFIG_VECTOR(PTR, KEY) (*PTR)[KEY].as<std::vector<std::string> >()
+#define CONFIG_HAS_KEY(PTR, KEY) (*PTR).hasKey(KEY)
 
 namespace Transport {
 
@@ -74,6 +75,10 @@ class Config {
 		bool load(const std::string &configfile, const std::string &jid = "");
 
 		bool reload();
+
+		bool hasKey(const std::string &key) {
+			return m_variables.find(key) != m_variables.end();
+		}
 
 		/// Returns value of variable defined by key.
 		

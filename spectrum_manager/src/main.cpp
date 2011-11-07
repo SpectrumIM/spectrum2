@@ -151,7 +151,10 @@ static void start_all_instances(ManagerConfig *config) {
 					continue;
 				}
 
-				std::vector<std::string> vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
+				
+				std::vector<std::string> vhosts;
+				if (CONFIG_HAS_KEY(&cfg, "vhosts.vhost"))
+					vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
 				vhosts.push_back(CONFIG_STRING(&cfg, "service.jid"));
 
 				BOOST_FOREACH(std::string &vhost, vhosts) {
@@ -201,7 +204,9 @@ static void stop_all_instances(ManagerConfig *config) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
 				}
 
-				std::vector<std::string> vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
+				std::vector<std::string> vhosts;
+				if (CONFIG_HAS_KEY(&cfg, "vhosts.vhost"))
+					vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
 				vhosts.push_back(CONFIG_STRING(&cfg, "service.jid"));
 
 				BOOST_FOREACH(std::string &vhost, vhosts) {
