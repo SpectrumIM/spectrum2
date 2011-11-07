@@ -105,6 +105,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	bool found_working = false;
 	bool found_pidfile = false;
+	bool found_backend_port = false;
 	std::string jid = "";
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.string_key == "service.jid") {
@@ -117,6 +118,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 			}
 		}
 		else if (opt.string_key == "service.backend_port") {
+			found_backend_port = true;
 			if (opt.value[0] == "0") {
 				unsigned long r = 0;
 				BOOST_FOREACH(char c, _jid) {
@@ -144,6 +146,17 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		std::vector<std::string> value;
 		value.push_back("/var/run/spectrum2/$jid.pid");
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
+	}
+	if (!found_backend_port) {
+		unsigned long r = 0;
+		BOOST_FOREACH(char c, _jid) {
+			r += (int) c;
+		}
+		srand(time(NULL) + r);
+		int randomPort = 30000 + rand() % 10000;
+		std::vector<std::string> value;
+		value.push_back(boost::lexical_cast<std::string>(randomPort));
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.backend_port", value));
 	}
 
 	BOOST_FOREACH(option &opt, parsed.options) {
