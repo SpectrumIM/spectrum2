@@ -66,7 +66,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
 		("service.backend_host", value<std::string>()->default_value("localhost"), "Host to bind backend server to")
-		("service.backend_port", value<std::string>()->default_value("10000"), "Port to bind backend server to")
+		("service.backend_port", value<std::string>()->default_value("0"), "Port to bind backend server to")
 		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
 		("service.admin_jid", value<std::string>()->default_value(""), "Administrator jid.")
