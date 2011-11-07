@@ -125,6 +125,7 @@ class RosterManager {
 		Swift::Timer::ref m_RIETimer;
 		std::list <Swift::SetRosterRequest::ref> m_requests;
 		bool m_supportRemoteRoster;
+		AddressedRosterRequest::ref m_remoteRosterRequest;
 };
 
 }
