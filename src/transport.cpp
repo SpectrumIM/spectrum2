@@ -34,6 +34,8 @@
 #include "Swiften/Serializer/PayloadSerializers/AttentionSerializer.h"
 #include "Swiften/Parser/PayloadParsers/XHTMLIMParser.h"
 #include "Swiften/Serializer/PayloadSerializers/XHTMLIMSerializer.h"
+#include "Swiften/Parser/PayloadParsers/StatsParser.h"
+#include "Swiften/Serializer/PayloadSerializers/StatsSerializer.h"
 #include "transport/BlockParser.h"
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
@@ -90,11 +92,13 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 
 		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_server->addPayloadSerializer(new Swift::XHTMLIMSerializer());
 		m_server->addPayloadSerializer(new Transport::BlockSerializer());
 		m_server->addPayloadSerializer(new Swift::InvisibleSerializer());
+		m_server->addPayloadSerializer(new Swift::StatsSerializer());
 
 		m_server->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
 		m_server->onDataWritten.connect(boost::bind(&Component::handleDataWritten, this, _1));
@@ -113,11 +117,13 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 
 		m_component->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_component->addPayloadSerializer(new Swift::XHTMLIMSerializer());
 		m_component->addPayloadSerializer(new Transport::BlockSerializer());
 		m_component->addPayloadSerializer(new Swift::InvisibleSerializer());
+		m_component->addPayloadSerializer(new Swift::StatsSerializer());
 
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
