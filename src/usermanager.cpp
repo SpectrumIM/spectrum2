@@ -149,7 +149,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	// Create user class if it's not there
 	if (!user) {
 		// Admin user is not legacy network user, so do not create User class instance for him
-		if (CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
+		if (m_component->inServerMode() && CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
 			return;
 		}
 
