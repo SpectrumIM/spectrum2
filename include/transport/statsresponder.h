@@ -41,6 +41,8 @@ class StatsResponder : public Swift::Responder<Swift::StatsPayload> {
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::StatsPayload> payload);
 		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::StatsPayload> payload);
 
+		unsigned long usedMemory();
+
 		Component *m_component;
 		UserManager *m_userManager;
 		NetworkPluginServer *m_server;
