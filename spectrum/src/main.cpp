@@ -8,6 +8,7 @@
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
+#include "transport/statsresponder.h"
 #include "transport/util.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
@@ -323,6 +324,8 @@ int main(int argc, char **argv)
 	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
 
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
+	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
+	statsResponder.start();
 
 	eventLoop_ = &eventLoop;
 

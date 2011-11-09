@@ -14,7 +14,7 @@ StatsParser::StatsParser() : level_(TopLevel), inItem_(false) {
 
 void StatsParser::handleStartElement(const std::string& element, const std::string& /*ns*/, const AttributeMap& attributes) {
 	if (level_ == PayloadLevel) {
-		if (element == "item") {
+		if (element == "stat") {
 			inItem_ = true;
 
 			currentItem_ = StatsPayload::Item();
