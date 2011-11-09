@@ -205,6 +205,54 @@ int main(int argc, char **argv)
     }
 #endif
 
+#ifndef WIN32
+	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
+		struct rlimit limit;
+		getrlimit(RLIMIT_CORE, &limit);
+
+		if (!CONFIG_STRING(&config, "service.group").empty()) {
+			struct group *gr;
+			if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
+				std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
+				return 1;
+			}
+
+			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
+				std::cerr << "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
+				return 1;
+			}
+		}
+
+		if (!CONFIG_STRING(&config, "service.user").empty()) {
+			struct passwd *pw;
+			if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
+				std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
+				return 1;
+			}
+
+			if ((setuid(pw->pw_uid)) != 0) {
+				std::cerr << "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
+				return 1;
+			}
+		}
+		setrlimit(RLIMIT_CORE, &limit);
+	}
+
+	struct rlimit limit;
+	limit.rlim_max = RLIM_INFINITY;
+	limit.rlim_cur = RLIM_INFINITY;
+	setrlimit(RLIMIT_CORE, &limit);
+
+	// create directories
+	try {
+		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+	}
+	catch (...) {
+		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+		return 1;
+	}
+#endif
+
 	if (CONFIG_STRING(&config, "logging.config").empty()) {
 		LoggerPtr root = log4cxx::Logger::getRootLogger();
 #ifdef WIN32
@@ -230,54 +278,6 @@ int main(int argc, char **argv)
 #endif
 		log4cxx::PropertyConfigurator::configure(p);
 	}
-
-#ifndef WIN32
-	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
-		struct rlimit limit;
-		getrlimit(RLIMIT_CORE, &limit);
-
-		if (!CONFIG_STRING(&config, "service.group").empty()) {
-			struct group *gr;
-			if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-				LOG4CXX_ERROR(logger, "Invalid service.group name " << CONFIG_STRING(&config, "service.group"));
-				return 1;
-			}
-
-			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
-				LOG4CXX_ERROR(logger, "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno));
-				return 1;
-			}
-		}
-
-		if (!CONFIG_STRING(&config, "service.user").empty()) {
-			struct passwd *pw;
-			if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-				LOG4CXX_ERROR(logger, "Invalid service.user name " << CONFIG_STRING(&config, "service.user"));
-				return 1;
-			}
-
-			if ((setuid(pw->pw_uid)) != 0) {
-				LOG4CXX_ERROR(logger, "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno));
-				return 1;
-			}
-		}
-		setrlimit(RLIMIT_CORE, &limit);
-	}
-
-	struct rlimit limit;
-	limit.rlim_max = RLIM_INFINITY;
-	limit.rlim_cur = RLIM_INFINITY;
-	setrlimit(RLIMIT_CORE, &limit);
-
-	// create directories
-	try {
-		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
-	}
-	catch (...) {
-		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
-		return 1;
-	}
-#endif
 
 	Swift::SimpleEventLoop eventLoop;
 
