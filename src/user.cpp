@@ -215,7 +215,24 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		return;
 	}
 
-	sendCurrentPresence();
+
+	// User wants to disconnect this resource
+	if (!m_component->inServerMode()) {
+		if (presence->getType() == Swift::Presence::Unavailable) {
+				// Send unavailable presences for online contacts
+				m_rosterManager->sendUnavailablePresences(presence->getFrom());
+
+				// Send unavailable presence for transport contact itself
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(m_component->getJID());
+				response->setType(Swift::Presence::Unavailable);
+				m_component->getStanzaChannel()->sendPresence(response);
+		}
+		else {
+			sendCurrentPresence();
+		}
+	}
 
 
 	// Change legacy network presence
