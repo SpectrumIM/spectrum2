@@ -74,6 +74,10 @@ class Conversation {
 			m_nickname = nickname;
 		}
 
+		void setJID(const Swift::JID &jid) {
+			m_jid = jid;
+		}
+
 		/// Sends message to Legacy network.
 
 		/// \param message Message.
@@ -112,6 +116,7 @@ class Conversation {
 		std::string m_nickname;
 		std::string m_room;
 		bool m_muc;
+		Swift::JID m_jid;
 };
 
 }

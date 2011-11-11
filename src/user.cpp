@@ -174,6 +174,8 @@ void User::setConnected(bool connected) {
 void User::handlePresence(Swift::Presence::ref presence) {
 	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
 
+	m_conversationManager->resetResources();
+
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {

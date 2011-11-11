@@ -73,6 +73,8 @@ class ConversationManager {
 		/// \param conv Conversation.
 		void removeConversation(Conversation *conv);
 
+		void resetResources();
+
 	private:
 		void handleMessageReceived(Swift::Message::ref message);
 
