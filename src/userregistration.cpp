@@ -225,14 +225,14 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		language->setValue(CONFIG_STRING(m_config, "registration.language"));
 	form->addField(language);
 
-	TextSingleFormField::ref encoding = TextSingleFormField::create();
-	encoding->setName("encoding");
-	encoding->setLabel((("Encoding")));
-	if (registered)
-		encoding->setValue(res.encoding);
-	else
-		encoding->setValue(CONFIG_STRING(m_config, "registration.encoding"));
-	form->addField(encoding);
+//	TextSingleFormField::ref encoding = TextSingleFormField::create();
+//	encoding->setName("encoding");
+//	encoding->setLabel((("Encoding")));
+//	if (registered)
+//		encoding->setValue(res.encoding);
+//	else
+//		encoding->setValue(CONFIG_STRING(m_config, "registration.encoding"));
+//	form->addField(encoding);
 
 	if (registered) {
 		BooleanFormField::ref boolean = BooleanFormField::create();
