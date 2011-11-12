@@ -181,7 +181,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	bool registered = m_storageBackend->getUser(barejid, res);
 
 	std::string instructions = CONFIG_STRING(m_config, "registration.instructions");
-	std::string usernameField = CONFIG_STRING(m_config, "registration.username_field");
+	std::string usernameField = CONFIG_STRING(m_config, "registration.username_label");
 
 	// normal jabber:iq:register
 	reg->setInstructions(instructions);
@@ -219,6 +219,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	ListSingleFormField::ref language = ListSingleFormField::create();
 	language->setName("language");
 	language->setLabel((("Language")));
+	language->addOption(Swift::FormField::Option(CONFIG_STRING(m_config, "registration.language"), CONFIG_STRING(m_config, "registration.language")));
 	if (registered)
 		language->setValue(res.language);
 	else
