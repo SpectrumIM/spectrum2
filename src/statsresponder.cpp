@@ -91,10 +91,16 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		Swift::StatusShow s;
 		std::string statusMessage;
 		for (std::map<std::string, User *>::const_iterator it = m_userManager->getUsers().begin(); it != m_userManager->getUsers().end(); it++) {
+			if (!(*it).second) {
+				continue;
+			}
 			const RosterManager::BuddiesMap &buddies = (*it).second->getRosterManager()->getBuddies();
 			contactsTotal += buddies.size();
-			for(RosterManager::BuddiesMap::const_iterator it = buddies.begin(); it != buddies.end(); it++) {
-				if (!(*it).second->getStatus(s, statusMessage))
+			for(RosterManager::BuddiesMap::const_iterator bt = buddies.begin(); bt != buddies.end(); bt++) {
+				if (!(*bt).second) {
+					continue;
+				}
+				if (!(*bt).second->getStatus(s, statusMessage))
 					continue;
 				if (s.getType() != Swift::StatusShow::None) {
 					contactsOnline++;
