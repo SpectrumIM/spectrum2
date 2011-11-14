@@ -23,8 +23,12 @@ std::string StatsSerializer::serializePayload(boost::shared_ptr<StatsPayload> st
 	foreach(const StatsPayload::Item& item, stats->getItems()) {
 		boost::shared_ptr<XMLElement> statElement(new XMLElement("stat"));
 		statElement->setAttribute("name", item.getName());
-		statElement->setAttribute("units", item.getUnits());
-		statElement->setAttribute("value", item.getValue());
+		if (!item.getUnits().empty()) {
+			statElement->setAttribute("units", item.getUnits());
+		}
+		if (!item.getUnits().empty()) {
+			statElement->setAttribute("value", item.getUnits());
+		}
 
 		queryElement.addNode(statElement);
 	}
