@@ -97,6 +97,10 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 			else {
 				continue;
 			}
+
+			if (!discoInfo) {
+				continue;
+			}
 #else
 			continue;
 #endif

@@ -141,8 +141,6 @@ void RosterManager::handleBuddyChanged(Buddy *buddy) {
 }
 
 void RosterManager::setBuddyCallback(Buddy *buddy) {
-	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
-
 	LOG4CXX_INFO(logger, "Associating buddy " << buddy->getName() << " with " << m_user->getJID().toString());
 	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
@@ -153,21 +151,17 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		sendBuddyRosterPush(buddy);
 	}
 	else {
-		if (m_setBuddyTimer->onTick.empty()) {
-			m_setBuddyTimer->stop();
-
-			if (m_supportRemoteRoster) {
-				sendBuddyRosterPush(buddy);
+		if (m_supportRemoteRoster) {
+			sendBuddyRosterPush(buddy);
+		}
+		else {
+			// Send RIE only if there's resource which supports it.
+			Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
+			if (jidWithRIE.isValid()) {
+				m_RIETimer->start();
 			}
 			else {
-				// Send RIE only if there's resource which supports it.
-				Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
-				if (jidWithRIE.isValid()) {
-					m_RIETimer->start();
-				}
-				else {
-					sendBuddySubscribePresence(buddy);
-				}
+				sendBuddySubscribePresence(buddy);
 			}
 		}
 	}
