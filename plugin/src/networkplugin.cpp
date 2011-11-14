@@ -553,6 +553,13 @@ void NetworkPlugin::send(const std::string &data) {
 	sendData(std::string(header, 4) + data);
 }
 
+void NetworkPlugin::checkPing() {
+	if (m_pingReceived == false) {
+		handleExitRequest();
+	}
+	m_pingReceived = false;
+}
+
 void NetworkPlugin::sendPong() {
 	m_pingReceived = true;
 	std::string message;

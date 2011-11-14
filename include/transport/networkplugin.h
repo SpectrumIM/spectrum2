@@ -214,7 +214,8 @@ class NetworkPlugin {
 		virtual void handleExitRequest() { exit(1); }
 		void handleDataRead(std::string &data);
 		virtual void sendData(const std::string &string) {}
-		
+
+		void checkPing();
 
 	private:
 		void handleLoginPayload(const std::string &payload);

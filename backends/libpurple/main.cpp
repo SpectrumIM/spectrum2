@@ -1230,6 +1230,11 @@ static gboolean disconnectMe(void *data) {
 	return FALSE;
 }
 
+static gboolean pingTimeout(void *data) {
+	np->checkPing();
+	return TRUE;
+}
+
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
@@ -1960,6 +1965,7 @@ int main(int argc, char **argv) {
 		m_sock = create_socket(host, port);
 
 		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+		purple_timeout_add_seconds(30, pingTimeout, NULL);
 
 		np = new SpectrumNetworkPlugin(host, port);
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
