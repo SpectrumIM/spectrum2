@@ -26,8 +26,8 @@ std::string StatsSerializer::serializePayload(boost::shared_ptr<StatsPayload> st
 		if (!item.getUnits().empty()) {
 			statElement->setAttribute("units", item.getUnits());
 		}
-		if (!item.getUnits().empty()) {
-			statElement->setAttribute("value", item.getUnits());
+		if (!item.getValue().empty()) {
+			statElement->setAttribute("value", item.getValue());
 		}
 
 		queryElement.addNode(statElement);
