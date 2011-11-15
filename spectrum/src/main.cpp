@@ -187,19 +187,41 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-#ifndef WIN32
-	if (!no_daemon) {
-		// create directories
-		try {
-			boost::filesystem::create_directories(
-				boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
-			);
-		}
-		catch (...) {
-			std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
+	// create directories
+	try {
+		boost::filesystem::create_directories(
+			boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
+		);
+	}
+	catch (...) {
+		std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
+		return 1;
+	}
+	// create directories
+	try {
+		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+	}
+	catch (...) {
+		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+		return 1;
+	}
+
+	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
+		struct group *gr;
+		if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
+			std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
 			return 1;
 		}
+		struct passwd *pw;
+		if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
+			std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
+			return 1;
+		}
+		chown(CONFIG_STRING(&config, "service.working_dir").c_str(), pw->pw_uid, gr->gr_gid);
+	}
 
+#ifndef WIN32
+	if (!no_daemon) {
 		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
 // 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
@@ -234,7 +256,7 @@ int main(int argc, char **argv)
 		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
 			if (boost::ends_with(prop, ".File")) {
 				dir = p.get(prop);
-				boost::replace_all(dir, "{$jid}", jid);
+				boost::replace_all(dir, "${jid}", jid);
 				break;
 			}
 		}
@@ -309,15 +331,6 @@ int main(int argc, char **argv)
 	limit.rlim_max = RLIM_INFINITY;
 	limit.rlim_cur = RLIM_INFINITY;
 	setrlimit(RLIMIT_CORE, &limit);
-
-	// create directories
-	try {
-		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
-	}
-	catch (...) {
-		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
-		return 1;
-	}
 #endif
 
 	Swift::SimpleEventLoop eventLoop;
