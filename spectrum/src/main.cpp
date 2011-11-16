@@ -138,13 +138,14 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #endif
-	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
+	boost::program_options::options_description desc(std::string("Spectrum version: ") + SPECTRUM_VERSION + "\nUsage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
 		("help,h", "help")
 		("no-daemonize,n", "Do not run spectrum as daemon")
 		("no-debug,d", "Create coredumps on crash")
 		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
 		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
+		("version,v", "Shows Spectrum version")
 		;
 	try
 	{
@@ -154,7 +155,10 @@ int main(int argc, char **argv)
           options(desc).positional(p).run(), vm);
 		boost::program_options::notify(vm);
 
-		
+		if (vm.count("version")) {
+			std::cout << SPECTRUM_VERSION << "\n";
+			return 0;
+		}
 
 		if(vm.count("help"))
 		{
