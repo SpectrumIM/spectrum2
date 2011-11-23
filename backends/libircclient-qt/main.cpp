@@ -15,11 +15,22 @@
 #include <QtNetwork>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
 #include "ircnetworkplugin.h"
+#include "singleircnetworkplugin.h"
+
+#include "log4cxx/logger.h"
+#include "log4cxx/consoleappender.h"
+#include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
+#include "log4cxx/helpers/properties.h"
+#include "log4cxx/helpers/fileinputstream.h"
+#include "log4cxx/helpers/transcoder.h"
 
 using namespace boost::program_options;
 using namespace Transport;
 
-IRCNetworkPlugin * np = NULL;
+using namespace log4cxx;
+
+NetworkPlugin * np = NULL;
 
 int main (int argc, char* argv[]) {
 	std::string host;
@@ -72,8 +83,39 @@ int main (int argc, char* argv[]) {
 	}
 	QCoreApplication app(argc, argv);
 
+	if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
+		LoggerPtr root = log4cxx::Logger::getRootLogger();
+#ifndef _MSC_VER
+		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+#else
+		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
+#endif
+	}
+	else {
+		log4cxx::helpers::Properties p;
+		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
+		p.load(istream);
+		LogString pid, jid;
+		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
+		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
+#ifdef _MSC_VER
+		p.setProperty(L"pid", pid);
+		p.setProperty(L"jid", jid);
+#else
+		p.setProperty("pid", pid);
+		p.setProperty("jid", jid);
+#endif
+		log4cxx::PropertyConfigurator::configure(p);
+	}
+
 	Swift::QtEventLoop eventLoop;
-	np = new IRCNetworkPlugin(&config, &eventLoop, host, port);
+
+	if (config.getUnregistered().find("service.irc_server") == config.getUnregistered().end()) {
+		np = new IRCNetworkPlugin(&config, &eventLoop, host, port);
+	}
+	else {
+		np = new SingleIRCNetworkPlugin(&config, &eventLoop, host, port);
+	}
 
 	return app.exec();
 }

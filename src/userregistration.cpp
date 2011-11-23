@@ -329,10 +329,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	}
 
 	// Register or change password
-	if (payload->getUsername()->empty() ||
-		(payload->getPassword()->empty() && CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
-	)
-	{
+	if (payload->getUsername()->empty()) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}

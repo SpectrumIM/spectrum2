@@ -13,6 +13,12 @@
 #include <iostream>
 #include "Swiften/Elements/StatusShow.h"
 
+#include "log4cxx/logger.h"
+
+using namespace log4cxx;
+
+static LoggerPtr logger = log4cxx::Logger::getLogger("IRCSession");
+
 MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix, QObject* parent) : Irc::Session(parent)
 {
 	this->np = np;
@@ -23,24 +29,24 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std
 }
 
 void MyIrcSession::on_connected(){
-	std::cout << "connected:\n";
+//	std::cout << "connected:\n";
 }
 
 void MyIrcSession::on_disconnected()
 {
-	std::cout << "disconnected:\n";
+//	std::cout << "disconnected:\n";
 	if (suffix.empty())
 		np->handleDisconnected(user, 0, "");
 }
 
 void MyIrcSession::on_bufferAdded(Irc::Buffer* buffer)
 {
-    qDebug() << "buffer added:" << buffer->receiver();
+//    qDebug() << "buffer added:" << buffer->receiver();
 }
 
 void MyIrcSession::on_bufferRemoved(Irc::Buffer* buffer)
 {
-    qDebug() << "buffer removed:" << buffer->receiver();
+//    qDebug() << "buffer removed:" << buffer->receiver();
 }
 
 Irc::Buffer* MyIrcSession::createBuffer(const QString& receiver)
@@ -80,7 +86,7 @@ MyIrcBuffer::MyIrcBuffer(const QString& receiver, const std::string &user, Netwo
 
 void MyIrcBuffer::on_receiverChanged(const QString& receiver)
 {
-    qDebug() << "receiver changed:" << receiver;
+//    qDebug() << "receiver changed:" << receiver;
 }
 
 bool MyIrcBuffer::correctNickname(std::string &nickname) {
@@ -94,7 +100,7 @@ bool MyIrcBuffer::correctNickname(std::string &nickname) {
 }
 
 void MyIrcBuffer::on_joined(const QString& origin) {
-	qDebug() << "joined:" << receiver() << origin;
+	LOG4CXX_INFO(logger, user << ": " << origin.toStdString() << " joined " << receiver().toStdString() + suffix);
 	bool flags = 0;
 	std::string nickname = origin.toStdString();
 	flags = correctNickname(nickname);
@@ -102,6 +108,7 @@ void MyIrcBuffer::on_joined(const QString& origin) {
 }
 
 void MyIrcBuffer::on_parted(const QString& origin, const QString& message) {
+	LOG4CXX_INFO(logger, user << ": " << origin.toStdString() << " parted " << receiver().toStdString() + suffix);
 	qDebug() << "parted:" << receiver() << origin << message;
 	bool flags = 0;
 	std::string nickname = origin.toStdString();
@@ -109,14 +116,12 @@ void MyIrcBuffer::on_parted(const QString& origin, const QString& message) {
 		np->handleParticipantChanged(user, nickname, receiver().toStdString() + suffix,(int) flags, pbnetwork::STATUS_NONE, message.toStdString());
 }
 
-void MyIrcBuffer::on_quit(const QString& origin, const QString& message)
-{
-    qDebug() << "quit:" << receiver() << origin << message;
+void MyIrcBuffer::on_quit(const QString& origin, const QString& message) {
 	on_parted(origin, message);
 }
 
 void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick) {
-	qDebug() << "nick changed:" << receiver() << origin << nick;
+	LOG4CXX_INFO(logger, user << ": " << origin.toStdString() << " changed nickname to " << nick.toStdString());
 	std::string nickname = origin.toStdString();
 	bool flags = p->m_modes[receiver().toStdString() + nickname];
 // 	std::cout << receiver().toStdString() + nickname << " " << flags <<  "\n";
@@ -125,10 +130,10 @@ void MyIrcBuffer::on_nickChanged(const QString& origin, const QString& nick) {
 
 void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, const QString& args) {
 	// mode changed: "#testik" "HanzZ" "+o" "hanzz_k" 
-	qDebug() << "mode changed:" << receiver() << origin << mode << args;
 	std::string nickname = args.toStdString();
 	if (nickname.empty())
 		return;
+	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode.toStdString());
 	if (mode == "+o") {
 		p->m_modes[receiver().toStdString() + nickname] = 1;
 	}
@@ -141,29 +146,28 @@ void MyIrcBuffer::on_modeChanged(const QString& origin, const QString& mode, con
 
 void MyIrcBuffer::on_topicChanged(const QString& origin, const QString& topic) {
 	//topic changed: "#testik" "HanzZ" "test"
-	qDebug() << "topic changed:" << receiver() << origin << topic;
-		np->handleSubject(user, receiver().toStdString() + suffix, topic.toStdString(), origin.toStdString());
+	LOG4CXX_INFO(logger, user << ": " << origin.toStdString() << " topic changed to " << topic.toStdString());
+	np->handleSubject(user, receiver().toStdString() + suffix, topic.toStdString(), origin.toStdString());
 }
 
-void MyIrcBuffer::on_invited(const QString& origin, const QString& receiver, const QString& channel)
-{
-    qDebug() << "invited:" << Irc::Buffer::receiver() << origin << receiver << channel;
+void MyIrcBuffer::on_invited(const QString& origin, const QString& receiver, const QString& channel) {
+	qDebug() << "invited:" << Irc::Buffer::receiver() << origin << receiver << channel;
 }
 
-void MyIrcBuffer::on_kicked(const QString& origin, const QString& nick, const QString& message)
-{
-    qDebug() << "kicked:" << receiver() << origin << nick << message;
+void MyIrcBuffer::on_kicked(const QString& origin, const QString& nick, const QString& message) {
+	qDebug() << "kicked:" << receiver() << origin << nick << message;
 }
 
 void MyIrcBuffer::on_messageReceived(const QString& origin, const QString& message, Irc::Buffer::MessageFlags flags) {
-	qDebug() << "message received:" << receiver() << origin << message << (flags & Irc::Buffer::IdentifiedFlag ? "(identified!)" : "(not identified)");
+	// qDebug() << "message received:" << receiver() << origin << message << (flags & Irc::Buffer::IdentifiedFlag ? "(identified!)" : "(not identified)");
+
 	if (!receiver().startsWith("#") && (flags & Irc::Buffer::EchoFlag))
 		return;
 	std::string r = receiver().toStdString();
 //	if (!suffix.empty()) {
 //		r = receiver().replace('@', '%').toStdString();
 //	}
-
+	LOG4CXX_INFO(logger, user << ": Message from " << r);
 	if (r.find("#") == 0) {
 		np->handleMessage(user, r + suffix, message.toStdString(), origin.toStdString());
 	}
@@ -223,7 +227,8 @@ void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, co
 			}
 			break;
 	}
-	qDebug() << "numeric message received:" << receiver() << origin << code << params;
+	LOG4CXX_INFO(logger, user << ": Numeric message received " << receiver().toStdString() << " " << origin.toStdString() << " " << code);
+	//qDebug() << "numeric message received:" << receiver() << origin << code << params;
 }
 
 void MyIrcBuffer::on_unknownMessageReceived(const QString& origin, const QStringList& params)
