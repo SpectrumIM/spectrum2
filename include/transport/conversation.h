@@ -74,6 +74,10 @@ class Conversation {
 			m_nickname = nickname;
 		}
 
+		const std::string &getNickname() {
+			return m_nickname;
+		}
+
 		void setJID(const Swift::JID &jid) {
 			m_jid = jid;
 		}

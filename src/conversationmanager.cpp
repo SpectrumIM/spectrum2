@@ -90,6 +90,7 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 		if (!m_convs[name]) {
 			m_convs[name] = m_component->getFactory()->createConversation(this, name);
 			m_convs[name]->setRoom(room_name);
+			m_convs[name]->setNickname(name);
 		}
 	}
 

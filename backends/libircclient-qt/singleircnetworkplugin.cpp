@@ -12,6 +12,13 @@ SingleIRCNetworkPlugin::SingleIRCNetworkPlugin(Config *config, Swift::QtEventLoo
 	m_socket->connectToHost(QString::fromStdString(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
+	if (config->getUnregistered().find("service.irc_identify") != config->getUnregistered().end()) {
+		m_identify = config->getUnregistered().find("service.irc_identify")->second;
+	}
+	else {
+		m_identify = "NickServ identify $name $password";
+	}
+
 	LOG4CXX_INFO(logger, "SingleIRCNetworkPlugin for server " << m_server << " initialized.");
 }
 
@@ -39,6 +46,12 @@ void SingleIRCNetworkPlugin::handleLoginRequest(const std::string &user, const s
 	MyIrcSession *session = new MyIrcSession(user, this);
 	session->setNick(QString::fromStdString(legacyName));
 	session->connectToServer(QString::fromStdString(m_server), 6667);
+
+	std::string identify = m_identify;
+	boost::replace_all(identify, "$password", password);
+	boost::replace_all(identify, "$name", legacyName);
+	session->setIdentify(identify);
+
 	m_sessions[user] = session;
 }
 

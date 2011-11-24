@@ -36,4 +36,5 @@ class SingleIRCNetworkPlugin : public QObject, public NetworkPlugin {
 		Config *config;
 		QTcpSocket *m_socket;
 		std::string m_server;
+		std::string m_identify;
 };

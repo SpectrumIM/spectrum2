@@ -204,8 +204,14 @@ void MyIrcBuffer::on_numericMessageReceived(const QString& origin, uint code, co
 {
 	switch (code) {
 		case 251:
-			if (suffix.empty())
+			if (suffix.empty()) {
 				np->handleConnected(user);
+			}
+			if (p->getIdentify().find(" ") != std::string::npos) {
+				std::string to = p->getIdentify().substr(0, p->getIdentify().find(" "));
+				std::string what = p->getIdentify().substr(p->getIdentify().find(" ") + 1);
+				p->message(QString::fromStdString(to), QString::fromStdString(what));
+			}
 			break;
 		case 332:
 			m_topicData = params.value(2).toStdString();

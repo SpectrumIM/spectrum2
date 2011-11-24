@@ -27,6 +27,14 @@ public:
 	std::string suffix;
 	int rooms;
 
+	void setIdentify(const std::string &identify) {
+		m_identify = identify;
+	}
+
+	const std::string  &getIdentify() {
+		return m_identify;
+	}
+
 protected Q_SLOTS:
     void on_connected();
     void on_disconnected();
@@ -37,6 +45,7 @@ protected Q_SLOTS:
 protected:
 	NetworkPlugin *np;
 	std::string user;
+	std::string m_identify;
 
     virtual Irc::Buffer* createBuffer(const QString& receiver);
 };
