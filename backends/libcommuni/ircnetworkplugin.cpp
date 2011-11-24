@@ -1,4 +1,6 @@
 #include "ircnetworkplugin.h"
+#include <IrcCommand>
+#include <IrcMessage>
 
 IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
 	this->config = config;
@@ -26,8 +28,10 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 	if (CONFIG_BOOL(config, "service.server_mode")) {
 		MyIrcSession *session = new MyIrcSession(user, this);
 		std::string h = user.substr(0, user.find("@"));
-		session->setNick(QString::fromStdString(h.substr(0, h.find("%"))));
-		session->connectToServer(QString::fromStdString(h.substr(h.find("%") + 1)), 6667);
+		session->setNickName(QString::fromStdString(h.substr(0, h.find("%"))));
+		session->setHost(QString::fromStdString(h.substr(h.find("%") + 1)));
+		session->setPort(6667);
+		session->open();
 		std::cout << "CONNECTING IRC NETWORK " << h.substr(h.find("%") + 1) << "\n";
 		m_sessions[user] = session;
 	}
@@ -39,7 +43,7 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 	if (m_sessions[user] == NULL)
 		return;
-	m_sessions[user]->disconnectFromServer();
+	m_sessions[user]->close();
 	m_sessions[user]->deleteLater();
 	m_sessions.erase(user);
 }
@@ -68,7 +72,7 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 		}
 	}
 	std::cout << "MESSAGE " << u << " " << r << "\n";
-	m_sessions[u]->message(QString::fromStdString(r), QString::fromStdString(message));
+	m_sessions[u]->sendCommand(IrcCommand::createMessage(QString::fromStdString(r), QString::fromStdString(message)));
 	std::cout << "SENT\n";
 }
 
@@ -85,8 +89,10 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 		if (room.find("@") != std::string::npos) {
 			// suffix is %irc.freenode.net to let MyIrcSession return #room%irc.freenode.net
 			MyIrcSession *session = new MyIrcSession(user, this, room.substr(room.find("@")));
-			session->setNick(QString::fromStdString(nickname));
-			session->connectToServer(QString::fromStdString(room.substr(room.find("@") + 1)), 6667);
+			session->setNickName(QString::fromStdString(nickname));
+			session->setHost(QString::fromStdString(room.substr(room.find("@") + 1)));
+			session->setPort(6667);
+			session->open();
 			std::cout << "CONNECTING IRC NETWORK " << room.substr(room.find("@") + 1) << "\n";
 			std::cout << "SUFFIX " << room.substr(room.find("@")) << "\n";
 			m_sessions[u] = session;
@@ -96,11 +102,11 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 		}
 	}
 	std::cout << "JOINING " << r << "\n";
-	m_sessions[u]->addAutoJoinChannel(QString::fromStdString(r));
-	m_sessions[u]->join(QString::fromStdString(r), QString::fromStdString(password));
+	m_sessions[u]->addAutoJoinChannel(r);
+	m_sessions[u]->sendCommand(IrcCommand::createJoin(QString::fromStdString(r), QString::fromStdString(password)));
 	m_sessions[u]->rooms += 1;
 	// update nickname, because we have nickname per session, no nickname per room.
-	handleRoomNicknameChanged(user, r, m_sessions[u]->nick().toStdString());
+	handleRoomNicknameChanged(user, r, m_sessions[u]->nickName().toStdString());
 }
 
 void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std::string &room) {
@@ -114,12 +120,12 @@ void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std
 	if (m_sessions[u] == NULL)
 		return;
 
-	m_sessions[u]->part(QString::fromStdString(r));
-	m_sessions[u]->removeAutoJoinChannel(QString::fromStdString(r));
+	m_sessions[u]->sendCommand(IrcCommand::createPart(QString::fromStdString(r)));
+	m_sessions[u]->removeAutoJoinChannel(r);
 	m_sessions[u]->rooms -= 1;
 
 	if (m_sessions[u]->rooms <= 0) {
-		m_sessions[u]->disconnectFromServer();
+		m_sessions[u]->close();
 		m_sessions[u]->deleteLater();
 		m_sessions.erase(u);
 	}
