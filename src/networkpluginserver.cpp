@@ -935,7 +935,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 // 	UserInfo userInfo = user->getUserInfo();
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
-	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3));
+	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
 }
 
@@ -991,7 +991,7 @@ void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence:
 	send(c->connection, message);
 }
 
-void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
+void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, const std::string &r, const std::string &nickname, const std::string &password) {
 	UserInfo userInfo = user->getUserInfo();
 
 	pbnetwork::Room room;
@@ -1014,6 +1014,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, con
 	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
+	conv->setJID(who);
 }
 
 void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {

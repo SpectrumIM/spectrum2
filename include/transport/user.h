@@ -111,7 +111,7 @@ class User : public Swift::EntityCapsProvider {
 
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
-		boost::signal<void (const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		boost::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
 		boost::signal<void (const std::string &room)> onRoomLeft;
 		boost::signal<void ()> onDisconnected;
 

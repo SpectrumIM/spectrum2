@@ -226,7 +226,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
 				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";
 			}
-			onRoomJoined(room, presence->getTo().getResource(), password);
+			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 		}
 		return;
 	}

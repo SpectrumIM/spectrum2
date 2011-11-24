@@ -64,6 +64,9 @@ void ConversationManager::removeConversation(Conversation *conv) {
 
 void ConversationManager::resetResources() {
 	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
+		if ((*it).second->isMUC()) {
+			continue;
+		}
 		(*it).second->setJID(m_user->getJID().toBare());
 	}
 }
