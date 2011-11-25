@@ -24,12 +24,17 @@
 #include <stdlib.h>
 #include <vector>
 #include <string>
+#include "Swiften/StringCodecs/Base64.h"
 
 namespace Transport {
 
 namespace Util {
 
 void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t);
+
+std::string encryptPassword(const std::string &password, const std::string &key);
+
+std::string decryptPassword(std::string &encrypted, const std::string &key);
 
 }
 

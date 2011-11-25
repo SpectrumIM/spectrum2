@@ -21,6 +21,7 @@
 #ifdef WITH_MYSQL
 
 #include "transport/mysqlbackend.h"
+#include "transport/util.h"
 #include <boost/bind.hpp>
 #include "log4cxx/logger.h"
 
@@ -409,7 +410,11 @@ bool MySQLBackend::exec(const std::string &query) {
 }
 
 void MySQLBackend::setUser(const UserInfo &user) {
-	*m_setUser << user.jid << user.uin << user.password << user.language << user.encoding << user.vip << user.password;
+	std::string encrypted = user.password;
+	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
+		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
+	}
+	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.password;
 	EXEC(m_setUser, setUser(user));
 }
 
@@ -423,6 +428,10 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 	while (m_getUser->fetch() == 0) {
 		ret = true;
 		*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
+
+		if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
+			user.password = Util::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
+		}
 	}
 
 	return ret;

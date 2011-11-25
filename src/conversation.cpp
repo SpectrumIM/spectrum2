@@ -37,6 +37,7 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 	m_legacyName = legacyName;
 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
+	m_jid = m_conversationManager->getUser()->getJID().toBare();
 }
 
 Conversation::~Conversation() {
@@ -54,11 +55,16 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 	else {
 		message->setType(Swift::Message::Chat);
 	}
+
+	std::string n = nickname;
+	if (n.empty() && !m_room.empty() && !m_muc) {
+		n = m_nickname;
+	}
+
 	if (message->getType() != Swift::Message::Groupchat) {
-		
-		message->setTo(m_conversationManager->getUser()->getJID().toBare());
+		message->setTo(m_jid);
 		// normal message
-		if (nickname.empty()) {
+		if (n.empty()) {
 			Buddy *buddy = m_conversationManager->getUser()->getRosterManager()->getBuddy(m_legacyName);
 			if (buddy) {
 				message->setFrom(buddy->getJID());
@@ -70,10 +76,10 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		// PM message
 		else {
 			if (m_room.empty()) {
-				message->setFrom(Swift::JID(nickname, m_conversationManager->getComponent()->getJID().toBare(), "user"));
+				message->setFrom(Swift::JID(n, m_conversationManager->getComponent()->getJID().toBare(), "user"));
 			}
 			else {
-				message->setFrom(Swift::JID(m_room, m_conversationManager->getComponent()->getJID().toBare(), nickname));
+				message->setFrom(Swift::JID(m_room, m_conversationManager->getComponent()->getJID().toBare(), n));
 			}
 		}
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
@@ -83,7 +89,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		if (legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
-		message->setTo(m_conversationManager->getUser()->getJID().toString());
+		message->setTo(m_jid);
 		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}
@@ -99,7 +105,7 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 		}
 	}
 	presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
-	presence->setTo(m_conversationManager->getUser()->getJID().toString());
+	presence->setTo(m_jid);
 	presence->setType(Swift::Presence::Available);
 
 	if (!statusMessage.empty())

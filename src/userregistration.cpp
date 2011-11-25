@@ -181,7 +181,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	bool registered = m_storageBackend->getUser(barejid, res);
 
 	std::string instructions = CONFIG_STRING(m_config, "registration.instructions");
-	std::string usernameField = CONFIG_STRING(m_config, "registration.username_field");
+	std::string usernameField = CONFIG_STRING(m_config, "registration.username_label");
 
 	// normal jabber:iq:register
 	reg->setInstructions(instructions);
@@ -219,20 +219,21 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	ListSingleFormField::ref language = ListSingleFormField::create();
 	language->setName("language");
 	language->setLabel((("Language")));
+	language->addOption(Swift::FormField::Option(CONFIG_STRING(m_config, "registration.language"), CONFIG_STRING(m_config, "registration.language")));
 	if (registered)
 		language->setValue(res.language);
 	else
 		language->setValue(CONFIG_STRING(m_config, "registration.language"));
 	form->addField(language);
 
-	TextSingleFormField::ref encoding = TextSingleFormField::create();
-	encoding->setName("encoding");
-	encoding->setLabel((("Encoding")));
-	if (registered)
-		encoding->setValue(res.encoding);
-	else
-		encoding->setValue(CONFIG_STRING(m_config, "registration.encoding"));
-	form->addField(encoding);
+//	TextSingleFormField::ref encoding = TextSingleFormField::create();
+//	encoding->setName("encoding");
+//	encoding->setLabel((("Encoding")));
+//	if (registered)
+//		encoding->setValue(res.encoding);
+//	else
+//		encoding->setValue(CONFIG_STRING(m_config, "registration.encoding"));
+//	form->addField(encoding);
 
 	if (registered) {
 		BooleanFormField::ref boolean = BooleanFormField::create();
@@ -328,10 +329,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	}
 
 	// Register or change password
-	if (payload->getUsername()->empty() ||
-		(payload->getPassword()->empty() && CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
-	)
-	{
+	if (payload->getUsername()->empty()) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}

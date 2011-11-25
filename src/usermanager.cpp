@@ -149,7 +149,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	// Create user class if it's not there
 	if (!user) {
 		// Admin user is not legacy network user, so do not create User class instance for him
-		if (CONFIG_STRING(m_component->getConfig(), "service.admin_username") == presence->getFrom().getNode()) {
+		if (m_component->inServerMode() && CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
 			return;
 		}
 
@@ -316,6 +316,11 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 // 		response->setTo(presence->getFrom());
 // 		response->setType(Swift::Presence::Subscribe);
 // 		m_component->getStanzaChannel()->sendPresence(response);
+		return;
+	}
+
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
 		return;
 	}
 

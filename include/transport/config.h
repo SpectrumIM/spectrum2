@@ -34,6 +34,7 @@
 #define CONFIG_BOOL(PTR, KEY) (*PTR)[KEY].as<bool>()
 #define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
 #define CONFIG_VECTOR(PTR, KEY) (*PTR)[KEY].as<std::vector<std::string> >()
+#define CONFIG_HAS_KEY(PTR, KEY) (*PTR).hasKey(KEY)
 
 namespace Transport {
 
@@ -60,9 +61,9 @@ class Config {
 		/// the parser using opts parameter.
 		/// \param configfile path to config file
 		/// \param opts extra options which will be recognized by a parser
-		bool load(const std::string &configfile, boost::program_options::options_description &opts);
+		bool load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid = "");
 
-		bool load(std::istream &ifs, boost::program_options::options_description &opts);
+		bool load(std::istream &ifs, boost::program_options::options_description &opts, const std::string &jid = "");
 
 		bool load(std::istream &ifs);
 
@@ -71,9 +72,13 @@ class Config {
 		/// This function loads only config variables needed by libtransport.
 		/// \see load(const std::string &, boost::program_options::options_description &)
 		/// \param configfile path to config file
-		bool load(const std::string &configfile);
+		bool load(const std::string &configfile, const std::string &jid = "");
 
 		bool reload();
+
+		bool hasKey(const std::string &key) {
+			return m_variables.find(key) != m_variables.end();
+		}
 
 		/// Returns value of variable defined by key.
 		

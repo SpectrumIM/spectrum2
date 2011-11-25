@@ -4,7 +4,7 @@ if (PROTOBUF_FOUND)
 	endif()
 
 	if (IRC_FOUND)
-		ADD_SUBDIRECTORY(libircclient-qt)
+		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
 if (NOT WIN32)

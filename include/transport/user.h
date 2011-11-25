@@ -111,7 +111,7 @@ class User : public Swift::EntityCapsProvider {
 
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
-		boost::signal<void (const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		boost::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
 		boost::signal<void (const std::string &room)> onRoomLeft;
 		boost::signal<void ()> onDisconnected;
 
@@ -135,6 +135,7 @@ class User : public Swift::EntityCapsProvider {
 		time_t m_lastActivity;
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
 		std::vector<boost::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
+		int m_resources;
 };
 
 }

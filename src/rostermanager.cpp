@@ -52,9 +52,9 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_supportRemoteRoster = false;
 
 	if (!m_component->inServerMode()) {
-		AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), m_user->getJID().toBare()));
-		request->onResponse.connect(boost::bind(&RosterManager::handleRemoteRosterResponse, this, _1, _2));
-		request->send();
+		m_remoteRosterRequest = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), m_user->getJID().toBare()));
+		m_remoteRosterRequest->onResponse.connect(boost::bind(&RosterManager::handleRemoteRosterResponse, this, _1, _2));
+		m_remoteRosterRequest->send();
 	}
 }
 
@@ -66,6 +66,11 @@ RosterManager::~RosterManager() {
 	}
 
 	sendUnavailablePresences(m_user->getJID().toBare());
+
+	if (m_remoteRosterRequest) {
+		m_remoteRosterRequest->onResponse.disconnect_all_slots();
+		m_component->getIQRouter()->removeHandler(m_remoteRosterRequest);
+	}
 
 	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
@@ -136,8 +141,6 @@ void RosterManager::handleBuddyChanged(Buddy *buddy) {
 }
 
 void RosterManager::setBuddyCallback(Buddy *buddy) {
-	m_setBuddyTimer->onTick.disconnect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
-
 	LOG4CXX_INFO(logger, "Associating buddy " << buddy->getName() << " with " << m_user->getJID().toString());
 	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
@@ -148,21 +151,17 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		sendBuddyRosterPush(buddy);
 	}
 	else {
-		if (m_setBuddyTimer->onTick.empty()) {
-			m_setBuddyTimer->stop();
-
-			if (m_supportRemoteRoster) {
-				sendBuddyRosterPush(buddy);
+		if (m_supportRemoteRoster) {
+			sendBuddyRosterPush(buddy);
+		}
+		else {
+			// Send RIE only if there's resource which supports it.
+			Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
+			if (jidWithRIE.isValid()) {
+				m_RIETimer->start();
 			}
 			else {
-				// Send RIE only if there's resource which supports it.
-				Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
-				if (jidWithRIE.isValid()) {
-					m_RIETimer->start();
-				}
-				else {
-					sendBuddySubscribePresence(buddy);
-				}
+				sendBuddySubscribePresence(buddy);
 			}
 		}
 	}
@@ -198,6 +197,7 @@ void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error
 }
 
 void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
+	m_remoteRosterRequest.reset();
 	if (error) {
 		m_supportRemoteRoster = false;
 		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server does not support remote roster protoXEP");

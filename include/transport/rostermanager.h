@@ -49,6 +49,7 @@ class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload
 /// Manages roster of one XMPP user.
 class RosterManager {
 	public:
+		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > BuddiesMap;
 		/// Creates new RosterManager.
 		/// \param user User associated with this RosterManager.
 		/// \param component Transport instance associated with this roster.
@@ -79,6 +80,10 @@ class RosterManager {
 		/// Returns user associated with this roster.
 		/// \return User
 		User *getUser() { return m_user; }
+
+		const BuddiesMap &getBuddies() {
+			return m_buddies;
+		}
 
 		bool isRemoteRosterSupported() {
 			return m_supportRemoteRoster;
@@ -125,6 +130,7 @@ class RosterManager {
 		Swift::Timer::ref m_RIETimer;
 		std::list <Swift::SetRosterRequest::ref> m_requests;
 		bool m_supportRemoteRoster;
+		AddressedRosterRequest::ref m_remoteRosterRequest;
 };
 
 }

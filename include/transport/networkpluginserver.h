@@ -96,7 +96,7 @@ class NetworkPluginServer {
 		void handleFTDataPayload(Backend *b ,const std::string &payload);
 
 		void handleUserCreated(User *user);
-		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
+		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);
 		void handleRoomLeft(User *user, const std::string &room);
 		void handleUserReadyToConnect(User *user);
 		void handleUserPresenceChanged(User *user, Swift::Presence::ref presence);

@@ -31,13 +31,13 @@ using namespace boost::program_options;
 
 namespace Transport {
 
-bool Config::load(const std::string &configfile, boost::program_options::options_description &opts) {
+bool Config::load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid) {
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
 		return false;
 
 	m_file = configfile;
-	bool ret = load(ifs, opts);
+	bool ret = load(ifs, opts, jid);
 	ifs.close();
 
 	char path[PATH_MAX] = "";
@@ -49,7 +49,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 	return ret;
 }
 
-bool Config::load(std::istream &ifs, boost::program_options::options_description &opts) {
+bool Config::load(std::istream &ifs, boost::program_options::options_description &opts, const std::string &_jid) {
 	m_unregistered.clear();
 	opts.add_options()
 		("service.jid", value<std::string>()->default_value(""), "Transport Jabber ID")
@@ -60,13 +60,13 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.group", value<std::string>()->default_value(""), "The name of group Spectrum runs as.")
 		("service.backend", value<std::string>()->default_value("libpurple_backend"), "Backend")
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
-		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/spectrum2.pid"), "Full path to pid file")
-		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2"), "Working dir")
+		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
+		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
 		("service.allowed_servers", value<std::string>()->default_value(""), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
 		("service.backend_host", value<std::string>()->default_value("localhost"), "Host to bind backend server to")
-		("service.backend_port", value<std::string>()->default_value("10000"), "Port to bind backend server to")
+		("service.backend_port", value<std::string>()->default_value("0"), "Port to bind backend server to")
 		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
 		("service.admin_jid", value<std::string>()->default_value(""), "Administrator jid.")
@@ -76,15 +76,16 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.memory_collector_time", value<int>()->default_value(0), "Time in seconds after which backend with most memory is set to die.")
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
+		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
 		("identity.type", value<std::string>()->default_value(""), "Type of transport ('icq','msn','gg','irc', ...)")
 		("registration.enable_public_registration", value<bool>()->default_value(true), "True if users should be able to register.")
 		("registration.language", value<std::string>()->default_value("en"), "Default language for registration form")
-		("registration.instructions", value<std::string>()->default_value(""), "Instructions showed to user in registration form")
-		("registration.username_field", value<std::string>()->default_value(""), "Label for username field")
+		("registration.instructions", value<std::string>()->default_value("Enter your legacy network username and password."), "Instructions showed to user in registration form")
+		("registration.username_label", value<std::string>()->default_value("Legacy network username:"), "Label for username field")
 		("registration.username_mask", value<std::string>()->default_value(""), "Username mask")
-		("registration.encoding", value<std::string>()->default_value("en"), "Default encoding in registration form")
+		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
 		("database.type", value<std::string>()->default_value("none"), "Database type.")
 		("database.database", value<std::string>()->default_value(""), "Database used to store data")
 		("database.server", value<std::string>()->default_value("localhost"), "Database server.")
@@ -92,6 +93,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("database.password", value<std::string>()->default_value(""), "Database Password.")
 		("database.port", value<int>()->default_value(0), "Database port.")
 		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
+		("database.encryption_key", value<std::string>()->default_value(""), "Encryption key.")
 		("logging.config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for Spectrum 2 instance")
 		("logging.backend_config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for backends")
 		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")
@@ -101,9 +103,68 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	parsed_options parsed = parse_config_file(ifs, opts, true);
 
-	BOOST_FOREACH(option opt, parsed.options) {
+	bool found_working = false;
+	bool found_pidfile = false;
+	bool found_backend_port = false;
+	std::string jid = "";
+	BOOST_FOREACH(option &opt, parsed.options) {
+		if (opt.string_key == "service.jid") {
+			if (_jid.empty()) {
+				jid = opt.value[0];
+			}
+			else {
+				opt.value[0] = _jid;
+				jid = _jid;
+			}
+		}
+		else if (opt.string_key == "service.backend_port") {
+			found_backend_port = true;
+			if (opt.value[0] == "0") {
+				unsigned long r = 0;
+				BOOST_FOREACH(char c, _jid) {
+					r += (int) c;
+				}
+				srand(time(NULL) + r);
+				int randomPort = 30000 + rand() % 10000;
+				opt.value[0] = boost::lexical_cast<std::string>(randomPort);
+			}
+		}
+		else if (opt.string_key == "service.working_dir") {
+			found_working = true;
+		}
+		else if (opt.string_key == "service.pidfile") {
+			found_pidfile = true;
+		}
+	}
+
+	if (!found_working) {
+		std::vector<std::string> value;
+		value.push_back("/var/lib/spectrum2/$jid");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.working_dir", value));
+	}
+	if (!found_pidfile) {
+		std::vector<std::string> value;
+		value.push_back("/var/run/spectrum2/$jid.pid");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
+	}
+	if (!found_backend_port) {
+		unsigned long r = 0;
+		BOOST_FOREACH(char c, _jid) {
+			r += (int) c;
+		}
+		srand(time(NULL) + r);
+		int randomPort = 30000 + rand() % 10000;
+		std::vector<std::string> value;
+		value.push_back(boost::lexical_cast<std::string>(randomPort));
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.backend_port", value));
+	}
+
+	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
 			m_unregistered[opt.string_key] = opt.value[0];
+		}
+		else if (opt.value[0].find("$jid") != std::string::npos) {
+			boost::replace_all(opt.value[0], "$jid", jid);
 		}
 	}
 
@@ -120,9 +181,9 @@ bool Config::load(std::istream &ifs) {
 	return load(ifs, opts);
 }
 
-bool Config::load(const std::string &configfile) {
+bool Config::load(const std::string &configfile, const std::string &jid) {
 	options_description opts("Transport options");
-	return load(configfile, opts);
+	return load(configfile, opts, jid);
 }
 
 bool Config::reload() {

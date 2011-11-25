@@ -69,6 +69,20 @@ class SpectrumNetworkPlugin;
 GKeyFile *keyfile;
 SpectrumNetworkPlugin *np;
 
+std::string replaceAll(
+  std::string result,
+  const std::string& replaceWhat,
+  const std::string& replaceWithWhat)
+{
+  while(1)
+  {
+	const int pos = result.find(replaceWhat);
+	if (pos==-1) break;
+	result.replace(pos,replaceWhat.size(),replaceWithWhat);
+  }
+  return result;
+}
+
 static std::string KEYFILE_STRING(const std::string &cat, const std::string &key, const std::string &def = "") {
 	gchar *str = g_key_file_get_string(keyfile, cat.c_str(), key.c_str(), 0);
 	if (!str) {
@@ -82,6 +96,11 @@ static std::string KEYFILE_STRING(const std::string &cat, const std::string &key
 		while(*(ret.end() - 1) == ' ') {
 			ret.erase(ret.end() - 1);
 		}
+	}
+
+	if (ret.find("$jid") != std::string::npos) {
+		std::string jid = KEYFILE_STRING("service", "jid");
+		ret = replaceAll(ret, "$jid", jid);
 	}
 	return ret;
 }
@@ -523,6 +542,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			while (keys && keys[i] != NULL) {
 				std::string key = keys[i];
 
+				if (key == "fb_api_key" || key == "fb_api_secret") {
+					purple_account_set_bool(account, "auth_fb", TRUE);
+				}
+
 				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
 				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
 				bool found = false;
@@ -570,11 +593,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			getProtocolAndName(legacyName, name, protocol);
 
 			if (password.empty()) {
+				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
 				np->handleDisconnected(user, 0, "Empty password.");
 				return;
 			}
 
 			if (!purple_find_prpl(protocol.c_str())) {
+				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
 				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
 				return;
 			}
@@ -1205,6 +1230,11 @@ static gboolean disconnectMe(void *data) {
 	return FALSE;
 }
 
+static gboolean pingTimeout(void *data) {
+	np->checkPing();
+	return TRUE;
+}
+
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account(gc);
 	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
@@ -1550,11 +1580,78 @@ static void transport_core_ui_init(void)
 // #endif
 }
 
+/***** Core Ui Ops *****/
+static void
+spectrum_glib_log_handler(const gchar *domain,
+						  GLogLevelFlags flags,
+						  const gchar *message,
+						  gpointer user_data)
+{
+	const char *level;
+	char *new_msg = NULL;
+	char *new_domain = NULL;
+
+	if ((flags & G_LOG_LEVEL_ERROR) == G_LOG_LEVEL_ERROR)
+		level = "ERROR";
+	else if ((flags & G_LOG_LEVEL_CRITICAL) == G_LOG_LEVEL_CRITICAL)
+		level = "CRITICAL";
+	else if ((flags & G_LOG_LEVEL_WARNING) == G_LOG_LEVEL_WARNING)
+		level = "WARNING";
+	else if ((flags & G_LOG_LEVEL_MESSAGE) == G_LOG_LEVEL_MESSAGE)
+		level = "MESSAGE";
+	else if ((flags & G_LOG_LEVEL_INFO) == G_LOG_LEVEL_INFO)
+		level = "INFO";
+	else if ((flags & G_LOG_LEVEL_DEBUG) == G_LOG_LEVEL_DEBUG)
+		level = "DEBUG";
+	else {
+		LOG4CXX_ERROR(logger, "Unknown glib logging level in " << (guint)flags);
+		level = "UNKNOWN"; /* This will never happen. */
+	}
+
+	if (message != NULL)
+		new_msg = purple_utf8_try_convert(message);
+
+	if (domain != NULL)
+		new_domain = purple_utf8_try_convert(domain);
+
+	if (new_msg != NULL) {
+		std::string area("glib");
+		area.push_back('/');
+		area.append(level);
+
+		std::string message(new_domain ? new_domain : "g_log");
+		message.push_back(' ');
+		message.append(new_msg);
+
+		LOG4CXX_ERROR(logger, message);
+		g_free(new_msg);
+	}
+
+	g_free(new_domain);
+}
+
+static void
+debug_init(void)
+{
+#define REGISTER_G_LOG_HANDLER(name) \
+	g_log_set_handler((name), \
+		(GLogLevelFlags)(G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL \
+										  | G_LOG_FLAG_RECURSION), \
+					  spectrum_glib_log_handler, NULL)
+
+	REGISTER_G_LOG_HANDLER(NULL);
+	REGISTER_G_LOG_HANDLER("GLib");
+	REGISTER_G_LOG_HANDLER("GModule");
+	REGISTER_G_LOG_HANDLER("GLib-GObject");
+	REGISTER_G_LOG_HANDLER("GThread");
+
+#undef REGISTER_G_LOD_HANDLER
+}
+
 static PurpleCoreUiOps coreUiOps =
 {
 	NULL,
-// 	debug_init,
-	NULL,
+	debug_init,
 	transport_core_ui_init,
 	NULL,
 	spectrum_ui_get_info,
@@ -1852,7 +1949,7 @@ int main(int argc, char **argv) {
 			p.load(istream);
 			LogString pid, jid;
 			log4cxx::helpers::Transcoder::decode(stringOf(getpid()), pid);
-			log4cxx::helpers::Transcoder::decode(KEYFILE_STRING("service", "service.jid"), jid);
+			log4cxx::helpers::Transcoder::decode(KEYFILE_STRING("service", "jid"), jid);
 #ifdef _MSC_VER
 			p.setProperty(L"pid", pid);
 			p.setProperty(L"jid", jid);
@@ -1868,6 +1965,7 @@ int main(int argc, char **argv) {
 		m_sock = create_socket(host, port);
 
 		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+		purple_timeout_add_seconds(30, pingTimeout, NULL);
 
 		np = new SpectrumNetworkPlugin(host, port);
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";

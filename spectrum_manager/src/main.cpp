@@ -1,10 +1,6 @@
 #include "managerconfig.h"
-#include "transport/transport.h"
-#include "transport/usermanager.h"
-#include "transport/logger.h"
-#include "transport/sqlite3backend.h"
-#include "transport/userregistration.h"
-#include "transport/networkpluginserver.h"
+#include "transport/config.h"
+#include "Swiften/Swiften.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 
 #include <boost/foreach.hpp>
@@ -86,12 +82,17 @@ static std::string searchForBinary(const std::string &binary) {
 }
 
 // Executes new backend
-static unsigned long exec_(std::string path, std::string config) {
+static unsigned long exec_(std::string path, std::string config, std::string jid = "") {
 	// fork and exec
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		// child process
-		exit(execl(path.c_str(), path.c_str(), config.c_str(), NULL));
+		if (jid.empty()) {
+			exit(execl(path.c_str(), path.c_str(), config.c_str(), NULL));
+		}
+		else {
+			exit(execl(path.c_str(), path.c_str(), "-j", jid.c_str(), config.c_str(), NULL));
+		}
 	} else if ( pid < 0 ) {
 		// fork failed
 	}
@@ -147,15 +148,30 @@ static void start_all_instances(ManagerConfig *config) {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+					continue;
 				}
 
-				int pid = isRunning(CONFIG_STRING(&cfg, "service.pidfile"));
-				if (pid == 0) {
-					std::cout << "Starting " << itr->path() << ": OK\n";
-					exec_(spectrum2_binary, itr->path().string());
-				}
-				else {
-					std::cout << "Starting " << itr->path() << ": Already started (PID=" << pid << ")\n";
+				
+				std::vector<std::string> vhosts;
+				if (CONFIG_HAS_KEY(&cfg, "vhosts.vhost"))
+					vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
+				vhosts.push_back(CONFIG_STRING(&cfg, "service.jid"));
+
+				BOOST_FOREACH(std::string &vhost, vhosts) {
+					Config vhostCfg;
+					if (vhostCfg.load(itr->path().string(), vhost) == false) {
+						std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+						continue;
+					}
+
+					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
+					if (pid == 0) {
+						std::cout << "Starting " << itr->path() << ": OK\n";
+						exec_(spectrum2_binary, itr->path().string(), vhost);
+					}
+					else {
+						std::cout << "Starting " << itr->path() << ": Already started (PID=" << pid << ")\n";
+					}
 				}
 			}
 		}
@@ -188,13 +204,26 @@ static void stop_all_instances(ManagerConfig *config) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
 				}
 
-				int pid = isRunning(CONFIG_STRING(&cfg, "service.pidfile"));
-				if (pid) {
-					std::cout << "Stopping " << itr->path() << ": OK\n";
-					kill(pid, SIGTERM);
-				}
-				else {
-					std::cout << "Stopping " << itr->path() << ": Not running\n";
+				std::vector<std::string> vhosts;
+				if (CONFIG_HAS_KEY(&cfg, "vhosts.vhost"))
+					vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
+				vhosts.push_back(CONFIG_STRING(&cfg, "service.jid"));
+
+				BOOST_FOREACH(std::string &vhost, vhosts) {
+					Config vhostCfg;
+					if (vhostCfg.load(itr->path().string(), vhost) == false) {
+						std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+						continue;
+					}
+
+					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
+					if (pid) {
+						std::cout << "Stopping " << itr->path() << ": OK\n";
+						kill(pid, SIGTERM);
+					}
+					else {
+						std::cout << "Stopping " << itr->path() << ": Not running\n";
+					}
 				}
 			}
 		}

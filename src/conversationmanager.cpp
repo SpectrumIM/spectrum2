@@ -62,6 +62,15 @@ void ConversationManager::removeConversation(Conversation *conv) {
 	m_convs.erase(conv->getLegacyName());
 }
 
+void ConversationManager::resetResources() {
+	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
+		if ((*it).second->isMUC()) {
+			continue;
+		}
+		(*it).second->setJID(m_user->getJID().toBare());
+	}
+}
+
 void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 // 	std::string name = message->getTo().getUnescapedNode();
 // 	if (name.find_last_of("%") != std::string::npos) { // OK when commented
@@ -84,9 +93,12 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 		if (!m_convs[name]) {
 			m_convs[name] = m_component->getFactory()->createConversation(this, name);
 			m_convs[name]->setRoom(room_name);
+			m_convs[name]->setNickname(name);
 		}
 	}
 
+	// update resource and send the message
+	m_convs[name]->setJID(message->getFrom());
 	m_convs[name]->sendMessage(message);
 }
 

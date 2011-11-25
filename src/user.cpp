@@ -43,7 +43,7 @@ namespace Transport {
 static LoggerPtr logger = Logger::getLogger("User");
 
 User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
-	m_jid = jid;
+	m_jid = jid.toBare();
 	m_data = NULL;
 
 	m_component = component;
@@ -54,6 +54,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_connected = false;
 	m_readyForConnect = false;
 	m_ignoreDisconnect = false;
+	m_resources = 0;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
@@ -96,6 +97,10 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 			else {
 				continue;
 			}
+
+			if (!discoInfo) {
+				continue;
+			}
 #else
 			continue;
 #endif
@@ -129,29 +134,36 @@ void User::sendCurrentPresence() {
 		return;
 	}
 
-	if (m_connected) {
-		Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
-		if (highest) {
-			Swift::Presence::ref response = Swift::Presence::create(highest);
-			response->setTo(m_jid);
-			response->setFrom(m_component->getJID());
-			m_component->getStanzaChannel()->sendPresence(response);
+	std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
+	foreach(Swift::Presence::ref presence, presences) {
+		if (presence->getType() == Swift::Presence::Unavailable) {
+			continue;
+		}
+
+		if (m_connected) {
+			Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
+			if (highest) {
+				Swift::Presence::ref response = Swift::Presence::create(highest);
+				response->setTo(presence->getFrom());
+				response->setFrom(m_component->getJID());
+				m_component->getStanzaChannel()->sendPresence(response);
+			}
+			else {
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(m_component->getJID());
+				response->setType(Swift::Presence::Unavailable);
+				m_component->getStanzaChannel()->sendPresence(response);
+			}
 		}
 		else {
 			Swift::Presence::ref response = Swift::Presence::create();
-			response->setTo(m_jid.toBare());
+			response->setTo(presence->getFrom());
 			response->setFrom(m_component->getJID());
 			response->setType(Swift::Presence::Unavailable);
+			response->setStatus("Connecting");
 			m_component->getStanzaChannel()->sendPresence(response);
 		}
-	}
-	else {
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(m_jid.toBare());
-		response->setFrom(m_component->getJID());
-		response->setType(Swift::Presence::Unavailable);
-		response->setStatus("Connecting");
-		m_component->getStanzaChannel()->sendPresence(response);
 	}
 }
 
@@ -164,6 +176,10 @@ void User::setConnected(bool connected) {
 }
 
 void User::handlePresence(Swift::Presence::ref presence) {
+	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
+
+	m_conversationManager->resetResources();
+
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {
@@ -210,12 +226,35 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
 				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";
 			}
-			onRoomJoined(room, presence->getTo().getResource(), password);
+			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 		}
 		return;
 	}
 
-	sendCurrentPresence();
+
+	// User wants to disconnect this resource
+	if (!m_component->inServerMode()) {
+		if (presence->getType() == Swift::Presence::Unavailable) {
+				// Send unavailable presences for online contacts
+				m_rosterManager->sendUnavailablePresences(presence->getFrom());
+
+				// Send unavailable presence for transport contact itself
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(m_component->getJID());
+				response->setType(Swift::Presence::Unavailable);
+				m_component->getStanzaChannel()->sendPresence(response);
+		}
+		else {
+			sendCurrentPresence();
+			// This resource is new, so we have to send buddies presences
+			if (currentResourcesCount != m_resources) {
+				m_rosterManager->sendCurrentPresences(presence->getFrom());
+			}
+		}
+	}
+
+	m_resources = currentResourcesCount;
 
 
 	// Change legacy network presence

@@ -66,6 +66,11 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		return;
 	}
 
+	// Ignore empty messages
+	if (message->getBody().empty()) {
+		return;
+	}
+
 	LOG4CXX_INFO(logger, "Message from admin received");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
