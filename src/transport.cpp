@@ -36,6 +36,7 @@
 #include "Swiften/Serializer/PayloadSerializers/XHTMLIMSerializer.h"
 #include "Swiften/Parser/PayloadParsers/StatsParser.h"
 #include "Swiften/Serializer/PayloadSerializers/StatsSerializer.h"
+#include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
 #include "transport/BlockParser.h"
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
@@ -99,6 +100,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadSerializer(new Transport::BlockSerializer());
 		m_server->addPayloadSerializer(new Swift::InvisibleSerializer());
 		m_server->addPayloadSerializer(new Swift::StatsSerializer());
+		m_server->addPayloadSerializer(new Swift::SpectrumErrorSerializer());
 
 		m_server->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
 		m_server->onDataWritten.connect(boost::bind(&Component::handleDataWritten, this, _1));
@@ -124,6 +126,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_component->addPayloadSerializer(new Transport::BlockSerializer());
 		m_component->addPayloadSerializer(new Swift::InvisibleSerializer());
 		m_component->addPayloadSerializer(new Swift::StatsSerializer());
+		m_component->addPayloadSerializer(new Swift::SpectrumErrorSerializer());
 
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();

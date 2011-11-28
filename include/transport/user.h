@@ -27,6 +27,7 @@
 #include "Swiften/Disco/EntityCapsProvider.h"
 #include "storagebackend.h"
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
+#include "Swiften/Elements/SpectrumErrorPayload.h"
 
 namespace Transport {
 
@@ -93,7 +94,7 @@ class User : public Swift::EntityCapsProvider {
 		/// \return language
 		const char *getLang() { return "en"; }
 
-		void handleDisconnected(const std::string &error);
+		void handleDisconnected(const std::string &error, Swift::SpectrumErrorPayload::Error e = Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR);
 
 		bool isReadyToConnect() {
 			return m_readyForConnect;

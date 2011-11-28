@@ -28,6 +28,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
@@ -315,7 +316,7 @@ void User::setIgnoreDisconnect(bool ignoreDisconnect) {
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Setting ignoreDisconnect=" << m_ignoreDisconnect);
 }
 
-void User::handleDisconnected(const std::string &error) {
+void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayload::Error e) {
 	if (m_ignoreDisconnect) {
 		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network ignored (probably moving between backends)");
 		return;
@@ -333,6 +334,7 @@ void User::handleDisconnected(const std::string &error) {
 	msg->setBody(error);
 	msg->setTo(m_jid.toBare());
 	msg->setFrom(m_component->getJID());
+	msg->addPayload(boost::make_shared<Swift::SpectrumErrorPayload>(e));
 	m_component->getStanzaChannel()->sendMessage(msg);
 
 	// In server mode, server finishes the session and pass unavailable session to userManager if we're connected to legacy network,

@@ -39,6 +39,7 @@
 #include "Swiften/Elements/AttentionPayload.h"
 #include "Swiften/Elements/XHTMLIMPayload.h"
 #include "Swiften/Elements/InvisiblePayload.h"
+#include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 #include "log4cxx/logger.h"
 
@@ -387,7 +388,7 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 	if (!user) {
 		return;
 	}
-	user->handleDisconnected(payload.message());
+	user->handleDisconnected(payload.message(), (Swift::SpectrumErrorPayload::Error) payload.error());
 }
 
 void NetworkPluginServer::handleVCardPayload(const std::string &data) {
