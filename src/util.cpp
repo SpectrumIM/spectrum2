@@ -24,6 +24,7 @@
 #include <iterator>
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 using namespace boost::filesystem;
 
@@ -101,6 +102,30 @@ std::string decryptPassword(std::string &encrypted, const std::string &key) {
 	}
 
 	return password;
+}
+
+std::string serializeGroups(const std::vector<std::string> &groups) {
+	std::string ret;
+	BOOST_FOREACH(const std::string &group, groups) {
+		ret += group + "\n";
+	}
+	if (!ret.empty()) {
+		ret.erase(ret.end() - 1);
+	}
+	return ret;
+}
+
+std::vector<std::string> deserializeGroups(std::string &groups) {
+	std::vector<std::string> ret;
+	if (groups.empty()) {
+		return ret;
+	}
+
+	boost::split(ret, groups, boost::is_any_of("\n"));
+	if (ret.back().empty()) {
+		ret.erase(ret.end() - 1);
+	}
+	return ret;
 }
 
 }

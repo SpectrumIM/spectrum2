@@ -198,9 +198,11 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	}
 
 	// Change groups if it's not empty. The same as above...
-	if (!payload.groups().empty()) {
-		std::vector<std::string> groups;
-		groups.push_back(payload.groups());
+	std::vector<std::string> groups;
+	for (int i = 0; i < payload.group_size(); i++) {
+		groups.push_back(payload.group(i));
+	}
+	if (!groups.empty()) {
 		buddy->setGroups(groups);
 	}
 
@@ -1163,7 +1165,9 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+		buddy.add_group(g);
+	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
 
 	std::string message;
@@ -1189,7 +1193,9 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+		buddy.add_group(g);
+	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
 
 	std::string message;
@@ -1215,7 +1221,9 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	buddy.set_groups(b->getGroups().size() == 0 ? "" : b->getGroups()[0]);
+	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+		buddy.add_group(g);
+	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
 	buddy.set_blocked(!b->isBlocked());
 

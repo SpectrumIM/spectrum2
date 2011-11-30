@@ -53,7 +53,7 @@ class NetworkPlugin {
 		/// \param iconHash MD5 hash of buddy icon. Empty if none buddy icon.
 		/// \param blocked True if this buddy is blocked in privacy lists in legacy network.
 		void handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, pbnetwork::StatusType status, const std::string &statusMessage = "", const std::string &iconHash = "",
+			const std::vector<std::string> &groups, pbnetwork::StatusType status, const std::string &statusMessage = "", const std::string &iconHash = "",
 			bool blocked = false
 		);
 
@@ -197,8 +197,8 @@ class NetworkPlugin {
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		virtual void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/) {}
 		virtual void handleStatusChangeRequest(const std::string &/*user*/, int status, const std::string &statusMessage) {}
-		virtual void handleBuddyUpdatedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*alias*/, const std::string &/*groups*/) {}
-		virtual void handleBuddyRemovedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*groups*/) {}
+		virtual void handleBuddyUpdatedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*alias*/, const std::vector<std::string> &/*groups*/) {}
+		virtual void handleBuddyRemovedRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::vector<std::string> &/*groups*/) {}
 		virtual void handleBuddyBlockToggled(const std::string &/*user*/, const std::string &/*buddyName*/, bool /*blocked*/) {}
 
 		virtual void handleTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}

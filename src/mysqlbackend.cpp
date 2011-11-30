@@ -320,7 +320,7 @@ bool MySQLBackend::connect() {
 
 	createDatabase();
 
-	m_setUser = new Statement(&m_conn, "sssssbs", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?) ON DUPLICATE KEY UPDATE uin=?, password=?");
+	m_setUser = new Statement(&m_conn, "sssssbss", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?) ON DUPLICATE KEY UPDATE uin=?, password=?");
 	m_getUser = new Statement(&m_conn, "s|isssssb", "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
 	m_removeUser = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "users WHERE id=?");
@@ -414,7 +414,7 @@ void MySQLBackend::setUser(const UserInfo &user) {
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
 		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
-	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << user.password;
+	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << encrypted;
 	EXEC(m_setUser, setUser(user));
 }
 
@@ -444,8 +444,9 @@ void MySQLBackend::setUserOnline(long id, bool online) {
 
 long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
+	std::string groups = Util::serializeGroups(buddyInfo.groups);
 	*m_addBuddy << userId << buddyInfo.legacyName << buddyInfo.subscription;
-	*m_addBuddy << (buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]);
+	*m_addBuddy << groups;
 	*m_addBuddy << buddyInfo.alias << buddyInfo.flags;
 
 	EXEC(m_addBuddy, addBuddy(userId, buddyInfo));
@@ -463,7 +464,8 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 
 void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?"
-	*m_updateBuddy << (buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]);
+	std::string groups = Util::serializeGroups(buddyInfo.groups);
+	*m_updateBuddy << groups;
 	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
 	*m_updateBuddy << userId << buddyInfo.legacyName;
 
@@ -491,8 +493,9 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		std::string group;
 		*m_getBuddies >> b.id >> b.legacyName >> b.subscription >> b.alias >> group >> b.flags;
 
-		if (!group.empty())
-			b.groups.push_back(group);
+		if (!group.empty()) {
+			b.groups = Util::deserializeGroups(group);
+		}
 
 		roster.push_back(b);
 	}

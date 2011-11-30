@@ -115,12 +115,14 @@ void NetworkPlugin::handleSubject(const std::string &user, const std::string &le
 }
 
 void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::string &buddyName, const std::string &alias,
-			const std::string &groups, pbnetwork::StatusType status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
+			const std::vector<std::string> &groups, pbnetwork::StatusType status, const std::string &statusMessage, const std::string &iconHash, bool blocked) {
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user);
 	buddy.set_buddyname(buddyName);
 	buddy.set_alias(alias);
-	buddy.set_groups(groups);
+	for (std::vector<std::string>::const_iterator it = groups.begin(); it != groups.end(); it++) {
+		buddy.add_group(*it);
+	}
 	buddy.set_status((pbnetwork::StatusType) status);
 	buddy.set_statusmessage(statusMessage);
 	buddy.set_iconhash(iconHash);
@@ -424,7 +426,11 @@ void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
 		handleBuddyBlockToggled(payload.username(), payload.buddyname(), payload.blocked());
 	}
 	else {
-		handleBuddyUpdatedRequest(payload.username(), payload.buddyname(), payload.alias(), payload.groups());
+		std::vector<std::string> groups;
+		for (int i = 0; i < payload.group_size(); i++) {
+			groups.push_back(payload.group(i));
+		}
+		handleBuddyUpdatedRequest(payload.username(), payload.buddyname(), payload.alias(), groups);
 	}
 }
 
@@ -435,7 +441,12 @@ void NetworkPlugin::handleBuddyRemovedPayload(const std::string &data) {
 		return;
 	}
 
-	handleBuddyRemovedRequest(payload.username(), payload.buddyname(), payload.groups());
+	std::vector<std::string> groups;
+	for (int i = 0; i < payload.group_size(); i++) {
+		groups.push_back(payload.group(i));
+	}
+
+	handleBuddyRemovedRequest(payload.username(), payload.buddyname(), groups);
 }
 
 void NetworkPlugin::handleChatStatePayload(const std::string &data, int type) {
