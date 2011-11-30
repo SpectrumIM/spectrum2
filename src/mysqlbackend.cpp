@@ -320,7 +320,7 @@ bool MySQLBackend::connect() {
 
 	createDatabase();
 
-	m_setUser = new Statement(&m_conn, "sssssbs", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?) ON DUPLICATE KEY UPDATE password=?");
+	m_setUser = new Statement(&m_conn, "sssssbs", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?) ON DUPLICATE KEY UPDATE uin=?, password=?");
 	m_getUser = new Statement(&m_conn, "s|isssssb", "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
 	m_removeUser = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "users WHERE id=?");
@@ -414,7 +414,7 @@ void MySQLBackend::setUser(const UserInfo &user) {
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
 		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
-	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.password;
+	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << user.password;
 	EXEC(m_setUser, setUser(user));
 }
 
