@@ -234,7 +234,8 @@ static void stop_all_instances(ManagerConfig *config) {
 	}
 }
 
-static void show_status(ManagerConfig *config) {
+static int show_status(ManagerConfig *config) {
+	int ret = 0;
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -273,6 +274,7 @@ static void show_status(ManagerConfig *config) {
 						std::cout << itr->path() << ": " << vhost << " Running\n";
 					}
 					else {
+						ret = 3;
 						std::cout << itr->path() << ": " << vhost << " Stopped\n";
 					}
 				}
@@ -283,6 +285,7 @@ static void show_status(ManagerConfig *config) {
 		std::cerr << "boost filesystem error\n";
 		exit(5);
 	}
+	return ret;
 }
 
 static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
@@ -390,7 +393,7 @@ int main(int argc, char **argv)
 		stop_all_instances(&config);
 	}
 	else if (command == "status") {
-		show_status(&config);
+		return show_status(&config);
 	}
 	else {
 		Swift::SimpleEventLoop eventLoop;
