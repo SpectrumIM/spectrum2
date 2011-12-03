@@ -234,7 +234,7 @@ static void stop_all_instances(ManagerConfig *config) {
 	}
 }
 
-void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
+static void show_status(ManagerConfig *config) {
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -256,8 +256,63 @@ void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &netw
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
 				}
 
+				std::vector<std::string> vhosts;
+				if (CONFIG_HAS_KEY(&cfg, "vhosts.vhost"))
+					vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
+				vhosts.push_back(CONFIG_STRING(&cfg, "service.jid"));
+
+				BOOST_FOREACH(std::string &vhost, vhosts) {
+					Config vhostCfg;
+					if (vhostCfg.load(itr->path().string(), vhost) == false) {
+						std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+						continue;
+					}
+
+					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
+					if (pid) {
+						std::cout << itr->path() << ": " << vhost << " Running\n";
+					}
+					else {
+						std::cout << itr->path() << ": " << vhost << " Stopped\n";
+					}
+				}
+			}
+		}
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "boost filesystem error\n";
+		exit(5);
+	}
+}
+
+static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
+	path p(CONFIG_STRING(config, "service.config_directory"));
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+				}
+
+				if (CONFIG_STRING(&cfg, "service.admin_jid").empty() || CONFIG_STRING(&cfg, "service.admin_password").empty()) {
+					std::cerr << itr->path().string() << ": service.admin_jid or service.admin_password empty. This server can't be queried over XMPP.\n";
+				}
+
 				finished++;
-				Swift::Client *client = new Swift::Client(CONFIG_STRING(&cfg, "service.admin_username"), CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
+				Swift::Client *client = new Swift::Client(CONFIG_STRING(&cfg, "service.admin_jid"), CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
 				client->setAlwaysTrustCertificates();
 				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
 				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
@@ -285,6 +340,7 @@ int main(int argc, char **argv)
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\nCommands:\n"
 													 " start - start all local Spectrum2 instances\n"
 													 " stop  - stop all  local Spectrum2 instances\n"
+													 " status - status of local Spectrum2 instances\n"
 													 " <other> - send command to all local + remote Spectrum2 instances and print output\n"
 													 "Allowed options");
 	desc.add_options()
@@ -332,6 +388,9 @@ int main(int argc, char **argv)
 	}
 	else if (command == "stop") {
 		stop_all_instances(&config);
+	}
+	else if (command == "status") {
+		show_status(&config);
 	}
 	else {
 		Swift::SimpleEventLoop eventLoop;
