@@ -69,7 +69,7 @@ class SpectrumNetworkPlugin;
 GKeyFile *keyfile;
 SpectrumNetworkPlugin *np;
 
-std::string replaceAll(
+static std::string replaceAll(
   std::string result,
   const std::string& replaceWhat,
   const std::string& replaceWithWhat)
@@ -808,7 +808,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::string &groups) {
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
@@ -823,9 +823,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::string &groups) {
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups_) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				std::string groups = groups_.empty() ? "" : groups_[0];
 
 				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
 					m_authRequests[user + buddyName]->authorize_cb(m_authRequests[user + buddyName]->user_data);
