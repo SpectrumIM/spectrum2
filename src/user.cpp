@@ -56,6 +56,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_readyForConnect = false;
 	m_ignoreDisconnect = false;
 	m_resources = 0;
+	m_reconnectCounter = 0;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
@@ -170,6 +171,7 @@ void User::sendCurrentPresence() {
 
 void User::setConnected(bool connected) {
 	m_connected = connected;
+	m_reconnectCounter = 0;
 	setIgnoreDisconnect(false);
 	updateLastActivity();
 
@@ -323,12 +325,15 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	}
 
 	if (e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR || e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR) {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network, trying to reconnect automatically.");
-		// Simulate destruction/resurrection :)
-		// TODO: If this stops working, create onReconnect signal
-		m_userManager->onUserDestroyed(this);
-		m_userManager->onUserCreated(this);
-		return;
+		if (m_reconnectCounter < 3) {
+			m_reconnectCounter++;
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network for, trying to reconnect automatically.");
+			// Simulate destruction/resurrection :)
+			// TODO: If this stops working, create onReconnect signal
+			m_userManager->onUserDestroyed(this);
+			m_userManager->onUserCreated(this);
+			return;
+		}
 	}
 
 	if (error.empty()) {

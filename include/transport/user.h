@@ -137,6 +137,7 @@ class User : public Swift::EntityCapsProvider {
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
 		std::vector<boost::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
+		int m_reconnectCounter;
 };
 
 }
