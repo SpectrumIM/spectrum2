@@ -322,6 +322,15 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 		return;
 	}
 
+	if (e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR || e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR) {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network, trying to reconnect automatically.");
+		// Simulate destruction/resurrection :)
+		// TODO: If this stops working, create onReconnect signal
+		m_userManager->onUserDestroyed(this);
+		m_userManager->onUserCreated(this);
+		return;
+	}
+
 	if (error.empty()) {
 		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network");
 	}

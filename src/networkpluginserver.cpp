@@ -288,6 +288,7 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->res = 0;
 	client->init_res = 0;
 	client->shared = 0;
+	client->willDie = 0;
 	// Backend does not accept new clients automatically if it's long-running
 	client->acceptUsers = !m_isNextLongRun;
 	client->longRun = m_isNextLongRun;
@@ -335,6 +336,9 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
 	LOG4CXX_INFO(logger, "Backend " << c << " disconnected. Current backend count=" << (m_clients.size() - 1));
+
+	// This backend will do, so we can't reconnect users to it in User::handleDisconnected call
+	c->willDie = true;
 
 	// If there are users associated with this backend, it must have crashed, so print error output
 	// and disconnect users
@@ -935,7 +939,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	user->setData(c);
 	c->users.push_back(user);
 
-// 	UserInfo userInfo = user->getUserInfo();
+	// Don't forget to disconnect these in handleUserDestroyed!!!
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
@@ -1053,6 +1057,11 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 void NetworkPluginServer::handleUserDestroyed(User *user) {
 	m_waitingUsers.remove(user);
 	UserInfo userInfo = user->getUserInfo();
+
+	user->onReadyToConnect.disconnect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
+	user->onPresenceChanged.disconnect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
+	user->onRoomJoined.disconnect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
+	user->onRoomLeft.disconnect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
 
 	pbnetwork::Logout logout;
 	logout.set_user(user->getJID().toBare());
@@ -1352,7 +1361,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 
 	// Check all backends and find free one
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->acceptUsers == acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
+		if ((*it)->willDie == false && (*it)->acceptUsers == acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
 			c = *it;
 			// if we're not reusing all backends and backend is full, stop accepting new users on this backend
 			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
