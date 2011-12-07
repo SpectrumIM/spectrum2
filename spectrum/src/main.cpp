@@ -357,7 +357,13 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
+		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		return -2;
+	}
 #endif
+
 #ifdef WITH_MYSQL
 	if (CONFIG_STRING(&config, "database.type") == "mysql") {
 		storageBackend = new MySQLBackend(&config);
@@ -366,7 +372,17 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "mysql") {
+		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		return -2;
+	}
 #endif
+
+	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3") {
+		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
+		return -2;
+	}
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	userManager_ = &userManager;
