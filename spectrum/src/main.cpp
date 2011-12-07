@@ -353,7 +353,7 @@ int main(int argc, char **argv)
 	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
 		storageBackend = new SQLite3Backend(&config);
 		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database.\n";
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 			return -1;
 		}
 	}
@@ -362,7 +362,7 @@ int main(int argc, char **argv)
 	if (CONFIG_STRING(&config, "database.type") == "mysql") {
 		storageBackend = new MySQLBackend(&config);
 		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database.\n";
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 			return -1;
 		}
 	}
