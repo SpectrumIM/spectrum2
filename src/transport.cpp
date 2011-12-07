@@ -197,6 +197,8 @@ void Component::start() {
 	else if (m_server) {
 		LOG4CXX_INFO(logger, "Starting component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server->start();
+		// We're connected right here, because we're in server mode...
+		handleConnected();
 	}
 }
 

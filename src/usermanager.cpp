@@ -101,7 +101,7 @@ Swift::DiscoInfo::ref UserManager::getCaps(const Swift::JID &jid) const {
 	return user->getCaps(jid);
 }
 
-void UserManager::removeUser(User *user) {
+void UserManager::removeUser(User *user, bool onUserBehalf) {
 	m_users.erase(user->getJID().toBare().toString());
 	if (m_cachedUser == user)
 		m_cachedUser = NULL;
@@ -110,7 +110,7 @@ void UserManager::removeUser(User *user) {
 		disconnectUser(user->getJID());
 	}
 
-	if (m_storageBackend) {
+	if (m_storageBackend && onUserBehalf) {
 		m_storageBackend->setUserOnline(user->getUserInfo().id, false);
 	}
 
@@ -122,9 +122,9 @@ void UserManager::removeUser(User *user) {
 // 	VALGRIND_DO_LEAK_CHECK;
 }
 
-void UserManager::removeAllUsers() {
+void UserManager::removeAllUsers(bool onUserBehalf) {
 	while(m_users.begin() != m_users.end()) {
-		removeUser((*m_users.begin()).second);
+		removeUser((*m_users.begin()).second, onUserBehalf);
 	}
 }
 

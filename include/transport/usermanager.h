@@ -78,9 +78,9 @@ class UserManager : public Swift::EntityCapsProvider {
 		/// Removes user. This function disconnects user and safely removes
 		/// User class. This does *not* remove user from StorageBackend.
 		/// \param user User class to remove
-		void removeUser(User *user);
+		void removeUser(User *user, bool onUserBehalf = true);
 
-		void removeAllUsers();
+		void removeAllUsers(bool onUserBehalf = true);
 
 		Swift::DiscoInfo::ref getCaps(const Swift::JID&) const;
 

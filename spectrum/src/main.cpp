@@ -9,6 +9,7 @@
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
 #include "transport/statsresponder.h"
+#include "transport/usersreconnecter.h"
 #include "transport/util.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
@@ -42,7 +43,7 @@ Component *component_ = NULL;
 UserManager *userManager_ = NULL;
 
 static void stop_spectrum() {
-	userManager_->removeAllUsers();
+	userManager_->removeAllUsers(false);
 	component_->stop();
 	eventLoop_->stop();
 }
@@ -369,13 +370,15 @@ int main(int argc, char **argv)
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	userManager_ = &userManager;
+
 	UserRegistration *userRegistration = NULL;
+	UsersReconnecter *usersReconnecter = NULL;
 	if (storageBackend) {
 		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
 		userRegistration->start();
-// 		logger.setUserRegistration(&userRegistration);
+
+		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
 	}
-// 	logger.setUserManager(&userManager);
 
 	FileTransferManager ftManager(&transport, &userManager);
 
@@ -393,6 +396,11 @@ int main(int argc, char **argv)
 		userRegistration->stop();
 		delete userRegistration;
 	}
+
+	if (usersReconnecter) {
+		delete usersReconnecter;
+	}
+
 	delete storageBackend;
 	delete factories;
 }
