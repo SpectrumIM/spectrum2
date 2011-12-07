@@ -99,6 +99,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_updateUserSetting);
 		FINALIZE_STMT(m_updateBuddySetting);
 		FINALIZE_STMT(m_setUserOnline);
+		FINALIZE_STMT(m_getOnlineUsers);
 		sqlite3_close(m_db);
 	}
 }
@@ -132,6 +133,7 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
 
 	PREP_STMT(m_setUserOnline, "UPDATE " + m_prefix + "users SET online=?, last_login=DATETIME('NOW') WHERE id=?");
+	PREP_STMT(m_getOnlineUsers, "SELECT jid FROM " + m_prefix + "users WHERE online=1");
 
 	return true;
 }
@@ -247,6 +249,23 @@ void SQLite3Backend::setUserOnline(long id, bool online) {
 	BIND_INT(m_setUserOnline, (int)online);
 	BIND_INT(m_setUserOnline, id);
 	EXECUTE_STATEMENT(m_setUserOnline, "setUserOnline query");
+}
+
+bool SQLite3Backend::getOnlineUsers(std::vector<std::string> &users) {
+	sqlite3_reset(m_getOnlineUsers);
+
+	int ret;
+	while((ret = sqlite3_step(m_getOnlineUsers)) == SQLITE_ROW) {
+		std::string jid = (const char *) sqlite3_column_text(m_getOnlineUsers, 0);
+		users.push_back(jid);
+	}
+
+	if (ret != SQLITE_DONE) {
+		LOG4CXX_ERROR(logger, "getOnlineUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
+	return true;
 }
 
 long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
