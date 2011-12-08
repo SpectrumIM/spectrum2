@@ -22,7 +22,6 @@
 
 #include <time.h>
 #include "Swiften/Swiften.h"
-#include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
 #include "storagebackend.h"
@@ -35,6 +34,7 @@ class Component;
 class RosterManager;
 class ConversationManager;
 class UserManager;
+class PresenceOracle;
 struct UserInfo;
 
 /// Represents online XMPP user.
@@ -125,7 +125,7 @@ class User : public Swift::EntityCapsProvider {
 		UserManager *m_userManager;
 		ConversationManager *m_conversationManager;
 		Swift::EntityCapsManager *m_entityCapsManager;
-		Swift::PresenceOracle *m_presenceOracle;
+		PresenceOracle *m_presenceOracle;
 		UserInfo m_userInfo;
 		void *m_data;
 		bool m_connected;

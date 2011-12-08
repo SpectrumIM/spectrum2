@@ -24,6 +24,7 @@
 #include "transport/rostermanager.h"
 #include "transport/usermanager.h"
 #include "transport/conversationmanager.h"
+#include "transport/presenceoracle.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
