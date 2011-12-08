@@ -55,7 +55,7 @@ message Buddy {
 	required string userName = 1;
 	required string buddyName = 2;
 	optional string alias = 3;
-	optional string groups = 4;
+	repeated string group = 4;
 	optional StatusType status = 5;
 	optional string statusMessage = 6;
 	optional string iconHash = 7;

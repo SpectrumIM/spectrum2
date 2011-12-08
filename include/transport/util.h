@@ -36,6 +36,10 @@ std::string encryptPassword(const std::string &password, const std::string &key)
 
 std::string decryptPassword(std::string &encrypted, const std::string &key);
 
+std::string serializeGroups(const std::vector<std::string> &groups);
+
+std::vector<std::string> deserializeGroups(std::string &groups);
+
 }
 
 }

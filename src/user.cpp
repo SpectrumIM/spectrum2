@@ -28,6 +28,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
@@ -55,6 +56,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_readyForConnect = false;
 	m_ignoreDisconnect = false;
 	m_resources = 0;
+	m_reconnectCounter = 0;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
@@ -169,6 +171,7 @@ void User::sendCurrentPresence() {
 
 void User::setConnected(bool connected) {
 	m_connected = connected;
+	m_reconnectCounter = 0;
 	setIgnoreDisconnect(false);
 	updateLastActivity();
 
@@ -315,10 +318,22 @@ void User::setIgnoreDisconnect(bool ignoreDisconnect) {
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Setting ignoreDisconnect=" << m_ignoreDisconnect);
 }
 
-void User::handleDisconnected(const std::string &error) {
+void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayload::Error e) {
 	if (m_ignoreDisconnect) {
 		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network ignored (probably moving between backends)");
 		return;
+	}
+
+	if (e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR || e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR) {
+		if (m_reconnectCounter < 3) {
+			m_reconnectCounter++;
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network for, trying to reconnect automatically.");
+			// Simulate destruction/resurrection :)
+			// TODO: If this stops working, create onReconnect signal
+			m_userManager->onUserDestroyed(this);
+			m_userManager->onUserCreated(this);
+			return;
+		}
 	}
 
 	if (error.empty()) {
@@ -333,6 +348,7 @@ void User::handleDisconnected(const std::string &error) {
 	msg->setBody(error);
 	msg->setTo(m_jid.toBare());
 	msg->setFrom(m_component->getJID());
+	msg->addPayload(boost::make_shared<Swift::SpectrumErrorPayload>(e));
 	m_component->getStanzaChannel()->sendMessage(msg);
 
 	// In server mode, server finishes the session and pass unavailable session to userManager if we're connected to legacy network,

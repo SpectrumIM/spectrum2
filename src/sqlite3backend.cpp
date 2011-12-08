@@ -21,6 +21,7 @@
 #ifdef WITH_SQLITE
 
 #include "transport/sqlite3backend.h"
+#include "transport/util.h"
 #include <boost/bind.hpp>
 #include "log4cxx/logger.h"
 
@@ -98,6 +99,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_updateUserSetting);
 		FINALIZE_STMT(m_updateBuddySetting);
 		FINALIZE_STMT(m_setUserOnline);
+		FINALIZE_STMT(m_getOnlineUsers);
 		sqlite3_close(m_db);
 	}
 }
@@ -131,6 +133,7 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
 
 	PREP_STMT(m_setUserOnline, "UPDATE " + m_prefix + "users SET online=?, last_login=DATETIME('NOW') WHERE id=?");
+	PREP_STMT(m_getOnlineUsers, "SELECT jid FROM " + m_prefix + "users WHERE online=1");
 
 	return true;
 }
@@ -248,13 +251,30 @@ void SQLite3Backend::setUserOnline(long id, bool online) {
 	EXECUTE_STATEMENT(m_setUserOnline, "setUserOnline query");
 }
 
+bool SQLite3Backend::getOnlineUsers(std::vector<std::string> &users) {
+	sqlite3_reset(m_getOnlineUsers);
+
+	int ret;
+	while((ret = sqlite3_step(m_getOnlineUsers)) == SQLITE_ROW) {
+		std::string jid = (const char *) sqlite3_column_text(m_getOnlineUsers, 0);
+		users.push_back(jid);
+	}
+
+	if (ret != SQLITE_DONE) {
+		LOG4CXX_ERROR(logger, "getOnlineUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
+	return true;
+}
+
 long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
 	BEGIN(m_addBuddy);
 	BIND_INT(m_addBuddy, userId);
 	BIND_STR(m_addBuddy, buddyInfo.legacyName);
 	BIND_STR(m_addBuddy, buddyInfo.subscription);
-	BIND_STR(m_addBuddy, buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]); // TODO: serialize groups
+	BIND_STR(m_addBuddy, Util::serializeGroups(buddyInfo.groups));
 	BIND_STR(m_addBuddy, buddyInfo.alias);
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
@@ -280,7 +300,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?
 	BEGIN(m_updateBuddy);
-	BIND_STR(m_updateBuddy, buddyInfo.groups.size() == 0 ? "" : buddyInfo.groups[0]); // TODO: serialize groups
+	BIND_STR(m_updateBuddy, Util::serializeGroups(buddyInfo.groups));
 	BIND_STR(m_updateBuddy, buddyInfo.alias);
 	BIND_INT(m_updateBuddy, buddyInfo.flags);
 	BIND_STR(m_updateBuddy, buddyInfo.subscription);
@@ -321,7 +341,8 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		b.legacyName = GET_STR(m_getBuddies);
 		b.subscription = GET_STR(m_getBuddies);
 		b.alias = GET_STR(m_getBuddies);
-		b.groups.push_back(GET_STR(m_getBuddies));
+		std::string groups = GET_STR(m_getBuddies);
+		b.groups = Util::deserializeGroups(groups);
 		b.flags = GET_INT(m_getBuddies);
 
 		if (buddy_id == b.id) {

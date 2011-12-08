@@ -82,6 +82,8 @@ class MySQLBackend : public StorageBackend
 		/// \return true if user has been found in database and roster has been fetched
 		bool getBuddies(long id, std::list<BuddyInfo> &roster);
 
+		bool getOnlineUsers(std::vector<std::string> &users);
+
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
@@ -148,6 +150,7 @@ class MySQLBackend : public StorageBackend
 		Statement *m_getBuddies;
 		Statement *m_getBuddiesSettings;
 		Statement *m_setUserOnline;
+		Statement *m_getOnlineUsers;
 };
 
 }

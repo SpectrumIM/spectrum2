@@ -171,7 +171,9 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			np->handleConnected(user);
-			np->handleBuddyChanged(user, "zcode", "ZCode", "ZCode", pbnetwork::STATUS_ONLINE);
+			std::vector<std::string> groups;
+			groups.push_back("ZCode");
+			np->handleBuddyChanged(user, "zcode", "ZCode", groups, pbnetwork::STATUS_ONLINE);
 // 			sleep(1);
 // 			np->handleMessage(np->m_user, "zork", first_msg);
 		}

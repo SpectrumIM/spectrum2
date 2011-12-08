@@ -69,7 +69,7 @@ class SpectrumNetworkPlugin;
 GKeyFile *keyfile;
 SpectrumNetworkPlugin *np;
 
-std::string replaceAll(
+static std::string replaceAll(
   std::string result,
   const std::string& replaceWhat,
   const std::string& replaceWithWhat)
@@ -808,7 +808,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::string &groups) {
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
@@ -823,9 +823,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::string &groups) {
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups_) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				std::string groups = groups_.empty() ? "" : groups_[0];
 
 				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
 					m_authRequests[user + buddyName]->authorize_cb(m_authRequests[user + buddyName]->user_data);
@@ -1052,7 +1053,22 @@ static std::string getIconHash(PurpleBuddy *m_buddy) {
 
 static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 	std::vector<std::string> groups;
-	groups.push_back((purple_buddy_get_group(m_buddy) && purple_group_get_name(purple_buddy_get_group(m_buddy))) ? std::string(purple_group_get_name(purple_buddy_get_group(m_buddy))) : std::string("Buddies"));
+	if (purple_buddy_get_name(m_buddy)) {
+		GSList *buddies = purple_find_buddies(purple_buddy_get_account(m_buddy), purple_buddy_get_name(m_buddy));
+		while(buddies) {
+			PurpleGroup *g = purple_buddy_get_group((PurpleBuddy *) buddies->data);
+			buddies = g_slist_delete_link(buddies, buddies);
+
+			if(g && purple_group_get_name(g)) {
+				groups.push_back(purple_group_get_name(g));
+			}
+		}
+	}
+
+	if (groups.empty()) {
+		groups.push_back("Buddies");
+	}
+
 	return groups;
 }
 
@@ -1105,7 +1121,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		}
 	}
 
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy)[0], status, message, getIconHash(buddy),
+	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy), status, message, getIconHash(buddy),
 		blocked
 	);
 }

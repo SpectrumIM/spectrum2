@@ -55,6 +55,7 @@ class NetworkPluginServer {
 			unsigned long shared;
 			bool acceptUsers;
 			bool longRun;
+			bool willDie;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);

@@ -9,6 +9,7 @@
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
 #include "transport/statsresponder.h"
+#include "transport/usersreconnecter.h"
 #include "transport/util.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
@@ -42,7 +43,7 @@ Component *component_ = NULL;
 UserManager *userManager_ = NULL;
 
 static void stop_spectrum() {
-	userManager_->removeAllUsers();
+	userManager_->removeAllUsers(false);
 	component_->stop();
 	eventLoop_->stop();
 }
@@ -352,30 +353,48 @@ int main(int argc, char **argv)
 	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
 		storageBackend = new SQLite3Backend(&config);
 		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database.\n";
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 			return -1;
 		}
 	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
+		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		return -2;
+	}
 #endif
+
 #ifdef WITH_MYSQL
 	if (CONFIG_STRING(&config, "database.type") == "mysql") {
 		storageBackend = new MySQLBackend(&config);
 		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database.\n";
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 			return -1;
 		}
 	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "mysql") {
+		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		return -2;
+	}
 #endif
+
+	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3") {
+		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
+		return -2;
+	}
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	userManager_ = &userManager;
+
 	UserRegistration *userRegistration = NULL;
+	UsersReconnecter *usersReconnecter = NULL;
 	if (storageBackend) {
 		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
 		userRegistration->start();
-// 		logger.setUserRegistration(&userRegistration);
+
+		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
 	}
-// 	logger.setUserManager(&userManager);
 
 	FileTransferManager ftManager(&transport, &userManager);
 
@@ -393,6 +412,11 @@ int main(int argc, char **argv)
 		userRegistration->stop();
 		delete userRegistration;
 	}
+
+	if (usersReconnecter) {
+		delete usersReconnecter;
+	}
+
 	delete storageBackend;
 	delete factories;
 }
