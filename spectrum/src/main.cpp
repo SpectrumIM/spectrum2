@@ -211,6 +211,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
 		struct group *gr;
 		if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
@@ -225,7 +226,6 @@ int main(int argc, char **argv)
 		chown(CONFIG_STRING(&config, "service.working_dir").c_str(), pw->pw_uid, gr->gr_gid);
 	}
 
-#ifndef WIN32
 	if (!no_daemon) {
 		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 		std::string dir;
 		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
 			if (boost::ends_with(prop, ".File")) {
-				dir = p.get(prop);
+				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
 				boost::replace_all(dir, "${jid}", jid);
 				break;
 			}
