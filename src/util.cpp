@@ -128,6 +128,15 @@ std::vector<std::string> deserializeGroups(std::string &groups) {
 	return ret;
 }
 
+int getRandomPort(const std::string &s) {
+	unsigned long r = 0;
+	BOOST_FOREACH(char c, s) {
+		r += (int) c;
+	}
+	srand(time(NULL) + r);
+	return 30000 + rand() % 10000;
+}
+
 }
 
 }

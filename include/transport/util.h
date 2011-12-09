@@ -40,6 +40,8 @@ std::string serializeGroups(const std::vector<std::string> &groups);
 
 std::vector<std::string> deserializeGroups(std::string &groups);
 
+int getRandomPort(const std::string &s);
+
 }
 
 }

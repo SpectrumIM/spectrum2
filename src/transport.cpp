@@ -45,6 +45,7 @@
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
+#include "Swiften/Swiften.h"
 
 using namespace Swift;
 using namespace boost;

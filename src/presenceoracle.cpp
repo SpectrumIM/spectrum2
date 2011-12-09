@@ -19,6 +19,7 @@
  */
 
 #include "transport/presenceoracle.h"
+#include "Swiften/Swiften.h"
 
 #include <boost/bind.hpp>
 
@@ -46,9 +47,10 @@ void PresenceOracle::handleStanzaChannelAvailableChanged(bool available) {
 
 void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 	// ignore presences for some contact, we're checking only presences for the transport itself here.
-	if (!presence->getTo().getNode().empty()) {
+	bool isMUC = presence->getPayload<MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
+	// filter out login/logout presence spam
+	if (!presence->getTo().getNode().empty() && isMUC == false)
 		return;
-	}
 
 	JID bareJID(presence->getFrom().toBare());
 	if (presence->getType() == Presence::Subscribe) {
