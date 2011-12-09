@@ -53,11 +53,11 @@ void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 		return;
 
 	JID bareJID(presence->getFrom().toBare());
-	if (presence->getType() == Presence::Subscribe) {
+	if (presence->getType() == Presence::Subscribe || presence->getType() == Presence::Subscribed) {
 	}
 	else {
 		Presence::ref passedPresence = presence;
-		if (presence->getType() == Presence::Unsubscribe) {
+		if (presence->getType() == Presence::Unsubscribe || presence->getType() == Presence::Unsubscribed) {
 			/* 3921bis says that we don't follow up with an unavailable, so simulate this ourselves */
 			passedPresence = Presence::ref(new Presence());
 			passedPresence->setType(Presence::Unavailable);
