@@ -5,6 +5,7 @@
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/mysqlbackend.h"
+#include "transport/pqxxbackend.h"
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
@@ -379,7 +380,23 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3") {
+#ifdef WITH_PQXX
+	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
+		storageBackend = new PQXXBackend(&config);
+		if (!storageBackend->connect()) {
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+			return -1;
+		}
+	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
+		std::cerr << "Spectrum2 is not compiled with pqxx backend.\n";
+		return -2;
+	}
+#endif
+
+	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3"
+		&& CONFIG_STRING(&config, "database.type") != "pqxx") {
 		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
 		return -2;
 	}
