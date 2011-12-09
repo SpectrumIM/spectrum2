@@ -221,5 +221,6 @@ void MyIrcSession::onMessageReceived(IrcMessage *message) {
 		case IrcMessage::Numeric:
 			on_numericMessageReceived(message);
 			break;
+		default:break;
 	}
 }

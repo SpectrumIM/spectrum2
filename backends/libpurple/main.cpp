@@ -441,6 +441,16 @@ static void * requestInput(const char *title, const char *primary,const char *se
 			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
 			return NULL;
 		}
+		else if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Denied Message:") {
+			LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
+			return NULL;
+		}
 		else {
 			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
 		}
