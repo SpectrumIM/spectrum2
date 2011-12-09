@@ -1,3 +1,11 @@
+Version 2.0.0-beta  (X-X-X):
+	General:
+	* Fixed registration from Pidgin.
+	* Unsubscribe presence sent to some buddy doesn't disconnect the account.
+	* Remote Roster requests are not sent to resources, but to bare JID.
+	* Added automatic reconnection in case of non-fatal error.
+	* Added more error messages.
+
 version 2.0.0 alpha (2011-12-06):
 	General:
 	* First Spectrum 2.0.0 alpha release, check more on
