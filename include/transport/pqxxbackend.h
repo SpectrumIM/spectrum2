@@ -27,7 +27,7 @@
 #include "Swiften/Swiften.h"
 #include "transport/storagebackend.h"
 #include "transport/config.h"
-#include "mysql.h"
+#include <pqxx/pqxx>
 
 namespace Transport {
 
@@ -99,6 +99,8 @@ class PQXXBackend : public StorageBackend
 		bool exec(const std::string &query);
 		Config *m_config;
 		std::string m_prefix;
+
+		pqxx::connection *m_conn;
 };
 
 }
