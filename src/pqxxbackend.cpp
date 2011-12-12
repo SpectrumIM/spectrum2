@@ -43,6 +43,8 @@ PQXXBackend::~PQXXBackend(){
 
 void PQXXBackend::disconnect() {
 	LOG4CXX_INFO(logger, "Disconnecting");
+
+	delete m_conn;
 }
 
 bool PQXXBackend::connect() {
@@ -50,6 +52,12 @@ bool PQXXBackend::connect() {
 		CONFIG_STRING(m_config, "database.user") << ", database " << CONFIG_STRING(m_config, "database.database") <<
 		", port " << CONFIG_INT(m_config, "database.port")
 	);
+	
+	std::string str = "dbname=";
+	str += CONFIG_STRING(m_config, "database.database") + " ";
+
+	str += "user=" + CONFIG_STRING(m_config, "database.user") + " ";
+	m_conn = new pqxx::connection(str);
 
 	createDatabase();
 
@@ -115,10 +123,9 @@ bool PQXXBackend::createDatabase() {
 }
 
 bool PQXXBackend::exec(const std::string &query) {
-//	if (mysql_query(&m_conn, query.c_str())) {
-//		LOG4CXX_ERROR(logger, query << " " << mysql_error(&m_conn));
-//		return false;
-//	}
+	pqxx::work txn(*m_conn);
+	txn.exec(query);
+	txn.commit();
 	return true;
 }
 
