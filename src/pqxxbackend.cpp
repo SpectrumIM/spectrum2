@@ -65,67 +65,76 @@ bool PQXXBackend::connect() {
 }
 
 bool PQXXBackend::createDatabase() {
-	int not_exist = exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "buddies` ("
-							"`id` int(10) unsigned NOT NULL auto_increment,"
-							"`user_id` int(10) unsigned NOT NULL,"
-							"`uin` varchar(255) collate utf8_bin NOT NULL,"
-							"`subscription` enum('to','from','both','ask','none') collate utf8_bin NOT NULL,"
-							"`nickname` varchar(255) collate utf8_bin NOT NULL,"
-							"`groups` varchar(255) collate utf8_bin NOT NULL,"
-							"`flags` smallint(4) NOT NULL DEFAULT '0',"
-							"PRIMARY KEY (`id`),"
-							"UNIQUE KEY `user_id` (`user_id`,`uin`)"
-						") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+	
+	int exist = exec("SELECT * FROM " + m_prefix + "buddies_settings LIMIT 1;", false);
 
-	if (not_exist) {
-		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "buddies_settings` ("
-				"`user_id` int(10) unsigned NOT NULL,"
-				"`buddy_id` int(10) unsigned NOT NULL,"
-				"`var` varchar(50) collate utf8_bin NOT NULL,"
-				"`type` smallint(4) unsigned NOT NULL,"
-				"`value` varchar(255) collate utf8_bin NOT NULL,"
-				"PRIMARY KEY (`buddy_id`,`var`),"
-				"KEY `user_id` (`user_id`)"
-			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+	if (!exist) {
+		exec("CREATE TABLE " + m_prefix + "buddies_settings ("
+				"user_id integer NOT NULL,"
+				"buddy_id integer NOT NULL,"
+				"var varchar(50) NOT NULL,"
+				"type smallint NOT NULL,"
+				"value varchar(255) NOT NULL,"
+				"PRIMARY KEY (buddy_id,var)"
+			");");
+		
+		exec("CREATE TYPE Subscription AS ENUM ('to','from','both','ask','none');");
+		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "buddies ("
+							"id SERIAL,"
+							"user_id integer NOT NULL,"
+							"uin varchar(255) NOT NULL,"
+							"subscription Subscription NOT NULL,"
+							"nickname varchar(255) NOT NULL,"
+							"groups varchar(255) NOT NULL,"
+							"flags smallint NOT NULL DEFAULT '0',"
+							"PRIMARY KEY (id),"
+							"UNIQUE (user_id,uin)"
+						");");
  
-		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "users` ("
-				"`id` int(10) unsigned NOT NULL auto_increment,"
-				"`jid` varchar(255) collate utf8_bin NOT NULL,"
-				"`uin` varchar(4095) collate utf8_bin NOT NULL,"
-				"`password` varchar(255) collate utf8_bin NOT NULL,"
-				"`language` varchar(25) collate utf8_bin NOT NULL,"
-				"`encoding` varchar(50) collate utf8_bin NOT NULL default 'utf8',"
-				"`last_login` datetime,"
-				"`vip` tinyint(1) NOT NULL  default '0',"
-				"`online` tinyint(1) NOT NULL  default '0',"
-				"PRIMARY KEY (`id`),"
-				"UNIQUE KEY `jid` (`jid`)"
-			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "users ("
+				"id SERIAL,"
+				"jid varchar(255) NOT NULL,"
+				"uin varchar(4095) NOT NULL,"
+				"password varchar(255) NOT NULL,"
+				"language varchar(25) NOT NULL,"
+				"encoding varchar(50) NOT NULL default 'utf8',"
+				"last_login timestamp,"
+				"vip boolean NOT NULL  default '0',"
+				"online boolean NOT NULL  default '0',"
+				"PRIMARY KEY (id),"
+				"UNIQUE (jid)"
+			");");
 
-		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "users_settings` ("
-				"`user_id` int(10) unsigned NOT NULL,"
-				"`var` varchar(50) collate utf8_bin NOT NULL,"
-				"`type` smallint(4) unsigned NOT NULL,"
-				"`value` varchar(255) collate utf8_bin NOT NULL,"
-				"PRIMARY KEY (`user_id`,`var`),"
-				"KEY `user_id` (`user_id`)"
-			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "users_settings ("
+				"user_id integer NOT NULL,"
+				"var varchar(50) NOT NULL,"
+				"type smallint NOT NULL,"
+				"value varchar(255) NOT NULL,"
+				"PRIMARY KEY (user_id,var)"
+			");");
 
-		exec("CREATE TABLE IF NOT EXISTS `" + m_prefix + "db_version` ("
-				"`ver` int(10) unsigned NOT NULL default '1',"
-				"UNIQUE KEY `ver` (`ver`)"
-			") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;");
+		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "db_version ("
+				"ver integer NOT NULL default '1',"
+				"UNIQUE (ver)"
+			");");
 
-		exec("INSERT IGNORE INTO db_version (ver) VALUES ('2');");
+// 		exec("INSERT INTO db_version (ver) VALUES ('2');");
 	}
 
 	return true;
 }
 
-bool PQXXBackend::exec(const std::string &query) {
+bool PQXXBackend::exec(const std::string &query, bool show_error) {
 	pqxx::work txn(*m_conn);
-	txn.exec(query);
-	txn.commit();
+	try {
+		txn.exec(query);
+		txn.commit();
+	}
+	catch (std::exception& e) {
+		if (show_error)
+			LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
 	return true;
 }
 
