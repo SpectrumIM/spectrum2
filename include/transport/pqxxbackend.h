@@ -96,7 +96,7 @@ class PQXXBackend : public StorageBackend
 		void commitTransaction();
 
 	private:
-		bool exec(const std::string &query);
+		bool exec(const std::string &query, bool show_error = true);
 		Config *m_config;
 		std::string m_prefix;
 
