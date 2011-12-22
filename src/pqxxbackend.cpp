@@ -126,6 +126,10 @@ bool PQXXBackend::createDatabase() {
 
 bool PQXXBackend::exec(const std::string &query, bool show_error) {
 	pqxx::work txn(*m_conn);
+	return exec(txn, query, show_error);
+}
+
+bool PQXXBackend::exec(pqxx::work &txn, const std::string &query, bool show_error) {
 	try {
 		txn.exec(query);
 		txn.commit();
@@ -139,12 +143,20 @@ bool PQXXBackend::exec(const std::string &query, bool show_error) {
 }
 
 void PQXXBackend::setUser(const UserInfo &user) {
-//	std::string encrypted = user.password;
-//	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-//		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
-//	}
-//	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << encrypted;
-//	EXEC(m_setUser, setUser(user));
+	std::string encrypted = user.password;
+	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
+		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
+	}
+	pqxx::work txn(*m_conn);
+	exec(txn, "UPDATE " + m_prefix + "users SET uin=" + txn.quote(user.uin) + ", password=" + txn.quote(encrypted) + ";"
+		"INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
+		 "(" + txn.quote(user.jid) + ","
+		+ txn.quote(user.uin) + ","
+		+ txn.quote(encrypted) + ","
+		+ txn.quote(user.language) + ","
+		+ txn.quote(user.encoding) + ","
+		+ "NOW(),"
+		+ txn.quote(user.vip) +")");
 }
 
 bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
