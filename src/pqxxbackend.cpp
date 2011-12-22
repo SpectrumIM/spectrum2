@@ -160,22 +160,30 @@ void PQXXBackend::setUser(const UserInfo &user) {
 }
 
 bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
-//	*m_getUser << barejid;
-//	EXEC(m_getUser, getUser(barejid, user));
-//	if (!exec_ok)
-//		return false;
+	try {
+		pqxx::work txn(*m_conn);
 
-	int ret = false;
-//	while (m_getUser->fetch() == 0) {
-//		ret = true;
-//		*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
+		pqxx::result r = txn.exec("SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid="
+			+ txn.quote(barejid));
 
-//		if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-//			user.password = Util::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
-//		}
-//	}
+		if (r.size() == 0) {
+			return false;
+		}
 
-	return ret;
+		user.id = r[0][0].as<int>();
+		user.jid = r[0][1].as<std::string>();
+		user.uin = r[0][2].as<std::string>();
+		user.password = r[0][3].as<std::string>();
+		user.encoding = r[0][4].as<std::string>();
+		user.language = r[0][5].as<std::string>();
+		// user.vip = r[0][6].as<int>();
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
+
+	return true;
 }
 
 void PQXXBackend::setUserOnline(long id, bool online) {
