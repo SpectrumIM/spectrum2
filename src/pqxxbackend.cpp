@@ -79,7 +79,7 @@ bool PQXXBackend::createDatabase() {
 			");");
 		
 		exec("CREATE TYPE Subscription AS ENUM ('to','from','both','ask','none');");
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "buddies ("
+		exec("CREATE TABLE " + m_prefix + "buddies ("
 							"id SERIAL,"
 							"user_id integer NOT NULL,"
 							"uin varchar(255) NOT NULL,"
@@ -91,7 +91,7 @@ bool PQXXBackend::createDatabase() {
 							"UNIQUE (user_id,uin)"
 						");");
  
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "users ("
+		exec("CREATE TABLE " + m_prefix + "users ("
 				"id SERIAL,"
 				"jid varchar(255) NOT NULL,"
 				"uin varchar(4095) NOT NULL,"
@@ -105,7 +105,7 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (jid)"
 			");");
 
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "users_settings ("
+		exec("CREATE TABLE " + m_prefix + "users_settings ("
 				"user_id integer NOT NULL,"
 				"var varchar(50) NOT NULL,"
 				"type smallint NOT NULL,"
@@ -113,7 +113,7 @@ bool PQXXBackend::createDatabase() {
 				"PRIMARY KEY (user_id,var)"
 			");");
 
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "db_version ("
+		exec("CREATE TABLE " + m_prefix + "db_version ("
 				"ver integer NOT NULL default '1',"
 				"UNIQUE (ver)"
 			");");
