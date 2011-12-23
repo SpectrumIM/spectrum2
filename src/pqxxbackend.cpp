@@ -176,7 +176,7 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 		user.password = r[0][3].as<std::string>();
 		user.encoding = r[0][4].as<std::string>();
 		user.language = r[0][5].as<std::string>();
-		// user.vip = r[0][6].as<int>();
+		user.vip = r[0][6].as<bool>();
 	}
 	catch (std::exception& e) {
 		LOG4CXX_ERROR(logger, e.what());
@@ -187,20 +187,28 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 }
 
 void PQXXBackend::setUserOnline(long id, bool online) {
-//	*m_setUserOnline << online << id;
-//	EXEC(m_setUserOnline, setUserOnline(id, online));
+	try {
+		pqxx::work txn(*m_conn);
+		exec(txn, "UPDATE " + m_prefix + "users SET online=" + txn.quote(online) + ", last_login=NOW() WHERE id=" + txn.quote(id));
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
-//	EXEC(m_getOnlineUsers, getOnlineUsers(users));
-//	if (!exec_ok)
-//		return false;
+	try {
+		pqxx::work txn(*m_conn);
+		pqxx::result r = txn.exec("SELECT jid FROM " + m_prefix + "users WHERE online=1");
 
-//	std::string jid;
-//	while (m_getOnlineUsers->fetch() == 0) {
-//		*m_getOnlineUsers >> jid;
-//		users.push_back(jid);
-//	}
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			users.push_back((*it)[0].as<std::string>());
+		}
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
 
 	return true;
 }
