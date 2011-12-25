@@ -614,11 +614,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
-			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
+
+			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL) {
+				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_accounts_find(name.c_str(), protocol.c_str());
 			}
 			else {
+				LOG4CXX_INFO(logger, "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_account_new(name.c_str(), protocol.c_str());
 				purple_accounts_add(account);
 			}
@@ -1087,6 +1089,8 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
+
+	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy));
 
 	// Status
 	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
