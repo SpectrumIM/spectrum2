@@ -18,13 +18,12 @@
 #include <Swiften/FileTransfer/SOCKS5BytestreamServer.h>
 #include <Swiften/Base/IDGenerator.h>
 #include <Swiften/Elements/Presence.h>
-#include <Swiften/Presence/PresenceOracle.h>
 #include <Swiften/Base/foreach.h>
 
 
 namespace Swift {
 
-CombinedOutgoingFileTransferManager::CombinedOutgoingFileTransferManager(JingleSessionManager* jingleSessionManager, IQRouter* router, EntityCapsProvider* capsProvider, RemoteJingleTransportCandidateSelectorFactory* remoteFactory, LocalJingleTransportCandidateGeneratorFactory* localFactory, SOCKS5BytestreamRegistry* bytestreamRegistry, SOCKS5BytestreamProxy* bytestreamProxy, PresenceOracle *presOracle, SOCKS5BytestreamServer *bytestreamServer) : jsManager(jingleSessionManager), iqRouter(router), capsProvider(capsProvider), remoteFactory(remoteFactory), localFactory(localFactory), bytestreamRegistry(bytestreamRegistry), bytestreamProxy(bytestreamProxy), presenceOracle(presOracle), bytestreamServer(bytestreamServer) {
+CombinedOutgoingFileTransferManager::CombinedOutgoingFileTransferManager(JingleSessionManager* jingleSessionManager, IQRouter* router, EntityCapsProvider* capsProvider, RemoteJingleTransportCandidateSelectorFactory* remoteFactory, LocalJingleTransportCandidateGeneratorFactory* localFactory, SOCKS5BytestreamRegistry* bytestreamRegistry, SOCKS5BytestreamProxy* bytestreamProxy, Transport::PresenceOracle *presOracle, SOCKS5BytestreamServer *bytestreamServer) : jsManager(jingleSessionManager), iqRouter(router), capsProvider(capsProvider), remoteFactory(remoteFactory), localFactory(localFactory), bytestreamRegistry(bytestreamRegistry), bytestreamProxy(bytestreamProxy), presenceOracle(presOracle), bytestreamServer(bytestreamServer) {
 	idGenerator = new IDGenerator();
 }
 

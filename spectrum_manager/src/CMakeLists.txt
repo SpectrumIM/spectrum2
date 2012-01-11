@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp)
 
-ADD_EXECUTABLE(spectrum2_manager ${SRC} ../../src/config.cpp)
+ADD_EXECUTABLE(spectrum2_manager ${SRC} ../../src/config.cpp ../../src/util.cpp)
 
 target_link_libraries(spectrum2_manager ${SWIFTEN_LIBRARY})
 

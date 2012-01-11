@@ -53,6 +53,9 @@ find_package(log4cxx)
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
+set(pqxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(pqxx)
+
 find_package(Doxygen)
 
 INCLUDE(FindQt4)
@@ -100,6 +103,16 @@ else (MYSQL_FOUND)
 	set(MYSQL_LIBRARIES "")
 	message("MySQL             : no (install mysql-devel)")
 endif (MYSQL_FOUND)
+
+if (PQXX_FOUND)
+	ADD_DEFINITIONS(-DWITH_PQXX)
+	include_directories(${PQXX_INCLUDE_DIR})
+	message("PostgreSQL        : yes")
+else (PQXX_FOUND)
+	set(PQXX_LIBRARY "")
+	set(PQ_LIBRARY "")
+	message("PostgreSQL        : no (install libpqxx-devel)")
+endif (PQXX_FOUND)
 
 if (PROTOBUF_FOUND)
 	ADD_DEFINITIONS(-DWITH_PROTOBUF)

@@ -45,6 +45,7 @@
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
+#include "Swiften/Swiften.h"
 
 using namespace Swift;
 using namespace boost;
@@ -137,7 +138,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_stanzaChannel);
  	m_entityCapsManager->onCapsChanged.connect(boost::bind(&Component::handleCapsChanged, this, _1));
 	
-	m_presenceOracle = new PresenceOracle(m_stanzaChannel);
+	m_presenceOracle = new Transport::PresenceOracle(m_stanzaChannel);
 	m_presenceOracle->onPresenceChange.connect(bind(&Component::handlePresence, this, _1));
 
 	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
@@ -170,7 +171,7 @@ Swift::StanzaChannel *Component::getStanzaChannel() {
 	return m_stanzaChannel;
 }
 
-Swift::PresenceOracle *Component::getPresenceOracle() {
+Transport::PresenceOracle *Component::getPresenceOracle() {
 	return m_presenceOracle;
 }
 

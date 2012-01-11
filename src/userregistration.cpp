@@ -286,6 +286,10 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 				else if (textSingle->getName() == "encoding") {
 					encoding = textSingle->getValue();
 				}
+				// Pidgin sends it as textSingle, not sure why...
+				else if (textSingle->getName() == "password") {
+					payload->setPassword(textSingle->getValue());
+				}
 				continue;
 			}
 

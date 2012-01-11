@@ -441,6 +441,16 @@ static void * requestInput(const char *title, const char *primary,const char *se
 			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
 			return NULL;
 		}
+		else if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Denied Message:") {
+			LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
+			return NULL;
+		}
 		else {
 			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
 		}
@@ -604,11 +614,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
-			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
+
+			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL) {
+				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_accounts_find(name.c_str(), protocol.c_str());
 			}
 			else {
+				LOG4CXX_INFO(logger, "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_account_new(name.c_str(), protocol.c_str());
 				purple_accounts_add(account);
 			}
@@ -1077,6 +1089,8 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
+
+	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy));
 
 	// Status
 	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
