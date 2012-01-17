@@ -41,6 +41,7 @@ namespace Swift {
 			void send(boost::shared_ptr<Stanza> stanza);
 			void handleSessionFinished(const boost::optional<Session::SessionError>&, const boost::shared_ptr<ServerFromClientSession> &session);
 			void handleElement(boost::shared_ptr<Element> element, const boost::shared_ptr<ServerFromClientSession> &session);
+			void handleDataRead(const SafeByteArray &data, const boost::shared_ptr<ServerFromClientSession> &session);
 			void handleSessionInitialized();
 
 		private:

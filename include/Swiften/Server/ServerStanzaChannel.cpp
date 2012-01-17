@@ -32,11 +32,13 @@ void ServerStanzaChannel::addSession(boost::shared_ptr<ServerFromClientSession> 
 	sessions[session->getRemoteJID().toBare().toString()].push_back(session);
 	session->onSessionFinished.connect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.connect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
+	session->onDataRead.connect(boost::bind(&ServerStanzaChannel::handleDataRead, this, _1, session));
 }
 
 void ServerStanzaChannel::removeSession(boost::shared_ptr<ServerFromClientSession> session) {
 	session->onSessionFinished.disconnect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.disconnect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
+	session->onDataRead.disconnect(boost::bind(&ServerStanzaChannel::handleDataRead, this, _1, session));
 	std::list<boost::shared_ptr<ServerFromClientSession> > &lst = sessions[session->getRemoteJID().toBare().toString()];
 	lst.erase(std::remove(lst.begin(), lst.end(), session), lst.end());
 }
@@ -51,6 +53,15 @@ void ServerStanzaChannel::sendMessage(boost::shared_ptr<Message> message) {
 
 void ServerStanzaChannel::sendPresence(boost::shared_ptr<Presence> presence) {
 	send(presence);
+}
+
+void ServerStanzaChannel::handleDataRead(const SafeByteArray &data, const boost::shared_ptr<ServerFromClientSession> &session) {
+	if (safeByteArrayToString(data).find("</stream:stream>") != std::string::npos) {
+		Swift::Presence::ref presence = Swift::Presence::create();
+		presence->setFrom(session->getRemoteJID());
+		presence->setType(Swift::Presence::Unavailable);
+		onPresenceReceived(presence);
+	}
 }
 
 void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element, bool last) {
