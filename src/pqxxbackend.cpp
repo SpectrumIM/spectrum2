@@ -79,7 +79,7 @@ bool PQXXBackend::createDatabase() {
 			");");
 		
 		exec("CREATE TYPE Subscription AS ENUM ('to','from','both','ask','none');");
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "buddies ("
+		exec("CREATE TABLE " + m_prefix + "buddies ("
 							"id SERIAL,"
 							"user_id integer NOT NULL,"
 							"uin varchar(255) NOT NULL,"
@@ -91,7 +91,7 @@ bool PQXXBackend::createDatabase() {
 							"UNIQUE (user_id,uin)"
 						");");
  
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "users ("
+		exec("CREATE TABLE " + m_prefix + "users ("
 				"id SERIAL,"
 				"jid varchar(255) NOT NULL,"
 				"uin varchar(4095) NOT NULL,"
@@ -105,7 +105,7 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (jid)"
 			");");
 
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "users_settings ("
+		exec("CREATE TABLE " + m_prefix + "users_settings ("
 				"user_id integer NOT NULL,"
 				"var varchar(50) NOT NULL,"
 				"type smallint NOT NULL,"
@@ -113,7 +113,7 @@ bool PQXXBackend::createDatabase() {
 				"PRIMARY KEY (user_id,var)"
 			");");
 
-		exec("CREATE TABLE IF NOT EXISTS " + m_prefix + "db_version ("
+		exec("CREATE TABLE " + m_prefix + "db_version ("
 				"ver integer NOT NULL default '1',"
 				"UNIQUE (ver)"
 			");");
@@ -126,6 +126,10 @@ bool PQXXBackend::createDatabase() {
 
 bool PQXXBackend::exec(const std::string &query, bool show_error) {
 	pqxx::work txn(*m_conn);
+	return exec(txn, query, show_error);
+}
+
+bool PQXXBackend::exec(pqxx::work &txn, const std::string &query, bool show_error) {
 	try {
 		txn.exec(query);
 		txn.commit();
@@ -139,48 +143,72 @@ bool PQXXBackend::exec(const std::string &query, bool show_error) {
 }
 
 void PQXXBackend::setUser(const UserInfo &user) {
-//	std::string encrypted = user.password;
-//	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-//		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
-//	}
-//	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << encrypted;
-//	EXEC(m_setUser, setUser(user));
+	std::string encrypted = user.password;
+	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
+		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
+	}
+	pqxx::work txn(*m_conn);
+	exec(txn, "UPDATE " + m_prefix + "users SET uin=" + txn.quote(user.uin) + ", password=" + txn.quote(encrypted) + ";"
+		"INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
+		 "(" + txn.quote(user.jid) + ","
+		+ txn.quote(user.uin) + ","
+		+ txn.quote(encrypted) + ","
+		+ txn.quote(user.language) + ","
+		+ txn.quote(user.encoding) + ","
+		+ "NOW(),"
+		+ txn.quote(user.vip) +")");
 }
 
 bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
-//	*m_getUser << barejid;
-//	EXEC(m_getUser, getUser(barejid, user));
-//	if (!exec_ok)
-//		return false;
+	try {
+		pqxx::work txn(*m_conn);
 
-	int ret = false;
-//	while (m_getUser->fetch() == 0) {
-//		ret = true;
-//		*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
+		pqxx::result r = txn.exec("SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid="
+			+ txn.quote(barejid));
 
-//		if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-//			user.password = Util::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
-//		}
-//	}
+		if (r.size() == 0) {
+			return false;
+		}
 
-	return ret;
+		user.id = r[0][0].as<int>();
+		user.jid = r[0][1].as<std::string>();
+		user.uin = r[0][2].as<std::string>();
+		user.password = r[0][3].as<std::string>();
+		user.encoding = r[0][4].as<std::string>();
+		user.language = r[0][5].as<std::string>();
+		user.vip = r[0][6].as<bool>();
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
+
+	return true;
 }
 
 void PQXXBackend::setUserOnline(long id, bool online) {
-//	*m_setUserOnline << online << id;
-//	EXEC(m_setUserOnline, setUserOnline(id, online));
+	try {
+		pqxx::work txn(*m_conn);
+		exec(txn, "UPDATE " + m_prefix + "users SET online=" + txn.quote(online) + ", last_login=NOW() WHERE id=" + txn.quote(id));
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
-//	EXEC(m_getOnlineUsers, getOnlineUsers(users));
-//	if (!exec_ok)
-//		return false;
+	try {
+		pqxx::work txn(*m_conn);
+		pqxx::result r = txn.exec("SELECT jid FROM " + m_prefix + "users WHERE online=1");
 
-//	std::string jid;
-//	while (m_getOnlineUsers->fetch() == 0) {
-//		*m_getOnlineUsers >> jid;
-//		users.push_back(jid);
-//	}
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			users.push_back((*it)[0].as<std::string>());
+		}
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
 
 	return true;
 }

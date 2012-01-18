@@ -396,7 +396,7 @@ int main(int argc, char **argv)
 #endif
 
 	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3"
-		&& CONFIG_STRING(&config, "database.type") != "pqxx") {
+		&& CONFIG_STRING(&config, "database.type") != "pqxx" && CONFIG_STRING(&config, "database.type") != "none") {
 		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
 		return -2;
 	}
