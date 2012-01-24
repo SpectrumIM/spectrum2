@@ -9,7 +9,7 @@ if (PROTOBUF_FOUND)
 
 if (NOT WIN32)
 	ADD_SUBDIRECTORY(frotz)
-	ADD_SUBDIRECTORY(skype)
+#	ADD_SUBDIRECTORY(skype)
 endif()
 
 endif()
