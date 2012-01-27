@@ -241,6 +241,20 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		boolean->setLabel((("Remove your registration")));
 		boolean->setValue(0);
 		form->addField(boolean);
+	} else {
+		if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
+			std::string localUsernameField = CONFIG_STRING(m_config, "registration.local_username_label");
+			TextSingleFormField::ref local_username = TextSingleFormField::create();
+			local_username->setName("local_username");
+			local_username->setLabel((localUsernameField));
+			local_username->setRequired(true);
+			form->addField(local_username);
+			TextPrivateFormField::ref local_password = TextPrivateFormField::create();
+			local_password->setName("local_password");
+			local_password->setLabel((("Local Password")));
+			local_password->setRequired(true);
+			form->addField(local_password);
+		}
 	}
 
 	reg->setForm(form);
@@ -273,6 +287,8 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	std::string encoding;
 	std::string language;
+	std::string local_username("");
+	std::string local_password("");
 
 	Form::ref form = payload->getForm();
 	if (form) {
@@ -290,6 +306,13 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 				else if (textSingle->getName() == "password") {
 					payload->setPassword(textSingle->getValue());
 				}
+				else if (textSingle->getName() == "local_username") {
+					local_username = textSingle->getValue();
+				}
+				// Pidgin sends it as textSingle, not sure why...
+				else if (textSingle->getName() == "local_password") {
+					local_password = textSingle->getValue();
+				}
 				continue;
 			}
 
@@ -297,6 +320,9 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 			if (textPrivate) {
 				if (textPrivate->getName() == "password") {
 					payload->setPassword(textPrivate->getValue());
+				}
+				else if (textPrivate->getName() == "local_password") {
+					local_password = textPrivate->getValue();
 				}
 				continue;
 			}
@@ -326,6 +352,22 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		sendResponse(from, id, InBandRegistrationPayload::ref());
 		return true;
 	}
+
+	if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
+	/*	if (!local_username || !local_password) {
+			sendResponse(from, id, InBandRegistrationPayload::ref());
+			return true
+		} else */ if (local_username == "" || local_password == "") {
+			sendResponse(from, id, InBandRegistrationPayload::ref());
+			return true;
+		} else if (local_username != "heinz" || local_password != "heinz") {
+			// TODO: Check local password and username
+			sendError(from, id, ErrorPayload::NotAuthorized, ErrorPayload::Modify);
+			return true;
+		}
+	}
+
+	printf("here\n");
 
 	if (!payload->getUsername() || !payload->getPassword()) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);

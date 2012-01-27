@@ -87,6 +87,8 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("registration.username_label", value<std::string>()->default_value("Legacy network username:"), "Label for username field")
 		("registration.username_mask", value<std::string>()->default_value(""), "Username mask")
 		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
+		("registration.require_local_account", value<bool>()->default_value(false), "True if users have to have a local account to register to this transport from remote servers.")
+		("registration.local_username_label", value<std::string>()->default_value("Local username:"), "Label for local usernme field")
 		("database.type", value<std::string>()->default_value("none"), "Database type.")
 		("database.database", value<std::string>()->default_value(""), "Database used to store data")
 		("database.server", value<std::string>()->default_value("localhost"), "Database server.")
