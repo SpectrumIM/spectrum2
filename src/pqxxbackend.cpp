@@ -248,76 +248,67 @@ void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 }
 
 bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
-//	SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC
-//	*m_getBuddies << id;
+	try {
+		pqxx::work txn(*m_conn);
 
-// 	"SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC"
-//	*m_getBuddiesSettings << id;
+		pqxx::result r = txn.exec("SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=" + pqxx::to_string(id) + " ORDER BY id ASC");
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			BuddyInfo b;
+			std::string group;
 
-//	SettingVariableInfo var;
-//	long buddy_id = -1;
-//	std::string key;
+			b.id = r[0][0].as<long>();
+			b.legacyName = r[0][1].as<std::string>();
+			b.subscription = r[0][2].as<std::string>();
+			b.alias = r[0][3].as<std::string>();
+			group = r[0][4].as<std::string>();
+			b.flags = r[0][5].as<long>();
 
-//	EXEC(m_getBuddies, getBuddies(id, roster));
-//	if (!exec_ok)
-//		return false;
+			if (!group.empty()) {
+				b.groups = Util::deserializeGroups(group);
+			}
 
-//	while (m_getBuddies->fetch() == 0) {
-//		BuddyInfo b;
+			roster.push_back(b);
+		}
 
-//		std::string group;
-//		*m_getBuddies >> b.id >> b.legacyName >> b.subscription >> b.alias >> group >> b.flags;
 
-//		if (!group.empty()) {
-//			b.groups = Util::deserializeGroups(group);
-//		}
+		r = txn.exec("SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=" + pqxx::to_string(id) + " ORDER BY buddy_id ASC");
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			SettingVariableInfo var;
+			long buddy_id = -1;
+			std::string key;
+			std::string val;
 
-//		roster.push_back(b);
-//	}
+			buddy_id = r[0][0].as<long>();
+			var.type = r[0][1].as<long>();
+			key = r[0][2].as<std::string>();
+			val = r[0][3].as<std::string>();
+			switch (var.type) {
+				case TYPE_BOOLEAN:
+					var.b = atoi(val.c_str());
+					break;
+				case TYPE_STRING:
+					var.s = val;
+					break;
+				default:
+					continue;
+					break;
+			}
 
-//	EXEC(m_getBuddiesSettings, getBuddies(id, roster));
-//	if (!exec_ok)
-//		return false;
+			BOOST_FOREACH(BuddyInfo &b, roster) {
+				if (buddy_id == b.id) {
+					b.settings[key] = var;
+					break;
+				}
+			}
+		}
 
-//	BOOST_FOREACH(BuddyInfo &b, roster) {
-//		if (buddy_id == b.id) {
-//// 			std::cout << "Adding buddy info setting " << key << "\n";
-//			b.settings[key] = var;
-//			buddy_id = -1;
-//		}
+		return true;
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 
-//		while(buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
-//			std::string val;
-//			*m_getBuddiesSettings >> buddy_id >> var.type >> key >> val;
-
-//			switch (var.type) {
-//				case TYPE_BOOLEAN:
-//					var.b = atoi(val.c_str());
-//					break;
-//				case TYPE_STRING:
-//					var.s = val;
-//					break;
-//				default:
-//					if (buddy_id == b.id) {
-//						buddy_id = -1;
-//					}
-//					continue;
-//					break;
-//			}
-//			if (buddy_id == b.id) {
-//// 				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
-//				b.settings[key] = var;
-//				buddy_id = -1;
-//			}
-//		}
-//	}
-
-//	while(m_getBuddiesSettings->fetch() == 0) {
-//		// TODO: probably remove those settings, because there's no buddy for them.
-//		// It should not happend, but one never know...
-//	}
-	
-	return true;
+	return false;
 }
 
 bool PQXXBackend::removeUser(long id) {
@@ -329,6 +320,7 @@ bool PQXXBackend::removeUser(long id) {
 		exec(txn, "DELETE FROM " + m_prefix + "buddies_settings SET user_id=" + pqxx::to_string(id));
 
 		return true;
+	}
 	catch (std::exception& e) {
 		LOG4CXX_ERROR(logger, e.what());
 	}
@@ -345,7 +337,7 @@ void PQXXBackend::getUserSetting(long id, const std::string &variable, int &type
 		}
 		else {
 			type = r[0][0].as<int>();
-			value = r[0][0].as<std::string>();
+			value = r[0][1].as<std::string>();
 		}
 	}
 	catch (std::exception& e) {
