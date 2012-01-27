@@ -89,6 +89,8 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
 		("registration.require_local_account", value<bool>()->default_value(false), "True if users have to have a local account to register to this transport from remote servers.")
 		("registration.local_username_label", value<std::string>()->default_value("Local username:"), "Label for local usernme field")
+		("registration.local_account_server", value<std::string>()->default_value("localhost"), "The server on which the local accounts will be checked for validity")
+		("registration.local_account_server_timeout", value<int>()->default_value(10000), "Timeout when checking local user on local_account_server (msecs)")
 		("database.type", value<std::string>()->default_value("none"), "Database type.")
 		("database.database", value<std::string>()->default_value(""), "Database used to store data")
 		("database.server", value<std::string>()->default_value("localhost"), "Database server.")

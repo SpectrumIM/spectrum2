@@ -26,6 +26,8 @@
 #include "transport/user.h"
 #include "Swiften/Elements/ErrorPayload.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "log4cxx/logger.h"
 
 using namespace Swift;
@@ -360,8 +362,36 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		} else */ if (local_username == "" || local_password == "") {
 			sendResponse(from, id, InBandRegistrationPayload::ref());
 			return true;
-		} else if (local_username != "heinz" || local_password != "heinz") {
-			// TODO: Check local password and username
+		} 
+		Swift::logging = true;
+		bool validLocal = false;
+		std::string localLookupServer = CONFIG_STRING(m_config, "registration.local_account_server");
+		std::string localLookupJID = local_username + std::string("@") + localLookupServer;
+		SimpleEventLoop localLookupEventLoop;
+		BoostNetworkFactories localLookupNetworkFactories(&localLookupEventLoop);
+		Client localLookupClient(localLookupJID, local_password, &localLookupNetworkFactories);
+		
+		// TODO: this is neccessary on my server ... but should maybe omitted
+		localLookupClient.setAlwaysTrustCertificates();
+		localLookupClient.connect();
+
+		class SimpleLoopRunner {
+			public:
+				SimpleLoopRunner() {};
+
+				static void run(SimpleEventLoop * loop) {
+					loop->run();
+				};
+		};
+
+		// TODO: Really ugly and hacky solution, any other ideas more than welcome!
+		boost::thread thread(boost::bind(&(SimpleLoopRunner::run), &localLookupEventLoop));
+		thread.timed_join(boost::posix_time::millisec(CONFIG_INT(m_config, "registration.local_account_server_timeout")));
+		localLookupEventLoop.stop();
+		thread.join();
+		validLocal = localLookupClient.isAvailable();
+		localLookupClient.disconnect();
+		if (!validLocal) {
 			sendError(from, id, ErrorPayload::NotAuthorized, ErrorPayload::Modify);
 			return true;
 		}
