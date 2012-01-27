@@ -363,7 +363,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 			sendResponse(from, id, InBandRegistrationPayload::ref());
 			return true;
 		} 
-		Swift::logging = true;
+//		Swift::logging = true;
 		bool validLocal = false;
 		std::string localLookupServer = CONFIG_STRING(m_config, "registration.local_account_server");
 		std::string localLookupJID = local_username + std::string("@") + localLookupServer;
