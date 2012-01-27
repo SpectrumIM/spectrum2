@@ -118,7 +118,7 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (ver)"
 			");");
 
-// 		exec("INSERT INTO db_version (ver) VALUES ('2');");
+ 		exec("INSERT INTO db_version (ver) VALUES ('1');");
 	}
 
 	return true;
@@ -218,29 +218,34 @@ bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 }
 
 long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
-// 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
-//	std::string groups = Util::serializeGroups(buddyInfo.groups);
-//	*m_addBuddy << userId << buddyInfo.legacyName << buddyInfo.subscription;
-//	*m_addBuddy << groups;
-//	*m_addBuddy << buddyInfo.alias << buddyInfo.flags;
+	pqxx::work txn(*m_conn);
+	pqxx::result r = txn.exec("INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES "
+		+ "(" + pqxx::to_string(userId) + ","
+		+ quote(txn, buddyInfo.legacyName) + ","
+		+ quote(txn, buddyInfo.subscription) + ","
+		+ quote(txn, Util::serializeGroups(buddyInfo.groups)) + ","
+		+ quote(txn, buddyInfo.alias) + ","
+		+ pqxx::to_string(buddyInfo.flags) + ") RETURNING id");
 
-//	EXEC(m_addBuddy, addBuddy(userId, buddyInfo));
+	long id = r[0][0].as<long>();
 
-//	long id = (long) mysql_insert_id(&m_conn);
+	r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string(TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
+	if (r.affected_rows() == 0) {
+		exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
+			+ "(" + pqxx::to_string(userId) + ","
+			+ pqxx::to_string(id) + ","
+			+ quote(txn, buddyInfo.settings.find("icon_hash")->first) + ","
+			+ pqxx::to_string(TYPE_STRING) + ","
+			+ quote(txn,  buddyInfo.settings.find("icon_hash")->second.s) + ")");
+	}
 
-// 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
-//	if (!buddyInfo.settings.find("icon_hash")->second.s.empty()) {
-//		*m_updateBuddySetting << userId << id << buddyInfo.settings.find("icon_hash")->first << (int) TYPE_STRING << buddyInfo.settings.find("icon_hash")->second.s << buddyInfo.settings.find("icon_hash")->second.s;
-//		EXEC(m_updateBuddySetting, addBuddy(userId, buddyInfo));
-//	}
-
-	return 0;
+	return id;
 }
 
 void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 	try {
 		pqxx::work txn(*m_conn);
-		exec(txn, "UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, Util::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + quote(txn, buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
+		exec(txn, "UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, Util::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + pqxx::to_string(buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
 	}
 	catch (std::exception& e) {
 		LOG4CXX_ERROR(logger, e.what());
