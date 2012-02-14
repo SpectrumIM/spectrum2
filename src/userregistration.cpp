@@ -26,6 +26,8 @@
 #include "transport/user.h"
 #include "Swiften/Elements/ErrorPayload.h"
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "log4cxx/logger.h"
 
 using namespace Swift;
@@ -241,6 +243,20 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		boolean->setLabel((("Remove your registration")));
 		boolean->setValue(0);
 		form->addField(boolean);
+	} else {
+		if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
+			std::string localUsernameField = CONFIG_STRING(m_config, "registration.local_username_label");
+			TextSingleFormField::ref local_username = TextSingleFormField::create();
+			local_username->setName("local_username");
+			local_username->setLabel((localUsernameField));
+			local_username->setRequired(true);
+			form->addField(local_username);
+			TextPrivateFormField::ref local_password = TextPrivateFormField::create();
+			local_password->setName("local_password");
+			local_password->setLabel((("Local Password")));
+			local_password->setRequired(true);
+			form->addField(local_password);
+		}
 	}
 
 	reg->setForm(form);
@@ -273,6 +289,8 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	std::string encoding;
 	std::string language;
+	std::string local_username("");
+	std::string local_password("");
 
 	Form::ref form = payload->getForm();
 	if (form) {
@@ -290,6 +308,13 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 				else if (textSingle->getName() == "password") {
 					payload->setPassword(textSingle->getValue());
 				}
+				else if (textSingle->getName() == "local_username") {
+					local_username = textSingle->getValue();
+				}
+				// Pidgin sends it as textSingle, not sure why...
+				else if (textSingle->getName() == "local_password") {
+					local_password = textSingle->getValue();
+				}
 				continue;
 			}
 
@@ -297,6 +322,9 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 			if (textPrivate) {
 				if (textPrivate->getName() == "password") {
 					payload->setPassword(textPrivate->getValue());
+				}
+				else if (textPrivate->getName() == "local_password") {
+					local_password = textPrivate->getValue();
 				}
 				continue;
 			}
@@ -326,6 +354,50 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		sendResponse(from, id, InBandRegistrationPayload::ref());
 		return true;
 	}
+
+	if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
+	/*	if (!local_username || !local_password) {
+			sendResponse(from, id, InBandRegistrationPayload::ref());
+			return true
+		} else */ if (local_username == "" || local_password == "") {
+			sendResponse(from, id, InBandRegistrationPayload::ref());
+			return true;
+		} 
+//		Swift::logging = true;
+		bool validLocal = false;
+		std::string localLookupServer = CONFIG_STRING(m_config, "registration.local_account_server");
+		std::string localLookupJID = local_username + std::string("@") + localLookupServer;
+		SimpleEventLoop localLookupEventLoop;
+		BoostNetworkFactories localLookupNetworkFactories(&localLookupEventLoop);
+		Client localLookupClient(localLookupJID, local_password, &localLookupNetworkFactories);
+		
+		// TODO: this is neccessary on my server ... but should maybe omitted
+		localLookupClient.setAlwaysTrustCertificates();
+		localLookupClient.connect();
+
+		class SimpleLoopRunner {
+			public:
+				SimpleLoopRunner() {};
+
+				static void run(SimpleEventLoop * loop) {
+					loop->run();
+				};
+		};
+
+		// TODO: Really ugly and hacky solution, any other ideas more than welcome!
+		boost::thread thread(boost::bind(&(SimpleLoopRunner::run), &localLookupEventLoop));
+		thread.timed_join(boost::posix_time::millisec(CONFIG_INT(m_config, "registration.local_account_server_timeout")));
+		localLookupEventLoop.stop();
+		thread.join();
+		validLocal = localLookupClient.isAvailable();
+		localLookupClient.disconnect();
+		if (!validLocal) {
+			sendError(from, id, ErrorPayload::NotAuthorized, ErrorPayload::Modify);
+			return true;
+		}
+	}
+
+	printf("here\n");
 
 	if (!payload->getUsername() || !payload->getPassword()) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
