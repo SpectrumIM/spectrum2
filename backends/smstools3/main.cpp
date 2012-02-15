@@ -42,6 +42,8 @@ using namespace Transport;
 
 using namespace log4cxx;
 
+#define INTERNAL_USER "/sms@backend@internal@user"
+
 class SMSNetworkPlugin;
 SMSNetworkPlugin * np = NULL;
 StorageBackend *storageBackend;
@@ -52,6 +54,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
 		Swift::Timer::ref m_timer;
+		int m_internalUser;
 
 		SMSNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
@@ -65,6 +68,13 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			m_timer = m_factories->getTimerFactory()->createTimer(5000);
 			m_timer->onTick.connect(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
 			m_timer->start();
+
+			UserInfo info;
+			info.jid = INTERNAL_USER;
+			info.password = "";
+			storageBackend->setUser(info);
+			storageBackend->getUser(INTERNAL_USER, info);
+			m_internalUser = info.id;
 		}
 
 
@@ -78,21 +88,32 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 			str.assign((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
-			std::string to = "";
+			std::string from = "";
 			std::string msg = "";
 			while(str.find("\n") != std::string::npos) {
 				std::string line = str.substr(0, str.find("\n"));
-				if (line.find("To: ") == 0) {
-					to = line.substr(strlen("To: "));
+				if (line.find("From: ") == 0) {
+					from = line.substr(strlen("From: "));
 				}
 				else if (line.empty()) {
-					msg = str;
+					msg = str.substr(1);
 					break;
 				}
 				str = str.substr(str.find("\n") + 1);
 			}
 
-			std::cout << "INCOMING SMS '" << to << "' '" << msg << "'\n";
+			std::list<BuddyInfo> roster;
+			storageBackend->getBuddies(m_internalUser, roster);
+
+			std::string to;
+			BOOST_FOREACH(BuddyInfo &b, roster) {
+				if (b.legacyName == from) {
+					to = b.alias;
+				}
+			}
+
+			handleMessage(to, from, msg);
+			std::cout << "INCOMING SMS '" << from << "' '" << to << "' '" << msg << "'\n";
 
 		}
 
@@ -104,7 +125,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 				try {
 					if (is_regular(itr->path())) {
 						handleSMS(itr->path().string());
-//						remove(itr->path());
+						remove(itr->path());
 					}
 				}
 				catch (const filesystem_error& ex) {
@@ -162,7 +183,20 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
-			sendSMS(legacyName, message);
+			std::string n = legacyName;
+			if (n.find("+") == 0) {
+				n = n.substr(1);
+			}
+
+			BuddyInfo info;
+			info.legacyName = n;
+			info.alias = user;
+			info.id = -1;
+			info.subscription = "both";
+			info.flags = 0;
+			storageBackend->addBuddy(m_internalUser, info);
+
+			sendSMS(n, message);
 		}
 
 		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {

@@ -111,6 +111,8 @@ bool SQLite3Backend::connect() {
 		return false;
 	}
 
+	sqlite3_busy_timeout(m_db, 1500);
+
 	if (createDatabase() == false)
 		return false;
 
