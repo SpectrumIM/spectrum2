@@ -10,6 +10,10 @@
 
 #include "transport/config.h"
 #include "transport/networkplugin.h"
+#include "transport/sqlite3backend.h"
+#include "transport/mysqlbackend.h"
+#include "transport/pqxxbackend.h"
+#include "transport/storagebackend.h"
 #include "Swiften/Swiften.h"
 #include <boost/filesystem.hpp>
 #include "unistd.h"
@@ -40,6 +44,7 @@ using namespace log4cxx;
 
 class SMSNetworkPlugin;
 SMSNetworkPlugin * np = NULL;
+StorageBackend *storageBackend;
 
 class SMSNetworkPlugin : public NetworkPlugin {
 	public:
@@ -135,6 +140,18 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+			UserInfo info;
+			if (!storageBackend->getUser(user, info)) {
+				handleDisconnected(user, 0, "Not registered user.");
+				return;
+			}
+			std::list<BuddyInfo> roster;
+			storageBackend->getBuddies(info.id, roster);
+
+			BOOST_FOREACH(BuddyInfo &b, roster) {
+				handleBuddyChanged(user, b.legacyName, b.alias, b.groups, pbnetwork::STATUS_ONLINE);
+			}
+
 			np->handleConnected(user);
 //			std::vector<std::string> groups;
 //			groups.push_back("ZCode");
@@ -152,6 +169,14 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
+		}
+
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
+			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
+		}
+
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
+
 		}
 
 
@@ -253,6 +278,57 @@ int main (int argc, char* argv[]) {
 		p.setProperty("jid", jid);
 #endif
 		log4cxx::PropertyConfigurator::configure(p);
+	}
+
+#ifdef WITH_SQLITE
+	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
+		storageBackend = new SQLite3Backend(&config);
+		if (!storageBackend->connect()) {
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+			return -1;
+		}
+	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
+		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		return -2;
+	}
+#endif
+
+#ifdef WITH_MYSQL
+	if (CONFIG_STRING(&config, "database.type") == "mysql") {
+		storageBackend = new MySQLBackend(&config);
+		if (!storageBackend->connect()) {
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+			return -1;
+		}
+	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "mysql") {
+		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		return -2;
+	}
+#endif
+
+#ifdef WITH_PQXX
+	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
+		storageBackend = new PQXXBackend(&config);
+		if (!storageBackend->connect()) {
+			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+			return -1;
+		}
+	}
+#else
+	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
+		std::cerr << "Spectrum2 is not compiled with pqxx backend.\n";
+		return -2;
+	}
+#endif
+
+	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3"
+		&& CONFIG_STRING(&config, "database.type") != "pqxx" && CONFIG_STRING(&config, "database.type") != "none") {
+		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
+		return -2;
 	}
 
 	Swift::SimpleEventLoop eventLoop;
