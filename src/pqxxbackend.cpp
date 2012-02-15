@@ -229,13 +229,13 @@ long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 
 	long id = r[0][0].as<long>();
 
-	r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string(TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
+	r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string((int)TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
 	if (r.affected_rows() == 0) {
 		exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
 			+ "(" + pqxx::to_string(userId) + ","
 			+ pqxx::to_string(id) + ","
 			+ quote(txn, buddyInfo.settings.find("icon_hash")->first) + ","
-			+ pqxx::to_string(TYPE_STRING) + ","
+			+ pqxx::to_string((int)TYPE_STRING) + ","
 			+ quote(txn,  buddyInfo.settings.find("icon_hash")->second.s) + ")");
 	}
 
