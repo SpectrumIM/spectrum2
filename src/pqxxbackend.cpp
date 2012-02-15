@@ -125,16 +125,16 @@ bool PQXXBackend::createDatabase() {
 }
 
 template<typename T>
-std::string PQXXBackend::quote(pqxx::work &txn, const T &t) {
+std::string PQXXBackend::quote(pqxx::nontransaction &txn, const T &t) {
 	return "'" + txn.esc(pqxx::to_string(t)) + "'";
 }
 
 bool PQXXBackend::exec(const std::string &query, bool show_error) {
-	pqxx::work txn(*m_conn);
+	pqxx::nontransaction txn(*m_conn);
 	return exec(txn, query, show_error);
 }
 
-bool PQXXBackend::exec(pqxx::work &txn, const std::string &query, bool show_error) {
+bool PQXXBackend::exec(pqxx::nontransaction &txn, const std::string &query, bool show_error) {
 	try {
 		txn.exec(query);
 		txn.commit();
@@ -152,7 +152,7 @@ void PQXXBackend::setUser(const UserInfo &user) {
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
 		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
-	pqxx::work txn(*m_conn);
+	pqxx::nontransaction txn(*m_conn);
 	exec(txn, "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
 		 "(" + quote(txn, user.jid) + ","
 		+ quote(txn, user.uin) + ","
@@ -165,7 +165,7 @@ void PQXXBackend::setUser(const UserInfo &user) {
 
 bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 
 		pqxx::result r = txn.exec("SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid="
 			+ quote(txn, barejid));
@@ -192,7 +192,7 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 
 void PQXXBackend::setUserOnline(long id, bool online) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 		exec(txn, "UPDATE " + m_prefix + "users SET online=" + (online ? "'true'" : "'false'") + ", last_login=NOW() WHERE id=" + pqxx::to_string(id));
 	}
 	catch (std::exception& e) {
@@ -202,7 +202,7 @@ void PQXXBackend::setUserOnline(long id, bool online) {
 
 bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 		pqxx::result r = txn.exec("SELECT jid FROM " + m_prefix + "users WHERE online=1");
 
 		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
@@ -218,7 +218,7 @@ bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 }
 
 long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
-	pqxx::work txn(*m_conn);
+	pqxx::nontransaction txn(*m_conn);
 	pqxx::result r = txn.exec("INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES "
 		+ "(" + pqxx::to_string(userId) + ","
 		+ quote(txn, buddyInfo.legacyName) + ","
@@ -231,7 +231,7 @@ long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 
 	r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string((int)TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
 	if (r.affected_rows() == 0) {
-		exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
+		txn.exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
 			+ "(" + pqxx::to_string(userId) + ","
 			+ pqxx::to_string(id) + ","
 			+ quote(txn, buddyInfo.settings.find("icon_hash")->first) + ","
@@ -239,12 +239,14 @@ long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 			+ quote(txn,  buddyInfo.settings.find("icon_hash")->second.s) + ")");
 	}
 
+	txn.commit();
+
 	return id;
 }
 
 void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 		exec(txn, "UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, Util::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + pqxx::to_string(buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
 	}
 	catch (std::exception& e) {
@@ -254,7 +256,7 @@ void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 
 bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 
 		pqxx::result r = txn.exec("SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=" + pqxx::to_string(id) + " ORDER BY id ASC");
 		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
@@ -318,7 +320,7 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 
 bool PQXXBackend::removeUser(long id) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 		exec(txn, "DELETE FROM " + m_prefix + "users SET id=" + pqxx::to_string(id));
 		exec(txn, "DELETE FROM " + m_prefix + "buddies SET user_id=" + pqxx::to_string(id));
 		exec(txn, "DELETE FROM " + m_prefix + "user_settings SET user_id=" + pqxx::to_string(id));
@@ -334,11 +336,11 @@ bool PQXXBackend::removeUser(long id) {
 
 void PQXXBackend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 
 		pqxx::result r = txn.exec("SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=" + pqxx::to_string(id) + " AND var=" + quote(txn, variable));
 		if (r.size() == 0) {
-			exec(txn, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES(" + pqxx::to_string(id) + "," + quote(txn, variable) + "," + pqxx::to_string(type) + "," + quote(txn, value) + ")");
+			txn.exec(txn, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES(" + pqxx::to_string(id) + "," + quote(txn, variable) + "," + pqxx::to_string(type) + "," + quote(txn, value) + ")");
 		}
 		else {
 			type = r[0][0].as<int>();
@@ -352,7 +354,7 @@ void PQXXBackend::getUserSetting(long id, const std::string &variable, int &type
 
 void PQXXBackend::updateUserSetting(long id, const std::string &variable, const std::string &value) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 		exec(txn, "UPDATE " + m_prefix + "users_settings SET value=" + quote(txn, value) + " WHERE user_id=" + pqxx::to_string(id) + " AND var=" + quote(txn, variable));
 	}
 	catch (std::exception& e) {
@@ -361,7 +363,7 @@ void PQXXBackend::updateUserSetting(long id, const std::string &variable, const 
 }
 
 void PQXXBackend::beginTransaction() {
-	exec("START TRANSACTION;");
+	exec("BEGIN;");
 }
 
 void PQXXBackend::commitTransaction() {
