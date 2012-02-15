@@ -7,7 +7,7 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
-#ADD_SUBDIRECTORY(smstools3)
+	ADD_SUBDIRECTORY(smstools3)
 
 if (NOT WIN32)
 	ADD_SUBDIRECTORY(frotz)

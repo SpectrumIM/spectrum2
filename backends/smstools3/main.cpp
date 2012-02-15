@@ -87,6 +87,8 @@ class SMSNetworkPlugin : public NetworkPlugin {
 				str = str.substr(str.find("\n") + 1);
 			}
 
+			std::cout << "INCOMING SMS '" << to << "' '" << msg << "'\n";
+
 		}
 
 		void handleSMSDir() {
@@ -97,7 +99,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 				try {
 					if (is_regular(itr->path())) {
 						handleSMS(itr->path().string());
-						remove(itr->path());
+//						remove(itr->path());
 					}
 				}
 				catch (const filesystem_error& ex) {
@@ -105,6 +107,22 @@ class SMSNetworkPlugin : public NetworkPlugin {
 				}
 			}
 			m_timer->start();
+		}
+
+		void sendSMS(const std::string &to, const std::string &msg) {
+			std::string data = "To: " + to + "\n";
+			data += "\n";
+			data += msg;
+
+			std::string bucket = "abcdefghijklmnopqrstuvwxyz";
+			std::string uuid;
+			for (int i = 0; i < 10; i++) {
+				uuid += bucket[rand() % bucket.size()];
+			}
+			std::ofstream myfile;
+			myfile.open (std::string("/var/spool/sms/outgoing/spectrum." + uuid).c_str());
+			myfile << data;
+			myfile.close();
 		}
 
 		void sendData(const std::string &string) {
@@ -127,7 +145,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
-
+			sendSMS(legacyName, message);
 		}
 
 		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
