@@ -56,6 +56,9 @@ find_package(event)
 set(pqxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(pqxx)
 
+set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(dbus)
+
 find_package(Doxygen)
 
 INCLUDE(FindQt4)
@@ -146,12 +149,21 @@ if (PROTOBUF_FOUND)
 	endif()
 
 	message("Frotz plugin      : yes")
+	message("SMSTools3 plugin  : yes")
+
+	if(${LIBDBUSGLIB_FOUND})
+		message("Skype plugin      : yes")
+		include_directories(${LIBDBUSGLIB_INCLUDE_DIRS})
+	else()
+		message("Skype plugin      : no (install dbus-glib-devel)")
+	endif()
 
 else()
 	message("Network plugins   : no (install libprotobuf-dev)")
 	message("Libpurple plugin  : no (install libpurple and libprotobuf-dev)")
 	message("IRC plugin        : no (install libircclient-qt and libprotobuf-dev)")
 	message("Frotz plugin      : no (install libprotobuf-dev)")
+	message("SMSTools3 plugin  : no (install libprotobuf-dev)")
 endif()
 
 if (LOG4CXX_FOUND)

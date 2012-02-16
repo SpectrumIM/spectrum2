@@ -12,9 +12,7 @@
 #include "transport/rostermanager.h"
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
-#include "spectrumeventloop.h"
 #include <boost/filesystem.hpp>
-#include "geventloop.h"
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
@@ -773,7 +771,7 @@ int main(int argc, char **argv) {
 
 
 	GIOChannel *channel;
-	GIOCondition cond = (GIOCondition) READ_COND;
+	GIOCondition cond = (GIOCondition) G_IO_IN;
 	channel = g_io_channel_unix_new(m_sock);
 	g_io_add_watch_full(channel, G_PRIORITY_DEFAULT, cond, transportDataReceived, NULL, io_destroy);
 
