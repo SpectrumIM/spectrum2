@@ -73,6 +73,11 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			m_timer->onTick.connect(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
 			m_timer->start();
 
+			// We're reusing our database model here. Buddies of user with JID INTERNAL_USER are there
+			// to match received GSM messages from number N with the XMPP users who sent message to number N.
+			// BuddyName = GSM number
+			// Alias = XMPP user JID to which the messages from this number is sent to.
+			// TODO: This should be per Modem!!!
 			UserInfo info;
 			info.jid = INTERNAL_USER;
 			info.password = "";
@@ -150,10 +155,12 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void sendSMS(const std::string &to, const std::string &msg) {
+			// TODO: Probably 
 			std::string data = "To: " + to + "\n";
 			data += "\n";
 			data += msg;
 
+			// generate random string here...
 			std::string bucket = "abcdefghijklmnopqrstuvwxyz";
 			std::string uuid;
 			for (int i = 0; i < 10; i++) {
@@ -183,25 +190,25 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			std::list<BuddyInfo> roster;
 			storageBackend->getBuddies(info.id, roster);
 
+			// Send available presence to every number in the roster.
 			BOOST_FOREACH(BuddyInfo &b, roster) {
 				handleBuddyChanged(user, b.legacyName, b.alias, b.groups, pbnetwork::STATUS_ONLINE);
 			}
 
 			np->handleConnected(user);
-//			std::vector<std::string> groups;
-//			groups.push_back("ZCode");
-//			np->handleBuddyChanged(user, "zcode", "ZCode", groups, pbnetwork::STATUS_ONLINE);
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
+			// Remove trailing +, because smstools doesn't use it in "From: " field for received messages.
 			std::string n = legacyName;
 			if (n.find("+") == 0) {
 				n = n.substr(1);
 			}
 
+			// Create GSM Number - XMPP user pair to match the potential response and send it to the proper JID.
 			BuddyInfo info;
 			info.legacyName = n;
 			info.alias = user;

@@ -38,7 +38,7 @@ set(Boost_USE_STATIC_LIBS        ON)
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 endif()
-find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
+find_package(Boost COMPONENTS program_options date_time system filesystem regex  signals REQUIRED)
 message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
 set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
