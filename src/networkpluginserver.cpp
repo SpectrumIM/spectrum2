@@ -257,6 +257,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 #endif
 
 	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
