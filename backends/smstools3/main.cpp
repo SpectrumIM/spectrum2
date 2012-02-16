@@ -42,6 +42,8 @@ using namespace Transport;
 
 using namespace log4cxx;
 
+static LoggerPtr logger = log4cxx::Logger::getLogger("SMSNetworkPlugin");
+
 #define INTERNAL_USER "/sms@backend@internal@user"
 
 class SMSNetworkPlugin;
@@ -65,6 +67,8 @@ class SMSNetworkPlugin : public NetworkPlugin {
 // 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
 // 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
 
+			LOG4CXX_INFO(logger, "Starting the plugin.");
+
 			m_timer = m_factories->getTimerFactory()->createTimer(5000);
 			m_timer->onTick.connect(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
 			m_timer->start();
@@ -79,6 +83,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 
 		void handleSMS(const std::string &sms) {
+			LOG4CXX_INFO(logger, "Handling SMS " << sms << ".")
 			std::ifstream t(sms.c_str());
 			std::string str;
 
@@ -112,13 +117,22 @@ class SMSNetworkPlugin : public NetworkPlugin {
 				}
 			}
 
-			handleMessage(to, from, msg);
-			std::cout << "INCOMING SMS '" << from << "' '" << to << "' '" << msg << "'\n";
+			if (to.empty()) {
+				LOG4CXX_WARN(logger, "Received SMS from " << from << ", but this number is not associated with any XMPP user.");
+			}
 
+			LOG4CXX_INFO(logger, "Forwarding SMS from " << from << " to " << to << ".");
+			handleMessage(to, from, msg);
 		}
 
 		void handleSMSDir() {
-			path p(config->getUnregistered().find("backend.incoming_dir")->second);
+			std::string dir = "/var/spool/sms/incoming/";
+			if (config->getUnregistered().find("backend.incoming_dir") != config->getUnregistered().end()) {
+				dir = config->getUnregistered().find("backend.incoming_dir")->second;
+			}
+			LOG4CXX_INFO(logger, "Checking directory " << dir << " for incoming SMS.");
+
+			path p(dir);
 			directory_iterator end_itr;
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 
@@ -129,7 +143,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 					}
 				}
 				catch (const filesystem_error& ex) {
-
+					LOG4CXX_ERROR(logger, "Error when removing the SMS: " << ex.what() << ".");
 				}
 			}
 			m_timer->start();
@@ -196,6 +210,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			info.flags = 0;
 			storageBackend->addBuddy(m_internalUser, info);
 
+			LOG4CXX_INFO(logger, "Sending SMS from " << user << " to " << n << ".");
 			sendSMS(n, message);
 		}
 
@@ -206,6 +221,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
+			LOG4CXX_INFO(logger, user << ": Added buddy " << buddyName << ".");
 			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
 		}
 
