@@ -517,6 +517,10 @@ bool Skype::loadSkypeBuddies() {
 				buddy = buddy.substr(buddy.rfind(","));
 			}
 
+			if (buddy[0] == ',') {
+				buddy.erase(buddy.begin());
+			}
+
 			LOG4CXX_INFO(logger, "Got buddy " << buddy);
 			std::string st = full_friends_list[i + 5];
 
