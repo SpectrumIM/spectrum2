@@ -1,5 +1,7 @@
 Version 2.0.0-beta  (X-X-X):
 	General:
+	* Send presences only "from" bare JID (fixed bug with buddies appearing
+	  twice in the roster and potential unregistering issues).
 	* Fixed potential MySQL/SQLite3 deadlocks.
 	* Fixed disconnecting in server-mode when client does not send unavailable
 	  presence before disconnection.
