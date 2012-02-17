@@ -111,6 +111,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	bool found_working = false;
 	bool found_pidfile = false;
 	bool found_backend_port = false;
+	bool found_database = false;
 	std::string jid = "";
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.string_key == "service.jid") {
@@ -134,6 +135,9 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.string_key == "service.pidfile") {
 			found_pidfile = true;
 		}
+		else if (opt.string_key == "database.database") {
+			found_database = true;
+		}
 	}
 
 	if (!found_working) {
@@ -151,6 +155,11 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		std::string p = boost::lexical_cast<std::string>(Util::getRandomPort(_jid.empty() ? jid : _jid));
 		value.push_back(p);
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.backend_port", value));
+	}
+	if (!found_database) {
+		std::vector<std::string> value;
+		value.push_back("/var/lib/spectrum2/$jid/database.sql");
+		parsed.options.push_back(boost::program_options::basic_option<char>("database.database", value));
 	}
 
 	BOOST_FOREACH(option &opt, parsed.options) {
