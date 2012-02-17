@@ -534,7 +534,9 @@ bool Skype::loadSkypeBuddies() {
 			}
 
 			std::vector<std::string> groups;
-			groups.push_back(group_map[buddy]);
+			if (group_map.find(buddy) != group_map.end()) {
+				groups.push_back(group_map[buddy]);
+			}
 			np->handleBuddyChanged(m_user, buddy, alias, groups, status, mood_text);
 		}
 	}
