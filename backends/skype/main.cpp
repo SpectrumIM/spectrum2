@@ -107,6 +107,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
 		SpectrumNetworkPlugin(Config *config, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
+			LOG4CXX_INFO(logger, "Starting the backend.");
 		}
 
 		~SpectrumNetworkPlugin() {
@@ -118,7 +119,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			std::string name = legacyName;
 			name = name.substr(name.find(".") + 1);
-			LOG4CXX_INFO(logger,  "Creating account with name '" << name);
+			LOG4CXX_INFO(logger,  "Creating account with name '" << name << "'");
 
 			Skype *skype = new Skype(user, name, password);
 			m_sessions[user] = skype;
@@ -366,8 +367,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			free(db);
 
-			sleep(10);
-
 			GError *error = NULL;
 			DBusObjectPathVTable vtable;
 
@@ -376,6 +375,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			
 			if (m_connection == NULL)
 			{
+				LOG4CXX_INFO(logger, "Creating DBus connection.");
 				m_connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
 				if (m_connection == NULL && error != NULL)
 				{
@@ -387,15 +387,29 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			
 			if (m_proxy == NULL)
 			{
-				m_proxy = dbus_g_proxy_new_for_name_owner (m_connection,
-												"com.Skype.API",
-												"/com/Skype",
-												"com.Skype.API",
-												&error);
-				if (m_proxy == NULL && error != NULL)
-				{
-					LOG4CXX_INFO(logger,  m_username << ":" << error->message);
-					g_error_free(error);
+				int counter = 0;
+				while (m_proxy == NULL) {
+					counter++;
+					sleep(1);
+					LOG4CXX_INFO(logger, "Creating DBus proxy for com.Skype.Api.");
+					m_proxy = dbus_g_proxy_new_for_name_owner (m_connection,
+													"com.Skype.API",
+													"/com/Skype",
+													"com.Skype.API",
+													&error);
+					if (m_proxy == NULL && error != NULL)
+					{
+						LOG4CXX_INFO(logger,  m_username << ":" << error->message);
+
+						if (counter == 15) {
+							np->handleDisconnected(m_user, 0, error->message);
+							close(fd_output);
+							logout();
+							g_error_free(error);
+							break;
+						}
+						g_error_free(error);
+					}
 				}
 				
 				vtable.message_function = &skype_notify_handler;
@@ -466,7 +480,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					if (buddy[0] == ',') {
 						buddy.erase(buddy.begin());
 					}
-					std::cout << "BUDDY '" << buddy << "'\n";
+					LOG4CXX_INFO(logger, "Got buddy " << buddy);
 					std::string st = full_friends_list[i + 5];
 					
 					pbnetwork::StatusType status = getStatus(st);
