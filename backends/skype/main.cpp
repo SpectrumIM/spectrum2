@@ -366,7 +366,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			free(db);
 
-			sleep(2);
+			sleep(10);
 
 			GError *error = NULL;
 			DBusObjectPathVTable vtable;
