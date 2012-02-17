@@ -57,7 +57,14 @@ bool PQXXBackend::connect() {
 	str += CONFIG_STRING(m_config, "database.database") + " ";
 
 	str += "user=" + CONFIG_STRING(m_config, "database.user") + " ";
-	m_conn = new pqxx::connection(str);
+
+	try {
+		m_conn = new pqxx::connection(str);
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
 
 	createDatabase();
 
@@ -152,15 +159,20 @@ void PQXXBackend::setUser(const UserInfo &user) {
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
 		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
-	pqxx::nontransaction txn(*m_conn);
-	txn.exec("INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
-		+ "(" + quote(txn, user.jid) + ","
-		+ quote(txn, user.uin) + ","
-		+ quote(txn, encrypted) + ","
-		+ quote(txn, user.language) + ","
-		+ quote(txn, user.encoding) + ","
-		+ "NOW(),"
-		+ (user.vip ? "'true'" : "'false'") +")");
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		txn.exec("INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
+			+ "(" + quote(txn, user.jid) + ","
+			+ quote(txn, user.uin) + ","
+			+ quote(txn, encrypted) + ","
+			+ quote(txn, user.language) + ","
+			+ quote(txn, user.encoding) + ","
+			+ "NOW(),"
+			+ (user.vip ? "'true'" : "'false'") +")");
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
@@ -218,30 +230,34 @@ bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 }
 
 long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
-	pqxx::nontransaction txn(*m_conn);
-	pqxx::result r = txn.exec("INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES "
-		+ "(" + pqxx::to_string(userId) + ","
-		+ quote(txn, buddyInfo.legacyName) + ","
-		+ quote(txn, buddyInfo.subscription) + ","
-		+ quote(txn, Util::serializeGroups(buddyInfo.groups)) + ","
-		+ quote(txn, buddyInfo.alias) + ","
-		+ pqxx::to_string(buddyInfo.flags) + ") RETURNING id");
-
-	long id = r[0][0].as<long>();
-
-	r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string((int)TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
-	if (r.affected_rows() == 0) {
-		txn.exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		pqxx::result r = txn.exec("INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES "
 			+ "(" + pqxx::to_string(userId) + ","
-			+ pqxx::to_string(id) + ","
-			+ quote(txn, buddyInfo.settings.find("icon_hash")->first) + ","
-			+ pqxx::to_string((int)TYPE_STRING) + ","
-			+ quote(txn,  buddyInfo.settings.find("icon_hash")->second.s) + ")");
+			+ quote(txn, buddyInfo.legacyName) + ","
+			+ quote(txn, buddyInfo.subscription) + ","
+			+ quote(txn, Util::serializeGroups(buddyInfo.groups)) + ","
+			+ quote(txn, buddyInfo.alias) + ","
+			+ pqxx::to_string(buddyInfo.flags) + ") RETURNING id");
+
+		long id = r[0][0].as<long>();
+
+		r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string((int)TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
+		if (r.affected_rows() == 0) {
+			txn.exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
+				+ "(" + pqxx::to_string(userId) + ","
+				+ pqxx::to_string(id) + ","
+				+ quote(txn, buddyInfo.settings.find("icon_hash")->first) + ","
+				+ pqxx::to_string((int)TYPE_STRING) + ","
+				+ quote(txn,  buddyInfo.settings.find("icon_hash")->second.s) + ")");
+		}
+
+		return id;
 	}
-
-	txn.commit();
-
-	return id;
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return -1;
+	}
 }
 
 void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
