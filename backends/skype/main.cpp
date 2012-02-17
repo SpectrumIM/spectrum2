@@ -541,6 +541,7 @@ bool Skype::loadSkypeBuddies() {
 	g_strfreev(full_friends_list);
 
 	send_command("SET AUTOAWAY OFF");
+	send_command("SET USERSTATUS ONLINE");
 	return FALSE;
 }
 
