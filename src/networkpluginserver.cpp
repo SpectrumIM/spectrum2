@@ -157,6 +157,7 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	// fork and exec
 	pid_t pid = fork();
 	if ( pid == 0 ) {
+		setsid();
 		// child process
 		exit(execv(argv[0], argv));
 	} else if ( pid < 0 ) {
