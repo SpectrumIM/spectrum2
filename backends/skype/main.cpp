@@ -522,7 +522,6 @@ bool Skype::loadSkypeBuddies() {
 			std::string mood_text = "";
 			if (full_friends_list[i + 8] && *full_friends_list[i + 8] != '\0' && *full_friends_list[i + 8] != ',') {
 				mood_text = full_friends_list[i + 8];
-				i++;
 			}
 
 			std::vector<std::string> groups;
