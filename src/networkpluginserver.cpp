@@ -175,7 +175,7 @@ static void SigCatcher(int n) {
 	int status;
 	// Read exit code from all children to not have zombies arround
 	// WARNING: Do not put LOG4CXX_ here, because it can lead to deadlock
-	while ((result = waitpid(0, &status, WNOHANG)) > 0) {
+	while ((result = waitpid(-1, &status, WNOHANG)) > 0) {
 		if (result != 0) {
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
