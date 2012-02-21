@@ -7,9 +7,13 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
+	ADD_SUBDIRECTORY(smstools3)
+
 if (NOT WIN32)
 	ADD_SUBDIRECTORY(frotz)
-#	ADD_SUBDIRECTORY(skype)
+	if (${LIBDBUSGLIB_FOUND})
+		ADD_SUBDIRECTORY(skype)
+	endif()
 endif()
 
 endif()

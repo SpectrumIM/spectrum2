@@ -12,9 +12,7 @@
 #include "transport/rostermanager.h"
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
-#include "spectrumeventloop.h"
 #include <boost/filesystem.hpp>
-#include "geventloop.h"
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
@@ -96,6 +94,9 @@ class Skype {
 			return m_username;
 		}
 
+		bool createDBusProxy();
+		bool loadSkypeBuddies();
+
 	private:
 		std::string m_username;
 		std::string m_password;
@@ -103,12 +104,16 @@ class Skype {
 		DBusGConnection *m_connection;
 		DBusGProxy *m_proxy;
 		std::string m_user;
+		int m_timer;
+		int m_counter;
+		int fd_output;
 };
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
 		SpectrumNetworkPlugin(Config *config, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
+			LOG4CXX_INFO(logger, "Starting the backend.");
 		}
 
 		~SpectrumNetworkPlugin() {
@@ -120,7 +125,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			std::string name = legacyName;
 			name = name.substr(name.find(".") + 1);
-			LOG4CXX_INFO(logger,  "Creating account with name '" << name);
+			LOG4CXX_INFO(logger,  "Creating account with name '" << name << "'");
 
 			Skype *skype = new Skype(user, name, password);
 			m_sessions[user] = skype;
@@ -297,236 +302,287 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		
 };
 
-		Skype::Skype(const std::string &user, const std::string &username, const std::string &password) {
-			m_username = username;
-			m_user = user;
-			m_password = password;
-			m_pid = 0;
-			m_connection = 0;
-			m_proxy = 0;
-		}
 
-		void Skype::login() {
-			boost::filesystem::path	path(std::string("/tmp/skype/") + m_username);
-			if (!boost::filesystem::exists(path)) {
-				boost::filesystem::create_directories(path);
-				boost::filesystem::path	path2(std::string("/tmp/skype/") + m_username + "/" + m_username );
-				boost::filesystem::create_directories(path2);
-			}
+Skype::Skype(const std::string &user, const std::string &username, const std::string &password) {
+	m_username = username;
+	m_user = user;
+	m_password = password;
+	m_pid = 0;
+	m_connection = 0;
+	m_proxy = 0;
+	m_timer = -1;
+	m_counter = 0;
+}
 
-			std::string shared_xml = "<?xml version=\"1.0\"?>\n"
-									"<config version=\"1.0\" serial=\"28\" timestamp=\"" + boost::lexical_cast<std::string>(time(NULL)) + ".0\">\n"
-									"<UI>\n"
-										"<Installed>2</Installed>\n"
-										"<Language>en</Language>\n"
-									"</UI>\n"
-									"</config>\n";
-			g_file_set_contents(std::string(std::string("/tmp/skype/") + m_username + "/shared.xml").c_str(), shared_xml.c_str(), -1, NULL);
 
-			std::string config_xml = "<?xml version=\"1.0\"?>\n"
-									"<config version=\"1.0\" serial=\"7\" timestamp=\"" + boost::lexical_cast<std::string>(time(NULL)) + ".0\">\n"
-										"<Lib>\n"
-											"<Account>\n"
-											"<IdleTimeForAway>30000000</IdleTimeForAway>\n"
-											"<IdleTimeForNA>300000000</IdleTimeForNA>\n"
-											"<LastUsed>" + boost::lexical_cast<std::string>(time(NULL)) + "</LastUsed>\n"
-											"</Account>\n"
-										"</Lib>\n"
-										"<UI>\n"
-											"<API>\n"
-											"<Authorizations>Spectrum</Authorizations>\n"
-											"<BlockedPrograms></BlockedPrograms>\n"
-											"</API>\n"
-										"</UI>\n"
-									"</config>\n";
-			g_file_set_contents(std::string(std::string("/tmp/skype/") + m_username + "/" + m_username +"/config.xml").c_str(), config_xml.c_str(), -1, NULL);
-			std::string db_path = std::string("/tmp/skype/") + m_username;
-			char *db = (char *) malloc(db_path.size() + 1);
-			strcpy(db, db_path.c_str());
-			LOG4CXX_INFO(logger,  m_username << ": Spawning new Skype instance dbpath=" << db);
-			gchar* argv[6] = {"skype", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
+static gboolean load_skype_buddies(gpointer data) {
+	Skype *skype = (Skype *) data;
+	return skype->loadSkypeBuddies();
+}
 
-			int fd;
-			int fd_output;
-			g_spawn_async_with_pipes(NULL,
-				argv,
-				NULL /*envp*/,
-				G_SPAWN_SEARCH_PATH,
-				NULL /*child_setup*/,
-				NULL /*user_data*/,
-				&m_pid /*child_pid*/,
-				&fd,
-				NULL,
-				&fd_output,
-				NULL /*error*/);
-			std::string login_data = std::string(m_username + " " + m_password + "\n");
-			LOG4CXX_INFO(logger,  m_username << ": Login data=" << login_data);
-			write(fd, login_data.c_str(), login_data.size());
-			close(fd);
-			
-			fcntl (fd_output, F_SETFL, O_NONBLOCK);
+bool Skype::createDBusProxy() {
+	if (m_proxy == NULL) {
+		LOG4CXX_INFO(logger, "Creating DBus proxy for com.Skype.Api.");
+		m_counter++;
 
-			free(db);
+		GError *error = NULL;
+		m_proxy = dbus_g_proxy_new_for_name_owner (m_connection, "com.Skype.API", "/com/Skype", "com.Skype.API", &error);
+		if (m_proxy == NULL && error != NULL) {
+			LOG4CXX_INFO(logger,  m_username << ":" << error->message);
 
-			sleep(2);
-
-			GError *error = NULL;
-			DBusObjectPathVTable vtable;
-
-			//Initialise threading
-			dbus_threads_init_default();
-			
-			if (m_connection == NULL)
-			{
-				m_connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
-				if (m_connection == NULL && error != NULL)
-				{
-					LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
-					g_error_free(error);
-					return;
-				}
-			}
-			
-			if (m_proxy == NULL)
-			{
-				m_proxy = dbus_g_proxy_new_for_name_owner (m_connection,
-												"com.Skype.API",
-												"/com/Skype",
-												"com.Skype.API",
-												&error);
-				if (m_proxy == NULL && error != NULL)
-				{
-					LOG4CXX_INFO(logger,  m_username << ":" << error->message);
-					g_error_free(error);
-				}
-				
-				vtable.message_function = &skype_notify_handler;
-				dbus_connection_register_object_path(dbus_g_connection_get_connection(m_connection), "/com/Skype/Client", &vtable, this);
-			}
-
-			int counter = 0;
-			std::string re = "CONNSTATUS OFFLINE";
-			while (re == "CONNSTATUS OFFLINE" || re.empty()) {
-				sleep(1);
-				gchar buffer[1024];
-				int bytes_read;
-				bytes_read = read (fd_output, buffer, 1023);
-				if (bytes_read > 0) {
-					buffer[bytes_read] = 0;
-					np->handleDisconnected(m_user, 0, buffer);
-					close(fd_output);
-					logout();
-					return;
-				}
-				re = send_command("NAME Spectrum");
-				if (counter++ > 15)
-					break;
-			}
-
-			close(fd_output);
-
-			if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
-				np->handleDisconnected(m_user, 0, "Skype is not ready");
+			if (m_counter == 15) {
+				np->handleDisconnected(m_user, 0, error->message);
 				logout();
-				return;
+				g_error_free(error);
+				return FALSE;
 			}
-			
-			np->handleConnected(m_user);
-
-			std::map<std::string, std::string> group_map;
-			std::string groups = send_command("SEARCH GROUPS CUSTOM");
-			groups = groups.substr(groups.find(' ') + 1);
-			std::vector<std::string> grps;
-			boost::split(grps, groups, boost::is_any_of(","));
-			BOOST_FOREACH(std::string grp, grps) {
-				std::vector<std::string> data;
-				std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
-				boost::split(data, name, boost::is_any_of(" "));
-				name = name.substr(name.find("DISPLAYNAME") + 12);
-
-				std::string users = send_command("GET GROUP " + data[1] + " USERS");
-				users = name.substr(name.find("USERS") + 6);
-				boost::split(data, users, boost::is_any_of(","));
-				BOOST_FOREACH(std::string u, data) {
-					group_map[u] = grp;
-				}
-			}
-
-			std::string friends = send_command("GET AUTH_CONTACTS_PROFILES");
-
-			char **full_friends_list = g_strsplit((strchr(friends.c_str(), ' ')+1), ";", 0);
-			if (full_friends_list && full_friends_list[0])
-			{
-				//in the format of: username;full name;phone;office phone;mobile phone;
-				//                  online status;friendly name;voicemail;mood
-				// (comma-seperated lines, usernames can have comma's)
-
-				for (int i=0; full_friends_list[i] && *full_friends_list[i] != '\0'; i+=8)
-				{
-					std::string buddy = full_friends_list[i];
-
-					if (buddy[0] == ',') {
-						buddy.erase(buddy.begin());
-					}
-					std::cout << "BUDDY '" << buddy << "'\n";
-					std::string st = full_friends_list[i + 5];
-					
-					pbnetwork::StatusType status = getStatus(st);
-
-					std::string alias = full_friends_list[i + 6];
-
-					std::string mood_text = "";
-					if (full_friends_list[i + 8] && *full_friends_list[i + 8] != '\0' && *full_friends_list[i + 8] != ',') {
-						mood_text = full_friends_list[i + 8];
-						i++;
-					}
-
-					std::vector<std::string> groups;
-					groups.push_back(group_map[buddy]);
-					np->handleBuddyChanged(m_user, buddy, alias, groups, status, mood_text);
-				}
-			}
-			g_strfreev(full_friends_list);
-			
-			send_command("SET AUTOAWAY OFF");
+			g_error_free(error);
 		}
 
-		void Skype::logout() {
-			if (m_pid != 0) {
-				send_command("SET USERSTATUS INVISIBLE");
-				send_command("SET USERSTATUS OFFLINE");
-				sleep(2);
-				g_object_unref(m_proxy);
-				LOG4CXX_INFO(logger,  m_username << ": Killing Skype instance");
-				kill((int) m_pid, SIGTERM);
-				m_pid = 0;
-			}
-		}
+		if (m_proxy) {
+			LOG4CXX_INFO(logger, "Proxy created.");
+			DBusObjectPathVTable vtable;
+			vtable.message_function = &skype_notify_handler;
+			dbus_connection_register_object_path(dbus_g_connection_get_connection(m_connection), "/com/Skype/Client", &vtable, this);
 
-		std::string Skype::send_command(const std::string &message) {
-			GError *error = NULL;
-			gchar *str = NULL;
+			m_counter = 0;
+			m_timer = g_timeout_add_seconds(1, load_skype_buddies, this);
+			return FALSE;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean create_dbus_proxy(gpointer data) {
+	Skype *skype = (Skype *) data;
+	return skype->createDBusProxy();
+}
+
+void Skype::login() {
+	boost::filesystem::path	path(std::string("/tmp/skype/") + m_username);
+	if (!boost::filesystem::exists(path)) {
+		boost::filesystem::create_directories(path);
+		boost::filesystem::path	path2(std::string("/tmp/skype/") + m_username + "/" + m_username );
+		boost::filesystem::create_directories(path2);
+	}
+
+	std::string shared_xml = "<?xml version=\"1.0\"?>\n"
+							"<config version=\"1.0\" serial=\"28\" timestamp=\"" + boost::lexical_cast<std::string>(time(NULL)) + ".0\">\n"
+							"<UI>\n"
+								"<Installed>2</Installed>\n"
+								"<Language>en</Language>\n"
+							"</UI>\n"
+							"</config>\n";
+	g_file_set_contents(std::string(std::string("/tmp/skype/") + m_username + "/shared.xml").c_str(), shared_xml.c_str(), -1, NULL);
+
+	std::string config_xml = "<?xml version=\"1.0\"?>\n"
+							"<config version=\"1.0\" serial=\"7\" timestamp=\"" + boost::lexical_cast<std::string>(time(NULL)) + ".0\">\n"
+								"<Lib>\n"
+									"<Account>\n"
+									"<IdleTimeForAway>30000000</IdleTimeForAway>\n"
+									"<IdleTimeForNA>300000000</IdleTimeForNA>\n"
+									"<LastUsed>" + boost::lexical_cast<std::string>(time(NULL)) + "</LastUsed>\n"
+									"</Account>\n"
+								"</Lib>\n"
+								"<UI>\n"
+									"<API>\n"
+									"<Authorizations>Spectrum</Authorizations>\n"
+									"<BlockedPrograms></BlockedPrograms>\n"
+									"</API>\n"
+								"</UI>\n"
+							"</config>\n";
+	g_file_set_contents(std::string(std::string("/tmp/skype/") + m_username + "/" + m_username +"/config.xml").c_str(), config_xml.c_str(), -1, NULL);
+
+	std::string db_path = std::string("/tmp/skype/") + m_username;
+	char *db = (char *) malloc(db_path.size() + 1);
+	strcpy(db, db_path.c_str());
+	LOG4CXX_INFO(logger,  m_username << ": Spawning new Skype instance dbpath=" << db);
+	gchar* argv[6] = {"skype", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
+
+	int fd;
+	g_spawn_async_with_pipes(NULL,
+		argv,
+		NULL /*envp*/,
+		G_SPAWN_SEARCH_PATH,
+		NULL /*child_setup*/,
+		NULL /*user_data*/,
+		&m_pid /*child_pid*/,
+		&fd,
+		NULL,
+		&fd_output,
+		NULL /*error*/);
+	std::string login_data = std::string(m_username + " " + m_password + "\n");
+	LOG4CXX_INFO(logger,  m_username << ": Login data=" << login_data);
+	write(fd, login_data.c_str(), login_data.size());
+	close(fd);
+
+	fcntl (fd_output, F_SETFL, O_NONBLOCK);
+
+	free(db);
+
+	//Initialise threading
+	dbus_threads_init_default();
+
+	if (m_connection == NULL)
+	{
+		LOG4CXX_INFO(logger, "Creating DBus connection.");
+		GError *error = NULL;
+		m_connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
+		if (m_connection == NULL && error != NULL)
+		{
+			LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
+			g_error_free(error);
+			return;
+		}
+	}
+
+	m_timer = g_timeout_add_seconds(1, create_dbus_proxy, this);
+}
+
+bool Skype::loadSkypeBuddies() {
+//	std::string re = "CONNSTATUS OFFLINE";
+//	while (re == "CONNSTATUS OFFLINE" || re.empty()) {
+//		sleep(1);
+
+	gchar buffer[1024];
+	int bytes_read = read(fd_output, buffer, 1023);
+	if (bytes_read > 0) {
+		buffer[bytes_read] = 0;
+		np->handleDisconnected(m_user, 0, buffer);
+		close(fd_output);
+		logout();
+		return FALSE;
+	}
+
+	std::string re = send_command("NAME Spectrum");
+	if (m_counter++ > 15) {
+		np->handleDisconnected(m_user, 0, "");
+		close(fd_output);
+		logout();
+		return FALSE;
+	}
+
+	if (re.empty() || re == "CONNSTATUS OFFLINE") {
+		return TRUE;
+	}
+
+	close(fd_output);
+
+	if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
+		np->handleDisconnected(m_user, 0, "Skype is not ready");
+		logout();
+		return FALSE;
+	}
+
+	np->handleConnected(m_user);
+
+	std::map<std::string, std::string> group_map;
+	std::string groups = send_command("SEARCH GROUPS CUSTOM");
+	groups = groups.substr(groups.find(' ') + 1);
+	std::vector<std::string> grps;
+	boost::split(grps, groups, boost::is_any_of(","));
+	BOOST_FOREACH(std::string grp, grps) {
+		std::vector<std::string> data;
+		std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
+		boost::split(data, name, boost::is_any_of(" "));
+		name = name.substr(name.find("DISPLAYNAME") + 12);
+
+		std::string users = send_command("GET GROUP " + data[1] + " USERS");
+		users = name.substr(name.find("USERS") + 6);
+		boost::split(data, users, boost::is_any_of(","));
+		BOOST_FOREACH(std::string u, data) {
+			group_map[u] = grp;
+		}
+	}
+
+	std::string friends = send_command("GET AUTH_CONTACTS_PROFILES");
+
+	char **full_friends_list = g_strsplit((strchr(friends.c_str(), ' ')+1), ";", 0);
+	if (full_friends_list && full_friends_list[0])
+	{
+		//in the format of: username;full name;phone;office phone;mobile phone;
+		//                  online status;friendly name;voicemail;mood
+		// (comma-seperated lines, usernames can have comma's)
+
+		for (int i=0; full_friends_list[i] && *full_friends_list[i] != '\0'; i+=8)
+		{
+			std::string buddy = full_friends_list[i];
+
+			if (buddy[0] == ',') {
+				buddy.erase(buddy.begin());
+			}
+
+			if (buddy.rfind(",") != std::string::npos) {
+				buddy = buddy.substr(buddy.rfind(","));
+			}
+
+			if (buddy[0] == ',') {
+				buddy.erase(buddy.begin());
+			}
+
+			LOG4CXX_INFO(logger, "Got buddy " << buddy);
+			std::string st = full_friends_list[i + 5];
+
+			pbnetwork::StatusType status = getStatus(st);
+
+			std::string alias = full_friends_list[i + 6];
+
+			std::string mood_text = "";
+			if (full_friends_list[i + 8] && *full_friends_list[i + 8] != '\0' && *full_friends_list[i + 8] != ',') {
+				mood_text = full_friends_list[i + 8];
+			}
+
+			std::vector<std::string> groups;
+			if (group_map.find(buddy) != group_map.end()) {
+				groups.push_back(group_map[buddy]);
+			}
+			np->handleBuddyChanged(m_user, buddy, alias, groups, status, mood_text);
+		}
+	}
+	g_strfreev(full_friends_list);
+
+	send_command("SET AUTOAWAY OFF");
+	send_command("SET USERSTATUS ONLINE");
+	return FALSE;
+}
+
+void Skype::logout() {
+	if (m_pid != 0) {
+		send_command("SET USERSTATUS INVISIBLE");
+		send_command("SET USERSTATUS OFFLINE");
+		sleep(2);
+		g_object_unref(m_proxy);
+		LOG4CXX_INFO(logger,  m_username << ": Killing Skype instance");
+		kill((int) m_pid, SIGTERM);
+		m_pid = 0;
+	}
+}
+
+std::string Skype::send_command(const std::string &message) {
+	GError *error = NULL;
+	gchar *str = NULL;
 // 			int message_num;
 // 			gchar error_return[30];
-			
-			if (!dbus_g_proxy_call (m_proxy, "Invoke", &error, G_TYPE_STRING, message.c_str(), G_TYPE_INVALID,
-								G_TYPE_STRING, &str, G_TYPE_INVALID))
+
+	if (!dbus_g_proxy_call (m_proxy, "Invoke", &error, G_TYPE_STRING, message.c_str(), G_TYPE_INVALID,
+						G_TYPE_STRING, &str, G_TYPE_INVALID))
+	{
+			if (error && error->message)
 			{
-					if (error && error->message)
-					{
-					LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
-					g_error_free(error);
-				} else {
-					LOG4CXX_INFO(logger,  m_username << ": DBUS no response");
-				}
-				
-			}
-			if (str != NULL)
-			{
-				LOG4CXX_INFO(logger,  m_username << ": DBUS:" << str);
-			}
-			return str ? std::string(str) : std::string();
+			LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
+			g_error_free(error);
+		} else {
+			LOG4CXX_INFO(logger,  m_username << ": DBUS no response");
 		}
+
+	}
+	if (str != NULL)
+	{
+		LOG4CXX_INFO(logger,  m_username << ": DBUS:" << str);
+	}
+	return str ? std::string(str) : std::string();
+}
 
 static void handle_skype_message(std::string &message, Skype *sk) {
 	std::vector<std::string> cmd;
@@ -684,6 +740,10 @@ static void io_destroy(gpointer data) {
 	exit(1);
 }
 
+static void log_glib_error(const gchar *string) {
+	LOG4CXX_ERROR(logger, "GLIB ERROR:" << string);
+}
+
 int main(int argc, char **argv) {
 	GError *error = NULL;
 	GOptionContext *context;
@@ -771,9 +831,10 @@ int main(int argc, char **argv) {
 
 		m_sock = create_socket(host, port);
 
+		g_set_printerr_handler(log_glib_error);
 
 	GIOChannel *channel;
-	GIOCondition cond = (GIOCondition) READ_COND;
+	GIOCondition cond = (GIOCondition) G_IO_IN;
 	channel = g_io_channel_unix_new(m_sock);
 	g_io_add_watch_full(channel, G_PRIORITY_DEFAULT, cond, transportDataReceived, NULL, io_destroy);
 

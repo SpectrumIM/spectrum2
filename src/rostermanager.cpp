@@ -285,8 +285,8 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	// using roster pushes.
 	if (m_component->inServerMode()) {
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(presence->getFrom());
-		response->setFrom(presence->getTo());
+		response->setTo(presence->getFrom().toBare());
+		response->setFrom(presence->getTo().toBare());
 		Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(presence->getTo()));
 		if (buddy) {
 			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received and buddy " << Buddy::JIDToLegacyName(presence->getTo()) << " is already there => answering");
@@ -342,7 +342,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 		Swift::Presence::ref response = Swift::Presence::create();
 		Swift::Presence::ref currentPresence;
 		response->setTo(presence->getFrom().toBare());
-		response->setFrom(presence->getTo().toBare().toString() + "/bot");
+		response->setFrom(presence->getTo().toBare());
 
 		Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(presence->getTo()));
 		if (buddy) {

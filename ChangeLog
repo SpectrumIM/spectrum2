@@ -1,10 +1,26 @@
 Version 2.0.0-beta  (X-X-X):
 	General:
+	* Added PostreSQL support (thanks to Jadestorm).
+	* Send presences only "from" bare JID (fixed bug with buddies appearing
+	  twice in the roster and potential unregistering issues).
+	* Fixed potential MySQL/SQLite3 deadlocks.
+	* Fixed disconnecting in server-mode when client does not send unavailable
+	  presence before disconnection.
+	* Fixed crash in server-mode when client send its custom jabber:iq:storage
+	  payload.
 	* Fixed registration from Pidgin.
 	* Unsubscribe presence sent to some buddy doesn't disconnect the account.
 	* Remote Roster requests are not sent to resources, but to bare JID.
 	* Added automatic reconnection in case of non-fatal error.
 	* Added more error messages.
+
+	Skype:
+	* Initial support for Skype added, read more on
+	  http://spectrum.im/projects/spectrum/wiki/Spectrum_2_Admin_-_Skype_backend
+
+	SMSTools3:
+	* Initial support for SMSTools3, read more on
+	http://spectrum.im/projects/spectrum/wiki/Spectrum_2_Admin_-_SMSTools3_backend
 
 version 2.0.0 alpha (2011-12-06):
 	General:

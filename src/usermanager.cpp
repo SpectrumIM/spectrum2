@@ -306,8 +306,8 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 	// answer to subscibe for transport itself
 	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setFrom(presence->getTo());
-		response->setTo(presence->getFrom());
+		response->setFrom(presence->getTo().toBare());
+		response->setTo(presence->getFrom().toBare());
 		response->setType(Swift::Presence::Subscribed);
 		m_component->getStanzaChannel()->sendPresence(response);
 
