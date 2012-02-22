@@ -8,7 +8,7 @@
 
 namespace Swift {
 
-PubSubItem::PubSubItem(const std::string &body) : body_(body) {
+PubSubItem::PubSubItem() {
 }
 
 }

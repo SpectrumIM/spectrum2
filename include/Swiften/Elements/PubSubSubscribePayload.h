@@ -15,7 +15,7 @@
 namespace Swift {
 	class PubSubSubscribePayload : public Payload {
 		public:
-			PubSubSubscribePayload(const JID &jid, const std::string &node = "");
+			PubSubSubscribePayload(const JID &jid = JID(), const std::string &node = "");
 
 			void setJID(const JID &jid) {
 				this->jid = jid;

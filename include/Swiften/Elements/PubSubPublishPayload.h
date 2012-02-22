@@ -28,16 +28,16 @@ namespace Swift {
 				return node;
 			}
 
-			void addItem(const boost::shared_ptr<PubSubItem> &item) {
+			void addItem(const boost::shared_ptr<Payload> &item) {
 				items.push_back(item);
 			}
 
-			const std::vector<boost::shared_ptr<PubSubItem> > &getItems() const {
+			const std::vector<boost::shared_ptr<Payload> > &getItems() const {
 				return items;
 			}
 
 		private:
 			std::string node;
-			std::vector<boost::shared_ptr<PubSubItem> > items;
+			std::vector<boost::shared_ptr<Payload> > items;
 	};
 }

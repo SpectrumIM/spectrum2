@@ -10,10 +10,13 @@
 #include <Swiften/Elements/PubSubItem.h>
 
 namespace Swift {
+	class PayloadSerializerCollection;
 	class PubSubItemSerializer : public GenericPayloadSerializer<PubSubItem> {
 		public:
-			PubSubItemSerializer();
+			PubSubItemSerializer(PayloadSerializerCollection *serializers);
 
 			virtual std::string serializePayload(boost::shared_ptr<PubSubItem> item)  const;
+		private:
+			PayloadSerializerCollection *serializers;
 	};
 }

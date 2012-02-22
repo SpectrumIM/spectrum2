@@ -26,7 +26,7 @@ std::string PubSubPublishPayloadSerializer::serializePayload(boost::shared_ptr<P
 	}
 
 	if (!payload->getItems().empty()) {		
-		foreach(boost::shared_ptr<PubSubItem> subPayload, payload->getItems()) {
+		foreach(boost::shared_ptr<Payload> subPayload, payload->getItems()) {
 			PayloadSerializer* serializer = serializers->getPayloadSerializer(subPayload);
 			if (serializer) {
 				publish.addNode(boost::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(serializer->serialize(subPayload))));

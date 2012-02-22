@@ -16,10 +16,14 @@ namespace Swift {
 		public:
 			PubSubPayload();
 
+			void addPayload(boost::shared_ptr<Payload> payload) {
+				payloads.push_back(payload);
+			}
+
 			const std::vector<boost::shared_ptr<Payload> > getPayloads() const {
 				return payloads;
 			}
-			
+
 			template<typename T>
 			const std::vector<boost::shared_ptr<T> > getPayloads() const {
 				std::vector<boost::shared_ptr<T> > matched_payloads;

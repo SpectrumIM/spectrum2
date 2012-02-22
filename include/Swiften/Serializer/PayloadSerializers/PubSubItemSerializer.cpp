@@ -9,10 +9,12 @@
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
+#include <Swiften/Serializer/PayloadSerializerCollection.h>
 
 namespace Swift {
 
-PubSubItemSerializer::PubSubItemSerializer() : GenericPayloadSerializer<PubSubItem>() {
+PubSubItemSerializer::PubSubItemSerializer(PayloadSerializerCollection *serializers) : 
+	GenericPayloadSerializer<PubSubItem>(), serializers(serializers) {
 }
 
 std::string PubSubItemSerializer::serializePayload(boost::shared_ptr<PubSubItem> payload)  const {
@@ -21,9 +23,14 @@ std::string PubSubItemSerializer::serializePayload(boost::shared_ptr<PubSubItem>
 		item.setAttribute("id", payload->getId());
 	}
 
-	boost::shared_ptr<XMLElement> body(new XMLElement("body", "http://www.w3.org/1999/xhtml"));
-	body->addNode(boost::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(payload->getData())));
-	item.addNode(body);
+	if (!payload->getPayloads().empty()) {		
+		foreach(boost::shared_ptr<Payload> subPayload, payload->getPayloads()) {
+			PayloadSerializer* serializer = serializers->getPayloadSerializer(subPayload);
+			if (serializer) {
+				item.addNode(boost::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(serializer->serialize(subPayload))));
+			}
+		}
+	}
 
 	return item.serialize();
 }

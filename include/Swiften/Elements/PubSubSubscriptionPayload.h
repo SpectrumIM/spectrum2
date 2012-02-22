@@ -17,7 +17,7 @@ namespace Swift {
 		public:
 			enum Type { None, Pending, Subscribed, Unconfigured };
 
-			PubSubSubscriptionPayload(const JID &jid, const std::string &node = "");
+			PubSubSubscriptionPayload(const JID &jid = JID(), const std::string &node = "");
 
 			void setJID(const JID &jid) {
 				this->jid = jid;
