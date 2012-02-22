@@ -41,6 +41,10 @@ namespace Swift {
 				return m_platformXMLParserFactory;
 			}
 
+			EventLoop *getEventLoop() const {
+				return eventLoop;
+			}
+
             Swift::TLSContextFactory* getTLSContextFactory() const {
                 return 0;
             }
@@ -55,5 +59,6 @@ namespace Swift {
 			ConnectionFactory* connectionFactory;
 			DomainNameResolver* domainNameResolver;
 			ConnectionServerFactory* connectionServerFactory;
+			EventLoop *eventLoop;
 	};
 }
