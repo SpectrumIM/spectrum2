@@ -629,6 +629,19 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], "", groups, status, mood_text);
 		}
+		else if (cmd[2] == "FULLNAME") {
+			std::string st = sk->send_command("GET USER " + cmd[1] + " ONLINESTATUS");
+			st = st.substr(st.find("ONLINESTATUS") + 13);
+			pbnetwork::StatusType status = getStatus(st);
+
+			std::string mood_text = sk->send_command("GET USER " + cmd[1] + " MOOD_TEXT");
+			mood_text = mood_text.substr(mood_text.find("MOOD_TEXT") + 10);
+
+			std::string alias = message.substr(message.find("FULLNAME") + 9);
+
+			std::vector<std::string> groups;
+			np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
+		}
 	}
 	else if (cmd[0] == "CHATMESSAGE") {
 		if (cmd[3] == "RECEIVED") {
