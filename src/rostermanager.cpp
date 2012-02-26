@@ -110,7 +110,12 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 	Swift::RosterItemPayload item;
 	item.setJID(buddy->getJID().toBare());
-	item.setName(buddy->getAlias());
+	if (buddy->getAlias().empty()) {
+		item.setName(buddy->getJID().toBare().toString());
+	}
+	else {
+		item.setName(buddy->getAlias());
+	}
 	item.setGroups(buddy->getGroups());
 	item.setSubscription(Swift::RosterItemPayload::Both);
 
