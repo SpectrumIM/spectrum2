@@ -20,7 +20,7 @@ GatewayPayloadSerializer::GatewayPayloadSerializer()
 std::string GatewayPayloadSerializer::serializePayload(boost::shared_ptr<GatewayPayload> payload)  const {
 	XMLElement query("query", "jabber:iq:gateway");
 
-	if (!payload->getJID().isValid()) {
+	if (payload->getJID().isValid()) {
 		boost::shared_ptr<XMLElement> jid(new XMLElement("jid", "", payload->getJID().toBare().toString()));
 		query.addNode(jid);
 	}

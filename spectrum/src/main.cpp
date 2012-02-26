@@ -12,6 +12,7 @@
 #include "transport/statsresponder.h"
 #include "transport/usersreconnecter.h"
 #include "transport/util.h"
+#include "transport/gatewayresponder.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -420,6 +421,9 @@ int main(int argc, char **argv)
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
 	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
 	statsResponder.start();
+
+	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
+	gatewayResponder.start();
 
 	eventLoop_ = &eventLoop;
 

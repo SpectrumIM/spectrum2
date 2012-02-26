@@ -1,6 +1,7 @@
 Version 2.0.0-beta  (X-X-X):
 	General:
 	* Added PostreSQL support (thanks to Jadestorm).
+	* Added XEP-0100 (Gateway interaction) support.
 	* Send presences only "from" bare JID (fixed bug with buddies appearing
 	  twice in the roster and potential unregistering issues).
 	* Fixed potential MySQL/SQLite3 deadlocks.
