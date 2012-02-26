@@ -479,6 +479,8 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	if (!user)
 		return;
 
+	LOG4CXX_INFO(logger, "HANDLE BUDDY CHANGED " << payload.buddyname() << "-" << payload.alias());
+
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
