@@ -505,7 +505,7 @@ bool Skype::loadSkypeBuddies() {
 		//                  online status;friendly name;voicemail;mood
 		// (comma-seperated lines, usernames can have comma's)
 
-		for (int i=0; full_friends_list[i] && *full_friends_list[i] != '\0'; i+=8)
+		for (int i=0; full_friends_list[i] && full_friends_list[i+1] && *full_friends_list[i] != '\0'; i+=8)
 		{
 			std::string buddy = full_friends_list[i];
 
