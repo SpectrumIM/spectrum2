@@ -1,4 +1,4 @@
-Version 2.0.0-beta  (X-X-X):
+Version 2.0.0-beta (2012-02-28):
 	General:
 	* Added PostreSQL support (thanks to Jadestorm).
 	* Added XEP-0100 (Gateway interaction) support.
