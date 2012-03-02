@@ -24,6 +24,7 @@
 #include "transport/rostermanager.h"
 #include "transport/usermanager.h"
 #include "transport/conversationmanager.h"
+#include "transport/presenceoracle.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -212,8 +213,8 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	if (isMUC) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << presence->getTo().getNode());
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 			onRoomLeft(room);
 		}
 		else {
@@ -223,8 +224,8 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				m_readyForConnect = true;
 				onReadyToConnect();
 			}
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << presence->getTo().getNode() << " as " << presence->getTo().getResource());
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
 			std::string password = "";
 			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
 				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";

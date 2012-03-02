@@ -157,6 +157,7 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	// fork and exec
 	pid_t pid = fork();
 	if ( pid == 0 ) {
+		setsid();
 		// child process
 		exit(execv(argv[0], argv));
 	} else if ( pid < 0 ) {
@@ -174,7 +175,7 @@ static void SigCatcher(int n) {
 	int status;
 	// Read exit code from all children to not have zombies arround
 	// WARNING: Do not put LOG4CXX_ here, because it can lead to deadlock
-	while ((result = waitpid(0, &status, WNOHANG)) > 0) {
+	while ((result = waitpid(-1, &status, WNOHANG)) > 0) {
 		if (result != 0) {
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
@@ -194,6 +195,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
+		LOG4CXX_INFO(logger, "Setting alias to " << payload.alias() << " " << buddy->getAlias());
 		buddy->setAlias(payload.alias());
 	}
 
@@ -257,6 +259,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 #endif
 
 	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
@@ -475,6 +478,8 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	User *user = m_userManager->getUser(payload.username());
 	if (!user)
 		return;
+
+	LOG4CXX_INFO(logger, "HANDLE BUDDY CHANGED " << payload.buddyname() << "-" << payload.alias());
 
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {

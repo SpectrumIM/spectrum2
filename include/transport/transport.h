@@ -27,7 +27,6 @@
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/CapsManager.h"
 #include "Swiften/Disco/CapsMemoryStorage.h"
-#include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Server/UserRegistry.h"
@@ -37,6 +36,7 @@
 #include <boost/bind.hpp>
 #include "transport/config.h"
 #include "transport/factory.h"
+#include "transport/presenceoracle.h"
 
 namespace Transport {
 	// typedef enum { 	CLIENT_FEATURE_ROSTERX = 2,
@@ -92,7 +92,7 @@ namespace Transport {
 
 			/// You can use it to check current resource connected for particular user.
 			/// \return Swift::PresenceOracle associated with this Transport::Component.
-			Swift::PresenceOracle *getPresenceOracle();
+			PresenceOracle *getPresenceOracle();
 
 			/// Returns True if the component is in server mode.
 
@@ -179,7 +179,7 @@ namespace Transport {
 			Swift::EntityCapsManager *m_entityCapsManager;
 			Swift::CapsManager *m_capsManager;
 			Swift::CapsMemoryStorage *m_capsMemoryStorage;
-			Swift::PresenceOracle *m_presenceOracle;
+			PresenceOracle *m_presenceOracle;
 			Swift::StanzaChannel *m_stanzaChannel;
 			Swift::IQRouter *m_iqRouter;
 			

@@ -104,6 +104,10 @@ class UserManager : public Swift::EntityCapsProvider {
 			return m_userRegistry;
 		}
 
+		Component *getComponent() {
+			return m_component;
+		}
+
 		/// Connects user manually.
 		/// \param user JID of user.
 		void connectUser(const Swift::JID &user);

@@ -71,11 +71,19 @@ bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 		return true;
 	}
 
-	StorageSerializer serializer;
-	std::string value = serializer.serializePayload(boost::dynamic_pointer_cast<Storage>(payload->getPayload()));
-	m_storageBackend->updateUserSetting(user->getUserInfo().id, "storage", value);
-	LOG4CXX_INFO(logger, from.toBare().toString() << ": Storing jabber:iq:storage");
-	sendResponse(from, id, boost::shared_ptr<PrivateStorage>());
+	boost::shared_ptr<Storage> storage = boost::dynamic_pointer_cast<Storage>(payload->getPayload());
+
+	if (storage) {
+		StorageSerializer serializer;
+		std::string value = serializer.serializePayload(boost::dynamic_pointer_cast<Storage>(payload->getPayload()));
+		m_storageBackend->updateUserSetting(user->getUserInfo().id, "storage", value);
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Storing jabber:iq:storage");
+		sendResponse(from, id, boost::shared_ptr<PrivateStorage>());
+	}
+	else {
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unknown element. Libtransport does not support serialization of this.");
+		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
+	}
 	return true;
 }
 

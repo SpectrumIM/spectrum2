@@ -111,6 +111,8 @@ bool SQLite3Backend::connect() {
 		return false;
 	}
 
+	sqlite3_busy_timeout(m_db, 1500);
+
 	if (createDatabase() == false)
 		return false;
 
@@ -234,6 +236,8 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 		user.encoding = (const char *) sqlite3_column_text(m_getUser, 4);
 		user.language = (const char *) sqlite3_column_text(m_getUser, 5);
 		user.vip = sqlite3_column_int(m_getUser, 6) != 0;
+		while((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
+		}
 		return true;
 	}
 
@@ -388,6 +392,9 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		roster.push_back(b);
 	}
 
+	while((ret = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+	}
+
 	if (ret != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "getBuddies query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
@@ -443,6 +450,10 @@ void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &t
 	else {
 		type = GET_INT(m_getUserSetting);
 		value = GET_STR(m_getUserSetting);
+	}
+
+	int ret;
+	while((ret = sqlite3_step(m_getUserSetting)) == SQLITE_ROW) {
 	}
 }
 

@@ -65,6 +65,7 @@ protected:
 	std::string m_identify;
 	std::list<std::string> m_autoJoin;
 	std::string m_topicData;
+	bool m_connected;
 };
 
 //class MyIrcBuffer : public Irc::Buffer

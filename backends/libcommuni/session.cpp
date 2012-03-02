@@ -26,6 +26,7 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std
 	this->np = np;
 	this->user = user;
 	this->suffix = suffix;
+	m_connected = false;
 	rooms = 0;
 	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
 	connect(this, SIGNAL(connected()), SLOT(on_connected()));
@@ -33,6 +34,7 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std
 }
 
 void MyIrcSession::on_connected() {
+	m_connected = true;
 	if (suffix.empty()) {
 		np->handleConnected(user);
 	}
@@ -51,6 +53,7 @@ void MyIrcSession::on_connected() {
 void MyIrcSession::on_disconnected() {
 	if (suffix.empty())
 		np->handleDisconnected(user, 0, "");
+	m_connected = false;
 }
 
 bool MyIrcSession::correctNickname(std::string &nickname) {
@@ -156,6 +159,9 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 }
 
 void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
+	QString channel;
+	QStringList members;
+
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	switch (m->code()) {
 		case 332:
@@ -165,8 +171,8 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			 np->handleSubject(user, m->parameters().value(1).toStdString() + suffix, m_topicData, m->parameters().value(2).toStdString());
 			break;
 		case 353:
-			QString channel = m->parameters().value(2);
-			QStringList members = m->parameters().value(3).split(" ");
+			channel = m->parameters().value(2);
+			members = m->parameters().value(3).split(" ");
 
 			for (int i = 0; i < members.size(); i++) {
 				bool flags = 0;
@@ -175,6 +181,13 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 				m_modes[channel.toStdString() + nickname] = flags;
 				np->handleParticipantChanged(user, nickname, channel.toStdString() + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
 			}
+			break;
+		case 432:
+			if (m_connected) {
+				np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
+			}
+			break;
+		default:
 			break;
 	}
 
@@ -208,5 +221,6 @@ void MyIrcSession::onMessageReceived(IrcMessage *message) {
 		case IrcMessage::Numeric:
 			on_numericMessageReceived(message);
 			break;
+		default:break;
 	}
 }

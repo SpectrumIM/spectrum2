@@ -441,6 +441,16 @@ static void * requestInput(const char *title, const char *primary,const char *se
 			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
 			return NULL;
 		}
+		else if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Denied Message:") {
+			LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
+			return NULL;
+		}
 		else {
 			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
 		}
@@ -604,11 +614,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			LOG4CXX_INFO(logger,  "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
-			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL){
+
+			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL) {
+				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_accounts_find(name.c_str(), protocol.c_str());
 			}
 			else {
+				LOG4CXX_INFO(logger, "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_account_new(name.c_str(), protocol.c_str());
 				purple_accounts_add(account);
 			}
@@ -903,6 +915,41 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &pasword) {
+			PurpleAccount *account = m_sessions[user];
+			if (!account) {
+				return;
+			}
+
+			PurpleConnection *gc = purple_account_get_connection(account);
+			GHashTable *comps = NULL;
+
+			// Check if the PurpleChat is not stored in buddy list
+			PurpleChat *chat = purple_blist_find_chat(account, room.c_str());
+			if (chat) {
+				comps = purple_chat_get_components(chat);
+			}
+			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
+				comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
+			}
+
+			LOG4CXX_INFO(logger, user << ": Joining the room " << room);
+			if (comps) {
+				serv_join_chat(gc, comps);
+				g_hash_table_destroy(comps);
+			}
+		}
+
+		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
+			PurpleAccount *account = m_sessions[user];
+			if (!account) {
+				return;
+			}
+
+			PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, room.c_str(), account);
+			purple_conversation_destroy(conv);
+		}
+
 		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
 			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
 			if (xfer) {
@@ -1077,6 +1124,8 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
+
+	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy));
 
 	// Status
 	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;

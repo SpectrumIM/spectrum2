@@ -38,7 +38,7 @@ set(Boost_USE_STATIC_LIBS        ON)
 set(Boost_USE_MULTITHREADED      ON)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 endif()
-find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
+find_package(Boost COMPONENTS program_options date_time system filesystem regex  signals REQUIRED)
 message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
 set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
@@ -52,6 +52,12 @@ find_package(log4cxx)
 
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
+
+set(pqxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(pqxx)
+
+set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(dbus)
 
 find_package(Doxygen)
 
@@ -101,6 +107,16 @@ else (MYSQL_FOUND)
 	message("MySQL             : no (install mysql-devel)")
 endif (MYSQL_FOUND)
 
+if (PQXX_FOUND)
+	ADD_DEFINITIONS(-DWITH_PQXX)
+	include_directories(${PQXX_INCLUDE_DIR})
+	message("PostgreSQL        : yes")
+else (PQXX_FOUND)
+	set(PQXX_LIBRARY "")
+	set(PQ_LIBRARY "")
+	message("PostgreSQL        : no (install libpqxx-devel)")
+endif (PQXX_FOUND)
+
 if (PROTOBUF_FOUND)
 	ADD_DEFINITIONS(-DWITH_PROTOBUF)
 	include_directories(${PROTOBUF_INCLUDE_DIRS})
@@ -133,12 +149,21 @@ if (PROTOBUF_FOUND)
 	endif()
 
 	message("Frotz plugin      : yes")
+	message("SMSTools3 plugin  : yes")
+
+	if(${LIBDBUSGLIB_FOUND})
+		message("Skype plugin      : yes")
+		include_directories(${LIBDBUSGLIB_INCLUDE_DIRS})
+	else()
+		message("Skype plugin      : no (install dbus-glib-devel)")
+	endif()
 
 else()
 	message("Network plugins   : no (install libprotobuf-dev)")
 	message("Libpurple plugin  : no (install libpurple and libprotobuf-dev)")
 	message("IRC plugin        : no (install libircclient-qt and libprotobuf-dev)")
 	message("Frotz plugin      : no (install libprotobuf-dev)")
+	message("SMSTools3 plugin  : no (install libprotobuf-dev)")
 endif()
 
 if (LOG4CXX_FOUND)
