@@ -915,6 +915,41 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &pasword) {
+			PurpleAccount *account = m_sessions[user];
+			if (!account) {
+				return;
+			}
+
+			PurpleConnection *gc = purple_account_get_connection(account);
+			GHashTable *comps = NULL;
+
+			// Check if the PurpleChat is not stored in buddy list
+			PurpleChat *chat = purple_blist_find_chat(account, room.c_str());
+			if (chat) {
+				comps = purple_chat_get_components(chat);
+			}
+			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
+				comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
+			}
+
+			LOG4CXX_INFO(logger, user << ": Joining the room " << room);
+			if (comps) {
+				serv_join_chat(gc, comps);
+				g_hash_table_destroy(comps);
+			}
+		}
+
+		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
+			PurpleAccount *account = m_sessions[user];
+			if (!account) {
+				return;
+			}
+
+			PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, room.c_str(), account);
+			purple_conversation_destroy(conv);
+		}
+
 		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
 			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
 			if (xfer) {
