@@ -361,7 +361,7 @@ int main(int argc, char **argv)
 	}
 #else
 	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+		std::cerr << "Spectrum2 is not compiled with sqlite3 backend.\n";
 		return -2;
 	}
 #endif

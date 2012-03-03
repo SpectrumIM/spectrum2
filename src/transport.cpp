@@ -20,6 +20,7 @@
 
 #include "transport/transport.h"
 #include <boost/bind.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include "transport/storagebackend.h"
 #include "transport/factory.h"
@@ -27,9 +28,15 @@
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "storageparser.h"
-#include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
+#ifdef _WIN32
+#include <Swiften/TLS/CAPICertificate.h>
+#include "Swiften/TLS/Schannel/SchannelServerContext.h"
+#include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"
+#else
 #include "Swiften/TLS/PKCS12Certificate.h"
+#include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContextFactory.h"
+#endif
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
 #include "Swiften/Serializer/PayloadSerializers/AttentionSerializer.h"
 #include "Swiften/Parser/PayloadParsers/XHTMLIMParser.h"
@@ -81,8 +88,14 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
+#ifdef _WIN32
+			TLSServerContextFactory *f = new SchannelServerContextFactory();
+			m_server->addTLSEncryption(f, boost::make_shared<CAPICertificate>(CONFIG_STRING(m_config, "service.cert")));
+#else
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
-			m_server->addTLSEncryption(f, PKCS12Certificate(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+			m_server->addTLSEncryption(f, boost::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+#endif
+			
 		}
 		else {
 			LOG4CXX_WARN(logger, "No PKCS#12 certificate used. TLS is disabled.");
