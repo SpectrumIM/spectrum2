@@ -804,8 +804,8 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 
 void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const std::string &data) {
 	// generate header - size of wrapper message
-	char header[4];
-	*((int*)(header)) = htonl(data.size());
+	uint32_t size = htonl(data.size());
+	char *header = (char *) &size;
 
 	// send header together with wrapper message
 	c->write(Swift::createSafeByteArray(std::string(header, 4) + data));

@@ -559,8 +559,8 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 }
 
 void NetworkPlugin::send(const std::string &data) {
-	char header[4];
-	*((int*)(header)) = htonl(data.size());
+	uint32_t size = htonl(data.size());
+	char *header = (char *) &size;
 	sendData(std::string(header, 4) + data);
 }
 
