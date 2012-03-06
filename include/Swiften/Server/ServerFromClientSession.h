@@ -15,6 +15,7 @@
 #include <Swiften/JID/JID.h>
 #include <Swiften/Network/Connection.h>
 #include <Swiften/Base/ByteArray.h>
+#include <Swiften/TLS/CertificateWithKey.h>
 
 namespace Swift {
 	class ProtocolHeader;
@@ -49,7 +50,7 @@ namespace Swift {
 				return user_;
 			}
 
-			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, const PKCS12Certificate& cert);
+			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert);
 
 			Swift::JID getBareJID() {
 				return Swift::JID(user_, getLocalJID().getDomain());

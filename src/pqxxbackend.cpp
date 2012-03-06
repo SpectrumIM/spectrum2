@@ -57,7 +57,14 @@ bool PQXXBackend::connect() {
 	str += CONFIG_STRING(m_config, "database.database") + " ";
 
 	str += "user=" + CONFIG_STRING(m_config, "database.user") + " ";
-	m_conn = new pqxx::connection(str);
+
+	try {
+		m_conn = new pqxx::connection(str);
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return false;
+	}
 
 	createDatabase();
 
@@ -99,8 +106,8 @@ bool PQXXBackend::createDatabase() {
 				"language varchar(25) NOT NULL,"
 				"encoding varchar(50) NOT NULL default 'utf8',"
 				"last_login timestamp,"
-				"vip boolean NOT NULL  default '0',"
-				"online boolean NOT NULL  default '0',"
+				"vip boolean NOT NULL  default 'false',"
+				"online boolean NOT NULL  default 'false',"
 				"PRIMARY KEY (id),"
 				"UNIQUE (jid)"
 			");");
@@ -118,18 +125,23 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (ver)"
 			");");
 
-// 		exec("INSERT INTO db_version (ver) VALUES ('2');");
+ 		exec("INSERT INTO db_version (ver) VALUES ('1');");
 	}
 
 	return true;
 }
 
+template<typename T>
+std::string PQXXBackend::quote(pqxx::nontransaction &txn, const T &t) {
+	return "'" + txn.esc(pqxx::to_string(t)) + "'";
+}
+
 bool PQXXBackend::exec(const std::string &query, bool show_error) {
-	pqxx::work txn(*m_conn);
+	pqxx::nontransaction txn(*m_conn);
 	return exec(txn, query, show_error);
 }
 
-bool PQXXBackend::exec(pqxx::work &txn, const std::string &query, bool show_error) {
+bool PQXXBackend::exec(pqxx::nontransaction &txn, const std::string &query, bool show_error) {
 	try {
 		txn.exec(query);
 		txn.commit();
@@ -147,24 +159,28 @@ void PQXXBackend::setUser(const UserInfo &user) {
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
 		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
-	pqxx::work txn(*m_conn);
-	exec(txn, "UPDATE " + m_prefix + "users SET uin=" + txn.quote(user.uin) + ", password=" + txn.quote(encrypted) + ";"
-		"INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
-		 "(" + txn.quote(user.jid) + ","
-		+ txn.quote(user.uin) + ","
-		+ txn.quote(encrypted) + ","
-		+ txn.quote(user.language) + ","
-		+ txn.quote(user.encoding) + ","
-		+ "NOW(),"
-		+ txn.quote(user.vip) +")");
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		txn.exec("INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
+			+ "(" + quote(txn, user.jid) + ","
+			+ quote(txn, user.uin) + ","
+			+ quote(txn, encrypted) + ","
+			+ quote(txn, user.language) + ","
+			+ quote(txn, user.encoding) + ","
+			+ "NOW(),"
+			+ (user.vip ? "'true'" : "'false'") +")");
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 	try {
-		pqxx::work txn(*m_conn);
+		pqxx::nontransaction txn(*m_conn);
 
 		pqxx::result r = txn.exec("SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid="
-			+ txn.quote(barejid));
+			+ quote(txn, barejid));
 
 		if (r.size() == 0) {
 			return false;
@@ -188,8 +204,8 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 
 void PQXXBackend::setUserOnline(long id, bool online) {
 	try {
-		pqxx::work txn(*m_conn);
-		exec(txn, "UPDATE " + m_prefix + "users SET online=" + txn.quote(online) + ", last_login=NOW() WHERE id=" + txn.quote(id));
+		pqxx::nontransaction txn(*m_conn);
+		txn.exec("UPDATE " + m_prefix + "users SET online=" + (online ? "'true'" : "'false'") + ", last_login=NOW() WHERE id=" + pqxx::to_string(id));
 	}
 	catch (std::exception& e) {
 		LOG4CXX_ERROR(logger, e.what());
@@ -198,8 +214,8 @@ void PQXXBackend::setUserOnline(long id, bool online) {
 
 bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 	try {
-		pqxx::work txn(*m_conn);
-		pqxx::result r = txn.exec("SELECT jid FROM " + m_prefix + "users WHERE online=1");
+		pqxx::nontransaction txn(*m_conn);
+		pqxx::result r = txn.exec("SELECT jid FROM " + m_prefix + "users WHERE online='true'");
 
 		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
 			users.push_back((*it)[0].as<std::string>());
@@ -214,158 +230,160 @@ bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 }
 
 long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
-// 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
-//	std::string groups = Util::serializeGroups(buddyInfo.groups);
-//	*m_addBuddy << userId << buddyInfo.legacyName << buddyInfo.subscription;
-//	*m_addBuddy << groups;
-//	*m_addBuddy << buddyInfo.alias << buddyInfo.flags;
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		pqxx::result r = txn.exec("INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES "
+			+ "(" + pqxx::to_string(userId) + ","
+			+ quote(txn, buddyInfo.legacyName) + ","
+			+ quote(txn, buddyInfo.subscription) + ","
+			+ quote(txn, Util::serializeGroups(buddyInfo.groups)) + ","
+			+ quote(txn, buddyInfo.alias) + ","
+			+ pqxx::to_string(buddyInfo.flags) + ") RETURNING id");
 
-//	EXEC(m_addBuddy, addBuddy(userId, buddyInfo));
+		long id = r[0][0].as<long>();
 
-//	long id = (long) mysql_insert_id(&m_conn);
+		r = txn.exec("UPDATE " + m_prefix + "buddies_settings SET var = " + quote(txn, buddyInfo.settings.find("icon_hash")->first) + ", type = " + pqxx::to_string((int)TYPE_STRING) + ", value = " + quote(txn, buddyInfo.settings.find("icon_hash")->second.s) + " WHERE user_id = " + pqxx::to_string(userId) + " AND buddy_id = " + pqxx::to_string(id));
+		if (r.affected_rows() == 0) {
+			txn.exec("INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES "
+				+ "(" + pqxx::to_string(userId) + ","
+				+ pqxx::to_string(id) + ","
+				+ quote(txn, buddyInfo.settings.find("icon_hash")->first) + ","
+				+ pqxx::to_string((int)TYPE_STRING) + ","
+				+ quote(txn,  buddyInfo.settings.find("icon_hash")->second.s) + ")");
+		}
 
-// 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
-//	if (!buddyInfo.settings.find("icon_hash")->second.s.empty()) {
-//		*m_updateBuddySetting << userId << id << buddyInfo.settings.find("icon_hash")->first << (int) TYPE_STRING << buddyInfo.settings.find("icon_hash")->second.s << buddyInfo.settings.find("icon_hash")->second.s;
-//		EXEC(m_updateBuddySetting, addBuddy(userId, buddyInfo));
-//	}
-
-	return 0;
+		return id;
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+		return -1;
+	}
 }
 
 void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
-// 	"UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?"
-//	std::string groups = Util::serializeGroups(buddyInfo.groups);
-//	*m_updateBuddy << groups;
-//	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
-//	*m_updateBuddy << userId << buddyInfo.legacyName;
-
-//	EXEC(m_updateBuddy, updateBuddy(userId, buddyInfo));
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		txn.exec("UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, Util::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + pqxx::to_string(buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
-//	SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC
-//	*m_getBuddies << id;
+	try {
+		pqxx::nontransaction txn(*m_conn);
 
-// 	"SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC"
-//	*m_getBuddiesSettings << id;
+		pqxx::result r = txn.exec("SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=" + pqxx::to_string(id) + " ORDER BY id ASC");
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			BuddyInfo b;
+			std::string group;
 
-//	SettingVariableInfo var;
-//	long buddy_id = -1;
-//	std::string key;
+			b.id = r[0][0].as<long>();
+			b.legacyName = r[0][1].as<std::string>();
+			b.subscription = r[0][2].as<std::string>();
+			b.alias = r[0][3].as<std::string>();
+			group = r[0][4].as<std::string>();
+			b.flags = r[0][5].as<long>();
 
-//	EXEC(m_getBuddies, getBuddies(id, roster));
-//	if (!exec_ok)
-//		return false;
+			if (!group.empty()) {
+				b.groups = Util::deserializeGroups(group);
+			}
 
-//	while (m_getBuddies->fetch() == 0) {
-//		BuddyInfo b;
+			roster.push_back(b);
+		}
 
-//		std::string group;
-//		*m_getBuddies >> b.id >> b.legacyName >> b.subscription >> b.alias >> group >> b.flags;
 
-//		if (!group.empty()) {
-//			b.groups = Util::deserializeGroups(group);
-//		}
+		r = txn.exec("SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=" + pqxx::to_string(id) + " ORDER BY buddy_id ASC");
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			SettingVariableInfo var;
+			long buddy_id = -1;
+			std::string key;
+			std::string val;
 
-//		roster.push_back(b);
-//	}
+			buddy_id = r[0][0].as<long>();
+			var.type = r[0][1].as<long>();
+			key = r[0][2].as<std::string>();
+			val = r[0][3].as<std::string>();
+			switch (var.type) {
+				case TYPE_BOOLEAN:
+					var.b = atoi(val.c_str());
+					break;
+				case TYPE_STRING:
+					var.s = val;
+					break;
+				default:
+					continue;
+					break;
+			}
 
-//	EXEC(m_getBuddiesSettings, getBuddies(id, roster));
-//	if (!exec_ok)
-//		return false;
+			BOOST_FOREACH(BuddyInfo &b, roster) {
+				if (buddy_id == b.id) {
+					b.settings[key] = var;
+					break;
+				}
+			}
+		}
 
-//	BOOST_FOREACH(BuddyInfo &b, roster) {
-//		if (buddy_id == b.id) {
-//// 			std::cout << "Adding buddy info setting " << key << "\n";
-//			b.settings[key] = var;
-//			buddy_id = -1;
-//		}
+		return true;
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 
-//		while(buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
-//			std::string val;
-//			*m_getBuddiesSettings >> buddy_id >> var.type >> key >> val;
-
-//			switch (var.type) {
-//				case TYPE_BOOLEAN:
-//					var.b = atoi(val.c_str());
-//					break;
-//				case TYPE_STRING:
-//					var.s = val;
-//					break;
-//				default:
-//					if (buddy_id == b.id) {
-//						buddy_id = -1;
-//					}
-//					continue;
-//					break;
-//			}
-//			if (buddy_id == b.id) {
-//// 				std::cout << "Adding buddy info setting " << key << "=" << val << "\n";
-//				b.settings[key] = var;
-//				buddy_id = -1;
-//			}
-//		}
-//	}
-
-//	while(m_getBuddiesSettings->fetch() == 0) {
-//		// TODO: probably remove those settings, because there's no buddy for them.
-//		// It should not happend, but one never know...
-//	}
-	
-	return true;
+	return false;
 }
 
 bool PQXXBackend::removeUser(long id) {
-//	*m_removeUser << (int) id;
-//	EXEC(m_removeUser, removeUser(id));
-//	if (!exec_ok)
-//		return false;
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		txn.exec("DELETE FROM " + m_prefix + "users SET id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "buddies SET user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "user_settings SET user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "buddies_settings SET user_id=" + pqxx::to_string(id));
 
-//	*m_removeUserSettings << (int) id;
-//	EXEC(m_removeUserSettings, removeUser(id));
-//	if (!exec_ok)
-//		return false;
-
-//	*m_removeUserBuddies << (int) id;
-//	EXEC(m_removeUserBuddies, removeUser(id));
-//	if (!exec_ok)
-//		return false;
-
-//	*m_removeUserBuddiesSettings << (int) id;
-//	EXEC(m_removeUserBuddiesSettings, removeUser(id));
-//	if (!exec_ok)
-//		return false;
-
-	return true;
+		return true;
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
+	return false;
 }
 
 void PQXXBackend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {
-//// 	"SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?"
-//	*m_getUserSetting << id << variable;
-//	EXEC(m_getUserSetting, getUserSetting(id, variable, type, value));
-//	if (m_getUserSetting->fetch() != 0) {
-//// 		"INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)"
-//		*m_setUserSetting << id << variable << type << value;
-//		EXEC(m_setUserSetting, getUserSetting(id, variable, type, value));
-//	}
-//	else {
-//		*m_getUserSetting >> type >> value;
-//	}
+	try {
+		pqxx::nontransaction txn(*m_conn);
+
+		pqxx::result r = txn.exec("SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=" + pqxx::to_string(id) + " AND var=" + quote(txn, variable));
+		if (r.size() == 0) {
+			txn.exec("INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES(" + pqxx::to_string(id) + "," + quote(txn, variable) + "," + pqxx::to_string((int)type) + "," + quote(txn, value) + ")");
+		}
+		else {
+			type = r[0][0].as<int>();
+			value = r[0][1].as<std::string>();
+		}
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 void PQXXBackend::updateUserSetting(long id, const std::string &variable, const std::string &value) {
-//// 	"UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?"
-//	*m_updateUserSetting << value << id << variable;
-//	EXEC(m_updateUserSetting, updateUserSetting(id, variable, value));
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		txn.exec("UPDATE " + m_prefix + "users_settings SET value=" + quote(txn, value) + " WHERE user_id=" + pqxx::to_string(id) + " AND var=" + quote(txn, variable));
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(logger, e.what());
+	}
 }
 
 void PQXXBackend::beginTransaction() {
-//	exec("START TRANSACTION;");
+	exec("BEGIN;");
 }
 
 void PQXXBackend::commitTransaction() {
-//	exec("COMMIT;");
+	exec("COMMIT;");
 }
 
 }

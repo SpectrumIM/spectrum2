@@ -32,11 +32,11 @@ LocalBuddy::~LocalBuddy() {
 }
 
 void LocalBuddy::setAlias(const std::string &alias) {
-	if (m_firstSet) {
-		m_firstSet = false;
-		m_alias = alias;
-		return;
-	}
+//	if (m_firstSet) {
+//		m_firstSet = false;
+//		m_alias = alias;
+//		return;
+//	}
 	bool changed = m_alias != alias;
 	m_alias = alias;
 

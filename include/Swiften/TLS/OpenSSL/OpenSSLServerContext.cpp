@@ -14,6 +14,13 @@
 #include <openssl/err.h>
 #include <openssl/pkcs12.h>
 
+#include "log4cxx/logger.h"
+#include "log4cxx/consoleappender.h"
+#include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
+using namespace log4cxx;
+static LoggerPtr logger = Logger::getLogger("OpenSSLServerContext");
+
 
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLCertificate.h"
@@ -179,7 +186,7 @@ void OpenSSLServerContext::sendPendingDataToApplication() {
 
 bool OpenSSLServerContext::setServerCertificate(const PKCS12Certificate& certificate) {
 	if (certificate.isNull()) {
-// 		std::cout << "error 1\n";
+		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate can't be loaded.");
 		return false;
 	}
 
@@ -189,7 +196,7 @@ bool OpenSSLServerContext::setServerCertificate(const PKCS12Certificate& certifi
 	boost::shared_ptr<PKCS12> pkcs12(d2i_PKCS12_bio(bio, NULL), PKCS12_free);
 	BIO_free(bio);
 	if (!pkcs12) {
-// 		std::cout << "error 2\n";
+		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
 		return false;
 	}
 
@@ -199,7 +206,7 @@ bool OpenSSLServerContext::setServerCertificate(const PKCS12Certificate& certifi
 	STACK_OF(X509)* caCertsPtr = 0;
 	int result = PKCS12_parse(pkcs12.get(), reinterpret_cast<const char*>(vecptr(certificate.getPassword())), &privateKeyPtr, &certPtr, &caCertsPtr);
 	if (result != 1) { 
-// 		std::cout << "error 3\n";
+		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
 		return false;
 	}
 	boost::shared_ptr<X509> cert(certPtr, X509_free);
@@ -208,11 +215,11 @@ bool OpenSSLServerContext::setServerCertificate(const PKCS12Certificate& certifi
 
 	// Use the key & certificates
 	if (SSL_CTX_use_certificate(context_, cert.get()) != 1) {
-// 		std::cout << "error 4\n";
+		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Can't use this certificate");
 		return false;
 	}
 	if (SSL_CTX_use_PrivateKey(context_, privateKey.get()) != 1) {
-// 		std::cout << "error 5\n";
+		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Can't use this private key");
 		return false;
 	}
 	return true;

@@ -470,7 +470,7 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	long id = (long) mysql_insert_id(&m_conn);
 
 // 	INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)
-	if (!buddyInfo.settings.find("icon_hash")->second.s.empty()) {
+	if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end() && !buddyInfo.settings.find("icon_hash")->second.s.empty()) {
 		*m_updateBuddySetting << userId << id << buddyInfo.settings.find("icon_hash")->first << (int) TYPE_STRING << buddyInfo.settings.find("icon_hash")->second.s << buddyInfo.settings.find("icon_hash")->second.s;
 		EXEC(m_updateBuddySetting, addBuddy(userId, buddyInfo));
 	}
@@ -597,6 +597,10 @@ void MySQLBackend::getUserSetting(long id, const std::string &variable, int &typ
 	else {
 		*m_getUserSetting >> type >> value;
 	}
+
+	while (m_getUserSetting->fetch() == 0) {
+
+	}
 }
 
 void MySQLBackend::updateUserSetting(long id, const std::string &variable, const std::string &value) {
@@ -606,11 +610,11 @@ void MySQLBackend::updateUserSetting(long id, const std::string &variable, const
 }
 
 void MySQLBackend::beginTransaction() {
-	exec("START TRANSACTION;");
+	//exec("START TRANSACTION;");
 }
 
 void MySQLBackend::commitTransaction() {
-	exec("COMMIT;");
+	//exec("COMMIT;");
 }
 
 }

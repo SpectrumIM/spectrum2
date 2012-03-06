@@ -9,6 +9,7 @@
 #include "Swiften/Base/SafeByteArray.h"
 #include "Swiften/StreamStack/StreamLayer.h"
 #include "Swiften/TLS/Certificate.h"
+#include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/TLS/CertificateVerificationError.h"
 
 namespace Swift {
@@ -22,7 +23,7 @@ namespace Swift {
 			~TLSServerLayer();
 
 			void connect();
-			bool setServerCertificate(const PKCS12Certificate&);
+			bool setServerCertificate(CertificateWithKey::ref cert);
 
 			Certificate::ref getPeerCertificate() const;
 			boost::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;

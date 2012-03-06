@@ -27,6 +27,7 @@
 #include <Swiften/Elements/StartTLSRequest.h>
 #include <Swiften/Elements/TLSProceed.h>
 #include <iostream>
+#include <Swiften/TLS/CertificateWithKey.h>
 
 namespace Swift {
 
@@ -162,7 +163,7 @@ void ServerFromClientSession::handleSessionFinished(const boost::optional<Sessio
 	userRegistry_->stopLogin(JID(user_, getLocalJID().getDomain()), this);
 }
 
-void ServerFromClientSession::addTLSEncryption(TLSServerContextFactory* tlsContextFactory, const PKCS12Certificate& cert) {
+void ServerFromClientSession::addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert) {
 	tlsLayer = new TLSServerLayer(tlsContextFactory);
 	if (!tlsLayer->setServerCertificate(cert)) {
 // 		std::cout << "error\n";

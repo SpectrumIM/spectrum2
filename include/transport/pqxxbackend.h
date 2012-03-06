@@ -97,7 +97,10 @@ class PQXXBackend : public StorageBackend
 
 	private:
 		bool exec(const std::string &query, bool show_error = true);
-		bool exec(pqxx::work &txn, const std::string &query, bool show_error = true);
+		bool exec(pqxx::nontransaction &txn, const std::string &query, bool show_error = true);
+		template<typename T>
+		std::string quote(pqxx::nontransaction &txn, const T &t);
+
 		Config *m_config;
 		std::string m_prefix;
 
