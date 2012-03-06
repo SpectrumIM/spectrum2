@@ -48,7 +48,7 @@
 
 #ifdef _WIN32
 #include "windows.h"
-#define uint32_t u_long
+#include <stdint.h>
 #else
 #include "sys/wait.h"
 #include "sys/signal.h"
