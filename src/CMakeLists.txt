@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
+
+# Build without openssl on windows
+if (WIN32)
+	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
+endif()
+
 FILE(GLOB HEADERS ../include/transport/*.h)
 
 if (CPPUNIT_FOUND)
