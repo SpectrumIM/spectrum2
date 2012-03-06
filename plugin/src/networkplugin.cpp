@@ -25,9 +25,9 @@
 
 #ifndef WIN32
 #include <arpa/inet.h>
-#define uint32_t u_long
 #else 
 #include <winsock2.h>
+#include <stdint.h>
 #endif
 
 using namespace log4cxx;
