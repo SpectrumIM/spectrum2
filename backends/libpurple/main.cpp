@@ -1256,6 +1256,48 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
 }
 
+static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gboolean new_arrivals) {
+	PurpleAccount *account = purple_conversation_get_account(conv);
+
+	GList *l = cbuddies;
+	while (l != NULL) {
+		PurpleConvChatBuddy *cb = (PurpleConvChatBuddy *)l->data;
+		std::string name(cb->name);
+		int flags = GPOINTER_TO_INT(cb->flags);
+		if (flags & PURPLE_CBFLAGS_OP || flags & PURPLE_CBFLAGS_HALFOP) {
+// 			item->addAttribute("affiliation", "admin");
+// 			item->addAttribute("role", "moderator");
+			flags = 1;
+		}
+		else if (flags & PURPLE_CBFLAGS_FOUNDER) {
+// 			item->addAttribute("affiliation", "owner");
+// 			item->addAttribute("role", "moderator");
+			flags = 1;
+		}
+		else {
+			flags = 0;
+// 			item->addAttribute("affiliation", "member");
+// 			item->addAttribute("role", "participant");
+		}
+
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name(conv), (int) flags, pbnetwork::STATUS_ONLINE);
+
+		l = l->next;
+	}
+}
+
+static void conv_chat_remove_users(PurpleConversation *conv, GList *users) {
+	PurpleAccount *account = purple_conversation_get_account(conv);
+
+	GList *l = users;
+	while (l != NULL) {
+		std::string name((char *) l->data);
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name(conv), 0, pbnetwork::STATUS_NONE);
+
+		l = l->next;
+	}
+}
+
 static PurpleConversationUiOps conversation_ui_ops =
 {
 	NULL,
@@ -1263,9 +1305,9 @@ static PurpleConversationUiOps conversation_ui_ops =
 	NULL,//conv_write_chat,                              /* write_chat           */
 	conv_write_im,             /* write_im             */
 	NULL,//conv_write_conv,           /* write_conv           */
-	NULL,//conv_chat_add_users,       /* chat_add_users       */
+	conv_chat_add_users,       /* chat_add_users       */
 	NULL,//conv_chat_rename_user,     /* chat_rename_user     */
-	NULL,//conv_chat_remove_users,    /* chat_remove_users    */
+	conv_chat_remove_users,    /* chat_remove_users    */
 	NULL,//pidgin_conv_chat_update_user,     /* chat_update_user     */
 	NULL,//pidgin_conv_present_conversation, /* present              */
 	NULL,//pidgin_conv_has_focus,            /* has_focus            */
