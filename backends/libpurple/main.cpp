@@ -768,17 +768,30 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
-					conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+					PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+					if (!conv) {
+						conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+					}
 				}
 				if (xhtml.empty()) {
 					gchar *_markup = purple_markup_escape_text(message.c_str(), -1);
-					purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+					if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+						purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+					}
+					else if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_CHAT) {
+						purple_conv_chat_send(PURPLE_CONV_CHAT(conv), _markup);
+					}
 					g_free(_markup);
 				}
 				else {
-					purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
+					if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+						purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
+					}
+					else if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_CHAT) {
+						purple_conv_chat_send(PURPLE_CONV_CHAT(conv), xhtml.c_str());
+					}
 				}
 			}
 		}
@@ -1213,8 +1226,10 @@ static PurpleBlistUiOps blistUiOps =
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
-	if (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)
+	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM && flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM) {
+		LOG4CXX_INFO(logger, "MSG");
 		return;
+	}
 	PurpleAccount *account = purple_conversation_get_account(conv);
 
 // 	char *striped = purple_markup_strip_html(message);
@@ -1253,7 +1268,13 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 // 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
 
-	np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
+	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
+	}
+	else {
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name(conv) << "' " << w);
+		np->handleMessage(np->m_accounts[account], purple_conversation_get_name(conv), message_, w, xhtml_);
+	}
 }
 
 static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gboolean new_arrivals) {
@@ -1302,7 +1323,7 @@ static PurpleConversationUiOps conversation_ui_ops =
 {
 	NULL,
 	NULL,
-	NULL,//conv_write_chat,                              /* write_chat           */
+	conv_write_im,//conv_write_chat,                              /* write_chat           */
 	conv_write_im,             /* write_im             */
 	NULL,//conv_write_conv,           /* write_conv           */
 	conv_chat_add_users,       /* chat_add_users       */

@@ -218,6 +218,7 @@ ADD_SUBDIRECTORY(spectrum)
 ADD_SUBDIRECTORY(backends)
 if (NOT WIN32)
 	ADD_SUBDIRECTORY(spectrum_manager)
+	ADD_SUBDIRECTORY(spectrum2_send_message)
 endif()
 
 if (CPPUNIT_FOUND)
