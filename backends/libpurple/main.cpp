@@ -89,7 +89,7 @@ static std::string KEYFILE_STRING(const std::string &cat, const std::string &key
 		return def;
 	}
 	std::string ret(str);
-	free(str);
+	g_free(str);
 
 	if (ret.find("#") != std::string::npos) {
 		ret = ret.substr(0, ret.find("#"));
@@ -1407,11 +1407,13 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			if (true) {
 				gchar *data;
 				gchar *path = purple_buddy_icon_get_full_path(icon);
-				if (g_file_get_contents (path, &data, &len, NULL)) {
-					photo = std::string(data, len);
-					free(data);
+				if (path) {
+					if (g_file_get_contents(path, &data, &len, NULL)) {
+						photo = std::string(data, len);
+						g_free(data);
+					}
+					g_free(path);
 				}
-				free(path);
 			}
 			else {
 				const gchar * data = (gchar*)purple_buddy_icon_get_data(icon, &len);
