@@ -1226,8 +1226,7 @@ static PurpleBlistUiOps blistUiOps =
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
-	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM && flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM) {
-		LOG4CXX_INFO(logger, "MSG");
+	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
 		return;
 	}
 	PurpleAccount *account = purple_conversation_get_account(conv);
