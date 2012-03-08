@@ -95,7 +95,12 @@ class NetworkFactory : public Factory {
 			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
 			buddy->setAlias(buddyInfo.alias);
 			buddy->setName(buddyInfo.legacyName);
-			buddy->setSubscription(buddyInfo.subscription);
+			if (buddyInfo.subscription == "both") {
+				buddy->setSubscription(Buddy::Both);
+			}
+			else {
+				buddy->setSubscription(Buddy::Ask);
+			}
 			buddy->setGroups(buddyInfo.groups);
 			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
