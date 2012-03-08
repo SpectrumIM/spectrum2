@@ -834,7 +834,17 @@ int main(int argc, char **argv) {
 			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
 
 			p.load(istream);
-			p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
+
+			LogString pid, jid;
+			log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
+			log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
+#ifdef _MSC_VER
+			p.setProperty(L"pid", pid);
+			p.setProperty(L"jid", jid);
+#else
+			p.setProperty("pid", pid);
+			p.setProperty("jid", jid);
+#endif
 			log4cxx::PropertyConfigurator::configure(p);
 		}
 
