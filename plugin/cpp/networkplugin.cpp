@@ -587,13 +587,18 @@ void NetworkPlugin::sendMemoryUsage() {
 	pbnetwork::Stats stats;
 
 	stats.set_init_res(m_init_res);
-	double res;
-	double shared;
+	double res = 0;
+	double shared = 0;
 #ifndef WIN32
 	process_mem_usage(shared, res);
 #endif
-	stats.set_res(res);
-	stats.set_shared(shared);
+
+	double e_res;
+	double e_shared;
+	handleMemoryUsage(e_res, e_shared);
+
+	stats.set_res(res + e_res);
+	stats.set_shared(shared + e_shared);
 
 	std::string message;
 	stats.SerializeToString(&message);
