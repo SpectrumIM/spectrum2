@@ -42,6 +42,8 @@ static LoggerPtr logger = Logger::getLogger("UserManager");
 UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
+	m_sentToXMPP = 0;
+	m_sentToBackend = 0;
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;

@@ -351,6 +351,10 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 
 	// If there are users associated with this backend, it must have crashed, so print error output
 	// and disconnect users
+	if (!c->users.empty()) {
+		m_crashedBackends.push_back(c->id);
+	}
+
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
 		LOG4CXX_ERROR(logger, "Backend " << c << " disconnected (probably crashed) with active user " << (*it)->getJID().toString());
 		(*it)->setData(NULL);

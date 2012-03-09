@@ -71,6 +71,10 @@ class NetworkPluginServer {
 			return m_clients;
 		}
 
+		const std::vector<std::string> &getCrashedBackends() {
+			return m_crashedBackends;
+		}
+
 		void collectBackend();
 
 		bool moveToLongRunBackend(User *user);
@@ -138,6 +142,7 @@ class NetworkPluginServer {
 		bool m_isNextLongRun;
 		std::map<unsigned long, FileTransferManager::Transfer> m_filetransfers;
 		FileTransferManager *m_ftManager;
+		std::vector<std::string> m_crashedBackends;
 };
 
 }
