@@ -342,7 +342,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					break;
 				case Swift::Presence::Subscribed:
 // 					onBuddyAdded(buddy);
-					break;
+					return;
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
 					response->setType(Swift::Presence::Unsubscribed);
@@ -397,7 +397,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 						buddy->setSubscription(Buddy::Both);
 						handleBuddyChanged(buddy);
 					}
-					break;
+					return;
 				default:
 					return;
 			}
