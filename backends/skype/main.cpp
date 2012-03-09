@@ -4,6 +4,7 @@
 #include "transport/config.h"
 #include "transport/transport.h"
 #include "transport/usermanager.h"
+#include "transport/memoryusage.h"
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/userregistration.h"
@@ -97,6 +98,10 @@ class Skype {
 		bool createDBusProxy();
 		bool loadSkypeBuddies();
 
+		int getPid() {
+			return (int) m_pid;
+		}
+
 	private:
 		std::string m_username;
 		std::string m_password;
@@ -132,6 +137,19 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			m_accounts[skype] = user;
 
 			skype->login();
+		}
+
+		void handleMemoryUsage(double &res, double &shared) {
+			res = 0;
+			shared = 0;
+			for(std::map<std::string, Skype *>::const_iterator it = m_sessions.begin(); it != m_sessions.end(); it++) {
+				Skype *skype = it->second;
+				double r;
+				double s;
+				process_mem_usage(s, r, skype->getPid());
+				res += r;
+				shared += s;
+			}
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
@@ -834,17 +852,7 @@ int main(int argc, char **argv) {
 			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
 
 			p.load(istream);
-
-			LogString pid, jid;
-			log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
-			log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
-#ifdef _MSC_VER
-			p.setProperty(L"pid", pid);
-			p.setProperty(L"jid", jid);
-#else
-			p.setProperty("pid", pid);
-			p.setProperty("jid", jid);
-#endif
+			p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
 			log4cxx::PropertyConfigurator::configure(p);
 		}
 
