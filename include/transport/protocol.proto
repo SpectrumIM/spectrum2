@@ -106,6 +106,7 @@ message Stats {
 	required int32 res = 1;
 	required int32 init_res = 2;
 	required int32 shared = 3;
+	required string id = 4;
 }
 
 message File {

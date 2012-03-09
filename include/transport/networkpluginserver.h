@@ -56,6 +56,7 @@ class NetworkPluginServer {
 			bool acceptUsers;
 			bool longRun;
 			bool willDie;
+			std::string id;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);

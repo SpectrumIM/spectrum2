@@ -41,6 +41,12 @@ namespace Transport {
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
 
+template <class T> std::string stringOf(T object) {
+	std::ostringstream os;
+	os << object;
+	return (os.str());
+}
+
 NetworkPlugin::NetworkPlugin() {
 	m_pingReceived = false;
 
@@ -602,6 +608,8 @@ void NetworkPlugin::sendMemoryUsage() {
 
 	std::string message;
 	stats.SerializeToString(&message);
+
+	stats.set_id(stringOf(getpid()));
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATS);
 

@@ -612,6 +612,7 @@ void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data
 	c->res = payload.res();
 	c->init_res = payload.init_res();
 	c->shared = payload.shared();
+	c->id = payload.id();
 }
 
 void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
