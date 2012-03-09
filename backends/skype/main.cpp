@@ -196,6 +196,21 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
+			Skype *skype = m_sessions[user];
+			if (skype) {
+				skype->send_command("SET USER " + buddyName + " BUDDYSTATUS 2 Please authorize me");
+				skype->send_command("SET USER " + buddyName + " ISAUTHORIZED TRUE");
+			}
+		}
+
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
+			Skype *skype = m_sessions[user];
+			if (skype) {
+				skype->send_command("SET USER " + buddyName + " BUDDYSTATUS 1");
+			}
+		}
+
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
 			Skype *skype = m_sessions[user];
 			if (skype) {
@@ -284,13 +299,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleVCardUpdatedRequest(const std::string &user, const std::string &p, const std::string &nickname) {
-		}
-
-		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
-		}
-
-		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-
 		}
 
 		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
