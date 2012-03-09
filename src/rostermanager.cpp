@@ -137,6 +137,11 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 		request->send();
 		m_requests.push_back(request);
 	}
+
+	if (buddy->getSubscription() != Buddy::Both) {
+		buddy->setSubscription(Buddy::Both);
+		handleBuddyChanged(buddy);
+	}
 }
 
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
@@ -165,6 +170,11 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		sendBuddyRosterPush(buddy);
 	}
 	else {
+		if (buddy->getSubscription() == Buddy::Both) {
+			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Not forwarding this buddy, because subscription=both");
+			return;
+		}
+
 		if (m_supportRemoteRoster) {
 			sendBuddyRosterPush(buddy);
 		}
@@ -331,7 +341,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					response->setType(Swift::Presence::Subscribed);
 					break;
 				case Swift::Presence::Subscribed:
-					onBuddyAdded(buddy);
+// 					onBuddyAdded(buddy);
 					break;
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
@@ -361,6 +371,10 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 						currentPresence->setTo(presence->getFrom());
 						m_component->getStanzaChannel()->sendPresence(currentPresence);
 					}
+					if (buddy->getSubscription() != Buddy::Both) {
+						buddy->setSubscription(Buddy::Both);
+						handleBuddyChanged(buddy);
+					}
 					break;
 				// remove buddy
 				case Swift::Presence::Unsubscribe:
@@ -370,6 +384,19 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				// just send response
 				case Swift::Presence::Unsubscribed:
 					response->setType(Swift::Presence::Unsubscribe);
+					// We set both here, because this Unsubscribed can be response to
+					// subscribe presence and we don't want that unsubscribe presence
+					// to be send later again
+					if (buddy->getSubscription() != Buddy::Both) {
+						buddy->setSubscription(Buddy::Both);
+						handleBuddyChanged(buddy);
+					}
+					break;
+				case Swift::Presence::Subscribed:
+					if (buddy->getSubscription() != Buddy::Both) {
+						buddy->setSubscription(Buddy::Both);
+						handleBuddyChanged(buddy);
+					}
 					break;
 				default:
 					return;
@@ -394,7 +421,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
 					response->setType(Swift::Presence::Unsubscribed);
-					onBuddyRemoved(buddy);
+// 					onBuddyRemoved(buddy);
 					break;
 				// just send response
 				case Swift::Presence::Unsubscribed:
