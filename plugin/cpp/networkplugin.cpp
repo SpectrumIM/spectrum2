@@ -605,11 +605,10 @@ void NetworkPlugin::sendMemoryUsage() {
 
 	stats.set_res(res + e_res);
 	stats.set_shared(shared + e_shared);
+	stats.set_id(stringOf(getpid()));
 
 	std::string message;
 	stats.SerializeToString(&message);
-
-	stats.set_id(stringOf(getpid()));
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATS);
 
