@@ -386,6 +386,12 @@ static gboolean create_dbus_proxy(gpointer data) {
 }
 
 void Skype::login() {
+	if (m_username.find("..") == 0 || m_username.find("/") != std::string::npos) {
+		np->handleDisconnected(m_user, 0, "Invalid username");
+		return;
+	}
+	boost::filesystem::remove_all(std::string("/tmp/skype/") + m_username);
+
 	boost::filesystem::path	path(std::string("/tmp/skype/") + m_username);
 	if (!boost::filesystem::exists(path)) {
 		boost::filesystem::create_directories(path);
