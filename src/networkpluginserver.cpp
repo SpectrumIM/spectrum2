@@ -579,6 +579,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 	// Forward it
 	conv->handleMessage(msg, payload.nickname());
+	m_userManager->messageToXMPPSent();
 }
 
 void NetworkPluginServer::handleAttentionPayload(const std::string &data) {

@@ -268,6 +268,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	user->getConversationManager()->handleMessageReceived(message);
+	messageToBackendSent();
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
