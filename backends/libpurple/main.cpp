@@ -770,7 +770,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (account) {
 				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
-					PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+					conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
 					if (!conv) {
 						conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
 					}
