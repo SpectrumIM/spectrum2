@@ -129,7 +129,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			std::string name = legacyName;
-			name = name.substr(name.find(".") + 1);
+			if (name.find("skype.") == 0 || name.find("prpl-skype.") == 0) {
+				name = name.substr(name.find(".") + 1);
+			}
 			LOG4CXX_INFO(logger,  "Creating account with name '" << name << "'");
 
 			Skype *skype = new Skype(user, name, password);
@@ -144,11 +146,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			shared = 0;
 			for(std::map<std::string, Skype *>::const_iterator it = m_sessions.begin(); it != m_sessions.end(); it++) {
 				Skype *skype = it->second;
-				double r;
-				double s;
-				process_mem_usage(s, r, skype->getPid());
-				res += r;
-				shared += s;
+				if (skype) {
+					double r;
+					double s;
+					process_mem_usage(s, r, skype->getPid());
+					res += r;
+					shared += s;
+				}
 			}
 		}
 
