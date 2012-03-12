@@ -473,6 +473,7 @@ void Skype::login() {
 		}
 	}
 
+	sleep(2);
 	m_timer = g_timeout_add_seconds(1, create_dbus_proxy, this);
 }
 
@@ -499,7 +500,7 @@ bool Skype::loadSkypeBuddies() {
 		return FALSE;
 	}
 
-	if (re.empty() || re == "CONNSTATUS OFFLINE") {
+	if (re.empty() || re == "CONNSTATUS OFFLINE" || re == "ERROR 68") {
 		return TRUE;
 	}
 
