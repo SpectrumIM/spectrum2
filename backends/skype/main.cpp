@@ -430,6 +430,7 @@ void Skype::login() {
 							"</config>\n";
 	g_file_set_contents(std::string(std::string("/tmp/skype/") + m_username + "/" + m_username +"/config.xml").c_str(), config_xml.c_str(), -1, NULL);
 
+	sleep(1);
 	std::string db_path = std::string("/tmp/skype/") + m_username;
 	char *db = (char *) malloc(db_path.size() + 1);
 	strcpy(db, db_path.c_str());
@@ -473,7 +474,7 @@ void Skype::login() {
 		}
 	}
 
-	sleep(2);
+	sleep(1);
 	m_timer = g_timeout_add_seconds(1, create_dbus_proxy, this);
 }
 
@@ -602,6 +603,7 @@ std::string Skype::send_command(const std::string &message) {
 // 			int message_num;
 // 			gchar error_return[30];
 
+	LOG4CXX_INFO(logger, "Sending: " << message);
 	if (!dbus_g_proxy_call (m_proxy, "Invoke", &error, G_TYPE_STRING, message.c_str(), G_TYPE_INVALID,
 						G_TYPE_STRING, &str, G_TYPE_INVALID))
 	{
