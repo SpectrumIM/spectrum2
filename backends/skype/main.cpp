@@ -82,7 +82,7 @@ static pbnetwork::StatusType getStatus(const std::string &st) {
 class Skype {
 	public:
 		Skype(const std::string &user, const std::string &username, const std::string &password);
-		~Skype() { logout(); }
+		~Skype() { LOG4CXX_INFO(logger, "Skype instance desctuctor"); logout(); }
 		void login();
 		void logout();
 		std::string send_command(const std::string &message);
@@ -159,6 +159,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 			Skype *skype = m_sessions[user];
 			if (skype) {
+				LOG4CXX_INFO(logger, "User wants to logout, logging out");
 				skype->logout();
 				exit(1);
 			}
@@ -361,6 +362,7 @@ bool Skype::createDBusProxy() {
 			LOG4CXX_INFO(logger,  m_username << ":" << error->message);
 
 			if (m_counter == 15) {
+				LOG4CXX_ERROR(logger, "Logging out, proxy couldn't be created");
 				np->handleDisconnected(m_user, 0, error->message);
 				logout();
 				g_error_free(error);
@@ -483,18 +485,19 @@ bool Skype::loadSkypeBuddies() {
 //	while (re == "CONNSTATUS OFFLINE" || re.empty()) {
 //		sleep(1);
 
-	gchar buffer[1024];
-	int bytes_read = read(fd_output, buffer, 1023);
-	if (bytes_read > 0) {
-		buffer[bytes_read] = 0;
-		np->handleDisconnected(m_user, 0, buffer);
-		close(fd_output);
-		logout();
-		return FALSE;
-	}
+// 	gchar buffer[1024];
+// 	int bytes_read = read(fd_output, buffer, 1023);
+// 	if (bytes_read > 0) {
+// 		buffer[bytes_read] = 0;
+// 		np->handleDisconnected(m_user, 0, buffer);
+// 		close(fd_output);
+// 		logout();
+// 		return FALSE;
+// 	}
 
 	std::string re = send_command("NAME Spectrum");
 	if (m_counter++ > 15) {
+		LOG4CXX_ERROR(logger, "Logging out, because we tried to connect the Skype over DBUS 15 times without success");
 		np->handleDisconnected(m_user, 0, "");
 		close(fd_output);
 		logout();
@@ -508,6 +511,7 @@ bool Skype::loadSkypeBuddies() {
 	close(fd_output);
 
 	if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
+		LOG4CXX_ERROR(logger, "PROTOCOL 7 failed, logging out");
 		np->handleDisconnected(m_user, 0, "Skype is not ready");
 		logout();
 		return FALSE;
