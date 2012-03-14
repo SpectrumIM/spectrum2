@@ -363,7 +363,7 @@ bool Skype::createDBusProxy() {
 
 			if (m_counter == 15) {
 				LOG4CXX_ERROR(logger, "Logging out, proxy couldn't be created");
-				np->handleDisconnected(m_user, 0, error->message);
+				np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, error->message);
 				logout();
 				g_error_free(error);
 				return FALSE;
@@ -393,7 +393,7 @@ static gboolean create_dbus_proxy(gpointer data) {
 
 void Skype::login() {
 	if (m_username.find("..") == 0 || m_username.find("/") != std::string::npos) {
-		np->handleDisconnected(m_user, 0, "Invalid username");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Invalid username");
 		return;
 	}
 	boost::filesystem::remove_all(std::string("/tmp/skype/") + m_username);
@@ -437,7 +437,7 @@ void Skype::login() {
 	char *db = (char *) malloc(db_path.size() + 1);
 	strcpy(db, db_path.c_str());
 	LOG4CXX_INFO(logger,  m_username << ": Spawning new Skype instance dbpath=" << db);
-	gchar* argv[8] = {"skype", "--enable-dbus", "--use-session-dbus", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
+	gchar* argv[6] = {"skype", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
 
 	int fd;
 	g_spawn_async_with_pipes(NULL,
@@ -485,20 +485,25 @@ bool Skype::loadSkypeBuddies() {
 //	while (re == "CONNSTATUS OFFLINE" || re.empty()) {
 //		sleep(1);
 
-// 	gchar buffer[1024];
-// 	int bytes_read = read(fd_output, buffer, 1023);
-// 	if (bytes_read > 0) {
-// 		buffer[bytes_read] = 0;
-// 		np->handleDisconnected(m_user, 0, buffer);
-// 		close(fd_output);
-// 		logout();
-// 		return FALSE;
-// 	}
+	gchar buffer[1024];
+	int bytes_read = read(fd_output, buffer, 1023);
+	if (bytes_read > 0) {
+		buffer[bytes_read] = 0;
+		std::string b(buffer);
+		LOG4CXX_WARN(logger, "Skype wrote this on stdout '" << b << "'");
+		if (b.find("Incorrect Password") != std::string::npos) {
+			LOG4CXX_INFO(logger, "Incorrect password, logging out")
+			np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_FAILED, "Incorrect password");
+			close(fd_output);
+			logout();
+			return FALSE;
+		}
+	}
 
 	std::string re = send_command("NAME Spectrum");
 	if (m_counter++ > 15) {
 		LOG4CXX_ERROR(logger, "Logging out, because we tried to connect the Skype over DBUS 15 times without success");
-		np->handleDisconnected(m_user, 0, "");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not read.");
 		close(fd_output);
 		logout();
 		return FALSE;
@@ -512,7 +517,7 @@ bool Skype::loadSkypeBuddies() {
 
 	if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
 		LOG4CXX_ERROR(logger, "PROTOCOL 7 failed, logging out");
-		np->handleDisconnected(m_user, 0, "Skype is not ready");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready");
 		logout();
 		return FALSE;
 	}
@@ -708,6 +713,32 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 				return;
 
 			np->handleMessage(sk->getUser(), from, body);
+		}
+	}
+	else if (cmd[0] == "CALL") {
+		// CALL 884 STATUS RINGING
+		if (cmd[2] == "STATUS") {
+			if (cmd[3] == "RINGING" || cmd[3] == "MISSED") {
+				// handle only incoming calls
+				std::string type = sk->send_command("GET CALL " + cmd[1] + " TYPE");
+				type = type.substr(type.find("TYPE") + 5);
+				if (type.find("INCOMING") != 0) {
+					return;
+				}
+
+				std::string from = sk->send_command("GET CALL " + cmd[1] + " PARTNER_HANDLE");
+				from = from.substr(from.find("PARTNER_HANDLE") + 15);
+
+				std::string dispname = sk->send_command("GET CALL " + cmd[1] + " PARTNER_DISPNAME");
+				dispname = dispname.substr(dispname.find("PARTNER_DISPNAME") + 17);
+
+				if (cmd[3] == "RINGING") {
+					np->handleMessage(sk->getUser(), from, "User " + dispname + " is calling you.");
+				}
+				else {
+					np->handleMessage(sk->getUser(), from, "You have missed call from user " + dispname + ".");
+				}
+			}
 		}
 	}
 }
