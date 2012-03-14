@@ -337,55 +337,16 @@ int main (int argc, char* argv[]) {
 		log4cxx::PropertyConfigurator::configure(p);
 	}
 
-#ifdef WITH_SQLITE
-	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		storageBackend = new SQLite3Backend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
+	std::string error;
+	storageBackend = StorageBackend::createBackend(&config, error);
+	if (storageBackend == NULL) {
+		std::cerr << error << "\n";
 		return -2;
 	}
-#endif
 
-#ifdef WITH_MYSQL
-	if (CONFIG_STRING(&config, "database.type") == "mysql") {
-		storageBackend = new MySQLBackend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "mysql") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
-		return -2;
-	}
-#endif
-
-#ifdef WITH_PQXX
-	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
-		storageBackend = new PQXXBackend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
-		std::cerr << "Spectrum2 is not compiled with pqxx backend.\n";
-		return -2;
-	}
-#endif
-
-	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3"
-		&& CONFIG_STRING(&config, "database.type") != "pqxx" && CONFIG_STRING(&config, "database.type") != "none") {
-		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
-		return -2;
+	if (!storageBackend->connect()) {
+		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+		return -1;
 	}
 
 	Swift::SimpleEventLoop eventLoop;
