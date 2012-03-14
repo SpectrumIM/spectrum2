@@ -363,7 +363,7 @@ bool Skype::createDBusProxy() {
 
 			if (m_counter == 15) {
 				LOG4CXX_ERROR(logger, "Logging out, proxy couldn't be created");
-				np->handleDisconnected(m_user, 0, error->message);
+				np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, error->message);
 				logout();
 				g_error_free(error);
 				return FALSE;
@@ -393,7 +393,7 @@ static gboolean create_dbus_proxy(gpointer data) {
 
 void Skype::login() {
 	if (m_username.find("..") == 0 || m_username.find("/") != std::string::npos) {
-		np->handleDisconnected(m_user, 0, "Invalid username");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Invalid username");
 		return;
 	}
 	boost::filesystem::remove_all(std::string("/tmp/skype/") + m_username);
@@ -493,7 +493,7 @@ bool Skype::loadSkypeBuddies() {
 		LOG4CXX_WARN(logger, "Skype wrote this on stdout '" << b << "'");
 		if (b.find("Incorrect Password") != std::string::npos) {
 			LOG4CXX_INFO(logger, "Incorrect password, logging out")
-			np->handleDisconnected(m_user, 0, "Incorrect password");
+			np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_FAILED, "Incorrect password");
 			close(fd_output);
 			logout();
 			return FALSE;
@@ -503,7 +503,7 @@ bool Skype::loadSkypeBuddies() {
 	std::string re = send_command("NAME Spectrum");
 	if (m_counter++ > 15) {
 		LOG4CXX_ERROR(logger, "Logging out, because we tried to connect the Skype over DBUS 15 times without success");
-		np->handleDisconnected(m_user, 0, "");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not read.");
 		close(fd_output);
 		logout();
 		return FALSE;
@@ -517,7 +517,7 @@ bool Skype::loadSkypeBuddies() {
 
 	if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
 		LOG4CXX_ERROR(logger, "PROTOCOL 7 failed, logging out");
-		np->handleDisconnected(m_user, 0, "Skype is not ready");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready");
 		logout();
 		return FALSE;
 	}
