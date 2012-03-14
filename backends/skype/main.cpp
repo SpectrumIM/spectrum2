@@ -437,7 +437,7 @@ void Skype::login() {
 	char *db = (char *) malloc(db_path.size() + 1);
 	strcpy(db, db_path.c_str());
 	LOG4CXX_INFO(logger,  m_username << ": Spawning new Skype instance dbpath=" << db);
-	gchar* argv[8] = {"skype", "--enable-dbus", "--use-session-dbus", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
+	gchar* argv[6] = {"skype", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
 
 	int fd;
 	g_spawn_async_with_pipes(NULL,
