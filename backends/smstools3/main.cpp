@@ -9,6 +9,7 @@
  */
 
 #include "transport/config.h"
+#include "transport/logging.h"
 #include "transport/networkplugin.h"
 #include "transport/sqlite3backend.h"
 #include "transport/mysqlbackend.h"
@@ -312,39 +313,17 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
-		LoggerPtr root = log4cxx::Logger::getRootLogger();
-#ifndef _MSC_VER
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-#else
-		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
-#endif
-	}
-	else {
-		log4cxx::helpers::Properties p;
-		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
-		p.load(istream);
-		LogString pid, jid;
-		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
-		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
-#ifdef _MSC_VER
-		p.setProperty(L"pid", pid);
-		p.setProperty(L"jid", jid);
-#else
-		p.setProperty("pid", pid);
-		p.setProperty("jid", jid);
-#endif
-		log4cxx::PropertyConfigurator::configure(p);
-	}
+	Logging::initBackendLogging(&config);
 
 	std::string error;
-	storageBackend = StorageBackend::createBackend(&config, error);
+	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
 	if (storageBackend == NULL) {
-		std::cerr << error << "\n";
-		return -2;
+		if (!error.empty()) {
+			std::cerr << error << "\n";
+			return -2;
+		}
 	}
-
-	if (!storageBackend->connect()) {
+	else if (!storageBackend->connect()) {
 		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 		return -1;
 	}

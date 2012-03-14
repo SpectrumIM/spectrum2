@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "transport/config.h"
+#include "transport/logging.h"
 #include "transport/transport.h"
 #include "transport/usermanager.h"
 #include "transport/memoryusage.h"
@@ -901,18 +902,7 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
-			LoggerPtr root = log4cxx::Logger::getRootLogger();
-			root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-		}
-		else {
-			log4cxx::helpers::Properties p;
-			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
-
-			p.load(istream);
-			p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
-			log4cxx::PropertyConfigurator::configure(p);
-		}
+		Logging::initBackendLogging(&config);
 
 // 		initPurple(config);
 

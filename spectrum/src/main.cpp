@@ -13,6 +13,7 @@
 #include "transport/usersreconnecter.h"
 #include "transport/util.h"
 #include "transport/gatewayresponder.h"
+#include "transport/logging.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -235,71 +236,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-	if (CONFIG_STRING(&config, "logging.config").empty()) {
-		LoggerPtr root = log4cxx::Logger::getRootLogger();
-#ifdef WIN32
-		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
-#else
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-#endif
-	}
-	else {
-		log4cxx::helpers::Properties p;
-		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.config"));
-
-		p.load(istream);
-		LogString pid, jid;
-		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
-		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
-#ifdef WIN32
-		p.setProperty(L"pid", pid);
-		p.setProperty(L"jid", jid);
-#else
-		p.setProperty("pid", pid);
-		p.setProperty("jid", jid);
-#endif
-
-		std::string dir;
-		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
-			if (boost::ends_with(prop, ".File")) {
-				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
-				boost::replace_all(dir, "${jid}", jid);
-				break;
-			}
-		}
-
-		if (!dir.empty()) {
-			// create directories
-			try {
-				boost::filesystem::create_directories(
-					boost::filesystem::path(dir).parent_path().string()
-				);
-			}
-			catch (...) {
-				std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ".\n";
-				return 1;
-			}
-
-#ifndef WIN32
-			if (!CONFIG_STRING(&config, "service.group").empty() && !CONFIG_STRING(&config, "service.user").empty()) {
-				struct group *gr;
-				if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-					std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
-					return 1;
-				}
-				struct passwd *pw;
-				if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-					std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
-					return 1;
-				}
-				chown(dir.c_str(), pw->pw_uid, gr->gr_gid);
-			}
-
-#endif
-		}
-
-		log4cxx::PropertyConfigurator::configure(p);
-	}
+	Logging::initMainLogging(&config);
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
@@ -352,11 +289,12 @@ int main(int argc, char **argv)
 	std::string error;
 	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
 	if (storageBackend == NULL) {
-		std::cerr << error << "\n";
-		return -2;
+		if (!error.empty()) {
+			std::cerr << error << "\n";
+			return -2;
+		}
 	}
-
-	if (!storageBackend->connect()) {
+	else if (!storageBackend->connect()) {
 		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 		return -1;
 	}
@@ -399,4 +337,5 @@ int main(int argc, char **argv)
 
 	delete storageBackend;
 	delete factories;
+	return 0;
 }
