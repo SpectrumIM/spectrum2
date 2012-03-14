@@ -485,15 +485,20 @@ bool Skype::loadSkypeBuddies() {
 //	while (re == "CONNSTATUS OFFLINE" || re.empty()) {
 //		sleep(1);
 
-// 	gchar buffer[1024];
-// 	int bytes_read = read(fd_output, buffer, 1023);
-// 	if (bytes_read > 0) {
-// 		buffer[bytes_read] = 0;
-// 		np->handleDisconnected(m_user, 0, buffer);
-// 		close(fd_output);
-// 		logout();
-// 		return FALSE;
-// 	}
+	gchar buffer[1024];
+	int bytes_read = read(fd_output, buffer, 1023);
+	if (bytes_read > 0) {
+		buffer[bytes_read] = 0;
+		std::string b(buffer);
+		LOG4CXX_WARN(logger, "Skype wrote this on stdout '" << b << "'");
+		if (b.find("Incorrect Password") != std::string::npos) {
+			LOG4CXX_INFO(logger, "Incorrect password, logging out")
+			np->handleDisconnected(m_user, 0, "Incorrect password");
+			close(fd_output);
+			logout();
+			return FALSE;
+		}
+	}
 
 	std::string re = send_command("NAME Spectrum");
 	if (m_counter++ > 15) {
@@ -708,6 +713,32 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 				return;
 
 			np->handleMessage(sk->getUser(), from, body);
+		}
+	}
+	else if (cmd[0] == "CALL") {
+		// CALL 884 STATUS RINGING
+		if (cmd[2] == "STATUS") {
+			if (cmd[3] == "RINGING" || cmd[3] == "MISSED") {
+				// handle only incoming calls
+				std::string type = sk->send_command("GET CALL " + cmd[1] + " TYPE");
+				type = type.substr(type.find("TYPE") + 5);
+				if (type.find("INCOMING") != 0) {
+					return;
+				}
+
+				std::string from = sk->send_command("GET CALL " + cmd[1] + " PARTNER_HANDLE");
+				from = from.substr(from.find("PARTNER_HANDLE") + 15);
+
+				std::string dispname = sk->send_command("GET CALL " + cmd[1] + " PARTNER_DISPNAME");
+				dispname = dispname.substr(dispname.find("PARTNER_DISPNAME") + 17);
+
+				if (cmd[3] == "RINGING") {
+					np->handleMessage(sk->getUser(), from, "User " + dispname + " is calling you.");
+				}
+				else {
+					np->handleMessage(sk->getUser(), from, "You have missed call from user " + dispname + ".");
+				}
+			}
 		}
 	}
 }
