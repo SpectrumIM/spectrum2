@@ -112,7 +112,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
 			NetworkPluginServer::Backend *backend = *b;
-			lst += "Backend " + boost::lexical_cast<std::string>(id);
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + ")";
 			lst += backend->acceptUsers ? "" : " - not-accepting";
 			lst += backend->longRun ? " - long-running" : "";
 			lst += ":\n";
@@ -204,7 +204,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>(backend->res) + "\n";
+			lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res) + "\n";
 			id++;
 		}
 
@@ -215,7 +215,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>(backend->shared) + "\n";
+			lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->shared) + "\n";
 			id++;
 		}
 
@@ -226,7 +226,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>(backend->res - backend->shared) + "\n";
+			lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res - backend->shared) + "\n";
 			id++;
 		}
 
@@ -238,10 +238,10 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
 			if (backend->users.size() == 0) {
-				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": 0\n";
+				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): 0\n";
 			}
 			else {
-				lst += "Backend " + boost::lexical_cast<std::string>(id) + ": " + boost::lexical_cast<std::string>((backend->res - backend->init_res) / backend->users.size()) + "\n";
+				lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>((backend->res - backend->init_res) / backend->users.size()) + "\n";
 			}
 			id++;
 		}
@@ -250,6 +250,14 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	}
 	else if (message->getBody() == "collect_backend") {
 		m_server->collectBackend();
+	}
+	else if (message->getBody() == "crashed_backends") {
+		std::string lst;
+		const std::vector<std::string> &backends = m_server->getCrashedBackends();
+		BOOST_FOREACH(const std::string &backend, backends) {
+			lst += backend + "\n";
+		}
+		message->setBody(lst);
 	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
@@ -263,6 +271,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		help += "    has_online_user <bare_JID> - returns 1 if user is online\n";
 		help += "Backends:\n";
 		help += "    backends_count - number of active backends\n";
+		help += "    crashed_backends - returns IDs of crashed backends\n";
 		help += "Memory:\n";
 		help += "    res_memory - Total RESident memory spectrum2 and its backends use in KB\n";
 		help += "    shr_memory - Total SHaRed memory spectrum2 backends share together in KB\n";

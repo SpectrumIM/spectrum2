@@ -344,7 +344,7 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
-	LOG4CXX_INFO(logger, "Backend " << c << " disconnected. Current backend count=" << (m_clients.size() - 1));
+	LOG4CXX_INFO(logger, "Backend " << c << " (ID=" << c->id << ") disconnected. Current backend count=" << (m_clients.size() - 1));
 
 	// This backend will do, so we can't reconnect users to it in User::handleDisconnected call
 	c->willDie = true;
@@ -356,7 +356,7 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 	}
 
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
-		LOG4CXX_ERROR(logger, "Backend " << c << " disconnected (probably crashed) with active user " << (*it)->getJID().toString());
+		LOG4CXX_ERROR(logger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getJID().toString());
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
@@ -864,12 +864,12 @@ void NetworkPluginServer::pingTimeout() {
 			sendPing((*it));
 		}
 		else {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
 		}
 
 		if ((*it)->users.size() == 0) {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". There are no users.");
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). There are no users.");
 			toRemove.push_back(*it);
 		}
 	}
@@ -898,7 +898,7 @@ void NetworkPluginServer::collectBackend() {
 		if (m_collectTimer) {
 			m_collectTimer->start();
 		}
-		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
+		LOG4CXX_INFO(logger, "Backend " << backend << " (ID=" << backend->id << ") is set to die");
 		backend->acceptUsers = false;
 	}
 }
@@ -1366,7 +1366,7 @@ void NetworkPluginServer::sendPing(Backend *c) {
 	wrap.SerializeToString(&message);
 
 	if (c->connection) {
-		LOG4CXX_INFO(logger, "PING to " << c);
+		LOG4CXX_INFO(logger, "PING to " << c << " (ID=" << c->id << ")");
 		send(c->connection, message);
 		c->pongReceived = false;
 	}
