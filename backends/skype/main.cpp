@@ -36,6 +36,10 @@ using namespace Transport;
 
 class SpectrumNetworkPlugin;
 
+#define GET_RESPONSE_DATA(RESP, DATA) (RESP.find(DATA) != std::string::npos ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
+#define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = sk->send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
+					VAR = GET_RESPONSE_DATA(VAR, PROP);
+
 
 SpectrumNetworkPlugin *np;
 
@@ -292,7 +296,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				std::cout << skype->getUsername() << " " << name << "\n";
 				if (skype->getUsername() == name) {
 					alias = skype->send_command("GET PROFILE FULLNAME");
-					alias = alias.substr(17);
+					alias = GET_RESPONSE_DATA(alias, "FULLNAME")
 				}
 				handleVCard(user, id, legacyName, "", alias, photo);
 			}
@@ -504,7 +508,7 @@ bool Skype::loadSkypeBuddies() {
 	std::string re = send_command("NAME Spectrum");
 	if (m_counter++ > 15) {
 		LOG4CXX_ERROR(logger, "Logging out, because we tried to connect the Skype over DBUS 15 times without success");
-		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not read.");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready. This issue have been logged and admins will check it and try to fix it soon.");
 		close(fd_output);
 		logout();
 		return FALSE;
@@ -518,7 +522,7 @@ bool Skype::loadSkypeBuddies() {
 
 	if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
 		LOG4CXX_ERROR(logger, "PROTOCOL 7 failed, logging out");
-		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready. This issue have been logged and admins will check it and try to fix it soon.");
 		logout();
 		return FALSE;
 	}
@@ -527,20 +531,22 @@ bool Skype::loadSkypeBuddies() {
 
 	std::map<std::string, std::string> group_map;
 	std::string groups = send_command("SEARCH GROUPS CUSTOM");
-	groups = groups.substr(groups.find(' ') + 1);
-	std::vector<std::string> grps;
-	boost::split(grps, groups, boost::is_any_of(","));
-	BOOST_FOREACH(std::string grp, grps) {
-		std::vector<std::string> data;
-		std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
-		boost::split(data, name, boost::is_any_of(" "));
-		name = name.substr(name.find("DISPLAYNAME") + 12);
+	if (groups.find(' ') != std::string::npos) {
+		groups = groups.substr(groups.find(' ') + 1);
+		std::vector<std::string> grps;
+		boost::split(grps, groups, boost::is_any_of(","));
+		BOOST_FOREACH(std::string grp, grps) {
+			std::vector<std::string> data;
+			std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
+			boost::split(data, name, boost::is_any_of(" "));
+			name = GET_RESPONSE_DATA(name, "DISPLAYNAME");
 
-		std::string users = send_command("GET GROUP " + data[1] + " USERS");
-		users = name.substr(name.find("USERS") + 6);
-		boost::split(data, users, boost::is_any_of(","));
-		BOOST_FOREACH(std::string u, data) {
-			group_map[u] = grp;
+			std::string users = send_command("GET GROUP " + data[1] + " USERS");
+			users = GET_RESPONSE_DATA(users, "USERS");
+			boost::split(data, users, boost::is_any_of(","));
+			BOOST_FOREACH(std::string u, data) {
+				group_map[u] = grp;
+			}
 		}
 	}
 
@@ -650,45 +656,35 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 			}
 			else {
 				pbnetwork::StatusType status = getStatus(cmd[3]);
-				std::string mood_text = sk->send_command("GET USER " + cmd[1] + " MOOD_TEXT");
-				mood_text = mood_text.substr(mood_text.find("MOOD_TEXT") + 10);
-
-				std::string alias = sk->send_command("GET USER " + cmd[1] + " FULLNAME");
-				alias = alias.substr(alias.find("FULLNAME") + 9);
+				GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
+				GET_PROPERTY(alias, "USER", cmd[1], "FULLNAME");
 
 				std::vector<std::string> groups;
 				np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
 			}
 		}
 		else if (cmd[2] == "MOOD_TEXT") {
-			std::string st = sk->send_command("GET USER " + cmd[1] + " ONLINESTATUS");
-			st = st.substr(st.find("ONLINESTATUS") + 13);
+			GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
 			pbnetwork::StatusType status = getStatus(st);
 
-			std::string mood_text = message.substr(message.find("MOOD_TEXT") + 10);
+			std::string mood_text = GET_RESPONSE_DATA(message, "MOOD_TEXT");
 
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], "", groups, status, mood_text);
 		}
 		else if (cmd[2] == "BUDDYSTATUS" && cmd[3] == "3") {
-			std::string st = sk->send_command("GET USER " + cmd[1] + " ONLINESTATUS");
-			st = st.substr(st.find("ONLINESTATUS") + 13);
+			GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
+			GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
 			pbnetwork::StatusType status = getStatus(st);
-
-			std::string mood_text = message.substr(message.find("MOOD_TEXT") + 10);
 
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], "", groups, status, mood_text);
 		}
 		else if (cmd[2] == "FULLNAME") {
-			std::string st = sk->send_command("GET USER " + cmd[1] + " ONLINESTATUS");
-			st = st.substr(st.find("ONLINESTATUS") + 13);
+			GET_PROPERTY(alias, "USER", cmd[1], "FULLNAME");
+			GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
+			GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
 			pbnetwork::StatusType status = getStatus(st);
-
-			std::string mood_text = sk->send_command("GET USER " + cmd[1] + " MOOD_TEXT");
-			mood_text = mood_text.substr(mood_text.find("MOOD_TEXT") + 10);
-
-			std::string alias = message.substr(message.find("FULLNAME") + 9);
 
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
@@ -696,24 +692,13 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 	}
 	else if (cmd[0] == "CHATMESSAGE") {
 		if (cmd[3] == "RECEIVED") {
-			std::string body = sk->send_command("GET CHATMESSAGE " + cmd[1] + " BODY");
-			body = body.substr(body.find("BODY") + 5);
+			GET_PROPERTY(body, "CHATMESSAGE", cmd[1], "BODY");
+			GET_PROPERTY(from_handle, "CHATMESSAGE", cmd[1], "FROM_HANDLE");
 
-			std::string chatname = sk->send_command("GET CHATMESSAGE " + cmd[1] + " CHATNAME");
-			size_t start = chatname.find("$") + 1;
-			size_t len = chatname.find(";") - start;
-			std::string from = chatname.substr(start, len);
-
-			std::string from_handle = sk->send_command("GET CHATMESSAGE " + cmd[1] + " FROM_HANDLE");
-			from_handle = from_handle.substr(from_handle.find("FROM_HANDLE") + 12);
-
-// 			if (from_handle != sk->getUsername()) {
-				from = from_handle;
-// 			}
 			if (from_handle == sk->getUsername())
 				return;
 
-			np->handleMessage(sk->getUser(), from, body);
+			np->handleMessage(sk->getUser(), from_handle, body);
 		}
 	}
 	else if (cmd[0] == "CALL") {
@@ -721,17 +706,13 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 		if (cmd[2] == "STATUS") {
 			if (cmd[3] == "RINGING" || cmd[3] == "MISSED") {
 				// handle only incoming calls
-				std::string type = sk->send_command("GET CALL " + cmd[1] + " TYPE");
-				type = type.substr(type.find("TYPE") + 5);
+				GET_PROPERTY(type, "CALL", cmd[1], "TYPE");
 				if (type.find("INCOMING") != 0) {
 					return;
 				}
 
-				std::string from = sk->send_command("GET CALL " + cmd[1] + " PARTNER_HANDLE");
-				from = from.substr(from.find("PARTNER_HANDLE") + 15);
-
-				std::string dispname = sk->send_command("GET CALL " + cmd[1] + " PARTNER_DISPNAME");
-				dispname = dispname.substr(dispname.find("PARTNER_DISPNAME") + 17);
+				GET_PROPERTY(from, "CALL", cmd[1], "PARTNER_HANDLE");
+				GET_PROPERTY(dispname, "CALL", cmd[1], "PARTNER_DISPNAME");
 
 				if (cmd[3] == "RINGING") {
 					np->handleMessage(sk->getUser(), from, "User " + dispname + " is calling you.");
