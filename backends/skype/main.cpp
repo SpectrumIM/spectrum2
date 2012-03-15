@@ -699,6 +699,8 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 				return;
 
 			np->handleMessage(sk->getUser(), from_handle, body);
+
+			sk->send_command("SET CHATMESSAGE " + cmd[1] + " SEEN");
 		}
 	}
 	else if (cmd[0] == "CALL") {
