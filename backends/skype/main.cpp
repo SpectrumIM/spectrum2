@@ -36,7 +36,7 @@ using namespace Transport;
 
 class SpectrumNetworkPlugin;
 
-#define GET_RESPONSE_DATA(RESP, DATA) (RESP.find(DATA) != std::string::npos ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
+#define GET_RESPONSE_DATA(RESP, DATA) ((RESP.find(std::string(DATA) + " ") != std::string::npos) ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
 #define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = sk->send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
 					VAR = GET_RESPONSE_DATA(VAR, PROP);
 
