@@ -1,17 +1,22 @@
 Version 2.0.0-beta2 (2012-XX-XX):
 	General:
-	* Fixed bug when Roster Item Exchange and subscribe stanzas were send
+	* Fixed bug when Roster Item Exchange and subscribe stanzas were sent
 	  repeatedly.
+	* Backends related logs now contain the backend PID.
 	* Fixed username_mask setting.
-	* Added new fields into statistics.
+	* Added new fields into statistics (backends_crashed, messages related
+	  stats).
 
 	libpurple:
 	* Added support for MUC for prpl-jabber protocol.
 
 	Skype:
+	* Memory usage statistic now includes the Skype client.
 	* Fixed logging issue when the logs were not stored in the proper instance
 	  directory.
 	* Skype backend includes also Skype client memory usage into the account.
+	* Working buddies adding/removing.
+	* Information about missed call is now forwarded to XMPP user.
 
 Version 2.0.0-beta (2012-02-28):
 	General:
