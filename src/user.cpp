@@ -210,6 +210,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			}
 		}
 	}
+
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	if (isMUC) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
