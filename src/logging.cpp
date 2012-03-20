@@ -43,6 +43,8 @@
 #include "libgen.h"
 #else
 #include <windows.h>
+#include <process.h>
+#define getpid _getpid
 #endif
 
 using namespace boost::filesystem;
