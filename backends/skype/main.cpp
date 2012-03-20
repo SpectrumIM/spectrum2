@@ -38,7 +38,13 @@ class SpectrumNetworkPlugin;
 
 #define GET_RESPONSE_DATA(RESP, DATA) ((RESP.find(std::string(DATA) + " ") != std::string::npos) ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
 #define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = sk->send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
-					VAR = GET_RESPONSE_DATA(VAR, PROP);
+					try {\
+						VAR = GET_RESPONSE_DATA(VAR, PROP);\
+					}\
+					catch (std::out_of_range& oor) {\
+						VAR="";\
+					}
+					
 
 
 SpectrumNetworkPlugin *np;
@@ -547,7 +553,12 @@ bool Skype::loadSkypeBuddies() {
 			name = GET_RESPONSE_DATA(name, "DISPLAYNAME");
 
 			std::string users = send_command("GET GROUP " + data[1] + " USERS");
-			users = GET_RESPONSE_DATA(users, "USERS");
+			try {
+				users = GET_RESPONSE_DATA(users, "USERS");
+			}
+			catch (std::out_of_range& oor) {
+				continue;
+			}
 			boost::split(data, users, boost::is_any_of(","));
 			BOOST_FOREACH(std::string u, data) {
 				group_map[u] = grp;
