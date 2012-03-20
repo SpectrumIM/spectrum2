@@ -24,6 +24,11 @@
 #include <event.h>
 #endif
 
+#ifdef WIN32
+#include <process.h>
+#define getpid _getpid
+#endif
+
 using namespace log4cxx;
 
 static LoggerPtr logger_libpurple = log4cxx::Logger::getLogger("libpurple");
