@@ -25,6 +25,8 @@
 #endif
 
 #ifdef WIN32
+#include "win32/win32dep.h"
+#define ssize_t SSIZE_T
 #include <process.h>
 #define getpid _getpid
 #endif
