@@ -81,7 +81,10 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		response->addItem(StatsPayload::Item("users/online"));
 		response->addItem(StatsPayload::Item("contacts/online"));
 		response->addItem(StatsPayload::Item("contacts/total"));
-		response->addItem(StatsPayload::Item("backends"));
+		response->addItem(StatsPayload::Item("messages/from-xmpp"));
+		response->addItem(StatsPayload::Item("messages/to-xmpp"));
+		response->addItem(StatsPayload::Item("backends/running"));
+		response->addItem(StatsPayload::Item("backends/crashed"));
 		response->addItem(StatsPayload::Item("memory-usage"));
 	}
 	else {
@@ -115,8 +118,11 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 			else if (item.getName() == "users/online") {
 				response->addItem(StatsPayload::Item("users/online", "users", boost::lexical_cast<std::string>(m_userManager->getUserCount())));
 			}
-			else if (item.getName() == "backends") {
-				response->addItem(StatsPayload::Item("backends", "backends", boost::lexical_cast<std::string>(m_server->getBackendCount())));
+			else if (item.getName() == "backends/running") {
+				response->addItem(StatsPayload::Item("backends/running", "backends", boost::lexical_cast<std::string>(m_server->getBackendCount())));
+			}
+			else if (item.getName() == "backends/crashed") {
+				response->addItem(StatsPayload::Item("backends/crashed", "backends", boost::lexical_cast<std::string>(m_server->getCrashedBackends().size())));
 			}
 			else if (item.getName() == "memory-usage") {
 				response->addItem(StatsPayload::Item("memory-usage", "KB", boost::lexical_cast<std::string>(usedMemory())));
@@ -126,6 +132,12 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 			}
 			else if (item.getName() == "contacts/total") {
 				response->addItem(StatsPayload::Item("contacts/total", "contacts", boost::lexical_cast<std::string>(contactsTotal)));
+			}
+			else if (item.getName() == "messages/from-xmpp") {
+				response->addItem(StatsPayload::Item("messages/from-xmpp", "messages", boost::lexical_cast<std::string>(m_userManager->getMessagesToBackend())));
+			}
+			else if (item.getName() == "messages/to-xmpp") {
+				response->addItem(StatsPayload::Item("messages/to-xmpp", "messages", boost::lexical_cast<std::string>(m_userManager->getMessagesToXMPP())));
 			}
 		}
 	}

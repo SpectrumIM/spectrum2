@@ -20,16 +20,11 @@
 
 #pragma once
 
-#include <vector>
+#include "purple.h"
 
 #ifndef WIN32
-#include "signal.h"
+void spectrum_sigchld_handler(int sig);
 #endif
 
-namespace Transport {
-
-#ifndef WIN32
-	void process_mem_usage(double& shared, double& resident_set, pid_t pid = 0);
-#endif
-
-}
+int create_socket(char *host, int portno);
+GHashTable *spectrum_ui_get_info(void);

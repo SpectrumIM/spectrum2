@@ -211,6 +211,8 @@ class NetworkPlugin {
 		virtual void handleFTPauseRequest(unsigned long ftID) {}
 		virtual void handleFTContinueRequest(unsigned long ftID) {}
 
+		virtual void handleMemoryUsage(double &res, double &shared) {res = 0; shared = 0;}
+
 		virtual void handleExitRequest() { exit(1); }
 		void handleDataRead(std::string &data);
 		virtual void sendData(const std::string &string) {}

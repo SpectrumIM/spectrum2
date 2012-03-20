@@ -42,6 +42,8 @@ static LoggerPtr logger = Logger::getLogger("UserManager");
 UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
+	m_sentToXMPP = 0;
+	m_sentToBackend = 0;
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;
@@ -150,6 +152,21 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	if (!user) {
 		// Admin user is not legacy network user, so do not create User class instance for him
 		if (m_component->inServerMode() && CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
+			// Send admin contact to the user.
+			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+			Swift::RosterItemPayload item;
+			item.setJID(m_component->getJID());
+			item.setName("Admin");
+			item.setSubscription(Swift::RosterItemPayload::Both);
+			payload->addItem(item);
+
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
+			request->send();
+
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setTo(presence->getFrom());
+			response->setFrom(m_component->getJID());
+			m_component->getStanzaChannel()->sendPresence(response);
 			return;
 		}
 
@@ -266,6 +283,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	user->getConversationManager()->handleMessageReceived(message);
+	messageToBackendSent();
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
