@@ -538,6 +538,11 @@ bool Skype::loadSkypeBuddies() {
 		BOOST_FOREACH(std::string grp, grps) {
 			std::vector<std::string> data;
 			std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
+
+			if (name.find("ERROR") == 0) {
+				continue;
+			}
+
 			boost::split(data, name, boost::is_any_of(" "));
 			name = GET_RESPONSE_DATA(name, "DISPLAYNAME");
 
@@ -619,7 +624,7 @@ std::string Skype::send_command(const std::string &message) {
 // 			int message_num;
 // 			gchar error_return[30];
 
-	LOG4CXX_INFO(logger, "Sending: " << message);
+	LOG4CXX_INFO(logger, "Sending: '" << message << "'");
 	if (!dbus_g_proxy_call (m_proxy, "Invoke", &error, G_TYPE_STRING, message.c_str(), G_TYPE_INVALID,
 						G_TYPE_STRING, &str, G_TYPE_INVALID))
 	{
@@ -636,7 +641,7 @@ std::string Skype::send_command(const std::string &message) {
 	}
 	if (str != NULL)
 	{
-		LOG4CXX_INFO(logger,  m_username << ": DBUS:" << str);
+		LOG4CXX_INFO(logger,  m_username << ": DBUS:'" << str << "'");
 	}
 	return str ? std::string(str) : std::string();
 }
