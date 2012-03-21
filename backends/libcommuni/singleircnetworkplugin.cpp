@@ -1,11 +1,9 @@
 #include "singleircnetworkplugin.h"
-#include "log4cxx/logger.h"
+#include "transport/logging.h"
 #include <IrcCommand>
 #include <IrcMessage>
 
-using namespace log4cxx;
-
-static LoggerPtr logger = log4cxx::Logger::getLogger("SingleIRCNetworkPlugin");
+DEFINE_LOGGER(logger, "SingleIRCNetworkPlugin");
 
 SingleIRCNetworkPlugin::SingleIRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
 	this->config = config;

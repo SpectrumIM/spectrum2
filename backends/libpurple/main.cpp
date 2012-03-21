@@ -8,14 +8,8 @@
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
 #include "transport/config.h"
+#include "transport/logging.h"
 #include "geventloop.h"
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
-#include "log4cxx/helpers/transcoder.h"
 
 // #include "valgrind/memcheck.h"
 #include "malloc.h"
@@ -33,10 +27,9 @@
 #define getpid _getpid
 #endif
 
-using namespace log4cxx;
+DEFINE_LOGGER(logger_libpurple, "libpurple");
+DEFINE_LOGGER(logger, "backend");
 
-static LoggerPtr logger_libpurple = log4cxx::Logger::getLogger("libpurple");
-static LoggerPtr logger = log4cxx::Logger::getLogger("backend");
 int main_socket;
 static int writeInput;
 

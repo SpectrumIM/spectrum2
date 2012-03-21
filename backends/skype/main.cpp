@@ -14,13 +14,8 @@
 #include "transport/rostermanager.h"
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
+#include "transport/logger.h"
 #include <boost/filesystem.hpp>
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
 // #include "valgrind/memcheck.h"
@@ -28,9 +23,7 @@
 #include <dbus-1.0/dbus/dbus-glib-lowlevel.h>
 
 
-using namespace log4cxx;
-
-static LoggerPtr logger = Logger::getLogger("backend");
+DEFINE_LOGGER(logger, "backend");
 
 using namespace Transport;
 

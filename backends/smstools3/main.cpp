@@ -26,13 +26,6 @@
 
 Swift::SimpleEventLoop *loop_;
 
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
-#include "log4cxx/helpers/transcoder.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -41,9 +34,7 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
 
-using namespace log4cxx;
-
-static LoggerPtr logger = log4cxx::Logger::getLogger("SMSNetworkPlugin");
+DEFINE_LOGGER(logger, "SMSNetworkPlugin");
 
 #define INTERNAL_USER "/sms@backend@internal@user"
 

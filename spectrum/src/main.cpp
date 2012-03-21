@@ -26,20 +26,11 @@
 #else
 #include <windows.h>
 #endif
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/transcoder.h"
-#include "log4cxx/helpers/fileinputstream.h"
 #include <sys/stat.h>
-
-using namespace log4cxx;
 
 using namespace Transport;
 
-static LoggerPtr logger = log4cxx::Logger::getLogger("Spectrum");
+DEFINE_LOGGER(logger, "Spectrum");
 
 Swift::SimpleEventLoop *eventLoop_ = NULL;
 Component *component_ = NULL;

@@ -22,10 +22,8 @@
 
 #include "transport/mysqlbackend.h"
 #include "transport/util.h"
+#include "transport/logging.h"
 #include <boost/bind.hpp>
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
 
 #define MYSQL_DB_VERSION 2
 #define CHECK_DB_RESPONSE(stmt) \
@@ -92,7 +90,7 @@ using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("MySQLBackend");
+DEFINE_LOGGER(logger, "MySQLBackend");
 static bool exec_ok;
 
 MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const std::string &statement) {

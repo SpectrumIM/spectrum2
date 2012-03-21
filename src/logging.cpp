@@ -25,13 +25,7 @@
 #include <iterator>
 #include <algorithm>
 
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
-#include "log4cxx/helpers/transcoder.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -48,12 +42,14 @@
 #endif
 
 using namespace boost::filesystem;
-using namespace log4cxx;
+
 
 namespace Transport {
 
 namespace Logging {
 
+#ifdef WITH_LOG4CXX
+using namespace log4cxx;
 static LoggerPtr root;
 
 static void initLogging(Config *config, std::string key) {
@@ -142,6 +138,14 @@ void initBackendLogging(Config *config) {
 void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
 }
+
+#else /* WITH_LOG4CXX */
+void initBackendLogging(Config */*config*/) {
+}
+
+void initMainLogging(Config */*config*/) {
+}
+#endif /* WITH_LOG4CXX */
 
 }
 

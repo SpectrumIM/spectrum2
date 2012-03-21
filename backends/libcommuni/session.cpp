@@ -15,11 +15,9 @@
 #include <IrcCommand>
 #include <IrcMessage>
 
-#include "log4cxx/logger.h"
+#include "transport/logging.h"
 
-using namespace log4cxx;
-
-static LoggerPtr logger = log4cxx::Logger::getLogger("IRCSession");
+DEFINE_LOGGER(logger, "IRCSession");
 
 MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcSession(parent)
 {

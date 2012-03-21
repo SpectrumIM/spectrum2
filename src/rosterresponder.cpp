@@ -28,16 +28,14 @@
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
 #include "transport/buddy.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("RosterResponder");
+DEFINE_LOGGER(logger, "RosterResponder");
 
 RosterResponder::RosterResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<RosterPayload>(router) {
 	m_userManager = userManager;

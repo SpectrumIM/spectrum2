@@ -27,16 +27,14 @@
 #include "Swiften/Swiften.h"
 #include "transport/usermanager.h"
 #include "transport/user.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("StorageResponder");
+DEFINE_LOGGER(logger, "StorageResponder");
 
 StorageResponder::StorageResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::Responder<PrivateStorage>(router) {
 	m_storageBackend = storageBackend;

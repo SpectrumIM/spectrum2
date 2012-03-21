@@ -19,10 +19,7 @@
  */
 
 #include "transport/memoryreadbytestream.h"
-#include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
-
-using namespace log4cxx;
 
 namespace Transport {
 	

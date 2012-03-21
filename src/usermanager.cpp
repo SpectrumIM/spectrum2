@@ -25,19 +25,18 @@
 #include "transport/conversationmanager.h"
 #include "transport/rostermanager.h"
 #include "transport/userregistry.h"
+#include "transport/logging.h"
 #include "storageresponder.h"
-#include "log4cxx/logger.h"
+
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "malloc.h"
 // #include "valgrind/memcheck.h"
 
-using namespace log4cxx;
-
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("UserManager");
+DEFINE_LOGGER(logger, "UserManager");
 
 UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;

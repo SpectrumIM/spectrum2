@@ -34,16 +34,14 @@
 #include "transport/rostermanager.h"
 #include "transport/usermanager.h"
 #include "transport/networkpluginserver.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("StatsResponder");
+DEFINE_LOGGER(logger, "StatsResponder");
 
 StatsResponder::StatsResponder(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend) : Swift::Responder<StatsPayload>(component->getIQRouter()) {
 	m_component = component;
