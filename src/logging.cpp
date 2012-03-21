@@ -67,7 +67,21 @@ static void initLogging(Config *config, std::string key) {
 	}
 	else {
 		log4cxx::helpers::Properties p;
-		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(config, key));
+
+		log4cxx::helpers::FileInputStream *istream = NULL;
+		try {
+			istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(config, key));
+		}
+		catch(log4cxx::helpers::IOException &ex) {
+			std::cerr << "Can't create FileInputStream logger instance: " << ex.what() << "\n";
+		}
+		catch (...) {
+			std::cerr << "Can't create FileInputStream logger instance\n";
+		}
+
+		if (!istream) {
+			return;
+		}
 
 		p.load(istream);
 		LogString pid, jid;
