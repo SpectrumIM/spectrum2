@@ -453,7 +453,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // #endif
 	if (!registered) {
 		res.jid = barejid;
-		res.uin = username;
+		res.uin = newUsername;
 		res.password = *payload->getPassword();
 		res.language = language;
 		res.encoding = encoding;
@@ -462,7 +462,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	}
 	else {
 		res.jid = barejid;
-		res.uin = username;
+		res.uin = newUsername;
 		res.password = *payload->getPassword();
 		res.language = language;
 		res.encoding = encoding;

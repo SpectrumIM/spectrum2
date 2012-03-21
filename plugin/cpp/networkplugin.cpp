@@ -28,6 +28,8 @@
 #else 
 #include <winsock2.h>
 #include <stdint.h>
+#include <process.h>
+#define getpid _getpid
 #endif
 
 using namespace log4cxx;
@@ -40,6 +42,12 @@ namespace Transport {
 	wrap.set_type(TYPE); \
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
+
+template <class T> std::string stringOf(T object) {
+	std::ostringstream os;
+	os << object;
+	return (os.str());
+}
 
 NetworkPlugin::NetworkPlugin() {
 	m_pingReceived = false;
@@ -587,13 +595,19 @@ void NetworkPlugin::sendMemoryUsage() {
 	pbnetwork::Stats stats;
 
 	stats.set_init_res(m_init_res);
-	double res;
-	double shared;
+	double res = 0;
+	double shared = 0;
 #ifndef WIN32
 	process_mem_usage(shared, res);
 #endif
-	stats.set_res(res);
-	stats.set_shared(shared);
+
+	double e_res;
+	double e_shared;
+	handleMemoryUsage(e_res, e_shared);
+
+	stats.set_res(res + e_res);
+	stats.set_shared(shared + e_shared);
+	stats.set_id(stringOf(getpid()));
 
 	std::string message;
 	stats.SerializeToString(&message);

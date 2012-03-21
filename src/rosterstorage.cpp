@@ -103,7 +103,7 @@ bool RosterStorage::storeBuddies() {
 		buddyInfo.alias = buddy->getAlias();
 		buddyInfo.legacyName = buddy->getName();
 		buddyInfo.groups = buddy->getGroups();
-		buddyInfo.subscription = buddy->getSubscription();
+		buddyInfo.subscription = buddy->getSubscription() == Buddy::Ask ? "ask" : "both";
 		buddyInfo.id = buddy->getID();
 		buddyInfo.flags = buddy->getFlags();
 		buddyInfo.settings["icon_hash"].s = buddy->getIconHash();

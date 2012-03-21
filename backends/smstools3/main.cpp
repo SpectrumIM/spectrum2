@@ -9,6 +9,7 @@
  */
 
 #include "transport/config.h"
+#include "transport/logging.h"
 #include "transport/networkplugin.h"
 #include "transport/sqlite3backend.h"
 #include "transport/mysqlbackend.h"
@@ -312,80 +313,19 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
-		LoggerPtr root = log4cxx::Logger::getRootLogger();
-#ifndef _MSC_VER
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-#else
-		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
-#endif
-	}
-	else {
-		log4cxx::helpers::Properties p;
-		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
-		p.load(istream);
-		LogString pid, jid;
-		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
-		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
-#ifdef _MSC_VER
-		p.setProperty(L"pid", pid);
-		p.setProperty(L"jid", jid);
-#else
-		p.setProperty("pid", pid);
-		p.setProperty("jid", jid);
-#endif
-		log4cxx::PropertyConfigurator::configure(p);
-	}
+	Logging::initBackendLogging(&config);
 
-#ifdef WITH_SQLITE
-	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		storageBackend = new SQLite3Backend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
+	std::string error;
+	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
+	if (storageBackend == NULL) {
+		if (!error.empty()) {
+			std::cerr << error << "\n";
+			return -2;
 		}
 	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
-		return -2;
-	}
-#endif
-
-#ifdef WITH_MYSQL
-	if (CONFIG_STRING(&config, "database.type") == "mysql") {
-		storageBackend = new MySQLBackend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "mysql") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
-		return -2;
-	}
-#endif
-
-#ifdef WITH_PQXX
-	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
-		storageBackend = new PQXXBackend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
-		std::cerr << "Spectrum2 is not compiled with pqxx backend.\n";
-		return -2;
-	}
-#endif
-
-	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3"
-		&& CONFIG_STRING(&config, "database.type") != "pqxx" && CONFIG_STRING(&config, "database.type") != "none") {
-		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
-		return -2;
+	else if (!storageBackend->connect()) {
+		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+		return -1;
 	}
 
 	Swift::SimpleEventLoop eventLoop;

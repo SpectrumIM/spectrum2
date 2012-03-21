@@ -20,16 +20,20 @@
 
 #pragma once
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <vector>
-
-#ifndef WIN32
-#include "signal.h"
-#endif
+#include <string>
 
 namespace Transport {
 
-#ifndef WIN32
-	void process_mem_usage(double& shared, double& resident_set, pid_t pid = 0);
-#endif
+class Config;
+
+namespace Logging {
+
+void initBackendLogging(Config *config);
+void initMainLogging(Config *config);
+
+}
 
 }

@@ -39,6 +39,9 @@ typedef enum { 	BUDDY_NO_FLAG = 0,
 /// Represents one legacy network Buddy.
 class Buddy {
 	public:
+		typedef enum { 	Ask,
+						Both,
+					} Subscription;
 		/// Constructor.
 
 		/// \param rosterManager RosterManager associated with this buddy.
@@ -93,12 +96,12 @@ class Buddy {
 		/// Sets current subscription.
 
 		/// \param subscription "to", "from", "both", "ask"
-		void setSubscription(const std::string &subscription);
+		void setSubscription(Subscription subscription);
 
 		/// Returns current subscription
 
 		/// \return subscription "to", "from", "both", "ask"
-		const std::string getSubscription();
+		Subscription getSubscription();
 
 		/// Sets this buddy's flags.
 
@@ -172,6 +175,7 @@ class Buddy {
 		Swift::JID m_jid;
 		BuddyFlag m_flags;
 		RosterManager *m_rosterManager;
+		Subscription m_subscription;
 };
 
 }

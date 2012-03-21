@@ -80,12 +80,16 @@ struct BuddyInfo {
 	int flags;
 };
 
+class Config;
+
 /// Abstract class defining storage backends.
 class StorageBackend
 {
 	public:
 		/// Virtual desctructor.
 		virtual ~StorageBackend() {}
+
+		static StorageBackend *createBackend(Config *config, std::string &error);
 
 		/// connect
 		virtual bool connect() = 0;

@@ -95,7 +95,12 @@ class NetworkFactory : public Factory {
 			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
 			buddy->setAlias(buddyInfo.alias);
 			buddy->setName(buddyInfo.legacyName);
-			buddy->setSubscription(buddyInfo.subscription);
+			if (buddyInfo.subscription == "both") {
+				buddy->setSubscription(Buddy::Both);
+			}
+			else {
+				buddy->setSubscription(Buddy::Ask);
+			}
 			buddy->setGroups(buddyInfo.groups);
 			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
@@ -339,15 +344,19 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
-	LOG4CXX_INFO(logger, "Backend " << c << " disconnected. Current backend count=" << (m_clients.size() - 1));
+	LOG4CXX_INFO(logger, "Backend " << c << " (ID=" << c->id << ") disconnected. Current backend count=" << (m_clients.size() - 1));
 
 	// This backend will do, so we can't reconnect users to it in User::handleDisconnected call
 	c->willDie = true;
 
 	// If there are users associated with this backend, it must have crashed, so print error output
 	// and disconnect users
+	if (!c->users.empty()) {
+		m_crashedBackends.push_back(c->id);
+	}
+
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
-		LOG4CXX_ERROR(logger, "Backend " << c << " disconnected (probably crashed) with active user " << (*it)->getJID().toString());
+		LOG4CXX_ERROR(logger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getJID().toString());
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
@@ -570,6 +579,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 	// Forward it
 	conv->handleMessage(msg, payload.nickname());
+	m_userManager->messageToXMPPSent();
 }
 
 void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
@@ -607,6 +617,7 @@ void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data
 	c->res = payload.res();
 	c->init_res = payload.init_res();
 	c->shared = payload.shared();
+	c->id = payload.id();
 }
 
 void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
@@ -853,12 +864,12 @@ void NetworkPluginServer::pingTimeout() {
 			sendPing((*it));
 		}
 		else {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
 		}
 
 		if ((*it)->users.size() == 0) {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". There are no users.");
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). There are no users.");
 			toRemove.push_back(*it);
 		}
 	}
@@ -887,7 +898,7 @@ void NetworkPluginServer::collectBackend() {
 		if (m_collectTimer) {
 			m_collectTimer->start();
 		}
-		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
+		LOG4CXX_INFO(logger, "Backend " << backend << " (ID=" << backend->id << ") is set to die");
 		backend->acceptUsers = false;
 	}
 }
@@ -1355,7 +1366,7 @@ void NetworkPluginServer::sendPing(Backend *c) {
 	wrap.SerializeToString(&message);
 
 	if (c->connection) {
-		LOG4CXX_INFO(logger, "PING to " << c);
+		LOG4CXX_INFO(logger, "PING to " << c << " (ID=" << c->id << ")");
 		send(c->connection, message);
 		c->pongReceived = false;
 	}

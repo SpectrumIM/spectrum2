@@ -1,3 +1,5 @@
+#include "utils.h"
+
 #include "glib.h"
 #include "purple.h"
 #include <algorithm>
@@ -12,25 +14,7 @@
 #include "log4cxx/helpers/properties.h"
 #include "log4cxx/helpers/fileinputstream.h"
 #include "log4cxx/helpers/transcoder.h"
-#ifndef WIN32 
-#include "sys/wait.h"
-#include "sys/signal.h"
-#include <netinet/if_ether.h>
-#include <netinet/ip.h>
-#include <netinet/ip6.h>
-#include <netinet/udp.h>
-#include <netinet/tcp.h>
-#include <netinet/ether.h>
-#include "sys/socket.h"
-#include <netdb.h>
-#include <unistd.h>
-#include <fcntl.h>
-#else 
-#include <process.h>
-#define getpid _getpid 
-#define ssize_t SSIZE_T
-#include "win32/win32dep.h"
-#endif
+
 // #include "valgrind/memcheck.h"
 #include "malloc.h"
 #include <algorithm>
@@ -40,11 +24,18 @@
 #include <event.h>
 #endif
 
+#ifdef WIN32
+#include "win32/win32dep.h"
+#define ssize_t SSIZE_T
+#include <process.h>
+#define getpid _getpid
+#endif
+
 using namespace log4cxx;
 
 static LoggerPtr logger_libpurple = log4cxx::Logger::getLogger("libpurple");
 static LoggerPtr logger = log4cxx::Logger::getLogger("backend");
-int m_sock;
+int main_socket;
 static int writeInput;
 
 using namespace Transport;
@@ -89,7 +80,7 @@ static std::string KEYFILE_STRING(const std::string &cat, const std::string &key
 		return def;
 	}
 	std::string ret(str);
-	free(str);
+	g_free(str);
 
 	if (ret.find("#") != std::string::npos) {
 		ret = ret.substr(0, ret.find("#"));
@@ -107,13 +98,8 @@ static std::string KEYFILE_STRING(const std::string &cat, const std::string &key
 
 #define KEYFILE_BOOL(CAT, KEY) g_key_file_get_boolean(keyfile, CAT, KEY, 0)
 
-static gboolean nodaemon = FALSE;
-static gchar *logfile = NULL;
-static gchar *lock_file = NULL;
 static gchar *host = NULL;
 static int port = 10000;
-static gboolean ver = FALSE;
-static gboolean list_purple_settings = FALSE;
 
 struct FTData {
 	unsigned long id;
@@ -122,121 +108,12 @@ struct FTData {
 };
 
 static GOptionEntry options_entries[] = {
-	{ "nodaemon", 'n', 0, G_OPTION_ARG_NONE, &nodaemon, "Disable background daemon mode", NULL },
-	{ "logfile", 'l', 0, G_OPTION_ARG_STRING, &logfile, "Set file to log", NULL },
-	{ "pidfile", 'p', 0, G_OPTION_ARG_STRING, &lock_file, "File where to write transport PID", NULL },
-	{ "version", 'v', 0, G_OPTION_ARG_NONE, &ver, "Shows Spectrum version", NULL },
-	{ "list-purple-settings", 's', 0, G_OPTION_ARG_NONE, &list_purple_settings, "Lists purple settings which can be used in config file", NULL },
 	{ "host", 'h', 0, G_OPTION_ARG_STRING, &host, "Host to connect to", NULL },
 	{ "port", 'p', 0, G_OPTION_ARG_INT, &port, "Port to connect to", NULL },
 	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
-static GHashTable *ui_info = NULL;
-
-static GHashTable *spectrum_ui_get_info(void)
-{
-	if(NULL == ui_info) {
-		ui_info = g_hash_table_new(g_str_hash, g_str_equal);
-
-		g_hash_table_insert(ui_info, g_strdup("name"), g_strdup("Spectrum"));
-		g_hash_table_insert(ui_info, g_strdup("version"), g_strdup("0.5"));
-		g_hash_table_insert(ui_info, g_strdup("website"), g_strdup("http://spectrum.im"));
-		g_hash_table_insert(ui_info, g_strdup("dev_website"), g_strdup("http://spectrum.im"));
-		g_hash_table_insert(ui_info, g_strdup("client_type"), g_strdup("pc"));
-
-		/*
-		 * This is the client key for "Pidgin."  It is owned by the AIM
-		 * account "markdoliner."  Please don't use this key for other
-		 * applications.  You can either not specify a client key, in
-		 * which case the default "libpurple" key will be used, or you
-		 * can register for your own client key at
-		 * http://developer.aim.com/manageKeys.jsp
-		 */
-		g_hash_table_insert(ui_info, g_strdup("prpl-aim-clientkey"), g_strdup("ma1cSASNCKFtrdv9"));
-		g_hash_table_insert(ui_info, g_strdup("prpl-icq-clientkey"), g_strdup("ma1cSASNCKFtrdv9"));
-
-		/*
-		 * This is the distid for Pidgin, given to us by AOL.  Please
-		 * don't use this for other applications.  You can just not
-		 * specify a distid and libpurple will use a default.
-		 */
-		g_hash_table_insert(ui_info, g_strdup("prpl-aim-distid"), GINT_TO_POINTER(1550));
-		g_hash_table_insert(ui_info, g_strdup("prpl-icq-distid"), GINT_TO_POINTER(1550));
-	}
-
-	return ui_info;
-}
-
-static gboolean
-badchar(char c)
-{
-	switch (c) {
-	case ' ':
-	case ',':
-	case '\0':
-	case '\n':
-	case '\r':
-	case '<':
-	case '>':
-	case '"':
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
-static gboolean
-badentity(const char *c)
-{
-	if (!g_ascii_strncasecmp(c, "&lt;", 4) ||
-		!g_ascii_strncasecmp(c, "&gt;", 4) ||
-		!g_ascii_strncasecmp(c, "&quot;", 6)) {
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static const char *
-process_link(GString *ret,
-		const char *start, const char *c,
-		int matchlen,
-		const char *urlprefix,
-		int inside_paren)
-{
-	char *url_buf;
-	const char *t;
-
-	for (t = c;; t++) {
-		if (!badchar(*t) && !badentity(t))
-			continue;
-
-		if (t - c == matchlen)
-			break;
-
-		if (*t == ',' && *(t + 1) != ' ') {
-			continue;
-		}
-
-		if (t > start && *(t - 1) == '.')
-			t--;
-		if (t > start && *(t - 1) == ')' && inside_paren > 0)
-			t--;
-
-		url_buf = g_strndup(c, t - c);
-// 		tmpurlbuf = purple_unescape_html(url_buf);
-// 		std::cout << url_buf << "\n";
-		g_string_append_printf(ret, "<A HREF=\"%s%s\">%s</A>",
-				urlprefix,
-				url_buf, url_buf);
-// 		g_free(tmpurlbuf);
-		g_free(url_buf);
-		return t;
-	}
-
-	return c;
-}
 
 static gboolean ft_ui_ready(void *data) {
 	PurpleXfer *xfer = (PurpleXfer *) data;
@@ -244,184 +121,6 @@ static gboolean ft_ui_ready(void *data) {
 	ftdata->timer = 0;
 	purple_xfer_ui_ready((PurpleXfer *) data);
 	return FALSE;
-}
-
-static char *
-spectrum_markup_linkify(const char *text)
-{
-	const char *c, *t, *q = NULL;
-	char *tmpurlbuf, *url_buf;
-	gunichar g;
-	gboolean inside_html = FALSE;
-	int inside_paren = 0;
-	GString *ret;
-
-	if (text == NULL)
-		return NULL;
-
-	ret = g_string_new("");
-
-	c = text;
-	while (*c) {
-
-		if(*c == '(' && !inside_html) {
-			inside_paren++;
-			ret = g_string_append_c(ret, *c);
-			c++;
-		}
-
-		if(inside_html) {
-			if(*c == '>') {
-				inside_html = FALSE;
-			} else if(!q && (*c == '\"' || *c == '\'')) {
-				q = c;
-			} else if(q) {
-				if(*c == *q)
-					q = NULL;
-			}
-		} else if(*c == '<') {
-			inside_html = TRUE;
-			if (!g_ascii_strncasecmp(c, "<A", 2)) {
-				while (1) {
-					if (!g_ascii_strncasecmp(c, "/A>", 3)) {
-						inside_html = FALSE;
-						break;
-					}
-					ret = g_string_append_c(ret, *c);
-					c++;
-					if (!(*c))
-						break;
-				}
-			}
-		} else if (!g_ascii_strncasecmp(c, "http://", 7)) {
-			c = process_link(ret, text, c, 7, "", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "https://", 8)) {
-			c = process_link(ret, text, c, 8, "", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "ftp://", 6)) {
-			c = process_link(ret, text, c, 6, "", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "sftp://", 7)) {
-			c = process_link(ret, text, c, 7, "", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "file://", 7)) {
-			c = process_link(ret, text, c, 7, "", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "www.", 4) && c[4] != '.' && (c == text || badchar(c[-1]) || badentity(c-1))) {
-			c = process_link(ret, text, c, 4, "http://", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "ftp.", 4) && c[4] != '.' && (c == text || badchar(c[-1]) || badentity(c-1))) {
-			c = process_link(ret, text, c, 4, "ftp://", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "xmpp:", 5) && (c == text || badchar(c[-1]) || badentity(c-1))) {
-			c = process_link(ret, text, c, 5, "", inside_paren);
-		} else if (!g_ascii_strncasecmp(c, "mailto:", 7)) {
-			t = c;
-			while (1) {
-				if (badchar(*t) || badentity(t)) {
-					const char *d;
-					if (t - c == 7) {
-						break;
-					}
-					if (t > text && *(t - 1) == '.')
-						t--;
-					if ((d = strstr(c + 7, "?")) != NULL && d < t)
-						url_buf = g_strndup(c + 7, d - c - 7);
-					else
-						url_buf = g_strndup(c + 7, t - c - 7);
-					if (!purple_email_is_valid(url_buf)) {
-						g_free(url_buf);
-						break;
-					}
-					g_free(url_buf);
-					url_buf = g_strndup(c, t - c);
-// 					tmpurlbuf = purple_unescape_html(url_buf);
-					g_string_append_printf(ret, "<A HREF=\"%s\">%s</A>",
-							  url_buf, url_buf);
-					g_free(url_buf);
-// 					g_free(tmpurlbuf);
-					c = t;
-					break;
-				}
-				t++;
-			}
-		} else if (c != text && (*c == '@')) {
-			int flag;
-			GString *gurl_buf = NULL;
-			const char illegal_chars[] = "!@#$%^&*()[]{}/|\\<>\":;\r\n \0";
-
-			if (strchr(illegal_chars,*(c - 1)) || strchr(illegal_chars, *(c + 1)))
-				flag = 0;
-			else {
-				flag = 1;
-				gurl_buf = g_string_new("");
-			}
-
-			t = c;
-			while (flag) {
-				/* iterate backwards grabbing the local part of an email address */
-				g = g_utf8_get_char(t);
-				if (badchar(*t) || (g >= 127) || (*t == '(') ||
-					((*t == ';') && ((t > (text+2) && (!g_ascii_strncasecmp(t - 3, "&lt;", 4) ||
-				                                       !g_ascii_strncasecmp(t - 3, "&gt;", 4))) ||
-				                     (t > (text+4) && (!g_ascii_strncasecmp(t - 5, "&quot;", 6)))))) {
-					/* local part will already be part of ret, strip it out */
-					ret = g_string_truncate(ret, ret->len - (c - t));
-					ret = g_string_append_unichar(ret, g);
-					break;
-				} else {
-					g_string_prepend_unichar(gurl_buf, g);
-					t = g_utf8_find_prev_char(text, t);
-					if (t < text) {
-						ret = g_string_assign(ret, "");
-						break;
-					}
-				}
-			}
-
-			t = g_utf8_find_next_char(c, NULL);
-
-			while (flag) {
-				/* iterate forwards grabbing the domain part of an email address */
-				g = g_utf8_get_char(t);
-				if (badchar(*t) || (g >= 127) || (*t == ')') || badentity(t)) {
-					char *d;
-
-					url_buf = g_string_free(gurl_buf, FALSE);
-
-					/* strip off trailing periods */
-					if (strlen(url_buf) > 0) {
-						for (d = url_buf + strlen(url_buf) - 1; *d == '.'; d--, t--)
-							*d = '\0';
-					}
-
-					tmpurlbuf = purple_unescape_html(url_buf);
-					if (purple_email_is_valid(tmpurlbuf)) {
-						g_string_append_printf(ret, "<A HREF=\"mailto:%s\">%s</A>",
-								url_buf, url_buf);
-					} else {
-						g_string_append(ret, url_buf);
-					}
-					g_free(url_buf);
-					g_free(tmpurlbuf);
-					c = t;
-
-					break;
-				} else {
-					g_string_append_unichar(gurl_buf, g);
-					t = g_utf8_find_next_char(t, NULL);
-				}
-			}
-		}
-
-		if(*c == ')' && !inside_html) {
-			inside_paren--;
-			ret = g_string_append_c(ret, *c);
-			c++;
-		}
-
-		if (*c == 0)
-			break;
-
-		ret = g_string_append_c(ret, *c);
-		c++;
-
-	}
-	return g_string_free(ret, FALSE);
 }
 
 struct authRequest {
@@ -509,13 +208,13 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
-		SpectrumNetworkPlugin(const std::string &host, int port) : NetworkPlugin() {
+		SpectrumNetworkPlugin() : NetworkPlugin() {
 
 		}
 
 		void handleExitRequest() {
 			LOG4CXX_INFO(logger, "Exiting...");
-			exit(1);
+			exit(0);
 		}
 
 		void getProtocolAndName(const std::string &legacyName, std::string &name, std::string &protocol) {
@@ -597,7 +296,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			PurpleAccount *account = NULL;
-			
+
 			std::string name;
 			std::string protocol;
 			getProtocolAndName(legacyName, name, protocol);
@@ -613,7 +312,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
 				return;
 			}
-
 
 			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL) {
 				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
@@ -637,11 +335,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			setDefaultAccountOptions(account);
 
+			// Enable account + privacy lists
 			purple_account_set_enabled(account, "spectrum", TRUE);
 			if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
 				purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
 			}
 
+			// Set the status
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);
 			if (status_type != NULL) {
 				purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, NULL);
@@ -661,50 +361,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				m_accounts.erase(account);
 
 				purple_accounts_delete(account);
-// 
-// 				// Remove conversations.
-// 				// This has to be called before m_account->ui_data = NULL;, because it uses
-// 				// ui_data to call SpectrumMessageHandler::purpleConversationDestroyed() callback.
-// 				GList *iter;
-// 				for (iter = purple_get_conversations(); iter; ) {
-// 					PurpleConversation *conv = (PurpleConversation*) iter->data;
-// 					iter = iter->next;
-// 					if (purple_conversation_get_account(conv) == account)
-// 						purple_conversation_destroy(conv);
-// 				}
-// 
-// 				g_free(account->ui_data);
-// 				account->ui_data = NULL;
-// 				m_accounts.erase(account);
-// 
-// 				purple_notify_close_with_handle(account);
-// 				purple_request_close_with_handle(account);
-// 
-// 				purple_accounts_remove(account);
-// 
-// 				GSList *buddies = purple_find_buddies(account, NULL);
-// 				while(buddies) {
-// 					PurpleBuddy *b = (PurpleBuddy *) buddies->data;
-// 					purple_blist_remove_buddy(b);
-// 					buddies = g_slist_delete_link(buddies, buddies);
-// 				}
-// 
-// 				/* Remove any open conversation for this account */
-// 				for (GList *it = purple_get_conversations(); it; ) {
-// 					PurpleConversation *conv = (PurpleConversation *) it->data;
-// 					it = it->next;
-// 					if (purple_conversation_get_account(conv) == account)
-// 						purple_conversation_destroy(conv);
-// 				}
-// 
-// 				/* Remove this account's pounces */
-// 					// purple_pounce_destroy_all_by_account(account);
-// 
-// 				/* This will cause the deletion of an old buddy icon. */
-// 				purple_buddy_icons_set_account_icon(account, NULL, 0);
-// 
-// 				purple_account_destroy(account);
-				// force returning of memory chunks allocated by libxml2 to kernel
 #ifndef WIN32
 				malloc_trim(0);
 #endif
@@ -768,17 +424,30 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
-					conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+					conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+					if (!conv) {
+						conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+					}
 				}
 				if (xhtml.empty()) {
 					gchar *_markup = purple_markup_escape_text(message.c_str(), -1);
-					purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+					if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+						purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+					}
+					else if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_CHAT) {
+						purple_conv_chat_send(PURPLE_CONV_CHAT(conv), _markup);
+					}
 					g_free(_markup);
 				}
 				else {
-					purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
+					if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+						purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
+					}
+					else if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_CHAT) {
+						purple_conv_chat_send(PURPLE_CONV_CHAT(conv), xhtml.c_str());
+					}
 				}
 			}
 		}
@@ -989,9 +658,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void sendData(const std::string &string) {
-			write(m_sock, string.c_str(), string.size());
+			write(main_socket, string.c_str(), string.size());
 			if (writeInput == 0)
-				writeInput = purple_input_add(m_sock, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
+				writeInput = purple_input_add(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
 
 		void readyForData() {
@@ -1213,8 +882,9 @@ static PurpleBlistUiOps blistUiOps =
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
-	if (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)
+	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
 		return;
+	}
 	PurpleAccount *account = purple_conversation_get_account(conv);
 
 // 	char *striped = purple_markup_strip_html(message);
@@ -1253,19 +923,67 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 // 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
 
-	np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
+	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
+	}
+	else {
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name(conv) << "' " << w);
+		np->handleMessage(np->m_accounts[account], purple_conversation_get_name(conv), message_, w, xhtml_);
+	}
+}
+
+static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gboolean new_arrivals) {
+	PurpleAccount *account = purple_conversation_get_account(conv);
+
+	GList *l = cbuddies;
+	while (l != NULL) {
+		PurpleConvChatBuddy *cb = (PurpleConvChatBuddy *)l->data;
+		std::string name(cb->name);
+		int flags = GPOINTER_TO_INT(cb->flags);
+		if (flags & PURPLE_CBFLAGS_OP || flags & PURPLE_CBFLAGS_HALFOP) {
+// 			item->addAttribute("affiliation", "admin");
+// 			item->addAttribute("role", "moderator");
+			flags = 1;
+		}
+		else if (flags & PURPLE_CBFLAGS_FOUNDER) {
+// 			item->addAttribute("affiliation", "owner");
+// 			item->addAttribute("role", "moderator");
+			flags = 1;
+		}
+		else {
+			flags = 0;
+// 			item->addAttribute("affiliation", "member");
+// 			item->addAttribute("role", "participant");
+		}
+
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name(conv), (int) flags, pbnetwork::STATUS_ONLINE);
+
+		l = l->next;
+	}
+}
+
+static void conv_chat_remove_users(PurpleConversation *conv, GList *users) {
+	PurpleAccount *account = purple_conversation_get_account(conv);
+
+	GList *l = users;
+	while (l != NULL) {
+		std::string name((char *) l->data);
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name(conv), 0, pbnetwork::STATUS_NONE);
+
+		l = l->next;
+	}
 }
 
 static PurpleConversationUiOps conversation_ui_ops =
 {
 	NULL,
 	NULL,
-	NULL,//conv_write_chat,                              /* write_chat           */
+	conv_write_im,//conv_write_chat,                              /* write_chat           */
 	conv_write_im,             /* write_im             */
 	NULL,//conv_write_conv,           /* write_conv           */
-	NULL,//conv_chat_add_users,       /* chat_add_users       */
+	conv_chat_add_users,       /* chat_add_users       */
 	NULL,//conv_chat_rename_user,     /* chat_rename_user     */
-	NULL,//conv_chat_remove_users,    /* chat_remove_users    */
+	conv_chat_remove_users,    /* chat_remove_users    */
 	NULL,//pidgin_conv_chat_update_user,     /* chat_update_user     */
 	NULL,//pidgin_conv_present_conversation, /* present              */
 	NULL,//pidgin_conv_has_focus,            /* has_focus            */
@@ -1407,11 +1125,13 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			if (true) {
 				gchar *data;
 				gchar *path = purple_buddy_icon_get_full_path(icon);
-				if (g_file_get_contents (path, &data, &len, NULL)) {
-					photo = std::string(data, len);
-					free(data);
+				if (path) {
+					if (g_file_get_contents(path, &data, &len, NULL)) {
+						photo = std::string(data, len);
+						g_free(data);
+					}
+					g_free(path);
 				}
-				free(path);
 			}
 			else {
 				const gchar * data = (gchar*)purple_buddy_icon_get_data(icon, &len);
@@ -1800,9 +1520,8 @@ static bool initPurple() {
 	remove("./accounts.xml");
 	remove("./blist.xml");
 
-// 	if (m_configuration.logAreas & LOG_AREA_PURPLE)
-		purple_debug_set_ui_ops(&debugUiOps);
-		purple_debug_set_verbose(true);
+	purple_debug_set_ui_ops(&debugUiOps);
+	purple_debug_set_verbose(true);
 
 	purple_core_set_ui_ops(&coreUiOps);
 	if (KEYFILE_STRING("service", "eventloop") == "libev") {
@@ -1866,50 +1585,7 @@ static bool initPurple() {
 	}
 	return ret;
 }
-#ifndef WIN32
-static void spectrum_sigchld_handler(int sig)
-{
-	int status;
-	pid_t pid;
 
-	do {
-		pid = waitpid(-1, &status, WNOHANG);
-	} while (pid != 0 && pid != (pid_t)-1);
-
-	if ((pid == (pid_t) - 1) && (errno != ECHILD)) {
-		char errmsg[BUFSIZ];
-		snprintf(errmsg, BUFSIZ, "Warning: waitpid() returned %d", pid);
-		perror(errmsg);
-	}
-}
-#endif
-
-static int create_socket(char *host, int portno) {
-	struct sockaddr_in serv_addr;
-	
-	int m_sock = socket(AF_INET, SOCK_STREAM, 0);
-	memset((char *) &serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(portno);
-
-	hostent *hos;  // Resolve name
-	if ((hos = gethostbyname(host)) == NULL) {
-		// strerror() will not work for gethostbyname() and hstrerror() 
-		// is supposedly obsolete
-		exit(1);
-	}
-	serv_addr.sin_addr.s_addr = *((unsigned long *) hos->h_addr_list[0]);
-
-	if (connect(m_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-		close(m_sock);
-		m_sock = 0;
-	}
-
-	int flags = fcntl(m_sock, F_GETFL);
-	flags |= O_NONBLOCK;
-	fcntl(m_sock, F_SETFL, flags);
-	return m_sock;
-}
 
 static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond) {
 	if (cond & PURPLE_INPUT_READ) {
@@ -1938,15 +1614,8 @@ int main(int argc, char **argv) {
 	context = g_option_context_new("config_file_name or profile name");
 	g_option_context_add_main_entries(context, options_entries, "");
 	if (!g_option_context_parse (context, &argc, &argv, &error)) {
-		std::cout << "option parsing failed: " << error->message << "\n";
+		std::cerr << "option parsing failed: " << error->message << "\n";
 		return -1;
-	}
-
-	if (ver) {
-// 		std::cout << VERSION << "\n";
-		std::cout << "verze\n";
-		g_option_context_free(context);
-		return 0;
 	}
 
 	if (argc != 2) {
@@ -1972,27 +1641,6 @@ int main(int argc, char **argv) {
 			g_option_context_free(context);
 			return -1;
 		}
-// 
-// 		if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
-// 			std::cout << "SIGINT handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-// 		}
-// 
-// 		if (signal(SIGTERM, spectrum_sigterm_handler) == SIG_ERR) {
-// 			std::cout << "SIGTERM handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-// 		}
-// 
-// 		struct sigaction sa;
-// 		memset(&sa, 0, sizeof(sa)); 
-// 		sa.sa_handler = spectrum_sighup_handler;
-// 		if (sigaction(SIGHUP, &sa, NULL)) {
-// 			std::cout << "SIGHUP handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-//		}
 #endif
 		keyfile = g_key_file_new ();
 		if (!g_key_file_load_from_file (keyfile, argv[1], (GKeyFileFlags) 0, 0)) {
@@ -2027,12 +1675,11 @@ int main(int argc, char **argv) {
 
 		initPurple();
 
-		m_sock = create_socket(host, port);
-
-		purple_input_add(m_sock, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+		main_socket = create_socket(host, port);
+		purple_input_add(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
 		purple_timeout_add_seconds(30, pingTimeout, NULL);
 
-		np = new SpectrumNetworkPlugin(host, port);
+		np = new SpectrumNetworkPlugin();
 		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
 
 		GMainLoop *m_loop;
