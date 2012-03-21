@@ -1,1 +1,2 @@
 ADD_SUBDIRECTORY(sqlite3)
+ADD_SUBDIRECTORY(protobuf)
