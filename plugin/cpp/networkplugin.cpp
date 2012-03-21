@@ -28,6 +28,8 @@
 #else 
 #include <winsock2.h>
 #include <stdint.h>
+#include <process.h>
+#define getpid _getpid
 #endif
 
 using namespace log4cxx;
