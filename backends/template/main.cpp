@@ -12,7 +12,7 @@
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
-
+#endif
 // Boost
 #include <boost/algorithm/string.hpp>
 using namespace boost::filesystem;
