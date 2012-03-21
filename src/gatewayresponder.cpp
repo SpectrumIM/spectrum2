@@ -28,16 +28,14 @@
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("GatewayResponder");
+DEFINE_LOGGER(logger, "GatewayResponder");
 
 GatewayResponder::GatewayResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<GatewayPayload>(router) {
 	m_userManager = userManager;

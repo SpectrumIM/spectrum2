@@ -31,6 +31,7 @@
 #include "transport/vcardresponder.h"
 #include "transport/rosterresponder.h"
 #include "transport/memoryreadbytestream.h"
+#include "transport/logging.h"
 #include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -41,7 +42,6 @@
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
-#include "log4cxx/logger.h"
 
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
@@ -55,14 +55,12 @@
 #include "popt.h"
 #endif
 
-using namespace log4cxx;
-
 namespace Transport {
 
 static unsigned long backend_id;
 static unsigned long bytestream_id;
 
-static LoggerPtr logger = Logger::getLogger("NetworkPluginServer");
+DEFINE_LOGGER(logger, "NetworkPluginServer");
 
 class NetworkConversation : public Conversation {
 	public:

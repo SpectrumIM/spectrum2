@@ -1,6 +1,7 @@
 // Transport includes
 #include "transport/config.h"
 #include "transport/networkplugin.h"
+#include "transport/logging.h"
 
 // Swiften
 #include "Swiften/Swiften.h"
@@ -11,15 +12,6 @@
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
-#endif
-// Log4cxx
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
-#include "log4cxx/helpers/transcoder.h"
 
 // Boost
 #include <boost/algorithm/string.hpp>
@@ -27,9 +19,7 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
 
-// log4cxx main logger
-using namespace log4cxx;
-static LoggerPtr logger = log4cxx::Logger::getLogger("Backend Template");
+DEFINE_LOGGER(logger, "Backend Template");
 
 // eventloop
 Swift::SimpleEventLoop *loop_;
@@ -151,30 +141,7 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
-		LoggerPtr root = log4cxx::Logger::getRootLogger();
-#ifndef _MSC_VER
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-#else
-		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
-#endif
-	}
-	else {
-		log4cxx::helpers::Properties p;
-		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
-		p.load(istream);
-		LogString pid, jid;
-		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
-		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
-#ifdef _MSC_VER
-		p.setProperty(L"pid", pid);
-		p.setProperty(L"jid", jid);
-#else
-		p.setProperty("pid", pid);
-		p.setProperty("jid", jid);
-#endif
-		log4cxx::PropertyConfigurator::configure(p);
-	}
+	Logging::initBackendLogging(&config);
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;

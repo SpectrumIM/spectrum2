@@ -6,6 +6,10 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	* Fixed username_mask setting.
 	* Added new fields into statistics (backends_crashed, messages related
 	  stats).
+	* Log4cxx is now optional dependency. Without Log4cxx, Spectrum 2 logs
+	  to standard output.
+	* Fixed crash when Log4cxx configuration file didn't exist.
+	* Admin can now see "Admin" contact in server-mode.
 
 	libpurple:
 	* Added support for MUC for prpl-jabber protocol.

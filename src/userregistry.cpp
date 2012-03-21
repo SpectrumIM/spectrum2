@@ -23,13 +23,11 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "transport/userregistry.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("UserRegistry");
+DEFINE_LOGGER(logger, "UserRegistry");
 
 UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 	config = cfg;

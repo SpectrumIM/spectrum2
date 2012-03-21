@@ -25,6 +25,7 @@
 #include "transport/storagebackend.h"
 #include "transport/factory.h"
 #include "transport/userregistry.h"
+#include "transport/logging.h"
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "storageparser.h"
@@ -50,20 +51,15 @@
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
 #include "Swiften/Swiften.h"
 
 using namespace Swift;
 using namespace boost;
-using namespace log4cxx;
 
 namespace Transport {
 	
-static LoggerPtr logger = Logger::getLogger("Component");
-static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
+DEFINE_LOGGER(logger, "Component");
+DEFINE_LOGGER(logger_xml, "Component.XML");
 
 Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
 	m_component = NULL;

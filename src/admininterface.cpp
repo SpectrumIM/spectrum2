@@ -26,16 +26,14 @@
 #include "transport/rostermanager.h"
 #include "transport/usermanager.h"
 #include "transport/networkpluginserver.h"
+#include "transport/logging.h"
 #include "storageresponder.h"
-#include "log4cxx/logger.h"
 #include "transport/memoryusage.h"
 #include <boost/foreach.hpp>
 
-using namespace log4cxx;
-
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("AdminInterface");
+DEFINE_LOGGER(logger, "AdminInterface");
 
 static std::string getArg(const std::string &body) {
 	std::string ret;

@@ -28,16 +28,14 @@
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
 #include "transport/transport.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("VCardResponder");
+DEFINE_LOGGER(logger, "VCardResponder");
 
 VCardResponder::VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager) : Swift::Responder<VCard>(router) {
 	m_id = 0;

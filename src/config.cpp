@@ -19,7 +19,6 @@
  */
 
 #include "transport/config.h"
-#include "transport/util.h"
 #include <fstream>
 #ifdef _MSC_VER
 #include <direct.h>
@@ -31,6 +30,14 @@
 using namespace boost::program_options;
 
 namespace Transport {
+int getRandomPort(const std::string &s) {
+	unsigned long r = 0;
+	BOOST_FOREACH(char c, s) {
+		r += (int) c;
+	}
+	srand(time(NULL) + r);
+	return 30000 + rand() % 10000;
+}
 
 bool Config::load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid) {
 	std::ifstream ifs(configfile.c_str());
@@ -126,7 +133,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.string_key == "service.backend_port") {
 			found_backend_port = true;
 			if (opt.value[0] == "0") {
-				opt.value[0] = boost::lexical_cast<std::string>(Util::getRandomPort(_jid.empty() ? jid : _jid));
+				opt.value[0] = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
 			}
 		}
 		else if (opt.string_key == "service.working_dir") {
@@ -152,7 +159,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	}
 	if (!found_backend_port) {
 		std::vector<std::string> value;
-		std::string p = boost::lexical_cast<std::string>(Util::getRandomPort(_jid.empty() ? jid : _jid));
+		std::string p = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
 		value.push_back(p);
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.backend_port", value));
 	}

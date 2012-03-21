@@ -193,8 +193,12 @@ else()
 endif()
 
 if (LOG4CXX_FOUND)
-	message("Logging           : yes")
+	message("Log4cxx           : yes")
 	include_directories(${LOG4CXX_INCLUDE_DIR})
+	ADD_DEFINITIONS(-DWITH_LOG4CXX)
+else()
+	set(LOG4CXX_LIBRARIES "")
+	message("Log4cxx           : no (install log4cxx-devel)")
 endif()
 
 if (WIN32)

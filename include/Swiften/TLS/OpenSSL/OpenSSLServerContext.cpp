@@ -14,12 +14,8 @@
 #include <openssl/err.h>
 #include <openssl/pkcs12.h>
 
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-using namespace log4cxx;
-static LoggerPtr logger = Logger::getLogger("OpenSSLServerContext");
+#include "transport/logging.h"
+DEFINE_LOGGER(logger, "OpenSSLServerContext");
 
 
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"

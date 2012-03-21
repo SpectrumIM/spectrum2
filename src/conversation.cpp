@@ -25,13 +25,8 @@
 #include "transport/transport.h"
 #include "transport/buddy.h"
 #include "transport/rostermanager.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
 
 namespace Transport {
-
-// static LoggerPtr logger = Logger::getLogger("Conversation");
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
