@@ -47,8 +47,12 @@ endif()
 find_package(Boost COMPONENTS program_options date_time system filesystem regex  signals REQUIRED)
 message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
+if (NOT WIN32)
 set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Protobuf REQUIRED)
+else()
+set(PROTOBUF_FOUND TRUE)
+endif()
 
 set(Communi_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Communi)

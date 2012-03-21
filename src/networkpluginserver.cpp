@@ -1095,12 +1095,13 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	}
 	send(c->connection, message);
 	c->users.remove(user);
-// 	if (c->users.size() == 0) {
-// 		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
 
-// 		handleSessionFinished(c);
-// 		m_clients.erase(user->connection);
-// 	}
+	// If backend should handle only one user, it must not accept another one before 
+	// we kill it, so set up willDie to true
+	if (c->users.size() == 0 && CONFIG_INT(m_config, "service.users_per_backend") == 1) {
+		LOG4CXX_INFO(logger, "Backend " << c->id << " will die, because the last user disconnected");
+		c->willDie = true;
+	}
 }
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {

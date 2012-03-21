@@ -1658,7 +1658,21 @@ int main(int argc, char **argv) {
 		}
 		else {
 			log4cxx::helpers::Properties p;
-			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(KEYFILE_STRING("logging", "backend_config"));
+			log4cxx::helpers::FileInputStream *istream = NULL;
+			try {
+				istream = new log4cxx::helpers::FileInputStream(KEYFILE_STRING("logging", "backend_config"));
+			}
+			catch(log4cxx::helpers::IOException &ex) {
+				std::cerr << "Can't create FileInputStream logger instance: " << ex.what() << "\n";
+			}
+			catch (...) {
+				std::cerr << "Can't create FileInputStream logger instance\n";
+			}
+
+			if (!istream) {
+				return 1;
+			}
+
 			p.load(istream);
 			LogString pid, jid;
 			log4cxx::helpers::Transcoder::decode(stringOf(getpid()), pid);
