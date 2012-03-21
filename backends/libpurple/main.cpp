@@ -6,6 +6,8 @@
 #include <iostream>
 
 #include "transport/networkplugin.h"
+#include "transport/logging.h"
+#include "transport/config.h"
 #include "geventloop.h"
 #include "log4cxx/logger.h"
 #include "log4cxx/consoleappender.h"
@@ -1648,44 +1650,12 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		if (KEYFILE_STRING("logging", "backend_config").empty()) {
-			LoggerPtr root = log4cxx::Logger::getRootLogger();
-#ifndef _MSC_VER
-			root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-#else
-			root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
-#endif
+		Config config;
+		if (!config.load(argv[1])) {
+			std::cerr << "Can't open " << argv[1] << " configuration file.\n";
+			return 1;
 		}
-		else {
-			log4cxx::helpers::Properties p;
-			log4cxx::helpers::FileInputStream *istream = NULL;
-			try {
-				istream = new log4cxx::helpers::FileInputStream(KEYFILE_STRING("logging", "backend_config"));
-			}
-			catch(log4cxx::helpers::IOException &ex) {
-				std::cerr << "Can't create FileInputStream logger instance: " << ex.what() << "\n";
-			}
-			catch (...) {
-				std::cerr << "Can't create FileInputStream logger instance\n";
-			}
-
-			if (!istream) {
-				return 1;
-			}
-
-			p.load(istream);
-			LogString pid, jid;
-			log4cxx::helpers::Transcoder::decode(stringOf(getpid()), pid);
-			log4cxx::helpers::Transcoder::decode(KEYFILE_STRING("service", "jid"), jid);
-#ifdef _MSC_VER
-			p.setProperty(L"pid", pid);
-			p.setProperty(L"jid", jid);
-#else
-			p.setProperty("pid", pid);
-			p.setProperty("jid", jid);
-#endif
-			log4cxx::PropertyConfigurator::configure(p);
-		}
+		Logging::initBackendLogging(&config);
 
 		initPurple();
 
