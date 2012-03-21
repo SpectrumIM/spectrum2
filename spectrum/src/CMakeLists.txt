@@ -7,6 +7,9 @@ ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
 ADD_DEPENDENCIES(spectrum2 spectrum2_libircclient-qt_backend)
 
 target_link_libraries(spectrum2 transport ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
+if (WIN32)
+	target_link_libraries(spectrum2 libprotobuf)
+endif()
 
 INSTALL(TARGETS spectrum2 RUNTIME DESTINATION bin)
 
