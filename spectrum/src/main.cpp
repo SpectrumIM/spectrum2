@@ -24,7 +24,8 @@
 #include <sys/resource.h>
 #include "libgen.h"
 #else
-#include <windows.h>
+#include <process.h>
+#define getpid _getpid
 #endif
 #include <sys/stat.h>
 
