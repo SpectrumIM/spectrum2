@@ -282,7 +282,12 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	user->getConversationManager()->handleMessageReceived(message);
-	messageToBackendSent();
+
+	// Do not count chatstate notification...
+	boost::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
+	if (!statePayload) {
+		messageToBackendSent();
+	}
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
