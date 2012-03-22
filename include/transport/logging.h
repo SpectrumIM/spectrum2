@@ -24,6 +24,28 @@
 #include <stdlib.h>
 #include <vector>
 #include <string>
+#include <iostream>
+
+#ifdef WITH_LOG4CXX
+#include "log4cxx/logger.h"
+#include "log4cxx/consoleappender.h"
+#include "log4cxx/patternlayout.h"
+#include "log4cxx/propertyconfigurator.h"
+#include "log4cxx/helpers/properties.h"
+#include "log4cxx/helpers/fileinputstream.h"
+#include "log4cxx/helpers/transcoder.h"
+#include "log4cxx/logger.h"
+
+#define DEFINE_LOGGER(VAR, NAME) static log4cxx::LoggerPtr VAR = log4cxx::Logger::getLogger(NAME);
+
+using namespace log4cxx;
+#else
+#define DEFINE_LOGGER(VARIABLE, NAME) static const char *VARIABLE = NAME;
+
+#define LOG4CXX_ERROR(LOGGER, DATA) std::cerr << "E: <" << LOGGER << "> " << DATA << "\n";
+#define LOG4CXX_WARN(LOGGER, DATA) std::cout << "W: <" << LOGGER << "> " << DATA << "\n";
+#define LOG4CXX_INFO(LOGGER, DATA) std::cout << "I: <" << LOGGER << "> " << DATA << "\n";
+#endif
 
 namespace Transport {
 

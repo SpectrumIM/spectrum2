@@ -24,16 +24,14 @@
 #include "transport/buddy.h"
 #include "transport/factory.h"
 #include "transport/user.h"
+#include "transport/logging.h"
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("ConversationManager");
+DEFINE_LOGGER(logger, "ConversationManager");
 
 ConversationManager::ConversationManager(User *user, Component *component){
 	m_user = user;

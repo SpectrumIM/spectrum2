@@ -19,9 +19,10 @@
  */
 
 #include "transport/networkplugin.h"
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
 #include "transport/memoryusage.h"
+#include "transport/logging.h"
+
+#include <sstream>
 
 #ifndef WIN32
 #include <arpa/inet.h>
@@ -32,9 +33,7 @@
 #define getpid _getpid
 #endif
 
-using namespace log4cxx;
-
-static LoggerPtr logger = Logger::getLogger("NetworkPlugin");
+DEFINE_LOGGER(logger, "NetworkPlugin");
 
 namespace Transport {
 

@@ -18,18 +18,8 @@
 #include "ircnetworkplugin.h"
 #include "singleircnetworkplugin.h"
 
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
-#include "log4cxx/helpers/transcoder.h"
-
 using namespace boost::program_options;
 using namespace Transport;
-
-using namespace log4cxx;
 
 NetworkPlugin * np = NULL;
 

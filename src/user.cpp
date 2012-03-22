@@ -25,24 +25,23 @@
 #include "transport/usermanager.h"
 #include "transport/conversationmanager.h"
 #include "transport/presenceoracle.h"
+#include "transport/logging.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
-#include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 
-using namespace log4cxx;
 using namespace boost;
 
 #define foreach         BOOST_FOREACH
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("User");
+DEFINE_LOGGER(logger, "User");
 
 User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
 	m_jid = jid.toBare();

@@ -26,16 +26,14 @@
 #include "Swiften/Swiften.h"
 #include "transport/storagebackend.h"
 #include "transport/transport.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("UserReconnecter");
+DEFINE_LOGGER(logger, "UserReconnecter");
 
 UsersReconnecter::UsersReconnecter(Component *component, StorageBackend *storageBackend) {
 	m_component = component;

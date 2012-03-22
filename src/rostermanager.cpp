@@ -25,21 +25,19 @@
 #include "transport/usermanager.h"
 #include "transport/buddy.h"
 #include "transport/user.h"
+#include "transport/logging.h"
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
 #include "Swiften/Elements/RosterItemExchangePayload.h"
-#include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
 
 #include <map>
 #include <iterator>
 
-using namespace log4cxx;
-
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("RosterManager");
+DEFINE_LOGGER(logger, "RosterManager");
 
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
