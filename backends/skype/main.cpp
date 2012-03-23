@@ -616,8 +616,12 @@ void Skype::logout() {
 		send_command("SET USERSTATUS OFFLINE");
 		sleep(2);
 		g_object_unref(m_proxy);
-		LOG4CXX_INFO(logger,  m_username << ": Killing Skype instance");
+		LOG4CXX_INFO(logger,  m_username << ": Terminating Skype instance (SIGTERM)");
 		kill((int) m_pid, SIGTERM);
+		// Give skype a chance
+		sleep(2);
+		LOG4CXX_INFO(logger,  m_username << ": Killing Skype instance (SIGKILL)");
+		kill((int) m_pid, SIGKILL);
 		m_pid = 0;
 	}
 }
