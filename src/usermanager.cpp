@@ -284,7 +284,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	user->getConversationManager()->handleMessageReceived(message);
 
 	// Do not count chatstate notification...
-	boost::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
+	boost::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
 	if (!statePayload) {
 		messageToBackendSent();
 	}
