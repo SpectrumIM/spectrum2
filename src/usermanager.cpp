@@ -214,6 +214,34 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			res.password = m_userRegistry->getUserPassword(userkey);
 		}
 
+		// We allow auto_register feature in gateway-mode. This allows IRC user to register
+		// the transport just by joining the room.
+		if (!m_component->inServerMode()) {
+			if (!registered && CONFIG_BOOL(m_component->getConfig(), "registration.auto_register")) {
+				res.password = "";
+				res.jid = userkey;
+
+				bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
+				if (isMUC) {
+					res.uin = presence->getTo().getResource();
+				}
+				else {
+					res.uin = presence->getFrom().toString();
+				}
+				LOG4CXX_INFO(logger, "Auto-registering user " << userkey << " with uin=" << res.uin);
+
+				if (m_storageBackend) {
+					// store user and getUser again to get user ID.
+					m_storageBackend->setUser(res);
+					registered = m_storageBackend->getUser(userkey, res);
+				}
+				else {
+					registered = false;
+				}
+			}
+		}
+
+
 		// Unregistered users are not able to login
 		if (!registered) {
 			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");

@@ -50,10 +50,12 @@ void SingleIRCNetworkPlugin::handleLoginRequest(const std::string &user, const s
 	session->setHost(QString::fromStdString(m_server));
 	session->setPort(6667);
 
-	std::string identify = m_identify;
-	boost::replace_all(identify, "$password", password);
-	boost::replace_all(identify, "$name", legacyName);
-	session->setIdentify(identify);
+	if (!password.empty()) {
+		std::string identify = m_identify;
+		boost::replace_all(identify, "$password", password);
+		boost::replace_all(identify, "$name", legacyName);
+		session->setIdentify(identify);
+	}
 
 	session->open();
 
