@@ -40,6 +40,7 @@
 #include "Swiften/Parser/PayloadParsers/GatewayPayloadParser.h"
 #include "Swiften/Serializer/PayloadSerializers/GatewayPayloadSerializer.h"
 #include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
+#include "Swiften/Parser/PayloadParsers/MUCPayloadParser.h"
 #include "transport/BlockParser.h"
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
@@ -94,6 +95,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
 
 		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_server->addPayloadSerializer(new Swift::XHTMLIMSerializer());
@@ -122,6 +124,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
 
 		m_component->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_component->addPayloadSerializer(new Swift::XHTMLIMSerializer());
