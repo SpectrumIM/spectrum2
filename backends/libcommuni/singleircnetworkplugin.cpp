@@ -3,13 +3,16 @@
 #include <IrcCommand>
 #include <IrcMessage>
 
+#define FROM_UTF8(WHAT) QString::fromUtf8((WHAT).c_str(), (WHAT).size())
+#define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
+
 DEFINE_LOGGER(logger, "SingleIRCNetworkPlugin");
 
 SingleIRCNetworkPlugin::SingleIRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
 	this->config = config;
 	m_server = config->getUnregistered().find("service.irc_server")->second;
 	m_socket = new QTcpSocket();
-	m_socket->connectToHost(QString::fromUtf8(host), port);
+	m_socket->connectToHost(FROM_UTF8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
 	if (config->getUnregistered().find("service.irc_identify") != config->getUnregistered().end()) {
@@ -44,10 +47,10 @@ void SingleIRCNetworkPlugin::handleLoginRequest(const std::string &user, const s
 	LOG4CXX_INFO(logger, user << ": Connecting " << m_server << " as " << legacyName);
 
 	MyIrcSession *session = new MyIrcSession(user, this);
-	session->setUserName(QString::fromUtf8(legacyName));
-	session->setNickName(QString::fromUtf8(legacyName));
-	session->setRealName(QString::fromUtf8(legacyName));
-	session->setHost(QString::fromUtf8(m_server));
+	session->setUserName(FROM_UTF8(legacyName));
+	session->setNickName(FROM_UTF8(legacyName));
+	session->setRealName(FROM_UTF8(legacyName));
+	session->setHost(FROM_UTF8(m_server));
 	session->setPort(6667);
 
 	if (!password.empty()) {
@@ -90,10 +93,10 @@ void SingleIRCNetworkPlugin::handleMessageSendRequest(const std::string &user, c
 	}
 
 	LOG4CXX_INFO(logger, user << ": Forwarding message to " << r);
-	m_sessions[user]->sendCommand(IrcCommand::createMessage(QString::fromUtf8(r), QString::fromUtf8(message)));
+	m_sessions[user]->sendCommand(IrcCommand::createMessage(FROM_UTF8(r), FROM_UTF8(message)));
 
 	if (r.find("#") == 0) {
-		handleMessage(user, legacyName, message, m_sessions[user]->nickName().toUtf8());
+		handleMessage(user, legacyName, message, TO_UTF8(m_sessions[user]->nickName()));
 	}
 }
 
@@ -105,11 +108,11 @@ void SingleIRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, cons
 
 	LOG4CXX_INFO(logger, user << ": Joining " << room);
 	m_sessions[user]->addAutoJoinChannel(room);
-	m_sessions[user]->sendCommand(IrcCommand::createJoin(QString::fromUtf8(room), QString::fromUtf8(password)));
+	m_sessions[user]->sendCommand(IrcCommand::createJoin(FROM_UTF8(room), FROM_UTF8(password)));
 	m_sessions[user]->rooms += 1;
 
 	// update nickname, because we have nickname per session, no nickname per room.
-	handleRoomNicknameChanged(user, room, m_sessions[user]->userName().toUtf8());
+	handleRoomNicknameChanged(user, room, TO_UTF8(m_sessions[user]->userName()));
 }
 
 void SingleIRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std::string &room) {
@@ -122,7 +125,7 @@ void SingleIRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, con
 	}
 
 	LOG4CXX_INFO(logger, user << ": Leaving " << room);
-	m_sessions[u]->sendCommand(IrcCommand::createPart(QString::fromUtf8(r)));
+	m_sessions[u]->sendCommand(IrcCommand::createPart(FROM_UTF8(r)));
 	m_sessions[u]->removeAutoJoinChannel(r);
 	m_sessions[u]->rooms -= 1;
 }
