@@ -38,13 +38,13 @@ void MyIrcSession::on_connected() {
 	}
 
 	for(std::list<std::string>::const_iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		sendCommand(IrcCommand::createJoin(QString::fromStdString(*it)));
+		sendCommand(IrcCommand::createJoin(QString::fromUtf8(*it)));
 	}
 
 	if (getIdentify().find(" ") != std::string::npos) {
 		std::string to = getIdentify().substr(0, getIdentify().find(" "));
 		std::string what = getIdentify().substr(getIdentify().find(" ") + 1);
-		sendCommand(IrcCommand::createMessage(QString::fromStdString(to), QString::fromStdString(what)));
+		sendCommand(IrcCommand::createMessage(QString::fromUtf8(to), QString::fromUtf8(what)));
 	}
 }
 
@@ -67,30 +67,30 @@ bool MyIrcSession::correctNickname(std::string &nickname) {
 void MyIrcSession::on_joined(IrcMessage *message) {
 	IrcJoinMessage *m = (IrcJoinMessage *) message;
 	bool flags = 0;
-	std::string nickname = m->sender().name().toStdString();
+	std::string nickname = m->sender().name().toUtf8();
 	flags = correctNickname(nickname);
-	np->handleParticipantChanged(user, nickname, m->channel().toStdString() + suffix, (int) flags, pbnetwork::STATUS_ONLINE);
-	LOG4CXX_INFO(logger, user << ": Joined " << m->parameters()[0].toStdString());
+	np->handleParticipantChanged(user, nickname, m->channel().toUtf8() + suffix, (int) flags, pbnetwork::STATUS_ONLINE);
+	LOG4CXX_INFO(logger, user << ": Joined " << m->parameters()[0].toUtf8());
 }
 
 
 void MyIrcSession::on_parted(IrcMessage *message) {
 	IrcPartMessage *m = (IrcPartMessage *) message;
 	bool flags = 0;
-	std::string nickname = m->sender().name().toStdString();
+	std::string nickname = m->sender().name().toUtf8();
 	flags = correctNickname(nickname);
-	LOG4CXX_INFO(logger, user << ": " << nickname << " parted " << m->channel().toStdString() + suffix);
-	np->handleParticipantChanged(user, nickname, m->channel().toStdString() + suffix,(int) flags, pbnetwork::STATUS_NONE, m->reason().toStdString());
+	LOG4CXX_INFO(logger, user << ": " << nickname << " parted " << m->channel().toUtf8() + suffix);
+	np->handleParticipantChanged(user, nickname, m->channel().toUtf8() + suffix,(int) flags, pbnetwork::STATUS_NONE, m->reason().toUtf8());
 }
 
 void MyIrcSession::on_quit(IrcMessage *message) {
 	IrcQuitMessage *m = (IrcQuitMessage *) message;
 	for(std::list<std::string>::const_iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		bool flags = 0;
-		std::string nickname = m->sender().name().toStdString();
+		std::string nickname = m->sender().name().toUtf8();
 		flags = correctNickname(nickname);
 		LOG4CXX_INFO(logger, user << ": " << nickname << " quit " << (*it) + suffix);
-		np->handleParticipantChanged(user, nickname, (*it) + suffix,(int) flags, pbnetwork::STATUS_NONE, m->reason().toStdString());
+		np->handleParticipantChanged(user, nickname, (*it) + suffix,(int) flags, pbnetwork::STATUS_NONE, m->reason().toUtf8());
 	}
 }
 
@@ -98,10 +98,10 @@ void MyIrcSession::on_nickChanged(IrcMessage *message) {
 	IrcNickMessage *m = (IrcNickMessage *) message;
 
 	for(std::list<std::string>::const_iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		std::string nickname = m->sender().name().toStdString();
+		std::string nickname = m->sender().name().toUtf8();
 		bool flags = m_modes[(*it) + nickname];
-		LOG4CXX_INFO(logger, user << ": " << nickname << " changed nickname to " << m->nick().toStdString());
-		np->handleParticipantChanged(user, nickname, (*it) + suffix,(int) flags, pbnetwork::STATUS_ONLINE, "", m->nick().toStdString());
+		LOG4CXX_INFO(logger, user << ": " << nickname << " changed nickname to " << m->nick().toUtf8());
+		np->handleParticipantChanged(user, nickname, (*it) + suffix,(int) flags, pbnetwork::STATUS_ONLINE, "", m->nick().toUtf8());
 	}
 }
 
@@ -109,8 +109,8 @@ void MyIrcSession::on_modeChanged(IrcMessage *message) {
 	IrcModeMessage *m = (IrcModeMessage *) message;
 
 	// mode changed: "#testik" "HanzZ" "+o" "hanzz_k"
-	std::string nickname = m->argument().toStdString();
-	std::string mode = m->mode().toStdString();
+	std::string nickname = m->argument().toUtf8();
+	std::string mode = m->mode().toUtf8();
 	if (nickname.empty())
 		return;
 	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode);
@@ -130,29 +130,29 @@ void MyIrcSession::on_topicChanged(IrcMessage *message) {
 	IrcTopicMessage *m = (IrcTopicMessage *) message;
 
 	bool flags = 0;
-	std::string nickname = m->sender().name().toStdString();
+	std::string nickname = m->sender().name().toUtf8();
 	flags = correctNickname(nickname);
 
-	LOG4CXX_INFO(logger, user << ": " << nickname << " topic changed to " << m->topic().toStdString());
-	np->handleSubject(user, m->channel().toStdString() + suffix, m->topic().toStdString(), nickname);
+	LOG4CXX_INFO(logger, user << ": " << nickname << " topic changed to " << m->topic().toUtf8());
+	np->handleSubject(user, m->channel().toUtf8() + suffix, m->topic().toUtf8(), nickname);
 }
 
 void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	IrcPrivateMessage *m = (IrcPrivateMessage *) message;
 
-	std::string target = m->target().toStdString();
+	std::string target = m->target().toUtf8();
 	LOG4CXX_INFO(logger, user << ": Message from " << target);
 	if (target.find("#") == 0) {
 		bool flags = 0;
-		std::string nickname = m->sender().name().toStdString();
+		std::string nickname = m->sender().name().toUtf8();
 		flags = correctNickname(nickname);
-		np->handleMessage(user, target + suffix, m->message().toStdString(), nickname);
+		np->handleMessage(user, target + suffix, m->message().toUtf8(), nickname);
 	}
 	else {
 		bool flags = 0;
-		std::string nickname = m->sender().name().toStdString();
+		std::string nickname = m->sender().name().toUtf8();
 		flags = correctNickname(nickname);
-		np->handleMessage(user, nickname, m->message().toStdString());
+		np->handleMessage(user, nickname, m->message().toUtf8());
 	}
 }
 
@@ -163,10 +163,10 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	switch (m->code()) {
 		case 332:
-			m_topicData = m->parameters().value(2).toStdString();
+			m_topicData = m->parameters().value(2).toUtf8();
 			break;
 		case 333:
-			 np->handleSubject(user, m->parameters().value(1).toStdString() + suffix, m_topicData, m->parameters().value(2).toStdString());
+			 np->handleSubject(user, m->parameters().value(1).toUtf8() + suffix, m_topicData, m->parameters().value(2).toUtf8());
 			break;
 		case 353:
 			channel = m->parameters().value(2);
@@ -174,10 +174,10 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 
 			for (int i = 0; i < members.size(); i++) {
 				bool flags = 0;
-				std::string nickname = members.at(i).toStdString();
+				std::string nickname = members.at(i).toUtf8();
 				flags = correctNickname(nickname);
-				m_modes[channel.toStdString() + nickname] = flags;
-				np->handleParticipantChanged(user, nickname, channel.toStdString() + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
+				m_modes[channel.toUtf8() + nickname] = flags;
+				np->handleParticipantChanged(user, nickname, channel.toUtf8() + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
 			}
 			break;
 		case 432:
@@ -193,7 +193,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 }
 
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
-	LOG4CXX_INFO(logger, user << ": " << message->toString().toStdString());
+	LOG4CXX_INFO(logger, user << ": " << message->toString().toUtf8());
 	switch (message->type()) {
 		case IrcMessage::Join:
 			on_joined(message);

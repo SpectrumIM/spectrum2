@@ -93,7 +93,7 @@ void SingleIRCNetworkPlugin::handleMessageSendRequest(const std::string &user, c
 	m_sessions[user]->sendCommand(IrcCommand::createMessage(QString::fromUtf8(r), QString::fromUtf8(message)));
 
 	if (r.find("#") == 0) {
-		handleMessage(user, legacyName, message, m_sessions[user]->nickName().toStdString());
+		handleMessage(user, legacyName, message, m_sessions[user]->nickName().toUtf8());
 	}
 }
 
@@ -109,7 +109,7 @@ void SingleIRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, cons
 	m_sessions[user]->rooms += 1;
 
 	// update nickname, because we have nickname per session, no nickname per room.
-	handleRoomNicknameChanged(user, room, m_sessions[user]->userName().toStdString());
+	handleRoomNicknameChanged(user, room, m_sessions[user]->userName().toUtf8());
 }
 
 void SingleIRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std::string &room) {
