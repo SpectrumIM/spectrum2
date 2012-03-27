@@ -9,7 +9,7 @@ SingleIRCNetworkPlugin::SingleIRCNetworkPlugin(Config *config, Swift::QtEventLoo
 	this->config = config;
 	m_server = config->getUnregistered().find("service.irc_server")->second;
 	m_socket = new QTcpSocket();
-	m_socket->connectToHost(QString::fromStdString(host), port);
+	m_socket->connectToHost(QString::fromUtf8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
 	if (config->getUnregistered().find("service.irc_identify") != config->getUnregistered().end()) {
@@ -44,10 +44,10 @@ void SingleIRCNetworkPlugin::handleLoginRequest(const std::string &user, const s
 	LOG4CXX_INFO(logger, user << ": Connecting " << m_server << " as " << legacyName);
 
 	MyIrcSession *session = new MyIrcSession(user, this);
-	session->setUserName(QString::fromStdString(legacyName));
-	session->setNickName(QString::fromStdString(legacyName));
-	session->setRealName(QString::fromStdString(legacyName));
-	session->setHost(QString::fromStdString(m_server));
+	session->setUserName(QString::fromUtf8(legacyName));
+	session->setNickName(QString::fromUtf8(legacyName));
+	session->setRealName(QString::fromUtf8(legacyName));
+	session->setHost(QString::fromUtf8(m_server));
 	session->setPort(6667);
 
 	if (!password.empty()) {
@@ -90,7 +90,7 @@ void SingleIRCNetworkPlugin::handleMessageSendRequest(const std::string &user, c
 	}
 
 	LOG4CXX_INFO(logger, user << ": Forwarding message to " << r);
-	m_sessions[user]->sendCommand(IrcCommand::createMessage(QString::fromStdString(r), QString::fromStdString(message)));
+	m_sessions[user]->sendCommand(IrcCommand::createMessage(QString::fromUtf8(r), QString::fromUtf8(message)));
 
 	if (r.find("#") == 0) {
 		handleMessage(user, legacyName, message, m_sessions[user]->nickName().toStdString());
@@ -105,7 +105,7 @@ void SingleIRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, cons
 
 	LOG4CXX_INFO(logger, user << ": Joining " << room);
 	m_sessions[user]->addAutoJoinChannel(room);
-	m_sessions[user]->sendCommand(IrcCommand::createJoin(QString::fromStdString(room), QString::fromStdString(password)));
+	m_sessions[user]->sendCommand(IrcCommand::createJoin(QString::fromUtf8(room), QString::fromUtf8(password)));
 	m_sessions[user]->rooms += 1;
 
 	// update nickname, because we have nickname per session, no nickname per room.
@@ -122,7 +122,7 @@ void SingleIRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, con
 	}
 
 	LOG4CXX_INFO(logger, user << ": Leaving " << room);
-	m_sessions[u]->sendCommand(IrcCommand::createPart(QString::fromStdString(r)));
+	m_sessions[u]->sendCommand(IrcCommand::createPart(QString::fromUtf8(r)));
 	m_sessions[u]->removeAutoJoinChannel(r);
 	m_sessions[u]->rooms -= 1;
 }
