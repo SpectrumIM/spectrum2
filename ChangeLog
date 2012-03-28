@@ -1,4 +1,4 @@
-Version 2.0.0-beta2 (2012-XX-XX):
+Version 2.0.0-beta2 (2012-03-28):
 	General:
 	* Fixed bug when Roster Item Exchange and subscribe stanzas were sent
 	  repeatedly.
@@ -13,7 +13,7 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	* Admin can now see "Admin" contact in server-mode.
 
 	libpurple:
-	* Added support for MUC for prpl-jabber protocol.
+	* Added initial support for MUC for prpl-jabber protocol.
 
 	LibCommuni IRC backend:
 	* Fixed sending/receiving UTF8 messages.
