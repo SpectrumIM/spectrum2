@@ -6,6 +6,7 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	* Fixed username_mask setting.
 	* Added new fields into statistics (backends_crashed, messages related
 	  stats).
+	* Chatstates are now not counted as incoming messages in stats.
 	* Log4cxx is now optional dependency. Without Log4cxx, Spectrum 2 logs
 	  to standard output.
 	* Fixed crash when Log4cxx configuration file didn't exist.
@@ -14,6 +15,11 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	libpurple:
 	* Added support for MUC for prpl-jabber protocol.
 
+	LibCommuni IRC backend:
+	* Fixed sending/receiving UTF8 messages.
+	* Using the [registration] auto_register=1 config option, users don't
+	  have to register manually when connecting IRC network.
+
 	Skype:
 	* Memory usage statistic now includes the Skype client.
 	* Fixed logging issue when the logs were not stored in the proper instance
@@ -21,6 +27,7 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	* Skype backend includes also Skype client memory usage into the account.
 	* Working buddies adding/removing.
 	* Information about missed call is now forwarded to XMPP user.
+	* Fixed bug when Skype client instance wasn't killed by backend.
 
 Version 2.0.0-beta (2012-02-28):
 	General:
