@@ -366,7 +366,7 @@ bool Skype::createDBusProxy() {
 			LOG4CXX_INFO(logger,  m_username << ":" << error->message);
 
 			if (m_counter == 15) {
-				LOG4CXX_ERROR(logger, "Logging out, proxy couldn't be created");
+				LOG4CXX_ERROR(logger, "Logging out, proxy couldn't be created: " << error->message);
 				np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, error->message);
 				logout();
 				g_error_free(error);
@@ -444,7 +444,8 @@ void Skype::login() {
 	gchar* argv[6] = {"skype", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
 
 	int fd;
-	g_spawn_async_with_pipes(NULL,
+	GError *error = NULL;
+	bool spawned = g_spawn_async_with_pipes(NULL,
 		argv,
 		NULL /*envp*/,
 		G_SPAWN_SEARCH_PATH,
@@ -454,7 +455,14 @@ void Skype::login() {
 		&fd,
 		NULL,
 		&fd_output,
-		NULL /*error*/);
+		&error);
+
+	if (!spawned) {
+		LOG4CXX_ERROR(logger, "Error spawning the Skype instance: " << error->message)
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Error spawning the Skype instance.");
+		return;
+	}
+
 	std::string login_data = std::string(m_username + " " + m_password + "\n");
 	LOG4CXX_INFO(logger,  m_username << ": Login data=" << m_username);
 	write(fd, login_data.c_str(), login_data.size());
@@ -469,12 +477,12 @@ void Skype::login() {
 
 	if (m_connection == NULL)
 	{
-		LOG4CXX_INFO(logger, "Creating DBus connection.");
+		LOG4CXX_INFO(logger, "Creating DBUS connection.");
 		GError *error = NULL;
 		m_connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
 		if (m_connection == NULL && error != NULL)
 		{
-			LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
+			LOG4CXX_INFO(logger,  m_username << ": Creating DBUS Connection rrror: " << error->message);
 			g_error_free(error);
 			return;
 		}
