@@ -456,7 +456,7 @@ void Skype::login() {
 		&fd_output,
 		NULL /*error*/);
 	std::string login_data = std::string(m_username + " " + m_password + "\n");
-	LOG4CXX_INFO(logger,  m_username << ": Login data=" << login_data);
+	LOG4CXX_INFO(logger,  m_username << ": Login data=" << m_username);
 	write(fd, login_data.c_str(), login_data.size());
 	close(fd);
 
