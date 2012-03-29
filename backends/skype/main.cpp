@@ -482,7 +482,7 @@ void Skype::login() {
 		m_connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
 		if (m_connection == NULL && error != NULL)
 		{
-			LOG4CXX_INFO(logger,  m_username << ": Creating DBUS Connection rrror: " << error->message);
+			LOG4CXX_INFO(logger,  m_username << ": Creating DBUS Connection error: " << error->message);
 			g_error_free(error);
 			return;
 		}

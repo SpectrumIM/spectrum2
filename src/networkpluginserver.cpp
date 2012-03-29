@@ -163,9 +163,14 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	if ( pid == 0 ) {
 		setsid();
 		// child process
-		exit(execv(argv[0], argv));
+		errno = 0;
+		int ret = execv(argv[0], argv);
+		if (ret == -1) {
+			exit(errno);
+		}
+		exit(0);
 	} else if ( pid < 0 ) {
-		// fork failed
+		LOG4CXX_ERROR(logger, "Fork failed");
 	}
 	free(p);
 
@@ -258,12 +263,29 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
+	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+
 #ifndef _WIN32
+	// wait if the backend process will still be alive after 1 second
+	sleep(1);
+	pid_t result;
+	int status;
+	result = waitpid(-1, &status, WNOHANG);
+	if (result != 0) {
+		if (WIFEXITED(status)) {
+			if (WEXITSTATUS(status) != 0) {
+				LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+			}
+		}
+		else {
+			LOG4CXX_ERROR(logger, "Backend can not be started");
+		}
+	}
+
 	signal(SIGCHLD, SigCatcher);
 #endif
 
-	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
-	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
