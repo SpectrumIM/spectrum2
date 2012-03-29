@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB HEADERS ../include/transport/*.h)
 
-set(EXTRA_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/../../src/memoryusage.cpp)
-set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/../../src/logging.cpp)
-set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/../../src/config.cpp)
-set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.pb.cc)
+set(EXTRA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../src/memoryusage.cpp)
+set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../src/logging.cpp)
+set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../src/config.cpp)
+set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc)
 
 if (NOT WIN32)
 	ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ${EXTRA_SOURCES})
@@ -15,7 +15,7 @@ else()
 	ADD_DEPENDENCIES(transport-plugin libprotobuf)
 endif()
 ADD_DEPENDENCIES(transport-plugin pb)
-SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 	ADD_DEFINITIONS(-fPIC)
@@ -31,7 +31,7 @@ SET_TARGET_PROPERTIES(transport-plugin PROPERTIES
       VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
 )
 
-INSTALL(TARGETS transport-plugin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib COMPONENT libraries)
+INSTALL(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
-#CONFIGURE_FILE(transport.pc.in "${CMAKE_CURRENT_BINARY_DIR}/transport.pc")
-#INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/transport.pc" DESTINATION lib/pkgconfig)
+#CONFIGURE_FILE(transport.pc.in "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc")
+#INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc" DESTINATION lib/pkgconfig)

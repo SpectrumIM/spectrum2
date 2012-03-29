@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
 project(libtransport)
 
+if(NOT LIB_INSTALL_DIR)
+	set(LIB_INSTALL_DIR "lib")
+endif()
+
 set(CMAKE_MODULE_PATH "cmake_modules")
 
 set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
