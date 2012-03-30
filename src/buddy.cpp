@@ -148,7 +148,6 @@ void Buddy::handleBuddyChanged() {
 	if (presence) {
 		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
 	}
-	m_rosterManager->handleBuddyChanged(this);
 }
 
 void Buddy::handleVCardReceived(const std::string &id, Swift::VCard::ref vcard) {

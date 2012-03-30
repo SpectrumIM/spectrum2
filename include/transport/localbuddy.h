@@ -51,10 +51,20 @@ class LocalBuddy : public Buddy {
 		}
 
 		std::string getIconHash() { return m_iconHash; }
-		void setIconHash(const std::string &iconHash) { m_iconHash = iconHash; }
+		void setIconHash(const std::string &iconHash) {
+			bool changed = m_iconHash != iconHash;
+			m_iconHash = iconHash;
+			if (changed)
+				getRosterManager()->storeBuddy(this);
+		}
 
 		std::vector<std::string> getGroups() { return m_groups; }
-		void setGroups(const std::vector<std::string> &groups) { m_groups = groups; }
+		void setGroups(const std::vector<std::string> &groups) {
+			bool changed = m_groups.size() != groups.size();
+			m_groups = groups;
+			if (changed)
+				getRosterManager()->storeBuddy(this);
+		}
 
 	private:
 		std::string m_name;
