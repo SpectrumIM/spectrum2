@@ -49,6 +49,28 @@
 
 static GHashTable *ui_info = NULL;
 
+void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name) {
+	PurplePlugin *plugin = gc && PURPLE_CONNECTION_IS_CONNECTED(gc) ? gc->prpl : NULL;
+	if (plugin && PURPLE_PLUGIN_HAS_ACTIONS(plugin)) {
+		PurplePluginAction *action = NULL;
+		GList *actions, *l;
+
+		actions = PURPLE_PLUGIN_ACTIONS(plugin, gc);
+
+		for (l = actions; l != NULL; l = l->next) {
+			if (l->data) {
+				action = (PurplePluginAction *) l->data;
+				action->plugin = plugin;
+				action->context = gc;
+				if ((std::string) action->label == name) {
+					action->callback(action);
+				}
+				purple_plugin_action_free(action);
+			}
+		}
+	}
+}
+
 GHashTable *spectrum_ui_get_info(void)
 {
 	if(NULL == ui_info) {

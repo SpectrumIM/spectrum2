@@ -1448,25 +1448,8 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	malloc_trim(0);
 #endif
 
-	PurplePlugin *plugin = gc && PURPLE_CONNECTION_IS_CONNECTED(gc) ? gc->prpl : NULL;
-	if (plugin && PURPLE_PLUGIN_HAS_ACTIONS(plugin)) {
-		PurplePluginAction *action = NULL;
-		GList *actions, *l;
-
-		actions = PURPLE_PLUGIN_ACTIONS(plugin, gc);
-
-		for (l = actions; l != NULL; l = l->next) {
-			if (l->data) {
-				action = (PurplePluginAction *) l->data;
-				action->plugin = plugin;
-				action->context = gc;
-				if ((std::string) action->label == "Download buddylist from Server") {
-					action->callback(action);
-				}
-				purple_plugin_action_free(action);
-			}
-		}
-	}
+	// For prpl-gg
+	execute_purple_plugin_action(gc, "Download buddylist from Server");
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
