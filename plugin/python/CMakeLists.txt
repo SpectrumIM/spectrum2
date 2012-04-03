@@ -7,7 +7,9 @@ if (PROTOBUF_FOUND)
         COMMENT "Running Python protocol buffer compiler on protocol.proto"
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/../../include/transport/protocol.proto
     )
-    ADD_CUSTOM_TARGET(pb-python DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/protocol_pb2.py)
+    ADD_CUSTOM_TARGET(pb-python ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/protocol_pb2.py)
 endif()
+
+
 
 
