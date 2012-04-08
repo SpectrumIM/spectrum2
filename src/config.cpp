@@ -193,8 +193,13 @@ bool Config::load(std::istream &ifs) {
 }
 
 bool Config::load(const std::string &configfile, const std::string &jid) {
-	options_description opts("Transport options");
-	return load(configfile, opts, jid);
+	try {
+		options_description opts("Transport options");
+		return load(configfile, opts, jid);
+	} catch ( const boost::program_options::multiple_occurrences& e ) {
+		std::cerr << configfile << " parsing error: " << e.what() << " from option: " << e.get_option_name() << std::endl;
+		return false;
+	}
 }
 
 bool Config::reload() {
