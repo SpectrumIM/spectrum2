@@ -150,6 +150,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	// Create user class if it's not there
 	if (!user) {
 		// Admin user is not legacy network user, so do not create User class instance for him
+/*
 		if (m_component->inServerMode() && CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
 			// Send admin contact to the user.
 			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
@@ -167,6 +168,30 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			response->setFrom(m_component->getJID());
 			m_component->getStanzaChannel()->sendPresence(response);
 			return;
+		}
+*/
+		if (m_component->inServerMode()) {
+		//  && CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
+		    std::list<std::string> const &x = CONFIG_LIST(m_component->getConfig(),"service.admin_jid");
+		    if (std::find(x.begin(), x.end(), presence->getFrom().toBare().toString()) != x.end()) {
+		
+			// Send admin contact to the user.
+			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+			Swift::RosterItemPayload item;
+			item.setJID(m_component->getJID());
+			item.setName("Admin");
+			item.setSubscription(Swift::RosterItemPayload::Both);
+			payload->addItem(item);
+
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
+			request->send();
+
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setTo(presence->getFrom());
+			response->setFrom(m_component->getJID());
+			m_component->getStanzaChannel()->sendPresence(response);
+			return;
+		    }
 		}
 
 		// No user and unavailable presence -> answer with unavailable
