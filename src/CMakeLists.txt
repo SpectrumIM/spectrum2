@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 
-# Build without openssl on windows
-if (WIN32)
+# Build without openssl on msvc
+if (CMAKE_COMPILER_IS_GNUCXX)
+	string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
+else()
 	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
 endif()
 
@@ -37,15 +39,17 @@ else(PROTOBUF_FOUND)
 endif(PROTOBUF_FOUND)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	ADD_DEFINITIONS(-fPIC)
+	if (NOT WIN32)
+		ADD_DEFINITIONS(-fPIC)
+	endif()
 endif()
 
-if (WIN32)
+if (NOT CMAKE_COMPILER_IS_GNUCXX)
 	include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/protobuf/libprotobuf")
 	TARGET_LINK_LIBRARIES(transport transport-plugin ${PQXX_LIBRARY} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES})
-else (WIN32)
+else ()
 	TARGET_LINK_LIBRARIES(transport transport-plugin ${PQXX_LIBRARY} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY})
-endif(WIN32)
+endif()
 
 SET_TARGET_PROPERTIES(transport PROPERTIES
       VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}

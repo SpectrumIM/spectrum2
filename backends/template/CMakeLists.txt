@@ -4,7 +4,7 @@ FILE(GLOB SRC *.c *.cpp)
 
 ADD_EXECUTABLE(spectrum2_template_backend ${SRC})
 
-if (NOT WIN32)
+if (CMAKE_COMPILER_IS_GNUCXX)
 target_link_libraries(spectrum2_template_backend transport pthread ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 else()
 include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/protobuf/libprotobuf")

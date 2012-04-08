@@ -20,7 +20,7 @@
 
 #include "transport/config.h"
 #include <fstream>
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <direct.h>
 #define getcwd _getcwd
 #include <windows.h>

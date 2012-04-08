@@ -1,5 +1,5 @@
 if (PROTOBUF_FOUND)
-    if (WIN32)
+    if (NOT CMAKE_COMPILER_IS_GNUCXX)
 	set (PROTOBUF_PROTOC_EXECUTABLE protoc)
     endif()
     ADD_CUSTOM_COMMAND(

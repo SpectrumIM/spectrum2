@@ -12,6 +12,7 @@
 
 #include "Swiften/TLS/TLSServerContext.h"
 #include "Swiften/Base/ByteArray.h"
+#include <Swiften/TLS/CertificateWithKey.h>
 
 namespace Swift {
 	class PKCS12Certificate;
@@ -22,7 +23,7 @@ namespace Swift {
 			~OpenSSLServerContext();
 
 			void connect();
-			bool setServerCertificate(const PKCS12Certificate& cert);
+			bool setServerCertificate(CertificateWithKey::ref cert);
 
 			void handleDataFromNetwork(const SafeByteArray&);
 			void handleDataFromApplication(const SafeByteArray&);

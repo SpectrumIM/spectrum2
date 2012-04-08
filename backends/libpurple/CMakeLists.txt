@@ -3,11 +3,11 @@ FILE(GLOB SRC *.cpp)
 
 ADD_EXECUTABLE(spectrum2_libpurple_backend ${SRC})
 
-if(NOT WIN32)
+if(CMAKE_COMPILER_IS_GNUCXX)
 target_link_libraries(spectrum2_libpurple_backend ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport-plugin pthread)
 else()
 include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/protobuf/libprotobuf")
-target_link_libraries(spectrum2_libpurple_backend ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport-plugin libprotobuf)
+target_link_libraries(spectrum2_libpurple_backend ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${LIBXML2_LIBRARIES} ${EVENT_LIBRARIES} transport-plugin libprotobuf)
 endif()
 
 INSTALL(TARGETS spectrum2_libpurple_backend RUNTIME DESTINATION bin)
