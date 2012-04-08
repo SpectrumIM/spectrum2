@@ -1,0 +1,110 @@
+#!/usr/bin/perl
+
+# config:
+# [spectrum2_*]
+# env.admin_jid tradmin@host.org
+# env.password jid_password
+# env.transports icq.host.org xmpp.host.org
+#
+# symlinks: 
+#    spectrum2_backends  spectrum2_memory  spectrum2_users
+#
+#
+use AnyEvent;
+use AnyEvent::XMPP::Client;
+use AnyEvent::XMPP::Component;
+use AnyEvent::XMPP::Ext::Disco;
+use AnyEvent::XMPP::Ext::Version;
+use AnyEvent::XMPP::Namespaces qw/xmpp_ns/;
+use AnyEvent::XMPP::Util qw/simxml/;
+use XML::Simple;
+use Time::HiRes qw ( setitimer ITIMER_REAL time );
+use strict;
+$|=1;
+
+$SIG{ALRM} = sub { exit; };
+setitimer(ITIMER_REAL, 30, 1);
+
+
+my %config=(
+    users => {
+	title=>'Buddies online',
+	vlabel=>'users',
+	info=>'Number of users that currently use the spectrum transports.',
+	command=>'online_users_count',
+	base=>'--base 1000',
+	x=>'1',
+    },
+    backends => {
+	title=>'Backends running',
+	vlabel=>'backends',
+	info=>'Number of backends that currently running.',
+	command=>'backends_count',
+	base=>'--base 1000',
+	x=>'1',
+    },
+    memory => {
+	title=>'Memory usage of transports',
+	vlabel=>'megabytes',
+	info=>'Memory usage of spectrum transports.',
+	command=>'used_memory',
+	base=>'--base 1024',
+	x=>'1024',
+    },
+);
+$0 =~ /spectrum2_(.+)*$/;
+my $func = $1;
+exit 2 unless defined $func;
+my %tr;
+my $count=0;
+    foreach (split(' ',$ENV{'transports'})){
+        $tr{$_}=$count;
+        $count++;
+    }
+
+if (exists $ARGV[0] and $ARGV[0] eq "config") 
+{
+    print "graph_title ".$config{$func}->{'title'}."\n";
+    print "graph_vlabel ".$config{$func}->{'vlabel'}."\n";
+    print "graph_category spectrum2\n";
+    foreach (keys (%tr)){
+	print "r".$tr{$_}.".label ".$_."\n";
+    }
+    print "graph_args ".$config{$func}->{'base'}."\n";
+    print "graph_info ".$config{$func}->{'info'}."\n";
+    exit 0;
+}
+
+binmode( STDOUT);
+my $xs=new XML::Simple;
+my $cl=AnyEvent::XMPP::Client->new(debug=>0);
+my $j=AnyEvent->condvar;
+$cl->add_account($ENV{'admin_jid'}.'/'.time,$ENV{'password'});
+$cl->reg_cb(
+    session_ready => \&cl_sess,
+    disconnect => \&cl_disc,
+    message => \&cl_msg,
+);
+$cl->start;
+$j->wait;
+
+
+sub cl_disc
+{
+my ($cl,$acc,$h,$p,$reas)=@_;
+    print "disc ($h:$p) $reas\n";
+}
+sub cl_sess
+{
+    my($cl,$acc)=@_;
+    foreach (keys (%tr)){
+        $cl->send_message($config{$func}->{'command'},$_,undef,'chat');
+    }
+}
+sub cl_msg
+{
+    my ($cl,$acc,$msg)=@_;
+    print "r".$tr{$msg->from}.".value ".int($msg->any_body/$config{$func}->{'x'})."\n";
+    delete( $tr{$msg->from});
+    exit if (scalar(keys %tr)==0);
+}
