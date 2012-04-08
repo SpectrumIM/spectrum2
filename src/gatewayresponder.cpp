@@ -45,7 +45,9 @@ GatewayResponder::~GatewayResponder() {
 }
 
 bool GatewayResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::GatewayPayload> payload) {
-	sendResponse(from, id, boost::shared_ptr<GatewayPayload>(new GatewayPayload(Swift::JID(), "Enter legacy network contact ID.", "Contact ID")));
+	std::string prompt = CONFIG_STRING(m_userManager->getComponent()->getConfig(), "gateway_responder.prompt");
+	std::string label = CONFIG_STRING(m_userManager->getComponent()->getConfig(), "gateway_responder.label");
+	sendResponse(from, id, boost::shared_ptr<GatewayPayload>(new GatewayPayload(Swift::JID(), label, prompt)));
 	return true;
 }
 
