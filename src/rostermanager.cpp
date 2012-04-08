@@ -152,9 +152,6 @@ void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 }
 
 void RosterManager::handleBuddyChanged(Buddy *buddy) {
-	if (m_rosterStorage) {
-		m_rosterStorage->storeBuddy(buddy);
-	}
 }
 
 void RosterManager::setBuddyCallback(Buddy *buddy) {
