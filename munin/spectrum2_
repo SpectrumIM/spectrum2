@@ -7,7 +7,7 @@
 # env.transports icq.host.org xmpp.host.org
 #
 # symlinks: 
-#    spectrum2_backends  spectrum2_memory  spectrum2_users
+#    spectrum2_backends  spectrum2_memory  spectrum2_users spectrum2_messages spectrum2_messages_sec
 #
 #
 use AnyEvent;
@@ -51,15 +51,42 @@ my %config=(
 	base=>'--base 1024',
 	x=>'1024',
     },
+    messages => {
+	title=>'Messages send over transport',
+	vlabel=>'messages',
+	info=>'Messages send over spectrum transports.',
+	command=>'',
+	base=>'--base 1000',
+	x=>'1',
+    },
+    messages_sec => {
+	title=>'Messages send over transport',
+	vlabel=>'messages/sec',
+	info=>'Messages send per second over spectrum transports.',
+	command=>'',
+	base=>'--base 1000',
+	x=>'1',
+    },
 );
+my @queue=('_out','_in');
 $0 =~ /spectrum2_(.+)*$/;
 my $func = $1;
 exit 2 unless defined $func;
 my %tr;
 my $count=0;
     foreach (split(' ',$ENV{'transports'})){
-        $tr{$_}=$count;
-        $count++;
+        if ($func=~/messages/)
+	{
+	    $tr{$_."_in"}=$count;
+	    $count++;
+	    $tr{$_."_out"}=$count;
+	    $count++;
+	}
+	else
+	{
+	$tr{$_}=$count;
+	$count++;
+	}
     }
 
 if (exists $ARGV[0] and $ARGV[0] eq "config") 
@@ -69,6 +96,11 @@ if (exists $ARGV[0] and $ARGV[0] eq "config")
     print "graph_category spectrum2\n";
     foreach (keys (%tr)){
 	print "r".$tr{$_}.".label ".$_."\n";
+	if ($func eq 'messages_sec')
+	{
+	    print "r".$tr{$_}.".type DERIVE\n";
+	    print "r".$tr{$_}.".min 0\n";
+	}
     }
     print "graph_args ".$config{$func}->{'base'}."\n";
     print "graph_info ".$config{$func}->{'info'}."\n";
@@ -98,13 +130,37 @@ sub cl_sess
 {
     my($cl,$acc)=@_;
     foreach (keys (%tr)){
-        $cl->send_message($config{$func}->{'command'},$_,undef,'chat');
+        if ($func=~/messages/)
+	{
+	    if (s/_in$//)
+	    {
+		$cl->send_message("messages_from_xmpp",$_,undef,'chat');
+	    };
+	    if (s/_out$//)
+	    {
+		$cl->send_message("messages_to_xmpp",$_,undef,'chat');
+	    }
+	}
+	else
+	{
+	    $cl->send_message($config{$func}->{'command'},$_,undef,'chat');
+	}
     }
 }
 sub cl_msg
 {
     my ($cl,$acc,$msg)=@_;
-    print "r".$tr{$msg->from}.".value ".int($msg->any_body/$config{$func}->{'x'})."\n";
-    delete( $tr{$msg->from});
+    if ($func=~/messages/)
+    {
+	print "r".$tr{$msg->from.$queue[-1]}.".value ".int($msg->any_body/$config{$func}->{'x'})."\n";
+	delete( $tr{$msg->from.$queue[-1]});
+	pop(@queue);
+	if ($#queue==-1){@queue=("_out","_in");}
+    }
+    else
+    {
+	print "r".$tr{$msg->from}.".value ".int($msg->any_body/$config{$func}->{'x'})."\n";
+	delete( $tr{$msg->from});
+    }
     exit if (scalar(keys %tr)==0);
 }
