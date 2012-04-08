@@ -39,8 +39,8 @@ UserRegistry::~UserRegistry() { m_removeTimer->stop(); }
 
 void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password) {
 
-	if (!CONFIG_STRING(config, "service.admin_jid").empty() ) {
-		std::list<std::string> const &x = CONFIG_LIST(config,"service.admin_jid");
+//	if (!CONFIG_STRING(config, "service.admin_jid").empty() ) {
+		std::vector<std::string> const &x = CONFIG_VECTOR(config,"service.admin_jid");
 		if (std::find(x.begin(), x.end(), user.toBare().toString()) != x.end()) {
 		    if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
 			session->handlePasswordValid();
@@ -50,7 +50,7 @@ void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFrom
 		    }
 		    return;
 	    }
-	}
+//	}
 	std::string key = user.toBare().toString();
 
 	// Users try to connect twice

@@ -59,7 +59,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	if (!message->getTo().getNode().empty())
 		return;
 
-	std::list<std::string> const &x = CONFIG_LIST(m_component->getConfig(),"service.admin_jid");
+	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
 	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
 	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
 	    return;
