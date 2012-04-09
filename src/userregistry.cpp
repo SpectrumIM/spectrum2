@@ -38,16 +38,19 @@ UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 UserRegistry::~UserRegistry() { m_removeTimer->stop(); }
 
 void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password) {
-	if (!CONFIG_STRING(config, "service.admin_jid").empty() && user.toBare().toString() == CONFIG_STRING(config, "service.admin_jid")) {
-		if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
-			session->handlePasswordValid();
-		}
-		else {
-			session->handlePasswordInvalid();
-		}
-		return;
-	}
 
+//	if (!CONFIG_STRING(config, "service.admin_jid").empty() ) {
+		std::vector<std::string> const &x = CONFIG_VECTOR(config,"service.admin_jid");
+		if (std::find(x.begin(), x.end(), user.toBare().toString()) != x.end()) {
+		    if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
+			session->handlePasswordValid();
+		    }
+		    else {
+			session->handlePasswordInvalid();
+		    }
+		    return;
+	    }
+//	}
 	std::string key = user.toBare().toString();
 
 	// Users try to connect twice
