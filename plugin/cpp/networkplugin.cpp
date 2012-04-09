@@ -60,6 +60,11 @@ NetworkPlugin::NetworkPlugin() {
 NetworkPlugin::~NetworkPlugin() {
 }
 
+void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
+	std::string data = "[registration]";
+	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0");
+}
+
 void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
