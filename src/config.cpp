@@ -77,7 +77,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.backend_port", value<std::string>()->default_value("0"), "Port to bind backend server to")
 		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
-		("service.admin_jid", value<std::string>()->default_value(""), "Administrator jid.")
+		("service.admin_jid", value<std::vector<std::string> >()->multitoken(), "Administrator jid.")
 		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
 		("service.reuse_old_backends", value<bool>()->default_value(true), "True if Spectrum should use old backends which were full in the past.")
 		("service.idle_reconnect_time", value<int>()->default_value(0), "Time in seconds after which idle users are reconnected to let their backend die.")
