@@ -168,7 +168,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	std::string barejid = from.toBare().toString();
 
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
-		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
+		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
 			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -275,7 +275,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	std::string barejid = from.toBare().toString();
 
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
-		std::list<std::string> const &x = CONFIG_LIST(m_config,"service.allowed_servers");
+		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
 			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);

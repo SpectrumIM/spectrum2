@@ -70,7 +70,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
 		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
 		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
-		("service.allowed_servers", value<std::string>()->default_value(""), "Only users from these servers can connect")
+		("service.allowed_servers", value<std::vector<std::string> >()->multitoken(), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
 		("service.backend_host", value<std::string>()->default_value("localhost"), "Host to bind backend server to")
