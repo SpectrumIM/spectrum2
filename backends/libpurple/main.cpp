@@ -27,6 +27,8 @@
 #define getpid _getpid
 #endif
 
+#include "purple_defs.h"
+
 DEFINE_LOGGER(logger_libpurple, "libpurple");
 DEFINE_LOGGER(logger, "backend");
 
@@ -1515,6 +1517,8 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 
 static bool initPurple() {
 	bool ret;
+
+	resolvePurpleFunctions();
 
 	purple_util_set_user_dir("./");
 	remove("./accounts.xml");

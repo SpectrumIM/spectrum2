@@ -31,10 +31,10 @@ set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
 set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(Swiften REQUIRED)
+find_package(Swiften)
 
 set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(openssl REQUIRED)
+find_package(openssl)
 
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)

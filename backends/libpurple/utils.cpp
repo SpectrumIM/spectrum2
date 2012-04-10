@@ -47,6 +47,8 @@
 #include "win32/win32dep.h"
 #endif
 
+#include "purple_defs.h"
+
 static GHashTable *ui_info = NULL;
 
 void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name) {
