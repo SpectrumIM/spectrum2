@@ -5,7 +5,7 @@ methods = []
 definitions = []
 
 if len(sys.argv) != 2:
-	print "Usage:", sys.argv[0], "<path_to_libpurple_dir>"
+	print "Usage:", sys.argv[0], "<path_to_libpurple_dir_containing_libpurple_headers>"
 	sys.exit(1)
 
 
