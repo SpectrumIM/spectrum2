@@ -59,6 +59,13 @@ def handle_header(header, method):
 			if l.endswith(")"):
 				continue
 
+			if m.find("/*") > m.find(";"):
+				m = m[:m.find("/*")]
+				m.rstrip()
+				if len(m) != 0:
+					while m[-1] == " ":
+						m = m[:-1]
+
 			index = i;
 			while not m.endswith(";"):
 				index += 1
@@ -93,10 +100,14 @@ def get_args(d):
 
 def get_name(d):
 	x = d[:d.find("(")+1].lstrip()
+	if x.find("wpurple_") != -1:
+		return x[x.find("wpurple_"):]
 	return x[x.find("purple_"):]
 
 def get_rtype(d):
-	return d[:d.find("purple_") - 1].lstrip()
+	if d.find("wpurple_") != -1:
+		return d[:d.find("wpurple_")].lstrip()
+	return d[:d.find("purple_")].lstrip()
 
 def output():
 	global definitions
