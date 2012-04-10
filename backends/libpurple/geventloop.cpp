@@ -28,7 +28,7 @@
 #include "event.h"
 #endif
 
-#include "purple_defs.h
+#include "purple_defs.h"
 
 #include "transport/logging.h"
 
