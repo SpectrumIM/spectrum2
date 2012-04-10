@@ -161,7 +161,7 @@ def output():
 		print >> cpp, "\t" + get_name(d)[:-1] + "_wrapped = (" + get_name(d)[:-1] + "_wrapped_fnc)GetProcAddress(f_hPurple, \"" + get_name(d)[:-1] + "\");"
 		#if (!purple_util_set_user_wrapped)
 		print >> cpp, "\tif (!" + get_name(d)[:-1] + "_wrapped)"
-		print >> cpp, "\t\treturn false";
+		print >> cpp, "\t\treturn false;"
 		print >> cpp, ""
 	print >> cpp, "#endif"
 
