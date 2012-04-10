@@ -2,8 +2,8 @@ import sys
 import os
 
 # intialize for methods used in libpurple macros
-methods = ["purple_connection_get_state", "purple_conversation_get_im_data",
-			"purple_conversation_get_chat_data"]
+methods = ["purple_connection_get_state(", "purple_conversation_get_im_data(",
+			"purple_conversation_get_chat_data("]
 definitions = []
 
 if len(sys.argv) != 2:
@@ -99,7 +99,7 @@ def output():
 
 	for d in definitions:
 		#typedef void (WINAPI * purple_util_set_user_wrapped_func)(const char *dir);
-		print >> header, "typedef", get_rtype(d), "(WINAPI *", get_name(d)[:-1] + "spectrum_fnc)(" + get_raw_args(d) + ");"
+		print >> header, "typedef", get_rtype(d), "(WINAPI *", get_name(d)[:-1] + "_wrapped_fnc)(" + get_raw_args(d) + ");"
 		#extern purple_util_set_user_wrapped_func purple_util_set_user_wrapped;
 		print >> header, "extern", get_name(d)[:-1] + "_wrapped_fnc", get_name(d)[:-1] + "_wrapped;"
 		print >> header, ""
@@ -158,6 +158,7 @@ for f in os.listdir("."):
 	fd.write(new_file)
 	fd.close()
 
+print methods
 for f in os.listdir(sys.argv[1]):
 	if not f.endswith(".h"):
 		continue
