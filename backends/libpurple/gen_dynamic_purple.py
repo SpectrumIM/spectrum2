@@ -1,7 +1,9 @@
 import sys
 import os
 
-methods = []
+# intialize for methods used in libpurple macros
+methods = ["purple_connection_get_state", "purple_conversation_get_im_data",
+			"purple_conversation_get_chat_data"]
 definitions = []
 
 if len(sys.argv) != 2:
