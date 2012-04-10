@@ -13,6 +13,10 @@ if len(sys.argv) != 2:
 
 def handle_file(cpp):
 	global methods
+	sys.stdout.write("getting used methods in " + cpp + ": ")
+	sys.stdout.flush()
+
+	counter = 0
 
 	new_file = ""
 	f = open(cpp, "r")
@@ -25,17 +29,20 @@ def handle_file(cpp):
 				if line[index:].find("=") != -1 and line[index:].find("=") < line[index:].find("("):
 					index += 1
 					continue
-				if line[index-1] == "_" or line[index:].find("(") == -1:
+				if line[index-1] == "_" or line[index:].find("(") == -1 or line[index:].startswith("purple_commands_init"):
 					index += 1
 					continue
 				m = line[index:line[index:].find("(")+index]
 				new_line += m[1:] + "_wrapped("
 				index += len(m)
-				if not m in methods and len(m) != 0:
+				if not m + "(" in methods and len(m) != 0:
 					methods += [m + "("]
+					counter += 1
 			index += 1
 		new_file += new_line
 	f.close()
+
+	print counter, "new methods found"
 	return new_file
 
 def handle_header(header, method):
@@ -63,6 +70,7 @@ def handle_header(header, method):
 				continue;
 
 			if not m in definitions:
+				print "found", method[:-1], "in", header
 				definitions += [m]
 			break
 	f.close()
@@ -154,15 +162,32 @@ for f in os.listdir("."):
 	if not f.endswith(".cpp") or f.startswith("purple_defs"):
 		continue
 	new_file = handle_file(f)
+
+	print "updating", f
 	fd = open(f, "w")
 	fd.write(new_file)
 	fd.close()
 
-print methods
 for f in os.listdir(sys.argv[1]):
 	if not f.endswith(".h"):
 		continue
 	for m in methods:
 		handle_header(f, m)
+
+sys.argv[1] = sys.argv[1] + "/win32"
+for f in os.listdir(sys.argv[1]):
+	if not f.endswith(".h"):
+		continue
+	for m in methods:
+		handle_header(f, m)
+
+for m in methods:
+	found = False
+	for d in definitions:
+		if d.find(m[:-1]) != -1:
+			found = True
+			break
+	if not found:
+		print "NOT FOUND:", m
 
 output()
