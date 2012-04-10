@@ -27,10 +27,16 @@
 #define PATH_MAX MAX_PATH
 #endif
 
+#include "iostream"
+#include "boost/version.hpp"
+
+#define BOOST_MAJOR_VERSION BOOST_VERSION / 100000
+#define BOOST_MINOR_VERSION BOOST_VERSION / 100 % 1000
+
 using namespace boost::program_options;
 
 namespace Transport {
-int getRandomPort(const std::string &s) {
+static int getRandomPort(const std::string &s) {
 	unsigned long r = 0;
 	BOOST_FOREACH(char c, s) {
 		r += (int) c;
@@ -199,7 +205,11 @@ bool Config::load(const std::string &configfile, const std::string &jid) {
 		options_description opts("Transport options");
 		return load(configfile, opts, jid);
 	} catch ( const boost::program_options::multiple_occurrences& e ) {
+#if (BOOST_MAJOR_VERSION >= 1 && BOOST_MINOR_VERSION >= 42)
 		std::cerr << configfile << " parsing error: " << e.what() << " from option: " << e.get_option_name() << std::endl;
+#else
+		std::cerr << configfile << " parsing error: " << e.what() << std::endl;
+#endif
 		return false;
 	}
 }
