@@ -1518,7 +1518,10 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 static bool initPurple() {
 	bool ret;
 
-	resolvePurpleFunctions();
+	if (!resolvePurpleFunctions()) {
+		LOG4CXX_ERROR(logger, "Unable to load libpurple.dll or some of the needed methods");
+		return false;
+	}
 
 	purple_util_set_user_dir("./");
 	remove("./accounts.xml");
