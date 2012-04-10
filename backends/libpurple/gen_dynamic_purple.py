@@ -54,6 +54,8 @@ def handle_header(header, method):
 	for i in range(len(lines)):
 		line = lines[i]
 		if line.find(method) != -1:
+			if line.startswith(method):
+				line = lines[i-1][:-1] + line
 			m = line[:-1]
 			l = unicode(m).strip()
 			if l.endswith(")"):
@@ -75,6 +77,8 @@ def handle_header(header, method):
 			if (l.startswith("#") or l.startswith("*") or l.startswith("/*") or l.count("***") != 0 or l.count("&&") != 0
 				or l.endswith(")")):
 				continue;
+
+			m = m.replace("G_GNUC_NULL_TERMINATE", "")
 
 			if not m in definitions:
 				print "found", method[:-1], "in", header
