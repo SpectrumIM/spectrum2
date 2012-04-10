@@ -791,7 +791,8 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
 
-	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy));
+	std::vector<std::string> groups = getGroups(buddy);
+	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy) << " group=" << groups[0]);
 
 	// Status
 	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
