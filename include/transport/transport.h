@@ -37,6 +37,7 @@
 #include "transport/config.h"
 #include "transport/factory.h"
 #include "transport/presenceoracle.h"
+#include <Swiften/Network/BoostConnectionServer.h>
 
 namespace Transport {
 	// typedef enum { 	CLIENT_FEATURE_ROSTERX = 2,
@@ -165,6 +166,7 @@ namespace Transport {
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
+			void handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e);
 			void handlePresence(Swift::Presence::ref presence);
 			void handleDataRead(const Swift::SafeByteArray &data);
 			void handleDataWritten(const Swift::SafeByteArray &data);
