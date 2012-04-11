@@ -4,10 +4,15 @@ Version 2.0.0-beta3 (2012-XX-XX):
 	  example when path to backend binary is not found).
 	* Update buddies in database only when it's needed and do not execute
 	  useless database statements.
+	* Send roster changes also when buddy's group change.
+	* Fixed bug when transport contact we in all groups.
 	* Answer to disco#info IQ with proper node (#206).
 	* Set SQLite3 as default database backend.
 	* Fixed disconnecting from server caused by sending VCard response
 	  with bad "from" attribute.
+	* Added Munin plugin (Thanks to Askovpen).
+	* Added support for more admin_jid JIDs (Thanks to Askovpen).
+	* Fixed allowed_servers option.
 
 	Libpurple:
 	* prpl-gg: Fetch the contact list properly (#252).
