@@ -41,10 +41,10 @@ void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFrom
 	std::vector<std::string> const &x = CONFIG_VECTOR(config,"service.admin_jid");
 	if (std::find(x.begin(), x.end(), user.toBare().toString()) != x.end()) {
 		if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
-		session->handlePasswordValid();
+			session->handlePasswordValid();
 		}
 		else {
-		session->handlePasswordInvalid();
+			session->handlePasswordInvalid();
 		}
 		return;
 	}
