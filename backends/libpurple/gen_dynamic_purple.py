@@ -25,11 +25,11 @@ def handle_file(cpp):
 		index = 0
 		while index < len(line):
 			new_line += line[index]
-			if line[index:].startswith("purple_") or line[index:].startswith("wpurple_"):
+			if line[index:].startswith("purple_") or line[index:].startswith("wpurple_") or line[index:].startswith("serv_"):
 				if line[index:].find("=") != -1 and line[index:].find("=") < line[index:].find("("):
 					index += 1
 					continue
-				if line[index-1] == "_" or line[index:].find("(") == -1 or line[index:].startswith("purple_commands_init"):
+				if line[index-1] == "_" or line[index:].find("(") == -1 or line[index:].startswith("purple_commands_init") or line[index:].startswith("serv_addr"):
 					index += 1
 					continue
 				m = line[index:line[index:].find("(")+index]
@@ -106,11 +106,15 @@ def get_name(d):
 	x = d[:d.find("(")+1].lstrip()
 	if x.find("wpurple_") != -1:
 		return x[x.find("wpurple_"):]
+	if x.find("serv_") != -1:
+		return x[x.find("serv_"):]
 	return x[x.find("purple_"):]
 
 def get_rtype(d):
 	if d.find("wpurple_") != -1:
 		return d[:d.find("wpurple_")].lstrip()
+	if d.find("serv_") != -1:
+		return d[:d.find("serv_")].lstrip()
 	return d[:d.find("purple_")].lstrip()
 
 def output():
