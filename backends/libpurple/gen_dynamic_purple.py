@@ -146,8 +146,8 @@ def output():
 """
 
 	for d in definitions:
-		#typedef void (WINAPI * purple_util_set_user_wrapped_func)(const char *dir);
-		print >> header, "typedef", get_rtype(d), "(WINAPI *", get_name(d)[:-1] + "_wrapped_fnc)(" + get_raw_args(d) + ");"
+		#typedef void (_cdecl * purple_util_set_user_wrapped_func)(const char *dir);
+		print >> header, "typedef", get_rtype(d), "(_cdecl *", get_name(d)[:-1] + "_wrapped_fnc)(" + get_raw_args(d) + ");"
 		#extern purple_util_set_user_wrapped_func purple_util_set_user_wrapped;
 		print >> header, "extern", get_name(d)[:-1] + "_wrapped_fnc", get_name(d)[:-1] + "_wrapped;"
 		print >> header, ""
