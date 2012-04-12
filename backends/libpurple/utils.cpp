@@ -146,8 +146,8 @@ int create_socket(char *host, int portno) {
 		main_socket = 0;
 	}
 
-	int flags = fcntl(main_socket, F_GETFL);
-	flags |= O_NONBLOCK;
-	fcntl(main_socket, F_SETFL, flags);
+// 	int flags = fcntl(main_socket, F_GETFL);
+// 	flags |= O_NONBLOCK;
+// 	fcntl(main_socket, F_SETFL, flags);
 	return main_socket;
 }

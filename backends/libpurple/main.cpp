@@ -655,7 +655,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void sendData(const std::string &string) {
+#ifdef WIN32
+			::send(main_socket, string.c_str(), string.size(), 0);
+#else
 			write(main_socket, string.c_str(), string.size());
+#endif
 			if (writeInput == 0)
 				writeInput = purple_input_add(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
@@ -1524,6 +1528,8 @@ static bool initPurple() {
 		return false;
 	}
 
+	purple_plugins_add_search_path("./plugins");
+
 	purple_util_set_user_dir("./");
 	remove("./accounts.xml");
 	remove("./blist.xml");
@@ -1599,7 +1605,11 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 	if (cond & PURPLE_INPUT_READ) {
 		char buffer[65535];
 		char *ptr = buffer;
+#ifdef WIN32
+		ssize_t n = recv(source, ptr, sizeof(buffer), 0);
+#else
 		ssize_t n = read(source, ptr, sizeof(buffer));
+#endif
 		if (n <= 0) {
 			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
 			exit(errno);
