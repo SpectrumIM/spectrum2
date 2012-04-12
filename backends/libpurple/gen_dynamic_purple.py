@@ -39,6 +39,11 @@ def handle_file(cpp):
 					methods += [m + "("]
 					counter += 1
 			index += 1
+
+		new_line = new_line.replace("PURPLE_CONV_IM", "PURPLE_CONV_IM_WRAPPED")
+		new_line = new_line.replace("PURPLE_CONV_CHAT", "PURPLE_CONV_CHAT_WRAPPED")
+		new_line = new_line.replace("PURPLE_BLIST_NODE_IS_BUDDY", "PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED")
+		new_line = new_line.replace("PURPLE_CONNECTION_IS_CONNECTED", "PURPLE_CONNECTION_IS_CONNECTED_WRAPPED")
 		new_file += new_line
 	f.close()
 
@@ -123,6 +128,22 @@ def output():
 	header = open("purple_defs.h", "w")
 	print >> header, "#pragma once"
 	print >> header, "#ifdef WIN32"
+
+	print >> header, """
+#include <Windows.h>
+#include <purple.h>
+
+#define PURPLE_BLIST_NODE_IS_CHAT_WRAPPED(n)    (purple_blist_node_get_type_wrapped(n) == PURPLE_BLIST_CHAT_NODE)
+#define PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(n)   (purple_blist_node_get_type_wrapped(n) == PURPLE_BLIST_BUDDY_NODE)
+#define PURPLE_BLIST_NODE_IS_CONTACT_WRAPPED(n) (purple_blist_node_get_type_wrapped(n) == PURPLE_BLIST_CONTACT_NODE)
+#define PURPLE_BLIST_NODE_IS_GROUP_WRAPPED(n)   (purple_blist_node_get_type_wrapped(n) == PURPLE_BLIST_GROUP_NODE)
+
+#define PURPLE_CONV_IM_WRAPPED(c) (purple_conversation_get_im_data_wrapped(c))
+#define PURPLE_CONV_CHAT_WRAPPED(c) (purple_conversation_get_chat_data_wrapped(c))
+
+#define PURPLE_CONNECTION_IS_CONNECTED_WRAPPED(gc) \
+	(purple_connection_get_state_wrapped(gc) == PURPLE_CONNECTED)
+"""
 
 	for d in definitions:
 		#typedef void (WINAPI * purple_util_set_user_wrapped_func)(const char *dir);
