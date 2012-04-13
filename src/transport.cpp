@@ -29,7 +29,7 @@
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "storageparser.h"
-#ifdef _WIN32
+#ifdef _MSC_VER
 #include <Swiften/TLS/CAPICertificate.h>
 #include "Swiften/TLS/Schannel/SchannelServerContext.h"
 #include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"
@@ -85,7 +85,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
-#ifdef _WIN32
+#ifdef _MSC_VER
 			TLSServerContextFactory *f = new SchannelServerContextFactory();
 			m_server->addTLSEncryption(f, boost::make_shared<CAPICertificate>(CONFIG_STRING(m_config, "service.cert")));
 #else

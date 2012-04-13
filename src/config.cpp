@@ -24,7 +24,9 @@
 #include <direct.h>
 #define getcwd _getcwd
 #include <windows.h>
+#ifdef _MSC_VER
 #define PATH_MAX MAX_PATH
+#endif
 #endif
 
 using namespace boost::program_options;

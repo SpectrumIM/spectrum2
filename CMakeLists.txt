@@ -41,7 +41,7 @@ find_package(event)
 set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Swiften REQUIRED)
 
-if (NOT WIN32)
+if (CMAKE_COMPILER_IS_GNUCXX)
 set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(openssl REQUIRED)
 endif()
@@ -238,7 +238,7 @@ include_directories(${EVENT_INCLUDE_DIRS})
 include_directories(${SWIFTEN_INCLUDE_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 
-if (NOT WIN32)
+if (CMAKE_COMPILER_IS_GNUCXX)
 include_directories(${OPENSSL_INCLUDE_DIR})
 endif()
 

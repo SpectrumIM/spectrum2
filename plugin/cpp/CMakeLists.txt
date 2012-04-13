@@ -18,7 +18,9 @@ ADD_DEPENDENCIES(transport-plugin pb)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
+	if (NOT WIN32)
 	ADD_DEFINITIONS(-fPIC)
+	endif()
 endif()
 
 if (NOT WIN32)
