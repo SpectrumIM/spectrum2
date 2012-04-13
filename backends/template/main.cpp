@@ -6,7 +6,7 @@
 // Swiften
 #include "Swiften/Swiften.h"
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 // for signal handler
 #include "unistd.h"
 #include "signal.h"
@@ -79,7 +79,7 @@ class TemplatePlugin : public NetworkPlugin {
 		Config *config;
 };
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 
 static void spectrum_sigchld_handler(int sig)
 {
@@ -102,7 +102,7 @@ int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
 
-#ifndef _MSC_VER
+#ifndef _WIN32
 	if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 		std::cout << "SIGCHLD handler can't be set\n";
 		return -1;
