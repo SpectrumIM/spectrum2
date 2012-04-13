@@ -3,7 +3,8 @@ import os
 
 # intialize for methods used in libpurple macros
 methods = ["purple_connection_get_state(", "purple_conversation_get_im_data(",
-			"purple_conversation_get_chat_data("]
+			"purple_conversation_get_chat_data(", "purple_blist_node_get_type("]
+macros = ["PURPLE_CONV_IM", "PURPLE_CONV_CHAT", "PURPLE_BLIST_NODE_IS_BUDDY", "PURPLE_CONNECTION_IS_CONNECTED"]
 definitions = []
 
 if len(sys.argv) != 2:
@@ -13,6 +14,7 @@ if len(sys.argv) != 2:
 
 def handle_file(cpp):
 	global methods
+	global macros
 	sys.stdout.write("getting used methods in " + cpp + ": ")
 	sys.stdout.flush()
 
@@ -33,17 +35,20 @@ def handle_file(cpp):
 					index += 1
 					continue
 				m = line[index:line[index:].find("(")+index]
-				new_line += m[1:] + "_wrapped("
 				index += len(m)
+				if m.find("_wrapped") != -1:
+					new_line += m[1:] + "("
+					m = m.replace("_wrapped", "")
+				else:
+					new_line += m[1:] + "_wrapped("
 				if not m + "(" in methods and len(m) != 0:
 					methods += [m + "("]
 					counter += 1
 			index += 1
 
-		new_line = new_line.replace("PURPLE_CONV_IM", "PURPLE_CONV_IM_WRAPPED")
-		new_line = new_line.replace("PURPLE_CONV_CHAT", "PURPLE_CONV_CHAT_WRAPPED")
-		new_line = new_line.replace("PURPLE_BLIST_NODE_IS_BUDDY", "PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED")
-		new_line = new_line.replace("PURPLE_CONNECTION_IS_CONNECTED", "PURPLE_CONNECTION_IS_CONNECTED_WRAPPED")
+		for x in macros:
+			if new_line.find(x + "_WRAPPED") == -1:
+				new_line = new_line.replace(x, x + "_WRAPPED")
 		new_file += new_line
 	f.close()
 
