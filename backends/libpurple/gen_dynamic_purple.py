@@ -160,6 +160,19 @@ def output():
 	print >> header, ""
 	print >> header, "#else"
 	print >> header, ""
+
+	print >> header, """
+#define PURPLE_BLIST_NODE_IS_CHAT_WRAPPED PURPLE_BLIST_NODE_IS_CHAT
+#define PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED PURPLE_BLIST_NODE_IS_BUDDY
+#define PURPLE_BLIST_NODE_IS_CONTACT_WRAPPED PURPLE_BLIST_NODE_IS_CONTACT
+#define PURPLE_BLIST_NODE_IS_GROUP_WRAPPED PURPLE_BLIST_NODE_IS_GROUP
+
+#define PURPLE_CONV_IM_WRAPPED PURPLE_CONV_IM
+#define PURPLE_CONV_CHAT_WRAPPED PURPLE_CONV_CHAT
+
+#define PURPLE_CONNECTION_IS_CONNECTED_WRAPPED PURPLE_CONNECTION_IS_CONNECTED	
+"""
+
 	for d in definitions:
 		#define purple_util_set_user_wrapped purple_util_set_user
 		print >> header, "#define", get_name(d)[:-1] + "_wrapped", get_name(d)[:-1]
