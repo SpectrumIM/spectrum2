@@ -11,7 +11,7 @@ StorageBackend *StorageBackend::createBackend(Config *config, std::string &error
 	StorageBackend *storageBackend = NULL;
 #ifdef WITH_SQLITE
 	if (CONFIG_STRING(config, "database.type") == "sqlite3" ||
-		(CONFIG_STRING(config, "database.type") == "none" && CONFIG_BOOL(config, "service.server_mode"))) {
+		(CONFIG_STRING(config, "database.type") == "none" && !CONFIG_BOOL(config, "service.server_mode"))) {
 		storageBackend = new SQLite3Backend(config);
 	}
 #else
