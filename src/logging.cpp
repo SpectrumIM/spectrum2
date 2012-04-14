@@ -139,11 +139,19 @@ void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
 }
 
+void shutdownLogging() {
+	log4cxx::LogManager::shutdown();
+}
+
 #else /* WITH_LOG4CXX */
 void initBackendLogging(Config */*config*/) {
 }
 
 void initMainLogging(Config */*config*/) {
+}
+
+void shutdownLogging() {
+	
 }
 #endif /* WITH_LOG4CXX */
 

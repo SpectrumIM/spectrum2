@@ -35,6 +35,7 @@
 #include "log4cxx/helpers/fileinputstream.h"
 #include "log4cxx/helpers/transcoder.h"
 #include "log4cxx/logger.h"
+#include "log4cxx/logmanager.h"
 
 #define DEFINE_LOGGER(VAR, NAME) static log4cxx::LoggerPtr VAR = log4cxx::Logger::getLogger(NAME);
 
@@ -55,6 +56,7 @@ namespace Logging {
 
 void initBackendLogging(Config *config);
 void initMainLogging(Config *config);
+void shutdownLogging();
 
 }
 
