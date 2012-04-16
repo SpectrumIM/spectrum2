@@ -1,4 +1,4 @@
-find_package(Qt4 REQUIRED)
+find_package(Qt4)
 include( ${QT_USE_FILE} )
 
 FIND_LIBRARY(IRC_LIBRARY NAMES Communi PATHS ${QT_LIBRARY_DIR})

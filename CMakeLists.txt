@@ -48,6 +48,7 @@ find_package(Swiften)
 if (CMAKE_COMPILER_IS_GNUCXX)
 set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(openssl)
+endif()
 
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)
