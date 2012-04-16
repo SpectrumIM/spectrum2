@@ -232,7 +232,10 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 		if (m_buddies.find(legacyName) != m_buddies.end()) {
 			continue;
 		}
-		std::cout << "LEGACYNAME " << legacyName << "\n";
+
+		if (legacyName.empty()) {
+			continue;
+		}
 
 		BuddyInfo buddyInfo;
 		buddyInfo.id = -1;
@@ -240,6 +243,7 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 		buddyInfo.legacyName = legacyName;
 		buddyInfo.subscription = "both";
 		buddyInfo.flags = Buddy::buddFlagsFromJID(item.getJID());
+		buddyInfo.groups = item.getGroups();
 
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 		setBuddy(buddy);
@@ -291,6 +295,10 @@ void RosterManager::sendRIE() {
 
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	std::string legacyName = Buddy::JIDToLegacyName(presence->getTo());
+	if (legacyName.empty()) {
+		return;
+	}
+	
 	// For server mode the subscription changes are handler in rosterresponder.cpp
 	// using roster pushes.
 	if (m_component->inServerMode()) {

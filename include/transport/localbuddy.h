@@ -59,12 +59,7 @@ class LocalBuddy : public Buddy {
 		}
 
 		std::vector<std::string> getGroups() { return m_groups; }
-		void setGroups(const std::vector<std::string> &groups) {
-			bool changed = m_groups.size() != groups.size();
-			m_groups = groups;
-			if (changed)
-				getRosterManager()->storeBuddy(this);
-		}
+		void setGroups(const std::vector<std::string> &groups);
 
 	private:
 		std::string m_name;

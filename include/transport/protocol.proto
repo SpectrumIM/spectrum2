@@ -44,6 +44,7 @@ message Login {
 	required string user = 1;
 	required string legacyName = 2;
 	required string password = 3;
+	repeated string extraFields = 4;
 }
 
 message Logout {
@@ -122,6 +123,10 @@ message FileTransferData {
 	required bytes data = 2;
 }
 
+message BackendConfig {
+	required string config = 1;
+}
+
 message WrapperMessage {
 	enum Type { 
 		TYPE_CONNECTED 				= 1;
@@ -152,6 +157,7 @@ message WrapperMessage {
 		TYPE_FT_PAUSE				= 27;
 		TYPE_FT_CONTINUE			= 28;
 		TYPE_EXIT					= 29;
+		TYPE_BACKEND_CONFIG			= 30;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

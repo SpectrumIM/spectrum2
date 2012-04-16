@@ -60,6 +60,25 @@ NetworkPlugin::NetworkPlugin() {
 NetworkPlugin::~NetworkPlugin() {
 }
 
+void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
+	std::string data = "[registration]";
+	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0") + "\n";
+
+	for (std::vector<std::string>::const_iterator it = cfg.m_extraFields.begin(); it != cfg.m_extraFields.end(); it++) {
+		data += std::string("extraField=") + (*it) + "\n";
+	}
+
+	pbnetwork::BackendConfig m;
+	m.set_config(data);
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG);
+
+	send(message);
+}
+
 void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);

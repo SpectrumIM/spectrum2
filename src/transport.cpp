@@ -216,6 +216,11 @@ void Component::start() {
 	else if (m_server) {
 		LOG4CXX_INFO(logger, "Starting component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server->start();
+
+		//Type casting to BoostConnectionServer since onStopped signal is not defined in ConnectionServer
+		//Ideally, onStopped must be defined in ConnectionServer
+		boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&Component::handleServerStopped, this, _1));
+		
 		// We're connected right here, because we're in server mode...
 		handleConnected();
 	}
@@ -238,6 +243,17 @@ void Component::handleConnected() {
 	onConnected();
 	m_reconnectCount = 0;
 }
+
+void Component::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
+	if(e != NULL ) {
+		if(*e == Swift::BoostConnectionServer::Conflict)
+			LOG4CXX_INFO(logger, "Port "<< CONFIG_INT(m_config, "service.port") << " already in use! Stopping server..");
+		if(*e == Swift::BoostConnectionServer::UnknownError)
+			LOG4CXX_INFO(logger, "Unknown error occured! Stopping server..");
+		exit(1);
+	}
+}
+
 
 void Component::handleConnectionError(const ComponentError &error) {
 	onConnectionError(error);

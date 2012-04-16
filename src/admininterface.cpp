@@ -59,11 +59,13 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	if (!message->getTo().getNode().empty())
 		return;
 
-	if (message->getFrom().toBare().toString() != CONFIG_STRING(m_component->getConfig(), "service.admin_jid")) {
-		LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
-		return;
+	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
+	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
+	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
+	    return;
+	
 	}
-
+	
 	// Ignore empty messages
 	if (message->getBody().empty()) {
 		return;
@@ -257,6 +259,14 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		}
 		message->setBody(lst);
 	}
+	else if (message->getBody() == "messages_from_xmpp") {
+		int msgCount = m_userManager->getMessagesToBackend();
+		message->setBody(boost::lexical_cast<std::string>(msgCount));
+	}
+	else if (message->getBody() == "messages_to_xmpp") {
+		int msgCount = m_userManager->getMessagesToXMPP();
+		message->setBody(boost::lexical_cast<std::string>(msgCount));
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";
@@ -267,6 +277,9 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		help += "    online_users_count - number of online users\n";
 		help += "    online_users_per_backend - shows online users per backends\n";
 		help += "    has_online_user <bare_JID> - returns 1 if user is online\n";
+		help += "Messages:\n";
+		help += "    messages_from_xmpp - get number of messages received from XMPP users\n";
+		help += "    messages_to_xmpp - get number of messages sent to XMPP users\n";
 		help += "Backends:\n";
 		help += "    backends_count - number of active backends\n";
 		help += "    crashed_backends - returns IDs of crashed backends\n";
