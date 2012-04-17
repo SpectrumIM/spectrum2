@@ -114,7 +114,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 
 int main(int argc, char **argv)
 {
-	Config config;
+	Config config(argc, argv);
 
 	boost::program_options::variables_map vm;
 	bool no_daemon = false;
