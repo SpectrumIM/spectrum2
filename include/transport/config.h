@@ -50,7 +50,7 @@ typedef boost::program_options::variables_map Variables;
 class Config {
 	public:
 		/// Constructor.
-		Config() {}
+		Config(int argc = 0, char **argv = NULL) : m_argc(argc), m_argv(argv) {}
 
 		/// Destructor
 		virtual ~Config() {}
@@ -99,6 +99,8 @@ class Config {
 		boost::signal<void ()> onConfigReloaded;
 	
 	private:
+		int m_argc;
+		char **m_argv;
 		Variables m_variables;
 		std::map<std::string, std::string> m_unregistered;
 		std::string m_file;

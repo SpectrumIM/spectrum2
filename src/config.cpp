@@ -189,6 +189,11 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		}
 	}
 
+	// Load configs passed by command line
+	if (m_argc != 0 && m_argv) {
+		store(parse_command_line(m_argc, m_argv, opts), m_variables);
+	}
+
 	store(parsed, m_variables);
 	notify(m_variables);
 

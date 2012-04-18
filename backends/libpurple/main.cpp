@@ -289,6 +289,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				i++;
 			}
 			g_strfreev (keys);
+
+			char* contents;
+			gsize length;
+			gboolean ret = g_file_get_contents ("gfire.cfg", &contents, &length, NULL);
+			if (ret) {
+				purple_account_set_int(account, "version", fromString<int>(std::string(contents, length)));
+			}
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
@@ -348,6 +355,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				if (purple_account_get_int(account, "version", 0) != 0) {
+					std::string data = stringOf(purple_account_get_int(account, "version", 0));
+					g_file_set_contents ("gfire.cfg", data.c_str(), data.size(), NULL);
+				}
 // 				VALGRIND_DO_LEAK_CHECK;
 				m_sessions.erase(user);
 				purple_account_disconnect(account);
