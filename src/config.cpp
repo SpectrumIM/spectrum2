@@ -122,6 +122,13 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("backend.no_vcard_fetch", value<bool>()->default_value(false), "True if VCards for buddies should not be fetched. Only avatars will be forwarded.")
 	;
 
+	// Load configs passed by command line
+	if (m_argc != 0 && m_argv) {
+		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
+		parsed_options parsed = parser.run();
+		store(parsed, m_variables);
+	}
+
 	parsed_options parsed = parse_config_file(ifs, opts, true);
 
 	bool found_working = false;
@@ -185,11 +192,6 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.value[0].find("$jid") != std::string::npos) {
 			boost::replace_all(opt.value[0], "$jid", jid);
 		}
-	}
-
-	// Load configs passed by command line
-	if (m_argc != 0 && m_argv) {
-		store(parse_command_line(m_argc, m_argv, opts), m_variables);
 	}
 
 	store(parsed, m_variables);
