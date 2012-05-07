@@ -44,6 +44,7 @@ message Login {
 	required string user = 1;
 	required string legacyName = 2;
 	required string password = 3;
+	repeated string extraFields = 4;
 }
 
 message Logout {
@@ -106,6 +107,7 @@ message Stats {
 	required int32 res = 1;
 	required int32 init_res = 2;
 	required int32 shared = 3;
+	required string id = 4;
 }
 
 message File {
@@ -119,6 +121,10 @@ message File {
 message FileTransferData {
 	required int32 ftID = 1;
 	required bytes data = 2;
+}
+
+message BackendConfig {
+	required string config = 1;
 }
 
 message WrapperMessage {
@@ -151,6 +157,7 @@ message WrapperMessage {
 		TYPE_FT_PAUSE				= 27;
 		TYPE_FT_CONTINUE			= 28;
 		TYPE_EXIT					= 29;
+		TYPE_BACKEND_CONFIG			= 30;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

@@ -23,13 +23,11 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "transport/userregistry.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("UserRegistry");
+DEFINE_LOGGER(logger, "UserRegistry");
 
 UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 	config = cfg;
@@ -40,7 +38,8 @@ UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 UserRegistry::~UserRegistry() { m_removeTimer->stop(); }
 
 void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFromClientSession *session, const Swift::SafeByteArray& password) {
-	if (!CONFIG_STRING(config, "service.admin_jid").empty() && user.toBare().toString() == CONFIG_STRING(config, "service.admin_jid")) {
+	std::vector<std::string> const &x = CONFIG_VECTOR(config,"service.admin_jid");
+	if (std::find(x.begin(), x.end(), user.toBare().toString()) != x.end()) {
 		if (Swift::safeByteArrayToString(password) == CONFIG_STRING(config, "service.admin_password")) {
 			session->handlePasswordValid();
 		}
@@ -49,7 +48,6 @@ void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFrom
 		}
 		return;
 	}
-
 	std::string key = user.toBare().toString();
 
 	// Users try to connect twice

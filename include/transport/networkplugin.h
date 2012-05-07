@@ -34,6 +34,22 @@ namespace Transport {
 /// development.
 class NetworkPlugin {
 	public:
+
+		class PluginConfig {
+			public:
+				PluginConfig() : m_needPassword(true) {}
+				virtual ~PluginConfig() {}
+
+				void setNeedPassword(bool needPassword = true) { m_needPassword = needPassword; }
+				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
+
+			private:
+				bool m_needPassword;
+				std::vector<std::string> m_extraFields;
+
+				friend class NetworkPlugin;
+		};
+
 		/// Creates new NetworkPlugin and connects the Spectrum2 NetworkPluginServer.
 		/// \param loop Event loop.
 		/// \param host Host where Spectrum2 NetworkPluginServer runs.
@@ -42,6 +58,8 @@ class NetworkPlugin {
 
 		/// Destructor.
 		virtual ~NetworkPlugin();
+
+		void sendConfig(const PluginConfig &cfg);
 
 		/// Call this function when legacy network buddy changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -210,6 +228,8 @@ class NetworkPlugin {
 		virtual void handleFTFinishRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
 		virtual void handleFTPauseRequest(unsigned long ftID) {}
 		virtual void handleFTContinueRequest(unsigned long ftID) {}
+
+		virtual void handleMemoryUsage(double &res, double &shared) {res = 0; shared = 0;}
 
 		virtual void handleExitRequest() { exit(1); }
 		void handleDataRead(std::string &data);

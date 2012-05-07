@@ -25,23 +25,24 @@
 #include "transport/conversationmanager.h"
 #include "transport/rostermanager.h"
 #include "transport/userregistry.h"
+#include "transport/logging.h"
 #include "storageresponder.h"
-#include "log4cxx/logger.h"
+
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "malloc.h"
 // #include "valgrind/memcheck.h"
 
-using namespace log4cxx;
-
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("UserManager");
+DEFINE_LOGGER(logger, "UserManager");
 
 UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
+	m_sentToXMPP = 0;
+	m_sentToBackend = 0;
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;
@@ -149,8 +150,27 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	// Create user class if it's not there
 	if (!user) {
 		// Admin user is not legacy network user, so do not create User class instance for him
-		if (m_component->inServerMode() && CONFIG_STRING(m_component->getConfig(), "service.admin_jid") == presence->getFrom().toBare().toString()) {
+		if (m_component->inServerMode()) {
+		    std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
+		    if (std::find(x.begin(), x.end(), presence->getFrom().toBare().toString()) != x.end()) {
+		
+			// Send admin contact to the user.
+			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+			Swift::RosterItemPayload item;
+			item.setJID(m_component->getJID());
+			item.setName("Admin");
+			item.setSubscription(Swift::RosterItemPayload::Both);
+			payload->addItem(item);
+
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
+			request->send();
+
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setTo(presence->getFrom());
+			response->setFrom(m_component->getJID());
+			m_component->getStanzaChannel()->sendPresence(response);
 			return;
+		    }
 		}
 
 		// No user and unavailable presence -> answer with unavailable
@@ -197,6 +217,34 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			}
 			res.password = m_userRegistry->getUserPassword(userkey);
 		}
+
+		// We allow auto_register feature in gateway-mode. This allows IRC user to register
+		// the transport just by joining the room.
+		if (!m_component->inServerMode()) {
+			if (!registered && CONFIG_BOOL(m_component->getConfig(), "registration.auto_register")) {
+				res.password = "";
+				res.jid = userkey;
+
+				bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
+				if (isMUC) {
+					res.uin = presence->getTo().getResource();
+				}
+				else {
+					res.uin = presence->getFrom().toString();
+				}
+				LOG4CXX_INFO(logger, "Auto-registering user " << userkey << " with uin=" << res.uin);
+
+				if (m_storageBackend) {
+					// store user and getUser again to get user ID.
+					m_storageBackend->setUser(res);
+					registered = m_storageBackend->getUser(userkey, res);
+				}
+				else {
+					registered = false;
+				}
+			}
+		}
+
 
 		// Unregistered users are not able to login
 		if (!registered) {
@@ -266,6 +314,12 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	user->getConversationManager()->handleMessageReceived(message);
+
+	// Do not count chatstate notification...
+	boost::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
+	if (!statePayload) {
+		messageToBackendSent();
+	}
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {

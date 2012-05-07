@@ -18,6 +18,7 @@ DummyNetworkFactories::DummyNetworkFactories(EventLoop* eventLoop) {
 	domainNameResolver = new PlatformDomainNameResolver(eventLoop);
 	connectionServerFactory = new DummyConnectionServerFactory(eventLoop);
 	m_platformXMLParserFactory =  new PlatformXMLParserFactory();
+	this->eventLoop = eventLoop;
 }
 
 DummyNetworkFactories::~DummyNetworkFactories() {

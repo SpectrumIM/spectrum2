@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.6)
 project(libtransport)
 
+if(NOT LIB_INSTALL_DIR)
+	set(LIB_INSTALL_DIR "lib")
+endif()
+
 set(CMAKE_MODULE_PATH "cmake_modules")
 
 set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
@@ -27,10 +31,10 @@ set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
 set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(Swiften REQUIRED)
+find_package(Swiften)
 
 set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(openssl REQUIRED)
+find_package(openssl)
 
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)
@@ -167,10 +171,12 @@ else()
 endif()
 
 if (LOG4CXX_FOUND)
-	message("Logging           : yes")
+	message("Log4cxx           : yes")
 	include_directories(${LOG4CXX_INCLUDE_DIR})
+	ADD_DEFINITIONS(-DWITH_LOG4CXX)
 else()
-	message(FATAL_ERROR "Logging           : no (install log4cxx-devel)")
+	set(LOG4CXX_LIBRARIES "")
+	message("Log4cxx           : no (install log4cxx-devel)")
 endif()
 
 if (WIN32)
@@ -218,6 +224,7 @@ ADD_SUBDIRECTORY(spectrum)
 ADD_SUBDIRECTORY(backends)
 if (NOT WIN32)
 	ADD_SUBDIRECTORY(spectrum_manager)
+#	ADD_SUBDIRECTORY(spectrum2_send_message)
 endif()
 
 if (CPPUNIT_FOUND)

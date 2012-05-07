@@ -24,6 +24,7 @@
 #include "transport/storagebackend.h"
 #include "transport/factory.h"
 #include "transport/userregistry.h"
+#include "transport/logging.h"
 #include "discoinforesponder.h"
 #include "discoitemsresponder.h"
 #include "storageparser.h"
@@ -36,25 +37,23 @@
 #include "Swiften/Serializer/PayloadSerializers/XHTMLIMSerializer.h"
 #include "Swiften/Parser/PayloadParsers/StatsParser.h"
 #include "Swiften/Serializer/PayloadSerializers/StatsSerializer.h"
+#include "Swiften/Parser/PayloadParsers/GatewayPayloadParser.h"
+#include "Swiften/Serializer/PayloadSerializers/GatewayPayloadSerializer.h"
 #include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
+#include "Swiften/Parser/PayloadParsers/MUCPayloadParser.h"
 #include "transport/BlockParser.h"
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
 #include "Swiften/Swiften.h"
 
 using namespace Swift;
 using namespace boost;
-using namespace log4cxx;
 
 namespace Transport {
 	
-static LoggerPtr logger = Logger::getLogger("Component");
-static LoggerPtr logger_xml = Logger::getLogger("Component.XML");
+DEFINE_LOGGER(logger, "Component");
+DEFINE_LOGGER(logger_xml, "Component.XML");
 
 Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
 	m_component = NULL;
@@ -95,6 +94,8 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
+		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
 
 		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_server->addPayloadSerializer(new Swift::XHTMLIMSerializer());
@@ -102,6 +103,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_server->addPayloadSerializer(new Swift::InvisibleSerializer());
 		m_server->addPayloadSerializer(new Swift::StatsSerializer());
 		m_server->addPayloadSerializer(new Swift::SpectrumErrorSerializer());
+		m_server->addPayloadSerializer(new Swift::GatewayPayloadSerializer());
 
 		m_server->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
 		m_server->onDataWritten.connect(boost::bind(&Component::handleDataWritten, this, _1));
@@ -121,6 +123,8 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
+		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
 
 		m_component->addPayloadSerializer(new Swift::AttentionSerializer());
 		m_component->addPayloadSerializer(new Swift::XHTMLIMSerializer());
@@ -128,6 +132,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		m_component->addPayloadSerializer(new Swift::InvisibleSerializer());
 		m_component->addPayloadSerializer(new Swift::StatsSerializer());
 		m_component->addPayloadSerializer(new Swift::SpectrumErrorSerializer());
+		m_component->addPayloadSerializer(new Swift::GatewayPayloadSerializer());
 
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
@@ -198,6 +203,11 @@ void Component::start() {
 	else if (m_server) {
 		LOG4CXX_INFO(logger, "Starting component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server->start();
+
+		//Type casting to BoostConnectionServer since onStopped signal is not defined in ConnectionServer
+		//Ideally, onStopped must be defined in ConnectionServer
+		boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&Component::handleServerStopped, this, _1));
+		
 		// We're connected right here, because we're in server mode...
 		handleConnected();
 	}
@@ -220,6 +230,17 @@ void Component::handleConnected() {
 	onConnected();
 	m_reconnectCount = 0;
 }
+
+void Component::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
+	if(e != NULL ) {
+		if(*e == Swift::BoostConnectionServer::Conflict)
+			LOG4CXX_INFO(logger, "Port "<< CONFIG_INT(m_config, "service.port") << " already in use! Stopping server..");
+		if(*e == Swift::BoostConnectionServer::UnknownError)
+			LOG4CXX_INFO(logger, "Unknown error occured! Stopping server..");
+		exit(1);
+	}
+}
+
 
 void Component::handleConnectionError(const ComponentError &error) {
 	onConnectionError(error);

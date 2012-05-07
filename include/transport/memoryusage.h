@@ -22,10 +22,14 @@
 
 #include <vector>
 
+#ifndef WIN32
+#include "signal.h"
+#endif
+
 namespace Transport {
 
 #ifndef WIN32
-	void process_mem_usage(double& shared, double& resident_set);
+	void process_mem_usage(double& shared, double& resident_set, pid_t pid = 0);
 #endif
 
 }

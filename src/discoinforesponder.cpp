@@ -88,11 +88,15 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 
 	// presence for transport
 	if (to.getNode().empty()) {
-		sendResponse(from, id, boost::shared_ptr<DiscoInfo>(new DiscoInfo(m_transportInfo)));
+		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
+		res->setNode(info->getNode());
+		sendResponse(from, id, res);
 	}
 	// presence for buddy
 	else {
-		sendResponse(from, to, id, boost::shared_ptr<DiscoInfo>(new DiscoInfo(m_buddyInfo)));
+		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_buddyInfo));
+		res->setNode(info->getNode());
+		sendResponse(from, to, id, res);
 	}
 	return true;
 }

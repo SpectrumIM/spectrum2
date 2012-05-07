@@ -28,11 +28,11 @@
 #include "event.h"
 #endif
 
-#include "log4cxx/logger.h"
+#include "purple_defs.h"
 
-using namespace log4cxx;
+#include "transport/logging.h"
 
-static LoggerPtr logger = Logger::getLogger("EventLoop");
+DEFINE_LOGGER(logger, "EventLoop");
 
 typedef struct _PurpleIOClosure {
 	PurpleInputFunction function;

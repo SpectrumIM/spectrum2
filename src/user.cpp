@@ -25,24 +25,23 @@
 #include "transport/usermanager.h"
 #include "transport/conversationmanager.h"
 #include "transport/presenceoracle.h"
+#include "transport/logging.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
-#include "log4cxx/logger.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 
-using namespace log4cxx;
 using namespace boost;
 
 #define foreach         BOOST_FOREACH
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("User");
+DEFINE_LOGGER(logger, "User");
 
 User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
 	m_jid = jid.toBare();
@@ -210,11 +209,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			}
 		}
 	}
+
 	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	if (isMUC) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << presence->getTo().getNode());
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 			onRoomLeft(room);
 		}
 		else {
@@ -224,8 +224,8 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				m_readyForConnect = true;
 				onReadyToConnect();
 			}
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << presence->getTo().getNode() << " as " << presence->getTo().getResource());
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
 			std::string password = "";
 			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
 				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";
@@ -328,7 +328,7 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	if (e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR || e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR) {
 		if (m_reconnectCounter < 3) {
 			m_reconnectCounter++;
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network for, trying to reconnect automatically.");
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network " << error << ", trying to reconnect automatically.");
 			// Simulate destruction/resurrection :)
 			// TODO: If this stops working, create onReconnect signal
 			m_userManager->onUserDestroyed(this);

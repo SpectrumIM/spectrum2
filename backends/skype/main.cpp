@@ -2,8 +2,10 @@
 #include <iostream>
 
 #include "transport/config.h"
+#include "transport/logging.h"
 #include "transport/transport.h"
 #include "transport/usermanager.h"
+#include "transport/memoryusage.h"
 #include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/userregistration.h"
@@ -12,13 +14,8 @@
 #include "transport/rostermanager.h"
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
+#include "transport/logger.h"
 #include <boost/filesystem.hpp>
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/fileinputstream.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
 // #include "valgrind/memcheck.h"
@@ -26,13 +23,21 @@
 #include <dbus-1.0/dbus/dbus-glib-lowlevel.h>
 
 
-using namespace log4cxx;
-
-static LoggerPtr logger = Logger::getLogger("backend");
+DEFINE_LOGGER(logger, "backend");
 
 using namespace Transport;
 
 class SpectrumNetworkPlugin;
+
+#define GET_RESPONSE_DATA(RESP, DATA) ((RESP.find(std::string(DATA) + " ") != std::string::npos) ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
+#define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = sk->send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
+					try {\
+						VAR = GET_RESPONSE_DATA(VAR, PROP);\
+					}\
+					catch (std::out_of_range& oor) {\
+						VAR="";\
+					}
+					
 
 
 SpectrumNetworkPlugin *np;
@@ -81,7 +86,7 @@ static pbnetwork::StatusType getStatus(const std::string &st) {
 class Skype {
 	public:
 		Skype(const std::string &user, const std::string &username, const std::string &password);
-		~Skype() { logout(); }
+		~Skype() { LOG4CXX_INFO(logger, "Skype instance desctuctor"); logout(); }
 		void login();
 		void logout();
 		std::string send_command(const std::string &message);
@@ -96,6 +101,10 @@ class Skype {
 
 		bool createDBusProxy();
 		bool loadSkypeBuddies();
+
+		int getPid() {
+			return (int) m_pid;
+		}
 
 	private:
 		std::string m_username;
@@ -124,7 +133,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			std::string name = legacyName;
-			name = name.substr(name.find(".") + 1);
+			if (name.find("skype.") == 0 || name.find("prpl-skype.") == 0) {
+				name = name.substr(name.find(".") + 1);
+			}
 			LOG4CXX_INFO(logger,  "Creating account with name '" << name << "'");
 
 			Skype *skype = new Skype(user, name, password);
@@ -134,10 +145,27 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			skype->login();
 		}
 
+		void handleMemoryUsage(double &res, double &shared) {
+			res = 0;
+			shared = 0;
+			for(std::map<std::string, Skype *>::const_iterator it = m_sessions.begin(); it != m_sessions.end(); it++) {
+				Skype *skype = it->second;
+				if (skype) {
+					double r;
+					double s;
+					process_mem_usage(s, r, skype->getPid());
+					res += r;
+					shared += s;
+				}
+			}
+		}
+
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 			Skype *skype = m_sessions[user];
 			if (skype) {
+				LOG4CXX_INFO(logger, "User wants to logout, logging out");
 				skype->logout();
+				Logging::shutdownLogging();
 				exit(1);
 			}
 		}
@@ -175,6 +203,21 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			if (!statusMessage.empty()) {
 				skype->send_command("SET PROFILE MOOD_TEXT " + statusMessage);
+			}
+		}
+
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
+			Skype *skype = m_sessions[user];
+			if (skype) {
+				skype->send_command("SET USER " + buddyName + " BUDDYSTATUS 2 Please authorize me");
+				skype->send_command("SET USER " + buddyName + " ISAUTHORIZED TRUE");
+			}
+		}
+
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
+			Skype *skype = m_sessions[user];
+			if (skype) {
+				skype->send_command("SET USER " + buddyName + " BUDDYSTATUS 1");
 			}
 		}
 
@@ -253,7 +296,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				std::cout << skype->getUsername() << " " << name << "\n";
 				if (skype->getUsername() == name) {
 					alias = skype->send_command("GET PROFILE FULLNAME");
-					alias = alias.substr(17);
+					alias = GET_RESPONSE_DATA(alias, "FULLNAME")
 				}
 				handleVCard(user, id, legacyName, "", alias, photo);
 			}
@@ -266,13 +309,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleVCardUpdatedRequest(const std::string &user, const std::string &p, const std::string &nickname) {
-		}
-
-		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
-		}
-
-		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-
 		}
 
 		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
@@ -331,7 +367,8 @@ bool Skype::createDBusProxy() {
 			LOG4CXX_INFO(logger,  m_username << ":" << error->message);
 
 			if (m_counter == 15) {
-				np->handleDisconnected(m_user, 0, error->message);
+				LOG4CXX_ERROR(logger, "Logging out, proxy couldn't be created: " << error->message);
+				np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, error->message);
 				logout();
 				g_error_free(error);
 				return FALSE;
@@ -360,6 +397,12 @@ static gboolean create_dbus_proxy(gpointer data) {
 }
 
 void Skype::login() {
+	if (m_username.find("..") == 0 || m_username.find("/") != std::string::npos) {
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Invalid username");
+		return;
+	}
+	boost::filesystem::remove_all(std::string("/tmp/skype/") + m_username);
+
 	boost::filesystem::path	path(std::string("/tmp/skype/") + m_username);
 	if (!boost::filesystem::exists(path)) {
 		boost::filesystem::create_directories(path);
@@ -394,6 +437,7 @@ void Skype::login() {
 							"</config>\n";
 	g_file_set_contents(std::string(std::string("/tmp/skype/") + m_username + "/" + m_username +"/config.xml").c_str(), config_xml.c_str(), -1, NULL);
 
+	sleep(1);
 	std::string db_path = std::string("/tmp/skype/") + m_username;
 	char *db = (char *) malloc(db_path.size() + 1);
 	strcpy(db, db_path.c_str());
@@ -401,7 +445,8 @@ void Skype::login() {
 	gchar* argv[6] = {"skype", "--disable-cleanlooks", "--pipelogin", "--dbpath", db, 0};
 
 	int fd;
-	g_spawn_async_with_pipes(NULL,
+	GError *error = NULL;
+	bool spawned = g_spawn_async_with_pipes(NULL,
 		argv,
 		NULL /*envp*/,
 		G_SPAWN_SEARCH_PATH,
@@ -411,9 +456,16 @@ void Skype::login() {
 		&fd,
 		NULL,
 		&fd_output,
-		NULL /*error*/);
+		&error);
+
+	if (!spawned) {
+		LOG4CXX_ERROR(logger, "Error spawning the Skype instance: " << error->message)
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Error spawning the Skype instance.");
+		return;
+	}
+
 	std::string login_data = std::string(m_username + " " + m_password + "\n");
-	LOG4CXX_INFO(logger,  m_username << ": Login data=" << login_data);
+	LOG4CXX_INFO(logger,  m_username << ": Login data=" << m_username);
 	write(fd, login_data.c_str(), login_data.size());
 	close(fd);
 
@@ -426,17 +478,18 @@ void Skype::login() {
 
 	if (m_connection == NULL)
 	{
-		LOG4CXX_INFO(logger, "Creating DBus connection.");
+		LOG4CXX_INFO(logger, "Creating DBUS connection.");
 		GError *error = NULL;
 		m_connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
 		if (m_connection == NULL && error != NULL)
 		{
-			LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
+			LOG4CXX_INFO(logger,  m_username << ": Creating DBUS Connection error: " << error->message);
 			g_error_free(error);
 			return;
 		}
 	}
 
+	sleep(1);
 	m_timer = g_timeout_add_seconds(1, create_dbus_proxy, this);
 }
 
@@ -449,28 +502,35 @@ bool Skype::loadSkypeBuddies() {
 	int bytes_read = read(fd_output, buffer, 1023);
 	if (bytes_read > 0) {
 		buffer[bytes_read] = 0;
-		np->handleDisconnected(m_user, 0, buffer);
-		close(fd_output);
-		logout();
-		return FALSE;
+		std::string b(buffer);
+		LOG4CXX_WARN(logger, "Skype wrote this on stdout '" << b << "'");
+		if (b.find("Incorrect Password") != std::string::npos) {
+			LOG4CXX_INFO(logger, "Incorrect password, logging out")
+			np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_FAILED, "Incorrect password");
+			close(fd_output);
+			logout();
+			return FALSE;
+		}
 	}
 
 	std::string re = send_command("NAME Spectrum");
 	if (m_counter++ > 15) {
-		np->handleDisconnected(m_user, 0, "");
+		LOG4CXX_ERROR(logger, "Logging out, because we tried to connect the Skype over DBUS 15 times without success");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready. This issue have been logged and admins will check it and try to fix it soon.");
 		close(fd_output);
 		logout();
 		return FALSE;
 	}
 
-	if (re.empty() || re == "CONNSTATUS OFFLINE") {
+	if (re.empty() || re == "CONNSTATUS OFFLINE" || re == "ERROR 68") {
 		return TRUE;
 	}
 
 	close(fd_output);
 
 	if (send_command("PROTOCOL 7") != "PROTOCOL 7") {
-		np->handleDisconnected(m_user, 0, "Skype is not ready");
+		LOG4CXX_ERROR(logger, "PROTOCOL 7 failed, logging out");
+		np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Skype is not ready. This issue have been logged and admins will check it and try to fix it soon.");
 		logout();
 		return FALSE;
 	}
@@ -479,20 +539,32 @@ bool Skype::loadSkypeBuddies() {
 
 	std::map<std::string, std::string> group_map;
 	std::string groups = send_command("SEARCH GROUPS CUSTOM");
-	groups = groups.substr(groups.find(' ') + 1);
-	std::vector<std::string> grps;
-	boost::split(grps, groups, boost::is_any_of(","));
-	BOOST_FOREACH(std::string grp, grps) {
-		std::vector<std::string> data;
-		std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
-		boost::split(data, name, boost::is_any_of(" "));
-		name = name.substr(name.find("DISPLAYNAME") + 12);
+	if (groups.find(' ') != std::string::npos) {
+		groups = groups.substr(groups.find(' ') + 1);
+		std::vector<std::string> grps;
+		boost::split(grps, groups, boost::is_any_of(","));
+		BOOST_FOREACH(std::string grp, grps) {
+			std::vector<std::string> data;
+			std::string name = send_command("GET GROUP " + grp + " DISPLAYNAME");
 
-		std::string users = send_command("GET GROUP " + data[1] + " USERS");
-		users = name.substr(name.find("USERS") + 6);
-		boost::split(data, users, boost::is_any_of(","));
-		BOOST_FOREACH(std::string u, data) {
-			group_map[u] = grp;
+			if (name.find("ERROR") == 0) {
+				continue;
+			}
+
+			boost::split(data, name, boost::is_any_of(" "));
+			name = GET_RESPONSE_DATA(name, "DISPLAYNAME");
+
+			std::string users = send_command("GET GROUP " + data[1] + " USERS");
+			try {
+				users = GET_RESPONSE_DATA(users, "USERS");
+			}
+			catch (std::out_of_range& oor) {
+				continue;
+			}
+			boost::split(data, users, boost::is_any_of(","));
+			BOOST_FOREACH(std::string u, data) {
+				group_map[u] = grp;
+			}
 		}
 	}
 
@@ -505,7 +577,7 @@ bool Skype::loadSkypeBuddies() {
 		//                  online status;friendly name;voicemail;mood
 		// (comma-seperated lines, usernames can have comma's)
 
-		for (int i=0; full_friends_list[i] && *full_friends_list[i] != '\0'; i+=8)
+		for (int i=0; full_friends_list[i] && full_friends_list[i+1] && *full_friends_list[i] != '\0'; i+=8)
 		{
 			std::string buddy = full_friends_list[i];
 
@@ -553,8 +625,12 @@ void Skype::logout() {
 		send_command("SET USERSTATUS OFFLINE");
 		sleep(2);
 		g_object_unref(m_proxy);
-		LOG4CXX_INFO(logger,  m_username << ": Killing Skype instance");
+		LOG4CXX_INFO(logger,  m_username << ": Terminating Skype instance (SIGTERM)");
 		kill((int) m_pid, SIGTERM);
+		// Give skype a chance
+		sleep(2);
+		LOG4CXX_INFO(logger,  m_username << ": Killing Skype instance (SIGKILL)");
+		kill((int) m_pid, SIGKILL);
 		m_pid = 0;
 	}
 }
@@ -565,6 +641,7 @@ std::string Skype::send_command(const std::string &message) {
 // 			int message_num;
 // 			gchar error_return[30];
 
+	LOG4CXX_INFO(logger, "Sending: '" << message << "'");
 	if (!dbus_g_proxy_call (m_proxy, "Invoke", &error, G_TYPE_STRING, message.c_str(), G_TYPE_INVALID,
 						G_TYPE_STRING, &str, G_TYPE_INVALID))
 	{
@@ -572,14 +649,16 @@ std::string Skype::send_command(const std::string &message) {
 			{
 			LOG4CXX_INFO(logger,  m_username << ": DBUS Error: " << error->message);
 			g_error_free(error);
+			return "";
 		} else {
 			LOG4CXX_INFO(logger,  m_username << ": DBUS no response");
+			return "";
 		}
 
 	}
 	if (str != NULL)
 	{
-		LOG4CXX_INFO(logger,  m_username << ": DBUS:" << str);
+		LOG4CXX_INFO(logger,  m_username << ": DBUS:'" << str << "'");
 	}
 	return str ? std::string(str) : std::string();
 }
@@ -599,57 +678,73 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 			}
 			else {
 				pbnetwork::StatusType status = getStatus(cmd[3]);
-				std::string mood_text = sk->send_command("GET USER " + cmd[1] + " MOOD_TEXT");
-				mood_text = mood_text.substr(mood_text.find("MOOD_TEXT") + 10);
-
-				std::string alias = sk->send_command("GET USER " + cmd[1] + " FULLNAME");
-				alias = alias.substr(alias.find("FULLNAME") + 9);
+				GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
+				GET_PROPERTY(alias, "USER", cmd[1], "FULLNAME");
 
 				std::vector<std::string> groups;
 				np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
 			}
 		}
 		else if (cmd[2] == "MOOD_TEXT") {
-			std::string st = sk->send_command("GET USER " + cmd[1] + " ONLINESTATUS");
-			st = st.substr(st.find("ONLINESTATUS") + 13);
+			GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
 			pbnetwork::StatusType status = getStatus(st);
 
-			std::string mood_text = message.substr(message.find("MOOD_TEXT") + 10);
+			std::string mood_text = GET_RESPONSE_DATA(message, "MOOD_TEXT");
 
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], "", groups, status, mood_text);
 		}
 		else if (cmd[2] == "BUDDYSTATUS" && cmd[3] == "3") {
-			std::string st = sk->send_command("GET USER " + cmd[1] + " ONLINESTATUS");
-			st = st.substr(st.find("ONLINESTATUS") + 13);
+			GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
+			GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
 			pbnetwork::StatusType status = getStatus(st);
-
-			std::string mood_text = message.substr(message.find("MOOD_TEXT") + 10);
 
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], "", groups, status, mood_text);
 		}
+		else if (cmd[2] == "FULLNAME") {
+			GET_PROPERTY(alias, "USER", cmd[1], "FULLNAME");
+			GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
+			GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
+			pbnetwork::StatusType status = getStatus(st);
+
+			std::vector<std::string> groups;
+			np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
+		}
 	}
 	else if (cmd[0] == "CHATMESSAGE") {
 		if (cmd[3] == "RECEIVED") {
-			std::string body = sk->send_command("GET CHATMESSAGE " + cmd[1] + " BODY");
-			body = body.substr(body.find("BODY") + 5);
+			GET_PROPERTY(body, "CHATMESSAGE", cmd[1], "BODY");
+			GET_PROPERTY(from_handle, "CHATMESSAGE", cmd[1], "FROM_HANDLE");
 
-			std::string chatname = sk->send_command("GET CHATMESSAGE " + cmd[1] + " CHATNAME");
-			size_t start = chatname.find("$") + 1;
-			size_t len = chatname.find(";") - start;
-			std::string from = chatname.substr(start, len);
-
-			std::string from_handle = sk->send_command("GET CHATMESSAGE " + cmd[1] + " FROM_HANDLE");
-			from_handle = from_handle.substr(from_handle.find("FROM_HANDLE") + 12);
-
-// 			if (from_handle != sk->getUsername()) {
-				from = from_handle;
-// 			}
 			if (from_handle == sk->getUsername())
 				return;
 
-			np->handleMessage(sk->getUser(), from, body);
+			np->handleMessage(sk->getUser(), from_handle, body);
+
+			sk->send_command("SET CHATMESSAGE " + cmd[1] + " SEEN");
+		}
+	}
+	else if (cmd[0] == "CALL") {
+		// CALL 884 STATUS RINGING
+		if (cmd[2] == "STATUS") {
+			if (cmd[3] == "RINGING" || cmd[3] == "MISSED") {
+				// handle only incoming calls
+				GET_PROPERTY(type, "CALL", cmd[1], "TYPE");
+				if (type.find("INCOMING") != 0) {
+					return;
+				}
+
+				GET_PROPERTY(from, "CALL", cmd[1], "PARTNER_HANDLE");
+				GET_PROPERTY(dispname, "CALL", cmd[1], "PARTNER_DISPNAME");
+
+				if (cmd[3] == "RINGING") {
+					np->handleMessage(sk->getUser(), from, "User " + dispname + " is calling you.");
+				}
+				else {
+					np->handleMessage(sk->getUser(), from, "You have missed call from user " + dispname + ".");
+				}
+			}
 		}
 	}
 }
@@ -707,6 +802,7 @@ static int create_socket(char *host, int portno) {
 	if ((hos = gethostbyname(host)) == NULL) {
 		// strerror() will not work for gethostbyname() and hstrerror() 
 		// is supposedly obsolete
+		Logging::shutdownLogging();
 		exit(1);
 	}
 	serv_addr.sin_addr.s_addr = *((unsigned long *) hos->h_addr_list[0]);
@@ -729,6 +825,7 @@ static gboolean transportDataReceived(GIOChannel *source, GIOCondition condition
 	ssize_t n = read(m_sock, ptr, sizeof(buffer));
 	if (n <= 0) {
 		LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
+		Logging::shutdownLogging();
 		exit(errno);
 	}
 	std::string d = std::string(buffer, n);
@@ -737,6 +834,7 @@ static gboolean transportDataReceived(GIOChannel *source, GIOCondition condition
 }
 
 static void io_destroy(gpointer data) {
+	Logging::shutdownLogging();
 	exit(1);
 }
 
@@ -812,18 +910,7 @@ int main(int argc, char **argv) {
 			return 1;
 		}
 
-		if (CONFIG_STRING(&config, "logging.backend_config").empty()) {
-			LoggerPtr root = log4cxx::Logger::getRootLogger();
-			root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-		}
-		else {
-			log4cxx::helpers::Properties p;
-			log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.backend_config"));
-
-			p.load(istream);
-			p.setProperty("pid", boost::lexical_cast<std::string>(getpid()));
-			log4cxx::PropertyConfigurator::configure(p);
-		}
+		Logging::initBackendLogging(&config);
 
 // 		initPurple(config);
 

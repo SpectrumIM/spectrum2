@@ -56,6 +56,7 @@ class NetworkPluginServer {
 			bool acceptUsers;
 			bool longRun;
 			bool willDie;
+			std::string id;
 		};
 
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
@@ -68,6 +69,10 @@ class NetworkPluginServer {
 
 		const std::list<Backend *> &getBackends() {
 			return m_clients;
+		}
+
+		const std::vector<std::string> &getCrashedBackends() {
+			return m_crashedBackends;
 		}
 
 		void collectBackend();
@@ -137,6 +142,7 @@ class NetworkPluginServer {
 		bool m_isNextLongRun;
 		std::map<unsigned long, FileTransferManager::Transfer> m_filetransfers;
 		FileTransferManager *m_ftManager;
+		std::vector<std::string> m_crashedBackends;
 };
 
 }

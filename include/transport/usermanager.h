@@ -104,6 +104,10 @@ class UserManager : public Swift::EntityCapsProvider {
 			return m_userRegistry;
 		}
 
+		Component *getComponent() {
+			return m_component;
+		}
+
 		/// Connects user manually.
 		/// \param user JID of user.
 		void connectUser(const Swift::JID &user);
@@ -111,6 +115,13 @@ class UserManager : public Swift::EntityCapsProvider {
 		/// Disconnects user manually.
 		/// \param user JID of user.
 		void disconnectUser(const Swift::JID &user);
+
+		void messageToXMPPSent() { m_sentToXMPP++; }
+		void messageToBackendSent() { m_sentToBackend++; }
+
+		unsigned long getMessagesToXMPP() { return m_sentToXMPP; }
+		unsigned long getMessagesToBackend() { return m_sentToBackend; }
+		
 
 	private:
 		void handlePresence(Swift::Presence::ref presence);
@@ -130,6 +141,8 @@ class UserManager : public Swift::EntityCapsProvider {
 		StorageResponder *m_storageResponder;
 		UserRegistry *m_userRegistry;
 		Swift::Timer::ref m_removeTimer;
+		unsigned long m_sentToXMPP;
+		unsigned long m_sentToBackend;
 		friend class RosterResponder;
 };
 

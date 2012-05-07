@@ -12,6 +12,8 @@
 #include "transport/statsresponder.h"
 #include "transport/usersreconnecter.h"
 #include "transport/util.h"
+#include "transport/gatewayresponder.h"
+#include "transport/logging.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -24,20 +26,11 @@
 #else
 #include <windows.h>
 #endif
-#include "log4cxx/logger.h"
-#include "log4cxx/consoleappender.h"
-#include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
-#include "log4cxx/helpers/properties.h"
-#include "log4cxx/helpers/transcoder.h"
-#include "log4cxx/helpers/fileinputstream.h"
 #include <sys/stat.h>
-
-using namespace log4cxx;
 
 using namespace Transport;
 
-static LoggerPtr logger = log4cxx::Logger::getLogger("Spectrum");
+DEFINE_LOGGER(logger, "Spectrum");
 
 Swift::SimpleEventLoop *eventLoop_ = NULL;
 Component *component_ = NULL;
@@ -121,7 +114,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 
 int main(int argc, char **argv)
 {
-	Config config;
+	Config config(argc, argv);
 
 	boost::program_options::variables_map vm;
 	bool no_daemon = false;
@@ -154,7 +147,7 @@ int main(int argc, char **argv)
 		boost::program_options::positional_options_description p;
 		p.add("config", -1);
 		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-          options(desc).positional(p).run(), vm);
+          options(desc).positional(p).allow_unregistered().run(), vm);
 		boost::program_options::notify(vm);
 
 		if (vm.count("version")) {
@@ -234,71 +227,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-	if (CONFIG_STRING(&config, "logging.config").empty()) {
-		LoggerPtr root = log4cxx::Logger::getRootLogger();
-#ifdef WIN32
-		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
-#else
-		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
-#endif
-	}
-	else {
-		log4cxx::helpers::Properties p;
-		log4cxx::helpers::FileInputStream *istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(&config, "logging.config"));
-
-		p.load(istream);
-		LogString pid, jid;
-		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
-		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(&config, "service.jid"), jid);
-#ifdef WIN32
-		p.setProperty(L"pid", pid);
-		p.setProperty(L"jid", jid);
-#else
-		p.setProperty("pid", pid);
-		p.setProperty("jid", jid);
-#endif
-
-		std::string dir;
-		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
-			if (boost::ends_with(prop, ".File")) {
-				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
-				boost::replace_all(dir, "${jid}", jid);
-				break;
-			}
-		}
-
-		if (!dir.empty()) {
-			// create directories
-			try {
-				boost::filesystem::create_directories(
-					boost::filesystem::path(dir).parent_path().string()
-				);
-			}
-			catch (...) {
-				std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ".\n";
-				return 1;
-			}
-
-#ifndef WIN32
-			if (!CONFIG_STRING(&config, "service.group").empty() && !CONFIG_STRING(&config, "service.user").empty()) {
-				struct group *gr;
-				if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-					std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
-					return 1;
-				}
-				struct passwd *pw;
-				if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-					std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
-					return 1;
-				}
-				chown(dir.c_str(), pw->pw_uid, gr->gr_gid);
-			}
-
-#endif
-		}
-
-		log4cxx::PropertyConfigurator::configure(p);
-	}
+	Logging::initMainLogging(&config);
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
@@ -348,57 +277,17 @@ int main(int argc, char **argv)
 	component_ = &transport;
 // 	Logger logger(&transport);
 
-	StorageBackend *storageBackend = NULL;
-
-#ifdef WITH_SQLITE
-	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		storageBackend = new SQLite3Backend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
+	std::string error;
+	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
+	if (storageBackend == NULL) {
+		if (!error.empty()) {
+			std::cerr << error << "\n";
+			return -2;
 		}
 	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "sqlite3") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
-		return -2;
-	}
-#endif
-
-#ifdef WITH_MYSQL
-	if (CONFIG_STRING(&config, "database.type") == "mysql") {
-		storageBackend = new MySQLBackend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "mysql") {
-		std::cerr << "Spectrum2 is not compiled with mysql backend.\n";
-		return -2;
-	}
-#endif
-
-#ifdef WITH_PQXX
-	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
-		storageBackend = new PQXXBackend(&config);
-		if (!storageBackend->connect()) {
-			std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-			return -1;
-		}
-	}
-#else
-	if (CONFIG_STRING(&config, "database.type") == "pqxx") {
-		std::cerr << "Spectrum2 is not compiled with pqxx backend.\n";
-		return -2;
-	}
-#endif
-
-	if (CONFIG_STRING(&config, "database.type") != "mysql" && CONFIG_STRING(&config, "database.type") != "sqlite3"
-		&& CONFIG_STRING(&config, "database.type") != "pqxx" && CONFIG_STRING(&config, "database.type") != "none") {
-		std::cerr << "Unknown storage backend " << CONFIG_STRING(&config, "database.type") << "\n";
-		return -2;
+	else if (!storageBackend->connect()) {
+		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+		return -1;
 	}
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
@@ -421,6 +310,9 @@ int main(int argc, char **argv)
 	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
 	statsResponder.start();
 
+	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
+	gatewayResponder.start();
+
 	eventLoop_ = &eventLoop;
 
 	eventLoop.run();
@@ -436,4 +328,5 @@ int main(int argc, char **argv)
 
 	delete storageBackend;
 	delete factories;
+	return 0;
 }

@@ -19,19 +19,21 @@
  */
 
 #include "transport/networkplugin.h"
-#include "log4cxx/logger.h"
-#include "log4cxx/basicconfigurator.h"
 #include "transport/memoryusage.h"
+#include "transport/logging.h"
+
+#include <sstream>
 
 #ifndef WIN32
 #include <arpa/inet.h>
 #else 
 #include <winsock2.h>
+#include <stdint.h>
+#include <process.h>
+#define getpid _getpid
 #endif
 
-using namespace log4cxx;
-
-static LoggerPtr logger = Logger::getLogger("NetworkPlugin");
+DEFINE_LOGGER(logger, "NetworkPlugin");
 
 namespace Transport {
 
@@ -39,6 +41,12 @@ namespace Transport {
 	wrap.set_type(TYPE); \
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
+
+template <class T> std::string stringOf(T object) {
+	std::ostringstream os;
+	os << object;
+	return (os.str());
+}
 
 NetworkPlugin::NetworkPlugin() {
 	m_pingReceived = false;
@@ -50,6 +58,25 @@ NetworkPlugin::NetworkPlugin() {
 }
 
 NetworkPlugin::~NetworkPlugin() {
+}
+
+void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
+	std::string data = "[registration]";
+	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0") + "\n";
+
+	for (std::vector<std::string>::const_iterator it = cfg.m_extraFields.begin(); it != cfg.m_extraFields.end(); it++) {
+		data += std::string("extraField=") + (*it) + "\n";
+	}
+
+	pbnetwork::BackendConfig m;
+	m.set_config(data);
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG);
+
+	send(message);
 }
 
 void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml) {
@@ -559,8 +586,8 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 }
 
 void NetworkPlugin::send(const std::string &data) {
-	char header[4];
-	*((int*)(header)) = htonl(data.size());
+	uint32_t size = htonl(data.size());
+	char *header = (char *) &size;
 	sendData(std::string(header, 4) + data);
 }
 
@@ -586,13 +613,19 @@ void NetworkPlugin::sendMemoryUsage() {
 	pbnetwork::Stats stats;
 
 	stats.set_init_res(m_init_res);
-	double res;
-	double shared;
+	double res = 0;
+	double shared = 0;
 #ifndef WIN32
 	process_mem_usage(shared, res);
 #endif
-	stats.set_res(res);
-	stats.set_shared(shared);
+
+	double e_res;
+	double e_shared;
+	handleMemoryUsage(e_res, e_shared);
+
+	stats.set_res(res + e_res);
+	stats.set_shared(shared + e_shared);
+	stats.set_id(stringOf(getpid()));
 
 	std::string message;
 	stats.SerializeToString(&message);

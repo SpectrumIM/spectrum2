@@ -26,7 +26,8 @@
 
 namespace Transport {
 
-Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager){
+Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager),
+	m_subscription(Ask) {
 // 	m_rosterManager->setBuddy(this);
 }
 
@@ -64,12 +65,12 @@ const Swift::JID &Buddy::getJID() {
 	return m_jid;
 }
 
-void Buddy::setSubscription(const std::string &subscription) {
-// 	m_subscription = subscription;
+void Buddy::setSubscription(Subscription subscription) {
+	m_subscription = subscription;
 }
 
-const std::string Buddy::getSubscription() {
-	return "ask";
+Buddy::Subscription Buddy::getSubscription() {
+	return m_subscription;
 }
 
 Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) {
@@ -147,7 +148,6 @@ void Buddy::handleBuddyChanged() {
 	if (presence) {
 		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
 	}
-	m_rosterManager->handleBuddyChanged(this);
 }
 
 void Buddy::handleVCardReceived(const std::string &id, Swift::VCard::ref vcard) {

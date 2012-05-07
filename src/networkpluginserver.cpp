@@ -31,6 +31,7 @@
 #include "transport/vcardresponder.h"
 #include "transport/rosterresponder.h"
 #include "transport/memoryreadbytestream.h"
+#include "transport/logging.h"
 #include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -41,27 +42,25 @@
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
-#include "log4cxx/logger.h"
 
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
 
 #ifdef _WIN32
 #include "windows.h"
+#include <stdint.h>
 #else
 #include "sys/wait.h"
 #include "sys/signal.h"
 #include "popt.h"
 #endif
 
-using namespace log4cxx;
-
 namespace Transport {
 
 static unsigned long backend_id;
 static unsigned long bytestream_id;
 
-static LoggerPtr logger = Logger::getLogger("NetworkPluginServer");
+DEFINE_LOGGER(logger, "NetworkPluginServer");
 
 class NetworkConversation : public Conversation {
 	public:
@@ -94,7 +93,12 @@ class NetworkFactory : public Factory {
 			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
 			buddy->setAlias(buddyInfo.alias);
 			buddy->setName(buddyInfo.legacyName);
-			buddy->setSubscription(buddyInfo.subscription);
+			if (buddyInfo.subscription == "both") {
+				buddy->setSubscription(Buddy::Both);
+			}
+			else {
+				buddy->setSubscription(Buddy::Ask);
+			}
 			buddy->setGroups(buddyInfo.groups);
 			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
@@ -159,9 +163,14 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	if ( pid == 0 ) {
 		setsid();
 		// child process
-		exit(execv(argv[0], argv));
+		errno = 0;
+		int ret = execv(argv[0], argv);
+		if (ret == -1) {
+			exit(errno);
+		}
+		exit(0);
 	} else if ( pid < 0 ) {
-		// fork failed
+		LOG4CXX_ERROR(logger, "Fork failed");
 	}
 	free(p);
 
@@ -195,6 +204,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
+		LOG4CXX_INFO(logger, "Setting alias to " << payload.alias() << " " << buddy->getAlias());
 		buddy->setAlias(payload.alias());
 	}
 
@@ -253,12 +263,29 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
+	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+
 #ifndef _WIN32
+	// wait if the backend process will still be alive after 1 second
+	sleep(1);
+	pid_t result;
+	int status;
+	result = waitpid(-1, &status, WNOHANG);
+	if (result != 0) {
+		if (WIFEXITED(status)) {
+			if (WEXITSTATUS(status) != 0) {
+				LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+			}
+		}
+		else {
+			LOG4CXX_ERROR(logger, "Backend can not be started");
+		}
+	}
+
 	signal(SIGCHLD, SigCatcher);
 #endif
 
-	exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
-	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
@@ -337,15 +364,19 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
-	LOG4CXX_INFO(logger, "Backend " << c << " disconnected. Current backend count=" << (m_clients.size() - 1));
+	LOG4CXX_INFO(logger, "Backend " << c << " (ID=" << c->id << ") disconnected. Current backend count=" << (m_clients.size() - 1));
 
 	// This backend will do, so we can't reconnect users to it in User::handleDisconnected call
 	c->willDie = true;
 
 	// If there are users associated with this backend, it must have crashed, so print error output
 	// and disconnect users
+	if (!c->users.empty()) {
+		m_crashedBackends.push_back(c->id);
+	}
+
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
-		LOG4CXX_ERROR(logger, "Backend " << c << " disconnected (probably crashed) with active user " << (*it)->getJID().toString());
+		LOG4CXX_ERROR(logger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getJID().toString());
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
@@ -478,6 +509,8 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	if (!user)
 		return;
 
+	LOG4CXX_INFO(logger, "HANDLE BUDDY CHANGED " << payload.buddyname() << "-" << payload.alias());
+
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
@@ -566,6 +599,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 	// Forward it
 	conv->handleMessage(msg, payload.nickname());
+	m_userManager->messageToXMPPSent();
 }
 
 void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
@@ -603,6 +637,7 @@ void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data
 	c->res = payload.res();
 	c->init_res = payload.init_res();
 	c->shared = payload.shared();
+	c->id = payload.id();
 }
 
 void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
@@ -801,8 +836,8 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 
 void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const std::string &data) {
 	// generate header - size of wrapper message
-	char header[4];
-	*((int*)(header)) = htonl(data.size());
+	uint32_t size = htonl(data.size());
+	char *header = (char *) &size;
 
 	// send header together with wrapper message
 	c->write(Swift::createSafeByteArray(std::string(header, 4) + data));
@@ -849,12 +884,12 @@ void NetworkPluginServer::pingTimeout() {
 			sendPing((*it));
 		}
 		else {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". PING response not received.");
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
 		}
 
 		if ((*it)->users.size() == 0) {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << ". There are no users.");
+			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). There are no users.");
 			toRemove.push_back(*it);
 		}
 	}
@@ -883,7 +918,7 @@ void NetworkPluginServer::collectBackend() {
 		if (m_collectTimer) {
 			m_collectTimer->start();
 		}
-		LOG4CXX_INFO(logger, "Backend " << backend << "is set to die");
+		LOG4CXX_INFO(logger, "Backend " << backend << " (ID=" << backend->id << ") is set to die");
 		backend->acceptUsers = false;
 	}
 }
@@ -1080,12 +1115,13 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	}
 	send(c->connection, message);
 	c->users.remove(user);
-// 	if (c->users.size() == 0) {
-// 		LOG4CXX_INFO(logger, "Disconnecting backend " << c << ". There are no users.");
 
-// 		handleSessionFinished(c);
-// 		m_clients.erase(user->connection);
-// 	}
+	// If backend should handle only one user, it must not accept another one before 
+	// we kill it, so set up willDie to true
+	if (c->users.size() == 0 && CONFIG_INT(m_config, "service.users_per_backend") == 1) {
+		LOG4CXX_INFO(logger, "Backend " << c->id << " will die, because the last user disconnected");
+		c->willDie = true;
+	}
 }
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
@@ -1351,7 +1387,7 @@ void NetworkPluginServer::sendPing(Backend *c) {
 	wrap.SerializeToString(&message);
 
 	if (c->connection) {
-		LOG4CXX_INFO(logger, "PING to " << c);
+		LOG4CXX_INFO(logger, "PING to " << c << " (ID=" << c->id << ")");
 		send(c->connection, message);
 		c->pongReceived = false;
 	}

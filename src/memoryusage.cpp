@@ -25,6 +25,7 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
+#include <boost/lexical_cast.hpp>
 #ifndef WIN32
 #include <sys/param.h>
 #endif
@@ -41,13 +42,18 @@ namespace Transport {
 
 #ifndef WIN32
 #ifdef BSD
-void process_mem_usage(double& vm_usage, double& resident_set) {
+void process_mem_usage(double& vm_usage, double& resident_set, pid_t pid) {
 	int mib[4];
 	size_t size;
 	mib[0] = CTL_KERN;
 	mib[1] = KERN_PROC;
 	mib[2] = KERN_PROC_PID;
-	mib[3] = getpid();
+	if (pid == 0) {
+		mib[3] = getpid();
+	}
+	else {
+		mib[3] = pid;
+	}
 	struct kinfo_proc proc;
 
 	size = sizeof(struct kinfo_proc);
@@ -75,7 +81,7 @@ void process_mem_usage(double& vm_usage, double& resident_set) {
 	vm_usage = (double) proc.ki_size;
 }
 #else /* BSD */
-void process_mem_usage(double& shared, double& resident_set) {
+void process_mem_usage(double& shared, double& resident_set, pid_t pid) {
 	using std::ios_base;
 	using std::ifstream;
 	using std::string;
@@ -84,8 +90,11 @@ void process_mem_usage(double& shared, double& resident_set) {
 	resident_set = 0.0;
 
 	// 'file' stat seems to give the most reliable results
-	//
-	ifstream stat_stream("/proc/self/statm",ios_base::in);
+	std::string f = "/proc/self/statm";
+	if (pid != 0) {
+		f = "/proc/" + boost::lexical_cast<std::string>(pid) + "/statm";
+	}
+	ifstream stat_stream(f.c_str(), ios_base::in);
 	if (!stat_stream.is_open()) {
 		shared = 0;
 		resident_set = 0;
@@ -94,7 +103,7 @@ void process_mem_usage(double& shared, double& resident_set) {
 
 	// dummy vars for leading entries in stat that we don't care about
 	//
-	string pid, comm, state, ppid, pgrp, session, tty_nr;
+	string pid1, comm, state, ppid, pgrp, session, tty_nr;
 	string tpgid, flags, minflt, cminflt, majflt, cmajflt;
 	string utime, stime, cutime, cstime, priority, nice;
 	string O, itrealvalue, starttime;

@@ -22,10 +22,8 @@
 
 #include "transport/sqlite3backend.h"
 #include "transport/util.h"
+#include "transport/logging.h"
 #include <boost/bind.hpp>
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
 
 #define SQLITE_DB_VERSION 3
 #define CHECK_DB_RESPONSE(stmt) \
@@ -65,7 +63,7 @@ using namespace boost;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("SQLite3Backend");
+DEFINE_LOGGER(logger, "SQLite3Backend");
 
 SQLite3Backend::SQLite3Backend(Config *config) {
 	m_config = config;

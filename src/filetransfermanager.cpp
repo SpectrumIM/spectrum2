@@ -23,13 +23,11 @@
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/buddy.h"
-#include "log4cxx/logger.h"
-
-using namespace log4cxx;
+#include "transport/logging.h"
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("FileTransferManager");
+DEFINE_LOGGER(logger, "FileTransferManager");
 
 FileTransferManager::FileTransferManager(Component *component, UserManager *userManager) {
 	m_component = component;
