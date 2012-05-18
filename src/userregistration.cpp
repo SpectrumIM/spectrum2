@@ -189,7 +189,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	reg->setRegistered(registered);
 	reg->setUsername(res.uin);
 	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
-		reg->setPassword(res.password);
+		reg->setPassword("");
 
 
 	// form
