@@ -9,6 +9,8 @@ if (PROTOBUF_FOUND)
 
 	ADD_SUBDIRECTORY(smstools3)
 
+	ADD_SUBDIRECTORY(swiften)
+
 	ADD_SUBDIRECTORY(template)
 
 if (NOT WIN32)
