@@ -218,7 +218,7 @@ class SwiftenPlugin : public NetworkPlugin {
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-// 			LOG4CXX_INFO(logger, user << ": Added buddy " << buddyName << ".");
+			LOG4CXX_INFO(logger, user << ": Added/Updated buddy " << buddyName << ".");
 // 			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
 		}
 
