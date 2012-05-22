@@ -63,6 +63,9 @@ find_package(pqxx)
 set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(dbus)
 
+set(yahoo2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(yahoo2)
+
 find_package(Doxygen)
 
 INCLUDE(FindQt4)
@@ -160,6 +163,13 @@ if (PROTOBUF_FOUND)
 		include_directories(${LIBDBUSGLIB_INCLUDE_DIRS})
 	else()
 		message("Skype plugin      : no (install dbus-glib-devel)")
+	endif()
+
+	if(YAHOO2_FOUND)
+		message("Libyahoo2 plugin  : yes")
+		include_directories(${YAHOO2_INCLUDE_DIR})
+	else()
+		message("Libyahoo2 plugin  : no (install libyahoo2-devel)")
 	endif()
 
 else()

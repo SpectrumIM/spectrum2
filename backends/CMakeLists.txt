@@ -11,6 +11,10 @@ if (PROTOBUF_FOUND)
 
 	ADD_SUBDIRECTORY(swiften)
 
+	if(YAHOO2_FOUND)
+		ADD_SUBDIRECTORY(libyahoo2)
+	endif()
+
 	ADD_SUBDIRECTORY(template)
 
 if (NOT WIN32)
