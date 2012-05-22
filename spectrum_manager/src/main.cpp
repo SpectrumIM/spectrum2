@@ -308,10 +308,12 @@ static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactorie
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+					continue;
 				}
 
 				if (CONFIG_VECTOR(&cfg, "service.admin_jid").empty() || CONFIG_STRING(&cfg, "service.admin_password").empty()) {
 					std::cerr << itr->path().string() << ": service.admin_jid or service.admin_password empty. This server can't be queried over XMPP.\n";
+					continue;
 				}
 
 				finished++;

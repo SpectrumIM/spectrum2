@@ -26,6 +26,8 @@
 
 #ifndef WIN32
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <unistd.h>
 #else 
 #include <winsock2.h>
 #include <stdint.h>

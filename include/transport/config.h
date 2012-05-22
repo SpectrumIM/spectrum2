@@ -28,13 +28,13 @@
 #include <boost/bind.hpp>
 #include <boost/signal.hpp>
 
-
+#define CONFIG_HAS_KEY(PTR, KEY) (*PTR).hasKey(KEY)
 #define CONFIG_STRING(PTR, KEY) (*PTR)[KEY].as<std::string>()
 #define CONFIG_INT(PTR, KEY) (*PTR)[KEY].as<int>()
 #define CONFIG_BOOL(PTR, KEY) (*PTR)[KEY].as<bool>()
 #define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
-#define CONFIG_VECTOR(PTR, KEY) (*PTR)[KEY].as<std::vector<std::string> >()
-#define CONFIG_HAS_KEY(PTR, KEY) (*PTR).hasKey(KEY)
+#define CONFIG_VECTOR(PTR, KEY) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::vector<std::string> >() : std::vector<std::string>())
+
 
 namespace Transport {
 

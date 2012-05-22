@@ -50,6 +50,21 @@ template <class T> std::string stringOf(T object) {
 	return (os.str());
 }
 
+static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while(std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+
+static std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    return split(s, delim, elems);
+}
+
 static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond);
 
 class SpectrumNetworkPlugin;
@@ -296,6 +311,17 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (ret) {
 				purple_account_set_int(account, "version", fromString<int>(std::string(contents, length)));
 			}
+
+
+			if (KEYFILE_STRING("service", "protocol") == "prpl-novell") {
+				std::string username(purple_account_get_username(account));
+				std::vector <std::string> u = split(username, '@');
+				purple_account_set_username(account, (const char*) u.front().c_str());
+				std::vector <std::string> s = split(u.back(), ':'); 
+				purple_account_set_string(account, "server", s.front().c_str());
+				purple_account_set_int(account, "port", atoi(s.back().c_str()));  
+			}
+
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
