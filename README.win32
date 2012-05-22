@@ -10,7 +10,6 @@ Libraries
 3. Swiften library and Python for run scons (http://swift.im/git/swift)
 4. Boost 1.48 or newer (http://sourceforge.net/projects/boost/files/boost/1.49.0/)
 5. Google ProtoBuf library (http://code.google.com/p/protobuf/downloads/list)
-6. Apache log4cxx, apr, apr-util (http://logging.apache.org/log4cxx/download.html)
 
 
 Environment
@@ -26,13 +25,13 @@ launch "Visual Studio 2010 command prompt" or
 
 	bootstrap.bat
 	b2.exe --without-mpi --without-python
-	b2.exe --without-mpi --without-python install --prefix=C:\env-msvc-x64
+	b2.exe --without-mpi --without-python install --prefix=C:\env-msvc-x64 --layout=system
 
 2. clone swift repository and build it. Don't forget to point it to our env directory:
 
 	git clone http://swift.im/git/swift
 	cd swift
-	echo boost_includedir="c:/env-msvc-x64/include/boost-1_48" > config.py
+	echo boost_includedir="c:/env-msvc-x64/include" > config.py
 	echo boost_libdir="c:/env-msvc-x64/lib" >> config.py 
 	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64
 	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 C:\env-msvc-x64
@@ -47,12 +46,7 @@ Run extract_includes.bat in vsprojects/ directory and move resulting google/ dir
 
 Move protoc.exe to C:\env-msvc-x64\bin\ and libprotobuf.lib to C:\env-msvc-x64\lib
 
-4. unpack and compile log4cxx, apr, apr-util as described here: 
-	http://www.lextm.com/2010/09/how-to-build-log4cxx-in-visual-studio.html
-Also you need to make output type="Static Library" and add LOG4CXX_STATIC in Preprocessor Definitions of log4cxx vsproject.
-Move include/log4cxx and resulting log4cxx.lib to C:\env-msvc-x64\include and C:\env-msvc-x64\lib
-
-5. You're ready! :) Clone libtransport and compile it as:
+4. You're ready! :) Clone libtransport and compile it as:
 	set CMAKE_INCLUDE_PATH=C:\env-msvc-x64\include
 	cmake . -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
 	nmake
