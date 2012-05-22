@@ -6,11 +6,13 @@
 // Swiften
 #include "Swiften/Swiften.h"
 
+#ifndef WIN32
 // for signal handler
 #include "unistd.h"
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
+#endif
 
 // malloc_trim
 #include "malloc.h"
@@ -231,6 +233,7 @@ class SwiftenPlugin : public NetworkPlugin {
 		std::map<std::string, boost::shared_ptr<Swift::Client> > m_users;
 };
 
+#ifndef WIN32
 static void spectrum_sigchld_handler(int sig)
 {
 	int status;
@@ -246,16 +249,19 @@ static void spectrum_sigchld_handler(int sig)
 		perror(errmsg);
 	}
 }
+#endif
 
 
 int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
 
+#ifndef WIN32
 	if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 		std::cout << "SIGCHLD handler can't be set\n";
 		return -1;
 	}
+#endif
 
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()

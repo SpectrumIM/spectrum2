@@ -7,8 +7,6 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
-	ADD_SUBDIRECTORY(smstools3)
-
 	ADD_SUBDIRECTORY(swiften)
 
 	ADD_SUBDIRECTORY(template)
