@@ -12,6 +12,7 @@
 
 // Swiften
 #include "Swiften/Swiften.h"
+#include "Swiften/TLS/OpenSSL/OpenSSLContextFactory.h"
 
 // for signal handler
 #include "unistd.h"
@@ -25,15 +26,28 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
 
+
+typedef struct {
+	int handler_tag;
+	int conn_tag;
+	void *data;
+	yahoo_input_condition cond;
+} yahoo_handler;
+
 typedef struct {
 	int id;
-	boost::shared_ptr<Swift::Connection> conn;
+	std::map<int, boost::shared_ptr<Swift::Connection> > conns;
+	int conn_tag;
+	std::map<int, yahoo_handler *> handlers;
+	std::map<int, std::map<int, yahoo_handler *> > handlers_per_conn;
+	int handler_tag;
 	int status;
 	std::string msg;
 	std::string buffer;
 } yahoo_local_account;
 
 static std::string *currently_read_data;
+static yahoo_local_account *currently_writting_account;
 
 typedef struct {
 	std::string yahoo_id;
@@ -66,12 +80,16 @@ YahooPlugin * np = NULL;
 class YahooPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
+		Swift::OpenSSLContextFactory *m_sslFactory;
+		Swift::TLSConnectionFactory *m_tlsFactory;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
 
 		YahooPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
 			m_factories = new Swift::BoostNetworkFactories(loop);
+			m_sslFactory = new Swift::OpenSSLContextFactory();
+			m_tlsFactory = new Swift::TLSConnectionFactory(m_sslFactory, m_factories->getConnectionFactory());
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&YahooPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
@@ -92,6 +110,8 @@ class YahooPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			yahoo_local_account *account = new yahoo_local_account;
+			account->conn_tag = 1;
+			account->handler_tag = 1;
 			m_users[user] = account;
 
 			account->id = yahoo_init_with_attributes(legacyName.c_str(), password.c_str(), 
@@ -101,9 +121,8 @@ class YahooPlugin : public NetworkPlugin {
 			m_ids[account->id] = user;
 
 			account->status = YAHOO_STATUS_OFFLINE;
+			LOG4CXX_INFO(logger, user << ": Logging in the user as " << legacyName << " with id=" << account->id);
 			yahoo_login(account->id, YAHOO_STATUS_AVAILABLE);
-
-
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
@@ -125,32 +144,82 @@ class YahooPlugin : public NetworkPlugin {
 
 		}
 
-		void _yahoo_connect_finished(yahoo_local_account *account, yahoo_connect_callback callback, void *data, bool error) {
+		yahoo_local_account *getAccount(int id) {
+			return m_users[m_ids[id]];
+		}
+
+		void _yahoo_connect_finished(yahoo_local_account *account, yahoo_connect_callback callback, void *data, int conn_tag, bool error) {
 			if (error) {
+				LOG4CXX_ERROR(logger, "Connection error!");
 				callback(NULL, 0, data);
+// 				np->handleDisconnected(user, 0, "Connection error.");
 			}
 			else {
-				callback(account->conn.get(), 0, data);
+				LOG4CXX_INFO(logger, "Connected");
+				// We will have dangling pointer here, but we can't pass boost::shared_ptr here...
+				callback((void *) conn_tag, 0, data);
 			}
 		}
 
-		void _yahoo_data_read(yahoo_local_account *account, boost::shared_ptr<Swift::SafeByteArray> data) {
+		void _yahoo_data_read(yahoo_local_account *account, int conn_tag, boost::shared_ptr<Swift::SafeByteArray> data) {
+			// yahoo_read_ready calls ext_yahoo_read(...) in a loop, so we just have to choose proper buffer from which will
+			// that method read. We do that by static currently_read_data pointer.
 			std::string d(data->begin(), data->end());
-			currently_read_data = &d;
-			yahoo_read_ready(account->id, account->conn.get(), NULL);
+
+			LOG4CXX_INFO(logger, "data to read");
+			for (std::map<int, yahoo_handler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
+				if (it->second->cond == YAHOO_INPUT_READ) {
+					LOG4CXX_INFO(logger, "found handler");
+					std::string cpy(d);
+					currently_read_data = &cpy;
+					yahoo_read_ready(account->id, (void *) conn_tag, it->second->data);
+				}
+			}
+		}
+
+		void _yahoo_data_written(yahoo_local_account *account, int conn_tag) {
+			LOG4CXX_INFO(logger, "data written");
+			currently_writting_account = account;
+			for (std::map<int, yahoo_handler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
+				if (it->second->cond == YAHOO_INPUT_WRITE) {
+					yahoo_write_ready(account->id, (void *) conn_tag, it->second->data);
+				}
+			}
 		}
 
 		int _yahoo_connect_async(int id, const char *host, int port, yahoo_connect_callback callback, void *data, int use_ssl) {
-			yahoo_local_account *account = m_users[m_ids[id]];
+			yahoo_local_account *account = getAccount(id);
 			if (!account) {
+				LOG4CXX_ERROR(logger, "Unknown account id=" << id);
 				return -1;
 			}
 
-			account->conn = m_factories->getConnectionFactory()->createConnection();
-			m_conn->onConnectFinished.connect(boost::bind(&YahooPlugin::_yahoo_connect_finished, this, account, callback, data, _1));
-			m_conn->onDataRead.connect(boost::bind(&YahooPlugin::_yahoo_data_read, this, account, _1));
-			account->conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
-			return 0;
+// boost::asio::io_service io_service;
+// boost::asio::ip::tcp::resolver resolver(io_service);
+// boost::asio::ip::tcp::resolver::query query(values[1], "");
+// for(boost::asio::ip::tcp::resolver::iterator i = resolver.resolve(query);
+//                             i != boost::asio::ip::tcp::resolver::iterator();
+//                             ++i)
+// {
+//     boost::asio::ip::tcp::endpoint end = *i;
+//     std::cout << end.address() << ' ';
+// }
+// std::cout << '\n';
+
+
+			LOG4CXX_INFO(logger, m_ids[id] << ": Connecting " << host << ":" << port);
+			int tag = account->conn_tag++;
+			if (use_ssl) {
+				account->conns[tag] = m_tlsFactory->createConnection();
+			}
+			else {
+				account->conns[tag] = m_factories->getConnectionFactory()->createConnection();
+			}
+			account->conns[tag]->onConnectFinished.connect(boost::bind(&YahooPlugin::_yahoo_connect_finished, this, account, callback, data, tag, _1));
+			account->conns[tag]->onDataRead.connect(boost::bind(&YahooPlugin::_yahoo_data_read, this, account, tag, _1));
+			account->conns[tag]->onDataWritten.connect(boost::bind(&YahooPlugin::_yahoo_data_written, this, account, tag));
+			account->conns[tag]->connect(Swift::HostAddressPort(Swift::HostAddress("67.195.187.249"), port));
+			return tag;
 		}
 
 	private:
@@ -280,6 +349,7 @@ static void ext_yahoo_got_cookies(int id) {
 }
 
 static void ext_yahoo_login_response(int id, int succ, const char *url) {
+	LOG4CXX_INFO(logger, "login_response");
 // 	char buff[1024];
 // 
 // 	if(succ == YAHOO_LOGIN_OK) {
@@ -353,16 +423,61 @@ static int ext_yahoo_connect(const char *host, int port) {
 	return -1;
 }
 
-static int ext_yahoo_add_handler(int id, void *d, yahoo_input_condition cond, void *data) {
+static int ext_yahoo_add_handler(int id, void *fd, yahoo_input_condition cond, void *data) {
+	yahoo_local_account *account = np->getAccount(id);
+	if (!account) {
+		return -1;
+	}
+
+	LOG4CXX_INFO(logger, "Adding handler " << cond);
+
+	int conn_tag = (unsigned long) fd;
+	yahoo_handler *handler = new yahoo_handler;
+
+	handler->conn_tag = conn_tag;
+	handler->handler_tag = account->handler_tag++;
+	handler->data = data;
+	handler->cond = cond;
+
+	if (cond == YAHOO_INPUT_WRITE) {
+		yahoo_local_account *old = currently_writting_account;
+		currently_writting_account = account;
+		yahoo_write_ready(id, fd, data);
+		currently_writting_account = old;
+	}
+
+	account->handlers[handler->handler_tag] = handler;
+	account->handlers_per_conn[conn_tag][handler->handler_tag] = handler;
+
+	return handler->handler_tag;
 }
 
 static void ext_yahoo_remove_handler(int id, int tag) {
+	yahoo_local_account *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	if (account->handlers.find(tag) == account->handlers.end()) {
+		return;
+	}
+
+	yahoo_handler *handler = account->handlers[tag];
+	account->handlers.erase(tag);
+	account->handlers_per_conn[handler->conn_tag].erase(tag);
+	delete handler;
 }
 
-static int ext_yahoo_write(void *_conn, char *buf, int len) {
+static int ext_yahoo_write(void *fd, char *buf, int len) {
+	LOG4CXX_INFO(logger, "Writting " << len);
+
+	int conn_tag = (unsigned long) fd;
+
+	yahoo_local_account *account = currently_writting_account;
+
 	std::string string(buf, len);
-	Swift::Connection *conn = (Swift::Connection *) _conn;
-	conn->write(Swift::createSafeByteArray(string));
+	account->conns[conn_tag]->write(Swift::createSafeByteArray(string));
+
 	return len;
 }
 
@@ -370,7 +485,8 @@ static int ext_yahoo_read(void *fd, char *buf, int len) {
 	if (currently_read_data->size() < len) {
 		len = currently_read_data->size();
 	}
-	strncpy(buf, currently_read_data->c_str(), len);
+	LOG4CXX_INFO(logger, "Reading " << len);
+	memcpy(buf, currently_read_data->c_str(), len);
 	currently_read_data->erase(0, len);
 	return len;
 }
@@ -541,9 +657,11 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
+	Swift::logging=true;
 	Logging::initBackendLogging(&config);
 
 	register_callbacks();
+	yahoo_set_log_level(YAHOO_LOG_DEBUG);
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
