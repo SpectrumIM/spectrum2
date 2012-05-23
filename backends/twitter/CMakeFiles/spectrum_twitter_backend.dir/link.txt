@@ -1,0 +1,1 @@
+/usr/bin/c++   -g   CMakeFiles/spectrum_twitter_backend.dir/main.cpp.o  -o spectrum_twitter_backend -rdynamic -L/backends/twitter/libtwitcurl -ltwitcurl -lcurl -Wl,-rpath,/backends/twitter/libtwitcurl 
