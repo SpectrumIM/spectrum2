@@ -35,6 +35,10 @@ namespace Swift {
 			bool isAvailable() const {
 				return true;
 			}
+			
+			std::vector<Certificate::ref> getPeerCertificateChain() const {
+				return std::vector<Certificate::ref>();
+			}
 
 		private:
 			std::string getNewIQID();
