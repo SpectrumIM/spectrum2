@@ -110,6 +110,7 @@ class SwiftenPlugin : public NetworkPlugin {
 		}
 
 		void handleSwiftConnected(const std::string &user) {
+			LOG4CXX_INFO(logger, user << ": Connected to XMPP server.");
 			handleConnected(user);
 			m_users[user]->requestRoster();
 			Swift::Presence::ref response = Swift::Presence::create();

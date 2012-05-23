@@ -187,6 +187,10 @@ class YahooPlugin : public NetworkPlugin {
 			}
 		}
 
+		void _yahoo_disconnected(yahoo_local_account *account, int conn_tag, const boost::optional<Swift::Connection::Error> &error) {
+			LOG4CXX_INFO(logger, "Disconnected " << error);
+		}
+
 		int _yahoo_connect_async(int id, const char *host, int port, yahoo_connect_callback callback, void *data, int use_ssl) {
 			yahoo_local_account *account = getAccount(id);
 			if (!account) {
@@ -194,18 +198,14 @@ class YahooPlugin : public NetworkPlugin {
 				return -1;
 			}
 
-// boost::asio::io_service io_service;
-// boost::asio::ip::tcp::resolver resolver(io_service);
-// boost::asio::ip::tcp::resolver::query query(values[1], "");
-// for(boost::asio::ip::tcp::resolver::iterator i = resolver.resolve(query);
-//                             i != boost::asio::ip::tcp::resolver::iterator();
-//                             ++i)
-// {
-//     boost::asio::ip::tcp::endpoint end = *i;
-//     std::cout << end.address() << ' ';
-// }
-// std::cout << '\n';
-
+			boost::asio::ip::tcp::resolver resolver(*m_boostIOServiceThread.getIOService());
+			boost::asio::ip::tcp::resolver::query query(host, "");
+			boost::asio::ip::address address;
+			for(boost::asio::ip::tcp::resolver::iterator i = resolver.resolve(query); i != boost::asio::ip::tcp::resolver::iterator(); ++i) {
+				boost::asio::ip::tcp::endpoint end = *i;
+				address = end.address();
+				break;
+			}
 
 			LOG4CXX_INFO(logger, m_ids[id] << ": Connecting " << host << ":" << port);
 			int tag = account->conn_tag++;
@@ -216,9 +216,10 @@ class YahooPlugin : public NetworkPlugin {
 				account->conns[tag] = m_factories->getConnectionFactory()->createConnection();
 			}
 			account->conns[tag]->onConnectFinished.connect(boost::bind(&YahooPlugin::_yahoo_connect_finished, this, account, callback, data, tag, _1));
+			account->conns[tag]->onDisconnected.connect(boost::bind(&YahooPlugin::_yahoo_disconnected, this, account, tag, _1));
 			account->conns[tag]->onDataRead.connect(boost::bind(&YahooPlugin::_yahoo_data_read, this, account, tag, _1));
 			account->conns[tag]->onDataWritten.connect(boost::bind(&YahooPlugin::_yahoo_data_written, this, account, tag));
-			account->conns[tag]->connect(Swift::HostAddressPort(Swift::HostAddress("67.195.187.249"), port));
+			account->conns[tag]->connect(Swift::HostAddressPort(Swift::HostAddress(address), port));
 			return tag;
 		}
 
