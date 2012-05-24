@@ -336,8 +336,9 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		// User trying to login into his twitter account
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+			LOG4CXX_INFO(logger, std::string("Received login request for ") + user)
 			if(sessions.count(user)) {
-				LOG4CXX_INFO(logger, "A session corresponding to " + user + "  is already active\n")
+				LOG4CXX_INFO(logger, std::string("A session corresponding to ") + user + std::string(" is already active"))
 				return;
 			}
 			
@@ -348,17 +349,47 @@ class TwitterPlugin : public NetworkPlugin {
 
 			//if(myOAuthAccessTokenSecret.size() && myOAuthAccessTokenKey.size()) {	
 			//}
+			
+			std::string username = user.substr(0,user.find('@'));
+			std::string passwd = "dummy"; // Not needed since we are using OAuth
+			LOG4CXX_INFO(logger, username + "  " + passwd)
+
+			sessions[user] = new twitCurl();
 			handleConnected(user);
 			handleBuddyChanged(user, "twitter-account", "twitter", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
+			connectionState[user] = NEW;
+			
+			sessions[user]->setTwitterUsername(username);
+			sessions[user]->setTwitterPassword(passwd); 
+			sessions[user]->getOAuth().setConsumerKey( std::string( "qxfSCX7WN7SZl7dshqGZA" ) );
+			sessions[user]->getOAuth().setConsumerSecret( std::string( "ypWapSj87lswvnksZ46hMAoAZvST4ePGPxAQw6S2o" ) );
+			
+			std::string authUrl;
+			sessions[user]->oAuthRequestToken( authUrl );
+			handleMessage(user, "twitter-account", std::string("Please visit the following link and authorize this application: ") + authUrl);
+			handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with 'pin:'. Ex. 'pin: 1234'"));
+			connectionState[user] = WAITING_FOR_PIN;	
 		}
 		
 		// User logging out
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
+			delete sessions[user];
+			sessions[user] = NULL;
+			connectionState[user] = DISCONNECTED;
 		}
 
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
 			LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ".");
+			if(legacyName == "twitter-account") {
+				handleMessage(user, "twitter-account",message);
+				if(message.substr(0,3) == "pin") {
+					sessions[user]->getOAuth().setOAuthPin( message.substr(4) );
+					sessions[user]->oAuthAccessToken();
+					connectionState[user] = CONNECTED;
+					LOG4CXX_INFO(logger, "Sent PIN " << message.substr(4) << " and obtained access token");
+				}
+			}
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
@@ -371,8 +402,10 @@ class TwitterPlugin : public NetworkPlugin {
 		}
 
 	private:
+		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
 		Config *config;
-		std::map<std::string, twitCurl> sessions;
+		std::map<std::string, twitCurl*> sessions;
+		std::map<std::string, status> connectionState;
 };
 
 static void spectrum_sigchld_handler(int sig)
