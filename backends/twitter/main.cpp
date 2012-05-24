@@ -358,14 +358,14 @@ class TwitterPlugin : public NetworkPlugin {
 			handleConnected(user);
 			handleBuddyChanged(user, "twitter-account", "twitter", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 	        
-			std::string ip = "10.93.0.36";
-			std::string port = "3128";
-			std::string puser = "cs09s022";
-			std::string ppasswd = "$@R@ng123";
-			sessions[user]->setProxyServerIp(ip);
-	        sessions[user]->setProxyServerPort(port);
-	        sessions[user]->setProxyUserName(puser);
-	        sessions[user]->setProxyPassword(ppasswd);
+//			std::string ip = "10.93.0.36";
+//			std::string port = "3128";
+//			std::string puser = "cs09s022";
+//			std::string ppasswd = "";
+//			sessions[user]->setProxyServerIp(ip);
+//	        sessions[user]->setProxyServerPort(port);
+//	        sessions[user]->setProxyUserName(puser);
+//	        sessions[user]->setProxyPassword(ppasswd);
 			
 			connectionState[user] = NEW;
 			
