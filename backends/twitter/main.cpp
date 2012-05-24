@@ -357,6 +357,16 @@ class TwitterPlugin : public NetworkPlugin {
 			sessions[user] = new twitCurl();
 			handleConnected(user);
 			handleBuddyChanged(user, "twitter-account", "twitter", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
+	        
+			std::string ip = "10.93.0.36";
+			std::string port = "3128";
+			std::string puser = "cs09s022";
+			std::string ppasswd = "$@R@ng123";
+			sessions[user]->setProxyServerIp(ip);
+	        sessions[user]->setProxyServerPort(port);
+	        sessions[user]->setProxyUserName(puser);
+	        sessions[user]->setProxyPassword(ppasswd);
+			
 			connectionState[user] = NEW;
 			
 			sessions[user]->setTwitterUsername(username);
@@ -382,12 +392,29 @@ class TwitterPlugin : public NetworkPlugin {
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
 			LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ".");
 			if(legacyName == "twitter-account") {
-				handleMessage(user, "twitter-account",message);
-				if(message.substr(0,3) == "pin") {
-					sessions[user]->getOAuth().setOAuthPin( message.substr(4) );
+				std::string cmd = message.substr(0, message.find(':'));
+				std::string data = message.substr(message.find(':') + 1);
+				
+				handleMessage(user, "twitter-account", cmd + " " + data);
+
+				if(cmd == "pin") {
+					sessions[user]->getOAuth().setOAuthPin( data );
 					sessions[user]->oAuthAccessToken();
 					connectionState[user] = CONNECTED;
-					LOG4CXX_INFO(logger, "Sent PIN " << message.substr(4) << " and obtained access token");
+					LOG4CXX_INFO(logger, "Sent PIN " << data << " and obtained access token");
+				}
+
+				if(cmd == "status") {
+					LOG4CXX_INFO(logger, "Updating status for " << user << ": " << data);
+					std::string replyMsg; 
+					if( sessions[user]->statusUpdate( data ) ) {
+						sessions[user]->getLastWebResponse( replyMsg );
+						LOG4CXX_INFO(logger, "twitterClient:: twitCurl::statusUpdate web response: " << replyMsg );
+					}
+					else {
+						sessions[user]->getLastCurlError( replyMsg );
+						LOG4CXX_INFO(logger, "twitterClient:: twitCurl::statusUpdate error: " << replyMsg );
+					}
 				}
 			}
 		}
