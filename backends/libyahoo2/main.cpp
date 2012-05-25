@@ -10,6 +10,9 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include "yahoohandler.h"
+#include "yahoolocalaccount.h"
+
 // Swiften
 #include "Swiften/Swiften.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLContextFactory.h"
@@ -26,28 +29,39 @@ using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
 
-
-typedef struct {
-	int handler_tag;
-	int conn_tag;
-	void *data;
-	yahoo_input_condition cond;
-} yahoo_handler;
-
-typedef struct {
-	int id;
-	std::map<int, boost::shared_ptr<Swift::Connection> > conns;
-	int conn_tag;
-	std::map<int, yahoo_handler *> handlers;
-	std::map<int, std::map<int, yahoo_handler *> > handlers_per_conn;
-	int handler_tag;
-	int status;
-	std::string msg;
-	std::string buffer;
-} yahoo_local_account;
+class YahooHandler;
+class YahooLocalAccount;
 
 static std::string *currently_read_data;
-static yahoo_local_account *currently_writting_account;
+static YahooLocalAccount *currently_writting_account;
+
+YahooHandler::YahooHandler(YahooLocalAccount *account, int conn_tag, int handler_tag, void *data, yahoo_input_condition cond) :
+	handler_tag(handler_tag), conn_tag(conn_tag), data(data), cond(cond), remove_later(false), account(account) {}
+
+YahooHandler::~YahooHandler() {}
+
+void YahooHandler::ready(std::string *buffer) {
+	if (cond == YAHOO_INPUT_WRITE) {
+		YahooLocalAccount *old = currently_writting_account;
+		currently_writting_account = account;
+		yahoo_write_ready(account->id, (void *) conn_tag, data);
+		currently_writting_account = old;
+	}
+	else {
+		if (!buffer) {
+			return;
+		}
+		// yahoo_read_ready calls ext_yahoo_read(...) in a loop, so we just have to choose proper buffer from which will
+		// that method read. We do that by static currently_read_data pointer.
+		currently_read_data = buffer;
+		// libyahoo2 reads data per 1024 bytes, so if we still have some data after the first ext_yahoo_read call,
+		// we have to call yahoo_read_ready again...
+		do {
+			yahoo_read_ready(account->id, (void *) conn_tag, data);
+		} while (currently_read_data->size() != 0);
+	}
+}
+
 
 typedef struct {
 	std::string yahoo_id;
@@ -109,29 +123,30 @@ class YahooPlugin : public NetworkPlugin {
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-			yahoo_local_account *account = new yahoo_local_account;
-			account->conn_tag = 1;
-			account->handler_tag = 1;
+			YahooLocalAccount *account = new YahooLocalAccount(user, legacyName, password);
 			m_users[user] = account;
-
-			account->id = yahoo_init_with_attributes(legacyName.c_str(), password.c_str(), 
-					"local_host", "",
-					"pager_port", 5050,
-					NULL);
 			m_ids[account->id] = user;
 
-			account->status = YAHOO_STATUS_OFFLINE;
 			LOG4CXX_INFO(logger, user << ": Logging in the user as " << legacyName << " with id=" << account->id);
-			yahoo_login(account->id, YAHOO_STATUS_AVAILABLE);
+			account->login();
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
+			YahooLocalAccount *account = m_users[user];
+			if (account) {
+				yahoo_logoff(account->id);
+				m_ids.erase(account->id);
+				m_users.erase(user);
+				delete account;
+			}
 		}
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
-			LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ".");
-			if (legacyName == "echo") {
-				handleMessage(user, legacyName, message);
+			YahooLocalAccount *account = m_users[user];
+			if (account) {
+				LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ": " << message << ".");
+				yahoo_send_im(account->id, NULL, legacyName.c_str(), message.c_str(), 0, 0);
+				_yahoo_write_ready(account);
 			}
 		}
 
@@ -144,55 +159,84 @@ class YahooPlugin : public NetworkPlugin {
 
 		}
 
-		yahoo_local_account *getAccount(int id) {
+		YahooLocalAccount *getAccount(int id) {
 			return m_users[m_ids[id]];
 		}
 
-		void _yahoo_connect_finished(yahoo_local_account *account, yahoo_connect_callback callback, void *data, int conn_tag, bool error) {
+		void _yahoo_remove_account(YahooLocalAccount *account) {
+			m_ids.erase(account->id);
+			m_users.erase(account->user);
+			delete account;
+		}
+
+		void _yahoo_connect_finished(YahooLocalAccount *account, yahoo_connect_callback callback, void *data, int conn_tag, bool error) {
+			currently_writting_account = account;
 			if (error) {
-				LOG4CXX_ERROR(logger, "Connection error!");
+				LOG4CXX_ERROR(logger, account->user << ": Connection error!");
 				callback(NULL, 0, data);
 // 				np->handleDisconnected(user, 0, "Connection error.");
 			}
 			else {
-				LOG4CXX_INFO(logger, "Connected");
+				LOG4CXX_INFO(logger, account->user << ": Connected");
 				// We will have dangling pointer here, but we can't pass boost::shared_ptr here...
 				callback((void *) conn_tag, 0, data);
 			}
 		}
 
-		void _yahoo_data_read(yahoo_local_account *account, int conn_tag, boost::shared_ptr<Swift::SafeByteArray> data) {
-			// yahoo_read_ready calls ext_yahoo_read(...) in a loop, so we just have to choose proper buffer from which will
-			// that method read. We do that by static currently_read_data pointer.
+		void _yahoo_write_ready(YahooLocalAccount *account) {
+			// Find all WRITE handlers and inform that they really can write.
+			for (std::map<int, YahooHandler *>::iterator it = account->handlers.begin(); it != account->handlers.end(); it++) {
+				if (it->second->cond == YAHOO_INPUT_WRITE && !it->second->remove_later) {
+					it->second->ready();
+				}
+			}
+		}
+
+		void _yahoo_data_read(YahooLocalAccount *account, int conn_tag, boost::shared_ptr<Swift::SafeByteArray> data) {
 			std::string d(data->begin(), data->end());
 
-			LOG4CXX_INFO(logger, "data to read");
-			for (std::map<int, yahoo_handler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
-				if (it->second->cond == YAHOO_INPUT_READ) {
-					LOG4CXX_INFO(logger, "found handler");
+			// Find the handler that handles READing for this conn_tag
+			for (std::map<int, YahooHandler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
+				if (it->second->cond == YAHOO_INPUT_READ && !it->second->remove_later) {
 					std::string cpy(d);
-					currently_read_data = &cpy;
-					yahoo_read_ready(account->id, (void *) conn_tag, it->second->data);
+					it->second->ready(&cpy);
+
+					// Look like libyahoo2 needs to be informed it can write to socket after the read
+					// even we have informed it before...
+					_yahoo_write_ready(account);
+					break;
 				}
 			}
+
+			account->removeOldHandlers();
 		}
 
-		void _yahoo_data_written(yahoo_local_account *account, int conn_tag) {
+		void _yahoo_data_written(YahooLocalAccount *account, int conn_tag) {
 			LOG4CXX_INFO(logger, "data written");
-			currently_writting_account = account;
-			for (std::map<int, yahoo_handler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
+			for (std::map<int, YahooHandler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
 				if (it->second->cond == YAHOO_INPUT_WRITE) {
-					yahoo_write_ready(account->id, (void *) conn_tag, it->second->data);
+					it->second->ready();
 				}
 			}
+
+			account->removeOldHandlers();
 		}
 
-		void _yahoo_disconnected(yahoo_local_account *account, int conn_tag, const boost::optional<Swift::Connection::Error> &error) {
-			LOG4CXX_INFO(logger, "Disconnected " << error);
+		void _yahoo_disconnected(YahooLocalAccount *account, int conn_tag, const boost::optional<Swift::Connection::Error> &error) {
+			for (std::map<int, YahooHandler *>::iterator it = account->handlers_per_conn[conn_tag].begin(); it != account->handlers_per_conn[conn_tag].end(); it++) {
+				if (it->second->cond == YAHOO_INPUT_READ && !it->second->remove_later) {
+					std::string cpy;
+					it->second->ready(&cpy);
+					_yahoo_write_ready(account);
+					break;
+				}
+			}
+
+			account->removeConn(conn_tag);
 		}
 
 		int _yahoo_connect_async(int id, const char *host, int port, yahoo_connect_callback callback, void *data, int use_ssl) {
-			yahoo_local_account *account = getAccount(id);
+			YahooLocalAccount *account = getAccount(id);
 			if (!account) {
 				LOG4CXX_ERROR(logger, "Unknown account id=" << id);
 				return -1;
@@ -225,7 +269,7 @@ class YahooPlugin : public NetworkPlugin {
 
 	private:
 		Config *config;
-		std::map<std::string, yahoo_local_account *> m_users;
+		std::map<std::string, YahooLocalAccount *> m_users;
 		std::map<int, std::string> m_ids;
 };
 
@@ -276,27 +320,64 @@ static void ext_yahoo_chat_message(int id, const char *me, const char *who, cons
 }
 
 static void ext_yahoo_status_changed(int id, const char *who, int stat, const char *msg, int away, int idle, int mobile) {
+	YahooLocalAccount *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	LOG4CXX_INFO(logger, account->user << ": " << who << " status changed");
+
+	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
+	switch (stat) {
+		case YAHOO_STATUS_AVAILABLE:
+			status = pbnetwork::STATUS_ONLINE;
+			break;
+		case YAHOO_STATUS_NOTATHOME:
+		case YAHOO_STATUS_NOTATDESK:
+		case YAHOO_STATUS_NOTINOFFICE:
+		case YAHOO_STATUS_ONPHONE:
+		case YAHOO_STATUS_ONVACATION:
+		case YAHOO_STATUS_OUTTOLUNCH:
+		case YAHOO_STATUS_STEPPEDOUT:
+			status = pbnetwork::STATUS_AWAY;
+			break;
+		case YAHOO_STATUS_BRB:
+			status = pbnetwork::STATUS_XA;
+			break;
+		case YAHOO_STATUS_BUSY:
+			status = pbnetwork::STATUS_DND;
+			break;
+		case YAHOO_STATUS_OFFLINE:
+			status = pbnetwork::STATUS_NONE;
+			break;
+		default:
+			status = pbnetwork::STATUS_ONLINE;
+			break;
+	}
+
+	yahoo_buddyicon_request(id, who);
+
+	np->handleBuddyChanged(account->user, who, "", std::vector<std::string>(), status, msg ? msg : "");
 }
 
 static void ext_yahoo_got_buddies(int id, YList * buds) {
-// 	while(buddies) {
-// 		FREE(buddies->data);
-// 		buddies = buddies->next;
-// 		if(buddies)
-// 			FREE(buddies->prev);
-// 	}
-// 	for(; buds; buds = buds->next) {
-// 		yahoo_account *ya = y_new0(yahoo_account, 1);
-// 		struct yahoo_buddy *bud = buds->data;
-// 		strncpy(ya->yahoo_id, bud->id, 255);
-// 		if(bud->real_name)
-// 			strncpy(ya->name, bud->real_name, 255);
-// 		strncpy(ya->group, bud->group, 255);
-// 		ya->status = YAHOO_STATUS_OFFLINE;
-// 		buddies = y_list_append(buddies, ya);
-// 
-// /*		print_message(("%s is %s", bud->id, bud->real_name));*/
-// 	}
+	YahooLocalAccount *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	LOG4CXX_INFO(logger, account->user << ": Got buddy list");
+	for(; buds; buds = buds->next) {
+		struct yahoo_buddy *bud = (struct yahoo_buddy *) buds->data;
+
+		std::vector<std::string> groups;
+		groups.push_back(bud->group);
+		np->handleBuddyChanged(account->user, bud->id, bud->real_name ? bud->real_name : "", groups, pbnetwork::STATUS_NONE);
+	}
+
+	yahoo_set_away(id, YAHOO_STATUS_AVAILABLE, "", 1);
+	np->_yahoo_write_ready(account);
+	np->handleConnected(account->user);
 }
 
 static void ext_yahoo_got_ignore(int id, YList * igns)
@@ -307,6 +388,12 @@ static void ext_yahoo_got_buzz(int id, const char *me, const char *who, long tm)
 }
 
 static void ext_yahoo_got_im(int id, const char *me, const char *who, const char *msg, long tm, int stat, int utf8) {
+	YahooLocalAccount *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	np->handleMessage(account->user, who, msg);
 }
 
 static void ext_yahoo_rejected(int id, const char *who, const char *msg) {
@@ -350,39 +437,36 @@ static void ext_yahoo_got_cookies(int id) {
 }
 
 static void ext_yahoo_login_response(int id, int succ, const char *url) {
-	LOG4CXX_INFO(logger, "login_response");
-// 	char buff[1024];
-// 
-// 	if(succ == YAHOO_LOGIN_OK) {
-// 		ylad->status = yahoo_current_status(id);
-// 		print_message(("logged in"));
-// 		return;
-// 		
-// 	} else if(succ == YAHOO_LOGIN_UNAME) {
-// 
-// 		snprintf(buff, sizeof(buff), "Could not log into Yahoo service - username not recognised.  Please verify that your username is correctly typed.");
-// 	} else if(succ == YAHOO_LOGIN_PASSWD) {
-// 
-// 		snprintf(buff, sizeof(buff), "Could not log into Yahoo service - password incorrect.  Please verify that your password is correctly typed.");
-// 
-// 	} else if(succ == YAHOO_LOGIN_LOCK) {
-// 		
-// 		snprintf(buff, sizeof(buff), "Could not log into Yahoo service.  Your account has been locked.\nVisit %s to reactivate it.", url);
-// 
-// 	} else if(succ == YAHOO_LOGIN_DUPL) {
-// 
-// 		snprintf(buff, sizeof(buff), "You have been logged out of the yahoo service, possibly due to a duplicate login.");
-// 	} else if(succ == YAHOO_LOGIN_SOCK) {
-// 
-// 		snprintf(buff, sizeof(buff), "The server closed the socket.");
-// 	} else {
-// 		snprintf(buff, sizeof(buff), "Could not log in, unknown reason: %d.", succ);
-// 	}
-// 
-// 	ylad->status = YAHOO_STATUS_OFFLINE;
-// 	print_message((buff));
-// 	yahoo_logout();
-// 	poll_loop=0;
+	YahooLocalAccount *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	if (succ == YAHOO_LOGIN_OK) {
+		account->status = yahoo_current_status(id);
+		// We will fire handleConnected in Got Buddy List.
+		return;
+	}
+	else if (succ == YAHOO_LOGIN_UNAME) {
+		np->handleDisconnected(account->user, 0, "Could not log into Yahoo service - username not recognised.  Please verify that your username is correctly typed.");
+	}
+	else if (succ == YAHOO_LOGIN_PASSWD) {
+		np->handleDisconnected(account->user, 0, "Could not log into Yahoo service - password incorrect.  Please verify that your password is correctly typed.");
+	}
+	else if (succ == YAHOO_LOGIN_LOCK) {
+		np->handleDisconnected(account->user, 0, std::string("Could not log into Yahoo service.  Your account has been locked. Visit ") + url + " to reactivate it.");
+	}
+	else if (succ == YAHOO_LOGIN_DUPL) {
+		np->handleDisconnected(account->user, 0, "You have been logged out of the yahoo service, possibly due to a duplicate login.");
+	}
+	else if (succ == YAHOO_LOGIN_SOCK) {
+		np->handleDisconnected(account->user, 0, "The server closed the socket.");
+	}
+	else {
+		np->handleDisconnected(account->user, 0, "Could not log in, unknown reason.");
+	}
+
+	np->handleLogoutRequest(account->user, "");
 }
 
 static void ext_yahoo_error(int id, const char *_err, int fatal, int num) {
@@ -416,8 +500,16 @@ static void ext_yahoo_error(int id, const char *_err, int fatal, int num) {
 			break;
 	}
 	LOG4CXX_ERROR(logger, msg);
-// 	if(fatal)
-// 		yahoo_logout();
+
+	YahooLocalAccount *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	if(fatal) {
+		np->handleDisconnected(account->user, 0, msg);
+		np->handleLogoutRequest(account->user, "");
+	}
 }
 
 static int ext_yahoo_connect(const char *host, int port) {
@@ -425,36 +517,23 @@ static int ext_yahoo_connect(const char *host, int port) {
 }
 
 static int ext_yahoo_add_handler(int id, void *fd, yahoo_input_condition cond, void *data) {
-	yahoo_local_account *account = np->getAccount(id);
+	YahooLocalAccount *account = np->getAccount(id);
 	if (!account) {
 		return -1;
 	}
 
-	LOG4CXX_INFO(logger, "Adding handler " << cond);
-
 	int conn_tag = (unsigned long) fd;
-	yahoo_handler *handler = new yahoo_handler;
+	YahooHandler *handler = new YahooHandler(account, conn_tag, account->handler_tag++, data, cond);
+	account->addHandler(handler);
 
-	handler->conn_tag = conn_tag;
-	handler->handler_tag = account->handler_tag++;
-	handler->data = data;
-	handler->cond = cond;
-
-	if (cond == YAHOO_INPUT_WRITE) {
-		yahoo_local_account *old = currently_writting_account;
-		currently_writting_account = account;
-		yahoo_write_ready(id, fd, data);
-		currently_writting_account = old;
-	}
-
-	account->handlers[handler->handler_tag] = handler;
-	account->handlers_per_conn[conn_tag][handler->handler_tag] = handler;
+	// We are ready to write right now, so why not...
+	handler->ready();
 
 	return handler->handler_tag;
 }
 
 static void ext_yahoo_remove_handler(int id, int tag) {
-	yahoo_local_account *account = np->getAccount(id);
+	YahooLocalAccount *account = np->getAccount(id);
 	if (!account) {
 		return;
 	}
@@ -463,18 +542,13 @@ static void ext_yahoo_remove_handler(int id, int tag) {
 		return;
 	}
 
-	yahoo_handler *handler = account->handlers[tag];
-	account->handlers.erase(tag);
-	account->handlers_per_conn[handler->conn_tag].erase(tag);
-	delete handler;
+	YahooHandler *handler = account->handlers[tag];
+	handler->remove_later = true;
 }
 
 static int ext_yahoo_write(void *fd, char *buf, int len) {
-	LOG4CXX_INFO(logger, "Writting " << len);
-
 	int conn_tag = (unsigned long) fd;
-
-	yahoo_local_account *account = currently_writting_account;
+	YahooLocalAccount *account = currently_writting_account;
 
 	std::string string(buf, len);
 	account->conns[conn_tag]->write(Swift::createSafeByteArray(string));
@@ -486,13 +560,13 @@ static int ext_yahoo_read(void *fd, char *buf, int len) {
 	if (currently_read_data->size() < len) {
 		len = currently_read_data->size();
 	}
-	LOG4CXX_INFO(logger, "Reading " << len);
 	memcpy(buf, currently_read_data->c_str(), len);
 	currently_read_data->erase(0, len);
 	return len;
 }
 
 static void ext_yahoo_close(void *fd) {
+	// No need to do anything here. We close it properly in _yahoo_disconnected(...);
 }
 
 static int ext_yahoo_connect_async(int id, const char *host, int port, yahoo_connect_callback callback, void *data, int use_ssl) {
@@ -534,6 +608,7 @@ static void ext_yahoo_got_buddy_change_group(int id, const char *me, const char 
 }
 
 static void ext_yahoo_got_buddyicon(int id, const char *a, const char *b, const char *c, int checksum) {
+	LOG4CXX_INFO(logger, "got buddyicon " << c);
 }
 
 static void ext_yahoo_buddyicon_uploaded(int id, const char *url) {
@@ -545,12 +620,18 @@ static void ext_yahoo_got_buddyicon_request(int id, const char *me, const char *
 static int ext_yahoo_log(const char *fmt,...)
 {
 	static char log[8192];
+	static std::string buffered;
 	va_list ap;
 
 	va_start(ap, fmt);
 
 	vsnprintf(log, 8191, fmt, ap);
-	LOG4CXX_INFO(logger, log);
+	buffered += log;
+	if (buffered.find('\n') != std::string::npos) {
+		buffered.erase(buffered.find('\n'), 1);
+		LOG4CXX_INFO(logger, buffered);
+		buffered.clear();
+	}
 	fflush(stderr);
 	va_end(ap);
 	return 0;
@@ -658,7 +739,6 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	Swift::logging=true;
 	Logging::initBackendLogging(&config);
 
 	register_callbacks();

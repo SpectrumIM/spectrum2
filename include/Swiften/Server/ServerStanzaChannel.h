@@ -14,6 +14,7 @@
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/IQ.h"
 #include "Swiften/Elements/Presence.h"
+#include "Swiften/TLS/Certificate.h"
 
 namespace Swift {
 	class Error;
