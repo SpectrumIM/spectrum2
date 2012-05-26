@@ -10,6 +10,7 @@
 #include "twitcurl.h"
 
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <vector>
 #include <cstdio>
@@ -32,6 +33,15 @@ class TwitterPlugin : public NetworkPlugin {
 
 		TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
+
+			if(CONFIG_HAS_KEY(config, "twitter.consumer_key") == false ||
+			   CONFIG_HAS_KEY(config, "twitter.consumer_secret") == false) {
+				LOG4CXX_ERROR(logger, "Couldn't find consumer key and/or secret. Please check config file.");
+				exit(0);
+			}
+			consumerKey = CONFIG_STRING(config, "twitter.consumer_key");
+			consumerSecret = CONFIG_STRING(config, "twitter.consumer_secret");
+
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
@@ -70,13 +80,6 @@ class TwitterPlugin : public NetworkPlugin {
 			}
 			
 			LOG4CXX_INFO(logger, std::string("Received login request for ") + user)
-			//twitCurl &twitterObj = sessions[user];
-			//std::string myOAuthAccessTokenSecret, myOAuthAccessTokenKey;
-        	//twitterObj.getOAuth().getOAuthTokenKey( myOAuthAccessTokenKey );
-        	//twitterObj.getOAuth().getOAuthTokenSecret( myOAuthAccessTokenSecret );
-
-			//if(myOAuthAccessTokenSecret.size() && myOAuthAccessTokenKey.size()) {	
-			//}
 			
 			std::string username = user.substr(0,user.find('@'));
 			std::string passwd = password;
@@ -85,22 +88,33 @@ class TwitterPlugin : public NetworkPlugin {
 			sessions[user] = new twitCurl();
 			handleConnected(user);
 			handleBuddyChanged(user, "twitter-account", "twitter", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
-	        
-//			std::string ip = "10.93.0.36";
-//			std::string port = "3128";
-//			std::string puser = "cs09s022";
-//			std::string ppasswd = "";
-//			sessions[user]->setProxyServerIp(ip);
-//	        sessions[user]->setProxyServerPort(port);
-//	        sessions[user]->setProxyUserName(puser);
-//	        sessions[user]->setProxyPassword(ppasswd);
 			
+			if(CONFIG_HAS_KEY(config,"proxy.server")) {			
+				std::string ip = CONFIG_STRING(config,"proxy.server");
+
+				std::ostringstream out; 
+				out << CONFIG_INT(config,"proxy.port");
+				std::string port = out.str();
+
+				std::string puser = CONFIG_STRING(config,"proxy.user");
+				std::string ppasswd = CONFIG_STRING(config,"proxy.password");
+
+				LOG4CXX_INFO(logger, ip << " " << port << " " << puser << " " << ppasswd)
+
+				sessions[user]->setProxyServerIp(ip);
+		        sessions[user]->setProxyServerPort(port);
+		        sessions[user]->setProxyUserName(puser);
+		        sessions[user]->setProxyPassword(ppasswd);
+			}
 			connectionState[user] = NEW;
 			
 			sessions[user]->setTwitterUsername(username);
 			sessions[user]->setTwitterPassword(passwd); 
-			sessions[user]->getOAuth().setConsumerKey( std::string( "qxfSCX7WN7SZl7dshqGZA" ) );
-			sessions[user]->getOAuth().setConsumerSecret( std::string( "ypWapSj87lswvnksZ46hMAoAZvST4ePGPxAQw6S2o" ) );
+			sessions[user]->getOAuth().setConsumerKey(consumerKey);
+			sessions[user]->getOAuth().setConsumerSecret(consumerSecret);
+
+//			sessions[user]->getOAuth().setConsumerKey( std::string( "qxfSCX7WN7SZl7dshqGZA" ) );
+//			sessions[user]->getOAuth().setConsumerSecret( std::string( "ypWapSj87lswvnksZ46hMAoAZvST4ePGPxAQw6S2o" ) );
 			
 			if(registeredUsers.count(user) == 0) {	
 				std::string authUrl;
@@ -157,7 +171,6 @@ class TwitterPlugin : public NetworkPlugin {
 						return;
 					}
 
-					LOG4CXX_INFO(logger, "Updating status for " << user << ": " << data);
 					std::string replyMsg; 
 					if( sessions[user]->statusUpdate( data ) ) {
 						sessions[user]->getLastWebResponse( replyMsg );
@@ -167,6 +180,8 @@ class TwitterPlugin : public NetworkPlugin {
 						sessions[user]->getLastCurlError( replyMsg );
 						LOG4CXX_INFO(logger, "twitterClient:: twitCurl::statusUpdate error: " << replyMsg );
 					}
+					
+					LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
 				}
 			}
 		}
@@ -184,6 +199,8 @@ class TwitterPlugin : public NetworkPlugin {
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
 		Config *config;
 		UserDB *db;
+		std::string consumerKey;
+		std::string consumerSecret;
 		std::set<std::string> registeredUsers;
 		std::map<std::string, twitCurl*> sessions;
 		std::map<std::string, status> connectionState;
