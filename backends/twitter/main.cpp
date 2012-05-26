@@ -1,288 +1,3 @@
-//#include "twitcurl.h"
-//#include <cstdio>
-//#include <iostream>
-//#include <fstream>
-//
-//void printUsage()
-//{
-//    printf( "\nUsage:\ntwitterClient -u username -p password\n" );
-//}
-//
-//int main( int argc, char* argv[] )
-//{
-//    std::string userName( "" );
-//    std::string passWord( "" );
-//    if( argc > 4 )
-//    {
-//        for( int i = 1; i < argc; i += 2 )
-//        {
-//            if( 0 == strncmp( argv[i], "-u", strlen("-u") ) )
-//            {
-//                userName = argv[i+1];
-//            }
-//            else if( 0 == strncmp( argv[i], "-p", strlen("-p") ) )
-//            {
-//                passWord = argv[i+1];
-//            }
-//        }
-//        if( ( 0 == userName.length() ) || ( 0 == passWord.length() ) )
-//        {
-//            printUsage();
-//            return 0;
-//        }
-//    }
-//    else
-//    {
-//        printUsage();
-//        return 0;
-//    }
-//
-//    twitCurl twitterObj;
-//    std::string tmpStr;
-//    std::string replyMsg;
-//    char tmpBuf[1024];
-//
-//    /* Set twitter username and password */
-//    twitterObj.setTwitterUsername( userName );
-//    twitterObj.setTwitterPassword( passWord );
-//
-//    /* Set proxy server usename, password, IP and port (if present) */
-//    memset( tmpBuf, 0, 1024 );
-//    printf( "\nDo you have a proxy server configured (0 for no; 1 for yes): " );
-//    gets( tmpBuf );
-//    tmpStr = tmpBuf;
-//
-//    if( std::string::npos != tmpStr.find( "1" ) )
-//    {
-//        char proxyIp[1024];
-//        char proxyPort[1024];
-//        char proxyUsername[1024];
-//        char proxyPassword[1024];
-//
-//        memset( proxyIp, 0, 1024 );
-//        memset( proxyPort, 0, 1024 );
-//        memset( proxyUsername, 0, 1024 );
-//        memset( proxyPassword, 0, 1024 );
-//
-//        printf( "\nEnter proxy server IP: " );
-//        gets( proxyIp );
-//        printf( "\nEnter proxy server port: " );
-//        gets( proxyPort );
-//        printf( "\nEnter proxy server username: " );
-//        gets( proxyUsername );
-//        printf( "\nEnter proxy server password: " );
-//        gets( proxyPassword );
-//
-//        tmpStr = proxyIp;
-//        twitterObj.setProxyServerIp( tmpStr );
-//        tmpStr = proxyPort;
-//        twitterObj.setProxyServerPort( tmpStr );
-//        tmpStr = proxyUsername;
-//        twitterObj.setProxyUserName( tmpStr );
-//        tmpStr = proxyPassword;
-//        twitterObj.setProxyPassword( tmpStr );
-//    }
-//
-//    /* OAuth flow begins */
-//    /* Step 0: Set OAuth related params. These are got by registering your app at twitter.com */
-//    twitterObj.getOAuth().setConsumerKey( std::string( "qxfSCX7WN7SZl7dshqGZA" ) );
-//    twitterObj.getOAuth().setConsumerSecret( std::string( "ypWapSj87lswvnksZ46hMAoAZvST4ePGPxAQw6S2o" ) );
-//
-////    twitterObj.getOAuth().setConsumerKey( std::string( "vlC5S1NCMHHg8mD1ghPRkA" ) );
-////    twitterObj.getOAuth().setConsumerSecret( std::string( "3w4cIrHyI3IYUZW5O2ppcFXmsACDaENzFdLIKmEU84" ) );
-//
-//    /* Step 1: Check if we alredy have OAuth access token from a previous run */
-//    std::string myOAuthAccessTokenKey("");
-//    std::string myOAuthAccessTokenSecret("");
-//    std::ifstream oAuthTokenKeyIn;
-//    std::ifstream oAuthTokenSecretIn;
-//
-//    oAuthTokenKeyIn.open( "twitterClient_token_key.txt" );
-//    oAuthTokenSecretIn.open( "twitterClient_token_secret.txt" );
-//
-//    memset( tmpBuf, 0, 1024 );
-//    oAuthTokenKeyIn >> tmpBuf;
-//    myOAuthAccessTokenKey = tmpBuf;
-//
-//    memset( tmpBuf, 0, 1024 );
-//    oAuthTokenSecretIn >> tmpBuf;
-//    myOAuthAccessTokenSecret = tmpBuf;
-//
-//    oAuthTokenKeyIn.close();
-//    oAuthTokenSecretIn.close();
-//
-//    if( myOAuthAccessTokenKey.size() && myOAuthAccessTokenSecret.size() )
-//    {
-//        /* If we already have these keys, then no need to go through auth again */
-//        printf( "\nUsing:\nKey: %s\nSecret: %s\n\n", myOAuthAccessTokenKey.c_str(), myOAuthAccessTokenSecret.c_str() );
-//
-//        twitterObj.getOAuth().setOAuthTokenKey( myOAuthAccessTokenKey );
-//        twitterObj.getOAuth().setOAuthTokenSecret( myOAuthAccessTokenSecret );
-//    }
-//    else
-//    {
-//        /* Step 2: Get request token key and secret */
-//        std::string authUrl;
-//        twitterObj.oAuthRequestToken( authUrl );
-//
-//        /* Step 3: Get PIN  */
-//        memset( tmpBuf, 0, 1024 );
-//        printf( "\nDo you want to visit twitter.com for PIN (0 for no; 1 for yes): " );
-//        gets( tmpBuf );
-//        tmpStr = tmpBuf;
-//        if( std::string::npos != tmpStr.find( "1" ) )
-//        {
-//            /* Ask user to visit twitter.com auth page and get PIN */
-//            memset( tmpBuf, 0, 1024 );
-//            printf( "\nPlease visit this link in web browser and authorize this application:\n%s", authUrl.c_str() );
-//            printf( "\nEnter the PIN provided by twitter: " );
-//            gets( tmpBuf );
-//            tmpStr = tmpBuf;
-//            twitterObj.getOAuth().setOAuthPin( tmpStr );
-//        }
-//        else
-//        {
-//            /* Else, pass auth url to twitCurl and get it via twitCurl PIN handling */
-//            twitterObj.oAuthHandlePIN( authUrl );
-//        }
-//
-//        /* Step 4: Exchange request token with access token */
-//        twitterObj.oAuthAccessToken();
-//
-//        /* Step 5: Now, save this access token key and secret for future use without PIN */
-//        twitterObj.getOAuth().getOAuthTokenKey( myOAuthAccessTokenKey );
-//        twitterObj.getOAuth().getOAuthTokenSecret( myOAuthAccessTokenSecret );
-//
-//        /* Step 6: Save these keys in a file or wherever */
-//        std::ofstream oAuthTokenKeyOut;
-//        std::ofstream oAuthTokenSecretOut;
-//
-//        oAuthTokenKeyOut.open( "twitterClient_token_key.txt" );
-//        oAuthTokenSecretOut.open( "twitterClient_token_secret.txt" );
-//
-//        oAuthTokenKeyOut.clear();
-//        oAuthTokenSecretOut.clear();
-//
-//        oAuthTokenKeyOut << myOAuthAccessTokenKey.c_str();
-//        oAuthTokenSecretOut << myOAuthAccessTokenSecret.c_str();
-//
-//        oAuthTokenKeyOut.close();
-//        oAuthTokenSecretOut.close();
-//    }
-//    /* OAuth flow ends */
-//
-//    /* Post a new status message */
-//    memset( tmpBuf, 0, 1024 );
-//    printf( "\nEnter a new status message: " );
-//    gets( tmpBuf );
-//    tmpStr = tmpBuf;
-//    replyMsg = "";
-//    if( twitterObj.statusUpdate( tmpStr ) )
-//    {
-//        twitterObj.getLastWebResponse( replyMsg );
-//        printf( "\ntwitterClient:: twitCurl::statusUpdate web response:\n%s\n", replyMsg.c_str() );
-//    }
-//    else
-//    {
-//        twitterObj.getLastCurlError( replyMsg );
-//        printf( "\ntwitterClient:: twitCurl::statusUpdate error:\n%s\n", replyMsg.c_str() );
-//    }
-//
-////    /* Search a string */
-////    twitterObj.setTwitterApiType( twitCurlTypes::eTwitCurlApiFormatJson );
-////    printf( "\nEnter string to search: " );
-////    memset( tmpBuf, 0, 1024 );
-////    gets( tmpBuf );
-////    tmpStr = tmpBuf;
-////    replyMsg = "";
-////    if( twitterObj.search( tmpStr ) )
-////    {
-////        twitterObj.getLastWebResponse( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::search web response:\n%s\n", replyMsg.c_str() );
-////    }
-////    else
-////    {
-////        twitterObj.getLastCurlError( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::search error:\n%s\n", replyMsg.c_str() );
-////    }
-////
-////    /* Get user timeline */
-////    replyMsg = "";
-////    printf( "\nGetting user timeline\n" );
-////    if( twitterObj.timelineUserGet( false, false, 0 ) )
-////    {
-////        twitterObj.getLastWebResponse( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::timelineUserGet web response:\n%s\n", replyMsg.c_str() );
-////    }
-////    else
-////    {
-////        twitterObj.getLastCurlError( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::timelineUserGet error:\n%s\n", replyMsg.c_str() );
-////    }
-//
-//#ifdef _TWITCURL_TEST_
-////    /* Destroy a status message */
-////    memset( statusMsg, 0, 1024 );
-////    printf( "\nEnter status message id to delete: " );
-////    gets( statusMsg );
-////    tmpStr = statusMsg;
-////    replyMsg = "";
-////    if( twitterObj.statusDestroyById( tmpStr ) )
-////    {
-////        twitterObj.getLastWebResponse( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::statusDestroyById web response:\n%s\n", replyMsg.c_str() );
-////    }
-////    else
-////    {
-////        twitterObj.getLastCurlError( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::statusDestroyById error:\n%s\n", replyMsg.c_str() );
-////    }
-////
-////    /* Get public timeline */
-////    replyMsg = "";
-////    printf( "\nGetting public timeline\n" );
-////    if( twitterObj.timelinePublicGet() )
-////    {
-////        twitterObj.getLastWebResponse( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::timelinePublicGet web response:\n%s\n", replyMsg.c_str() );
-////    }
-////    else
-////    {
-////        twitterObj.getLastCurlError( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::timelinePublicGet error:\n%s\n", replyMsg.c_str() );
-////    }
-////
-////    /* Get friend ids */
-////    replyMsg = "";
-////    printf( "\nGetting friend ids\n" );
-////    tmpStr = "techcrunch";
-////    if( twitterObj.friendsIdsGet( tmpStr, false ) )
-////    {
-////        twitterObj.getLastWebResponse( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::friendsIdsGet web response:\n%s\n", replyMsg.c_str() );
-////    }
-////    else
-////    {
-////        twitterObj.getLastCurlError( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::friendsIdsGet error:\n%s\n", replyMsg.c_str() );
-////    }
-////
-////    /* Get trends */
-////    if( twitterObj.trendsDailyGet() )
-////    {
-////        twitterObj.getLastWebResponse( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::trendsDailyGet web response:\n%s\n", replyMsg.c_str() );
-////    }
-////    else
-////    {
-////        twitterObj.getLastCurlError( replyMsg );
-////        printf( "\ntwitterClient:: twitCurl::trendsDailyGet error:\n%s\n", replyMsg.c_str() );
-//    }
-//#endif // _TWITCURL_TEST_
-//
-//    return 0;
-//}
-
 #include "transport/config.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
@@ -293,10 +8,12 @@
 #include "sys/signal.h"
 #include <boost/algorithm/string.hpp>
 #include "twitcurl.h"
+
 #include <iostream>
 #include <map>
 #include <vector>
 #include <cstdio>
+#include "userdb.h"
 
 using namespace boost::filesystem;
 using namespace boost::program_options;
@@ -319,8 +36,17 @@ class TwitterPlugin : public NetworkPlugin {
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
-
+			
+			db = new UserDB(std::string("user.db"));
+			registeredUsers = db->getRegisteredUsers();
+			
 			LOG4CXX_INFO(logger, "Starting the plugin.");
+		}
+
+		~TwitterPlugin() {
+			delete db;
+			std::map<std::string, twitCurl*>::iterator it;
+			for(it = sessions.begin() ; it != sessions.end() ; it++) delete it->second;
 		}
 
 		// Send data to NetworkPlugin server
@@ -336,12 +62,14 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		// User trying to login into his twitter account
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-			LOG4CXX_INFO(logger, std::string("Received login request for ") + user)
-			if(sessions.count(user)) {
+			if(connectionState.count(user) && (connectionState[user] == NEW || 
+						                        connectionState[user] == CONNECTED || 
+												connectionState[user] == WAITING_FOR_PIN)) {
 				LOG4CXX_INFO(logger, std::string("A session corresponding to ") + user + std::string(" is already active"))
 				return;
 			}
 			
+			LOG4CXX_INFO(logger, std::string("Received login request for ") + user)
 			//twitCurl &twitterObj = sessions[user];
 			//std::string myOAuthAccessTokenSecret, myOAuthAccessTokenKey;
         	//twitterObj.getOAuth().getOAuthTokenKey( myOAuthAccessTokenKey );
@@ -351,7 +79,7 @@ class TwitterPlugin : public NetworkPlugin {
 			//}
 			
 			std::string username = user.substr(0,user.find('@'));
-			std::string passwd = "dummy"; // Not needed since we are using OAuth
+			std::string passwd = password;
 			LOG4CXX_INFO(logger, username + "  " + passwd)
 
 			sessions[user] = new twitCurl();
@@ -374,11 +102,23 @@ class TwitterPlugin : public NetworkPlugin {
 			sessions[user]->getOAuth().setConsumerKey( std::string( "qxfSCX7WN7SZl7dshqGZA" ) );
 			sessions[user]->getOAuth().setConsumerSecret( std::string( "ypWapSj87lswvnksZ46hMAoAZvST4ePGPxAQw6S2o" ) );
 			
-			std::string authUrl;
-			sessions[user]->oAuthRequestToken( authUrl );
-			handleMessage(user, "twitter-account", std::string("Please visit the following link and authorize this application: ") + authUrl);
-			handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with 'pin:'. Ex. 'pin: 1234'"));
-			connectionState[user] = WAITING_FOR_PIN;	
+			if(registeredUsers.count(user) == 0) {	
+				std::string authUrl;
+				if (sessions[user]->oAuthRequestToken( authUrl ) == false ) {
+					LOG4CXX_ERROR(logger, "Error creating twitter authorization url!");
+					handleLogoutRequest(user, username);
+					return;
+				}
+				handleMessage(user, "twitter-account", std::string("Please visit the following link and authorize this application: ") + authUrl);
+				handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with 'pin:'. Ex. 'pin: 1234'"));
+				connectionState[user] = WAITING_FOR_PIN;	
+			} else {
+				std::vector<std::string> keysecret;
+				db->fetch(user, keysecret);
+				sessions[user]->getOAuth().setOAuthTokenKey( keysecret[0] );
+				sessions[user]->getOAuth().setOAuthTokenSecret( keysecret[1] );
+				connectionState[user] = CONNECTED;
+			}
 		}
 		
 		// User logging out
@@ -400,11 +140,23 @@ class TwitterPlugin : public NetworkPlugin {
 				if(cmd == "pin") {
 					sessions[user]->getOAuth().setOAuthPin( data );
 					sessions[user]->oAuthAccessToken();
+					
+					std::string OAuthAccessTokenKey, OAuthAccessTokenSecret;
+					sessions[user]->getOAuth().getOAuthTokenKey( OAuthAccessTokenKey );
+					sessions[user]->getOAuth().getOAuthTokenSecret( OAuthAccessTokenSecret );
+					db->insert(UserData(user, OAuthAccessTokenKey, OAuthAccessTokenSecret));
+					registeredUsers.insert(user);
+
 					connectionState[user] = CONNECTED;
 					LOG4CXX_INFO(logger, "Sent PIN " << data << " and obtained access token");
 				}
 
 				if(cmd == "status") {
+					if(connectionState[user] != CONNECTED) {
+						LOG4CXX_ERROR(logger, "Trying to update status for " << user << " when not connected!");
+						return;
+					}
+
 					LOG4CXX_INFO(logger, "Updating status for " << user << ": " << data);
 					std::string replyMsg; 
 					if( sessions[user]->statusUpdate( data ) ) {
@@ -431,6 +183,8 @@ class TwitterPlugin : public NetworkPlugin {
 	private:
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
 		Config *config;
+		UserDB *db;
+		std::set<std::string> registeredUsers;
 		std::map<std::string, twitCurl*> sessions;
 		std::map<std::string, status> connectionState;
 };
