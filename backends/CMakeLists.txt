@@ -11,9 +11,9 @@ if (PROTOBUF_FOUND)
 
 	ADD_SUBDIRECTORY(swiften)
 
-	if(YAHOO2_FOUND)
+# 	if(YAHOO2_FOUND)
 		ADD_SUBDIRECTORY(libyahoo2)
-	endif()
+# 	endif()
 
 	ADD_SUBDIRECTORY(template)
 

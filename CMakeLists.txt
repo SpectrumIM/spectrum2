@@ -165,12 +165,13 @@ if (PROTOBUF_FOUND)
 		message("Skype plugin      : no (install dbus-glib-devel)")
 	endif()
 
-	if(YAHOO2_FOUND)
+#	We have our own copy now...
+# 	if(YAHOO2_FOUND)
 		message("Libyahoo2 plugin  : yes")
-		include_directories(${YAHOO2_INCLUDE_DIR})
-	else()
-		message("Libyahoo2 plugin  : no (install libyahoo2-devel)")
-	endif()
+# 		include_directories(${YAHOO2_INCLUDE_DIR})
+# 	else()
+# 		message("Libyahoo2 plugin  : no (install libyahoo2-devel)")
+# 	endif()
 
 else()
 	message("Network plugins   : no (install libprotobuf-dev)")
