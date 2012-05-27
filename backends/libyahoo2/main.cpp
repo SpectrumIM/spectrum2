@@ -12,6 +12,7 @@
 
 #include "yahoohandler.h"
 #include "yahoolocalaccount.h"
+#include "httpfetch.h"
 
 // Swiften
 #include "Swiften/Swiften.h"
@@ -153,6 +154,26 @@ class YahooPlugin : public NetworkPlugin {
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
 			LOG4CXX_INFO(logger, user << ": Added buddy " << buddyName << ".");
 			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
+		}
+
+		void _avatar_fetched(HTTPFetch *fetch, int account_id, unsigned int id, const std::string &img) {
+			handleVCard(m_ids[account_id], id, "", "", "", img);
+			delete fetch;
+		}
+
+		void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id) {
+			YahooLocalAccount *account = m_users[user];
+			if (!account) {
+				return;
+			}
+
+			if (account->urls.find(legacyName) == account->urls.end()) {
+				return;
+			}
+
+			HTTPFetch *fetch = new HTTPFetch(&m_boostIOServiceThread, m_factories->getConnectionFactory());
+			fetch->onURLFetched.connect(boost::bind(&YahooPlugin::_avatar_fetched, this, fetch, account->id, id, _1));
+			fetch->fetchURL(account->urls[legacyName]);
 		}
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
@@ -356,6 +377,7 @@ static void ext_yahoo_status_changed(int id, const char *who, int stat, const ch
 	}
 
 	yahoo_buddyicon_request(id, who);
+	np->_yahoo_write_ready(account);
 
 	np->handleBuddyChanged(account->user, who, "", std::vector<std::string>(), status, msg ? msg : "");
 }
@@ -375,7 +397,7 @@ static void ext_yahoo_got_buddies(int id, YList * buds) {
 		np->handleBuddyChanged(account->user, bud->id, bud->real_name ? bud->real_name : "", groups, pbnetwork::STATUS_NONE);
 	}
 
-	yahoo_set_away(id, YAHOO_STATUS_AVAILABLE, "", 1);
+// 	yahoo_set_away(id, YAHOO_STATUS_AVAILABLE, "", 1);
 	np->_yahoo_write_ready(account);
 	np->handleConnected(account->user);
 }
@@ -602,19 +624,27 @@ static void ext_yahoo_got_search_result(int id, int found, int start, int total,
 }
 
 static void ext_yahoo_got_buddyicon_checksum(int id, const char *a, const char *b, int checksum) {
+	LOG4CXX_INFO(logger, "got buddyicon_checksum");
 }
 
 static void ext_yahoo_got_buddy_change_group(int id, const char *me, const char *who, const char *old_group, const char *new_group) {
 }
 
-static void ext_yahoo_got_buddyicon(int id, const char *a, const char *b, const char *c, int checksum) {
-	LOG4CXX_INFO(logger, "got buddyicon " << c);
+static void ext_yahoo_got_buddyicon(int id, const char *me, const char *who, const char *url, int checksum) {
+	YahooLocalAccount *account = np->getAccount(id);
+	if (!account) {
+		return;
+	}
+
+	LOG4CXX_INFO(logger, account->user << ": got buddyicon of " << who);
+	account->urls[who] = url;
 }
 
 static void ext_yahoo_buddyicon_uploaded(int id, const char *url) {
 }
 
 static void ext_yahoo_got_buddyicon_request(int id, const char *me, const char *who) {
+	LOG4CXX_INFO(logger, "got buddyicon_request");
 }
 
 static int ext_yahoo_log(const char *fmt,...)

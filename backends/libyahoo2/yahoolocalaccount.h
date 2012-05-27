@@ -48,6 +48,7 @@ class YahooLocalAccount {
 		int conn_tag;
 		std::map<int, YahooHandler *> handlers;
 		std::map<int, std::map<int, YahooHandler *> > handlers_per_conn;
+		std::map<std::string, std::string> urls;
 		int handler_tag;
 		int status;
 		std::string msg;
