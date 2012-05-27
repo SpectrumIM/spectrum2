@@ -1,6 +1,10 @@
 #include "transport/config.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
+#include "transport/sqlite3backend.h"
+#include "transport/mysqlbackend.h"
+#include "transport/pqxxbackend.h"
+#include "transport/storagebackend.h"
 #include "Swiften/Swiften.h"
 #include "unistd.h"
 #include "signal.h"
@@ -24,6 +28,7 @@ DEFINE_LOGGER(logger, "Twitter Backend");
 Swift::SimpleEventLoop *loop_; // Event Loop
 class TwitterPlugin; // The plugin
 TwitterPlugin * np = NULL;
+StorageBackend *storagebackend;
 
 class TwitterPlugin : public NetworkPlugin {
 	public:
@@ -41,20 +46,23 @@ class TwitterPlugin : public NetworkPlugin {
 			}
 			consumerKey = CONFIG_STRING(config, "twitter.consumer_key");
 			consumerSecret = CONFIG_STRING(config, "twitter.consumer_secret");
+			OAUTH_KEY = "oauth_key";
+			OAUTH_SECRET = "oauth_secret";
 
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
 			
-			db = new UserDB(std::string("user.db"));
-			registeredUsers = db->getRegisteredUsers();
+			//db = new UserDB(std::string("user.db"));
+			//registeredUsers = db->getRegisteredUsers();
 			
 			LOG4CXX_INFO(logger, "Starting the plugin.");
 		}
 
 		~TwitterPlugin() {
-			delete db;
+			//delete db;
+			delete storagebackend;
 			std::map<std::string, twitCurl*>::iterator it;
 			for(it = sessions.begin() ; it != sessions.end() ; it++) delete it->second;
 		}
@@ -106,17 +114,28 @@ class TwitterPlugin : public NetworkPlugin {
 		        sessions[user]->setProxyUserName(puser);
 		        sessions[user]->setProxyPassword(ppasswd);
 			}
-			connectionState[user] = NEW;
-			
+
+			connectionState[user] = NEW;			
 			sessions[user]->setTwitterUsername(username);
 			sessions[user]->setTwitterPassword(passwd); 
 			sessions[user]->getOAuth().setConsumerKey(consumerKey);
 			sessions[user]->getOAuth().setConsumerSecret(consumerSecret);
-
-//			sessions[user]->getOAuth().setConsumerKey( std::string( "qxfSCX7WN7SZl7dshqGZA" ) );
-//			sessions[user]->getOAuth().setConsumerSecret( std::string( "ypWapSj87lswvnksZ46hMAoAZvST4ePGPxAQw6S2o" ) );
 			
-			if(registeredUsers.count(user) == 0) {	
+			LOG4CXX_INFO(logger, "Querying database for user " << user)
+
+			UserInfo info;	
+			if(storagebackend->getUser(user, info) == false/*registeredUsers.count(user) == 0*/) {			
+				LOG4CXX_INFO(logger, "Creating database entry for user " << user)
+				exit(0);
+				info.jid = user;
+				info.password = "";
+				info.uin = username;
+				info.language = "";
+				info.encoding = "";
+				info.vip = false;
+				info.id = 0;
+				storagebackend->setUser(info);
+
 				std::string authUrl;
 				if (sessions[user]->oAuthRequestToken( authUrl ) == false ) {
 					LOG4CXX_ERROR(logger, "Error creating twitter authorization url!");
@@ -127,10 +146,16 @@ class TwitterPlugin : public NetworkPlugin {
 				handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with 'pin:'. Ex. 'pin: 1234'"));
 				connectionState[user] = WAITING_FOR_PIN;	
 			} else {
-				std::vector<std::string> keysecret;
-				db->fetch(user, keysecret);
-				sessions[user]->getOAuth().setOAuthTokenKey( keysecret[0] );
-				sessions[user]->getOAuth().setOAuthTokenSecret( keysecret[1] );
+				//std::vector<std::string> keysecret;
+				//db->fetch(user, keysecret);
+				LOG4CXX_INFO(logger, user << " is already registerd. Using the stored oauth key and secret")
+				std::string key, secret;
+				int type;
+				storagebackend->getUserSetting((long)info.id, OAUTH_KEY, type, key);
+				storagebackend->getUserSetting((long)info.id, OAUTH_SECRET, type, secret);
+
+				sessions[user]->getOAuth().setOAuthTokenKey( key );
+				sessions[user]->getOAuth().setOAuthTokenSecret( secret );
 				connectionState[user] = CONNECTED;
 			}
 		}
@@ -158,8 +183,20 @@ class TwitterPlugin : public NetworkPlugin {
 					std::string OAuthAccessTokenKey, OAuthAccessTokenSecret;
 					sessions[user]->getOAuth().getOAuthTokenKey( OAuthAccessTokenKey );
 					sessions[user]->getOAuth().getOAuthTokenSecret( OAuthAccessTokenSecret );
-					db->insert(UserData(user, OAuthAccessTokenKey, OAuthAccessTokenSecret));
-					registeredUsers.insert(user);
+
+
+					//db->insert(UserData(user, OAuthAccessTokenKey, OAuthAccessTokenSecret));
+					//registeredUsers.insert(user);
+					UserInfo info;
+
+				   	if(storagebackend->getUser(user, info) == false) {
+						LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+						handleLogoutRequest(user, "");
+						return;
+					}
+
+					storagebackend->updateUserSetting((long)info.id, OAUTH_KEY, OAuthAccessTokenKey);	
+					storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);	
 
 					connectionState[user] = CONNECTED;
 					LOG4CXX_INFO(logger, "Sent PIN " << data << " and obtained access token");
@@ -198,12 +235,14 @@ class TwitterPlugin : public NetworkPlugin {
 	private:
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
 		Config *config;
-		UserDB *db;
+		//UserDB *db;
 		std::string consumerKey;
 		std::string consumerSecret;
-		std::set<std::string> registeredUsers;
+		//std::set<std::string> registeredUsers;
 		std::map<std::string, twitCurl*> sessions;
 		std::map<std::string, status> connectionState;
+		std::string OAUTH_KEY;
+		std::string OAUTH_SECRET;
 };
 
 static void spectrum_sigchld_handler(int sig)
@@ -266,6 +305,18 @@ int main (int argc, char* argv[]) {
 	}
 
 	Logging::initBackendLogging(&config);
+	
+	std::string error;
+	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
+	if (storageBackend == NULL) {
+		LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error)
+		return -2;
+	}
+
+	else if (!storageBackend->connect()) {
+		LOG4CXX_ERROR(logger, "Can't connect to database!")
+		return -1;
+	}
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
