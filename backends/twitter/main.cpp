@@ -121,20 +121,18 @@ class TwitterPlugin : public NetworkPlugin {
 			sessions[user]->getOAuth().setConsumerKey(consumerKey);
 			sessions[user]->getOAuth().setConsumerSecret(consumerSecret);
 			
-			LOG4CXX_INFO(logger, "Querying database for user " << user)
+			LOG4CXX_INFO(logger, "Querying database for usersettings of " << user)
+			
+			UserInfo info;
+			storagebackend->getUser(user, info);
 
-			UserInfo info;	
-			if(storagebackend->getUser(user, info) == false/*registeredUsers.count(user) == 0*/) {			
-				LOG4CXX_INFO(logger, "Creating database entry for user " << user)
-				exit(0);
-				info.jid = user;
-				info.password = "";
-				info.uin = username;
-				info.language = "";
-				info.encoding = "";
-				info.vip = false;
-				info.id = 0;
-				storagebackend->setUser(info);
+			std::string key="", secret="";
+			int type;
+			storagebackend->getUserSetting((long)info.id, OAUTH_KEY, type, key);
+			storagebackend->getUserSetting((long)info.id, OAUTH_SECRET, type, secret);
+
+			if(key == "" || secret == ""/*registeredUsers.count(user) == 0*/) {			
+				LOG4CXX_INFO(logger, "Intiating oauthflow for user " << user)
 
 				std::string authUrl;
 				if (sessions[user]->oAuthRequestToken( authUrl ) == false ) {
@@ -149,10 +147,7 @@ class TwitterPlugin : public NetworkPlugin {
 				//std::vector<std::string> keysecret;
 				//db->fetch(user, keysecret);
 				LOG4CXX_INFO(logger, user << " is already registerd. Using the stored oauth key and secret")
-				std::string key, secret;
-				int type;
-				storagebackend->getUserSetting((long)info.id, OAUTH_KEY, type, key);
-				storagebackend->getUserSetting((long)info.id, OAUTH_SECRET, type, secret);
+				LOG4CXX_INFO(logger, key << " " << secret)
 
 				sessions[user]->getOAuth().setOAuthTokenKey( key );
 				sessions[user]->getOAuth().setOAuthTokenSecret( secret );
@@ -307,13 +302,13 @@ int main (int argc, char* argv[]) {
 	Logging::initBackendLogging(&config);
 	
 	std::string error;
-	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
-	if (storageBackend == NULL) {
+	storagebackend = StorageBackend::createBackend(&config, error);
+	if (storagebackend == NULL) {
 		LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error)
 		return -2;
 	}
 
-	else if (!storageBackend->connect()) {
+	else if (!storagebackend->connect()) {
 		LOG4CXX_ERROR(logger, "Can't connect to database!")
 		return -1;
 	}
