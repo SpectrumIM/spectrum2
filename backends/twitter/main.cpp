@@ -12,6 +12,7 @@
 #include "sys/signal.h"
 #include <boost/algorithm/string.hpp>
 #include "twitcurl.h"
+#include "Swiften/Parser/StringTreeParser.h"
 
 #include <iostream>
 #include <sstream>
@@ -228,7 +229,7 @@ class TwitterPlugin : public NetworkPlugin {
 					}
 					
 					std::string replyMsg; 
-					if( sessions[user]->timelinePublicGet() ) {
+					if( sessions[user]->timelinePublicGet()/*(false, false, 20, sessions[user]->getTwitterUsername(), true)*/ ) {
 						sessions[user]->getLastWebResponse( replyMsg );
 						LOG4CXX_INFO(logger, "twitCurl::timeline web response: " << replyMsg );
 						handleMessage(user, "twitter-account", replyMsg);

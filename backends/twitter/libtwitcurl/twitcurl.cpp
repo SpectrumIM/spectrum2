@@ -425,6 +425,24 @@ bool twitCurl::timelinePublicGet()
 }
 
 /*++
+* @method: twitCurl::timelineHomeGet
+*
+* @description: method to get home timeline
+*
+* @input: none
+*
+* @output: true if GET is success, otherwise false. This does not check http
+*          response by twitter. Use getLastWebResponse() for that.
+*
+*--*/
+bool twitCurl::timelineHomeGet()
+{
+    /* Perform GET */
+    return performGet( twitterDefaults::TWITCURL_HOME_TIMELINE_URL +
+                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] );
+}
+
+/*++
 * @method: twitCurl::featuredUsersGet
 *
 * @description: method to get featured users

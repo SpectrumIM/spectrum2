@@ -146,6 +146,7 @@ public:
     bool statusDestroyById( std::string& statusId /* in */ );
 
     /* Twitter timeline APIs */
+    bool timelineHomeGet();
     bool timelinePublicGet();
     bool timelineFriendsGet();
     bool timelineUserGet( bool trimUser /* in */, bool includeRetweets /* in */, unsigned int tweetCount /* in */, std::string userInfo = "" /* in */, bool isUserId = false /* in */ );
