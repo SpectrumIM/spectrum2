@@ -101,7 +101,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	LOG4CXX_INFO(logger, from.toBare().toString() << ": Requested VCard of " << name);
 
 	m_queries[m_id].from = from;
-	m_queries[m_id].to = to_;
+	m_queries[m_id].to = to;
 	m_queries[m_id].id = id; 
 	m_queries[m_id].received = time(NULL);
 	onVCardRequired(user, name, m_id++);

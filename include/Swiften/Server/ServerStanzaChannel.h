@@ -14,6 +14,7 @@
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/IQ.h"
 #include "Swiften/Elements/Presence.h"
+#include "Swiften/TLS/Certificate.h"
 
 namespace Swift {
 	class Error;
@@ -34,6 +35,10 @@ namespace Swift {
 
 			bool isAvailable() const {
 				return true;
+			}
+			
+			std::vector<Certificate::ref> getPeerCertificateChain() const {
+				return std::vector<Certificate::ref>();
 			}
 
 		private:

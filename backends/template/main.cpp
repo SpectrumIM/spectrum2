@@ -56,6 +56,8 @@ class TemplatePlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			handleConnected(user);
+			LOG4CXX_INFO(logger, user << ": Added buddy - Echo.");
+			handleBuddyChanged(user, "echo", "Echo", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
@@ -63,6 +65,9 @@ class TemplatePlugin : public NetworkPlugin {
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
 			LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ".");
+			if (legacyName == "echo") {
+				handleMessage(user, legacyName, message);
+			}
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {

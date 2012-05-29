@@ -48,4 +48,24 @@ void LocalBuddy::setAlias(const std::string &alias) {
 	}
 }
 
+void LocalBuddy::setGroups(const std::vector<std::string> &groups) {
+	bool changed = m_groups.size() != groups.size();
+	if (!changed) {
+		for (int i = 0; i != m_groups.size(); i++) {
+			if (m_groups[i] != groups[i]) {
+				changed = true;
+				break;
+			}
+		}
+	}
+
+	m_groups = groups;
+	if (changed) {
+		if (getRosterManager()->getUser()->getComponent()->inServerMode() || getRosterManager()->isRemoteRosterSupported()) {
+			getRosterManager()->sendBuddyRosterPush(this);
+		}
+		getRosterManager()->storeBuddy(this);
+	}
+}
+
 }

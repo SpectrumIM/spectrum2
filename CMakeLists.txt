@@ -31,10 +31,10 @@ set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
 set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(Swiften REQUIRED)
+find_package(Swiften)
 
 set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(openssl REQUIRED)
+find_package(openssl)
 
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)
@@ -62,6 +62,9 @@ find_package(pqxx)
 
 set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(dbus)
+
+set(yahoo2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(yahoo2)
 
 find_package(Doxygen)
 
@@ -161,6 +164,14 @@ if (PROTOBUF_FOUND)
 	else()
 		message("Skype plugin      : no (install dbus-glib-devel)")
 	endif()
+
+#	We have our own copy now...
+# 	if(YAHOO2_FOUND)
+		message("Libyahoo2 plugin  : yes")
+# 		include_directories(${YAHOO2_INCLUDE_DIR})
+# 	else()
+# 		message("Libyahoo2 plugin  : no (install libyahoo2-devel)")
+# 	endif()
 
 else()
 	message("Network plugins   : no (install libprotobuf-dev)")

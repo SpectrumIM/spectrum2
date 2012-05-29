@@ -165,6 +165,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (skype) {
 				LOG4CXX_INFO(logger, "User wants to logout, logging out");
 				skype->logout();
+				Logging::shutdownLogging();
 				exit(1);
 			}
 		}
@@ -801,6 +802,7 @@ static int create_socket(char *host, int portno) {
 	if ((hos = gethostbyname(host)) == NULL) {
 		// strerror() will not work for gethostbyname() and hstrerror() 
 		// is supposedly obsolete
+		Logging::shutdownLogging();
 		exit(1);
 	}
 	serv_addr.sin_addr.s_addr = *((unsigned long *) hos->h_addr_list[0]);
@@ -823,6 +825,7 @@ static gboolean transportDataReceived(GIOChannel *source, GIOCondition condition
 	ssize_t n = read(m_sock, ptr, sizeof(buffer));
 	if (n <= 0) {
 		LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
+		Logging::shutdownLogging();
 		exit(errno);
 	}
 	std::string d = std::string(buffer, n);
@@ -831,6 +834,7 @@ static gboolean transportDataReceived(GIOChannel *source, GIOCondition condition
 }
 
 static void io_destroy(gpointer data) {
+	Logging::shutdownLogging();
 	exit(1);
 }
 

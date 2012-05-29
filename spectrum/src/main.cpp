@@ -114,7 +114,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 
 int main(int argc, char **argv)
 {
-	Config config;
+	Config config(argc, argv);
 
 	boost::program_options::variables_map vm;
 	bool no_daemon = false;
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 		boost::program_options::positional_options_description p;
 		p.add("config", -1);
 		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-          options(desc).positional(p).run(), vm);
+          options(desc).positional(p).allow_unregistered().run(), vm);
 		boost::program_options::notify(vm);
 
 		if (vm.count("version")) {

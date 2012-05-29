@@ -308,14 +308,16 @@ static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactorie
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+					continue;
 				}
 
-				if (CONFIG_STRING(&cfg, "service.admin_jid").empty() || CONFIG_STRING(&cfg, "service.admin_password").empty()) {
+				if (CONFIG_VECTOR(&cfg, "service.admin_jid").empty() || CONFIG_STRING(&cfg, "service.admin_password").empty()) {
 					std::cerr << itr->path().string() << ": service.admin_jid or service.admin_password empty. This server can't be queried over XMPP.\n";
+					continue;
 				}
 
 				finished++;
-				Swift::Client *client = new Swift::Client(CONFIG_STRING(&cfg, "service.admin_jid"), CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
+				Swift::Client *client = new Swift::Client(CONFIG_VECTOR(&cfg, "service.admin_jid")[0], CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
 				client->setAlwaysTrustCertificates();
 				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
 				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
