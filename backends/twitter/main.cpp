@@ -108,11 +108,13 @@ class TwitterPlugin : public NetworkPlugin {
 				std::string ppasswd = CONFIG_STRING(config,"proxy.password");
 
 				LOG4CXX_INFO(logger, ip << " " << port << " " << puser << " " << ppasswd)
-
-				sessions[user]->setProxyServerIp(ip);
-		        sessions[user]->setProxyServerPort(port);
-		        sessions[user]->setProxyUserName(puser);
-		        sessions[user]->setProxyPassword(ppasswd);
+				
+				if(ip != "localhost" && port != "0") {
+					sessions[user]->setProxyServerIp(ip);
+		        	sessions[user]->setProxyServerPort(port);
+		        	sessions[user]->setProxyUserName(puser);
+		        	sessions[user]->setProxyPassword(ppasswd);
+				}
 			}
 
 			connectionState[user] = NEW;			
@@ -173,12 +175,15 @@ class TwitterPlugin : public NetworkPlugin {
 
 				if(cmd == "pin") {
 					sessions[user]->getOAuth().setOAuthPin( data );
-					sessions[user]->oAuthAccessToken();
+					if (sessions[user]->oAuthAccessToken() == false) {
+						LOG4CXX_ERROR(logger, "Error while exchanging PIN with AcessToken!")
+						handleLogoutRequest(user, "");
+						return;
+					}
 					
 					std::string OAuthAccessTokenKey, OAuthAccessTokenSecret;
 					sessions[user]->getOAuth().getOAuthTokenKey( OAuthAccessTokenKey );
 					sessions[user]->getOAuth().getOAuthTokenSecret( OAuthAccessTokenSecret );
-
 
 					//db->insert(UserData(user, OAuthAccessTokenKey, OAuthAccessTokenSecret));
 					//registeredUsers.insert(user);
@@ -206,14 +211,32 @@ class TwitterPlugin : public NetworkPlugin {
 					std::string replyMsg; 
 					if( sessions[user]->statusUpdate( data ) ) {
 						sessions[user]->getLastWebResponse( replyMsg );
-						LOG4CXX_INFO(logger, "twitterClient:: twitCurl::statusUpdate web response: " << replyMsg );
+						LOG4CXX_INFO(logger, "twitCurl:statusUpdate web response: " << replyMsg );
 					}
 					else {
 						sessions[user]->getLastCurlError( replyMsg );
-						LOG4CXX_INFO(logger, "twitterClient:: twitCurl::statusUpdate error: " << replyMsg );
+						LOG4CXX_INFO(logger, "twitCurl::statusUpdate error: " << replyMsg );
 					}
 					
 					LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+				}
+
+				if(cmd == "#timeline") {
+					if(connectionState[user] != CONNECTED) {
+						LOG4CXX_ERROR(logger, "Trying to update status for " << user << " when not connected!");
+						return;
+					}
+					
+					std::string replyMsg; 
+					if( sessions[user]->timelinePublicGet() ) {
+						sessions[user]->getLastWebResponse( replyMsg );
+						LOG4CXX_INFO(logger, "twitCurl::timeline web response: " << replyMsg );
+						handleMessage(user, "twitter-account", replyMsg);
+					} else {
+						sessions[user]->getLastCurlError( replyMsg );
+						LOG4CXX_INFO(logger, "twitCurl::timeline error: " << replyMsg );
+					}
+
 				}
 			}
 		}
