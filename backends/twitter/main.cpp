@@ -12,7 +12,7 @@
 #include "sys/signal.h"
 #include <boost/algorithm/string.hpp>
 #include "twitcurl.h"
-#include "Swiften/Parser/StringTreeParser.h"
+#include "TwitterResponseParser.h"
 
 #include <iostream>
 #include <sstream>
@@ -211,7 +211,11 @@ class TwitterPlugin : public NetworkPlugin {
 
 					std::string replyMsg; 
 					if( sessions[user]->statusUpdate( data ) ) {
-						sessions[user]->getLastWebResponse( replyMsg );
+						replyMsg = "";
+						while(replyMsg.length() == 0) {
+							sessions[user]->getLastWebResponse( replyMsg );
+						}
+
 						LOG4CXX_INFO(logger, "twitCurl:statusUpdate web response: " << replyMsg );
 					}
 					else {
@@ -229,10 +233,14 @@ class TwitterPlugin : public NetworkPlugin {
 					}
 					
 					std::string replyMsg; 
-					if( sessions[user]->timelinePublicGet()/*(false, false, 20, sessions[user]->getTwitterUsername(), true)*/ ) {
+					if( sessions[user]->timelineHomeGet()/*(false, false, 20, sessions[user]->getTwitterUsername(), true)*/ ) {
 						sessions[user]->getLastWebResponse( replyMsg );
 						LOG4CXX_INFO(logger, "twitCurl::timeline web response: " << replyMsg );
-						handleMessage(user, "twitter-account", replyMsg);
+						
+						std::vector<Status> tweets = getTimeline(replyMsg);
+						for(int i=0 ; i<tweets.size() ; i++) {
+							handleMessage(user, "twitter-account", tweets[i].getTweet() + "\n");
+						}
 					} else {
 						sessions[user]->getLastCurlError( replyMsg );
 						LOG4CXX_INFO(logger, "twitCurl::timeline error: " << replyMsg );
