@@ -1,10 +1,13 @@
 #include "TwitterResponseParser.h"
+#include "transport/logging.h"
+
+DEFINE_LOGGER(logger, "TwitterResponseParser")
 
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns) 
 {
 	User user;
 	if(element->getName() != "user") {
-		std::cerr << "Not a user element!" << std::endl;
+		LOG4CXX_ERROR(logger, "Not a user element!")
 		return user;
 	}
 
@@ -19,7 +22,7 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 {
 	Status status;
 	if(element->getName() != "status") {
-		std::cerr << "Not a status element!" << std::endl;
+		LOG4CXX_ERROR(logger, "Not a status element!")
 		return status;
 	}
 
@@ -43,7 +46,7 @@ std::vector<Status> getTimeline(std::string &xml)
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
 	
 	if(rootElement->getName() != "statuses") {
-		std::cerr << "XML doesnt correspond to timline\n";
+		LOG4CXX_ERROR(logger, "XML doesnt correspond to timline")
 		return statuses;
 	}
 
