@@ -77,7 +77,7 @@ class Config {
 		bool reload();
 
 		bool hasKey(const std::string &key) {
-			return m_variables.find(key) != m_variables.end();
+			return m_variables.find(key) != m_variables.end() || m_unregistered.find(key) != m_unregistered.end();
 		}
 
 		/// Returns value of variable defined by key.
@@ -85,15 +85,14 @@ class Config {
 		/// For variables in sections you can use "section.variable" key format.
 		/// \param key config variable name
 		const boost::program_options::variable_value &operator[] (const std::string &key) {
-			return m_variables[key];
+			if (m_variables.find(key) != m_variables.end()) {
+				return m_variables[key];
+			}
+			return m_unregistered[key];
 		}
 
 		/// Returns path to config file from which data were loaded.
 		const std::string &getConfigFile() { return m_file; }
-
-		const std::map<std::string, std::string> &getUnregistered() {
-			return m_unregistered;
-		}
 
 		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
@@ -102,7 +101,7 @@ class Config {
 		int m_argc;
 		char **m_argv;
 		Variables m_variables;
-		std::map<std::string, std::string> m_unregistered;
+		std::map<std::string, boost::program_options::variable_value> m_unregistered;
 		std::string m_file;
 };
 
