@@ -8,6 +8,8 @@
 namespace TwitterReponseTypes
 {
 	const std::string id = "id";
+	const std::string id_list = "id_list";
+	const std::string ids = "ids";
 	const std::string name = "name";
 	const std::string screen_name = "screen_name";
 	const std::string statuses_count = "statuses_count";
@@ -93,6 +95,7 @@ class Status
 };
 
 std::vector<Status> getTimeline(std::string &xml);
+std::vector<std::string> getIDs(std::string &xml);
 Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns);
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns);
 #endif

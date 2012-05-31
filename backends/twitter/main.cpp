@@ -166,7 +166,7 @@ class TwitterPlugin : public NetworkPlugin {
 		void handlePINExchange(const std::string &user, std::string &data) {
 			sessions[user]->getOAuth().setOAuthPin( data );
 			if (sessions[user]->oAuthAccessToken() == false) {
-				LOG4CXX_ERROR(logger, "Error while exchanging PIN with AcessToken!")
+				LOG4CXX_ERROR(logger, "Error while exchanging PIN for Access Token!")
 				handleLogoutRequest(user, "");
 				return;
 			}
@@ -186,14 +186,14 @@ class TwitterPlugin : public NetworkPlugin {
 			storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);	
 
 			connectionState[user] = CONNECTED;
-			LOG4CXX_INFO(logger, "Sent PIN " << data << " and obtained access token");
+			LOG4CXX_INFO(logger, "Sent PIN " << data << " and obtained Access Token");
 		}
 
 		void printHelpMessage(const std::string &user) {
 			std::string helpMsg = "";
 			helpMsg = helpMsg
 				    + "\nHELP\n"
-					+ "status:<your status> - Update your status\n"
+					+ "#status:<your status> - Update your status\n"
 					+ "#timeline - Retrieve your timeline\n"
 					+ "@<username>:<message> - Send a directed message to the user <username>\n"
 					+ "#help - print this help message\n";
@@ -236,7 +236,7 @@ class TwitterPlugin : public NetworkPlugin {
 
 		void fetchTimeline(const std::string &user) {
 			if(connectionState[user] != CONNECTED) {
-				LOG4CXX_ERROR(logger, "Trying to update status for " << user << " when not connected!");
+				LOG4CXX_ERROR(logger, "Trying to fetch timeline for " << user << " when not connected!");
 				return;
 			}
 			
@@ -263,6 +263,41 @@ class TwitterPlugin : public NetworkPlugin {
 			}
 		}
 
+		void fetchFriends(const std::string &user) {
+			if(connectionState[user] != CONNECTED) {
+				LOG4CXX_ERROR(logger, "Trying to fetch friends of " << user << " when not connected!");
+				return;
+			}
+			
+			std::string replyMsg = ""; 
+			if( sessions[user]->friendsIdsGet(sessions[user]->getTwitterUsername())) {
+				
+				while(replyMsg.length() == 0) {
+					sessions[user]->getLastWebResponse( replyMsg );
+				}
+
+				LOG4CXX_INFO(logger, "twitCurl::friendsIdsGet web response: " << replyMsg.length() << " " << replyMsg << "\n" );
+
+				std::vector<std::string> IDs = getIDs( replyMsg );
+				for(int i=0 ; i<IDs.size() ; i++) {
+					LOG4CXX_INFO(logger, "ID #" << i+1 << ": " << IDs[i]);
+				}
+				
+				/*std::vector<Status> tweets = getTimeline(replyMsg);
+				std::string timeline = "\n";
+				for(int i=0 ; i<tweets.size() ; i++) {
+					timeline += tweets[i].getTweet() + "\n";
+				}
+
+				handleMessage(user, "twitter-account", timeline);*/
+
+			} else {
+				sessions[user]->getLastCurlError( replyMsg );
+				LOG4CXX_INFO(logger, "twitCurl::friendsIdsGet error: " << replyMsg );
+			}
+			
+		}
+
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
 			LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ".");
@@ -277,6 +312,7 @@ class TwitterPlugin : public NetworkPlugin {
 				else if(cmd[0] == '@') {std::string username = cmd.substr(1); handleDirectMessage(user, username, data);}
 				else if(cmd == "#status") handleStatusUpdate(user, data);
 				else if(cmd == "#timeline") fetchTimeline(user);
+				else if(cmd == "#friends") fetchFriends(user);
 			}
 		}
 

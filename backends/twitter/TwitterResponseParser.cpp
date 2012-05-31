@@ -46,7 +46,7 @@ std::vector<Status> getTimeline(std::string &xml)
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
 	
 	if(rootElement->getName() != "statuses") {
-		LOG4CXX_ERROR(logger, "XML doesnt correspond to timline")
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to timeline")
 		return statuses;
 	}
 
@@ -59,4 +59,23 @@ std::vector<Status> getTimeline(std::string &xml)
 		statuses.push_back(getStatus(status, xmlns));
 	}
 	return statuses;
+}
+
+std::vector<std::string> getIDs(std::string &xml)
+{
+	std::vector<std::string> IDs;
+	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+
+	if(rootElement->getName() != TwitterReponseTypes::id_list) {
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to id_list");
+		return IDs;
+	}
+
+	const std::string xmlns = rootElement->getNamespace();
+	const std::vector<Swift::ParserElement::ref> ids = rootElement->getChild(TwitterReponseTypes::ids, xmlns)->getChildren(TwitterReponseTypes::id, xmlns);
+	
+	for(int i=0 ; i<ids.size() ; i++) {
+		IDs.push_back(std::string( ids[i]->getText() ));
+	}
+	return IDs;
 }
