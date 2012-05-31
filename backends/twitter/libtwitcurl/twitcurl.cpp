@@ -1464,6 +1464,7 @@ bool twitCurl::performGet( const std::string& getUrl )
 
     /* Set http request and url */
     curl_easy_setopt( m_curlHandle, CURLOPT_HTTPGET, 1 );
+//    curl_easy_setopt( m_curlHandle, CURLOPT_VERBOSE, 1 );
     curl_easy_setopt( m_curlHandle, CURLOPT_URL, getUrl.c_str() );
 
     /* Send http request */
