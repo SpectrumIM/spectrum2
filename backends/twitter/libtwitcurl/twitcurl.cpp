@@ -585,6 +585,39 @@ bool twitCurl::userGet( std::string& userInfo, bool isUserId )
 }
 
 /*++
+* @method: twitCurl::userLookup
+*
+* @description: method to get a number of user's profiles
+*
+* @input: userInfo - vector of screen names or user ids
+*         isUserId - true if userInfo contains an id
+*
+* @output: true if POST is success, otherwise false. This does not check http
+*          response by twitter. Use getLastWebResponse() for that.
+*
+*--*/
+bool twitCurl::userLookup( std::vector<std::string> &userInfo, bool isUserId )
+{
+    bool retVal = false;
+    if( userInfo.size() )
+    {
+		std::string userIds = isUserId?twitCurlDefaults::TWITCURL_USERID : twitCurlDefaults::TWITCURL_SCREENNAME;
+		std::string sep = "";
+		for(int i=0 ; i<std::min(100U, userInfo.size()) ; i++, sep = ",")
+			userIds += sep + userInfo[i];
+
+        /* Set URL */
+        std::string buildUrl = twitterDefaults::TWITCURL_LOOKUPUSERS_URL + twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+
+		std::cerr << buildUrl << " " << userIds << std::endl;
+        
+		/* Perform POST */
+        retVal = performPost( buildUrl, userIds );
+    }
+    return retVal;
+}
+
+/*++
 * @method: twitCurl::friendsGet
 *
 * @description: method to get a user's friends

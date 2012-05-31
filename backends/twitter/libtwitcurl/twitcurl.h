@@ -2,6 +2,8 @@
 #define _TWITCURL_H_
 
 #include <string>
+#include <vector>
+#include <iostream>
 #include <sstream>
 #include <cstring>
 #include "oauthlib.h"
@@ -69,6 +71,7 @@ namespace twitterDefaults
     const std::string TWITCURL_USERTIMELINE_URL = "http://api.twitter.com/1/statuses/user_timeline";
 
     /* Users URLs */
+	const std::string TWITCURL_LOOKUPUSERS_URL = "http://api.twitter.com/1/users/lookup";
     const std::string TWITCURL_SHOWUSERS_URL = "http://api.twitter.com/1/users/show";
     const std::string TWITCURL_SHOWFRIENDS_URL = "http://api.twitter.com/1/statuses/friends";
     const std::string TWITCURL_SHOWFOLLOWERS_URL = "http://api.twitter.com/1/statuses/followers";
@@ -154,6 +157,7 @@ public:
     bool mentionsGet( std::string sinceId = "" /* in */ );
 
     /* Twitter user APIs */
+	bool userLookup( std::vector<std::string> &userInfo /* in */,  bool isUserId = false /* in */);
     bool userGet( std::string& userInfo /* in */, bool isUserId = false /* in */ );
     bool friendsGet( std::string userInfo = "" /* in */, bool isUserId = false /* in */ );
     bool followersGet( std::string userInfo = "" /* in */, bool isUserId = false /* in */ );

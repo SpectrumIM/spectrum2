@@ -166,7 +166,7 @@ class TwitterPlugin : public NetworkPlugin {
 		void handlePINExchange(const std::string &user, std::string &data) {
 			sessions[user]->getOAuth().setOAuthPin( data );
 			if (sessions[user]->oAuthAccessToken() == false) {
-				LOG4CXX_ERROR(logger, "Error while exchanging PIN for Access Token!")
+				LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
 				handleLogoutRequest(user, "");
 				return;
 			}
@@ -186,7 +186,7 @@ class TwitterPlugin : public NetworkPlugin {
 			storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);	
 
 			connectionState[user] = CONNECTED;
-			LOG4CXX_INFO(logger, "Sent PIN " << data << " and obtained Access Token");
+			LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
 		}
 
 		void printHelpMessage(const std::string &user) {
@@ -203,11 +203,11 @@ class TwitterPlugin : public NetworkPlugin {
 
 		void handleDirectMessage(const std::string &user, std::string &username, std::string &data) {
 			if(sessions[user]->directMessageSend(username, data, false) == false) {
-				LOG4CXX_ERROR(logger, "Error while sending directed message to user " << username );
+				LOG4CXX_ERROR(logger, user << ": Error while sending directed message to user " << username );
 				return;
 			}
 
-			LOG4CXX_INFO(logger, "Sending " << data << " to " << username)
+			LOG4CXX_INFO(logger, user << ": Sending " << data << " to " << username)
 
 			std::string replyMsg;
 			sessions[user]->getLastWebResponse( replyMsg );
@@ -226,10 +226,10 @@ class TwitterPlugin : public NetworkPlugin {
 				while(replyMsg.length() == 0) {
 					sessions[user]->getLastWebResponse( replyMsg );
 				}
-				LOG4CXX_INFO(logger, "twitCurl:statusUpdate web response: " << replyMsg );
+				LOG4CXX_INFO(logger, user << ": twitCurl:statusUpdate web response: " << replyMsg );
 			} else {
 				sessions[user]->getLastCurlError( replyMsg );
-				LOG4CXX_INFO(logger, "twitCurl::statusUpdate error: " << replyMsg );
+				LOG4CXX_INFO(logger, user << ": twitCurl::statusUpdate error: " << replyMsg );
 			}
 			LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
 		}
@@ -247,7 +247,7 @@ class TwitterPlugin : public NetworkPlugin {
 					sessions[user]->getLastWebResponse( replyMsg );
 				}
 
-				LOG4CXX_INFO(logger, "twitCurl::timeline web response: " << replyMsg.length() << " " << replyMsg << "\n" );
+				LOG4CXX_INFO(logger, user << ": twitCurl::timeline web response: " << replyMsg.length() << " " << replyMsg << "\n" );
 				
 				std::vector<Status> tweets = getTimeline(replyMsg);
 				std::string timeline = "\n";
@@ -259,7 +259,7 @@ class TwitterPlugin : public NetworkPlugin {
 
 			} else {
 				sessions[user]->getLastCurlError( replyMsg );
-				LOG4CXX_INFO(logger, "twitCurl::timeline error: " << replyMsg );
+				LOG4CXX_INFO(logger, user << ": twitCurl::timeline error: " << replyMsg );
 			}
 		}
 
@@ -276,24 +276,29 @@ class TwitterPlugin : public NetworkPlugin {
 					sessions[user]->getLastWebResponse( replyMsg );
 				}
 
-				LOG4CXX_INFO(logger, "twitCurl::friendsIdsGet web response: " << replyMsg.length() << " " << replyMsg << "\n" );
+				LOG4CXX_INFO(logger, user << ": twitCurl::friendsIdsGet web response: " << replyMsg.length() << " " << replyMsg << "\n" );
 
 				std::vector<std::string> IDs = getIDs( replyMsg );
-				for(int i=0 ; i<IDs.size() ; i++) {
-					LOG4CXX_INFO(logger, "ID #" << i+1 << ": " << IDs[i]);
-				}
-				
-				/*std::vector<Status> tweets = getTimeline(replyMsg);
-				std::string timeline = "\n";
-				for(int i=0 ; i<tweets.size() ; i++) {
-					timeline += tweets[i].getTweet() + "\n";
-				}
+				/*for(int i=0 ; i<IDs.size() ; i++) {
+					//LOG4CXX_INFO(logger, "ID #" << i+1 << ": " << IDs[i]);
+					
+				}*/
+				sessions[user]->userLookup(IDs, true);
+				sessions[user]->getLastWebResponse( replyMsg );
+				LOG4CXX_INFO(logger, user << ": twitCurl::UserLookUp web response: " << replyMsg.length() << " " << replyMsg << "\n" );
 
-				handleMessage(user, "twitter-account", timeline);*/
+				std::vector<User> users = getUsers( replyMsg );
+				
+				std::string userlist = "\n***************USER LIST****************\n";
+				for(int i=0 ; i < users.size() ; i++) {
+					userlist += "*)" + users[i].getUserName() + " (" + users[i].getScreenName() + ")\n";
+				}	
+				userlist += "***************************************\n";	
+				handleMessage(user, "twitter-account", userlist);
 
 			} else {
 				sessions[user]->getLastCurlError( replyMsg );
-				LOG4CXX_INFO(logger, "twitCurl::friendsIdsGet error: " << replyMsg );
+				LOG4CXX_INFO(logger, user << ": twitCurl::friendsIdsGet error: " << replyMsg );
 			}
 			
 		}

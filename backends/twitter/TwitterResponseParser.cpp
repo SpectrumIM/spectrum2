@@ -52,13 +52,32 @@ std::vector<Status> getTimeline(std::string &xml)
 
 	const std::string xmlns = rootElement->getNamespace();
 	const std::vector<Swift::ParserElement::ref> children = rootElement->getChildren(TwitterReponseTypes::status, xmlns);
-//	const std::vector<Swift::ParserElement::ref>::iterator it;
 
 	for(int i = 0; i <  children.size() ; i++) {
 		const Swift::ParserElement::ref status = children[i];
 		statuses.push_back(getStatus(status, xmlns));
 	}
 	return statuses;
+}
+
+std::vector<User> getUsers(std::string &xml)
+{
+	std::vector<User> users;
+	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	
+	if(rootElement->getName() != TwitterReponseTypes::users) {
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to user list")
+		return users;
+	}
+
+	const std::string xmlns = rootElement->getNamespace();
+	const std::vector<Swift::ParserElement::ref> children = rootElement->getChildren(TwitterReponseTypes::user, xmlns);
+
+	for(int i = 0 ; i < children.size() ; i++) {
+		const Swift::ParserElement::ref user = children[i];
+		users.push_back(getUser(user, xmlns));
+	}
+	return users;
 }
 
 std::vector<std::string> getIDs(std::string &xml)
