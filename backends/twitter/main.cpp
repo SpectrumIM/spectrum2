@@ -5,6 +5,7 @@
 #include "transport/mysqlbackend.h"
 #include "transport/pqxxbackend.h"
 #include "transport/storagebackend.h"
+
 #include "Swiften/Swiften.h"
 #include "unistd.h"
 #include "signal.h"
@@ -26,7 +27,10 @@
 #include <queue>
 #include <set>
 #include <cstdio>
-#include "userdb.h"
+
+#include "ThreadPool.h"
+#include "Requests/StatusUpdateRequest.h"
+#include "Requests/DirectMessageRequest.h"
 
 using namespace boost::filesystem;
 using namespace boost::program_options;
@@ -66,6 +70,8 @@ class TwitterPlugin : public NetworkPlugin {
 			m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
 			onDispatchRequest.connect(boost::bind(&TwitterPlugin::requestDispatcher, this, _1, _2));
+
+			tp = new ThreadPool(10);
 			
 			activeThreadCount = 0;
 			MAX_THREADS  = 50;
@@ -77,6 +83,7 @@ class TwitterPlugin : public NetworkPlugin {
 			delete storagebackend;
 			std::map<std::string, twitCurl*>::iterator it;
 			for(it = sessions.begin() ; it != sessions.end() ; it++) delete it->second;
+			delete tp;
 		}
 
 		// Send data to NetworkPlugin server
@@ -379,27 +386,34 @@ class TwitterPlugin : public NetworkPlugin {
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
 			
-			Request r;
+			/*Request r;
 			r.from = user;
 			r.to = legacyName;
 			r.message = message;
 			LOG4CXX_INFO(logger, user << "Dispatching request " << STR(r))
-			onDispatchRequest(r,true);
+			onDispatchRequest(r,true);*/
 			//requestDispatcher(r, true);
 
-			/*if(legacyName == "twitter-account") {
+			if(legacyName == "twitter-account") {
 				std::string cmd = message.substr(0, message.find(':'));
 				std::string data = message.substr(message.find(':') + 1);
 				
 				handleMessage(user, "twitter-account", cmd + " " + data);
 
 				if(cmd == "#pin") handlePINExchange(user, data);
-				else if(cmd == "#help") printHelpMessage(user);
-				else if(cmd[0] == '@') {std::string username = cmd.substr(1); handleDirectMessage(user, username, data);}
-				else if(cmd == "#status") handleStatusUpdate(user, data);
-				else if(cmd == "#timeline") fetchTimeline(user);
-				else if(cmd == "#friends") fetchFriends(user);
-			}*/
+				//else if(cmd == "#help") printHelpMessage(user);
+				else if(cmd[0] == '@') {
+					std::string username = cmd.substr(1); 
+					tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
+					//handleDirectMessage(user, username, data);
+				}
+				else if(cmd == "#status") {
+					tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
+					//handleStatusUpdate(user, data);
+				}
+				//else if(cmd == "#timeline") fetchTimeline(user);
+				//else if(cmd == "#friends") fetchFriends(user);
+			}
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
@@ -434,6 +448,7 @@ class TwitterPlugin : public NetworkPlugin {
 		};
 
 		Config *config;
+
 		std::string consumerKey;
 		std::string consumerSecret;
 		std::string OAUTH_KEY;
@@ -445,6 +460,7 @@ class TwitterPlugin : public NetworkPlugin {
 		boost::mutex criticalRegion;
 		boost::mutex threadLock;
 
+		ThreadPool *tp;
 		std::map<std::string, twitCurl*> sessions;
 		std::map<std::string, std::queue<Request> > requests;
 		
@@ -453,7 +469,6 @@ class TwitterPlugin : public NetworkPlugin {
 
 		
 		std::map<std::string, status> connectionState;
-
 		boost::signal< void (Request, bool) > onDispatchRequest;
 };
 
