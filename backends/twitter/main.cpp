@@ -31,6 +31,8 @@
 #include "ThreadPool.h"
 #include "Requests/StatusUpdateRequest.h"
 #include "Requests/DirectMessageRequest.h"
+#include "Requests/TimelineRequest.h"
+#include "Requests/FetchFriends.h"
 
 using namespace boost::filesystem;
 using namespace boost::program_options;
@@ -405,14 +407,16 @@ class TwitterPlugin : public NetworkPlugin {
 				else if(cmd[0] == '@') {
 					std::string username = cmd.substr(1); 
 					tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
-					//handleDirectMessage(user, username, data);
 				}
 				else if(cmd == "#status") {
 					tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
-					//handleStatusUpdate(user, data);
 				}
-				//else if(cmd == "#timeline") fetchTimeline(user);
-				//else if(cmd == "#friends") fetchFriends(user);
+				else if(cmd == "#timeline") {
+					tp->runAsThread(new TimelineRequest(np, sessions[user], user));
+				}
+				else if(cmd == "#friends") {
+					tp->runAsThread(new FetchFriends(np, sessions[user], user));
+				}
 			}
 		}
 
