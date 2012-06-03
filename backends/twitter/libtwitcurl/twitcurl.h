@@ -224,7 +224,7 @@ public:
 	twitCurl* clone()
 	{
 		twitCurl *cloneObj = new twitCurl();
-
+		
 		/* cURL flags */
 		cloneObj->m_curlProxyParamsSet = m_curlProxyParamsSet;
 		cloneObj->m_curlLoginParamsSet = m_curlLoginParamsSet;
@@ -234,7 +234,7 @@ public:
 		cloneObj->m_proxyServerIp = m_proxyServerIp;
 		cloneObj->m_proxyServerPort = m_proxyServerPort;
 		cloneObj->m_proxyUserName = m_proxyUserName;
-		cloneObj->m_proxyPassword = m_proxyPassword;
+	
 
 		/* Twitter data */
 		cloneObj->m_twitterUsername = m_twitterUsername;

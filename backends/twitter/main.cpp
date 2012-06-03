@@ -1,4 +1,4 @@
-#include "transport/config.h"
+/*#include "transport/config.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
 #include "transport/sqlite3backend.h"
@@ -34,18 +34,21 @@
 #include "Requests/TimelineRequest.h"
 #include "Requests/FetchFriends.h"
 #include "Requests/HelpMessageRequest.h"
+#include "Requests/PINExchangeProcess.h"
+#include "Requests/OAuthFlow.h"
+
+
 
 using namespace boost::filesystem;
 using namespace boost::program_options;
-using namespace Transport;
+using namespace Transport;*/
+
+#include "TwitterPlugin.h"
 
 DEFINE_LOGGER(logger, "Twitter Backend");
-Swift::SimpleEventLoop *loop_; // Event Loop
-class TwitterPlugin; // The plugin
-TwitterPlugin * np = NULL;
-StorageBackend *storagebackend;
+//class TwitterPlugin; // The plugin
 
-#define STR(x) (std::string("(") + x.from + ", " + x.to + ", " + x.message + ")")
+/*#define STR(x) (std::string("(") + x.from + ", " + x.to + ", " + x.message + ")")
 
 class TwitterPlugin : public NetworkPlugin {
 	private:
@@ -95,7 +98,7 @@ class TwitterPlugin : public NetworkPlugin {
 			std::string d(data->begin(), data->end());
 			handleDataRead(d);
 		}
-		
+	
 		// User trying to login into his twitter account
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			if(connectionState.count(user) && (connectionState[user] == NEW || 
@@ -107,14 +110,102 @@ class TwitterPlugin : public NetworkPlugin {
 			
 			LOG4CXX_INFO(logger, std::string("Received login request for ") + user)
 			
-			std::string username = user.substr(0,user.find('@'));
-			std::string passwd = password;
-			LOG4CXX_INFO(logger, username + "  " + passwd)
-
-			sessions[user] = new twitCurl();
+			initUserSession(user, password);
+			
 			handleConnected(user);
 			handleBuddyChanged(user, "twitter-account", "twitter", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			
+			LOG4CXX_INFO(logger, "Querying database for usersettings of " << user)
+			
+			std::string key, secret;
+			getUserOAuthKeyAndSecret(user, key, secret);
+
+			if(key == "" || secret == "") {			
+				LOG4CXX_INFO(logger, "Intiating OAuth Flow for user " << user)
+				tp->runAsThread(new OAuthFlow(np, sessions[user], user, sessions[user]->getTwitterUsername()));
+			} else {
+				LOG4CXX_INFO(logger, user << " is already registerd. Using the stored oauth key and secret")
+				LOG4CXX_INFO(logger, key << " " << secret)	
+				pinExchangeComplete(user, key, secret);
+			}
+		}
+		
+		// User logging out
+		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
+			delete sessions[user];
+			sessions[user] = NULL;
+			connectionState[user] = DISCONNECTED;
+		}
+
+
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
+			
+			if(legacyName == "twitter-account") {
+				std::string cmd = message.substr(0, message.find(':'));
+				std::string data = message.substr(message.find(':') + 1);
+				
+				handleMessage(user, "twitter-account", cmd + " " + data);
+
+				if(cmd == "#pin") tp->runAsThread(new PINExchangeProcess(np, sessions[user], user, data));
+				else if(cmd == "#help") tp->runAsThread(new HelpMessageRequest(np, user));
+				else if(cmd[0] == '@') {
+					std::string username = cmd.substr(1); 
+					tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
+				}
+				else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
+				else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(np, sessions[user], user));
+				else if(cmd == "#friends") tp->runAsThread(new FetchFriends(np, sessions[user], user));
+			}
+		}
+
+		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
+			LOG4CXX_INFO(logger, user << ": Added buddy " << buddyName << ".");
+			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
+		}
+
+		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
+
+		}
+
+
+		bool getUserOAuthKeyAndSecret(const std::string user, std::string &key, std::string &secret) {
+			boost::mutex::scoped_lock lock(dblock);
+			
+			UserInfo info;
+			if(storagebackend->getUser(user, info) == false) {
+				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+				return false;
+			}
+
+			key="", secret=""; int type;
+			storagebackend->getUserSetting((long)info.id, OAUTH_KEY, type, key);
+			storagebackend->getUserSetting((long)info.id, OAUTH_SECRET, type, secret);
+			return true;
+		}
+
+		bool storeUserOAuthKeyAndSecret(const std::string user, const std::string OAuthKey, const std::string OAuthSecret) {
+
+			boost::mutex::scoped_lock lock(dblock);
+
+			UserInfo info;
+			if(storagebackend->getUser(user, info) == false) {
+				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+				return false;
+			}
+
+			storagebackend->updateUserSetting((long)info.id, OAUTH_KEY, OAuthKey);	
+			storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthSecret);
+			return true;
+		}
+		
+		void initUserSession(const std::string user, const std::string password){
+			boost::mutex::scoped_lock lock(userlock);
+
+			std::string username = user.substr(0,user.find('@'));
+			std::string passwd = password;
+			LOG4CXX_INFO(logger, username + "  " + passwd)
+	
+			sessions[user] = new twitCurl();	
 			if(CONFIG_HAS_KEY(config,"proxy.server")) {			
 				std::string ip = CONFIG_STRING(config,"proxy.server");
 
@@ -140,110 +231,23 @@ class TwitterPlugin : public NetworkPlugin {
 			sessions[user]->setTwitterPassword(passwd); 
 			sessions[user]->getOAuth().setConsumerKey(consumerKey);
 			sessions[user]->getOAuth().setConsumerSecret(consumerSecret);
-			
-			LOG4CXX_INFO(logger, "Querying database for usersettings of " << user)
-			
-			UserInfo info;
-			storagebackend->getUser(user, info);
-
-			std::string key="", secret="";
-			int type;
-			storagebackend->getUserSetting((long)info.id, OAUTH_KEY, type, key);
-			storagebackend->getUserSetting((long)info.id, OAUTH_SECRET, type, secret);
-
-			if(key == "" || secret == "") {			
-				LOG4CXX_INFO(logger, "Intiating oauthflow for user " << user)
-
-				std::string authUrl;
-				if (sessions[user]->oAuthRequestToken( authUrl ) == false ) {
-					LOG4CXX_ERROR(logger, "Error creating twitter authorization url!");
-					handleLogoutRequest(user, username);
-					return;
-				}
-				handleMessage(user, "twitter-account", std::string("Please visit the following link and authorize this application: ") + authUrl);
-				handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with 'pin:'. Ex. 'pin: 1234'"));
-				connectionState[user] = WAITING_FOR_PIN;	
-			} else {
-				LOG4CXX_INFO(logger, user << " is already registerd. Using the stored oauth key and secret")
-				LOG4CXX_INFO(logger, key << " " << secret)
-
-				sessions[user]->getOAuth().setOAuthTokenKey( key );
-				sessions[user]->getOAuth().setOAuthTokenSecret( secret );
-				connectionState[user] = CONNECTED;
-			}
 		}
 		
-		// User logging out
-		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
+		void OAuthFlowComplete(const std::string user, twitCurl *obj) {
+			boost::mutex::scoped_lock lock(userlock);	
+
 			delete sessions[user];
-			sessions[user] = NULL;
-			connectionState[user] = DISCONNECTED;
-		}
+			sessions[user] = obj->clone();	
+			connectionState[user] = WAITING_FOR_PIN;
+		}	
 
-		void handlePINExchange(const std::string &user, std::string &data) {
-			sessions[user]->getOAuth().setOAuthPin( data );
-			if (sessions[user]->oAuthAccessToken() == false) {
-				LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
-				handleLogoutRequest(user, "");
-				return;
-			}
-			
-			std::string OAuthAccessTokenKey, OAuthAccessTokenSecret;
-			sessions[user]->getOAuth().getOAuthTokenKey( OAuthAccessTokenKey );
-			sessions[user]->getOAuth().getOAuthTokenSecret( OAuthAccessTokenSecret );
-
-			UserInfo info;
-			if(storagebackend->getUser(user, info) == false) {
-				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
-				handleLogoutRequest(user, "");
-				return;
-			}
-
-			storagebackend->updateUserSetting((long)info.id, OAUTH_KEY, OAuthAccessTokenKey);	
-			storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);	
-
-			connectionState[user] = CONNECTED;
-			LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
-		}
-
-
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
-			
-			if(legacyName == "twitter-account") {
-				std::string cmd = message.substr(0, message.find(':'));
-				std::string data = message.substr(message.find(':') + 1);
+		void pinExchangeComplete(const std::string user, const std::string OAuthAccessTokenKey, const std::string OAuthAccessTokenSecret) {
+			boost::mutex::scoped_lock lock(userlock);	
 				
-				handleMessage(user, "twitter-account", cmd + " " + data);
-
-				if(cmd == "#pin") handlePINExchange(user, data);
-				else if(cmd == "#help") {
-					tp->runAsThread(new HelpMessageRequest(np, user));
-				}
-				else if(cmd[0] == '@') {
-					std::string username = cmd.substr(1); 
-					tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
-				}
-				else if(cmd == "#status") {
-					tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
-				}
-				else if(cmd == "#timeline") {
-					tp->runAsThread(new TimelineRequest(np, sessions[user], user));
-					//fetchTimeline(user);
-				}
-				else if(cmd == "#friends") {
-					tp->runAsThread(new FetchFriends(np, sessions[user], user));
-				}
-			}
-		}
-
-		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-			LOG4CXX_INFO(logger, user << ": Added buddy " << buddyName << ".");
-			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
-		}
-
-		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
-
-		}
+			sessions[user]->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
+			sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
+			connectionState[user] = CONNECTED;
+		}	
 
 	private:
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
@@ -255,10 +259,12 @@ class TwitterPlugin : public NetworkPlugin {
 		std::string OAUTH_KEY;
 		std::string OAUTH_SECRET;
 
+		boost::mutex dblock, userlock;
+
 		ThreadPool *tp;
 		std::map<std::string, twitCurl*> sessions;		
 		std::map<std::string, status> connectionState;
-};
+};*/
 
 static void spectrum_sigchld_handler(int sig)
 {
@@ -322,6 +328,8 @@ int main (int argc, char* argv[]) {
 	Logging::initBackendLogging(&config);
 	
 	std::string error;
+	StorageBackend *storagebackend;
+	
 	storagebackend = StorageBackend::createBackend(&config, error);
 	if (storagebackend == NULL) {
 		LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error)
@@ -335,7 +343,7 @@ int main (int argc, char* argv[]) {
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
-	np = new TwitterPlugin(&config, &eventLoop, host, port);
+	np = new TwitterPlugin(&config, &eventLoop, storagebackend, host, port);
 	loop_->run();
 
 	return 0;

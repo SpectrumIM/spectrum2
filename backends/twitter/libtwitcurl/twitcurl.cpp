@@ -1497,7 +1497,7 @@ bool twitCurl::performGet( const std::string& getUrl )
 
     /* Set http request and url */
     curl_easy_setopt( m_curlHandle, CURLOPT_HTTPGET, 1 );
-//    curl_easy_setopt( m_curlHandle, CURLOPT_VERBOSE, 1 );
+    curl_easy_setopt( m_curlHandle, CURLOPT_VERBOSE, 1 );
     curl_easy_setopt( m_curlHandle, CURLOPT_URL, getUrl.c_str() );
 
     /* Send http request */
@@ -1544,6 +1544,7 @@ bool twitCurl::performGet( const std::string& getUrl, const std::string& oAuthHt
 
     /* Set http request and url */
     curl_easy_setopt( m_curlHandle, CURLOPT_HTTPGET, 1 );
+    curl_easy_setopt( m_curlHandle, CURLOPT_VERBOSE, 1 );
     curl_easy_setopt( m_curlHandle, CURLOPT_URL, getUrl.c_str() );
 
     /* Set header */
@@ -1675,6 +1676,7 @@ bool twitCurl::performPost( const std::string& postUrl, std::string dataStr )
 
     /* Set http request, url and data */
     curl_easy_setopt( m_curlHandle, CURLOPT_POST, 1 );
+    curl_easy_setopt( m_curlHandle, CURLOPT_VERBOSE, 1 );
     curl_easy_setopt( m_curlHandle, CURLOPT_URL, postUrl.c_str() );
     if( dataStr.length() )
     {
