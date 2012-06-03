@@ -73,7 +73,7 @@ class TwitterPlugin : public NetworkPlugin {
 			m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
 
-			tp = new ThreadPool(10);
+			tp = new ThreadPool(loop_, 10);
 				
 			LOG4CXX_INFO(logger, "Starting the plugin.");
 		}

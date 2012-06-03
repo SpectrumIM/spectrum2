@@ -7,6 +7,7 @@
 #include <queue>
 #include <iostream>
 #include "transport/logging.h"
+#include "Swiften/Swiften.h"
 
 
 /*
@@ -54,11 +55,12 @@ class ThreadPool
 	boost::mutex count_lock;
 	boost::mutex pool_lock;
 	boost::mutex criticalregion;
+	Swift::EventLoop *loop;
 
 	boost::signals2::signal  < void () > onWorkerAvailable;
 
 	public:
-	ThreadPool(int maxthreads);
+	ThreadPool(Swift::EventLoop *loop, int maxthreads);
 	~ThreadPool();
 	void runAsThread(Thread *t);
 	int getActiveThreadCount(); 

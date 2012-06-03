@@ -603,7 +603,7 @@ bool twitCurl::userLookup( std::vector<std::string> &userInfo, bool isUserId )
     {
 		std::string userIds = isUserId?twitCurlDefaults::TWITCURL_USERID : twitCurlDefaults::TWITCURL_SCREENNAME;
 		std::string sep = "";
-		for(int i=0 ; i<std::min(100U, userInfo.size()) ; i++, sep = ",")
+		for(int i=0 ; i<std::min(100U,(unsigned int) userInfo.size()) ; i++, sep = ",")
 			userIds += sep + userInfo[i];
 
         /* Set URL */
