@@ -220,6 +220,35 @@ public:
     void setProxyUserName( std::string& proxyUserName /* in */ );
     void setProxyPassword( std::string& proxyPassword /* in */ );
 
+
+	twitCurl* clone()
+	{
+		twitCurl *cloneObj = new twitCurl();
+
+		/* cURL flags */
+		cloneObj->m_curlProxyParamsSet = m_curlProxyParamsSet;
+		cloneObj->m_curlLoginParamsSet = m_curlLoginParamsSet;
+		cloneObj->m_curlCallbackParamsSet = m_curlCallbackParamsSet;
+
+		/* cURL proxy data */
+		cloneObj->m_proxyServerIp = m_proxyServerIp;
+		cloneObj->m_proxyServerPort = m_proxyServerPort;
+		cloneObj->m_proxyUserName = m_proxyUserName;
+		cloneObj->m_proxyPassword = m_proxyPassword;
+
+		/* Twitter data */
+		cloneObj->m_twitterUsername = m_twitterUsername;
+		cloneObj->m_twitterPassword = m_twitterPassword;
+
+		/* Twitter API type */
+		cloneObj->m_eApiFormatType = m_eApiFormatType;
+
+		/* OAuth data */
+		cloneObj->m_oAuth = m_oAuth.clone();
+
+		return cloneObj;
+	}
+
 private:
     /* cURL data */
     CURL* m_curlHandle;

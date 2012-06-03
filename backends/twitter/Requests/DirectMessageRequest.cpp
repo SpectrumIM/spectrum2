@@ -2,11 +2,11 @@
 DEFINE_LOGGER(logger, "DirectMessageRequest")
 void DirectMessageRequest::run() 
 {
-	if(twitObj.directMessageSend(username, data, false) == false) {
+	if(twitObj->directMessageSend(username, data, false) == false) {
 		LOG4CXX_ERROR(logger, user << ": Error while sending directed message to " << username );
 		return;
 	}
-	twitObj.getLastWebResponse( replyMsg );
+	twitObj->getLastWebResponse( replyMsg );
 }
 
 void DirectMessageRequest::finalize()

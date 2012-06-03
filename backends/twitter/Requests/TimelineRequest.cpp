@@ -3,11 +3,11 @@ DEFINE_LOGGER(logger, "TimelineRequest")
 void TimelineRequest::run()
 {	
 	replyMsg = ""; 
-	if( twitObj.timelinePublicGet() ) {	
+	if( twitObj->timelineHomeGet() ) {	
 		LOG4CXX_INFO(logger, "Sending timeline request for user " << user)
 
 		while(replyMsg.length() == 0) {
-			twitObj.getLastWebResponse( replyMsg );
+			twitObj->getLastWebResponse( replyMsg );
 		}
 
 		LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
@@ -27,7 +27,7 @@ void TimelineRequest::finalize()
 		np->handleMessage(user, "twitter-account", timeline); //send timeline
 	}
 	else {
-		twitObj.getLastCurlError( replyMsg );
+		twitObj->getLastCurlError( replyMsg );
 		LOG4CXX_ERROR(logger, user << " - " << replyMsg );
 	}
 }

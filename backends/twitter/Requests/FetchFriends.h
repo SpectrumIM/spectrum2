@@ -13,7 +13,7 @@ using namespace Transport;
 
 class FetchFriends : public Thread
 {
-	twitCurl twitObj;
+	twitCurl *twitObj;
 	std::string user;
 	std::string replyMsg;
 	std::string userlist;
@@ -21,9 +21,13 @@ class FetchFriends : public Thread
 
 	public:
 	FetchFriends(NetworkPlugin *_np, twitCurl *obj, const std::string &_user) {
-		twitObj = *obj;
+		twitObj = obj->clone();
 		np = _np;
 		user = _user;
+	}
+
+	~FetchFriends() {
+		delete twitObj;
 	}
 
 	void run();

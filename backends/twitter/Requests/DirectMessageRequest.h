@@ -12,7 +12,7 @@ using namespace Transport;
 
 class DirectMessageRequest : public Thread
 {
-	twitCurl twitObj;
+	twitCurl *twitObj;
 	std::string data;
 	std::string user;
 	std::string username;
@@ -21,11 +21,15 @@ class DirectMessageRequest : public Thread
 
 	public:
 	DirectMessageRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user, const std::string & _username, const std::string &_data) {
-		twitObj = *obj;
+		twitObj = obj->clone();
 		data = _data;
 		user = _user;
 		username = _username;
 		np = _np;
+	}
+
+	~DirectMessageRequest() {
+		delete twitObj;
 	}
 
 	void run();

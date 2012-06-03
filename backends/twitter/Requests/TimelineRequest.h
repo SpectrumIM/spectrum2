@@ -13,7 +13,7 @@ using namespace Transport;
 
 class TimelineRequest : public Thread
 {
-	twitCurl twitObj;
+	twitCurl *twitObj;
 	std::string user;
 	std::string replyMsg;
 	std::string timeline;
@@ -21,9 +21,14 @@ class TimelineRequest : public Thread
 
 	public:
 	TimelineRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user) {
-		twitObj = *obj;
+		twitObj = obj->clone();
 		np = _np;
 		user = _user;
+	}
+
+	~TimelineRequest() {
+		//std::cerr << "*****Timeline request: DESTROYING twitObj****" << std::endl;
+		delete twitObj;
 	}
 
 	void run();
