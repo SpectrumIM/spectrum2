@@ -22,14 +22,14 @@ class OAuthFlow : public Thread
 	
 	public:
 	OAuthFlow(TwitterPlugin *_np, twitCurl *obj, const std::string &_user, const std::string &_username) {
-		twitObj = obj;
+		twitObj = obj->clone();
 		username = _username;
 		user = _user;
 		np = _np;
 	}
 
 	~OAuthFlow() {
-		//delete twitObj;
+		delete twitObj;
 	}	
 
 	void run();

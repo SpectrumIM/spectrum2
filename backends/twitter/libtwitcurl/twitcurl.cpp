@@ -51,6 +51,35 @@ twitCurl::~twitCurl()
     }
 }
 
+twitCurl* twitCurl::clone()
+{
+	twitCurl *cloneObj = new twitCurl();
+	
+	/* cURL flags */
+	//cloneObj->m_curlProxyParamsSet = false;
+	//cloneObj->m_curlLoginParamsSet = m_curlLoginParamsSet;
+	//cloneObj->m_curlCallbackParamsSet = m_curlCallbackParamsSet;
+
+	/* cURL proxy data */
+	cloneObj->setProxyServerIp(m_proxyServerIp);
+	cloneObj->setProxyServerPort(m_proxyServerPort);
+	cloneObj->setProxyUserName(m_proxyUserName);
+	cloneObj->setProxyPassword(m_proxyPassword);
+
+
+	/* Twitter data */
+	cloneObj->setTwitterUsername(m_twitterUsername);
+	cloneObj->setTwitterPassword(m_twitterPassword);
+
+	/* Twitter API type */
+	cloneObj->setTwitterApiType(m_eApiFormatType);
+
+	/* OAuth data */
+	cloneObj->m_oAuth = m_oAuth.clone();
+
+	return cloneObj;
+}
+
 /*++
 * @method: twitCurl::setTwitterApiType
 *

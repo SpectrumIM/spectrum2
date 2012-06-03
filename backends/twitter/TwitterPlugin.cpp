@@ -203,8 +203,8 @@ void TwitterPlugin::OAuthFlowComplete(const std::string user, twitCurl *obj)
 {
 	boost::mutex::scoped_lock lock(userlock);	
 
-	//delete sessions[user];
-	//sessions[user] = obj;	
+	delete sessions[user];
+	sessions[user] = obj->clone();	
 	connectionState[user] = WAITING_FOR_PIN;
 }	
 
@@ -212,7 +212,7 @@ void TwitterPlugin::pinExchangeComplete(const std::string user, const std::strin
 {
 	boost::mutex::scoped_lock lock(userlock);	
 		
-	//sessions[user]->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
-	//sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
+	sessions[user]->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
+	sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
 	connectionState[user] = CONNECTED;
 }	
