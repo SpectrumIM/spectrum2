@@ -102,8 +102,10 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 {
 	
 	if(legacyName == "twitter-account") {
-		std::string cmd = message.substr(0, message.find(':'));
-		std::string data = message.substr(message.find(':') + 1);
+
+		std::string cmd = "", data = "";
+		std::istringstream in(message.c_str());
+		in >> cmd >> data;
 		
 		handleMessage(user, "twitter-account", cmd + " " + data);
 
