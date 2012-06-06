@@ -83,6 +83,10 @@ class TwitterPlugin : public NetworkPlugin {
 		void OAuthFlowComplete(const std::string user, twitCurl *obj);
 		
 		void pinExchangeComplete(const std::string user, const std::string OAuthAccessTokenKey, const std::string OAuthAccessTokenSecret);
+		
+		void updateUsersLastTweetID(const std::string user, const std::string ID);
+
+		std::string getMostRecentTweetID(const std::string user);
 
 	private:
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
@@ -99,6 +103,7 @@ class TwitterPlugin : public NetworkPlugin {
 		ThreadPool *tp;
 		std::map<std::string, twitCurl*> sessions;		
 		std::map<std::string, status> connectionState;
+		std::map<std::string, std::string> mostRecentTweetID;
 		std::set<std::string> onlineUsers;
 };
 

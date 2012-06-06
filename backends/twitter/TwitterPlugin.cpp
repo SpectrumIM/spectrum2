@@ -108,9 +108,13 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 	
 	if(legacyName == "twitter-account") {
 
+		char ch;
 		std::string cmd = "", data = "";
-		std::istringstream in(message.c_str());
-		in >> cmd >> data;
+	 	
+		int i;
+		for(i=0 ; i<message.size() && message[i] != ' '; i++) cmd += message[i];
+		while(i<message.size() && message[i] == ' ') i++;
+		data = message.substr(i);
 		
 		//handleMessage(user, "twitter-account", cmd + " " + data);
 
@@ -121,7 +125,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 			tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
 		}
 		else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
-		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(np, sessions[user], user, data));
+		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(np, sessions[user], user, data, ""));
 		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(np, sessions[user], user));
 		else handleMessage(user, "twitter-account", "Unknown command! Type #help for a list of available commands.");
 	}
@@ -145,7 +149,7 @@ void TwitterPlugin::pollForTweets()
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new TimelineRequest(np, sessions[user], user, ""));
+		tp->runAsThread(new TimelineRequest(np, sessions[user], user, "", mostRecentTweetID[user]));
 		it++;
 	}
 	m_timer->start();
@@ -237,4 +241,17 @@ void TwitterPlugin::pinExchangeComplete(const std::string user, const std::strin
 	sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
 	connectionState[user] = CONNECTED;
 	onlineUsers.insert(user);
+	mostRecentTweetID[user] = "";
 }	
+
+void TwitterPlugin::updateUsersLastTweetID(const std::string user, const std::string ID)
+{
+	boost::mutex::scoped_lock lock(userlock);	
+	mostRecentTweetID[user] = ID;
+}
+
+std::string TwitterPlugin::getMostRecentTweetID(const std::string user)
+{
+	boost::mutex::scoped_lock lock(userlock);	
+	return mostRecentTweetID[user];
+}

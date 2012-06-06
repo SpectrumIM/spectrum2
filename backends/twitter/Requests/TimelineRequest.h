@@ -5,6 +5,7 @@
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterResponseParser.h"
 #include "transport/networkplugin.h"
+#include "../TwitterPlugin.h"
 #include "transport/logging.h"
 #include <string>
 #include <iostream>
@@ -18,14 +19,17 @@ class TimelineRequest : public Thread
 	std::string userRequested;
 	std::string replyMsg;
 	std::string timeline;
-	NetworkPlugin *np;
+	std::string since_id;
+	TwitterPlugin *np;
+	bool success;
 
 	public:
-	TimelineRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user, const std::string &_user2) {
+	TimelineRequest(TwitterPlugin *_np, twitCurl *obj, const std::string &_user, const std::string &_user2, const std::string &_since_id) {
 		twitObj = obj->clone();
 		np = _np;
 		user = _user;
 		userRequested = _user2;
+		since_id = _since_id;
 	}
 
 	~TimelineRequest() {

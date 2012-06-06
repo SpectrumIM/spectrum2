@@ -464,11 +464,16 @@ bool twitCurl::timelinePublicGet()
 *          response by twitter. Use getLastWebResponse() for that.
 *
 *--*/
-bool twitCurl::timelineHomeGet()
+bool twitCurl::timelineHomeGet(std::string sinceId)
 {
+    std::string buildUrl = twitterDefaults::TWITCURL_HOME_TIMELINE_URL +
+                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+    if( sinceId.length() )
+    {
+        buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_SINCEID + sinceId;
+    }
     /* Perform GET */
-    return performGet( twitterDefaults::TWITCURL_HOME_TIMELINE_URL +
-                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] );
+    return performGet( buildUrl );
 }
 
 /*++
