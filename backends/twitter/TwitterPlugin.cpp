@@ -33,6 +33,10 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 
 	tp = new ThreadPool(loop_, 10);
 		
+	m_timer = m_factories->getTimerFactory()->createTimer(60000);
+	m_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForTweets, this));
+	m_timer->start();
+	
 	LOG4CXX_INFO(logger, "Starting the plugin.");
 }
 
@@ -95,6 +99,7 @@ void TwitterPlugin::handleLogoutRequest(const std::string &user, const std::stri
 	delete sessions[user];
 	sessions[user] = NULL;
 	connectionState[user] = DISCONNECTED;
+	onlineUsers.erase(user);
 }
 
 
@@ -131,6 +136,19 @@ void TwitterPlugin::handleBuddyUpdatedRequest(const std::string &user, const std
 void TwitterPlugin::handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) 
 {
 
+}
+
+
+void TwitterPlugin::pollForTweets()
+{
+	boost::mutex::scoped_lock lock(userlock);
+	std::set<std::string>::iterator it = onlineUsers.begin();
+	while(it != onlineUsers.end()) {
+		std::string user = *it;
+		tp->runAsThread(new TimelineRequest(np, sessions[user], user, ""));
+		it++;
+	}
+	m_timer->start();
 }
 
 
@@ -218,4 +236,5 @@ void TwitterPlugin::pinExchangeComplete(const std::string user, const std::strin
 	sessions[user]->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
 	sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
 	connectionState[user] = CONNECTED;
+	onlineUsers.insert(user);
 }	

@@ -48,6 +48,7 @@ class TwitterPlugin : public NetworkPlugin {
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
+		Swift::Timer::ref m_timer;
 		StorageBackend *storagebackend;
 
 		TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, StorageBackend *storagebackend, const std::string &host, int port);
@@ -70,6 +71,8 @@ class TwitterPlugin : public NetworkPlugin {
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups);
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups);
+		
+		void pollForTweets();
 		
 		bool getUserOAuthKeyAndSecret(const std::string user, std::string &key, std::string &secret);
 		
@@ -96,6 +99,7 @@ class TwitterPlugin : public NetworkPlugin {
 		ThreadPool *tp;
 		std::map<std::string, twitCurl*> sessions;		
 		std::map<std::string, status> connectionState;
+		std::set<std::string> onlineUsers;
 };
 
 #endif
