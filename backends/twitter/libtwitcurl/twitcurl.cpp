@@ -1472,6 +1472,9 @@ void twitCurl::prepareStandardParams()
     /* Restore any custom request we may have */
     curl_easy_setopt( m_curlHandle, CURLOPT_CUSTOMREQUEST, NULL );
 
+	/* All supported encodings*/
+    curl_easy_setopt( m_curlHandle, CURLOPT_ENCODING, "" );
+
     /* Clear callback and error buffers */
     clearCurlCallbackBuffers();
 

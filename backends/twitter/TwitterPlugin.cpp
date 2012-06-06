@@ -107,7 +107,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 		std::istringstream in(message.c_str());
 		in >> cmd >> data;
 		
-		handleMessage(user, "twitter-account", cmd + " " + data);
+		//handleMessage(user, "twitter-account", cmd + " " + data);
 
 		if(cmd == "#pin") tp->runAsThread(new PINExchangeProcess(np, sessions[user], user, data));
 		else if(cmd == "#help") tp->runAsThread(new HelpMessageRequest(np, user));
@@ -116,8 +116,9 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 			tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
 		}
 		else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
-		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(np, sessions[user], user));
+		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(np, sessions[user], user, data));
 		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(np, sessions[user], user));
+		else handleMessage(user, "twitter-account", "Unknown command! Type #help for a list of available commands.");
 	}
 }
 

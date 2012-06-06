@@ -33,7 +33,14 @@ void FetchFriends::run()
 void FetchFriends::finalize()
 {
 	if(replyMsg != "" ) {
-		np->handleMessage(user, "twitter-account", userlist);
+		std::string error = getErrorMessage(replyMsg);
+		if(error.length()) {
+			np->handleMessage(user, "twitter-account", error);
+			LOG4CXX_INFO(logger, user << ": " << error);
+		} else {
+			LOG4CXX_INFO(logger, user << ": " << userlist);
+			np->handleMessage(user, "twitter-account", userlist);
+		}
 	} else {
 		twitObj->getLastCurlError( replyMsg );
 		LOG4CXX_INFO(logger, user << " - friendsIdsGet error - " << replyMsg );

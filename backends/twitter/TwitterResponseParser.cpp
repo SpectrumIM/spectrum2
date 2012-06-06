@@ -98,3 +98,15 @@ std::vector<std::string> getIDs(std::string &xml)
 	}
 	return IDs;
 }
+
+std::string getErrorMessage(std::string &xml)
+{
+	std::string error;
+	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+
+	const std::string xmlns = rootElement->getNamespace();
+	const Swift::ParserElement::ref errorElement = rootElement->getChild(TwitterReponseTypes::error, xmlns);
+	
+	if(errorElement != NULL) error = errorElement->getText();
+	return error;
+}

@@ -25,6 +25,7 @@ namespace TwitterReponseTypes
 	const std::string user = "user";
 	const std::string users = "users";
 	const std::string status = "status";
+	const std::string error = "error";
 };
 
 //Class holding user data
@@ -98,6 +99,7 @@ class Status
 std::vector<Status> getTimeline(std::string &xml);
 std::vector<std::string> getIDs(std::string &xml);
 std::vector<User> getUsers(std::string &xml);
+std::string getErrorMessage(std::string &xml);
 Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns);
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns);
 #endif

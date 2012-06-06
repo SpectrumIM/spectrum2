@@ -6,7 +6,7 @@ void HelpMessageRequest::run()
 	helpMsg = helpMsg
 			+ "\n******************************HELP************************************\n"
 			+ "#status <your status> ==> Update your status\n"
-			+ "#timeline             ==> Retrieve your timeline\n"
+			+ "#timeline [username]  ==> Retrieve <username>'s timeline; Default - own timeline\n"
 			+ "@<username> <message> ==> Send a directed message to the user <username>\n"
 			+ "#help                 ==> Print this help message\n"
 			+ "************************************************************************\n";

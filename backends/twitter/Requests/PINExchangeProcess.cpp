@@ -14,6 +14,20 @@ void PINExchangeProcess::finalize()
 		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
 		np->handleLogoutRequest(user, "");
 	} else {
+		std::string replyMsg;
+		while(replyMsg.length() == 0) {
+			twitObj->getLastWebResponse(replyMsg);
+		}
+
+		std::string error = getErrorMessage(replyMsg);
+		if(error.length()) {
+			LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token! " << error)
+			np->handleMessage(user, "twitter-account", error);
+			np->handleLogoutRequest(user, "");
+			return;
+		}
+
+
 		std::string OAuthAccessTokenKey, OAuthAccessTokenSecret;
 		twitObj->getOAuth().getOAuthTokenKey( OAuthAccessTokenKey );
 		twitObj->getOAuth().getOAuthTokenSecret( OAuthAccessTokenSecret );

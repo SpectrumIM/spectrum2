@@ -3,7 +3,7 @@ DEFINE_LOGGER(logger, "TimelineRequest")
 void TimelineRequest::run()
 {	
 	replyMsg = ""; 
-	if( twitObj->timelineHomeGet() ) {	
+	if( twitObj->timelineUserGet(false, false, 20, userRequested, false) ) {	
 		LOG4CXX_INFO(logger, "Sending timeline request for user " << user)
 
 		while(replyMsg.length() == 0) {
@@ -23,8 +23,14 @@ void TimelineRequest::run()
 void TimelineRequest::finalize()
 {
 	if(replyMsg.length()) {
-		LOG4CXX_INFO(logger, user << "'s timeline\n" << replyMsg);
-		np->handleMessage(user, "twitter-account", timeline); //send timeline
+		std::string error = getErrorMessage(replyMsg);
+		if(error.length()) {
+			np->handleMessage(user, "twitter-account", error);
+			LOG4CXX_INFO(logger, user << ": " << error);
+		} else {	
+			LOG4CXX_INFO(logger, user << "'s timeline\n" << replyMsg);
+			np->handleMessage(user, "twitter-account", timeline); //send timeline
+		}
 	}
 	else {
 		twitObj->getLastCurlError( replyMsg );

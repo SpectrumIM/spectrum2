@@ -1,4 +1,6 @@
 #include "StatusUpdateRequest.h"
+#include "../TwitterResponseParser.h"
+
 DEFINE_LOGGER(logger, "StatusUpdateRequest")
 void StatusUpdateRequest::run() 
 {
@@ -14,10 +16,14 @@ void StatusUpdateRequest::run()
 void StatusUpdateRequest::finalize()
 {
 	if(replyMsg != "" ) {
-		LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+		std::string error = getErrorMessage(replyMsg);
+		if(error.length()) {
+			np->handleMessage(user, "twitter-account", error);
+			LOG4CXX_INFO(logger, user << ": " << error);
+		} else	LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
 	} else {
 		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger, user << "Error - " << replyMsg );
+		LOG4CXX_ERROR(logger, user << ": CurlError - " << replyMsg );
 	}
 	return;
 }

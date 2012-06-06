@@ -15,15 +15,17 @@ class TimelineRequest : public Thread
 {
 	twitCurl *twitObj;
 	std::string user;
+	std::string userRequested;
 	std::string replyMsg;
 	std::string timeline;
 	NetworkPlugin *np;
 
 	public:
-	TimelineRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user) {
+	TimelineRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user, const std::string &_user2) {
 		twitObj = obj->clone();
 		np = _np;
 		user = _user;
+		userRequested = _user2;
 	}
 
 	~TimelineRequest() {
