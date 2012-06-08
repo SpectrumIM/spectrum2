@@ -635,18 +635,19 @@ bool twitCurl::userLookup( std::vector<std::string> &userInfo, bool isUserId )
     bool retVal = false;
     if( userInfo.size() )
     {
-		std::string userIds = isUserId?twitCurlDefaults::TWITCURL_USERID : twitCurlDefaults::TWITCURL_SCREENNAME;
+		std::string userIds = "";
 		std::string sep = "";
 		for(int i=0 ; i<std::min(100U,(unsigned int) userInfo.size()) ; i++, sep = ",")
 			userIds += sep + userInfo[i];
 
-        /* Set URL */
-        std::string buildUrl = twitterDefaults::TWITCURL_LOOKUPUSERS_URL + twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+		userIds = (isUserId?twitCurlDefaults::TWITCURL_USERID : twitCurlDefaults::TWITCURL_SCREENNAME) + urlencode(userIds);
+		
+		std::string buildUrl = twitterDefaults::TWITCURL_LOOKUPUSERS_URL + twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
 
 		std::cerr << buildUrl << " " << userIds << std::endl;
         
 		/* Perform POST */
-        retVal = performPost( buildUrl, userIds );
+        retVal = performPost( buildUrl, userIds);
     }
     return retVal;
 }
