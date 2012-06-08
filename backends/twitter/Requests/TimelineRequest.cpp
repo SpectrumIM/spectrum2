@@ -17,7 +17,7 @@ void TimelineRequest::run()
 		LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
 		
 		std::vector<Status> tweets = getTimeline(replyMsg);
-		timeline = "\n";
+		timeline = "";
 
 		if(tweets.size() && (since_id == "" || 
 							 (since_id != "" && tweets[0].getID() != np->getMostRecentTweetID(user)) )) {
@@ -31,7 +31,7 @@ void TimelineRequest::run()
 
 void TimelineRequest::finalize()
 {
-	if(success && timeline != "\n") {
+	if(success && timeline != "") {
 		std::string error = getErrorMessage(replyMsg);
 		if(error.length()) {
 			np->handleMessage(user, "twitter-account", error);
