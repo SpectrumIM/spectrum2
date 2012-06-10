@@ -2,47 +2,31 @@
 DEFINE_LOGGER(logger, "TimelineRequest")
 void TimelineRequest::run()
 {	
-		
+	LOG4CXX_INFO(logger, "Sending timeline request for user " << userRequested)
+	
 	if(userRequested != "") success = twitObj->timelineUserGet(false, false, 20, userRequested, false);
 	else success = twitObj->timelineHomeGet(since_id);
 	
+	if(!success) return;
+
 	replyMsg = ""; 
-	if(success) {	
-		LOG4CXX_INFO(logger, "Sending timeline request for user " << user)
+	
+	twitObj->getLastWebResponse( replyMsg );
 
-		while(replyMsg.length() == 0) {
-			twitObj->getLastWebResponse( replyMsg );
-		}
-
-		LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
-		
-		std::vector<Status> tweets = getTimeline(replyMsg);
-		timeline = "";
-
-		if(tweets.size() && (since_id == "" || 
-							 (since_id != "" && tweets[0].getID() != np->getMostRecentTweetID(user)) )) {
-			for(int i=0 ; i<tweets.size() ; i++) {
-				timeline += tweets[i].getTweet() + "\n";
-			}
-			np->updateUsersLastTweetID(user, tweets[0].getID());
-		}
-	}
+	LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
+	
+	tweets = getTimeline(replyMsg);
 }
 
 void TimelineRequest::finalize()
 {
-	if(success && timeline != "") {
-		std::string error = getErrorMessage(replyMsg);
-		if(error.length()) {
-			np->handleMessage(user, "twitter-account", error);
-			LOG4CXX_INFO(logger, user << ": " << error);
-		} else {	
-			LOG4CXX_INFO(logger, user << "'s timeline\n" << replyMsg);
-			np->handleMessage(user, "twitter-account", timeline); //send timeline
-		}
-	}
-	else {
+	if(!success) {
 		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger, user << " - " << replyMsg );
-	}
+		LOG4CXX_ERROR(logger,  user << " - " << replyMsg)
+		callBack(user, userRequested, tweets, replyMsg);
+	} else {
+		std::string error = getErrorMessage(replyMsg);
+		if(error.length()) LOG4CXX_ERROR(logger,  user << " - " << error)
+		callBack(user, userRequested, tweets, error);
+	} 
 }

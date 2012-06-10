@@ -4,9 +4,11 @@
 #include "../ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterResponseParser.h"
-#include "transport/networkplugin.h"
 #include "transport/logging.h"
 #include <string>
+#include <boost/signals.hpp>
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 #include <iostream>
 
 using namespace Transport;
@@ -16,14 +18,16 @@ class FetchFriends : public Thread
 	twitCurl *twitObj;
 	std::string user;
 	std::string replyMsg;
-	std::string userlist;
-	NetworkPlugin *np;
+	std::vector<User> friends;
+	bool success;
+	boost::function< void (std::string, std::vector<User> &, std::string) > callBack;
 
 	public:
-	FetchFriends(NetworkPlugin *_np, twitCurl *obj, const std::string &_user) {
+	FetchFriends(twitCurl *obj, const std::string &_user, 
+			     boost::function< void (std::string, std::vector<User> &, std::string) >  cb) {
 		twitObj = obj->clone();
-		np = _np;
 		user = _user;
+		callBack = cb;
 	}
 
 	~FetchFriends() {

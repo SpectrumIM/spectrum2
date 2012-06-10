@@ -88,9 +88,16 @@ class TwitterPlugin : public NetworkPlugin {
 
 		std::string getMostRecentTweetID(const std::string user);
 
+		/****************** Twitter Response handlers **************************************/
+		void populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg);
+		void displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg);
+		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
+		/***********************************************************************************/
+
 	private:
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
-		
+		enum mode {SINGLECONTACT, MULTIPLECONTACT, CHATROOM};
+
 		Config *config;
 
 		std::string consumerKey;
@@ -105,6 +112,7 @@ class TwitterPlugin : public NetworkPlugin {
 		std::map<std::string, status> connectionState;
 		std::map<std::string, std::string> mostRecentTweetID;
 		std::set<std::string> onlineUsers;
+		mode twitterMode;
 };
 
 #endif

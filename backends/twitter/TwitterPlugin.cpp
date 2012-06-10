@@ -21,6 +21,13 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 		LOG4CXX_ERROR(logger, "Couldn't find consumer key and/or secret. Please check config file.");
 		exit(0);
 	}
+	
+	twitterMode = SINGLECONTACT;
+	if(CONFIG_HAS_KEY(config, "twitter.mode") == false) {
+		LOG4CXX_INFO(logger, "Using default single contact mode!");
+	} else twitterMode = (mode)CONFIG_INT(config, "twitter.mode");
+
+
 	consumerKey = CONFIG_STRING(config, "twitter.consumer_key");
 	consumerSecret = CONFIG_STRING(config, "twitter.consumer_secret");
 	OAUTH_KEY = "oauth_key";
@@ -108,7 +115,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 	
 	if(legacyName == "twitter-account") {
 
-		char ch;
+		//char ch;
 		std::string cmd = "", data = "";
 	 	
 		int i;
@@ -125,8 +132,10 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 			tp->runAsThread(new DirectMessageRequest(np, sessions[user], user, username, data));
 		}
 		else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
-		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(np, sessions[user], user, data, ""));
-		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(np, sessions[user], user));
+		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(sessions[user], user, data, "",
+														boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
+		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(sessions[user], user,
+													   boost::bind(&TwitterPlugin::displayFriendlist, this, _1, _2, _3)));
 		else handleMessage(user, "twitter-account", "Unknown command! Type #help for a list of available commands.");
 	}
 }
@@ -149,7 +158,8 @@ void TwitterPlugin::pollForTweets()
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new TimelineRequest(np, sessions[user], user, "", mostRecentTweetID[user]));
+		tp->runAsThread(new TimelineRequest(sessions[user], user, "", mostRecentTweetID[user],
+											boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
 		it++;
 	}
 	m_timer->start();
@@ -240,6 +250,12 @@ void TwitterPlugin::pinExchangeComplete(const std::string user, const std::strin
 	sessions[user]->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
 	sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
 	connectionState[user] = CONNECTED;
+	
+	if(twitterMode == MULTIPLECONTACT) {
+		tp->runAsThread(new FetchFriends(sessions[user], user,
+										 boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
+	}
+
 	onlineUsers.insert(user);
 	mostRecentTweetID[user] = "";
 }	
@@ -253,5 +269,54 @@ void TwitterPlugin::updateUsersLastTweetID(const std::string user, const std::st
 std::string TwitterPlugin::getMostRecentTweetID(const std::string user)
 {
 	boost::mutex::scoped_lock lock(userlock);	
-	return mostRecentTweetID[user];
+	std::string ID = "-1";
+	if(onlineUsers.count(user)) ID = mostRecentTweetID[user];
+	return ID;
 }
+
+/************************************** Twitter response functions **********************************/
+
+void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg) 
+{
+	if(errMsg.length() == 0) 
+	{
+		for(int i=0 ; i<friends.size() ; i++) {
+			handleBuddyChanged(user, friends[i].getUserName(), friends[i].getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
+		}
+	} else handleMessage(user, "twitter-account", std::string("Error populating roster - ") + errMsg);	
+}
+
+void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg)
+{
+	if(errMsg.length() == 0) 
+	{
+		std::string userlist = "\n***************USER LIST****************\n";
+		for(int i=0 ; i < friends.size() ; i++) {
+			userlist += " - " + friends[i].getUserName() + " (" + friends[i].getScreenName() + ")\n";
+		}	
+		userlist += "***************************************\n";
+		handleMessage(user, "twitter-account", userlist);	
+	} else handleMessage(user, "twitter-account", errMsg);	
+ 
+}
+
+void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg)
+{
+	if(errMsg.length() == 0) {
+		std::string timeline = "";
+
+		for(int i=0 ; i<tweets.size() ; i++) {
+			timeline += " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + "\n";
+		}
+
+		if((userRequested == "" || userRequested == user) && tweets.size()) {
+			std::string tweetID = getMostRecentTweetID(user);
+			if(tweetID != tweets[0].getID()) updateUsersLastTweetID(user, tweets[0].getID());
+			else timeline = ""; //have already sent the tweet earlier
+		}
+
+		if(timeline.length()) handleMessage(user, "twitter-account", timeline);
+	} else handleMessage(user, "twitter-account", errMsg);	
+}
+
+

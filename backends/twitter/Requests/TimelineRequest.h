@@ -4,11 +4,10 @@
 #include "../ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterResponseParser.h"
-#include "transport/networkplugin.h"
-#include "../TwitterPlugin.h"
 #include "transport/logging.h"
 #include <string>
 #include <iostream>
+#include <boost/function.hpp>
 
 using namespace Transport;
 
@@ -18,18 +17,19 @@ class TimelineRequest : public Thread
 	std::string user;
 	std::string userRequested;
 	std::string replyMsg;
-	std::string timeline;
 	std::string since_id;
-	TwitterPlugin *np;
 	bool success;
+	boost::function< void (std::string&, std::string&, std::vector<Status> &, std::string&) > callBack;
+	std::vector<Status> tweets;
 
 	public:
-	TimelineRequest(TwitterPlugin *_np, twitCurl *obj, const std::string &_user, const std::string &_user2, const std::string &_since_id) {
+	TimelineRequest(twitCurl *obj, const std::string &_user, const std::string &_user2, const std::string &_since_id,
+					boost::function< void (std::string&, std::string&, std::vector<Status> &, std::string&) > cb) {
 		twitObj = obj->clone();
-		np = _np;
 		user = _user;
 		userRequested = _user2;
 		since_id = _since_id;
+		callBack = cb;
 	}
 
 	~TimelineRequest() {
