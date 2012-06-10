@@ -73,6 +73,8 @@ class TwitterPlugin : public NetworkPlugin {
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups);
 		
 		void pollForTweets();
+
+		void pollForDirectMessages();
 		
 		bool getUserOAuthKeyAndSecret(const std::string user, std::string &key, std::string &secret);
 		
@@ -84,14 +86,19 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		void pinExchangeComplete(const std::string user, const std::string OAuthAccessTokenKey, const std::string OAuthAccessTokenSecret);
 		
-		void updateUsersLastTweetID(const std::string user, const std::string ID);
+		void updateLastTweetID(const std::string user, const std::string ID);
 
 		std::string getMostRecentTweetID(const std::string user);
+
+		void updateLastDMID(const std::string user, const std::string ID);
+		
+		std::string getMostRecentDMID(const std::string user);
 
 		/****************** Twitter Response handlers **************************************/
 		void populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
+		void directMessageResponse(std::string &user, std::string &errMsg);
 		/***********************************************************************************/
 
 	private:
@@ -111,6 +118,7 @@ class TwitterPlugin : public NetworkPlugin {
 		std::map<std::string, twitCurl*> sessions;		
 		std::map<std::string, status> connectionState;
 		std::map<std::string, std::string> mostRecentTweetID;
+		std::map<std::string, std::string> mostRecentDirectMessageID;
 		std::set<std::string> onlineUsers;
 		mode twitterMode;
 };

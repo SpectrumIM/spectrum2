@@ -6,23 +6,20 @@ DEFINE_LOGGER(logger, "DirectMessageRequest")
 void DirectMessageRequest::run() 
 {
 	replyMsg = "";
-	if(twitObj->directMessageSend(username, data, false) == false) {
-		LOG4CXX_ERROR(logger, user << ": Error while sending directed message to " << username );
-		return;
-	}
-	twitObj->getLastWebResponse( replyMsg );
+	success = twitObj->directMessageSend(username, data, false);
+	if(success) twitObj->getLastWebResponse( replyMsg );
 }
 
 void DirectMessageRequest::finalize()
 {
-	if(replyMsg.length()) {
+	if(!success) {
+		LOG4CXX_ERROR(logger, user << ": Error while sending directed message to " << username );
+		twitObj->getLastCurlError( replyMsg );
+		callBack(user, replyMsg);
+	} else {
 		std::string error = getErrorMessage(replyMsg);
-		if(error.length()) {
-			np->handleMessage(user, "twitter-account", error);
-			LOG4CXX_INFO(logger, user << ": " << error);
-		} else {
-			LOG4CXX_INFO(logger, user << ": Sent " << data << " to " << username)
-			LOG4CXX_INFO(logger, user << ": Twitter reponse - " << replyMsg)
-		}
+		if(error.length()) LOG4CXX_ERROR(logger,  user << " - " << error)
+		else LOG4CXX_INFO(logger, user << " - " << replyMsg)
+		callBack(user, error);	
 	}
 }

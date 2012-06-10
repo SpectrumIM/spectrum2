@@ -3,9 +3,9 @@
 
 #include "../ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
-#include "transport/networkplugin.h"
 #include "transport/logging.h"
 #include <string>
+#include <boost/function.hpp>
 #include <iostream>
 
 using namespace Transport;
@@ -17,15 +17,17 @@ class DirectMessageRequest : public Thread
 	std::string user;
 	std::string username;
 	std::string replyMsg;
-	NetworkPlugin *np;
+	boost::function< void (std::string&, std::string&) > callBack;
+	bool success;
 
 	public:
-	DirectMessageRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user, const std::string & _username, const std::string &_data) {
+	DirectMessageRequest(twitCurl *obj, const std::string &_user, const std::string & _username, const std::string &_data,
+			     		boost::function< void (std::string&, std::string&) >  cb) {
 		twitObj = obj->clone();
 		data = _data;
 		user = _user;
 		username = _username;
-		np = _np;
+		callBack = cb;
 	}
 
 	~DirectMessageRequest() {
