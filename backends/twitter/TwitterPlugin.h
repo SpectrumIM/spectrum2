@@ -48,7 +48,8 @@ class TwitterPlugin : public NetworkPlugin {
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
-		Swift::Timer::ref m_timer;
+		Swift::Timer::ref tweet_timer;
+		Swift::Timer::ref message_timer;
 		StorageBackend *storagebackend;
 
 		TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, StorageBackend *storagebackend, const std::string &host, int port);

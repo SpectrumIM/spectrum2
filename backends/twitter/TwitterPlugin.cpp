@@ -11,6 +11,20 @@ DEFINE_LOGGER(logger, "Twitter Backend");
 
 TwitterPlugin *np = NULL;
 Swift::SimpleEventLoop *loop_; // Event Loop
+
+#define abs(x) ((x)<0?-(x):(x))
+static int cmp(std::string a, std::string b)
+{
+	int diff = abs((int)a.size() - (int)b.size());
+	if(a.size() < b.size()) a = std::string(diff,'0') + a;
+	else b = std::string(diff,'0') + b;
+	
+	if(a == b) return 0;
+	if(a < b) return -1;
+	return 1;
+}
+
+
 TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, StorageBackend *storagebackend, const std::string &host, int port) : NetworkPlugin() 
 {
 	this->config = config;
@@ -40,10 +54,14 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 
 	tp = new ThreadPool(loop_, 10);
 		
-	m_timer = m_factories->getTimerFactory()->createTimer(60000);
-	m_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForTweets, this));
-	m_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForDirectMessages, this));
-	m_timer->start();
+	tweet_timer = m_factories->getTimerFactory()->createTimer(60000);
+	message_timer = m_factories->getTimerFactory()->createTimer(60000);
+
+	tweet_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForTweets, this));
+	message_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForDirectMessages, this));
+
+	tweet_timer->start();
+	message_timer->start();
 	
 	LOG4CXX_INFO(logger, "Starting the plugin.");
 }
@@ -169,20 +187,20 @@ void TwitterPlugin::pollForTweets()
 											boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
 		it++;
 	}
-	m_timer->start();
+	tweet_timer->start();
 }
 
 void TwitterPlugin::pollForDirectMessages()
 {
-	/*boost::mutex::scoped_lock lock(userlock);
+	boost::mutex::scoped_lock lock(userlock);
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new DirectMessage(sessions[user], user, "", mostRecentDirectMessageID[user],
+		tp->runAsThread(new DirectMessageRequest(sessions[user], user, "", mostRecentDirectMessageID[user],
 											boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3)));
 		it++;
 	}
-	m_timer->start();*/
+	message_timer->start();
 }
 
 
@@ -304,7 +322,7 @@ void TwitterPlugin::updateLastDMID(const std::string user, const std::string ID)
 std::string TwitterPlugin::getMostRecentDMID(const std::string user)
 {
 	boost::mutex::scoped_lock lock(userlock);	
-	std::string ID = "-1";
+	std::string ID = "";
 	if(onlineUsers.count(user)) ID = mostRecentDirectMessageID[user];
 	return ID;
 }
@@ -371,8 +389,18 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::vector<DirectM
 		msglist += "***************************************\n";
 		handleMessage(user, "twitter-account", msglist);	
 	} else if(twitterMode == MULTIPLECONTACT) {
+		
+		std::string msgID = getMostRecentDMID(user);
+		std::string maxID = msgID;
+
 		for(int i=0 ; i < messages.size() ; i++) {
-			handleMessage(user, messages[i].getSenderData().getScreenName(), messages[i].getMessage());		
+			if(cmp(msgID, messages[i].getID()) == -1) {
+				handleMessage(user, messages[i].getSenderData().getScreenName(), messages[i].getMessage());
+				if(cmp(maxID, messages[i].getID()) == -1) maxID = messages[i].getID();
+			}
 		}	
+		
+		if(maxID == getMostRecentDMID(user)) LOG4CXX_INFO(logger, "No new direct messages for " << user)
+		updateLastDMID(user, maxID);
 	}
 }
