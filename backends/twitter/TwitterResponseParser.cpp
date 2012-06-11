@@ -6,7 +6,9 @@ DEFINE_LOGGER(logger, "TwitterResponseParser")
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns) 
 {
 	User user;
-	if(element->getName() != "user") {
+	if(element->getName() != TwitterReponseTypes::user 
+	   && element->getName() != TwitterReponseTypes::sender
+	   && element->getName() != TwitterReponseTypes::recipient) {
 		LOG4CXX_ERROR(logger, "Not a user element!")
 		return user;
 	}
@@ -40,6 +42,26 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 	return status;
 }
 
+DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const std::string xmlns) 
+{
+	DirectMessage DM;
+	if(element->getName() != TwitterReponseTypes::direct_message) {
+		LOG4CXX_ERROR(logger, "Not a direct_message element!")
+		return DM;
+	}
+
+	DM.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	DM.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
+	DM.setMessage( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
+	DM.setSenderID( std::string( element->getChild(TwitterReponseTypes::sender_id, xmlns)->getText() ) );
+	DM.setRecipientID( std::string( element->getChild(TwitterReponseTypes::recipient_id, xmlns)->getText() ) );
+	DM.setSenderScreenName( std::string( element->getChild(TwitterReponseTypes::sender_screen_name, xmlns)->getText() ) );
+	DM.setRecipientScreenName( std::string( element->getChild(TwitterReponseTypes::recipient_screen_name, xmlns)->getText() ) );
+	DM.setSenderData( getUser(element->getChild(TwitterReponseTypes::sender, xmlns), xmlns) );
+	DM.setRecipientData( getUser(element->getChild(TwitterReponseTypes::recipient, xmlns), xmlns) );
+	return DM;
+}
+
 std::vector<Status> getTimeline(std::string &xml)
 {
 	std::vector<Status> statuses;
@@ -58,6 +80,26 @@ std::vector<Status> getTimeline(std::string &xml)
 		statuses.push_back(getStatus(status, xmlns));
 	}
 	return statuses;
+}
+
+std::vector<DirectMessage> getDirectMessages(std::string &xml)
+{
+	std::vector<DirectMessage> DMs;
+	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	
+	if(rootElement->getName() != TwitterReponseTypes::directmessages) {
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to direct-messages")
+		return DMs;
+	}
+
+	const std::string xmlns = rootElement->getNamespace();
+	const std::vector<Swift::ParserElement::ref> children = rootElement->getChildren(TwitterReponseTypes::direct_message, xmlns);
+
+	for(int i = 0; i <  children.size() ; i++) {
+		const Swift::ParserElement::ref dm = children[i];
+		DMs.push_back(getDirectMessage(dm, xmlns));
+	}
+	return DMs;
 }
 
 std::vector<User> getUsers(std::string &xml)

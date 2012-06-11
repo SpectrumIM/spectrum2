@@ -131,7 +131,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 		else if(cmd[0] == '@') {
 			std::string username = cmd.substr(1); 
 			tp->runAsThread(new DirectMessageRequest(sessions[user], user, username, data,
-												     boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2)));
+												     boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3)));
 		}
 		else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(np, sessions[user], user, data));
 		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(sessions[user], user, data, "",
@@ -143,7 +143,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 
 	else {
 		tp->runAsThread(new DirectMessageRequest(sessions[user], user, legacyName, message,
-												 boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2)));
+												 boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3)));
 	}
 }
 
@@ -354,9 +354,25 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 	} else handleMessage(user, "twitter-account", errMsg);	
 }
 
-void TwitterPlugin::directMessageResponse(std::string &user, std::string &errMsg)
+void TwitterPlugin::directMessageResponse(std::string &user, std::vector<DirectMessage> &messages, std::string &errMsg)
 {
 	if(errMsg.length()) {
 		handleMessage(user, "twitter-account", std::string("Error while sending direct message! - ") + errMsg);	
+		return;
+	}
+	
+	if(!messages.size()) return;
+	
+	if(twitterMode == SINGLECONTACT) {
+		std::string msglist = "\n***************MSG LIST****************\n";
+		for(int i=0 ; i < messages.size() ; i++) {
+			msglist += " - " + messages[i].getSenderData().getScreenName() + ": " + messages[i].getMessage() + "\n";
+		}	
+		msglist += "***************************************\n";
+		handleMessage(user, "twitter-account", msglist);	
+	} else if(twitterMode == MULTIPLECONTACT) {
+		for(int i=0 ; i < messages.size() ; i++) {
+			handleMessage(user, messages[i].getSenderData().getScreenName(), messages[i].getMessage());		
+		}	
 	}
 }

@@ -711,11 +711,17 @@ bool twitCurl::followersGet( std::string userInfo, bool isUserId )
 *          response by twitter. Use getLastWebResponse() for that.
 *
 *--*/
-bool twitCurl::directMessageGet()
+bool twitCurl::directMessageGet( std::string sinceId )
 {
+	std::string buildUrl = twitterDefaults::TWITCURL_DIRECTMESSAGES_URL + twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+	
+	if(sinceId.length())
+	{
+      	buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_SINCEID + sinceId;
+	}
+
     /* Perform GET */
-    return performGet( twitterDefaults::TWITCURL_DIRECTMESSAGES_URL +
-                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] );
+    return performGet( buildUrl );
 }
 
 /*++

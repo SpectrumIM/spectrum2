@@ -26,6 +26,14 @@ namespace TwitterReponseTypes
 	const std::string users = "users";
 	const std::string status = "status";
 	const std::string error = "error";
+	const std::string direct_message = "direct_message";
+	const std::string directmessages = "direct-messages";
+	const std::string sender_id = "sender_id";
+	const std::string recipient_id = "recipient_id";
+	const std::string sender_screen_name = "sender_screen_name";
+	const std::string recipient_screen_name = "recipient_screen_name";
+	const std::string sender = "sender";
+   	const std::string recipient = "recipient";
 };
 
 //Class holding user data
@@ -96,10 +104,50 @@ class Status
 	void setRetweeted(bool val) {retweeted = val;}
 };
 
+//Class representing a Direct Message
+class DirectMessage
+{
+	std::string created_at;
+	std::string ID;
+	std::string text;
+	std::string sender_id;
+	std::string recipient_id;
+	std::string sender_screen_name;
+	std::string recipient_screen_name;
+	User sender, recipient;
+
+	public:
+	DirectMessage():created_at(""),ID(""),text(""),sender_id(""),recipient_id(""),
+			 sender_screen_name(""),recipient_screen_name(""),sender(User()),recipient(User()){}
+	
+	std::string getCreationTime() {return created_at;}
+	std::string getID() {return ID;}
+	std::string getMessage() {return text;}
+	std::string getSenderID() {return sender_id;}
+	std::string getRecipientID() {return recipient_id;}
+	std::string getSenderScreenName() {return sender_screen_name;}
+	std::string getRecipientScreenName() {return recipient_screen_name;}
+	User getSenderData() {return sender;}
+	User getRecipientData() {return recipient;}
+	
+	void setCreationTime(std::string _created) {created_at = _created;}
+	void setID(std::string _id) {ID = _id;}
+	void setMessage(std::string _text) {text = _text;}
+	void setSenderID(std::string _id) {sender_id = _id;}
+	void setRecipientID(std::string _id) {recipient_id = _id;}
+	void setSenderScreenName(std::string _name) {sender_screen_name = _name;}
+	void setRecipientScreenName(std::string _name) {recipient_screen_name = _name;}
+	void setSenderData(User u) {sender = u;}
+	void setRecipientData(User u) {recipient = u;}
+};
+
 std::vector<Status> getTimeline(std::string &xml);
+std::vector<DirectMessage> getDirectMessages(std::string &xml);
 std::vector<std::string> getIDs(std::string &xml);
 std::vector<User> getUsers(std::string &xml);
 std::string getErrorMessage(std::string &xml);
+
 Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns);
+DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const std::string xmlns);
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns);
 #endif

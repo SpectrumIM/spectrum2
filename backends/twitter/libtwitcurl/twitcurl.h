@@ -163,7 +163,7 @@ public:
     bool followersGet( std::string userInfo = "" /* in */, bool isUserId = false /* in */ );
 
     /* Twitter direct message APIs */
-    bool directMessageGet();
+    bool directMessageGet( std::string sinceId /* in */ );
     bool directMessageSend( std::string& userInfo /* in */, std::string& dMsg /* in */, bool isUserId = false /* in */ );
     bool directMessageGetSent();
     bool directMessageDestroyById( std::string& dMsgId /* in */ );
