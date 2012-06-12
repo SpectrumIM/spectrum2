@@ -382,12 +382,21 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::vector<DirectM
 	if(!messages.size()) return;
 	
 	if(twitterMode == SINGLECONTACT) {
-		std::string msglist = "\n***************MSG LIST****************\n";
+
+		std::string msglist = "";
+		std::string msgID = getMostRecentDMID(user);
+		std::string maxID = msgID;
+		
 		for(int i=0 ; i < messages.size() ; i++) {
-			msglist += " - " + messages[i].getSenderData().getScreenName() + ": " + messages[i].getMessage() + "\n";
+			if(cmp(msgID, messages[i].getID()) == -1) {
+				msglist += " - " + messages[i].getSenderData().getScreenName() + ": " + messages[i].getMessage() + "\n";
+				if(cmp(maxID, messages[i].getID()) == -1) maxID = messages[i].getID();
+			}
 		}	
-		msglist += "***************************************\n";
-		handleMessage(user, "twitter-account", msglist);	
+
+		if(msglist.length()) handleMessage(user, "twitter-account", msglist);	
+		updateLastDMID(user, maxID);
+
 	} else if(twitterMode == MULTIPLECONTACT) {
 		
 		std::string msgID = getMostRecentDMID(user);

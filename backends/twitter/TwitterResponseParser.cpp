@@ -67,6 +67,11 @@ std::vector<Status> getTimeline(std::string &xml)
 	std::vector<Status> statuses;
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
 	
+	if(rootElement == NULL) {
+		LOG4CXX_ERROR(logger, "Error while parsing XML")
+		return statuses;
+	}
+
 	if(rootElement->getName() != "statuses") {
 		LOG4CXX_ERROR(logger, "XML doesn't correspond to timeline")
 		return statuses;
@@ -86,6 +91,11 @@ std::vector<DirectMessage> getDirectMessages(std::string &xml)
 {
 	std::vector<DirectMessage> DMs;
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	
+	if(rootElement == NULL) {
+		LOG4CXX_ERROR(logger, "Error while parsing XML")
+		return DMs;
+	}
 	
 	if(rootElement->getName() != TwitterReponseTypes::directmessages) {
 		LOG4CXX_ERROR(logger, "XML doesn't correspond to direct-messages")
@@ -107,6 +117,11 @@ std::vector<User> getUsers(std::string &xml)
 	std::vector<User> users;
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
 	
+	if(rootElement == NULL) {
+		LOG4CXX_ERROR(logger, "Error while parsing XML")
+		return users;
+	}
+
 	if(rootElement->getName() != TwitterReponseTypes::users) {
 		LOG4CXX_ERROR(logger, "XML doesn't correspond to user list")
 		return users;
@@ -127,6 +142,11 @@ std::vector<std::string> getIDs(std::string &xml)
 	std::vector<std::string> IDs;
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
 
+	if(rootElement == NULL) {
+		LOG4CXX_ERROR(logger, "Error while parsing XML")
+		return IDs;
+	}
+
 	if(rootElement->getName() != TwitterReponseTypes::id_list) {
 		LOG4CXX_ERROR(logger, "XML doesn't correspond to id_list");
 		return IDs;
@@ -145,6 +165,11 @@ std::string getErrorMessage(std::string &xml)
 {
 	std::string error;
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+
+	if(rootElement == NULL) {
+		LOG4CXX_ERROR(logger, "Error while parsing XML");
+		return "";
+	}
 
 	const std::string xmlns = rootElement->getNamespace();
 	const Swift::ParserElement::ref errorElement = rootElement->getChild(TwitterReponseTypes::error, xmlns);
