@@ -6,6 +6,8 @@
 #include "Requests/HelpMessageRequest.h"
 #include "Requests/PINExchangeProcess.h"
 #include "Requests/OAuthFlow.h"
+#include "Requests/CreateFriendRequest.h"
+#include "Requests/DestroyFriendRequest.h"
 
 DEFINE_LOGGER(logger, "Twitter Backend");
 
@@ -156,6 +158,10 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 														boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
 		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(sessions[user], user,
 													   boost::bind(&TwitterPlugin::displayFriendlist, this, _1, _2, _3)));
+		else if(cmd == "#follow") tp->runAsThread(new CreateFriendRequest(sessions[user], user, data,
+													   boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
+		else if(cmd == "#unfollow") tp->runAsThread(new DestroyFriendRequest(sessions[user], user, data,
+													   boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
 		else handleMessage(user, "twitter-account", "Unknown command! Type #help for a list of available commands.");
 	} 
 
@@ -411,5 +417,30 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::vector<DirectM
 		
 		if(maxID == getMostRecentDMID(user)) LOG4CXX_INFO(logger, "No new direct messages for " << user)
 		updateLastDMID(user, maxID);
+	}
+}
+
+void TwitterPlugin::createFriendResponse(std::string &user, std::string &frnd, std::string &errMsg)
+{
+	if(errMsg.length()) {
+		handleMessage(user, "twitter-account", errMsg);
+		return;
+	}
+
+	if(twitterMode == SINGLECONTACT) {
+		handleMessage(user, "twitter-account", std::string("You are now following ") + frnd);
+	} else if(twitterMode == MULTIPLECONTACT) {
+		handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
+	}
+}
+
+void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, std::string &errMsg)
+{
+	if(errMsg.length()) {
+		handleMessage(user, "twitter-account", errMsg);
+		return;
+	} if(twitterMode == SINGLECONTACT) {
+		handleMessage(user, "twitter-account", std::string("You are not following ") + frnd + "anymore");
+	} else if(twitterMode == MULTIPLECONTACT) {
 	}
 }

@@ -100,6 +100,8 @@ class TwitterPlugin : public NetworkPlugin {
 		void displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
 		void directMessageResponse(std::string &user, std::vector<DirectMessage> &messages, std::string &errMsg);
+		void createFriendResponse(std::string &user, std::string &frnd, std::string &errMsg);
+		void deleteFriendResponse(std::string &user, std::string &frnd, std::string &errMsg);
 		/***********************************************************************************/
 
 	private:
