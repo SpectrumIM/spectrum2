@@ -165,6 +165,19 @@ void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::strin
 	send(message);
 }
 
+void NetworkPlugin::handleBuddyRemoved(const std::string &user, const std::string &buddyName) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user);
+	buddy.set_buddyname(buddyName);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED);
+
+	send(message);
+}
+
 void NetworkPlugin::handleBuddyTyping(const std::string &user, const std::string &buddyName) {
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user);

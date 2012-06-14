@@ -99,6 +99,46 @@ void RosterManager::setBuddy(Buddy *buddy) {
 	setBuddyCallback(buddy);
 }
 
+void RosterManager::removeBuddy(const std::string &name) {
+	Buddy *buddy = getBuddy(name);
+	if (!buddy) {
+		LOG4CXX_WARN(logger, m_user->getJID().toString() << ": Tried to remove unknown buddy " << name);
+		return;
+	}
+
+	if (m_component->inServerMode() || m_remoteRosterRequest) {
+		sendBuddyRosterRemove(buddy);
+	}
+	else {
+		sendBuddyUnsubscribePresence(buddy);
+	}
+
+	unsetBuddy(buddy);
+	delete buddy;
+}
+
+void RosterManager::sendBuddyRosterRemove(Buddy *buddy) {
+	Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
+	Swift::RosterItemPayload item;
+	item.setJID(buddy->getJID().toBare());
+	item.setSubscription(Swift::RosterItemPayload::Remove);
+
+	p->addItem(item);
+
+	// In server mode we have to send pushes to all resources, but in gateway-mode we send it only to bare JID
+	if (m_component->inServerMode()) {
+		std::vector<Swift::Presence::ref> presences = m_component->getPresenceOracle()->getAllPresence(m_user->getJID().toBare());
+		BOOST_FOREACH(Swift::Presence::ref presence, presences) {
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, presence->getFrom(), m_component->getIQRouter());
+			request->send();
+		}
+	}
+	else {
+		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, m_user->getJID().toBare(), m_component->getIQRouter());
+		request->send();
+	}
+}
+
 void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	// user can't receive anything in server mode if he's not logged in.
 	// He will ask for roster later (handled in rosterreponsder.cpp)
@@ -140,6 +180,20 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 		buddy->setSubscription(Buddy::Both);
 		handleBuddyChanged(buddy);
 	}
+}
+
+void RosterManager::sendBuddyUnsubscribePresence(Buddy *buddy) {
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo(m_user->getJID());
+	response->setFrom(buddy->getJID());
+	response->setType(Swift::Presence::Unsubscribe);
+	m_component->getStanzaChannel()->sendPresence(response);
+
+	response = Swift::Presence::create();
+	response->setTo(m_user->getJID());
+	response->setFrom(buddy->getJID());
+	response->setType(Swift::Presence::Unsubscribed);
+	m_component->getStanzaChannel()->sendPresence(response);
 }
 
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {

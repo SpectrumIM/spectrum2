@@ -264,6 +264,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
 	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
 	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
 #ifndef _WIN32
@@ -509,8 +510,6 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	LOG4CXX_INFO(logger, "HANDLE BUDDY CHANGED " << payload.buddyname() << "-" << payload.alias());
-
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
@@ -522,6 +521,20 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		handleBuddyPayload(buddy, payload);
 		user->getRosterManager()->setBuddy(buddy);
 	}
+}
+
+void NetworkPluginServer::handleBuddyRemovedPayload(const std::string &data) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	user->getRosterManager()->removeBuddy(payload.buddyname());
 }
 
 void NetworkPluginServer::handleParticipantChangedPayload(const std::string &data) {
@@ -827,6 +840,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
 				handleFTDataPayload(c, wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
+				handleBuddyRemovedPayload(wrapper.payload());
 				break;
 			default:
 				return;
