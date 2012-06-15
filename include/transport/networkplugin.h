@@ -75,6 +75,11 @@ class NetworkPlugin {
 			bool blocked = false
 		);
 
+		/// Call this method when buddy is removed from legacy network contact list.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
+		void handleBuddyRemoved(const std::string &user, const std::string &buddyName);
+
 		/// Call this function when participant in room changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		/// \param nickname Nickname of participant. If participant renamed, this is old name of participant. (eg. "HanzZ")

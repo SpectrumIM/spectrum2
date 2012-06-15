@@ -195,7 +195,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
-			m_unregistered[opt.string_key] = opt.value[0];
+			m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {
 			boost::replace_all(opt.value[0], "$jid", jid);
