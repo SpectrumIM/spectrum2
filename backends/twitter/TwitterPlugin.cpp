@@ -176,13 +176,24 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 
 void TwitterPlugin::handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) 
 {
-	LOG4CXX_INFO(logger, user << ": Added buddy " << buddyName << ".");
-	handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
+	if(connectionState[user] != CONNECTED) {
+		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
+		return;
+	}
+
+	tp->runAsThread(new CreateFriendRequest(sessions[user], user, buddyName, 
+											boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
+	//handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
 }
 
 void TwitterPlugin::handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) 
 {
-
+	if(connectionState[user] != CONNECTED) {
+		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
+		return;
+	}
+	tp->runAsThread(new DestroyFriendRequest(sessions[user], user, buddyName, 
+											 boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
 }
 
 
@@ -445,6 +456,7 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, s
 	} if(twitterMode == SINGLECONTACT) {
 		handleMessage(user, "twitter-account", std::string("You are not following ") + frnd + "anymore");
 	} else if(twitterMode == MULTIPLECONTACT) {
+		handleBuddyRemoved(user, frnd);
 	}
 }
 
