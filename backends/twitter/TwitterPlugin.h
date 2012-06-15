@@ -102,6 +102,7 @@ class TwitterPlugin : public NetworkPlugin {
 		void directMessageResponse(std::string &user, std::vector<DirectMessage> &messages, std::string &errMsg);
 		void createFriendResponse(std::string &user, std::string &frnd, std::string &errMsg);
 		void deleteFriendResponse(std::string &user, std::string &frnd, std::string &errMsg);
+		void RetweetResponse(std::string &user, std::string &errMsg);
 		/***********************************************************************************/
 
 	private:

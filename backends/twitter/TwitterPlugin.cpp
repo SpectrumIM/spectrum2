@@ -8,6 +8,7 @@
 #include "Requests/OAuthFlow.h"
 #include "Requests/CreateFriendRequest.h"
 #include "Requests/DestroyFriendRequest.h"
+#include "Requests/RetweetRequest.h"
 
 DEFINE_LOGGER(logger, "Twitter Backend");
 
@@ -162,6 +163,8 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 													   boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
 		else if(cmd == "#unfollow") tp->runAsThread(new DestroyFriendRequest(sessions[user], user, data,
 													   boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
+		else if(cmd == "#retweet") tp->runAsThread(new RetweetRequest(sessions[user], user, data,
+													   boost::bind(&TwitterPlugin::RetweetResponse, this, _1, _2)));
 		else handleMessage(user, "twitter-account", "Unknown command! Type #help for a list of available commands.");
 	} 
 
@@ -365,7 +368,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 		std::string timeline = "";
 
 		for(int i=0 ; i<tweets.size() ; i++) {
-			timeline += " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + "\n";
+			timeline += " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")\n";
 		}
 
 		if((userRequested == "" || userRequested == user) && tweets.size()) {
@@ -442,5 +445,14 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, s
 	} if(twitterMode == SINGLECONTACT) {
 		handleMessage(user, "twitter-account", std::string("You are not following ") + frnd + "anymore");
 	} else if(twitterMode == MULTIPLECONTACT) {
+	}
+}
+
+
+void TwitterPlugin::RetweetResponse(std::string &user, std::string &errMsg)
+{
+	if(errMsg.length()) {
+		handleMessage(user, "twitter-account", errMsg);
+		return;
 	}
 }

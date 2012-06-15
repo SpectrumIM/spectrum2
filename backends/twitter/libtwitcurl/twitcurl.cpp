@@ -436,6 +436,36 @@ bool twitCurl::statusDestroyById( std::string& statusId )
 }
 
 /*++
+* @method: twitCurl::retweetById
+*
+* @description: method to retweet a status message by its id
+*
+* @input: statusId - a number in std::string format
+*
+* @output: true if RETWEET is success, otherwise false. This does not check http
+*          response by twitter. Use getLastWebResponse() for that.
+*
+*--*/
+bool twitCurl::retweetById( std::string& statusId )
+{
+    bool retVal = false;
+    if( statusId.length() )
+    {
+        /* Prepare URL */
+        std::string buildUrl = twitterDefaults::TWITCURL_RETWEET_URL + statusId +
+                               twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+
+        /* Send some dummy data in POST */
+        std::string dummyData = twitCurlDefaults::TWITCURL_TEXTSTRING +
+                                urlencode( std::string( "dummy" ) );
+
+        /* Perform Retweet */
+        retVal = performPost( buildUrl, dummyData );
+    }
+    return retVal;
+}
+
+/*++
 * @method: twitCurl::timelinePublicGet
 *
 * @description: method to get public timeline
