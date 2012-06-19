@@ -159,9 +159,9 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 														boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
 		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(sessions[user], user,
 													   boost::bind(&TwitterPlugin::displayFriendlist, this, _1, _2, _3)));
-		else if(cmd == "#follow") tp->runAsThread(new CreateFriendRequest(sessions[user], user, data,
+		else if(cmd == "#follow") tp->runAsThread(new CreateFriendRequest(sessions[user], user, data.substr(0,data.find('@')),
 													   boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
-		else if(cmd == "#unfollow") tp->runAsThread(new DestroyFriendRequest(sessions[user], user, data,
+		else if(cmd == "#unfollow") tp->runAsThread(new DestroyFriendRequest(sessions[user], user, data.substr(0,data.find('@')),
 													   boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
 		else if(cmd == "#retweet") tp->runAsThread(new RetweetRequest(sessions[user], user, data,
 													   boost::bind(&TwitterPlugin::RetweetResponse, this, _1, _2)));
@@ -181,9 +181,9 @@ void TwitterPlugin::handleBuddyUpdatedRequest(const std::string &user, const std
 		return;
 	}
 
+	LOG4CXX_INFO(logger, user << " Adding Twitter contact " << buddyName)
 	tp->runAsThread(new CreateFriendRequest(sessions[user], user, buddyName, 
 											boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
-	//handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
 }
 
 void TwitterPlugin::handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) 
