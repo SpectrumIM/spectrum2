@@ -26,7 +26,7 @@
 #include "transport/userregistry.h"
 #include "transport/logging.h"
 #include "discoinforesponder.h"
-#include "discoitemsresponder.h"
+#include "transport/discoitemsresponder.h"
 #include "storageparser.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
@@ -149,7 +149,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
 	m_discoInfoResponder->start();
 
-	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
+	m_discoItemsResponder = new DiscoItemsResponder(this);
 	m_discoItemsResponder->start();
 
 // 

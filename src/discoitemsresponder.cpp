@@ -18,32 +18,45 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "discoitemsresponder.h"
+#include "transport/discoitemsresponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "Swiften/Elements/DiscoItems.h"
 #include "Swiften/Swiften.h"
+#include "transport/transport.h"
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
 
 namespace Transport {
 
-DiscoItemsResponder::DiscoItemsResponder(Swift::IQRouter *router) : Swift::GetResponder<DiscoItems>(router) {
+DEFINE_LOGGER(logger, "DiscoItemsResponder");
+
+DiscoItemsResponder::DiscoItemsResponder(Component *component) : Swift::GetResponder<DiscoItems>(component->getIQRouter()) {
+	m_component = component;
+	m_commands = boost::shared_ptr<DiscoItems>(new DiscoItems());
+	m_commands->setNode("http://jabber.org/protocol/commands");
 }
 
 DiscoItemsResponder::~DiscoItemsResponder() {
 	
 }
 
+void DiscoItemsResponder::addAdHocCommand(const std::string &node, const std::string &name) {
+	m_commands->addItem(DiscoItems::Item(name, m_component->getJID(), node));
+}
+
+
 bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoItems> info) {
-	// presence for transport
-	if (to.getNode().empty()) {
+	LOG4CXX_INFO(logger, "get request received with node " << info->getNode());
+	if (info->getNode() == "http://jabber.org/protocol/commands") {
+		sendResponse(from, id, m_commands);
+	}
+	else if (to.getNode().empty()) {
 		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));
 	}
-	// presence for buddy
 	else {
 		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));
 	}
