@@ -14,6 +14,7 @@
 #include "transport/util.h"
 #include "transport/gatewayresponder.h"
 #include "transport/logging.h"
+#include "transport/discoitemsresponder.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -312,6 +313,9 @@ int main(int argc, char **argv)
 
 	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
 	gatewayResponder.start();
+
+	DiscoItemsResponder discoItemsResponder(&transport);
+	discoItemsResponder.start();
 
 	eventLoop_ = &eventLoop;
 
