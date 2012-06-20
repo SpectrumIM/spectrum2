@@ -26,7 +26,6 @@
 #include "transport/userregistry.h"
 #include "transport/logging.h"
 #include "discoinforesponder.h"
-#include "discoitemsresponder.h"
 #include "storageparser.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/PKCS12Certificate.h"
@@ -149,9 +148,6 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
 	m_discoInfoResponder->start();
 
-	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
-	m_discoItemsResponder->start();
-
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();
@@ -163,7 +159,6 @@ Component::~Component() {
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
 	delete m_discoInfoResponder;
-	delete m_discoItemsResponder;
 	if (m_component)
 		delete m_component;
 	if (m_server) {
