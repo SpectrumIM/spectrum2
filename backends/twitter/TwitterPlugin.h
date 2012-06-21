@@ -66,6 +66,10 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		// User logging out
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName);
+		
+		void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/);
+
+		void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/);
 
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "");
 
@@ -96,6 +100,8 @@ class TwitterPlugin : public NetworkPlugin {
 		std::string getMostRecentDMID(const std::string user);
 
 		/****************** Twitter Response handlers **************************************/
+		void statusUpdateResponse(std::string &user, std::string &errMsg);
+		void helpMessageResponse(std::string &user, std::string &msg);
 		void populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
@@ -110,6 +116,9 @@ class TwitterPlugin : public NetworkPlugin {
 		enum mode {SINGLECONTACT, MULTIPLECONTACT, CHATROOM};
 
 		Config *config;
+		std::string adminLegacyName;
+		std::string adminNickName;
+		std::string adminAlias;
 
 		std::string consumerKey;
 		std::string consumerSecret;
@@ -124,6 +133,7 @@ class TwitterPlugin : public NetworkPlugin {
 		std::map<std::string, std::string> mostRecentTweetID;
 		std::map<std::string, std::string> mostRecentDirectMessageID;
 		std::set<std::string> onlineUsers;
+		std::map<std::string,std::string> nickName;
 		mode twitterMode;
 };
 

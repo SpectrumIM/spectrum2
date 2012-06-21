@@ -6,6 +6,7 @@
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
 #include <string>
+#include <boost/function.hpp>
 #include <iostream>
 
 using namespace Transport;
@@ -13,12 +14,13 @@ using namespace Transport;
 class HelpMessageRequest : public Thread
 {
 	std::string user;
-	NetworkPlugin *np;
-
+	std::string helpMsg;
+	boost::function<void (std::string &, std::string &)> callBack;
+	
 	public:
-	HelpMessageRequest(NetworkPlugin *_np, const std::string &_user) {
+	HelpMessageRequest(const std::string &_user, boost::function<void (std::string &, std::string &)> cb) {
 		user = _user;
-		np = _np;
+		callBack = cb;
 	}
 
 	void run();

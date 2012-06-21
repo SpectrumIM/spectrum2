@@ -5,25 +5,26 @@ DEFINE_LOGGER(logger, "StatusUpdateRequest")
 void StatusUpdateRequest::run() 
 {
 	replyMsg = "";
-	if( twitObj->statusUpdate( data ) ) {
-		while(replyMsg.length() == 0) {
-			twitObj->getLastWebResponse( replyMsg );
-		}
+	success = twitObj->statusUpdate(data);
+	if(success) {
+		twitObj->getLastWebResponse( replyMsg );
 		LOG4CXX_INFO(logger, user << "StatusUpdateRequest response " << replyMsg );
-	} 
+	}
 }
 
 void StatusUpdateRequest::finalize()
 {
-	if(replyMsg != "" ) {
-		std::string error = getErrorMessage(replyMsg);
-		if(error.length()) {
-			np->handleMessage(user, "twitter-account", error);
-			LOG4CXX_INFO(logger, user << ": " << error);
-		} else	LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
-	} else {
+	if(!success) {
 		twitObj->getLastCurlError( replyMsg );
 		LOG4CXX_ERROR(logger, user << ": CurlError - " << replyMsg );
+		callBack(user, replyMsg);
+	} else {
+		std::string error = getErrorMessage(replyMsg);
+		if(error.length()) {
+			LOG4CXX_ERROR(logger, user << ": " << error);
+			callBack(user, error);
+		}
+		else LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
 	}
 	return;
 }

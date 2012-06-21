@@ -5,6 +5,7 @@
 #include "../libtwitcurl/twitcurl.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
+#include <boost/function.hpp>
 #include <string>
 #include <iostream>
 
@@ -15,13 +16,16 @@ class StatusUpdateRequest : public Thread
 	std::string data;
 	std::string user;
 	std::string replyMsg;
-	NetworkPlugin *np;
+	boost::function<void (std::string& user, std::string& errMsg)> callBack;
+	bool success;
+
 	public:
-	StatusUpdateRequest(NetworkPlugin *_np, twitCurl *obj, const std::string &_user, const std::string &_data) {
+	StatusUpdateRequest(twitCurl *obj, const std::string &_user, const std::string &_data,
+						boost::function<void (std::string& user, std::string& errMsg)> cb) {
 		twitObj = obj->clone();
 		data = _data;
 		user = _user;
-		np = _np;
+		callBack = cb;
 	}
 
 	~StatusUpdateRequest() {
