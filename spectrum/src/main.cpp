@@ -15,6 +15,8 @@
 #include "transport/gatewayresponder.h"
 #include "transport/logging.h"
 #include "transport/discoitemsresponder.h"
+#include "transport/adhocmanager.h"
+#include "transport/settingsadhoccommand.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -316,6 +318,12 @@ int main(int argc, char **argv)
 
 	DiscoItemsResponder discoItemsResponder(&transport);
 	discoItemsResponder.start();
+
+	AdHocManager adhocmanager(&transport, &discoItemsResponder);
+	adhocmanager.start();
+
+	SettingsAdHocCommandFactory settings;
+	adhocmanager.addAdHocCommand(&settings);
 
 	eventLoop_ = &eventLoop;
 
