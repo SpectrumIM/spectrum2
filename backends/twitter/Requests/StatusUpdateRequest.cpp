@@ -20,11 +20,8 @@ void StatusUpdateRequest::finalize()
 		callBack(user, replyMsg);
 	} else {
 		std::string error = getErrorMessage(replyMsg);
-		if(error.length()) {
-			LOG4CXX_ERROR(logger, user << ": " << error);
-			callBack(user, error);
-		}
+		if(error.length()) LOG4CXX_ERROR(logger, user << ": " << error)
 		else LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+		callBack(user, error);
 	}
-	return;
 }

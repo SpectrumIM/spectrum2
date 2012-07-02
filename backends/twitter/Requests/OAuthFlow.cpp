@@ -12,7 +12,7 @@ void OAuthFlow::finalize()
 		np->handleLogoutRequest(user, username);
 	} else {
 		np->handleMessage(user, "twitter-account", std::string("Please visit the following link and authorize this application: ") + authUrl);
-		np->handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with 'pin:'. Ex. 'pin: 1234'"));
+		np->handleMessage(user, "twitter-account", std::string("Please reply with the PIN provided by twitter. Prefix the pin with '#pin'. Ex. '#pin 1234'"));
 		np->OAuthFlowComplete(user, twitObj);
 	}	
 }

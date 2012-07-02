@@ -406,6 +406,8 @@ void TwitterPlugin::statusUpdateResponse(std::string &user, std::string &errMsg)
 {
 	if(errMsg.length()) {
 		handleMessage(user, adminLegacyName, errMsg, adminNickName);
+	} else {
+		handleMessage(user, adminLegacyName, "Status Update successful", adminNickName);
 	}
 }
 
@@ -514,6 +516,7 @@ void TwitterPlugin::createFriendResponse(std::string &user, std::string &frnd, s
 	if(twitterMode == SINGLECONTACT) {
 		handleMessage(user, adminLegacyName, std::string("You are now following ") + frnd, adminNickName);
 	} else if(twitterMode == MULTIPLECONTACT) {
+		handleMessage(user, adminLegacyName, std::string("You are now following ") + frnd, adminNickName);
 		handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 	}
 }
@@ -524,8 +527,9 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, s
 		handleMessage(user, adminLegacyName, errMsg, adminNickName);
 		return;
 	} if(twitterMode == SINGLECONTACT) {
-		handleMessage(user, adminLegacyName, std::string("You are not following ") + frnd + "anymore", adminNickName);
+		handleMessage(user, adminLegacyName, std::string("You are not following ") + frnd + " anymore", adminNickName);
 	} else if(twitterMode == MULTIPLECONTACT) {
+		handleMessage(user, adminLegacyName, std::string("You are not following ") + frnd + " anymore", adminNickName);
 		handleBuddyRemoved(user, frnd);
 	}
 }
@@ -535,6 +539,7 @@ void TwitterPlugin::RetweetResponse(std::string &user, std::string &errMsg)
 {
 	if(errMsg.length()) {
 		handleMessage(user, adminLegacyName, errMsg, adminNickName);
-		return;
+	} else {
+		handleMessage(user, adminLegacyName, "Retweet successful", adminNickName);
 	}
 }
