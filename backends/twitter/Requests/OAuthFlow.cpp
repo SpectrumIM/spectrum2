@@ -9,6 +9,7 @@ void OAuthFlow::finalize()
 {
 	if (!success) {
 		LOG4CXX_ERROR(logger, "Error creating twitter authorization url!");
+		np->handleMessage(user, "twitter-account", "Error creating twitter authorization url!");
 		np->handleLogoutRequest(user, username);
 	} else {
 		np->handleMessage(user, "twitter-account", std::string("Please visit the following link and authorize this application: ") + authUrl);

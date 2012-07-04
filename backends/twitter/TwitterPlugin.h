@@ -105,7 +105,7 @@ class TwitterPlugin : public NetworkPlugin {
 		void populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg);
 		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
-		void directMessageResponse(std::string &user, std::vector<DirectMessage> &messages, std::string &errMsg);
+		void directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, std::string &errMsg);
 		void createFriendResponse(std::string &user, std::string &frnd, std::string &errMsg);
 		void deleteFriendResponse(std::string &user, std::string &frnd, std::string &errMsg);
 		void RetweetResponse(std::string &user, std::string &errMsg);
@@ -134,6 +134,7 @@ class TwitterPlugin : public NetworkPlugin {
 		std::map<std::string, std::string> mostRecentDirectMessageID;
 		std::set<std::string> onlineUsers;
 		std::map<std::string,std::string> nickName;
+		std::map< std::string,std::set<std::string> > chatroomBuddies;
 		mode twitterMode;
 };
 

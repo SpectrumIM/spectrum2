@@ -19,11 +19,11 @@ void DirectMessageRequest::finalize()
 	if(!success) {
 		LOG4CXX_ERROR(logger, user << ": Error while sending directed message to " << username );
 		twitObj->getLastCurlError( replyMsg );
-		callBack(user, messages, replyMsg);
+		callBack(user, username, messages, replyMsg);
 	} else {
 		std::string error = getErrorMessage(replyMsg);
 		if(error.length()) LOG4CXX_ERROR(logger,  user << " - " << error)
 		else LOG4CXX_INFO(logger, user << " - " << replyMsg)
-		callBack(user, messages, error);	
+		callBack(user, username, messages, error);	
 	}
 }

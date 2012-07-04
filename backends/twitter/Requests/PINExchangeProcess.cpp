@@ -12,6 +12,7 @@ void PINExchangeProcess::finalize()
 {
 	if(!success) {
 		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
+		np->handleMessage(user, "twitter-account", "Error while exchanging PIN for Access Token!");
 		np->handleLogoutRequest(user, "");
 	} else {
 		std::string replyMsg;
