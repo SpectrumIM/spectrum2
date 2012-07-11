@@ -99,6 +99,12 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		std::string getMostRecentDMID(const std::string user);
 
+		void clearRoster(const std::string user);
+
+		int getTwitterMode(const std::string user);
+
+		bool setTwitterMode(const std::string user, int m);
+
 		/****************** Twitter Response handlers **************************************/
 		void statusUpdateResponse(std::string &user, std::string &errMsg);
 		void helpMessageResponse(std::string &user, std::string &msg);
@@ -117,6 +123,7 @@ class TwitterPlugin : public NetworkPlugin {
 
 		Config *config;
 		std::string adminLegacyName;
+		std::string adminChatRoom;
 		std::string adminNickName;
 		std::string adminAlias;
 
@@ -124,6 +131,7 @@ class TwitterPlugin : public NetworkPlugin {
 		std::string consumerSecret;
 		std::string OAUTH_KEY;
 		std::string OAUTH_SECRET;
+		std::string MODE;
 
 		boost::mutex dblock, userlock;
 
@@ -134,8 +142,8 @@ class TwitterPlugin : public NetworkPlugin {
 		std::map<std::string, std::string> mostRecentDirectMessageID;
 		std::set<std::string> onlineUsers;
 		std::map<std::string,std::string> nickName;
-		std::map< std::string,std::set<std::string> > chatroomBuddies;
-		mode twitterMode;
+		std::map<std::string, std::set<std::string> > buddies;
+		std::map<std::string, mode> twitterMode;
 };
 
 #endif
