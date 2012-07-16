@@ -86,6 +86,13 @@ RosterStorage::~RosterStorage() {
 }
 
 void RosterStorage::storeBuddy(Buddy *buddy) {
+	if (!buddy) {
+		return;
+	}
+	if (buddy->getName().empty()) {
+		return;
+	}
+
 	m_buddies[buddy->getName()] = buddy;
 	m_storageTimer->start();
 }
@@ -129,6 +136,7 @@ bool RosterStorage::storeBuddies() {
 // 		}
 	}
 
+	m_buddies.clear();
 	m_storageBackend->commitTransaction();
 	return true;
 }
