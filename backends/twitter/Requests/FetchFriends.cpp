@@ -9,14 +9,14 @@ void FetchFriends::run()
 	if(!success) return;	
 
 	twitObj->getLastWebResponse( replyMsg );
-	LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
+	//LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
 	std::vector<std::string> IDs = getIDs( replyMsg );
 	
 	success = twitObj->userLookup(IDs, true);
 	if(!success) return;
 
 	twitObj->getLastWebResponse( replyMsg );
-	LOG4CXX_INFO(logger, user << " - UserLookUp web response - " << replyMsg.length() << " " << replyMsg << "\n" );
+	//LOG4CXX_INFO(logger, user << " - UserLookUp web response - " << replyMsg.length() << " " << replyMsg << "\n" );
 	friends = getUsers( replyMsg );
 }
 

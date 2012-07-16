@@ -450,9 +450,9 @@ void TwitterPlugin::pinExchangeComplete(const std::string user, const std::strin
 	connectionState[user] = CONNECTED;
 	twitterMode[user] = (mode)getTwitterMode(user);
 	
-	//if(twitterMode[user] == MULTIPLECONTACT) {
-	tp->runAsThread(new FetchFriends(sessions[user], user, boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
-	//}
+	if(twitterMode[user] == MULTIPLECONTACT) {
+		tp->runAsThread(new FetchFriends(sessions[user], user, boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
+	}
 
 	onlineUsers.insert(user);
 	mostRecentTweetID[user] = "";
@@ -511,10 +511,10 @@ void TwitterPlugin::clearRoster(const std::string user)
 	std::set<std::string>::iterator it = buddies[user].begin();
 	while(it != buddies[user].end()) {
 		handleBuddyChanged(user, *it, *it, std::vector<std::string>(), pbnetwork::STATUS_NONE);
-		//handleBuddyRemoved(user, *it);
+		handleBuddyRemoved(user, *it);
 		it++;
 	}
-	//buddies[user].clear();
+	buddies[user].clear();
 }
 
 void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg) 
@@ -524,9 +524,10 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 		for(int i=0 ; i<friends.size() ; i++) {
 			if(twitterMode[user] == MULTIPLECONTACT)
 				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
-			else if(twitterMode[user] == CHATROOM) 
+			else if(twitterMode[user] == CHATROOM) {
 				handleParticipantChanged(user, friends[i].getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
-			buddies[user].insert(friends[i].getScreenName());
+				buddies[user].insert(friends[i].getScreenName());
+			}
 		}
 	} else handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
 							   std::string("Error populating roster - ") + errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");	
@@ -638,12 +639,14 @@ void TwitterPlugin::createFriendResponse(std::string &user, std::string &frnd, s
 
 	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
 						std::string("You are now following ") + frnd, twitterMode[user] == CHATROOM ? adminNickName : "");
-	buddies[user].insert(frnd);
-	handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_NONE);
+	
+	//buddies[user].insert(frnd);
+	//handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_NONE);
 
 	if(twitterMode[user] == MULTIPLECONTACT) {
 		handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 	} else if(twitterMode[user] == CHATROOM) {
+		buddies[user].insert(frnd);
 		handleParticipantChanged(user, frnd, adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 	}
 }
@@ -658,14 +661,16 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, s
 	
 	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
 						std::string("You are not following ") + frnd + " anymore", twitterMode[user] == CHATROOM ? adminNickName : "");
+	
 	if (twitterMode[user] == CHATROOM) {
 		handleParticipantChanged(user, frnd, adminLegacyName, 0, pbnetwork::STATUS_NONE);
+		buddies[user].erase(frnd);
 	}
-	buddies[user].erase(frnd);
-	handleBuddyRemoved(user, frnd);
-	//if(twitterMode[user] == MULTIPLECONTACT) {
-	//	handleBuddyRemoved(user, frnd);
-	//} 
+	//buddies[user].erase(frnd);
+	//handleBuddyRemoved(user, frnd);
+	if(twitterMode[user] == MULTIPLECONTACT) {
+		handleBuddyRemoved(user, frnd);
+	} 
 }
 
 

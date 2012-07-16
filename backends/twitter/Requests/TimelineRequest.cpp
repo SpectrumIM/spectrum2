@@ -8,13 +8,10 @@ void TimelineRequest::run()
 	else success = twitObj->timelineHomeGet(since_id);
 	
 	if(!success) return;
-
+	
 	replyMsg = ""; 
-	
 	twitObj->getLastWebResponse( replyMsg );
-
-	LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
-	
+	//LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
 	tweets = getTimeline(replyMsg);
 }
 
@@ -22,7 +19,7 @@ void TimelineRequest::finalize()
 {
 	if(!success) {
 		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger,  user << " - " << replyMsg)
+		LOG4CXX_ERROR(logger,  user << " - Curl error: " << replyMsg)
 		callBack(user, userRequested, tweets, replyMsg);
 	} else {
 		std::string error = getErrorMessage(replyMsg);

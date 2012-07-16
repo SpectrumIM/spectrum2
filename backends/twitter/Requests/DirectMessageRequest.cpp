@@ -17,8 +17,8 @@ void DirectMessageRequest::run()
 void DirectMessageRequest::finalize()
 {
 	if(!success) {
-		LOG4CXX_ERROR(logger, user << ": Error while sending directed message to " << username );
 		twitObj->getLastCurlError( replyMsg );
+		LOG4CXX_ERROR(logger, user << " Curl error: " << replyMsg);
 		callBack(user, username, messages, replyMsg);
 	} else {
 		std::string error = getErrorMessage(replyMsg);

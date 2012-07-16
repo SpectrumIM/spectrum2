@@ -11,12 +11,12 @@ void RetweetRequest::finalize()
 	replyMsg = "";
 	if(!success) {
 		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger, user << " " << replyMsg)
+		LOG4CXX_ERROR(logger, user << " Curl error: " << replyMsg)
 		callBack(user, replyMsg);
 	} else {
 		twitObj->getLastWebResponse( replyMsg );
 		std::string error = getErrorMessage( replyMsg );
-		if(error.length()) LOG4CXX_ERROR(logger, user << " " << error)
+		if(error.length()) LOG4CXX_ERROR(logger, user << " - " << error)
 		else LOG4CXX_INFO(logger, user << " " << replyMsg);
 		callBack(user, error);
 	}
