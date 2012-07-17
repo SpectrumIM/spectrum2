@@ -199,7 +199,11 @@ bool SQLite3Backend::exec(const std::string &query) {
 	char *errMsg = 0;
 	int rc = sqlite3_exec(m_db, query.c_str(), NULL, 0, &errMsg);
 	if (rc != SQLITE_OK) {
-		LOG4CXX_ERROR(logger, errMsg << " during statement " << query);
+		// This error is OK, because we try to create buddies table every time
+		// to detect if DB is created properly.
+		if (errMsg != "table buddies already exists") {
+			LOG4CXX_ERROR(logger, errMsg << " during statement " << query);
+		}
 		sqlite3_free(errMsg);
 		return false;
 	}
