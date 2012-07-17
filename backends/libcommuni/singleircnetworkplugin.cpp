@@ -52,6 +52,7 @@ void SingleIRCNetworkPlugin::handleLoginRequest(const std::string &user, const s
 	session->setRealName(FROM_UTF8(legacyName));
 	session->setHost(FROM_UTF8(m_server));
 	session->setPort(6667);
+	session->setEncoding( "utf-8" );
 
 	if (!password.empty()) {
 		std::string identify = m_identify;
