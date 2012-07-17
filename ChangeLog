@@ -1,4 +1,42 @@
-Version 2.0.0-beta2 (2012-XX-XX):
+Version 2.0.0-beta3 (2012-XX-XX):
+	General:
+	* Log errors related to backend spawning (Show proper log message for
+	  example when path to backend binary is not found).
+	* Update buddies in database only when it's needed and do not execute
+	  useless database statements.
+	* Send roster changes also when buddy's group change.
+	* Fixed bug when transport contact we in all groups.
+	* Answer to disco#info IQ with proper node (#206).
+	* Set SQLite3 as default database backend.
+	* Fixed disconnecting from server caused by sending VCard response
+	  with bad "from" attribute.
+	* Added Munin plugin (Thanks to Askovpen).
+	* Added support for more admin_jid JIDs (Thanks to Askovpen).
+	* Fixed allowed_servers option.
+	* Show error in server-mode when server port is already used.
+	* Fixed bug when backend could freeze on exit.
+	* Options from config file can now be set also using command line like
+	  --service.jid=domain.tld .
+	* Do not send password in IQ-get registration response.
+
+	Libpurple:
+	* prpl-gg: Fetch the contact list properly (#252).
+	* Added support for prpl-novell as it was in spectrum1.
+
+	Skype:
+	* Log more errors.
+
+	Libyahoo2:
+	* Added new Yahoo backend based on libyahoo2.
+
+	Swiften:
+	* Added new XMPP backend based on Swiften library.
+
+	Backend API:
+	* Added Python NetworkPlugin class, so it is now easier to write backends
+	  in Python (Thanks to Sarang).
+
+Version 2.0.0-beta2 (2012-03-28):
 	General:
 	* Fixed bug when Roster Item Exchange and subscribe stanzas were sent
 	  repeatedly.
@@ -6,13 +44,19 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	* Fixed username_mask setting.
 	* Added new fields into statistics (backends_crashed, messages related
 	  stats).
+	* Chatstates are now not counted as incoming messages in stats.
 	* Log4cxx is now optional dependency. Without Log4cxx, Spectrum 2 logs
 	  to standard output.
 	* Fixed crash when Log4cxx configuration file didn't exist.
 	* Admin can now see "Admin" contact in server-mode.
 
 	libpurple:
-	* Added support for MUC for prpl-jabber protocol.
+	* Added initial support for MUC for prpl-jabber protocol.
+
+	LibCommuni IRC backend:
+	* Fixed sending/receiving UTF8 messages.
+	* Using the [registration] auto_register=1 config option, users don't
+	  have to register manually when connecting IRC network.
 
 	Skype:
 	* Memory usage statistic now includes the Skype client.
@@ -21,6 +65,7 @@ Version 2.0.0-beta2 (2012-XX-XX):
 	* Skype backend includes also Skype client memory usage into the account.
 	* Working buddies adding/removing.
 	* Information about missed call is now forwarded to XMPP user.
+	* Fixed bug when Skype client instance wasn't killed by backend.
 
 Version 2.0.0-beta (2012-02-28):
 	General:

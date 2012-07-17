@@ -34,6 +34,22 @@ namespace Transport {
 /// development.
 class NetworkPlugin {
 	public:
+
+		class PluginConfig {
+			public:
+				PluginConfig() : m_needPassword(true) {}
+				virtual ~PluginConfig() {}
+
+				void setNeedPassword(bool needPassword = true) { m_needPassword = needPassword; }
+				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
+
+			private:
+				bool m_needPassword;
+				std::vector<std::string> m_extraFields;
+
+				friend class NetworkPlugin;
+		};
+
 		/// Creates new NetworkPlugin and connects the Spectrum2 NetworkPluginServer.
 		/// \param loop Event loop.
 		/// \param host Host where Spectrum2 NetworkPluginServer runs.
@@ -42,6 +58,8 @@ class NetworkPlugin {
 
 		/// Destructor.
 		virtual ~NetworkPlugin();
+
+		void sendConfig(const PluginConfig &cfg);
 
 		/// Call this function when legacy network buddy changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -56,6 +74,11 @@ class NetworkPlugin {
 			const std::vector<std::string> &groups, pbnetwork::StatusType status, const std::string &statusMessage = "", const std::string &iconHash = "",
 			bool blocked = false
 		);
+
+		/// Call this method when buddy is removed from legacy network contact list.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
+		void handleBuddyRemoved(const std::string &user, const std::string &buddyName);
 
 		/// Call this function when participant in room changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")

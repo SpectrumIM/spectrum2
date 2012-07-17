@@ -37,6 +37,7 @@
 #include "transport/config.h"
 #include "transport/factory.h"
 #include "transport/presenceoracle.h"
+#include <Swiften/Network/BoostConnectionServer.h>
 
 namespace Transport {
 	// typedef enum { 	CLIENT_FEATURE_ROSTERX = 2,
@@ -47,7 +48,6 @@ namespace Transport {
 	// 
 	class StorageBackend;
 	class DiscoInfoResponder;
-	class DiscoItemsResponder;
 	class Factory;
 	class UserRegistry;
 
@@ -165,6 +165,7 @@ namespace Transport {
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
+			void handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e);
 			void handlePresence(Swift::Presence::ref presence);
 			void handleDataRead(const Swift::SafeByteArray &data);
 			void handleDataWritten(const Swift::SafeByteArray &data);
@@ -186,7 +187,6 @@ namespace Transport {
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;
-			DiscoItemsResponder *m_discoItemsResponder;
 			int m_reconnectCount;
 			Config* m_config;
 			std::string m_protocol;

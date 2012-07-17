@@ -10,13 +10,19 @@ DEFINE_LOGGER(logger, "SingleIRCNetworkPlugin");
 
 SingleIRCNetworkPlugin::SingleIRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
 	this->config = config;
-	m_server = config->getUnregistered().find("service.irc_server")->second;
+	if (CONFIG_HAS_KEY(config, "service.irc_server")) {
+		m_server = CONFIG_STRING(config, "service.irc_server");
+	}
+	else {
+		LOG4CXX_ERROR(logger, "No [service] irc_server defined, exiting...");
+		exit(-1);
+	}
 	m_socket = new QTcpSocket();
 	m_socket->connectToHost(FROM_UTF8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
-	if (config->getUnregistered().find("service.irc_identify") != config->getUnregistered().end()) {
-		m_identify = config->getUnregistered().find("service.irc_identify")->second;
+	if (CONFIG_HAS_KEY(config, "service.irc_identify")) {
+		m_identify = CONFIG_STRING(config, "service.irc_identify");
 	}
 	else {
 		m_identify = "NickServ identify $name $password";

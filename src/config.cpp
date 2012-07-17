@@ -27,10 +27,16 @@
 #define PATH_MAX MAX_PATH
 #endif
 
+#include "iostream"
+#include "boost/version.hpp"
+
+#define BOOST_MAJOR_VERSION BOOST_VERSION / 100000
+#define BOOST_MINOR_VERSION BOOST_VERSION / 100 % 1000
+
 using namespace boost::program_options;
 
 namespace Transport {
-int getRandomPort(const std::string &s) {
+static int getRandomPort(const std::string &s) {
 	unsigned long r = 0;
 	BOOST_FOREACH(char c, s) {
 		r += (int) c;
@@ -70,14 +76,14 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
 		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
 		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
-		("service.allowed_servers", value<std::string>()->default_value(""), "Only users from these servers can connect")
+		("service.allowed_servers", value<std::vector<std::string> >()->multitoken(), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
 		("service.backend_host", value<std::string>()->default_value("localhost"), "Host to bind backend server to")
 		("service.backend_port", value<std::string>()->default_value("0"), "Port to bind backend server to")
 		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
-		("service.admin_jid", value<std::string>()->default_value(""), "Administrator jid.")
+		("service.admin_jid", value<std::vector<std::string> >()->multitoken(), "Administrator jid.")
 		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
 		("service.reuse_old_backends", value<bool>()->default_value(true), "True if Spectrum should use old backends which were full in the past.")
 		("service.idle_reconnect_time", value<int>()->default_value(0), "Time in seconds after which idle users are reconnected to let their backend die.")
@@ -99,6 +105,8 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("registration.local_username_label", value<std::string>()->default_value("Local username:"), "Label for local usernme field")
 		("registration.local_account_server", value<std::string>()->default_value("localhost"), "The server on which the local accounts will be checked for validity")
 		("registration.local_account_server_timeout", value<int>()->default_value(10000), "Timeout when checking local user on local_account_server (msecs)")
+		("gateway_responder.prompt", value<std::string>()->default_value("Contact ID"), "Value of <prompt> </promt> field")
+		("gateway_responder.label", value<std::string>()->default_value("Enter legacy network contact ID."), "Label for add contact ID field")
 		("database.type", value<std::string>()->default_value("none"), "Database type.")
 		("database.database", value<std::string>()->default_value("/var/lib/spectrum2/$jid/database.sql"), "Database used to store data")
 		("database.server", value<std::string>()->default_value("localhost"), "Database server.")
@@ -113,6 +121,13 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
 		("backend.no_vcard_fetch", value<bool>()->default_value(false), "True if VCards for buddies should not be fetched. Only avatars will be forwarded.")
 	;
+
+	// Load configs passed by command line
+	if (m_argc != 0 && m_argv) {
+		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
+		parsed_options parsed = parser.run();
+		store(parsed, m_variables);
+	}
 
 	parsed_options parsed = parse_config_file(ifs, opts, true);
 
@@ -172,7 +187,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
-			m_unregistered[opt.string_key] = opt.value[0];
+			m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {
 			boost::replace_all(opt.value[0], "$jid", jid);
@@ -193,8 +208,17 @@ bool Config::load(std::istream &ifs) {
 }
 
 bool Config::load(const std::string &configfile, const std::string &jid) {
-	options_description opts("Transport options");
-	return load(configfile, opts, jid);
+	try {
+		options_description opts("Transport options");
+		return load(configfile, opts, jid);
+	} catch ( const boost::program_options::multiple_occurrences& e ) {
+#if (BOOST_MAJOR_VERSION >= 1 && BOOST_MINOR_VERSION >= 42)
+		std::cerr << configfile << " parsing error: " << e.what() << " from option: " << e.get_option_name() << std::endl;
+#else
+		std::cerr << configfile << " parsing error: " << e.what() << std::endl;
+#endif
+		return false;
+	}
 }
 
 bool Config::reload() {

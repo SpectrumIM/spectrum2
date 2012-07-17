@@ -68,6 +68,10 @@ class ManagerConfig {
 			return m_variables[key];
 		}
 
+		bool hasKey(const std::string &key) {
+			return m_variables.find(key) != m_variables.end();
+		}
+
 		/// Returns path to config file from which data were loaded.
 		const std::string &getManagerConfigFile() { return m_file; }
 

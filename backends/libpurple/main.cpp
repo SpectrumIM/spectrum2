@@ -27,6 +27,8 @@
 #define getpid _getpid
 #endif
 
+#include "purple_defs.h"
+
 DEFINE_LOGGER(logger_libpurple, "libpurple");
 DEFINE_LOGGER(logger, "backend");
 
@@ -46,6 +48,21 @@ template <class T> std::string stringOf(T object) {
 	std::ostringstream os;
 	os << object;
 	return (os.str());
+}
+
+static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while(std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+
+static std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    return split(s, delim, elems);
 }
 
 static void transportDataReceived(gpointer data, gint source, PurpleInputCondition cond);
@@ -287,6 +304,24 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				i++;
 			}
 			g_strfreev (keys);
+
+			char* contents;
+			gsize length;
+			gboolean ret = g_file_get_contents ("gfire.cfg", &contents, &length, NULL);
+			if (ret) {
+				purple_account_set_int(account, "version", fromString<int>(std::string(contents, length)));
+			}
+
+
+			if (KEYFILE_STRING("service", "protocol") == "prpl-novell") {
+				std::string username(purple_account_get_username(account));
+				std::vector <std::string> u = split(username, '@');
+				purple_account_set_username(account, (const char*) u.front().c_str());
+				std::vector <std::string> s = split(u.back(), ':'); 
+				purple_account_set_string(account, "server", s.front().c_str());
+				purple_account_set_int(account, "port", atoi(s.back().c_str()));  
+			}
+
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
@@ -346,6 +381,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				if (purple_account_get_int(account, "version", 0) != 0) {
+					std::string data = stringOf(purple_account_get_int(account, "version", 0));
+					g_file_set_contents ("gfire.cfg", data.c_str(), data.size(), NULL);
+				}
 // 				VALGRIND_DO_LEAK_CHECK;
 				m_sessions.erase(user);
 				purple_account_disconnect(account);
@@ -653,7 +692,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void sendData(const std::string &string) {
+#ifdef WIN32
+			::send(main_socket, string.c_str(), string.size(), 0);
+#else
 			write(main_socket, string.c_str(), string.size());
+#endif
 			if (writeInput == 0)
 				writeInput = purple_input_add(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
@@ -789,7 +832,8 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account(buddy);
 
-	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy));
+	std::vector<std::string> groups = getGroups(buddy);
+	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy) << " group (" << groups.size() << ")=" << groups[0]);
 
 	// Status
 	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
@@ -1424,6 +1468,8 @@ debug_init(void)
 	REGISTER_G_LOG_HANDLER("GModule");
 	REGISTER_G_LOG_HANDLER("GLib-GObject");
 	REGISTER_G_LOG_HANDLER("GThread");
+	REGISTER_G_LOG_HANDLER("GConf");
+	
 
 #undef REGISTER_G_LOD_HANDLER
 }
@@ -1447,6 +1493,9 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	// force returning of memory chunks allocated by libxml2 to kernel
 	malloc_trim(0);
 #endif
+
+	// For prpl-gg
+	execute_purple_plugin_action(gc, "Download buddylist from Server");
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -1510,6 +1559,13 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 
 static bool initPurple() {
 	bool ret;
+
+	if (!resolvePurpleFunctions()) {
+		LOG4CXX_ERROR(logger, "Unable to load libpurple.dll or some of the needed methods");
+		return false;
+	}
+
+	purple_plugins_add_search_path("./plugins");
 
 	purple_util_set_user_dir("./");
 	remove("./accounts.xml");
@@ -1586,7 +1642,11 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 	if (cond & PURPLE_INPUT_READ) {
 		char buffer[65535];
 		char *ptr = buffer;
+#ifdef WIN32
+		ssize_t n = recv(source, ptr, sizeof(buffer), 0);
+#else
 		ssize_t n = read(source, ptr, sizeof(buffer));
+#endif
 		if (n <= 0) {
 			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
 			exit(errno);

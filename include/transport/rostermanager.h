@@ -69,6 +69,10 @@ class RosterManager {
 		/// \param buddy Buddy.
 		void unsetBuddy(Buddy *buddy);
 
+		/// Removes buddy from this roster, sends proper XML to XMPP side and deletes it.
+		/// \param name Buddy name.
+		void removeBuddy(const std::string &name);
+
 		Buddy *getBuddy(const std::string &name);
 
 		void setStorageBackend(StorageBackend *storageBackend);
@@ -107,7 +111,11 @@ class RosterManager {
 
 		void sendBuddyRosterPush(Buddy *buddy);
 
+		void sendBuddyRosterRemove(Buddy *buddy);
+
 		void sendBuddySubscribePresence(Buddy *buddy);
+		
+		void sendBuddyUnsubscribePresence(Buddy *buddy);
 
 		void sendCurrentPresences(const Swift::JID &to);
 

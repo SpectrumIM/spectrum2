@@ -124,8 +124,8 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 		void handleSMSDir() {
 			std::string dir = "/var/spool/sms/incoming/";
-			if (config->getUnregistered().find("backend.incoming_dir") != config->getUnregistered().end()) {
-				dir = config->getUnregistered().find("backend.incoming_dir")->second;
+			if (CONFIG_HAS_KEY(config, "backend.incoming_dir")) {
+				dir = CONFIG_STRING(config, "backend.incoming_dir");
 			}
 			LOG4CXX_INFO(logger, "Checking directory " << dir << " for incoming SMS.");
 
