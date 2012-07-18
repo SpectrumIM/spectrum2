@@ -32,6 +32,7 @@
 #include "transport/rosterresponder.h"
 #include "transport/memoryreadbytestream.h"
 #include "transport/logging.h"
+#include "transport/admininterface.h"
 #include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -228,6 +229,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_config = config;
 	m_component = component;
 	m_isNextLongRun = false;
+	m_adminInterface = NULL;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -763,6 +765,32 @@ void NetworkPluginServer::handlePongReceived(Backend *c) {
 	c->pongReceived = true;
 }
 
+void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data) {
+	pbnetwork::BackendConfig payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	if (!m_adminInterface) {
+		return;
+	}
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(payload.config());
+	m_adminInterface->handleQuery(msg);
+
+	pbnetwork::BackendConfig vcard;
+	vcard.set_config(msg->getBody());
+
+	std::string message;
+	vcard.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_QUERY);
+
+	send(b->connection, message);
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -853,6 +881,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
 				handleBuddyRemovedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_QUERY:
+				handleQueryPayload(c, wrapper.payload());
 				break;
 			default:
 				return;

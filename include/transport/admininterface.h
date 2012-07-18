@@ -38,6 +38,8 @@ class AdminInterface {
 
 		~AdminInterface();
 
+		void handleQuery(Swift::Message::ref message);
+
 	private:
 		void handleMessageReceived(Swift::Message::ref message);
 
