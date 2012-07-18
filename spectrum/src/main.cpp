@@ -309,7 +309,7 @@ int main(int argc, char **argv)
 
 	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
 
-	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
+	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
 	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
 	statsResponder.start();
 

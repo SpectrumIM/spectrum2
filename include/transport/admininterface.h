@@ -30,10 +30,11 @@ class Component;
 class StorageBackend;
 class UserManager;
 class NetworkPluginServer;
+class UserRegistration;
 
 class AdminInterface {
 	public:
-		AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server = NULL, StorageBackend *storageBackend = NULL);
+		AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server = NULL, StorageBackend *storageBackend = NULL, UserRegistration *userRegistration = NULL);
 
 		~AdminInterface();
 
@@ -44,6 +45,7 @@ class AdminInterface {
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
 		NetworkPluginServer *m_server;
+		UserRegistration *m_userRegistration;
 };
 
 }
