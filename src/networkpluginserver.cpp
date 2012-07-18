@@ -318,17 +318,13 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->res = 0;
 	client->init_res = 0;
 	client->shared = 0;
-	client->willDie = 0;
+	// Until we receive first PONG from backend, backend is in willDie state.
+	client->willDie = true;
 	// Backend does not accept new clients automatically if it's long-running
 	client->acceptUsers = !m_isNextLongRun;
 	client->longRun = m_isNextLongRun;
 
 	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
-
-	if (m_clients.size() == 0) {
-		// first backend connected, start the server, we're ready.
-		m_component->start();
-	}
 
 	m_clients.push_front(client);
 
@@ -340,28 +336,6 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	// in first ::pingTimeout call, because it can be called right after this function
 	// and backend wouldn't have any time to response to ping.
 	client->pongReceived = -1;
-
-	// some users are in queue waiting for this backend
-	while(!m_waitingUsers.empty()) {
-		// There's no new backend, so stop associating users and wait for new backend,
-		// which has been already spawned in getFreeClient() call.
-		if (getFreeClient() == NULL)
-			break;
-
-		User *u = m_waitingUsers.front();
-		m_waitingUsers.pop_front();
-
-		LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
-
-		// associate backend with user
-		handleUserCreated(u);
-
-		// connect user if it's ready
-		if (u->isReadyToConnect()) {
-			handleUserReadyToConnect(u);
-		}
-
-	}
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
@@ -753,6 +727,42 @@ void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
 	send(b->connection, message);
 }
 
+void NetworkPluginServer::handlePongReceived(Backend *c) {
+	// This could be first PONG from the backend
+	if (c->pongReceived == -1) {
+		// Backend is fully ready to handle requests
+		c->willDie = false;
+
+		if (m_clients.size() == 1) {
+			// first backend connected, start the server, we're ready.
+			m_component->start();
+		}
+
+		// some users are in queue waiting for this backend
+		while(!m_waitingUsers.empty()) {
+			// There's no new backend, so stop associating users and wait for new backend,
+			// which has been already spawned in getFreeClient() call.
+			if (getFreeClient() == NULL)
+				break;
+
+			User *u = m_waitingUsers.front();
+			m_waitingUsers.pop_front();
+
+			LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
+
+			// associate backend with user
+			handleUserCreated(u);
+
+			// connect user if it's ready
+			if (u->isReadyToConnect()) {
+				handleUserReadyToConnect(u);
+			}
+		}
+	}
+
+	c->pongReceived = true;
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -803,7 +813,7 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				handleConvMessagePayload(wrapper.payload(), true);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
-				c->pongReceived = true;
+				handlePongReceived(c);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED:
 				handleParticipantChangedPayload(wrapper.payload());
@@ -897,7 +907,11 @@ void NetworkPluginServer::pingTimeout() {
 		// pong has been received OR backend just connected and did not have time to answer the ping
 		// request.
 		if ((*it)->pongReceived || (*it)->pongReceived == -1) {
-			sendPing((*it));
+			// Don't send another ping if pongReceived == -1, because we've already sent one
+			// when registering backend.
+			if ((*it)->pongReceived) {
+				sendPing((*it));
+			}
 		}
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
