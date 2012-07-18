@@ -41,6 +41,8 @@ class AdHocCommand {
 
 		virtual boost::shared_ptr<Swift::Command> handleRequest(boost::shared_ptr<Swift::Command> payload) = 0;
 
+		void addFormField(Swift::FormField::ref field);
+
 		const std::string &getId() {
 			return m_id;
 		}
@@ -57,9 +59,10 @@ class AdHocCommand {
 		Component *m_component;
 		Swift::JID m_initiator;
 		Swift::JID m_to;
+		std::vector<Swift::FormField::ref> m_fields;
+		std::string m_id;
 
 	private:
-		std::string m_id;
 		// This is used to remove AdHocCommand after long inactivity to prevent memory leaks
 		// caused by users which disconnect before they finish the command.
 		// AdHocManager uses this to garbage collect old AdHocCommands.

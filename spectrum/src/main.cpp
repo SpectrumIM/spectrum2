@@ -207,6 +207,16 @@ int main(int argc, char **argv)
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
 		return 1;
 	}
+	// create directories
+	try {
+		boost::filesystem::create_directories(
+			boost::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
+		);
+	}
+	catch (...) {
+		std::cerr << "Can't create service.portfile directory " << CONFIG_STRING(&config, "service.portfile") << ".\n";
+		return 1;
+	}
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
@@ -222,6 +232,20 @@ int main(int argc, char **argv)
 		}
 		chown(CONFIG_STRING(&config, "service.working_dir").c_str(), pw->pw_uid, gr->gr_gid);
 	}
+
+	char backendport[20];
+	FILE* port_file_f;
+	port_file_f = fopen(CONFIG_STRING(&config, "service.portfile").c_str(), "w+");
+	if (port_file_f == NULL) {
+		std::cerr << "Cannot create port_file file " << CONFIG_STRING(&config, "service.portfile").c_str() << ". Exiting\n";
+		exit(1);
+	}
+	sprintf(backendport,"%s\n",CONFIG_STRING(&config, "service.backend_port").c_str());
+	if (fwrite(backendport,1,strlen(backendport),port_file_f) < strlen(backendport)) {
+		std::cerr << "Cannot write to port file " << CONFIG_STRING(&config, "service.portfile") << ". Exiting\n";
+		exit(1);
+	}
+	fclose(port_file_f);
 
 	if (!no_daemon) {
 		// daemonize
@@ -309,7 +333,9 @@ int main(int argc, char **argv)
 
 	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
 
-	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
+	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
+	plugin.setAdminInterface(&adminInterface);
+
 	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
 	statsResponder.start();
 

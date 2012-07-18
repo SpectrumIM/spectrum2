@@ -31,15 +31,47 @@ namespace Transport {
 DEFINE_LOGGER(logger, "SettingsAdHocCommand");
 
 SettingsAdHocCommand::SettingsAdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to) : AdHocCommand(component, initiator, to) {
+	m_state = Init;
 }
 
 SettingsAdHocCommand::~SettingsAdHocCommand() {
 }
 
+boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
+	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Executing));
+	boost::shared_ptr<Swift::Form> form(new Swift::Form());
+
+	BOOST_FOREACH(Swift::FormField::ref field, m_fields) {
+		form->addField(field);
+	}
+
+	response->setForm(form);
+	return response;
+}
+
+boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::shared_ptr<Swift::Command> payload) {
+	
+	
+
+	boost::shared_ptr<Swift::Command> response;
+	response->setStatus(Swift::Command::Completed);
+	return response;
+}
+
 boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleRequest(boost::shared_ptr<Swift::Command> payload) {
 	boost::shared_ptr<Swift::Command> response;
-	
-	
+
+	switch (m_state) {
+		case Init:
+			response = getForm();
+			m_state = WaitingForResponse;
+			break;
+		case WaitingForResponse:
+			response = handleResponse(payload);
+			break;
+		default:
+			break;
+	}
 	
 	return response;
 }

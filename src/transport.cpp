@@ -191,6 +191,9 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 void Component::start() {
 	if (m_component && !m_component->isAvailable()) {
 		LOG4CXX_INFO(logger, "Connecting XMPP server " << CONFIG_STRING(m_config, "service.server") << " port " << CONFIG_INT(m_config, "service.port"));
+		if (CONFIG_INT(m_config, "service.port") == 5222) {
+			LOG4CXX_WARN(logger, "Port 5222 is usually used for client connections, not for component connections! Are you sure you are using right port?");
+		}
 		m_reconnectCount++;
 		m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		m_reconnectTimer->stop();
