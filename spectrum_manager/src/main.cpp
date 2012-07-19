@@ -402,7 +402,7 @@ static void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories
 
 		if (!found) {
 			std::cerr << "Config file for Spectrum instance with this JID was not found\n";
-			exit(20)
+			exit(20);
 		}
 	}
 	catch (const filesystem_error& ex) {
