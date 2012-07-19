@@ -9,6 +9,7 @@
 #include "Requests/CreateFriendRequest.h"
 #include "Requests/DestroyFriendRequest.h"
 #include "Requests/RetweetRequest.h"
+#include "Requests/ProfileImageRequest.h"
 
 DEFINE_LOGGER(logger, "Twitter Backend");
 
@@ -139,7 +140,6 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 void TwitterPlugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) 
 {
 	if(onlineUsers.count(user)) {
-		clearRoster(user);
 		delete sessions[user];
 		sessions[user] = NULL;
 		connectionState[user] = DISCONNECTED;
@@ -291,6 +291,20 @@ void TwitterPlugin::handleBuddyRemovedRequest(const std::string &user, const std
 											 boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
 }
 
+void TwitterPlugin::handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id)
+{
+	LOG4CXX_INFO(logger, user << " - VCardRequest for " << legacyName << ", " << imgURL[legacyName])
+	if(connectionState[user] != CONNECTED) {
+		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
+		return;
+	}
+
+	if(getTwitterMode(user) != SINGLECONTACT && buddies[user].count(legacyName) && imgURL[legacyName].length()) {
+		LOG4CXX_INFO(logger, user << " - Initiating VCard request for " << legacyName);
+		tp->runAsThread(new ProfileImageRequest(config, user, legacyName, imgURL[legacyName], id,
+										        boost::bind(&TwitterPlugin::profileImageResponse, this, _1, _2, _3, _4, _5)));
+	}
+}
 
 void TwitterPlugin::pollForTweets()
 {
@@ -510,7 +524,7 @@ void TwitterPlugin::clearRoster(const std::string user)
 	if(buddies[user].size() == 0) return;
 	std::set<std::string>::iterator it = buddies[user].begin();
 	while(it != buddies[user].end()) {
-		handleBuddyChanged(user, *it, *it, std::vector<std::string>(), pbnetwork::STATUS_NONE);
+		//handleBuddyChanged(user, *it, *it, std::vector<std::string>(), pbnetwork::STATUS_NONE);
 		handleBuddyRemoved(user, *it);
 		it++;
 	}
@@ -524,10 +538,10 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 		for(int i=0 ; i<friends.size() ; i++) {
 			if(twitterMode[user] == MULTIPLECONTACT)
 				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
-			else if(twitterMode[user] == CHATROOM) {
+			else if(twitterMode[user] == CHATROOM)
 				handleParticipantChanged(user, friends[i].getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
-				buddies[user].insert(friends[i].getScreenName());
-			}
+			buddies[user].insert(friends[i].getScreenName());
+			imgURL[friends[i].getScreenName()] = friends[i].getProfileImgURL();
 		}
 	} else handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
 							   std::string("Error populating roster - ") + errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");	
@@ -629,7 +643,7 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 	}
 }
 
-void TwitterPlugin::createFriendResponse(std::string &user, std::string &frnd, std::string &errMsg)
+void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::string &errMsg)
 {
 	if(errMsg.length()) {
 		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
@@ -638,20 +652,22 @@ void TwitterPlugin::createFriendResponse(std::string &user, std::string &frnd, s
 	}
 
 	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-						std::string("You are now following ") + frnd, twitterMode[user] == CHATROOM ? adminNickName : "");
+						std::string("You are now following ") + frnd.getScreenName(), twitterMode[user] == CHATROOM ? adminNickName : "");
 	
-	//buddies[user].insert(frnd);
+	buddies[user].insert(frnd.getScreenName());
+	imgURL[frnd.getScreenName()] = frnd.getProfileImgURL();
+	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << imgURL[frnd.getScreenName()])
 	//handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_NONE);
 
 	if(twitterMode[user] == MULTIPLECONTACT) {
-		handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
+		handleBuddyChanged(user, frnd.getScreenName(), frnd.getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 	} else if(twitterMode[user] == CHATROOM) {
-		buddies[user].insert(frnd);
-		handleParticipantChanged(user, frnd, adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
+		//buddies[user].insert(frnd);
+		handleParticipantChanged(user, frnd.getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 	}
 }
 
-void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, std::string &errMsg)
+void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, std::string &errMsg)
 {
 	if(errMsg.length()) {
 		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName, 
@@ -660,16 +676,21 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, std::string &frnd, s
 	} 
 	
 	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-						std::string("You are not following ") + frnd + " anymore", twitterMode[user] == CHATROOM ? adminNickName : "");
+						std::string("You are not following ") + frnd.getScreenName() + " anymore", twitterMode[user] == CHATROOM ? adminNickName : "");
 	
 	if (twitterMode[user] == CHATROOM) {
-		handleParticipantChanged(user, frnd, adminLegacyName, 0, pbnetwork::STATUS_NONE);
-		buddies[user].erase(frnd);
+		handleParticipantChanged(user, frnd.getScreenName(), adminLegacyName, 0, pbnetwork::STATUS_NONE);
+		//buddies[user].erase(frnd);
 	}
-	//buddies[user].erase(frnd);
+
+	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << imgURL[frnd.getScreenName()])
+	
+	buddies[user].erase(frnd.getScreenName());
+	imgURL[frnd.getScreenName()] = "";
+
 	//handleBuddyRemoved(user, frnd);
 	if(twitterMode[user] == MULTIPLECONTACT) {
-		handleBuddyRemoved(user, frnd);
+		handleBuddyRemoved(user, frnd.getScreenName());
 	} 
 }
 
@@ -682,5 +703,16 @@ void TwitterPlugin::RetweetResponse(std::string &user, std::string &errMsg)
 	} else {
 		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
 							"Retweet successful", twitterMode[user] == CHATROOM ? adminNickName : "");
+	}
+}
+
+void TwitterPlugin::profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, std::string &errMsg)
+{
+	if(errMsg.length()) {
+		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
+							errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");
+	} else {
+		LOG4CXX_INFO(logger, user << " - Sending VCard for " << buddy)
+		handleVCard(user, reqID, buddy, buddy, "", img);
 	}
 }

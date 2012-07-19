@@ -1,7 +1,15 @@
 #include "TwitterResponseParser.h"
 #include "transport/logging.h"
+#include <cctype>
 
 DEFINE_LOGGER(logger, "TwitterResponseParser")
+
+static std::string tolowercase(std::string inp)
+{
+	std::string out = inp;
+	for(int i=0 ; i<out.size() ; i++) out[i] = tolower(out[i]);
+	return out;
+}
 
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns) 
 {
@@ -14,8 +22,9 @@ User getUser(const Swift::ParserElement::ref &element, const std::string xmlns)
 	}
 
 	user.setUserID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	user.setScreenName( std::string( element->getChild(TwitterReponseTypes::screen_name, xmlns)->getText() ) );
+	user.setScreenName( tolowercase( std::string( element->getChild(TwitterReponseTypes::screen_name, xmlns)->getText() ) ) );
 	user.setUserName( std::string( element->getChild(TwitterReponseTypes::name, xmlns)->getText() ) );
+	user.setProfileImgURL( std::string( element->getChild(TwitterReponseTypes::profile_image_url, xmlns)->getText() ) );
 	user.setNumberOfTweets( atoi(element->getChild(TwitterReponseTypes::statuses_count, xmlns)->getText().c_str()) );
 	return user;
 }
@@ -135,6 +144,25 @@ std::vector<User> getUsers(std::string &xml)
 		users.push_back(getUser(user, xmlns));
 	}
 	return users;
+}
+
+User getUser(std::string &xml)
+{
+	User user;
+	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	
+	if(rootElement == NULL) {
+		LOG4CXX_ERROR(logger, "Error while parsing XML")
+		return user;
+	}
+
+	if(rootElement->getName() != TwitterReponseTypes::user) {
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to user object")
+		return user;
+	}
+
+	const std::string xmlns = rootElement->getNamespace();
+	return user = getUser(rootElement, xmlns);
 }
 
 std::vector<std::string> getIDs(std::string &xml)

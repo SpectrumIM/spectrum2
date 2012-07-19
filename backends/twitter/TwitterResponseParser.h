@@ -34,6 +34,7 @@ namespace TwitterReponseTypes
 	const std::string recipient_screen_name = "recipient_screen_name";
 	const std::string sender = "sender";
    	const std::string recipient = "recipient";
+	const std::string profile_image_url = "profile_image_url";
 };
 
 //Class holding user data
@@ -42,6 +43,7 @@ class User
 	std::string ID;
 	std::string name;
 	std::string screen_name;
+	std::string profile_image_url;
 	unsigned int statuses_count;
 
 	public:
@@ -50,12 +52,14 @@ class User
 	std::string getUserID() {return ID;}
 	std::string getUserName() {return name;}
 	std::string getScreenName() {return screen_name;}
+	std::string getProfileImgURL() {return profile_image_url;}
 	unsigned int getNumberOfTweets() {return statuses_count;}
 	
 	
 	void setUserID(std::string _id) {ID = _id;}
 	void setUserName(std::string _name) {name = _name;}
 	void setScreenName(std::string _screen) {screen_name = _screen;}
+	void setProfileImgURL(std::string _url) {profile_image_url = _url;}
 	void setNumberOfTweets(unsigned int sc) {statuses_count  = sc;}
 };
 
@@ -145,6 +149,7 @@ std::vector<Status> getTimeline(std::string &xml);
 std::vector<DirectMessage> getDirectMessages(std::string &xml);
 std::vector<std::string> getIDs(std::string &xml);
 std::vector<User> getUsers(std::string &xml);
+User getUser(std::string &xml);
 std::string getErrorMessage(std::string &xml);
 
 Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns);
