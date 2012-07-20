@@ -16,6 +16,7 @@
 
 // Swiften
 #include "Swiften/Swiften.h"
+#include "Swiften/Network/TLSConnectionFactory.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLContextFactory.h"
 
 // for signal handler

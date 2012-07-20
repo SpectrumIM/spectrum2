@@ -89,6 +89,9 @@ class PQXXBackend : public StorageBackend
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
 		void removeBuddy(long id) {}
 
+		void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {}
+		void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {}
+
 		void getUserSetting(long userId, const std::string &variable, int &type, std::string &value);
 		void updateUserSetting(long userId, const std::string &variable, const std::string &value);
 

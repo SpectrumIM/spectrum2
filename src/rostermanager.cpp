@@ -113,6 +113,9 @@ void RosterManager::removeBuddy(const std::string &name) {
 		sendBuddyUnsubscribePresence(buddy);
 	}
 
+	if (m_rosterStorage)
+		m_rosterStorage->removeBuddy(buddy);
+
 	unsetBuddy(buddy);
 	delete buddy;
 }
