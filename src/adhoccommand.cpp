@@ -45,4 +45,8 @@ AdHocCommand::AdHocCommand(Component *component, const Swift::JID &initiator, co
 AdHocCommand::~AdHocCommand() {
 }
 
+void AdHocCommand::addFormField(Swift::FormField::ref field) {
+	m_fields.push_back(field);
+}
+
 }

@@ -158,6 +158,7 @@ message WrapperMessage {
 		TYPE_FT_CONTINUE			= 28;
 		TYPE_EXIT					= 29;
 		TYPE_BACKEND_CONFIG			= 30;
+		TYPE_QUERY					= 31;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

@@ -42,6 +42,7 @@ class VCardResponder;
 class RosterResponder;
 class BlockResponder;
 class DummyReadBytestream;
+class AdminInterface;
 
 class NetworkPluginServer {
 	public:
@@ -62,6 +63,10 @@ class NetworkPluginServer {
 		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
 
 		virtual ~NetworkPluginServer();
+
+		void setAdminInterface(AdminInterface *adminInterface) {
+			m_adminInterface = adminInterface;
+		}
 
 		int getBackendCount() {
 			return m_clients.size();
@@ -84,6 +89,7 @@ class NetworkPluginServer {
 	private:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Backend *c);
+		void handlePongReceived(Backend *c);
 		void handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data);
 
 		void handleConnectedPayload(const std::string &payload);
@@ -100,7 +106,8 @@ class NetworkPluginServer {
 		void handleStatsPayload(Backend *c, const std::string &payload);
 		void handleFTStartPayload(const std::string &payload);
 		void handleFTFinishPayload(const std::string &payload);
-		void handleFTDataPayload(Backend *b ,const std::string &payload);
+		void handleFTDataPayload(Backend *b, const std::string &payload);
+		void handleQueryPayload(Backend *b, const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);
@@ -144,6 +151,7 @@ class NetworkPluginServer {
 		std::map<unsigned long, FileTransferManager::Transfer> m_filetransfers;
 		FileTransferManager *m_ftManager;
 		std::vector<std::string> m_crashedBackends;
+		AdminInterface *m_adminInterface;
 };
 
 }

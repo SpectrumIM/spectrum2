@@ -27,6 +27,7 @@
 #include "transport/usermanager.h"
 #include "transport/networkpluginserver.h"
 #include "transport/logging.h"
+#include "transport/userregistration.h"
 #include "storageresponder.h"
 #include "transport/memoryusage.h"
 #include <boost/foreach.hpp>
@@ -43,11 +44,12 @@ static std::string getArg(const std::string &body) {
 	return body.substr(body.find(" ") + 1);
 }
 
-AdminInterface::AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend) {
+AdminInterface::AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend, UserRegistration *userRegistration) {
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_userManager = userManager;
 	m_server = server;
+	m_userRegistration = userRegistration;
 
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
 }
@@ -55,22 +57,7 @@ AdminInterface::AdminInterface(Component *component, UserManager *userManager, N
 AdminInterface::~AdminInterface() {
 }
 
-void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
-	if (!message->getTo().getNode().empty())
-		return;
-
-	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
-	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
-	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
-	    return;
-	
-	}
-	
-	// Ignore empty messages
-	if (message->getBody().empty()) {
-		return;
-	}
-
+void AdminInterface::handleQuery(Swift::Message::ref message) {
 	LOG4CXX_INFO(logger, "Message from admin received");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
@@ -267,6 +254,46 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		int msgCount = m_userManager->getMessagesToXMPP();
 		message->setBody(boost::lexical_cast<std::string>(msgCount));
 	}
+	else if (message->getBody().find("register ") == 0 && m_userRegistration) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 4) {
+			UserInfo res;
+			res.jid = args[1];
+			res.uin = args[2];
+			res.password = args[3];
+			res.language = "en";
+			res.encoding = "utf-8";
+			res.vip = 0;
+
+			if (m_userRegistration->registerUser(res)) {
+				message->setBody("User registered.");
+			}
+			else {
+				message->setBody("Registration failed: User is already registered");
+			}
+		}
+		else {
+			message->setBody("Bad argument count. See 'help'.");
+		}
+	}
+	else if (message->getBody().find("unregister ") == 0 && m_userRegistration) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 2) {
+			if (m_userRegistration->unregisterUser(args[1])) {
+				message->setBody("User unregistered.");
+			}
+			else {
+				message->setBody("Registration failed: User is not registered");
+			}
+		}
+		else {
+			message->setBody("Bad argument count. See 'help'.");
+		}
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";
@@ -277,6 +304,10 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 		help += "    online_users_count - number of online users\n";
 		help += "    online_users_per_backend - shows online users per backends\n";
 		help += "    has_online_user <bare_JID> - returns 1 if user is online\n";
+		if (m_userRegistration) {
+			help += "    register <bare_JID> <legacyName> <password> - registers the new user\n";
+			help += "    unregister <bare_JID> - unregisters existing user\n";
+		}
 		help += "Messages:\n";
 		help += "    messages_from_xmpp - get number of messages received from XMPP users\n";
 		help += "    messages_to_xmpp - get number of messages sent to XMPP users\n";
@@ -299,6 +330,25 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	else {
 		message->setBody("Unknown command. Try \"help\"");
 	}
+}
+
+void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
+	if (!message->getTo().getNode().empty())
+		return;
+
+	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
+	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
+	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
+	    return;
+	
+	}
+	
+	// Ignore empty messages
+	if (message->getBody().empty()) {
+		return;
+	}
+
+	handleQuery(message);
 
 	m_component->getStanzaChannel()->sendMessage(message);
 }

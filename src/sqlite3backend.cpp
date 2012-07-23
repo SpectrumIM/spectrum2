@@ -88,6 +88,8 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_removeUserBuddies);
 		FINALIZE_STMT(m_removeUserSettings);
 		FINALIZE_STMT(m_removeUserBuddiesSettings);
+		FINALIZE_STMT(m_removeBuddy);
+		FINALIZE_STMT(m_removeBuddySettings);
 		FINALIZE_STMT(m_addBuddy);
 		FINALIZE_STMT(m_updateBuddy);
 		FINALIZE_STMT(m_getBuddies);
@@ -96,6 +98,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_setUserSetting);
 		FINALIZE_STMT(m_updateUserSetting);
 		FINALIZE_STMT(m_updateBuddySetting);
+		FINALIZE_STMT(m_getBuddySetting);
 		FINALIZE_STMT(m_setUserOnline);
 		FINALIZE_STMT(m_getOnlineUsers);
 		sqlite3_close(m_db);
@@ -122,11 +125,15 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_removeUserSettings, "DELETE FROM " + m_prefix + "users_settings WHERE user_id=?");
 	PREP_STMT(m_removeUserBuddiesSettings, "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
 
+	PREP_STMT(m_removeBuddy, "DELETE FROM " + m_prefix + "buddies WHERE id=?");
+	PREP_STMT(m_removeBuddySettings, "DELETE FROM " + m_prefix + "buddies_settings WHERE buddy_id=?");
+
 	PREP_STMT(m_addBuddy, "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 	PREP_STMT(m_updateBuddy, "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
 	PREP_STMT(m_getBuddies, "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	PREP_STMT(m_getBuddiesSettings, "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	PREP_STMT(m_updateBuddySetting, "INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)");
+	PREP_STMT(m_getBuddySetting, "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
 	
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
@@ -199,7 +206,11 @@ bool SQLite3Backend::exec(const std::string &query) {
 	char *errMsg = 0;
 	int rc = sqlite3_exec(m_db, query.c_str(), NULL, 0, &errMsg);
 	if (rc != SQLITE_OK) {
-		LOG4CXX_ERROR(logger, errMsg << " during statement " << query);
+		// This error is OK, because we try to create buddies table every time
+		// to detect if DB is created properly.
+		if (errMsg != "table buddies already exists") {
+			LOG4CXX_ERROR(logger, errMsg << " during statement " << query);
+		}
 		sqlite3_free(errMsg);
 		return false;
 	}
@@ -401,6 +412,22 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	return true;
 }
 
+void SQLite3Backend::removeBuddy(long id) {
+	sqlite3_reset(m_removeBuddy);
+	sqlite3_bind_int(m_removeBuddy, 1, id);
+	if(sqlite3_step(m_removeBuddy) != SQLITE_DONE) {
+		LOG4CXX_ERROR(logger, "removeBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return;
+	}
+
+	sqlite3_reset(m_removeBuddySettings);
+	sqlite3_bind_int(m_removeBuddySettings, 1, id);
+	if(sqlite3_step(m_removeBuddySettings) != SQLITE_DONE) {
+		LOG4CXX_ERROR(logger, "removeBuddySettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return;
+	}
+}
+
 bool SQLite3Backend::removeUser(long id) {
 	sqlite3_reset(m_removeUser);
 	sqlite3_bind_int(m_removeUser, 1, id);
@@ -461,6 +488,31 @@ void SQLite3Backend::updateUserSetting(long id, const std::string &variable, con
 	BIND_INT(m_updateUserSetting, id);
 	BIND_STR(m_updateUserSetting, variable);
 	EXECUTE_STATEMENT(m_updateUserSetting, "m_updateUserSetting");
+}
+
+void SQLite3Backend::getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {
+	BEGIN(m_getBuddySetting);
+	BIND_INT(m_getBuddySetting, userId);
+	BIND_INT(m_getBuddySetting, buddyId);
+	BIND_STR(m_getBuddySetting, variable);
+	if(sqlite3_step(m_getBuddySetting) == SQLITE_ROW) {
+		type = GET_INT(m_getBuddySetting);
+		value = GET_STR(m_getBuddySetting);
+	}
+
+	int ret;
+	while((ret = sqlite3_step(m_getBuddySetting)) == SQLITE_ROW) {
+	}
+}
+
+void SQLite3Backend::updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {
+	BEGIN(m_updateBuddySetting);
+	BIND_INT(m_updateBuddySetting, userId);
+	BIND_INT(m_updateBuddySetting, buddyId);
+	BIND_STR(m_updateBuddySetting, variable);
+	BIND_INT(m_updateBuddySetting, type);
+	BIND_STR(m_updateBuddySetting, value);
+	EXECUTE_STATEMENT(m_updateBuddySetting, "m_updateBuddySetting");
 }
 
 void SQLite3Backend::beginTransaction() {

@@ -34,12 +34,19 @@ class Component;
 
 class SettingsAdHocCommand : public AdHocCommand {
 	public:
+		typedef enum { Init, WaitingForResponse } State;
+
 		SettingsAdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to);
 
 		/// Destructor.
 		virtual ~SettingsAdHocCommand();
 
 		virtual boost::shared_ptr<Swift::Command> handleRequest(boost::shared_ptr<Swift::Command> payload);
+
+	private:
+		boost::shared_ptr<Swift::Command> getForm();
+		boost::shared_ptr<Swift::Command> handleResponse(boost::shared_ptr<Swift::Command> payload);
+		State m_state;
 };
 
 class SettingsAdHocCommandFactory : public AdHocCommandFactory {
