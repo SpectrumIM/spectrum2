@@ -72,8 +72,8 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	tweet_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForTweets, this));
 	message_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForDirectMessages, this));
 
-	//tweet_timer->start();
-	//message_timer->start();
+	tweet_timer->start();
+	message_timer->start();
 	
 	LOG4CXX_INFO(logger, "Starting the plugin.");
 }
@@ -81,8 +81,10 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 TwitterPlugin::~TwitterPlugin() 
 {
 	delete storagebackend;
-	std::map<std::string, twitCurl*>::iterator it;
-	for(it = sessions.begin() ; it != sessions.end() ; it++) delete it->second;
+	//std::map<std::string, twitCurl*>::iterator it;
+	//for(it = sessions.begin() ; it != sessions.end() ; it++) delete it->second;
+	std::set<std::string>::iterator it;
+	for(it = onlineUsers.begin() ; it != onlineUsers.end() ; it++) delete userdb[*it].sessions;
 	delete tp;
 }
 
@@ -102,9 +104,16 @@ void TwitterPlugin::_handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data
 // User trying to login into his twitter account
 void TwitterPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) 
 {
-	if(connectionState.count(user) && (connectionState[user] == NEW || 
-										connectionState[user] == CONNECTED || 
-										connectionState[user] == WAITING_FOR_PIN)) {
+	//if(connectionState.count(user) && (connectionState[user] == NEW || 
+	//									connectionState[user] == CONNECTED || 
+	//									connectionState[user] == WAITING_FOR_PIN)) {
+	//	LOG4CXX_INFO(logger, std::string("A session corresponding to ") + user + std::string(" is already active"))
+	//	return;
+	//}
+	
+	if(userdb.count(user) && (userdb[user].connectionState == NEW || 
+										userdb[user].connectionState == CONNECTED || 
+										userdb[user].connectionState == WAITING_FOR_PIN)) {
 		LOG4CXX_INFO(logger, std::string("A session corresponding to ") + user + std::string(" is already active"))
 		return;
 	}
@@ -117,8 +126,9 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 	
 	LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
 	handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
-	nickName[user] = "";
-	//setTwitterMode(user, 0);
+	
+	//nickName[user] = "";
+	userdb[user].nickName = "";
 	
 	LOG4CXX_INFO(logger, "Querying database for usersettings of " << user)
 	
@@ -128,7 +138,8 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 	if(key == "" || secret == "") {			
 		LOG4CXX_INFO(logger, "Intiating OAuth Flow for user " << user)
 		setTwitterMode(user, 0);
-		tp->runAsThread(new OAuthFlow(np, sessions[user], user, sessions[user]->getTwitterUsername()));
+		//tp->runAsThread(new OAuthFlow(np, userdb[user].sessions, user, userdb[user].sessions->getTwitterUsername()));
+		tp->runAsThread(new OAuthFlow(np, userdb[user].sessions, user, userdb[user].sessions->getTwitterUsername()));
 	} else {
 		LOG4CXX_INFO(logger, user << " is already registerd. Using the stored oauth key and secret")
 		LOG4CXX_INFO(logger, key << " " << secret)	
@@ -140,9 +151,12 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 void TwitterPlugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) 
 {
 	if(onlineUsers.count(user)) {
-		delete sessions[user];
-		sessions[user] = NULL;
-		connectionState[user] = DISCONNECTED;
+		//delete sessions[user];
+		//sessions[user] = NULL;
+		//connectionState[user] = DISCONNECTED;
+		delete userdb[user].sessions;
+		userdb[user].sessions = NULL;
+		userdb[user].connectionState = DISCONNECTED;
 		onlineUsers.erase(user);
 	}
 }
@@ -157,12 +171,15 @@ void TwitterPlugin::handleJoinRoomRequest(const std::string &user, const std::st
 			
 		handleParticipantChanged(user, adminNickName, room, 0, pbnetwork::STATUS_ONLINE);
 
-		nickName[user] = nickname;
+		//nickName[user] = nickname;
+		userdb[user].nickName = nickname;
 
 		handleMessage(user, adminChatRoom, "Connected to Twitter Room! Populating your followers list", adminNickName);
 		
-		tp->runAsThread(new FetchFriends(sessions[user], user,
-										 boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
+		//tp->runAsThread(new FetchFriends(sessions[user], user,
+		//								 boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
+		tp->runAsThread(new FetchFriends(userdb[user].sessions, user,
+										 boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3, _4)));
 	} else {
 		setTwitterMode(user, 0);
 		LOG4CXX_ERROR(logger, "Couldn't connect to chatroom - " << room <<"! Try twitter-account as chatroom to access Twitter account")
@@ -201,69 +218,69 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 		
 		//handleMessage(user, adminLegacyName, cmd + " " + data);
 
-		if(cmd == "#pin") tp->runAsThread(new PINExchangeProcess(np, sessions[user], user, data));
+		if(cmd == "#pin") tp->runAsThread(new PINExchangeProcess(np, userdb[user].sessions, user, data));
 		else if(cmd == "#help") tp->runAsThread(new HelpMessageRequest(user, boost::bind(&TwitterPlugin::helpMessageResponse, this, _1, _2)));
 		else if(cmd[0] == '@') {
 			std::string username = cmd.substr(1); 
-			tp->runAsThread(new DirectMessageRequest(sessions[user], user, username, data,
+			tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, username, data,
 												     boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3, _4)));
 		}
-		else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(sessions[user], user, data,
+		else if(cmd == "#status") tp->runAsThread(new StatusUpdateRequest(userdb[user].sessions, user, data,
 														boost::bind(&TwitterPlugin::statusUpdateResponse, this, _1, _2)));
-		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(sessions[user], user, data, "",
+		else if(cmd == "#timeline") tp->runAsThread(new TimelineRequest(userdb[user].sessions, user, data, "",
 														boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
-		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(sessions[user], user,
-													   boost::bind(&TwitterPlugin::displayFriendlist, this, _1, _2, _3)));
-		else if(cmd == "#follow") tp->runAsThread(new CreateFriendRequest(sessions[user], user, data.substr(0,data.find('@')),
-													   boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
-		else if(cmd == "#unfollow") tp->runAsThread(new DestroyFriendRequest(sessions[user], user, data.substr(0,data.find('@')),
+		else if(cmd == "#friends") tp->runAsThread(new FetchFriends(userdb[user].sessions, user,
+													   boost::bind(&TwitterPlugin::displayFriendlist, this, _1, _2, _3, _4)));
+		else if(cmd == "#follow") tp->runAsThread(new CreateFriendRequest(userdb[user].sessions, user, data.substr(0,data.find('@')),
+													   boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3, _4)));
+		else if(cmd == "#unfollow") tp->runAsThread(new DestroyFriendRequest(userdb[user].sessions, user, data.substr(0,data.find('@')),
 													   boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
-		else if(cmd == "#retweet") tp->runAsThread(new RetweetRequest(sessions[user], user, data,
+		else if(cmd == "#retweet") tp->runAsThread(new RetweetRequest(userdb[user].sessions, user, data,
 													   boost::bind(&TwitterPlugin::RetweetResponse, this, _1, _2)));
 		else if(cmd == "#mode") {
 			int m = 0;
 			m = atoi(data.c_str());
-			mode prevm = twitterMode[user];
+			mode prevm = userdb[user].twitterMode;
 
-			if((mode)m == twitterMode[user]) return;
+			if((mode)m == userdb[user].twitterMode) return;
 			if(m < 0 || m > 2) {
 				handleMessage(user, adminLegacyName, std::string("Error! Unknown mode ") + data + ". Allowed values 0,1,2." );
 				return;
 			}
 
 			setTwitterMode(user, m);
-			if((twitterMode[user] == SINGLECONTACT || twitterMode[user] == CHATROOM) && prevm == MULTIPLECONTACT) clearRoster(user);
-			else if(twitterMode[user] == MULTIPLECONTACT) 
-				tp->runAsThread(new FetchFriends(sessions[user], user, boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
+			if((userdb[user].twitterMode == SINGLECONTACT || userdb[user].twitterMode == CHATROOM) && prevm == MULTIPLECONTACT) clearRoster(user);
+			else if(userdb[user].twitterMode == MULTIPLECONTACT) 
+				tp->runAsThread(new FetchFriends(userdb[user].sessions, user, boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3, _4)));
 
-			//if(twitterMode[user] != CHATROOM)
+			//if(userdb[user].twitterMode != CHATROOM)
 			//	handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			//
-			handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-								std::string("Changed mode to ") + data, twitterMode[user] == CHATROOM ? adminNickName : "");
-			LOG4CXX_INFO(logger, user << ": Changed mode to " << data  << " <" << (twitterMode[user] == CHATROOM ? adminNickName : "") << ">" )
+			handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+								std::string("Changed mode to ") + data, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+			LOG4CXX_INFO(logger, user << ": Changed mode to " << data  << " <" << (userdb[user].twitterMode == CHATROOM ? adminNickName : "") << ">" )
 		}
 
-		else if(twitterMode[user] == CHATROOM) {
+		else if(userdb[user].twitterMode == CHATROOM) {
 			std::string buddy = message.substr(0, message.find(":"));
-			if(buddies[user].count(buddy) == 0) {
-				tp->runAsThread(new StatusUpdateRequest(sessions[user], user, message,
+			if(userdb[user].buddies.count(buddy) == 0) {
+				tp->runAsThread(new StatusUpdateRequest(userdb[user].sessions, user, message,
 														boost::bind(&TwitterPlugin::statusUpdateResponse, this, _1, _2)));
 			} else {
 				data = message.substr(message.find(":")+1);
-				tp->runAsThread(new DirectMessageRequest(sessions[user], user, buddy, data,
+				tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, buddy, data,
 												 		 boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3, _4)));
 			}
 		}
-		else handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-				                 "Unknown command! Type #help for a list of available commands.", twitterMode[user] == CHATROOM ? adminNickName : "");
+		else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+				                 "Unknown command! Type #help for a list of available commands.", userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} 
 
 	else {	
 		std::string buddy;
-		if(twitterMode[user] == CHATROOM) buddy = legacyName.substr(legacyName.find("/") + 1);
+		if(userdb[user].twitterMode == CHATROOM) buddy = legacyName.substr(legacyName.find("/") + 1);
 		if(legacyName != "twitter") {
-			tp->runAsThread(new DirectMessageRequest(sessions[user], user, buddy, message,
+			tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, buddy, message,
 												 boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3, _4)));
 		}
 	}
@@ -271,38 +288,41 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 
 void TwitterPlugin::handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) 
 {
-	if(connectionState[user] != CONNECTED) {
+	if(userdb[user].connectionState != CONNECTED) {
 		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
 		return;
 	}
 
 	LOG4CXX_INFO(logger, user << " Adding Twitter contact " << buddyName)
-	tp->runAsThread(new CreateFriendRequest(sessions[user], user, buddyName, 
-											boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3)));
+	tp->runAsThread(new CreateFriendRequest(userdb[user].sessions, user, buddyName, 
+											boost::bind(&TwitterPlugin::createFriendResponse, this, _1, _2, _3, _4)));
 }
 
 void TwitterPlugin::handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) 
 {
-	if(connectionState[user] != CONNECTED) {
+	if(userdb[user].connectionState != CONNECTED) {
 		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
 		return;
 	}
-	tp->runAsThread(new DestroyFriendRequest(sessions[user], user, buddyName, 
+	tp->runAsThread(new DestroyFriendRequest(userdb[user].sessions, user, buddyName, 
 											 boost::bind(&TwitterPlugin::deleteFriendResponse, this, _1, _2, _3)));
 }
 
 void TwitterPlugin::handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id)
 {
-	LOG4CXX_INFO(logger, user << " - VCardRequest for " << legacyName << ", " << imgURL[legacyName])
-	if(connectionState[user] != CONNECTED) {
+	LOG4CXX_INFO(logger, user << " - VCardRequest for " << legacyName << ", " << userdb[user].buddiesInfo[legacyName].getProfileImgURL())
+	if(userdb[user].connectionState != CONNECTED) {
 		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
 		return;
 	}
 
-	if(getTwitterMode(user) != SINGLECONTACT && buddies[user].count(legacyName) && imgURL[legacyName].length()) {
-		LOG4CXX_INFO(logger, user << " - Initiating VCard request for " << legacyName);
-		tp->runAsThread(new ProfileImageRequest(config, user, legacyName, imgURL[legacyName], id,
-										        boost::bind(&TwitterPlugin::profileImageResponse, this, _1, _2, _3, _4, _5)));
+	if(getTwitterMode(user) != SINGLECONTACT && userdb[user].buddies.count(legacyName) && userdb[user].buddiesInfo[legacyName].getProfileImgURL().length()) {
+		if(userdb[user].buddiesImgs.count(legacyName) == 0) {
+			tp->runAsThread(new ProfileImageRequest(config, user, legacyName, userdb[user].buddiesInfo[legacyName].getProfileImgURL(), id,
+													boost::bind(&TwitterPlugin::profileImageResponse, this, _1, _2, _3, _4, _5)));
+		}
+		handleVCard(user, id, legacyName, legacyName, "", userdb[user].buddiesImgs[legacyName]);
+		//handleVCard(user, id, legacyName, legacyName, "", "");
 	}
 }
 
@@ -312,7 +332,7 @@ void TwitterPlugin::pollForTweets()
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new TimelineRequest(sessions[user], user, "", mostRecentTweetID[user],
+		tp->runAsThread(new TimelineRequest(userdb[user].sessions, user, "", userdb[user].mostRecentTweetID,
 											boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
 		it++;
 	}
@@ -325,7 +345,7 @@ void TwitterPlugin::pollForDirectMessages()
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new DirectMessageRequest(sessions[user], user, "", mostRecentDirectMessageID[user],
+		tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, "", userdb[user].mostRecentDirectMessageID,
 											boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3, _4)));
 		it++;
 	}
@@ -385,7 +405,7 @@ bool TwitterPlugin::setTwitterMode(const std::string user, int m)
 		m = 0;
 	}
 
-	twitterMode[user] = (mode)m;
+	userdb[user].twitterMode = (mode)m;
 
 	//int type;
 	std::string s_m = std::string(1,m+'0');
@@ -418,7 +438,7 @@ void TwitterPlugin::initUserSession(const std::string user, const std::string pa
 	std::string passwd = password;
 	LOG4CXX_INFO(logger, username + "  " + passwd)
 
-	sessions[user] = new twitCurl();	
+	userdb[user].sessions = new twitCurl();	
 	if(CONFIG_HAS_KEY(config,"proxy.server")) {			
 		std::string ip = CONFIG_STRING(config,"proxy.server");
 
@@ -432,72 +452,72 @@ void TwitterPlugin::initUserSession(const std::string user, const std::string pa
 		LOG4CXX_INFO(logger, ip << " " << port << " " << puser << " " << ppasswd)
 		
 		if(ip != "localhost" && port != "0") {
-			sessions[user]->setProxyServerIp(ip);
-			sessions[user]->setProxyServerPort(port);
-			sessions[user]->setProxyUserName(puser);
-			sessions[user]->setProxyPassword(ppasswd);
+			userdb[user].sessions->setProxyServerIp(ip);
+			userdb[user].sessions->setProxyServerPort(port);
+			userdb[user].sessions->setProxyUserName(puser);
+			userdb[user].sessions->setProxyPassword(ppasswd);
 		}
 	}
 
-	connectionState[user] = NEW;			
-	sessions[user]->setTwitterUsername(username);
-	sessions[user]->setTwitterPassword(passwd); 
-	sessions[user]->getOAuth().setConsumerKey(consumerKey);
-	sessions[user]->getOAuth().setConsumerSecret(consumerSecret);
+	userdb[user].connectionState = NEW;			
+	userdb[user].sessions->setTwitterUsername(username);
+	userdb[user].sessions->setTwitterPassword(passwd); 
+	userdb[user].sessions->getOAuth().setConsumerKey(consumerKey);
+	userdb[user].sessions->getOAuth().setConsumerSecret(consumerSecret);
 }
 
 void TwitterPlugin::OAuthFlowComplete(const std::string user, twitCurl *obj) 
 {
 	boost::mutex::scoped_lock lock(userlock);	
 
-	delete sessions[user];
-	sessions[user] = obj->clone();	
-	connectionState[user] = WAITING_FOR_PIN;
+	delete userdb[user].sessions;
+	userdb[user].sessions = obj->clone();	
+	userdb[user].connectionState = WAITING_FOR_PIN;
 }	
 
 void TwitterPlugin::pinExchangeComplete(const std::string user, const std::string OAuthAccessTokenKey, const std::string OAuthAccessTokenSecret) 
 {
 	boost::mutex::scoped_lock lock(userlock);	
 		
-	sessions[user]->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
-	sessions[user]->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
-	connectionState[user] = CONNECTED;
-	twitterMode[user] = (mode)getTwitterMode(user);
+	userdb[user].sessions->getOAuth().setOAuthTokenKey( OAuthAccessTokenKey );
+	userdb[user].sessions->getOAuth().setOAuthTokenSecret( OAuthAccessTokenSecret );
+	userdb[user].connectionState = CONNECTED;
+	userdb[user].twitterMode = (mode)getTwitterMode(user);
 	
-	if(twitterMode[user] == MULTIPLECONTACT) {
-		tp->runAsThread(new FetchFriends(sessions[user], user, boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3)));
+	if(userdb[user].twitterMode == MULTIPLECONTACT) {
+		tp->runAsThread(new FetchFriends(userdb[user].sessions, user, boost::bind(&TwitterPlugin::populateRoster, this, _1, _2, _3, _4)));
 	}
 
 	onlineUsers.insert(user);
-	mostRecentTweetID[user] = "";
-	mostRecentDirectMessageID[user] = "";
+	userdb[user].mostRecentTweetID = "";
+	userdb[user].mostRecentDirectMessageID = "";
 }	
 
 void TwitterPlugin::updateLastTweetID(const std::string user, const std::string ID)
 {
 	boost::mutex::scoped_lock lock(userlock);	
-	mostRecentTweetID[user] = ID;
+	userdb[user].mostRecentTweetID = ID;
 }
 
 std::string TwitterPlugin::getMostRecentTweetID(const std::string user)
 {
 	boost::mutex::scoped_lock lock(userlock);	
 	std::string ID = "-1";
-	if(onlineUsers.count(user)) ID = mostRecentTweetID[user];
+	if(onlineUsers.count(user)) ID = userdb[user].mostRecentTweetID;
 	return ID;
 }
 
 void TwitterPlugin::updateLastDMID(const std::string user, const std::string ID)
 {
 	boost::mutex::scoped_lock lock(userlock);	
-	mostRecentDirectMessageID[user] = ID;
+	userdb[user].mostRecentDirectMessageID = ID;
 }
 
 std::string TwitterPlugin::getMostRecentDMID(const std::string user)
 {
 	boost::mutex::scoped_lock lock(userlock);	
 	std::string ID = "";
-	if(onlineUsers.count(user)) ID = mostRecentDirectMessageID[user];
+	if(onlineUsers.count(user)) ID = userdb[user].mostRecentDirectMessageID;
 	return ID;
 }
 
@@ -505,51 +525,55 @@ std::string TwitterPlugin::getMostRecentDMID(const std::string user)
 void TwitterPlugin::statusUpdateResponse(std::string &user, std::string &errMsg)
 {
 	if(errMsg.length()) {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							"Status Update successful", twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							"Status Update successful", userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	}
 }
 
 void TwitterPlugin::helpMessageResponse(std::string &user, std::string &msg)
 {
-	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-						msg, twitterMode[user] == CHATROOM ? adminNickName : "");
+	handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+						msg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 }
 
 void TwitterPlugin::clearRoster(const std::string user)
 {
-	if(buddies[user].size() == 0) return;
-	std::set<std::string>::iterator it = buddies[user].begin();
-	while(it != buddies[user].end()) {
+	if(userdb[user].buddies.size() == 0) return;
+	std::set<std::string>::iterator it = userdb[user].buddies.begin();
+	while(it != userdb[user].buddies.end()) {
 		//handleBuddyChanged(user, *it, *it, std::vector<std::string>(), pbnetwork::STATUS_NONE);
 		handleBuddyRemoved(user, *it);
 		it++;
 	}
-	buddies[user].clear();
+	userdb[user].buddies.clear();
 }
 
-void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg) 
+void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg) 
 {
 	if(errMsg.length() == 0) 
 	{
 		for(int i=0 ; i<friends.size() ; i++) {
-			if(twitterMode[user] == MULTIPLECONTACT)
-				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
-			else if(twitterMode[user] == CHATROOM)
+			if(userdb[user].twitterMode == MULTIPLECONTACT)
+				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", "DUMMY");
+			else if(userdb[user].twitterMode == CHATROOM)
 				handleParticipantChanged(user, friends[i].getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
-			buddies[user].insert(friends[i].getScreenName());
-			imgURL[friends[i].getScreenName()] = friends[i].getProfileImgURL();
-		}
-	} else handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							   std::string("Error populating roster - ") + errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");	
 
-	if(twitterMode[user] == CHATROOM) handleParticipantChanged(user, nickName[user], adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
+			userdb[user].buddies.insert(friends[i].getScreenName());
+			userdb[user].buddiesInfo[friends[i].getScreenName()] = friends[i];
+			userdb[user].buddiesImgs[friends[i].getScreenName()] = friendAvatars[i];
+
+			//imgURL[friends[i].getScreenName()] = friends[i].getProfileImgURL();
+		}
+	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							   std::string("Error populating roster - ") + errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+
+	if(userdb[user].twitterMode == CHATROOM) handleParticipantChanged(user, userdb[user].nickName, adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 }
 
-void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg)
+void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg)
 {
 	if(errMsg.length() == 0) 
 	{
@@ -558,10 +582,10 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 			userlist += " - " + friends[i].getUserName() + " (" + friends[i].getScreenName() + ")\n";
 		}	
 		userlist += "***************************************\n";
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							userlist, twitterMode[user] == CHATROOM ? adminNickName : "");	
-	} else handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName, 
-							   errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");	
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							userlist, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
+							   errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
  
 }
 
@@ -572,10 +596,10 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 
 		for(int i=0 ; i<tweets.size() ; i++) {
 
-			if(twitterMode[user] != CHATROOM) {
+			if(userdb[user].twitterMode != CHATROOM) {
 				timeline += " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")\n";
 			} else {
-				handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
+				handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 									tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")", tweets[i].getUserData().getScreenName());
 			}
 		}
@@ -585,29 +609,29 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 			if(tweetID != tweets[0].getID()) updateLastTweetID(user, tweets[0].getID());
 		}
 
-		if(timeline.length()) handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-												  timeline, twitterMode[user] == CHATROOM ? adminNickName : "");
-	} else handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							   errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");	
+		if(timeline.length()) handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+												  timeline, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							   errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 }
 
 void TwitterPlugin::directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, std::string &errMsg)
 {
 	if(errMsg.length()) {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							std::string("Error while sending direct message! - ") + errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");	
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							std::string("Error while sending direct message! - ") + errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 		return;
 	}
 
 	if(username != "") {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-						   "Message delivered!", twitterMode[user] == CHATROOM ? adminNickName : "");	
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+						   "Message delivered!", userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 		return;
 	}
 	
 	if(!messages.size()) return;
 	
-	if(twitterMode[user] == SINGLECONTACT) {
+	if(userdb[user].twitterMode == SINGLECONTACT) {
 
 		std::string msglist = "";
 		std::string msgID = getMostRecentDMID(user);
@@ -630,7 +654,7 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 
 		for(int i=0 ; i < messages.size() ; i++) {
 			if(cmp(msgID, messages[i].getID()) == -1) {
-				if(twitterMode[user] == MULTIPLECONTACT)
+				if(userdb[user].twitterMode == MULTIPLECONTACT)
 					handleMessage(user, messages[i].getSenderData().getScreenName(), messages[i].getMessage(), "");
 				else
 					handleMessage(user, adminChatRoom, messages[i].getMessage() + " - <Direct Message>", messages[i].getSenderData().getScreenName());
@@ -643,26 +667,29 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 	}
 }
 
-void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::string &errMsg)
+void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::string &img, std::string &errMsg)
 {
 	if(errMsg.length()) {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
 	}
 
-	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-						std::string("You are now following ") + frnd.getScreenName(), twitterMode[user] == CHATROOM ? adminNickName : "");
+	handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+						std::string("You are now following ") + frnd.getScreenName(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	
-	buddies[user].insert(frnd.getScreenName());
-	imgURL[frnd.getScreenName()] = frnd.getProfileImgURL();
-	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << imgURL[frnd.getScreenName()])
+	userdb[user].buddies.insert(frnd.getScreenName());
+	userdb[user].buddiesInfo[frnd.getScreenName()] = frnd;
+	userdb[user].buddiesImgs[frnd.getScreenName()] = img;
+	
+	//imgURL[frnd.getScreenName()] = frnd.getProfileImgURL();
+	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL())
 	//handleBuddyChanged(user, frnd, frnd, std::vector<std::string>(), pbnetwork::STATUS_NONE);
 
-	if(twitterMode[user] == MULTIPLECONTACT) {
-		handleBuddyChanged(user, frnd.getScreenName(), frnd.getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
-	} else if(twitterMode[user] == CHATROOM) {
-		//buddies[user].insert(frnd);
+	if(userdb[user].twitterMode == MULTIPLECONTACT) {
+		handleBuddyChanged(user, frnd.getScreenName(), frnd.getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", "DUMMY");
+	} else if(userdb[user].twitterMode == CHATROOM) {
+		//userdb[user].buddies.insert(frnd);
 		handleParticipantChanged(user, frnd.getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 	}
 }
@@ -670,26 +697,26 @@ void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::str
 void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, std::string &errMsg)
 {
 	if(errMsg.length()) {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName, 
-							errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
+							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
 	} 
 	
-	handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-						std::string("You are not following ") + frnd.getScreenName() + " anymore", twitterMode[user] == CHATROOM ? adminNickName : "");
+	handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+						std::string("You are not following ") + frnd.getScreenName() + " anymore", userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	
-	if (twitterMode[user] == CHATROOM) {
+	if (userdb[user].twitterMode == CHATROOM) {
 		handleParticipantChanged(user, frnd.getScreenName(), adminLegacyName, 0, pbnetwork::STATUS_NONE);
-		//buddies[user].erase(frnd);
+		//userdb[user].buddies.erase(frnd);
 	}
 
-	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << imgURL[frnd.getScreenName()])
+	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL())
 	
-	buddies[user].erase(frnd.getScreenName());
-	imgURL[frnd.getScreenName()] = "";
+	userdb[user].buddies.erase(frnd.getScreenName());
+	//imgURL[frnd.getScreenName()] = "";
 
 	//handleBuddyRemoved(user, frnd);
-	if(twitterMode[user] == MULTIPLECONTACT) {
+	if(userdb[user].twitterMode == MULTIPLECONTACT) {
 		handleBuddyRemoved(user, frnd.getScreenName());
 	} 
 }
@@ -698,19 +725,19 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, std::str
 void TwitterPlugin::RetweetResponse(std::string &user, std::string &errMsg)
 {
 	if(errMsg.length()) {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							"Retweet successful", twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							"Retweet successful", userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	}
 }
 
 void TwitterPlugin::profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, std::string &errMsg)
 {
 	if(errMsg.length()) {
-		handleMessage(user, twitterMode[user] == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, twitterMode[user] == CHATROOM ? adminNickName : "");
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
 		LOG4CXX_INFO(logger, user << " - Sending VCard for " << buddy)
 		handleVCard(user, reqID, buddy, buddy, "", img);

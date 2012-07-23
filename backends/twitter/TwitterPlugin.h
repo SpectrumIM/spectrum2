@@ -43,6 +43,7 @@ class TwitterPlugin;
 extern TwitterPlugin *np;
 extern Swift::SimpleEventLoop *loop_; // Event Loop
 
+
 class TwitterPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
@@ -110,11 +111,11 @@ class TwitterPlugin : public NetworkPlugin {
 		/****************** Twitter Response handlers **************************************/
 		void statusUpdateResponse(std::string &user, std::string &errMsg);
 		void helpMessageResponse(std::string &user, std::string &msg);
-		void populateRoster(std::string &user, std::vector<User> &friends, std::string &errMsg);
-		void displayFriendlist(std::string &user, std::vector<User> &friends, std::string &errMsg);
+		void populateRoster(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg);
+		void displayFriendlist(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg);
 		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
 		void directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, std::string &errMsg);
-		void createFriendResponse(std::string &user, User &frnd, std::string &errMsg);
+		void createFriendResponse(std::string &user, User &frnd, std::string &img, std::string &errMsg);
 		void deleteFriendResponse(std::string &user, User &frnd, std::string &errMsg);
 		void RetweetResponse(std::string &user, std::string &errMsg);
 		void profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, std::string &errMsg);
@@ -139,15 +140,34 @@ class TwitterPlugin : public NetworkPlugin {
 		boost::mutex dblock, userlock;
 
 		ThreadPool *tp;
-		std::map<std::string, twitCurl*> sessions;		
-		std::map<std::string, status> connectionState;
-		std::map<std::string, std::string> mostRecentTweetID;
-		std::map<std::string, std::string> mostRecentDirectMessageID;
+		//std::map<std::string, twitCurl*> sessions;		
+		//std::map<std::string, status> connectionState;
+		//std::map<std::string, std::string> mostRecentTweetID;
+		//std::map<std::string, std::string> mostRecentDirectMessageID;
 		std::set<std::string> onlineUsers;
-		std::map<std::string,std::string> nickName;
-		std::map<std::string, std::set<std::string> > buddies;
-		std::map<std::string, std::string> imgURL;
-		std::map<std::string, mode> twitterMode;
+		//std::map<std::string, std::string> nickName;
+		//std::map<std::string, std::set<std::string> > buddies;
+		//std::map<std::string, std::string> imgURL;
+		//std::map<std::string, mode> twitterMode;
+		
+		struct UserData
+		{
+			User userTwitterObj;
+			std::string userImg;
+			twitCurl* sessions;		
+			status connectionState;
+			std::string mostRecentTweetID;
+			std::string mostRecentDirectMessageID;
+			std::string nickName;
+			std::set<std::string> buddies;
+			std::map<std::string, User> buddiesInfo;
+			std::map<std::string, std::string> buddiesImgs;
+			mode twitterMode;
+
+			UserData() { sessions = NULL; }
+		};
+
+		std::map<std::string, UserData> userdb;
 };
 
 #endif
