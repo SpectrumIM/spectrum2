@@ -32,6 +32,7 @@
 #include <cstdio>
 
 #include "ThreadPool.h"
+#include "Swiften/StringCodecs/SHA1.h"
 
 using namespace boost::filesystem;
 using namespace boost::program_options;
