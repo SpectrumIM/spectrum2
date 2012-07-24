@@ -37,6 +37,49 @@ namespace TwitterReponseTypes
 	const std::string profile_image_url = "profile_image_url";
 };
 
+//Class representing an embedded status object within other objects such as the User object.
+//Note: Not possible to user Status due to circular dependency
+class EmbeddedStatus
+{
+	std::string created_at;
+	std::string ID;
+	std::string text;
+	bool truncated;
+	std::string in_reply_to_status_id;
+	std::string in_reply_to_user_id;
+	std::string in_reply_to_screen_name;
+	unsigned int retweet_count;
+	bool favorited;
+	bool retweeted;
+	
+	public:
+	EmbeddedStatus():created_at(""),ID(""),text(""),truncated(false),in_reply_to_status_id(""),
+	         in_reply_to_user_id(""),in_reply_to_screen_name(""),retweet_count(0),
+	         favorited(false),retweeted(0){}
+	
+	std::string getCreationTime() {return created_at;}
+	std::string getID() {return ID;}
+	std::string getTweet() {return text;}
+	bool isTruncated() {return truncated;}
+	std::string getReplyToStatusID() {return in_reply_to_status_id;}
+	std::string getReplyToUserID() {return in_reply_to_user_id;}
+	std::string getReplyToScreenName() {return in_reply_to_screen_name;}
+	unsigned int getRetweetCount() {return retweet_count;}
+	bool isFavorited() {return favorited;}
+	bool isRetweeted() {return retweeted;}
+	
+	void setCreationTime(std::string _created) {created_at = _created;}
+	void setID(std::string _id) {ID = _id;}
+	void setTweet(std::string _text) {text = _text;}
+	void setTruncated(bool val) {truncated = val;}
+	void setReplyToStatusID(std::string _id) {in_reply_to_status_id = _id;}
+	void setReplyToUserID(std::string _id) {in_reply_to_user_id = _id;}
+	void setReplyToScreenName(std::string _name) {in_reply_to_screen_name = _name;}
+	void setRetweetCount(unsigned int rc) {retweet_count = rc;}
+	void setFavorited(bool val) {favorited = val;}
+	void setRetweeted(bool val) {retweeted = val;}
+};
+
 //Class holding user data
 class User
 {
@@ -45,6 +88,7 @@ class User
 	std::string screen_name;
 	std::string profile_image_url;
 	unsigned int statuses_count;
+	EmbeddedStatus last_status;
 
 	public:
 	User():ID(""),name(""),screen_name(""),statuses_count(0){}
@@ -54,6 +98,7 @@ class User
 	std::string getScreenName() {return screen_name;}
 	std::string getProfileImgURL() {return profile_image_url;}
 	unsigned int getNumberOfTweets() {return statuses_count;}
+	EmbeddedStatus getLastStatus() {return last_status;}
 	
 	
 	void setUserID(std::string _id) {ID = _id;}
@@ -61,7 +106,9 @@ class User
 	void setScreenName(std::string _screen) {screen_name = _screen;}
 	void setProfileImgURL(std::string _url) {profile_image_url = _url;}
 	void setNumberOfTweets(unsigned int sc) {statuses_count  = sc;}
+	void setLastStatus(EmbeddedStatus _last_status) {last_status = _last_status;}
 };
+
 
 //Class representing a status (tweet)
 class Status

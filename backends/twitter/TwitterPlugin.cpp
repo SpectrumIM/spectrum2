@@ -17,7 +17,17 @@ TwitterPlugin *np = NULL;
 Swift::SimpleEventLoop *loop_; // Event Loop
 
 #define abs(x) ((x)<0?-(x):(x))
-#define SHA(x) (Swift::byteArrayToString(Swift::SHA1::getHash(Swift::createByteArray((x)))))
+#define SHA(x) (convertToChars(Swift::byteArrayToString(Swift::SHA1::getHash(Swift::createByteArray((x))))))
+
+static std::string convertToChars(std::string s)
+{
+	std::string ret = "";
+	std::string tab[] = {"0","1","2","3","4","5","6","7",
+						 "8","9","A","B","C","D","E","F"};
+	for(int i = 0 ; i < s.size() ; i++)
+		ret = tab[s[i]>>4&15] + tab[s[i]&15] + ret;
+	return ret;
+}
 
 //Compares two +ve intergers 'a' and 'b' represented as strings 
 static int cmp(std::string a, std::string b)
@@ -534,11 +544,17 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 			userdb[user].buddiesInfo[friends[i].getScreenName()] = friends[i];
 			userdb[user].buddiesImgs[friends[i].getScreenName()] = friendAvatars[i];
 			
-			if(userdb[user].twitterMode == MULTIPLECONTACT)
-				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getScreenName(), std::vector<std::string>(), 
-								   pbnetwork::STATUS_ONLINE, "", SHA(friendAvatars[i]));
+			if(userdb[user].twitterMode == MULTIPLECONTACT) {
+				std::string lastTweet = friends[i].getLastStatus().getTweet();
+				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getUserName(), std::vector<std::string>(), 
+								   pbnetwork::STATUS_ONLINE, lastTweet, SHA(friendAvatars[i]));
+			}
 			else if(userdb[user].twitterMode == CHATROOM)
 				handleParticipantChanged(user, friends[i].getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
+			
+			/*handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							   	friends[i].getScreenName() + " - " + friends[i].getLastStatus().getTweet(), 
+								userdb[user].twitterMode == CHATROOM ? adminNickName : "");*/
 		}
 	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							   std::string("Error populating roster - ") + errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
@@ -565,15 +581,30 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg)
 {
 	if(errMsg.length() == 0) {
+		
 		std::string timeline = "";
+		std::map<std::string, int> lastTweet;
+		std::map<std::string, int>::iterator it;
 
 		for(int i=0 ; i<tweets.size() ; i++) {
-
 			if(userdb[user].twitterMode != CHATROOM) {
 				timeline += " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")\n";
+
+				std::string scrname = tweets[i].getUserData().getScreenName();
+				if(lastTweet.count(scrname) == 0 || cmp(tweets[lastTweet[scrname]].getID(), tweets[i].getID()) <= 0) lastTweet[scrname] = i;
+
 			} else {
 				handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 									tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")", tweets[i].getUserData().getScreenName());
+			}
+		}
+		
+		if(userdb[user].twitterMode == MULTIPLECONTACT) {
+			//Set as status user's last tweet
+			for(it=lastTweet.begin() ; it!=lastTweet.end() ; it++) {
+				int t =  it->second;
+				handleBuddyChanged(user, tweets[t].getUserData().getScreenName(), tweets[t].getUserData().getUserName(), 
+								   std::vector<std::string>(), pbnetwork::STATUS_ONLINE, tweets[t].getTweet());
 			}
 		}
 
@@ -657,7 +688,7 @@ void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::str
 	
 	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL())
 	if(userdb[user].twitterMode == MULTIPLECONTACT) {
-		handleBuddyChanged(user, frnd.getScreenName(), frnd.getScreenName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", SHA(img));
+		handleBuddyChanged(user, frnd.getScreenName(), frnd.getUserName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", SHA(img));
 	} else if(userdb[user].twitterMode == CHATROOM) {
 		handleParticipantChanged(user, frnd.getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 	}

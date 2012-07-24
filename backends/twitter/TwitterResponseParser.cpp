@@ -11,6 +11,27 @@ static std::string tolowercase(std::string inp)
 	return out;
 }
 
+EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const std::string xmlns)
+{
+	EmbeddedStatus status;
+	if(element->getName() != TwitterReponseTypes::status) {
+		LOG4CXX_ERROR(logger, "Not a status element!")
+		return status;
+	}
+
+	status.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
+	status.setTweet( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
+	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
+	status.setReplyToStatusID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_status_id, xmlns)->getText() ) );
+	status.setReplyToUserID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_user_id, xmlns)->getText() ) );
+	status.setReplyToScreenName( std::string( element->getChild(TwitterReponseTypes::in_reply_to_screen_name, xmlns)->getText() ) );
+	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
+	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
+	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );
+	return status;
+}
+
 User getUser(const Swift::ParserElement::ref &element, const std::string xmlns) 
 {
 	User user;
@@ -26,6 +47,8 @@ User getUser(const Swift::ParserElement::ref &element, const std::string xmlns)
 	user.setUserName( std::string( element->getChild(TwitterReponseTypes::name, xmlns)->getText() ) );
 	user.setProfileImgURL( std::string( element->getChild(TwitterReponseTypes::profile_image_url, xmlns)->getText() ) );
 	user.setNumberOfTweets( atoi(element->getChild(TwitterReponseTypes::statuses_count, xmlns)->getText().c_str()) );
+	if(element->getChild(TwitterReponseTypes::status, xmlns)) 
+		user.setLastStatus(getEmbeddedStatus(element->getChild(TwitterReponseTypes::status, xmlns),  xmlns));
 	return user;
 }
 
