@@ -205,7 +205,6 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
-		LOG4CXX_INFO(logger, "Setting alias to " << payload.alias() << " " << buddy->getAlias());
 		buddy->setAlias(payload.alias());
 	}
 

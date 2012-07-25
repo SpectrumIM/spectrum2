@@ -85,6 +85,12 @@ RosterStorage::~RosterStorage() {
 	m_storageTimer->stop();
 }
 
+void RosterStorage::removeBuddy(Buddy *buddy) {
+	if (buddy->getID() != -1) {
+		m_storageBackend->removeBuddy(buddy->getID());
+	}
+}
+
 void RosterStorage::storeBuddy(Buddy *buddy) {
 	if (!buddy) {
 		return;

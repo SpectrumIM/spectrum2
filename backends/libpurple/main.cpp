@@ -390,8 +390,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_disconnect(account);
 				purple_account_set_enabled(account, "spectrum", FALSE);
 
-				g_free(account->ui_data);
-				account->ui_data = NULL;
 				m_accounts.erase(account);
 
 				purple_accounts_delete(account);
