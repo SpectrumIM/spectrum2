@@ -10,6 +10,7 @@
 #include "Requests/DestroyFriendRequest.h"
 #include "Requests/RetweetRequest.h"
 #include "Requests/ProfileImageRequest.h"
+#include "Swiften/StringCodecs/Hexify.h"
 
 DEFINE_LOGGER(logger, "Twitter Backend");
 
@@ -17,17 +18,18 @@ TwitterPlugin *np = NULL;
 Swift::SimpleEventLoop *loop_; // Event Loop
 
 #define abs(x) ((x)<0?-(x):(x))
-#define SHA(x) (convertToChars(Swift::byteArrayToString(Swift::SHA1::getHash(Swift::createByteArray((x))))))
+//#define SHA(x) (convertToChars(Swift::byteArrayToString(Swift::SHA1::getHash(Swift::createByteArray((x))))))
+#define SHA(x) (Swift::Hexify::hexify(Swift::SHA1::getHash(Swift::createByteArray((x)))))
 
-static std::string convertToChars(std::string s)
-{
-	std::string ret = "";
-	std::string tab[] = {"0","1","2","3","4","5","6","7",
-						 "8","9","A","B","C","D","E","F"};
-	for(int i = 0 ; i < s.size() ; i++)
-		ret = tab[s[i]>>4&15] + tab[s[i]&15] + ret;
-	return ret;
-}
+//static std::string convertToChars(std::string s)
+//{
+//	std::string ret = "";
+//	std::string tab[] = {"0","1","2","3","4","5","6","7",
+//						 "8","9","A","B","C","D","E","F"};
+//	for(int i = 0 ; i < s.size() ; i++)
+//		ret = tab[s[i]>>4&15] + tab[s[i]&15] + ret;
+//	return ret;
+//}
 
 //Compares two +ve intergers 'a' and 'b' represented as strings 
 static int cmp(std::string a, std::string b)
@@ -546,6 +548,7 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 			
 			if(userdb[user].twitterMode == MULTIPLECONTACT) {
 				std::string lastTweet = friends[i].getLastStatus().getTweet();
+				//LOG4CXX_INFO(logger, user << " - " << SHA(friendAvatars[i]))
 				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getUserName(), std::vector<std::string>(), 
 								   pbnetwork::STATUS_ONLINE, lastTweet, SHA(friendAvatars[i]));
 			}
