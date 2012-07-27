@@ -479,11 +479,13 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?"
 	std::string groups = Util::serializeGroups(buddyInfo.groups);
+	LOG4CXX_INFO(logger, "update buddy '" << groups << "' '" << buddyInfo.alias << "' '" << buddyInfo.flags << "' '" << buddyInfo.subscription << "' '" << userId << "' '" << buddyInfo.legacyName);
 	*m_updateBuddy << groups;
 	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
 	*m_updateBuddy << userId << buddyInfo.legacyName;
 
 	EXEC(m_updateBuddy, updateBuddy(userId, buddyInfo));
+	LOG4CXX_INFO(logger, "update buddy done");
 }
 
 bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
