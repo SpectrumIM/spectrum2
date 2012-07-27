@@ -637,14 +637,14 @@ ELSE (_boost_IN_CACHE)
   endif(Boost_COMPILER)
 
 
-  if(${Boost_MINOR_VERSION} GREATER 41 AND NOT WIN32 AND NOT APPLE)
-      set (_boost_MULTITHREADED "")
-  else()
+#   if(${Boost_MINOR_VERSION} GREATER 41 AND NOT WIN32 AND NOT APPLE)
+#       set (_boost_MULTITHREADED "")
+#   else()
     SET (_boost_MULTITHREADED "-mt")
     if( NOT Boost_USE_MULTITHREADED )
       set (_boost_MULTITHREADED "")
     endif()
-  endif()
+#   endif()
 
   if(Boost_DEBUG)
     message(STATUS "[ ${CMAKE_CURRENT_LIST_FILE}:${CMAKE_CURRENT_LIST_LINE} ] "
