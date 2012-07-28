@@ -152,6 +152,7 @@ class NetworkPluginServer {
 		FileTransferManager *m_ftManager;
 		std::vector<std::string> m_crashedBackends;
 		AdminInterface *m_adminInterface;
+		bool m_startingBackend;
 };
 
 }

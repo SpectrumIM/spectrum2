@@ -229,6 +229,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_component = component;
 	m_isNextLongRun = false;
 	m_adminInterface = NULL;
+	m_startingBackend = false;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -324,6 +325,8 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	// Backend does not accept new clients automatically if it's long-running
 	client->acceptUsers = !m_isNextLongRun;
 	client->longRun = m_isNextLongRun;
+
+	m_startingBackend = false;
 
 	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
@@ -930,6 +933,9 @@ void NetworkPluginServer::pingTimeout() {
 		}
 	}
 
+	// We have to remove startingBackend flag otherwise 1 broken backend start could
+	// block the backend.
+	m_startingBackend = false;
 
 	// check ping responses
 	std::vector<Backend *> toRemove;
@@ -1472,8 +1478,9 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 	}
 
 	// there's no free backend, so spawn one.
-	if (c == NULL) {
+	if (c == NULL && !m_startingBackend) {
 		m_isNextLongRun = longRun;
+		m_startingBackend = true;
 		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 	}
 
