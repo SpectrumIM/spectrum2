@@ -1300,7 +1300,6 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 
 	dynamic_cast<LocalBuddy *>(b)->setAlias(item.getName());
 	dynamic_cast<LocalBuddy *>(b)->setGroups(item.getGroups());
-	user->getRosterManager()->storeBuddy(b);
 
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user->getJID().toBare());
