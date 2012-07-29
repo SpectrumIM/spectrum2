@@ -114,20 +114,16 @@ bool RosterStorage::storeBuddies() {
 	m_storageBackend->beginTransaction();
 
 	for (std::map<std::string, Buddy *>::const_iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
-		LOG4CXX_INFO(logger, "storing 1");
 		Buddy *buddy = (*it).second;
 		BuddyInfo buddyInfo;
 		buddyInfo.alias = buddy->getAlias();
-		LOG4CXX_INFO(logger, "storing 1.5");
 		buddyInfo.legacyName = buddy->getName();
 		buddyInfo.groups = buddy->getGroups();
-		LOG4CXX_INFO(logger, "storing 2");
 		buddyInfo.subscription = buddy->getSubscription() == Buddy::Ask ? "ask" : "both";
 		buddyInfo.id = buddy->getID();
 		buddyInfo.flags = buddy->getFlags();
 		buddyInfo.settings["icon_hash"].s = buddy->getIconHash();
 		buddyInfo.settings["icon_hash"].type = TYPE_STRING;
-		LOG4CXX_INFO(logger, "storing 3");
 
 		// Buddy is in DB
 		if (buddyInfo.id != -1) {
@@ -137,7 +133,6 @@ bool RosterStorage::storeBuddies() {
 			buddyInfo.id = m_storageBackend->addBuddy(m_user->getUserInfo().id, buddyInfo);
 			buddy->setID(buddyInfo.id);
 		}
-		LOG4CXX_INFO(logger, "storing 4");
 
 // 		Log("buddyListSaveNode", id << " " << name << " " << alias << " " << s_buddy->getSubscription());
 // 		if (s_buddy->getBuddy() && id != -1) {

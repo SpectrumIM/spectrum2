@@ -205,7 +205,6 @@ int MySQLBackend::Statement::execute() {
 	m_offset = 0;
 	m_resultOffset = 0;
 	int ret;
-
 	if ((ret = mysql_stmt_execute(m_stmt)) != 0) {
 		LOG4CXX_ERROR(logger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
 		return mysql_stmt_errno(m_stmt);
@@ -479,13 +478,11 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?"
 	std::string groups = Util::serializeGroups(buddyInfo.groups);
-	LOG4CXX_INFO(logger, "update buddy '" << groups << "' '" << buddyInfo.alias << "' '" << buddyInfo.flags << "' '" << buddyInfo.subscription << "' '" << userId << "' '" << buddyInfo.legacyName);
 	*m_updateBuddy << groups;
 	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
 	*m_updateBuddy << userId << buddyInfo.legacyName;
 
 	EXEC(m_updateBuddy, updateBuddy(userId, buddyInfo));
-	LOG4CXX_INFO(logger, "update buddy done");
 }
 
 bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
@@ -610,11 +607,11 @@ void MySQLBackend::updateUserSetting(long id, const std::string &variable, const
 }
 
 void MySQLBackend::beginTransaction() {
-	//exec("START TRANSACTION;");
+	exec("START TRANSACTION;");
 }
 
 void MySQLBackend::commitTransaction() {
-	//exec("COMMIT;");
+	exec("COMMIT;");
 }
 
 }

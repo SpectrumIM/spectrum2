@@ -515,7 +515,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 	if (m_rosterStorage || !storageBackend) {
 		return;
 	}
-	m_rosterStorage = new RosterStorage(m_user, storageBackend);
+	RosterStorage *storage = new RosterStorage(m_user, storageBackend);
 
 	std::list<BuddyInfo> roster;
 	storageBackend->getBuddies(m_user->getUserInfo().id, roster);
@@ -526,6 +526,8 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 		m_buddies[buddy->getName()] = buddy;
 		onBuddySet(buddy);
 	}
+
+	m_rosterStorage = storage;
 }
 
 Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
