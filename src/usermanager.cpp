@@ -308,8 +308,12 @@ void UserManager::handleRemoveTimeout(const std::string jid, User *u, bool recon
 }
 
 void UserManager::handleMessageReceived(Swift::Message::ref message) {
+	if (message->getType() == Swift::Message::Error) {
+		return;
+	}
+
 	User *user = getUser(message->getFrom().toBare().toString());
-	if (!user ){
+	if (!user){
 		return;
 	}
 
