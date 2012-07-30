@@ -144,7 +144,7 @@ if len( sys.argv ) > 1 and sys.argv[1] == 'config':
 graph_args --base 1000 -l 0
 graph_scale no
 graph_vlabel %s
-graph_category transports
+graph_category spectrum2
 graph_info %s""" %(title, vlabel, info) )
 	for jid in jids:
 		if len(stat) > 1: 
