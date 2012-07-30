@@ -411,6 +411,40 @@ static void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories
 	}
 }
 
+static void show_list(ManagerConfig *config) {
+	path p(CONFIG_STRING(config, "service.config_directory"));
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		bool found = false;
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+					continue;
+				}
+
+				std::cout << CONFIG_STRING(&cfg, "service.jid") << "\n";
+			}
+		}
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "boost filesystem error\n";
+		exit(5);
+	}
+}
+
 // static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
 // 	path p(CONFIG_STRING(config, "service.config_directory"));
 // 
@@ -520,6 +554,9 @@ int main(int argc, char **argv)
 	}
 	else if (command[0] == "status") {
 		return show_status(&config);
+	}
+	else if (command[0] == "list") {
+		show_list(&config);
 	}
 	else {
 		if (command.size() < 2) {
