@@ -227,6 +227,7 @@ void Component::stop() {
 void Component::handleConnected() {
 	onConnected();
 	m_reconnectCount = 0;
+	m_reconnectTimer->stop();
 }
 
 void Component::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
