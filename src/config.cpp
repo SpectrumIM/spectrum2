@@ -134,6 +134,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	bool found_working = false;
 	bool found_pidfile = false;
+	bool found_portfile = false;
 	bool found_backend_port = false;
 	bool found_database = false;
 	std::string jid = "";
@@ -159,6 +160,9 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.string_key == "service.pidfile") {
 			found_pidfile = true;
 		}
+		else if (opt.string_key == "service.portfile") {
+			found_portfile = true;
+		}
 		else if (opt.string_key == "database.database") {
 			found_database = true;
 		}
@@ -173,6 +177,11 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		std::vector<std::string> value;
 		value.push_back("/var/run/spectrum2/$jid.pid");
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
+	}
+	if (!found_portfile) {
+		std::vector<std::string> value;
+		value.push_back("/var/run/spectrum2/$jid.port");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.portfile", value));
 	}
 	if (!found_backend_port) {
 		std::vector<std::string> value;
