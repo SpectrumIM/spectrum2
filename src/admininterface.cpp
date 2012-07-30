@@ -59,7 +59,7 @@ AdminInterface::~AdminInterface() {
 }
 
 void AdminInterface::handleQuery(Swift::Message::ref message) {
-	LOG4CXX_INFO(logger, "Message from admin received");
+	LOG4CXX_INFO(logger, "Message from admin received: '" << message->getBody() << "'");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
 
@@ -294,7 +294,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 				message->setBody("User '" + args[1] + "' unregistered.");
 			}
 			else {
-				message->setBody("Registration failed: User '" + args[1] + "' is not registered");
+				message->setBody("Unregistration failed: User '" + args[1] + "' is not registered");
 			}
 		}
 		else {

@@ -316,6 +316,10 @@ bool MySQLBackend::connect() {
 		return false;
 	}
 
+	if (!mysql_set_character_set(&mysql, "utf8")) {
+		LOG4CXX_INFO(logger, "New client character set: " << mysql_character_set_name(&mysql));
+	}
+
 	createDatabase();
 
 	m_setUser = new Statement(&m_conn, "sssssbss", "INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, NOW(), ?) ON DUPLICATE KEY UPDATE uin=?, password=?");
