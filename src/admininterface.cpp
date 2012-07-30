@@ -291,10 +291,10 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 2) {
 			if (m_userRegistration->unregisterUser(args[1])) {
-				message->setBody("User unregistered.");
+				message->setBody("User '" + args[1] + "' unregistered.");
 			}
 			else {
-				message->setBody("Registration failed: User is not registered");
+				message->setBody("Registration failed: User '" + args[1] + "' is not registered");
 			}
 		}
 		else {

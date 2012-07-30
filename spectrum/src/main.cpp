@@ -123,7 +123,8 @@ int main(int argc, char **argv)
 	bool no_daemon = false;
 	std::string config_file;
 	std::string jid;
-	
+
+	setlocale(LC_ALL, "");
 
 #ifndef WIN32
 	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
