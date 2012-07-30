@@ -316,8 +316,8 @@ bool MySQLBackend::connect() {
 		return false;
 	}
 
-	if (!mysql_set_character_set(&mysql, "utf8")) {
-		LOG4CXX_INFO(logger, "New client character set: " << mysql_character_set_name(&mysql));
+	if (!mysql_set_character_set(&m_conn, "utf8")) {
+		LOG4CXX_INFO(logger, "New client character set: " << mysql_character_set_name(&m_conn));
 	}
 
 	createDatabase();
