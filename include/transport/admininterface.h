@@ -48,6 +48,7 @@ class AdminInterface {
 		UserManager *m_userManager;
 		NetworkPluginServer *m_server;
 		UserRegistration *m_userRegistration;
+		time_t m_start;
 };
 
 }

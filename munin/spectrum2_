@@ -105,46 +105,37 @@ if suffix == 'uptime':
 	vlabel = "days"
 	info = ''
 	transformer = lambda value: float(value)/60.0/60.0/24.0
-elif suffix == 'registered':
-	stat = { 'users/registered': None }
-	title = "Registered users"
-	vlabel = "users"
-	info = 'Total users that registerd with spectrum transports.'
 elif suffix == 'backends_count':
 	stat = { "backends_count": None }
 	title = "Backends count"
 	vlabel = "backends"
 	info = 'Total number of backends.'
 elif suffix == 'online':
-	stat = { 'users/online': None }
+	stat = { 'online_users_count': None }
 	title = "Online users"
 	vlabel = "users"
 	info = 'Number of users that currently use the spectrum transports.'
-elif suffix == 'contacts_total':
-	stat = { 'contacts/total': None }
-	title = "Buddies in roster (total)"
-	vlabel = "users"
-	info = 'Total number of contacts that the users that registered with spectrum have.'
-elif suffix == 'contacts_online':
-	stat = { 'contacts/online': None }
-	title = "Buddies online"
-	vlabel = "users"
-	info = 'Total number of contacts that are currently online.'
 elif suffix == 'messages':
-	stat = { 'messages/in': 'in', 'messages/out': 'out' }
+	stat = { 'messages_from_xmpp': 'from_xmpp', 'messages_to_xmpp': 'to_xmpp' }
 	title = "Messages send over transport"
 	vlabel = "messages"
 	info = 'Total messages send over spectrum since the last restart.'
 elif suffix == 'messages_sec':
-	stat = { 'messages/in': 'in', 'messages/out': 'out' }
+	stat = { 'messages_from_xmpp': 'from_xmpp', 'messages_to_xmpp': 'to_xmpp' }
 	title = "Messages send over transport per second"
 	vlabel = "messages/sec"
 	info = 'Messages send per second over spectrum transports.'
 elif suffix == 'memory':
-	stat = { 'memory-usage': None }
+	stat = { 'used_memory': None }
 	title = "Memory usage of transports"
 	vlabel = "megabytes"
 	transformer = lambda value: float(value)/1024.0
+	info = 'Memory usage of spectrum transports.'
+elif suffix == 'average_memory_per_user':
+	stat = { 'average_memory_per_user': None }
+	title = "Average memory usage per user"
+	vlabel = "kilobytes"
+	#transformer = lambda value: float(value)/1024.0
 	info = 'Memory usage of spectrum transports.'
 
 # handle config

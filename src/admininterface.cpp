@@ -50,6 +50,7 @@ AdminInterface::AdminInterface(Component *component, UserManager *userManager, N
 	m_userManager = userManager;
 	m_server = server;
 	m_userRegistration = userRegistration;
+	m_start = time(NULL);
 
 	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
 }
@@ -66,6 +67,9 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		int users = m_userManager->getUserCount();
 		int backends = m_server->getBackendCount();
 		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
+	}
+	else if (message->getBody() == "uptime") {
+		message->setBody(boost::lexical_cast<std::string>(time(0) - m_start));
 	}
 	else if (message->getBody() == "online_users") {
 		std::string lst;
@@ -246,6 +250,9 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		}
 		message->setBody(lst);
 	}
+	else if (message->getBody() == "crashed_backends_count") {
+		message->setBody(boost::lexical_cast<std::string>(m_server->getCrashedBackends().size()));
+	}
 	else if (message->getBody() == "messages_from_xmpp") {
 		int msgCount = m_userManager->getMessagesToBackend();
 		message->setBody(boost::lexical_cast<std::string>(msgCount));
@@ -299,6 +306,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		help += "General:\n";
 		help += "    status - shows instance status\n";
 		help += "    reload - Reloads config file\n";
+		help += "    uptime - returns ptime in seconds\n";
 		help += "Users:\n";
 		help += "    online_users - returns list of all online users\n";
 		help += "    online_users_count - number of online users\n";
@@ -314,6 +322,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		help += "Backends:\n";
 		help += "    backends_count - number of active backends\n";
 		help += "    crashed_backends - returns IDs of crashed backends\n";
+		help += "    crashed_backends_count - returns number of crashed backends\n";
 		help += "Memory:\n";
 		help += "    res_memory - Total RESident memory spectrum2 and its backends use in KB\n";
 		help += "    shr_memory - Total SHaRed memory spectrum2 backends share together in KB\n";
