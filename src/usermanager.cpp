@@ -312,6 +312,10 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 		return;
 	}
 
+	if (message->getBody().empty()) {
+		return;
+	}
+
 	User *user = getUser(message->getFrom().toBare().toString());
 	if (!user){
 		return;

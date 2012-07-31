@@ -91,6 +91,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.memory_collector_time", value<int>()->default_value(0), "Time in seconds after which backend with most memory is set to die.")
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
+		("service.enable_xhtml", value<bool>()->default_value(true), "")
 		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
