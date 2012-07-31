@@ -577,7 +577,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	// Add xhtml-im payload.
-	if (CONFIG_BOOL(m_config, "service.enabled_xhtml") && !payload.xhtml().empty()) {
+	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
 		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
@@ -952,17 +952,6 @@ void NetworkPluginServer::pingTimeout() {
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
-
-#ifndef WIN32
-			// generate coredump for this backend to find out why it wasn't able to respond to PING
-			std::string pid = (*it)->id;
-			if (!pid.empty()) {
-				try {
-					kill(boost::lexical_cast<int>(pid), SIGABRT);
-				}
-				catch (...) { }
-			}
-#endif
 		}
 
 		if ((*it)->users.size() == 0) {
