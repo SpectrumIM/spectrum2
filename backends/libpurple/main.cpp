@@ -344,8 +344,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL) {
-				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_accounts_find(name.c_str(), protocol.c_str());
+				if (m_accounts.find(account) != m_accounts.end() && m_accounts[account] != user) {
+					LOG4CXX_INFO(logger, "Account '" << name << "' is already used by '" << m_accounts[account] << "'");
+					np->handleDisconnected(user, 0, "Account '" + name + "' is already used by '" + m_accounts[account] + "'");
+					return;
+				}
+				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 			}
 			else {
 				LOG4CXX_INFO(logger, "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
