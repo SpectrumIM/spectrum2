@@ -44,6 +44,8 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 
+#include "utf8.h"
+
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
 
@@ -416,11 +418,17 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
+	std::string field;
 
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
-	vcard->setFullName(payload.fullname());
+
+	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), field.begin(), '_');
+	vcard->setFullName(field);
+
+	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), field.begin(), '_');
+	vcard->setNickname(field);
+
 	vcard->setPhoto(Swift::createByteArray(payload.photo()));
-	vcard->setNickname(payload.nickname());
 
 	m_vcardResponder->sendVCard(payload.id(), vcard);
 }
