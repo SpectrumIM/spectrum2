@@ -1,5 +1,6 @@
 #include "managerconfig.h"
 #include "transport/config.h"
+#include "transport/protocol.pb.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 
@@ -12,6 +13,11 @@
 #include "signal.h"
 #include "sys/wait.h"
 
+#define WRAP(MESSAGE, TYPE) 	pbnetwork::WrapperMessage wrap; \
+	wrap.set_type(TYPE); \
+	wrap.set_payload(MESSAGE); \
+	wrap.SerializeToString(&MESSAGE);
+
 
 using namespace Transport;
 
@@ -19,33 +25,7 @@ using namespace boost::filesystem;
 
 using namespace boost;
 
-static int finished;
-static std::string *m;
-
-static void handleDisconnected(Swift::Client *client, const boost::optional<Swift::ClientError> &, const std::string &server) {
-	std::cout << "[ DISCONNECTED ] " << server << "\n";
-	if (--finished == 0) {
-		exit(0);
-	}
-}
-
-static void handleConnected(Swift::Client *client, const std::string &server) {
-	boost::shared_ptr<Swift::Message> message(new Swift::Message());
-	message->setTo(server);
-	message->setFrom(client->getJID());
-	message->setBody(*m);
-
-	client->sendMessage(message);
-}
-
-static void handleMessageReceived(Swift::Client *client, Swift::Message::ref message, const std::string &server) {
-	std::string body = message->getBody();
-	boost::replace_all(body, "\n", "\n[      OK      ] " + server + ": ");
-	std::cout << "[      OK      ] " << server << ": " << body <<  "\n";
-	if (--finished == 0) {
-		exit(0);
-	}
-}
+std::string _data;
 
 static std::string searchForBinary(const std::string &binary) {
 	std::vector<std::string> path_list;
@@ -101,6 +81,22 @@ static unsigned long exec_(std::string path, std::string config, std::string jid
 	}
 
 	return (unsigned long) pid;
+}
+
+static int getPort(const std::string &portfile) {
+	path p(portfile);
+	if (!exists(p) || is_directory(p)) {
+		return 0;
+	}
+
+	std::ifstream f(p.string().c_str(), std::ios_base::in);
+	std::string port;
+	f >> port;
+
+	if (port.empty())
+		return 0;
+
+	return boost::lexical_cast<int>(port);
 }
 
 static int isRunning(const std::string &pidfile) {
@@ -288,7 +284,75 @@ static int show_status(ManagerConfig *config) {
 	return ret;
 }
 
-static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
+static void handleDataRead(boost::shared_ptr<Swift::Connection> m_conn, boost::shared_ptr<Swift::SafeByteArray> data) {
+	_data += std::string(data->begin(), data->end());
+
+	// Parse data while there are some
+	while (_data.size() != 0) {
+		// expected_size of wrapper message
+		unsigned int expected_size;
+
+		// if data is >= 4, we have whole header and we can
+		// read expected_size.
+		if (_data.size() >= 4) {
+			expected_size = *((unsigned int*) &_data[0]);
+			expected_size = ntohl(expected_size);
+			// If we don't have whole wrapper message, wait for next
+			// handleDataRead call.
+			if (_data.size() - 4 < expected_size)
+				return;
+		}
+		else {
+			return;
+		}
+
+		// Parse wrapper message and erase it from buffer.
+		pbnetwork::WrapperMessage wrapper;
+		if (wrapper.ParseFromArray(&_data[4], expected_size) == false) {
+			std::cout << "PARSING ERROR " << expected_size << "\n";
+			_data.erase(_data.begin(), _data.begin() + 4 + expected_size);
+			continue;
+		}
+		_data.erase(_data.begin(), _data.begin() + 4 + expected_size);
+
+		if (wrapper.type() == pbnetwork::WrapperMessage_Type_TYPE_QUERY) {
+			pbnetwork::BackendConfig payload;
+			if (payload.ParseFromString(wrapper.payload()) == false) {
+				std::cout << "PARSING ERROR\n";
+				// TODO: ERROR
+				continue;
+			}
+
+			std::cout << payload.config() << "\n";
+			exit(0);
+		}
+	}
+}
+
+static void handleConnected(boost::shared_ptr<Swift::Connection> m_conn, const std::string &msg, bool error) {
+	if (error) {
+		std::cerr << "Can't connect the server\n";
+		exit(50);
+	}
+	else {
+		pbnetwork::BackendConfig m;
+		m.set_config(msg);
+
+		std::string message;
+		m.SerializeToString(&message);
+
+		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_QUERY);
+
+		uint32_t size = htonl(message.size());
+		char *header = (char *) &size;
+
+		
+		// send header together with wrapper message
+		m_conn->write(Swift::createSafeByteArray(std::string(header, 4) + message));
+	}
+}
+
+static void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &jid, const std::string &message) {
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -302,6 +366,7 @@ static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactorie
 			exit(7);
 		}
 
+		bool found = false;
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
 			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
@@ -311,20 +376,66 @@ static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactorie
 					continue;
 				}
 
-				if (CONFIG_VECTOR(&cfg, "service.admin_jid").empty() || CONFIG_STRING(&cfg, "service.admin_password").empty()) {
-					std::cerr << itr->path().string() << ": service.admin_jid or service.admin_password empty. This server can't be queried over XMPP.\n";
+				if (CONFIG_STRING(&cfg, "service.jid") != jid) {
 					continue;
 				}
 
-				finished++;
-				Swift::Client *client = new Swift::Client(CONFIG_VECTOR(&cfg, "service.admin_jid")[0], CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
-				client->setAlwaysTrustCertificates();
-				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
-				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
-				client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, CONFIG_STRING(&cfg, "service.jid")));
-				Swift::ClientOptions opt;
-				opt.allowPLAINWithoutTLS = true;
-				client->connect(opt);
+				found = true;
+
+				boost::shared_ptr<Swift::Connection> m_conn;
+				m_conn = networkFactories.getConnectionFactory()->createConnection();
+				m_conn->onDataRead.connect(boost::bind(&handleDataRead, m_conn, _1));
+				m_conn->onConnectFinished.connect(boost::bind(&handleConnected, m_conn, message, _1));
+				m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(CONFIG_STRING(&cfg, "service.backend_host")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
+
+// 				finished++;
+// 				Swift::Client *client = new Swift::Client(CONFIG_VECTOR(&cfg, "service.admin_jid")[0], CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
+// 				client->setAlwaysTrustCertificates();
+// 				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
+// 				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
+// 				client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, CONFIG_STRING(&cfg, "service.jid")));
+// 				Swift::ClientOptions opt;
+// 				opt.allowPLAINWithoutTLS = true;
+// 				client->connect(opt);
+			}
+		}
+
+		if (!found) {
+			std::cerr << "Config file for Spectrum instance with this JID was not found\n";
+			exit(20);
+		}
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "boost filesystem error\n";
+		exit(5);
+	}
+}
+
+static void show_list(ManagerConfig *config) {
+	path p(CONFIG_STRING(config, "service.config_directory"));
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		bool found = false;
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+					continue;
+				}
+
+				std::cout << CONFIG_STRING(&cfg, "service.jid") << "\n";
 			}
 		}
 	}
@@ -334,24 +445,71 @@ static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactorie
 	}
 }
 
+// static void ask_local_servers(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &message) {
+// 	path p(CONFIG_STRING(config, "service.config_directory"));
+// 
+// 	try {
+// 		if (!exists(p)) {
+// 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+// 			exit(6);
+// 		}
+// 
+// 		if (!is_directory(p)) {
+// 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+// 			exit(7);
+// 		}
+// 
+// 		directory_iterator end_itr;
+// 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+// 			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+// 				Config cfg;
+// 				if (cfg.load(itr->path().string()) == false) {
+// 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+// 					continue;
+// 				}
+// 
+// 				if (CONFIG_VECTOR(&cfg, "service.admin_jid").empty() || CONFIG_STRING(&cfg, "service.admin_password").empty()) {
+// 					std::cerr << itr->path().string() << ": service.admin_jid or service.admin_password empty. This server can't be queried over XMPP.\n";
+// 					continue;
+// 				}
+// 
+// 				finished++;
+// 				Swift::Client *client = new Swift::Client(CONFIG_VECTOR(&cfg, "service.admin_jid")[0], CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
+// 				client->setAlwaysTrustCertificates();
+// 				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
+// 				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
+// 				client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, CONFIG_STRING(&cfg, "service.jid")));
+// 				Swift::ClientOptions opt;
+// 				opt.allowPLAINWithoutTLS = true;
+// 				client->connect(opt);
+// 			}
+// 		}
+// 	}
+// 	catch (const filesystem_error& ex) {
+// 		std::cerr << "boost filesystem error\n";
+// 		exit(5);
+// 	}
+// }
+
 
 int main(int argc, char **argv)
 {
 	ManagerConfig config;
 	std::string config_file;
-	std::string command;
+	std::vector<std::string> command;
 	boost::program_options::variables_map vm;
 
-	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\nCommands:\n"
+	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\n"
+													 "       spectrum [OPTIONS] <instance_JID> <other>\nCommands:\n"
 													 " start - start all local Spectrum2 instances\n"
-													 " stop  - stop all  local Spectrum2 instances\n"
+													 " stop  - stop all local Spectrum2 instances\n"
 													 " status - status of local Spectrum2 instances\n"
-													 " <other> - send command to all local + remote Spectrum2 instances and print output\n"
+													 " <other> - send command to local Spectrum2 instance and print output\n"
 													 "Allowed options");
 	desc.add_options()
 		("help,h", "Show help output")
 		("config,c", boost::program_options::value<std::string>(&config_file)->default_value("/etc/spectrum2/spectrum_manager.cfg"), "Spectrum manager config file")
-		("command", boost::program_options::value<std::string>(&command)->default_value(""), "Command")
+		("command", boost::program_options::value<std::vector<std::string> >(&command), "Command")
 		;
 	try
 	{
@@ -388,37 +546,35 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if (command == "start") {
+	if (command[0] == "start") {
 		start_all_instances(&config);
 	}
-	else if (command == "stop") {
+	else if (command[0] == "stop") {
 		stop_all_instances(&config);
 	}
-	else if (command == "status") {
+	else if (command[0] == "status") {
 		return show_status(&config);
 	}
+	else if (command[0] == "list") {
+		show_list(&config);
+	}
 	else {
+		if (command.size() < 2) {
+			std::cout << desc << "\n";
+			return 11;
+		}
 		Swift::SimpleEventLoop eventLoop;
 		Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
-		std::string message = command;
-		m = &message;
+		std::string jid = command[0];
+		command.erase(command.begin());
+		std::string cmd = boost::algorithm::join(command, " ");
 
-		ask_local_servers(&config, networkFactories, message);
+		ask_local_server(&config, networkFactories, jid, cmd);
+// 		std::string message = command;
+// 		m = &message;
 
-		std::vector<std::string> servers = CONFIG_VECTOR(&config, "servers.server");
-		for (std::vector<std::string>::const_iterator it = servers.begin(); it != servers.end(); it++) {
-			finished++;
-			Swift::Client *client = new Swift::Client(CONFIG_STRING(&config, "service.admin_username") + "@" + *it, CONFIG_STRING(&config, "service.admin_password"), &networkFactories);
-			client->setAlwaysTrustCertificates();
-			client->onConnected.connect(boost::bind(&handleConnected, client, *it));
-			client->onDisconnected.connect(bind(&handleDisconnected, client, _1, *it));
-			client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, *it));
-			Swift::ClientOptions opt;
-			opt.allowPLAINWithoutTLS = true;
-			client->connect(opt);
-	// 		std::cout << *it << "\n";
-		}
+// 		ask_local_server(&config, networkFactories, message);
 
 		eventLoop.run();
 	}

@@ -1,166 +1,240 @@
-#!/usr/bin/perl
-
-# config:
-# [spectrum2_*]
-# env.admin_jid tradmin@host.org
-# env.password jid_password
-# env.transports icq.host.org xmpp.host.org
+#!/usr/bin/python -Wignore::DeprecationWarning
+# -*- coding: utf-8 -*-
 #
-# symlinks: 
-#    spectrum2_backends  spectrum2_memory  spectrum2_users spectrum2_messages spectrum2_messages_sec
+# Wildcard-plugin to monitor spectrum transport usage through an XMPP-connection
+# sending Statistics Gathering (XEP-0039 [1]) packets. Depending on the suffix,
+# the plugin monitors one specific characteristic of one or more spectrum
+# instances.
 #
+# Current suffixes are:
+#     spectrum_uptime (monitor uptime of transports)
+#     spectrum_registered (how many users are registered to the transport)
+#     spectrum_online (how many users are online)
+#     spectarm_contacts_registered
+#     spectrum_contacts_online (same as above, only for the legacy network)
+#     spectrum_messages (how many messages have been sent over this transport)
+#     spectrum_memory (how much memory the transport consumes)
 #
-use AnyEvent;
-use AnyEvent::XMPP::Client;
-use AnyEvent::XMPP::Component;
-use AnyEvent::XMPP::Ext::Disco;
-use AnyEvent::XMPP::Ext::Version;
-use AnyEvent::XMPP::Namespaces qw/xmpp_ns/;
-use AnyEvent::XMPP::Util qw/simxml/;
-use XML::Simple;
-use Time::HiRes qw ( setitimer ITIMER_REAL time );
-use strict;
-$|=1;
+# Configuration:
+#     You need to configure this plugin (just like any other plugin) in
+#	     plugin-conf.d/munin-node.
+#     You have to configure the plugin to run as user and group "spectrum".
+#
+#     By default, the plugin monitors all instances configured in a config-file
+#     in /etc/spectrum. If you use a different directory, you can specify the
+#     environment-variable "base". If you do not want to monitor all instances,
+#     you can give an explicit listing of the corresponding configuration files
+#     with the environment variable "cfgs".
+#     
+#     Here is an example of a configuration. Note again that you can ommit both
+#     env.cfgs and env.base:
+#
+#     [spectrum_*]
+#     user spectrum
+#     group spectrum
+#     env.cfgs xmpp.example.com.cfg,irc.example.com.cfg
+#     env.base /etc/spectrum
+#
+# Author:
+#     Mathias Ertl <mati@fsinf.at>
+# 
+# Changelog:
+#     2.0: Port to config_interface local socket
+#     1.1: Suffixes that aggregate multiple values no longer show the individual
+#     	values by default. This can be overridden by setting the "verbose"
+#     	env-variable to any non-empty string.
+#     1.0: Initial version
+#
+# [1] http://xmpp.org/extensions/xep-0039.html
+#
+# Copyright (c) 2009 Mathias Ertl.
+#
+# Permission to use, copy, and modify this software with or without fee
+# is hereby granted, provided that this entire notice is included in
+# all source code copies of any software which is or includes a copy or
+# modification of this software.
+#
+# THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTY. IN PARTICULAR, NONE OF THE AUTHORS MAKES ANY
+# REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE
+# MERCHANTABILITY OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR
+# PURPOSE.
+#
+# Magic markers
+#%# family=auto
+#%# capabilities=autoconf suggest
 
-$SIG{ALRM} = sub { exit; };
-setitimer(ITIMER_REAL, 30, 1);
+import sys
+from subprocess import *
 
+# autoconf and suggest handling:
+if len( sys.argv ) > 1:
+	if sys.argv[1] == 'autoconf':
+		print( 'yes' )
+		sys.exit( 0 )
+	elif sys.argv[1] == 'suggest':
+		print( """uptime
+registered
+online
+contacts_total
+contacts_online
+messages
+messages_sec
+memory""" )
+		sys.exit(0)
 
-my %config=(
-    users => {
-	title=>'Buddies online',
-	vlabel=>'users',
-	info=>'Number of users that currently use the spectrum transports.',
-	command=>'online_users_count',
-	base=>'--base 1000',
-	x=>'1',
-    },
-    backends => {
-	title=>'Backends running',
-	vlabel=>'backends',
-	info=>'Number of backends that currently running.',
-	command=>'backends_count',
-	base=>'--base 1000',
-	x=>'1',
-    },
-    memory => {
-	title=>'Memory usage of transports',
-	vlabel=>'megabytes',
-	info=>'Memory usage of spectrum transports.',
-	command=>'used_memory',
-	base=>'--base 1024',
-	x=>'1024',
-    },
-    messages => {
-	title=>'Messages send over transport',
-	vlabel=>'messages',
-	info=>'Messages send over spectrum transports.',
-	command=>'',
-	base=>'--base 1000',
-	x=>'1',
-    },
-    messages_sec => {
-	title=>'Messages send over transport',
-	vlabel=>'messages/sec',
-	info=>'Messages send per second over spectrum transports.',
-	command=>'',
-	base=>'--base 1000',
-	x=>'1',
-    },
-);
-my @queue=('_out','_in');
-$0 =~ /spectrum2_(.+)*$/;
-my $func = $1;
-exit 2 unless defined $func;
-my %tr;
-my $count=0;
-    foreach (split(' ',$ENV{'transports'})){
-        if ($func=~/messages/)
-	{
-	    $tr{$_."_in"}=$count;
-	    $count++;
-	    $tr{$_."_out"}=$count;
-	    $count++;
-	}
-	else
-	{
-	$tr{$_}=$count;
-	$count++;
-	}
-    }
+import os, re
 
-if (exists $ARGV[0] and $ARGV[0] eq "config") 
-{
-    print "graph_title ".$config{$func}->{'title'}."\n";
-    print "graph_vlabel ".$config{$func}->{'vlabel'}."\n";
-    print "graph_category spectrum2\n";
-    foreach (keys (%tr)){
-	print "r".$tr{$_}.".label ".$_."\n";
-	if ($func eq 'messages_sec')
-	{
-	    print "r".$tr{$_}.".type DERIVE\n";
-	    print "r".$tr{$_}.".min 0\n";
-	}
-    }
-    print "graph_args ".$config{$func}->{'base'}."\n";
-    print "graph_info ".$config{$func}->{'info'}."\n";
-    exit 0;
-}
+# filter forbidden characters for munin fieldnames
+def handle_field( string ):
+	for regexp in [ '^[^A-Za-z_]', '[^A-Za-z0-9_]' ]:
+		string = re.compile( regexp ).sub( '_', string )
+	return string
 
-binmode( STDOUT);
-my $xs=new XML::Simple;
-my $cl=AnyEvent::XMPP::Client->new(debug=>0);
-my $j=AnyEvent->condvar;
-$cl->add_account($ENV{'admin_jid'}.'/'.time,$ENV{'password'});
-$cl->reg_cb(
-    session_ready => \&cl_sess,
-    disconnect => \&cl_disc,
-    message => \&cl_msg,
-);
-$cl->start;
-$j->wait;
+# get runtime variables
+suffix = sys.argv[0].partition('_')[2]
+verbose = os.environ.get( 'verbose' )
+proc = Popen(['spectrum2_manager', 'list'], stdout=PIPE, stderr=PIPE)
+out, err = proc.communicate()
+jids = out.split('\n')[:-1]
 
+# set variables based on wildcard 
+if suffix == 'uptime':
+	stat = { 'uptime': None }
+	title = "Uptime"
+	vlabel = "days"
+	info = ''
+	transformer = lambda value: float(value)/60.0/60.0/24.0
+elif suffix == 'backends_count':
+	stat = { "backends_count": None }
+	title = "Backends count"
+	vlabel = "backends"
+	info = 'Total number of backends.'
+elif suffix == 'online':
+	stat = { 'online_users_count': None }
+	title = "Online users"
+	vlabel = "users"
+	info = 'Number of users that currently use the spectrum transports.'
+elif suffix == 'messages':
+	stat = { 'messages_from_xmpp': 'from_xmpp', 'messages_to_xmpp': 'to_xmpp' }
+	title = "Messages send over transport"
+	vlabel = "messages"
+	info = 'Total messages send over spectrum since the last restart.'
+elif suffix == 'messages_sec':
+	stat = { 'messages_from_xmpp': 'from_xmpp', 'messages_to_xmpp': 'to_xmpp' }
+	title = "Messages send over transport per second"
+	vlabel = "messages/sec"
+	info = 'Messages send per second over spectrum transports.'
+elif suffix == 'memory':
+	stat = { 'used_memory': None }
+	title = "Memory usage of transports"
+	vlabel = "megabytes"
+	transformer = lambda value: float(value)/1024.0
+	info = 'Memory usage of spectrum transports.'
+elif suffix == 'average_memory_per_user':
+	stat = { 'average_memory_per_user': None }
+	title = "Average memory usage per user"
+	vlabel = "kilobytes"
+	#transformer = lambda value: float(value)/1024.0
+	info = 'Memory usage of spectrum transports.'
 
-sub cl_disc
-{
-my ($cl,$acc,$h,$p,$reas)=@_;
-    print "disc ($h:$p) $reas\n";
-}
-sub cl_sess
-{
-    my($cl,$acc)=@_;
-    foreach (keys (%tr)){
-        if ($func=~/messages/)
-	{
-	    if (s/_in$//)
-	    {
-		$cl->send_message("messages_from_xmpp",$_,undef,'chat');
-	    };
-	    if (s/_out$//)
-	    {
-		$cl->send_message("messages_to_xmpp",$_,undef,'chat');
-	    }
-	}
-	else
-	{
-	    $cl->send_message($config{$func}->{'command'},$_,undef,'chat');
-	}
-    }
-}
-sub cl_msg
-{
-    my ($cl,$acc,$msg)=@_;
-    if ($func=~/messages/)
-    {
-	print "r".$tr{$msg->from.$queue[-1]}.".value ".int($msg->any_body/$config{$func}->{'x'})."\n";
-	delete( $tr{$msg->from.$queue[-1]});
-	pop(@queue);
-	if ($#queue==-1){@queue=("_out","_in");}
-    }
-    else
-    {
-	print "r".$tr{$msg->from}.".value ".int($msg->any_body/$config{$func}->{'x'})."\n";
-	delete( $tr{$msg->from});
-    }
-    exit if (scalar(keys %tr)==0);
-}
+# handle config
+if len( sys.argv ) > 1 and sys.argv[1] == 'config':
+	print( """graph_title %s
+graph_args --base 1000 -l 0
+graph_scale no
+graph_vlabel %s
+graph_category spectrum2
+graph_info %s""" %(title, vlabel, info) )
+	for jid in jids:
+		if len(stat) > 1: 
+			# plugin monitors more than one field
+			label = jid + ' total'
+			fieldname = handle_field( label )
+			print( '%s.label %s' %(fieldname, label) )
+			if suffix == 'messages_sec':
+				print( '%s.type DERIVE' %(fieldname) )
+				print( '%s.min 0' %(fieldname) )
+
+			# to not print individual fields if verbose is not set:
+			if not verbose: 
+				continue
+
+		for name, field_suffix in stat.iteritems():
+			label = jid
+			if field_suffix:
+				label += ' ' + field_suffix
+			fieldname = handle_field( label )
+			print( '%s.label %s' %(fieldname, label) )
+			if suffix == 'messages_sec':
+				print( '%s.type DERIVE' %(fieldname) )
+				print( '%s.min 0' %(fieldname) )
+	sys.exit(0)
+
+# callback to handle incoming packets
+def handler_fetch( packet ):
+	jid = str( packet.getFrom() )
+	total = None
+
+	for child in packet.getChildren()[0].getChildren():
+		label = jid
+		value = child.getAttr( 'value' )
+		if len( stat ) > 1:
+			if total == None:
+				total = int( value )
+			else:
+				total += int( value )
+			if not verbose:
+				continue
+		
+		field_suffix = stat[ child.getAttr( 'name' ) ]
+		if field_suffix:
+			label += ' ' + field_suffix
+		fieldname = handle_field( label )
+		if 'transformer' in globals():
+			value = transformer(value)
+
+		print( '%s.value %s' %(fieldname, value) )
+
+	if total != None:
+		fieldname = handle_field( jid + ' total' )
+		if 'transformer' in globals():
+			total = transformer( total )
+		print( '%s.value %s' %(fieldname, total) )
+
+for jid in jids:
+	total = None
+	label = jid
+	for name in stat.keys():
+		proc = Popen(['spectrum2_manager', jid, name], stdout=PIPE, stderr=PIPE)
+		out, err = proc.communicate()
+		out = out.replace('\n', '')
+		value = 0
+		try:
+			value = int(out)
+		except:
+			print( "Error: %s" % (value))
+			continue
+
+		if len( stat ) > 1:
+			if total == None:
+				total = int( value )
+			else:
+				total += int( value )
+			if not verbose:
+				continue
+		
+		field_suffix = stat[ name ]
+		if field_suffix:
+			label += ' ' + field_suffix
+		fieldname = handle_field( label )
+		if 'transformer' in globals():
+			value = transformer(value)
+
+		print( '%s.value %s' %(fieldname, value) )
+
+	if total != None:
+		fieldname = handle_field( jid + ' total' )
+		if 'transformer' in globals():
+			total = transformer( total )
+		print( '%s.value %s' %(fieldname, total) )

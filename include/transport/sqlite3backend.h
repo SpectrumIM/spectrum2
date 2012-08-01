@@ -86,7 +86,10 @@ class SQLite3Backend : public StorageBackend
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
-		void removeBuddy(long id) {}
+		void removeBuddy(long id);
+
+		void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value);
+		void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value);
 
 		void getUserSetting(long userId, const std::string &variable, int &type, std::string &value);
 		void updateUserSetting(long userId, const std::string &variable, const std::string &value);
@@ -111,9 +114,12 @@ class SQLite3Backend : public StorageBackend
 		sqlite3_stmt *m_removeUserBuddies;
 		sqlite3_stmt *m_removeUserSettings;
 		sqlite3_stmt *m_removeUserBuddiesSettings;
+		sqlite3_stmt *m_removeBuddy;
+		sqlite3_stmt *m_removeBuddySettings;
 		sqlite3_stmt *m_addBuddy;
 		sqlite3_stmt *m_updateBuddy;
 		sqlite3_stmt *m_updateBuddySetting;
+		sqlite3_stmt *m_getBuddySetting;
 		sqlite3_stmt *m_getBuddies;
 		sqlite3_stmt *m_getBuddiesSettings;
 		sqlite3_stmt *m_setUserOnline;

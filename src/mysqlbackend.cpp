@@ -205,7 +205,6 @@ int MySQLBackend::Statement::execute() {
 	m_offset = 0;
 	m_resultOffset = 0;
 	int ret;
-
 	if ((ret = mysql_stmt_execute(m_stmt)) != 0) {
 		LOG4CXX_ERROR(logger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
 		return mysql_stmt_errno(m_stmt);
@@ -315,6 +314,10 @@ bool MySQLBackend::connect() {
 					   CONFIG_INT(m_config, "database.port"), NULL, 0)) {
 		LOG4CXX_ERROR(logger, "Can't connect database: " << mysql_error(&m_conn));
 		return false;
+	}
+
+	if (!mysql_set_character_set(&m_conn, "utf8")) {
+		LOG4CXX_INFO(logger, "New client character set: " << mysql_character_set_name(&m_conn));
 	}
 
 	createDatabase();
@@ -608,11 +611,11 @@ void MySQLBackend::updateUserSetting(long id, const std::string &variable, const
 }
 
 void MySQLBackend::beginTransaction() {
-	//exec("START TRANSACTION;");
+	exec("START TRANSACTION;");
 }
 
 void MySQLBackend::commitTransaction() {
-	//exec("COMMIT;");
+	exec("COMMIT;");
 }
 
 }

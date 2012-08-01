@@ -32,6 +32,7 @@
 #include "transport/rosterresponder.h"
 #include "transport/memoryreadbytestream.h"
 #include "transport/logging.h"
+#include "transport/admininterface.h"
 #include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -204,7 +205,6 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
-		LOG4CXX_INFO(logger, "Setting alias to " << payload.alias() << " " << buddy->getAlias());
 		buddy->setAlias(payload.alias());
 	}
 
@@ -228,6 +228,8 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_config = config;
 	m_component = component;
 	m_isNextLongRun = false;
+	m_adminInterface = NULL;
+	m_startingBackend = false;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -264,6 +266,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
 	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+	LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
 	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
 #ifndef _WIN32
@@ -317,17 +320,15 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->res = 0;
 	client->init_res = 0;
 	client->shared = 0;
-	client->willDie = 0;
+	// Until we receive first PONG from backend, backend is in willDie state.
+	client->willDie = true;
 	// Backend does not accept new clients automatically if it's long-running
 	client->acceptUsers = !m_isNextLongRun;
 	client->longRun = m_isNextLongRun;
 
-	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
+	m_startingBackend = false;
 
-	if (m_clients.size() == 0) {
-		// first backend connected, start the server, we're ready.
-		m_component->start();
-	}
+	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
 	m_clients.push_front(client);
 
@@ -339,28 +340,6 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	// in first ::pingTimeout call, because it can be called right after this function
 	// and backend wouldn't have any time to response to ping.
 	client->pongReceived = -1;
-
-	// some users are in queue waiting for this backend
-	while(!m_waitingUsers.empty()) {
-		// There's no new backend, so stop associating users and wait for new backend,
-		// which has been already spawned in getFreeClient() call.
-		if (getFreeClient() == NULL)
-			break;
-
-		User *u = m_waitingUsers.front();
-		m_waitingUsers.pop_front();
-
-		LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
-
-		// associate backend with user
-		handleUserCreated(u);
-
-		// connect user if it's ready
-		if (u->isReadyToConnect()) {
-			handleUserReadyToConnect(u);
-		}
-
-	}
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
@@ -509,8 +488,6 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	LOG4CXX_INFO(logger, "HANDLE BUDDY CHANGED " << payload.buddyname() << "-" << payload.alias());
-
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
@@ -522,6 +499,20 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		handleBuddyPayload(buddy, payload);
 		user->getRosterManager()->setBuddy(buddy);
 	}
+}
+
+void NetworkPluginServer::handleBuddyRemovedPayload(const std::string &data) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	user->getRosterManager()->removeBuddy(payload.buddyname());
 }
 
 void NetworkPluginServer::handleParticipantChangedPayload(const std::string &data) {
@@ -586,7 +577,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	// Add xhtml-im payload.
-	if (!payload.xhtml().empty()) {
+	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
 		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
@@ -740,6 +731,68 @@ void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
 	send(b->connection, message);
 }
 
+void NetworkPluginServer::handlePongReceived(Backend *c) {
+	// This could be first PONG from the backend
+	if (c->pongReceived == -1) {
+		// Backend is fully ready to handle requests
+		c->willDie = false;
+
+		if (m_clients.size() == 1) {
+			// first backend connected, start the server, we're ready.
+			m_component->start();
+		}
+
+		// some users are in queue waiting for this backend
+		while(!m_waitingUsers.empty()) {
+			// There's no new backend, so stop associating users and wait for new backend,
+			// which has been already spawned in getFreeClient() call.
+			if (getFreeClient() == NULL)
+				break;
+
+			User *u = m_waitingUsers.front();
+			m_waitingUsers.pop_front();
+
+			LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
+
+			// associate backend with user
+			handleUserCreated(u);
+
+			// connect user if it's ready
+			if (u->isReadyToConnect()) {
+				handleUserReadyToConnect(u);
+			}
+		}
+	}
+
+	c->pongReceived = true;
+}
+
+void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data) {
+	pbnetwork::BackendConfig payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	if (!m_adminInterface) {
+		return;
+	}
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(payload.config());
+	m_adminInterface->handleQuery(msg);
+
+	pbnetwork::BackendConfig vcard;
+	vcard.set_config(msg->getBody());
+
+	std::string message;
+	vcard.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_QUERY);
+
+	send(b->connection, message);
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -790,7 +843,7 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				handleConvMessagePayload(wrapper.payload(), true);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
-				c->pongReceived = true;
+				handlePongReceived(c);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED:
 				handleParticipantChangedPayload(wrapper.payload());
@@ -827,6 +880,12 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
 				handleFTDataPayload(c, wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
+				handleBuddyRemovedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_QUERY:
+				handleQueryPayload(c, wrapper.payload());
 				break;
 			default:
 				return;
@@ -874,6 +933,9 @@ void NetworkPluginServer::pingTimeout() {
 		}
 	}
 
+	// We have to remove startingBackend flag otherwise 1 broken backend start could
+	// block the backend.
+	m_startingBackend = false;
 
 	// check ping responses
 	std::vector<Backend *> toRemove;
@@ -881,11 +943,26 @@ void NetworkPluginServer::pingTimeout() {
 		// pong has been received OR backend just connected and did not have time to answer the ping
 		// request.
 		if ((*it)->pongReceived || (*it)->pongReceived == -1) {
-			sendPing((*it));
+			// Don't send another ping if pongReceived == -1, because we've already sent one
+			// when registering backend.
+			if ((*it)->pongReceived) {
+				sendPing((*it));
+			}
 		}
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
+
+#ifndef WIN32
+			// generate coredump for this backend to find out why it wasn't able to respond to PING
+			std::string pid = (*it)->id;
+			if (!pid.empty()) {
+				try {
+					kill(boost::lexical_cast<int>(pid), SIGABRT);
+				}
+				catch (...) { }
+			}
+#endif
 		}
 
 		if ((*it)->users.size() == 0) {
@@ -1234,7 +1311,6 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 
 	dynamic_cast<LocalBuddy *>(b)->setAlias(item.getName());
 	dynamic_cast<LocalBuddy *>(b)->setGroups(item.getGroups());
-	user->getRosterManager()->storeBuddy(b);
 
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user->getJID().toBare());
@@ -1412,8 +1488,9 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 	}
 
 	// there's no free backend, so spawn one.
-	if (c == NULL) {
+	if (c == NULL && !m_startingBackend) {
 		m_isNextLongRun = longRun;
+		m_startingBackend = true;
 		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
 	}
 

@@ -27,7 +27,6 @@
 #include "transport/userregistry.h"
 #include "transport/logging.h"
 #include "discoinforesponder.h"
-#include "discoitemsresponder.h"
 #include "storageparser.h"
 #ifdef _MSC_VER
 #include <Swiften/TLS/CAPICertificate.h>
@@ -162,9 +161,6 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
 	m_discoInfoResponder->start();
 
-	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
-	m_discoItemsResponder->start();
-
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();
@@ -176,7 +172,6 @@ Component::~Component() {
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
 	delete m_discoInfoResponder;
-	delete m_discoItemsResponder;
 	if (m_component)
 		delete m_component;
 	if (m_server) {
@@ -209,6 +204,9 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 void Component::start() {
 	if (m_component && !m_component->isAvailable()) {
 		LOG4CXX_INFO(logger, "Connecting XMPP server " << CONFIG_STRING(m_config, "service.server") << " port " << CONFIG_INT(m_config, "service.port"));
+		if (CONFIG_INT(m_config, "service.port") == 5222) {
+			LOG4CXX_WARN(logger, "Port 5222 is usually used for client connections, not for component connections! Are you sure you are using right port?");
+		}
 		m_reconnectCount++;
 		m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		m_reconnectTimer->stop();
@@ -242,6 +240,7 @@ void Component::stop() {
 void Component::handleConnected() {
 	onConnected();
 	m_reconnectCount = 0;
+	m_reconnectTimer->stop();
 }
 
 void Component::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {

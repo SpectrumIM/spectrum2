@@ -78,6 +78,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.backend", value<std::string>()->default_value("libpurple_backend"), "Backend")
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
 		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
+		("service.portfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.port"), "File to store backend_port to. It's used by spectrum2_manager.")
 		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
 		("service.allowed_servers", value<std::vector<std::string> >()->multitoken(), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
@@ -93,6 +94,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.memory_collector_time", value<int>()->default_value(0), "Time in seconds after which backend with most memory is set to die.")
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
+		("service.enable_xhtml", value<bool>()->default_value(true), "")
 		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
@@ -136,6 +138,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	bool found_working = false;
 	bool found_pidfile = false;
+	bool found_portfile = false;
 	bool found_backend_port = false;
 	bool found_database = false;
 	std::string jid = "";
@@ -161,6 +164,9 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.string_key == "service.pidfile") {
 			found_pidfile = true;
 		}
+		else if (opt.string_key == "service.portfile") {
+			found_portfile = true;
+		}
 		else if (opt.string_key == "database.database") {
 			found_database = true;
 		}
@@ -176,6 +182,11 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		value.push_back("/var/run/spectrum2/$jid.pid");
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
 	}
+	if (!found_portfile) {
+		std::vector<std::string> value;
+		value.push_back("/var/run/spectrum2/$jid.port");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.portfile", value));
+	}
 	if (!found_backend_port) {
 		std::vector<std::string> value;
 		std::string p = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
@@ -190,7 +201,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
-			m_unregistered[opt.string_key] = opt.value[0];
+			m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {
 			boost::replace_all(opt.value[0], "$jid", jid);

@@ -13,12 +13,24 @@ Version 2.0.0-beta3 (2012-XX-XX):
 	* Added Munin plugin (Thanks to Askovpen).
 	* Added support for more admin_jid JIDs (Thanks to Askovpen).
 	* Fixed allowed_servers option.
+	* Show error in server-mode when server port is already used.
+	* Fixed bug when backend could freeze on exit.
+	* Options from config file can now be set also using command line like
+	  --service.jid=domain.tld .
+	* Do not send password in IQ-get registration response.
 
 	Libpurple:
 	* prpl-gg: Fetch the contact list properly (#252).
+	* Added support for prpl-novell as it was in spectrum1.
 
 	Skype:
 	* Log more errors.
+
+	Libyahoo2:
+	* Added new Yahoo backend based on libyahoo2.
+
+	Swiften:
+	* Added new XMPP backend based on Swiften library.
 
 	Backend API:
 	* Added Python NetworkPlugin class, so it is now easier to write backends

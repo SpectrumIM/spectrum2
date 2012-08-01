@@ -48,7 +48,6 @@ namespace Transport {
 	// 
 	class StorageBackend;
 	class DiscoInfoResponder;
-	class DiscoItemsResponder;
 	class Factory;
 	class UserRegistry;
 
@@ -188,7 +187,6 @@ namespace Transport {
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
  			DiscoInfoResponder *m_discoInfoResponder;
-			DiscoItemsResponder *m_discoItemsResponder;
 			int m_reconnectCount;
 			Config* m_config;
 			std::string m_protocol;

@@ -22,6 +22,9 @@
 #include "transport/buddy.h"
 #include "transport/user.h"
 #include "transport/storagebackend.h"
+#include "transport/logging.h"
+
+DEFINE_LOGGER(logger, "RosterStorage");
 
 namespace Transport {
 
@@ -85,7 +88,20 @@ RosterStorage::~RosterStorage() {
 	m_storageTimer->stop();
 }
 
+void RosterStorage::removeBuddy(Buddy *buddy) {
+	if (buddy->getID() != -1) {
+		m_storageBackend->removeBuddy(buddy->getID());
+	}
+}
+
 void RosterStorage::storeBuddy(Buddy *buddy) {
+	if (!buddy) {
+		return;
+	}
+	if (buddy->getName().empty()) {
+		return;
+	}
+
 	m_buddies[buddy->getName()] = buddy;
 	m_storageTimer->start();
 }
@@ -129,6 +145,7 @@ bool RosterStorage::storeBuddies() {
 // 		}
 	}
 
+	m_buddies.clear();
 	m_storageBackend->commitTransaction();
 	return true;
 }

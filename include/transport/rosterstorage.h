@@ -40,6 +40,8 @@ class RosterStorage {
 		// will happen if buddy is already added.
 		void storeBuddy(Buddy *buddy);
 
+		void removeBuddy(Buddy *buddy);
+
 		// Store all buddies from queue immediately. Returns true
 		// if some buddies were stored.
 		bool storeBuddies();

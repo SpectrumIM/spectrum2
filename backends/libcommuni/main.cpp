@@ -78,7 +78,7 @@ int main (int argc, char* argv[]) {
 
 	Swift::QtEventLoop eventLoop;
 
-	if (config.getUnregistered().find("service.irc_server") == config.getUnregistered().end()) {
+	if (!CONFIG_HAS_KEY(&config, "service.irc_server")) {
 		np = new IRCNetworkPlugin(&config, &eventLoop, host, port);
 	}
 	else {
