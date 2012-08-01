@@ -1,2 +1,3 @@
 *.pb.cc
 *.pb.h
+plugin/python/protocol_pb2.py
