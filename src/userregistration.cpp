@@ -29,6 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/regex.hpp> 
 
 using namespace Swift;
 
@@ -441,15 +442,15 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // 		return true;
 // 	}
 
-//TODO: Part of spectrum1 registration stuff, this should be potentially rewritten for S2 too
-// #if GLIB_CHECK_VERSION(2,14,0)
-// 	if (!CONFIG_STRING(m_config, "registration.reg_allowed_usernames").empty() &&
-// 		!g_regex_match_simple(CONFIG_STRING(m_config, "registration.reg_allowed_usernames"), newUsername.c_str(),(GRegexCompileFlags) (G_REGEX_CASELESS | G_REGEX_EXTENDED), (GRegexMatchFlags) 0)) {
-// 		Log("UserRegistration", "This is not valid username: "<< newUsername);
-// 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
-// 		return true;
-// 	}
-// #endif
+	if (!CONFIG_STRING(m_config, "registration.allowed_usernames").empty()) {
+		boost::regex expression(CONFIG_STRING(m_config, "registration.allowed_usernames"));
+		if (!regex_match(newUsername, expression)) {
+			LOG4CXX_INFO(logger, "This is not valid username: " << newUsername);
+			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+			return true;
+		}
+	}
+
 	if (!registered) {
 		res.jid = barejid;
 		res.uin = newUsername;
