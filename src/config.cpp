@@ -101,6 +101,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("registration.instructions", value<std::string>()->default_value("Enter your legacy network username and password."), "Instructions showed to user in registration form")
 		("registration.username_label", value<std::string>()->default_value("Legacy network username:"), "Label for username field")
 		("registration.username_mask", value<std::string>()->default_value(""), "Username mask")
+		("registration.allowed_usernanames", value<std::string>()->default_value(""), "Allowed usernames")
 		("registration.auto_register", value<bool>()->default_value(false), "Register new user automatically when the presence arrives.")
 		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
 		("registration.require_local_account", value<bool>()->default_value(false), "True if users have to have a local account to register to this transport from remote servers.")
