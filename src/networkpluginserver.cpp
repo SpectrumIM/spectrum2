@@ -95,7 +95,10 @@ class NetworkFactory : public Factory {
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
 			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
 			buddy->setAlias(buddyInfo.alias);
-			buddy->setName(buddyInfo.legacyName);
+			if (!buddy->setName(buddyInfo.legacyName)) {
+				delete buddy;
+				return NULL;
+			}
 			if (buddyInfo.subscription == "both") {
 				buddy->setSubscription(Buddy::Both);
 			}
@@ -203,7 +206,6 @@ static void SigCatcher(int n) {
 #endif
 
 static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payload) {
-	buddy->setName(payload.buddyname());
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
@@ -503,6 +505,10 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	}
 	else {
 		buddy = new LocalBuddy(user->getRosterManager(), -1);
+		if (!buddy->setName(payload.buddyname())) {
+			delete buddy;
+			return;
+		}
 		buddy->setFlags(BUDDY_JID_ESCAPING);
 		handleBuddyPayload(buddy, payload);
 		user->getRosterManager()->setBuddy(buddy);

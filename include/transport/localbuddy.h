@@ -37,7 +37,7 @@ class LocalBuddy : public Buddy {
 		void setAlias(const std::string &alias);
 
 		std::string getName() { return m_name; }
-		void setName(const std::string &name) { m_name = name; }
+		bool setName(const std::string &name);
 
 		bool getStatus(Swift::StatusShow &status, std::string &statusMessage) {
 			status = m_status;

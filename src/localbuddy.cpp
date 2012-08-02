@@ -31,6 +31,22 @@ LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id) : Buddy(rosterMana
 LocalBuddy::~LocalBuddy() {
 }
 
+bool LocalBuddy::setName(const std::string &name) {
+	if (name == m_name) {
+		return true;
+	}
+	std::string oldName = name;
+	m_name = name;
+	try {
+		generateJID();
+		return true;
+	} catch (...) {
+		m_name = oldName;
+		return false;
+	}
+	
+}
+
 void LocalBuddy::setAlias(const std::string &alias) {
 //	if (m_firstSet) {
 //		m_firstSet = false;

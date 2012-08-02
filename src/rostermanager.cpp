@@ -303,7 +303,9 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 		buddyInfo.groups = item.getGroups();
 
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-		setBuddy(buddy);
+		if (buddy) {
+			setBuddy(buddy);
+		}
 	}
 }
 

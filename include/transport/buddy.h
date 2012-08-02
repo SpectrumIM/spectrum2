@@ -167,9 +167,10 @@ class Buddy {
 		static std::string JIDToLegacyName(const Swift::JID &jid);
 		static BuddyFlag buddFlagsFromJID(const Swift::JID &jid);
 
-	private:
+	protected:
 		void generateJID();
 
+	private:
 		long m_id;
 // 		Swift::Presence::ref m_lastPresence;
 		Swift::JID m_jid;

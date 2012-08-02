@@ -222,8 +222,22 @@ static void stop_instances(ManagerConfig *config, const std::string &_jid = "") 
 
 					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
 					if (pid) {
-						std::cout << "Stopping " << itr->path() << ": OK\n";
+						std::cout << "Stopping " << itr->path() << ": ";
 						kill(pid, SIGTERM);
+
+						sleep(1);
+						int count = 20;
+						while (kill(pid, 0) == 0 && count != 0) {
+							std::cout << ".";
+							sleep(1);
+							count--;
+						}
+						if (count == 0) {
+							std::cout << " ERROR (timeout)\n";
+						}
+						else {
+							std::cout << " OK\n";
+						}
 					}
 					else {
 						std::cout << "Stopping " << itr->path() << ": Not running\n";
