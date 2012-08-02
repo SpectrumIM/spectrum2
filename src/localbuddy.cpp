@@ -44,7 +44,6 @@ bool LocalBuddy::setName(const std::string &name) {
 		m_name = oldName;
 		return false;
 	}
-	
 }
 
 void LocalBuddy::setAlias(const std::string &alias) {

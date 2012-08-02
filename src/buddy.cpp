@@ -51,7 +51,10 @@ long Buddy::getID() {
 void Buddy::setFlags(BuddyFlag flags) {
 	m_flags = flags;
 
-// 	generateJID();
+	try {
+		generateJID();
+	} catch (...) {
+	}
 }
 
 BuddyFlag Buddy::getFlags() {
