@@ -282,6 +282,10 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 		return;
 	}
 
+	if (presence->getType() == Presence::Error) {
+		return;
+	}
+
 	// check if we have this client's capabilities and ask for them
 	if (presence->getType() != Swift::Presence::Unavailable) {
 		boost::shared_ptr<CapsInfo> capsInfo = presence->getPayload<CapsInfo>();
