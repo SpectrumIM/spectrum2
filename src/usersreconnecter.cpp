@@ -63,7 +63,11 @@ void UsersReconnecter::reconnectNextUser() {
 
 	LOG4CXX_INFO(logger, "Sending probe presence to " << user);
 	Swift::Presence::ref response = Swift::Presence::create();
-	response->setTo(user);
+	try {
+		response->setTo(user);
+	}
+	catch (...) { return; }
+	
 	response->setFrom(m_component->getJID());
 	response->setType(Swift::Presence::Probe);
 
