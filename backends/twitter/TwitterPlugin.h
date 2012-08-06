@@ -88,7 +88,7 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		bool storeUserOAuthKeyAndSecret(const std::string user, const std::string OAuthKey, const std::string OAuthSecret);
 		
-		void initUserSession(const std::string user, const std::string password);
+		void initUserSession(const std::string user, const std::string legacyName, const std::string password);
 		
 		void OAuthFlowComplete(const std::string user, twitCurl *obj);
 		
@@ -152,6 +152,7 @@ class TwitterPlugin : public NetworkPlugin {
 		std::set<std::string> onlineUsers;
 		struct UserData
 		{
+			std::string legacyName;
 			User userTwitterObj;
 			std::string userImg;
 			twitCurl* sessions;		

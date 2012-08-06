@@ -118,7 +118,7 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 	}
 	
 	LOG4CXX_INFO(logger, std::string("Received login request for ") + user)	
-	initUserSession(user, password);
+	initUserSession(user, legacyName, password);
 	handleConnected(user);
 	
 	LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
@@ -417,11 +417,11 @@ bool TwitterPlugin::storeUserOAuthKeyAndSecret(const std::string user, const std
 	return true;
 }
 
-void TwitterPlugin::initUserSession(const std::string user, const std::string password)
+void TwitterPlugin::initUserSession(const std::string user, const std::string legacyName, const std::string password)
 {
 	boost::mutex::scoped_lock lock(userlock);
 
-	std::string username = user.substr(0,user.find('@'));
+	std::string username = legacyName;
 	std::string passwd = password;
 	LOG4CXX_INFO(logger, username + "  " + passwd)
 
@@ -446,7 +446,8 @@ void TwitterPlugin::initUserSession(const std::string user, const std::string pa
 		}
 	}
 
-	userdb[user].connectionState = NEW;			
+	userdb[user].connectionState = NEW;
+	userdb[user].legacyName = username;	
 	userdb[user].sessions->setTwitterUsername(username);
 	userdb[user].sessions->setTwitterPassword(passwd); 
 	userdb[user].sessions->getOAuth().setConsumerKey(consumerKey);
