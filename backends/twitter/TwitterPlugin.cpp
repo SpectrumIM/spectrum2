@@ -63,8 +63,8 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	consumerKey = CONFIG_STRING(config, "twitter.consumer_key");
 	consumerSecret = CONFIG_STRING(config, "twitter.consumer_secret");
 
-	OAUTH_KEY = "oauth_key";
-	OAUTH_SECRET = "oauth_secret";
+	OAUTH_KEY = "twitter_oauth_token";
+	OAUTH_SECRET = "twitter_oauth_secret";
 	MODE = "mode";
 
 	m_factories = new Swift::BoostNetworkFactories(loop);
