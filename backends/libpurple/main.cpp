@@ -1692,6 +1692,9 @@ int main(int argc, char **argv) {
 	}
 	else {
 #ifndef WIN32
+		mallopt(M_CHECK_ACTION, 2);
+		mallopt(M_PERTURB, 0xb);
+
 		signal(SIGPIPE, SIG_IGN);
 
 		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {

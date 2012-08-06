@@ -569,9 +569,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	putenv("MALLOC_CHECK_=2");
-	putenv("MALLOC_PERTURB_=B");
-
 	if (command[0] == "start") {
 		start_instances(&config);
 	}
