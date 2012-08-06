@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <cstdlib>
 #include "signal.h"
 #include "sys/wait.h"
 
@@ -567,6 +568,9 @@ int main(int argc, char **argv)
 		std::cout << desc << "\n";
 		return 1;
 	}
+
+	putenv("MALLOC_CHECK_=2");
+	putenv("MALLOC_PERTURB_=B");
 
 	if (command[0] == "start") {
 		start_instances(&config);

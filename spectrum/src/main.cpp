@@ -125,6 +125,8 @@ int main(int argc, char **argv)
 	std::string jid;
 
 	setlocale(LC_ALL, "");
+	putenv("MALLOC_CHECK_=2");
+	putenv("MALLOC_PERTURB_=B");
 
 #ifndef WIN32
 	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
