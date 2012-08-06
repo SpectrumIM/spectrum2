@@ -269,29 +269,35 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
-	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
-	LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
-	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+	while (true) {
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
+		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
 #ifndef _WIN32
-	// wait if the backend process will still be alive after 1 second
-	sleep(1);
-	pid_t result;
-	int status;
-	result = waitpid(-1, &status, WNOHANG);
-	if (result != 0) {
-		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status) != 0) {
-				LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+		// wait if the backend process will still be alive after 1 second
+		sleep(1);
+		pid_t result;
+		int status;
+		result = waitpid(-1, &status, WNOHANG);
+		if (result != 0) {
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+					continue;
+				}
+			}
+			else {
+				LOG4CXX_ERROR(logger, "Backend can not be started");
+				continue;
 			}
 		}
-		else {
-			LOG4CXX_ERROR(logger, "Backend can not be started");
-		}
-	}
 
-	signal(SIGCHLD, SigCatcher);
+		signal(SIGCHLD, SigCatcher);
 #endif
+		// quit the while loop
+		break;
+	}
 
 }
 
