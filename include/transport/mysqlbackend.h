@@ -87,10 +87,10 @@ class MySQLBackend : public StorageBackend
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
-		void removeBuddy(long id) {}
+		void removeBuddy(long id);
 
-		void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {}
-		void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {}
+		void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value);
+		void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value);
 
 		void getUserSetting(long userId, const std::string &variable, int &type, std::string &value);
 		void updateUserSetting(long userId, const std::string &variable, const std::string &value);
@@ -148,8 +148,11 @@ class MySQLBackend : public StorageBackend
 		Statement *m_removeUserSettings;
 		Statement *m_removeUserBuddiesSettings;
 		Statement *m_addBuddy;
+		Statement *m_removeBuddy;
+		Statement *m_removeBuddySettings;
 		Statement *m_updateBuddy;
 		Statement *m_updateBuddySetting;
+		Statement *m_getBuddySetting;
 		Statement *m_getBuddies;
 		Statement *m_getBuddiesSettings;
 		Statement *m_setUserOnline;
