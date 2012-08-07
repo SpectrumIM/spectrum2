@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 2.5)
+project(libtwit)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules/")
+set(twitSrcs base64.cpp HMAC_SHA1.cpp oauthlib.cpp SHA1.cpp urlencode.cpp twitcurl.cpp)
+FIND_PACKAGE(PkgConfig)
+#pkg_check_modules (PKGS)
+include_directories (${PKGS_INCLUDE_DIRS}) 
+add_library(twit STATIC ${twitSrcs})
+SET_TARGET_PROPERTIES(twit PROPERTIES CLEAN_DIRECT_OUTPUT "wcode")
+target_link_libraries(twit)
+SET(CMAKE_INSTALL_LIBDIR libtwit CACHE PATH "Output directory for libraries")
+ 
+install(TARGETS twit DESTINATION lib)
+INSTALL(FILES twitcurl.h DESTINATION include/libtwit) 
+INSTALL(FILES oauthlib.h DESTINATION include/libtwit) 
+ 
