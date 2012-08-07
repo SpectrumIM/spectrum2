@@ -1,7 +1,7 @@
 #ifndef RETWEET_H
 #define RETWEET_H
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../TwitterResponseParser.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "transport/networkplugin.h"

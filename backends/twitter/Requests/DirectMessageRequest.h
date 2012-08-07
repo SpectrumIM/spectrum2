@@ -1,7 +1,7 @@
 #ifndef DIRECT_MESSAGE
 #define DIRECT_MESSAGE
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../TwitterResponseParser.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "transport/logging.h"

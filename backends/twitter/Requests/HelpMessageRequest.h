@@ -1,7 +1,7 @@
 #ifndef HELPMESSAGE_H
 #define HELPMESSAGE_H
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"

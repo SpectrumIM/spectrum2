@@ -1,7 +1,7 @@
 #ifndef OAUTH_FLOW
 #define OAUTH_FLOW
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterPlugin.h"
 #include "transport/logging.h"

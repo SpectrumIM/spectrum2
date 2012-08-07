@@ -1,7 +1,7 @@
 #ifndef PROFILEIMAGE_H
 #define PROFILEIMAGE_H
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../TwitterResponseParser.h"
 #include "transport/logging.h"
 #include "transport/config.h"

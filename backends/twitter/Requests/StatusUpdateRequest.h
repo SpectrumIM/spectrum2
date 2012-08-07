@@ -1,7 +1,7 @@
 #ifndef STATUS_UPDATE
 #define STATUS_UPDATE
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"

@@ -1,7 +1,7 @@
 #ifndef CREATE_FRIEND
 #define CREATE_FRIEND
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../TwitterResponseParser.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "transport/logging.h"

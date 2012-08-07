@@ -8,6 +8,7 @@
 #include "transport/mysqlbackend.h"
 #include "transport/pqxxbackend.h"
 #include "transport/storagebackend.h"
+#include "transport/threadpool.h"
 
 #include "Swiften/Swiften.h"
 #include "unistd.h"
@@ -31,7 +32,6 @@
 #include <set>
 #include <cstdio>
 
-#include "ThreadPool.h"
 #include "Swiften/StringCodecs/SHA1.h"
 
 using namespace boost::filesystem;

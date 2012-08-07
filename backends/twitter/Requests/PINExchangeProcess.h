@@ -1,7 +1,7 @@
 #ifndef PIN_EXCHANGE
 #define PIN_EXCHANGE
 
-#include "../ThreadPool.h"
+#include "transport/threadpool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterPlugin.h"
 #include "transport/networkplugin.h"
