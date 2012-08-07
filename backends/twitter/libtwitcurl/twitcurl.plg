@@ -1,0 +1,37 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: twitcurl - Win32 Release--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\Mahesh\LOCALS~1\Temp\RSP239.tmp" with contents
+[
+/nologo /ML /W3 /GX /O2 /I "./curl" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /Fp"Release/twitcurl.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"C:\Projects\twitcurl\base64.cpp"
+"C:\Projects\twitcurl\HMAC_SHA1.cpp"
+"C:\Projects\twitcurl\oauthlib.cpp"
+"C:\Projects\twitcurl\SHA1.cpp"
+"C:\Projects\twitcurl\twitcurl.cpp"
+"C:\Projects\twitcurl\urlencode.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\Mahesh\LOCALS~1\Temp\RSP239.tmp" 
+Creating command line "link.exe -lib /nologo /out:"Release\twitcurl.lib"  .\Release\base64.obj .\Release\HMAC_SHA1.obj .\Release\oauthlib.obj .\Release\SHA1.obj .\Release\twitcurl.obj .\Release\urlencode.obj "
+<h3>Output Window</h3>
+Compiling...
+base64.cpp
+HMAC_SHA1.cpp
+oauthlib.cpp
+SHA1.cpp
+twitcurl.cpp
+urlencode.cpp
+Creating library...
+
+
+
+<h3>Results</h3>
+twitcurl.lib - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

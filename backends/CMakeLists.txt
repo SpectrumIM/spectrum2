@@ -16,6 +16,8 @@ if (PROTOBUF_FOUND)
 # 	endif()
 
 	ADD_SUBDIRECTORY(template)
+	
+	ADD_SUBDIRECTORY(twitter)
 
 if (NOT WIN32)
 	ADD_SUBDIRECTORY(frotz)

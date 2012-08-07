@@ -123,6 +123,14 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")
 		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
 		("backend.no_vcard_fetch", value<bool>()->default_value(false), "True if VCards for buddies should not be fetched. Only avatars will be forwarded.")
+		("twitter.consumer_key", value<std::string>()->default_value(""), "Twitter APP Consumer Key.")
+		("twitter.consumer_secret", value<std::string>()->default_value(""), "Twitter APP Consumer Secret")
+		("twitter.mode", value<int>()->default_value(0), "Twitter mode")
+		("proxy.server", value<std::string>()->default_value("localhost"), "Proxy IP.")
+		("proxy.user", value<std::string>()->default_value(""), "Proxy user.")
+		("proxy.password", value<std::string>()->default_value(""), "Proxy Password.")
+		("proxy.port", value<int>()->default_value(0), "Proxy port.")
+
 	;
 
 	// Load configs passed by command line
