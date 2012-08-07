@@ -173,12 +173,17 @@ if (PROTOBUF_FOUND)
 # 		message("Libyahoo2 plugin  : no (install libyahoo2-devel)")
 # 	endif()
 
+	message("Swiften plugin    : yes")
+    message("Twitter plugin    : yes")
+
 else()
 	message("Network plugins   : no (install libprotobuf-dev)")
 	message("Libpurple plugin  : no (install libpurple and libprotobuf-dev)")
 	message("IRC plugin        : no (install libircclient-qt and libprotobuf-dev)")
 	message("Frotz plugin      : no (install libprotobuf-dev)")
 	message("SMSTools3 plugin  : no (install libprotobuf-dev)")
+	message("Swiften plugin    : no (install libprotobuf-dev)")
+    message("Twitter plugin    : no (install libprotobuf-dev)")
 endif()
 
 if (LOG4CXX_FOUND)
