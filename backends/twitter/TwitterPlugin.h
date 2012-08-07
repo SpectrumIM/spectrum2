@@ -86,6 +86,8 @@ class TwitterPlugin : public NetworkPlugin {
 		
 		bool getUserOAuthKeyAndSecret(const std::string user, std::string &key, std::string &secret);
 		
+		bool checkSpectrum1User(const std::string user);
+		
 		bool storeUserOAuthKeyAndSecret(const std::string user, const std::string OAuthKey, const std::string OAuthSecret);
 		
 		void initUserSession(const std::string user, const std::string legacyName, const std::string password);
@@ -153,6 +155,7 @@ class TwitterPlugin : public NetworkPlugin {
 		struct UserData
 		{
 			std::string legacyName;
+			bool spectrum1User; //Legacy support
 			User userTwitterObj;
 			std::string userImg;
 			twitCurl* sessions;		

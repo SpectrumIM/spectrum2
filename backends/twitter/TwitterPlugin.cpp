@@ -17,19 +17,11 @@ DEFINE_LOGGER(logger, "Twitter Backend");
 TwitterPlugin *np = NULL;
 Swift::SimpleEventLoop *loop_; // Event Loop
 
-#define abs(x) ((x)<0?-(x):(x))
-//#define SHA(x) (convertToChars(Swift::byteArrayToString(Swift::SHA1::getHash(Swift::createByteArray((x))))))
-#define SHA(x) (Swift::Hexify::hexify(Swift::SHA1::getHash(Swift::createByteArray((x)))))
+const std::string OLD_APP_KEY = "PCWAdQpyyR12ezp2fVwEhw";
+const std::string OLD_APP_SECRET = "EveLmCXJIg2R7BTCpm6OWV8YyX49nI0pxnYXh7JMvDg";
 
-//static std::string convertToChars(std::string s)
-//{
-//	std::string ret = "";
-//	std::string tab[] = {"0","1","2","3","4","5","6","7",
-//						 "8","9","A","B","C","D","E","F"};
-//	for(int i = 0 ; i < s.size() ; i++)
-//		ret = tab[s[i]>>4&15] + tab[s[i]&15] + ret;
-//	return ret;
-//}
+#define abs(x) ((x)<0?-(x):(x))
+#define SHA(x) (Swift::Hexify::hexify(Swift::SHA1::getHash(Swift::createByteArray((x)))))
 
 //Compares two +ve intergers 'a' and 'b' represented as strings 
 static int cmp(std::string a, std::string b)
@@ -120,6 +112,8 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 	LOG4CXX_INFO(logger, std::string("Received login request for ") + user)	
 	initUserSession(user, legacyName, password);
 	handleConnected(user);
+	
+	LOG4CXX_INFO(logger, "SPECTRUM 1 USER? - " << (userdb[user].spectrum1User? "true" : "false")) 
 	
 	LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
 	handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
@@ -356,6 +350,26 @@ bool TwitterPlugin::getUserOAuthKeyAndSecret(const std::string user, std::string
 	return true;
 }
 
+bool TwitterPlugin::checkSpectrum1User(const std::string user) 
+{
+	boost::mutex::scoped_lock lock(dblock);
+	
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+		return false;
+	}
+
+	std::string first_synchronization_done = "";
+	int type;
+	storagebackend->getUserSetting((long)info.id, "first_synchronization_done", type, first_synchronization_done);
+
+	LOG4CXX_INFO(logger, "first_synchronization_done: " << first_synchronization_done)
+
+	if(first_synchronization_done.length()) return true;
+	return false;
+}
+
 int TwitterPlugin::getTwitterMode(const std::string user) 
 {
 	boost::mutex::scoped_lock lock(dblock);
@@ -446,12 +460,21 @@ void TwitterPlugin::initUserSession(const std::string user, const std::string le
 		}
 	}
 
+	//Check if the user is spectrum1 user
+	userdb[user].spectrum1User = checkSpectrum1User(user);
+
 	userdb[user].connectionState = NEW;
 	userdb[user].legacyName = username;	
 	userdb[user].sessions->setTwitterUsername(username);
-	userdb[user].sessions->setTwitterPassword(passwd); 
-	userdb[user].sessions->getOAuth().setConsumerKey(consumerKey);
-	userdb[user].sessions->getOAuth().setConsumerSecret(consumerSecret);
+	userdb[user].sessions->setTwitterPassword(passwd);
+
+	if(!userdb[user].spectrum1User) {
+		userdb[user].sessions->getOAuth().setConsumerKey(consumerKey);
+		userdb[user].sessions->getOAuth().setConsumerSecret(consumerSecret);
+	} else {
+		userdb[user].sessions->getOAuth().setConsumerKey(OLD_APP_KEY);
+		userdb[user].sessions->getOAuth().setConsumerSecret(OLD_APP_SECRET);
+	}
 }
 
 void TwitterPlugin::OAuthFlowComplete(const std::string user, twitCurl *obj) 
