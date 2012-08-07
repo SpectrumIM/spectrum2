@@ -524,9 +524,11 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 
 	for (std::list<BuddyInfo>::const_iterator it = roster.begin(); it != roster.end(); it++) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
-		m_buddies[buddy->getName()] = buddy;
-		onBuddySet(buddy);
+		if (buddy) {
+			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
+			m_buddies[buddy->getName()] = buddy;
+			onBuddySet(buddy);
+		}
 	}
 
 	m_rosterStorage = storage;

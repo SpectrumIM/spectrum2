@@ -169,11 +169,11 @@ class Buddy {
 
 	protected:
 		void generateJID();
+		Swift::JID m_jid;
 
 	private:
 		long m_id;
 // 		Swift::Presence::ref m_lastPresence;
-		Swift::JID m_jid;
 		BuddyFlag m_flags;
 		RosterManager *m_rosterManager;
 		Subscription m_subscription;

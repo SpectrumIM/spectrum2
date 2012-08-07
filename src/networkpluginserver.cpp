@@ -95,6 +95,7 @@ class NetworkFactory : public Factory {
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
 			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
 			buddy->setAlias(buddyInfo.alias);
+			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (!buddy->setName(buddyInfo.legacyName)) {
 				delete buddy;
 				return NULL;
@@ -106,7 +107,6 @@ class NetworkFactory : public Factory {
 				buddy->setSubscription(Buddy::Ask);
 			}
 			buddy->setGroups(buddyInfo.groups);
-			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;

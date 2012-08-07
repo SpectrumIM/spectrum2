@@ -39,7 +39,7 @@ bool LocalBuddy::setName(const std::string &name) {
 	m_name = name;
 	try {
 		generateJID();
-		return true;
+		return m_jid.isValid();
 	} catch (...) {
 		m_name = oldName;
 		return false;
