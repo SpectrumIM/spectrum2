@@ -1651,6 +1651,9 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 		ssize_t n = read(source, ptr, sizeof(buffer));
 #endif
 		if (n <= 0) {
+			if (errno == EAGAIN) {
+				return;
+			}
 			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
 			exit(errno);
 		}
