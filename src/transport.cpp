@@ -204,7 +204,9 @@ void Component::start() {
 
 		//Type casting to BoostConnectionServer since onStopped signal is not defined in ConnectionServer
 		//Ideally, onStopped must be defined in ConnectionServer
-		boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&Component::handleServerStopped, this, _1));
+		if (boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
+			boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&Component::handleServerStopped, this, _1));
+		}
 		
 		// We're connected right here, because we're in server mode...
 		handleConnected();

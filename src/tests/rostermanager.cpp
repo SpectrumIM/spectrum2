@@ -71,23 +71,15 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		User *user = userManager->getUser("user@localhost");
 		CPPUNIT_ASSERT(user);
 
-		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1);
-		buddy->setFlags(BUDDY_JID_ESCAPING);
-		buddy->setName("buddy1");
-		buddy->setAlias("Buddy 1");
 		std::vector<std::string> grp;
 		grp.push_back("group1");
-		buddy->setGroups(grp);
+		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
 		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
 		user->getRosterManager()->setBuddy(buddy);
 
-		buddy = new LocalBuddy(user->getRosterManager(), -1);
-		buddy->setFlags(BUDDY_JID_ESCAPING);
-		buddy->setName("buddy2");
-		buddy->setAlias("Buddy 2");
 		std::vector<std::string> grp2;
 		grp2.push_back("group2");
-		buddy->setGroups(grp2);
+		buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy2", "Buddy 2", grp2, BUDDY_JID_ESCAPING);
 		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status2");
 		user->getRosterManager()->setBuddy(buddy);
 	}

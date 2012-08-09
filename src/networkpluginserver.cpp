@@ -84,6 +84,8 @@ class NetworkFactory : public Factory {
 			m_nps = nps;
 		}
 
+		virtual ~NetworkFactory() {}
+
 		// Creates new conversation (NetworkConversation in this case)
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
 			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName);
@@ -93,10 +95,8 @@ class NetworkFactory : public Factory {
 
 		// Creates new LocalBuddy
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
-			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
-			buddy->setAlias(buddyInfo.alias);
-			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
-			if (!buddy->setName(buddyInfo.legacyName)) {
+			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id, buddyInfo.legacyName, buddyInfo.alias, buddyInfo.groups, (BuddyFlag) buddyInfo.flags);
+			if (!buddy->isValid()) {
 				delete buddy;
 				return NULL;
 			}
@@ -106,7 +106,6 @@ class NetworkFactory : public Factory {
 			else {
 				buddy->setSubscription(Buddy::Ask);
 			}
-			buddy->setGroups(buddyInfo.groups);
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
@@ -510,13 +509,18 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		buddy->handleBuddyChanged();
 	}
 	else {
-		buddy = new LocalBuddy(user->getRosterManager(), -1);
-		if (!buddy->setName(payload.buddyname())) {
+		std::vector<std::string> groups;
+		for (int i = 0; i < payload.group_size(); i++) {
+			groups.push_back(payload.group(i));
+		}
+		buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		if (!buddy->isValid()) {
 			delete buddy;
 			return;
 		}
-		buddy->setFlags(BUDDY_JID_ESCAPING);
-		handleBuddyPayload(buddy, payload);
+		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+		buddy->setIconHash(payload.iconhash());
+		buddy->setBlocked(payload.blocked());
 		user->getRosterManager()->setBuddy(buddy);
 	}
 }

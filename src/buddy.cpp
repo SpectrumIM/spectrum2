@@ -26,7 +26,7 @@
 
 namespace Transport {
 
-Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager),
+Buddy::Buddy(RosterManager *rosterManager, long id, BuddyFlag flags) : m_id(id), m_flags(flags), m_rosterManager(rosterManager),
 	m_subscription(Ask) {
 // 	m_rosterManager->setBuddy(this);
 }

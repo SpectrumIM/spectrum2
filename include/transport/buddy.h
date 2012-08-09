@@ -47,7 +47,7 @@ class Buddy {
 		/// \param rosterManager RosterManager associated with this buddy.
 		/// \param id ID which identifies the buddy in database or -1 if it's new buddy which is
 		/// not in database yet.
-		Buddy(RosterManager *rosterManager, long id = -1);
+		Buddy(RosterManager *rosterManager, long id = -1, BuddyFlag flags = BUDDY_NO_FLAG);
 
 		/// Destructor
 		virtual ~Buddy();
