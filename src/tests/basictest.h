@@ -69,12 +69,12 @@ class TestingFactory : public Factory {
 
 		// Creates new LocalBuddy
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
-			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
-			buddy->setAlias(buddyInfo.alias);
-			buddy->setName(buddyInfo.legacyName);
+			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id, buddyInfo.legacyName, buddyInfo.alias, buddyInfo.groups, (BuddyFlag) buddyInfo.flags);
+			if (!buddy->isValid()) {
+				delete buddy;
+				return NULL;
+			}
 			buddy->setSubscription(Buddy::Ask);
-			buddy->setGroups(buddyInfo.groups);
-			buddy->setFlags((BuddyFlag) buddyInfo.flags);
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
@@ -99,6 +99,8 @@ class BasicTest : public Swift::XMPPParserClient {
 	void injectPresence(boost::shared_ptr<Swift::Presence> &response);
 	void injectIQ(boost::shared_ptr<Swift::IQ> iq);
 
+	void dumpReceived();
+
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element);
 
 	protected:
@@ -116,5 +118,6 @@ class BasicTest : public Swift::XMPPParserClient {
 		TestingFactory *factory;
 		Component *component;
 		std::vector<boost::shared_ptr<Swift::Element> > received;
+		std::string receivedData;
 };
 

@@ -47,7 +47,7 @@ class Buddy {
 		/// \param rosterManager RosterManager associated with this buddy.
 		/// \param id ID which identifies the buddy in database or -1 if it's new buddy which is
 		/// not in database yet.
-		Buddy(RosterManager *rosterManager, long id = -1);
+		Buddy(RosterManager *rosterManager, long id = -1, BuddyFlag flags = BUDDY_NO_FLAG);
 
 		/// Destructor
 		virtual ~Buddy();
@@ -165,7 +165,7 @@ class Buddy {
 		/// \param jid Jabber ID.
 		/// \return legacy name of buddy from JID.
 		static std::string JIDToLegacyName(const Swift::JID &jid);
-		static BuddyFlag buddFlagsFromJID(const Swift::JID &jid);
+		static BuddyFlag buddyFlagsFromJID(const Swift::JID &jid);
 
 	protected:
 		void generateJID();
