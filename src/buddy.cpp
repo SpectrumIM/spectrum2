@@ -178,7 +178,7 @@ std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	return name;
 }
 
-BuddyFlag Buddy::buddFlagsFromJID(const Swift::JID &jid) {
+BuddyFlag Buddy::buddyFlagsFromJID(const Swift::JID &jid) {
 	if (jid.getUnescapedNode() == jid.getNode()) {
 		return BUDDY_NO_FLAG;
 	}

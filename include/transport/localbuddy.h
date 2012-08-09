@@ -62,7 +62,8 @@ class LocalBuddy : public Buddy {
 		void setGroups(const std::vector<std::string> &groups);
 
 		bool isValid() {
-			return m_jid.isValid();
+			std::string safeName = getSafeName();
+			return m_jid.isValid() && safeName.find("/") == std::string::npos;
 		}
 
 	private:

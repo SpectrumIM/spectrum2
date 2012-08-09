@@ -165,7 +165,7 @@ class Buddy {
 		/// \param jid Jabber ID.
 		/// \return legacy name of buddy from JID.
 		static std::string JIDToLegacyName(const Swift::JID &jid);
-		static BuddyFlag buddFlagsFromJID(const Swift::JID &jid);
+		static BuddyFlag buddyFlagsFromJID(const Swift::JID &jid);
 
 	protected:
 		void generateJID();
