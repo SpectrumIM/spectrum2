@@ -47,8 +47,8 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 		exit(0);
 	}
 	
-	adminLegacyName = "twitter-account"; 
-	adminChatRoom = "twitter-chatroom"; 
+	adminLegacyName = "twitter.com"; 
+	adminChatRoom = "#twitter"; 
 	adminNickName = "twitter"; 
 	adminAlias = "twitter";
 
