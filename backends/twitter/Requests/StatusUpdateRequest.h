@@ -3,6 +3,7 @@
 
 #include "../ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
+#include "../TwitterResponseParser.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
 #include <boost/function.hpp>
@@ -16,12 +17,12 @@ class StatusUpdateRequest : public Thread
 	std::string data;
 	std::string user;
 	std::string replyMsg;
-	boost::function<void (std::string& user, std::string& errMsg)> callBack;
+	boost::function<void (std::string& user, Error& errMsg)> callBack;
 	bool success;
 
 	public:
 	StatusUpdateRequest(twitCurl *obj, const std::string &_user, const std::string &_data,
-						boost::function<void (std::string& user, std::string& errMsg)> cb) {
+						boost::function<void (std::string& user, Error& errMsg)> cb) {
 		twitObj = obj->clone();
 		data = _data;
 		user = _user;

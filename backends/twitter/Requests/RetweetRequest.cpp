@@ -8,15 +8,17 @@ void RetweetRequest::run()
 
 void RetweetRequest::finalize()
 {
-	replyMsg = "";
+	Error error;
 	if(!success) {
-		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger, user << " Curl error: " << replyMsg)
-		callBack(user, replyMsg);
+		std::string curlerror;
+		twitObj->getLastCurlError(curlerror);
+		error.setMessage(curlerror);	
+		LOG4CXX_ERROR(logger, user << " Curl error: " << curlerror)
+		callBack(user, error);
 	} else {
-		twitObj->getLastWebResponse( replyMsg );
-		std::string error = getErrorMessage( replyMsg );
-		if(error.length()) LOG4CXX_ERROR(logger, user << " - " << error)
+		twitObj->getLastWebResponse(replyMsg);
+		error = getErrorMessage(replyMsg);
+		if(error.getMessage().length()) LOG4CXX_ERROR(logger, user << " - " << error.getMessage())
 		else LOG4CXX_INFO(logger, user << " " << replyMsg);
 		callBack(user, error);
 	}

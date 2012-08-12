@@ -18,14 +18,14 @@ class CreateFriendRequest : public Thread
 	std::string user;
 	std::string frnd;
 	std::string replyMsg;
-	boost::function< void (std::string&, User&, std::string &, std::string&) > callBack;
+	boost::function< void (std::string&, User&, std::string &, Error&) > callBack;
 	User friendInfo;
 	std::string profileImg;	
 	bool success;
 
 	public:
 	CreateFriendRequest(twitCurl *obj, const std::string &_user, const std::string & _frnd,
-			     		 boost::function< void (std::string&, User&, std::string &, std::string&) >  cb) {
+			     		 boost::function< void (std::string&, User&, std::string &, Error&) >  cb) {
 		twitObj = obj->clone();
 		user = _user;
 		frnd = _frnd;

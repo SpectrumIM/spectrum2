@@ -17,13 +17,16 @@ void TimelineRequest::run()
 
 void TimelineRequest::finalize()
 {
+	Error error;
 	if(!success) {
-		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger,  user << " - Curl error: " << replyMsg)
-		callBack(user, userRequested, tweets, replyMsg);
+		std::string curlerror;
+		twitObj->getLastCurlError(curlerror);
+		error.setMessage(curlerror);	
+		LOG4CXX_ERROR(logger,  user << " - Curl error: " << curlerror)
+		callBack(user, userRequested, tweets, error);
 	} else {
-		std::string error = getErrorMessage(replyMsg);
-		if(error.length()) LOG4CXX_ERROR(logger,  user << " - " << error)
+		error = getErrorMessage(replyMsg);
+		if(error.getMessage().length()) LOG4CXX_ERROR(logger,  user << " - " << error.getMessage())
 		callBack(user, userRequested, tweets, error);
 	} 
 }

@@ -18,13 +18,13 @@ class DestroyFriendRequest : public Thread
 	std::string user;
 	std::string frnd;
 	std::string replyMsg;
-	boost::function< void (std::string&, User&, std::string&) > callBack;
+	boost::function< void (std::string&, User&, Error&) > callBack;
 	User friendInfo;	
 	bool success;
 
 	public:
 	DestroyFriendRequest(twitCurl *obj, const std::string &_user, const std::string & _frnd,
-			     		 boost::function< void (std::string&, User&, std::string&) >  cb) {
+			     		 boost::function< void (std::string&, User&, Error&) >  cb) {
 		twitObj = obj->clone();
 		user = _user;
 		frnd = _frnd;

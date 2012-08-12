@@ -192,12 +192,25 @@ class DirectMessage
 	void setRecipientData(User u) {recipient = u;}
 };
 
+class Error
+{
+	std::string code;
+	std::string message;
+	public:
+	Error():code(""),message(""){}
+	std::string getCode() {return code;}
+	std::string getMessage() {return message;}
+
+	void setCode(std::string &_code) {code = _code;}
+	void setMessage(std::string &_message) {message = _message;}
+};
+
 std::vector<Status> getTimeline(std::string &xml);
 std::vector<DirectMessage> getDirectMessages(std::string &xml);
 std::vector<std::string> getIDs(std::string &xml);
 std::vector<User> getUsers(std::string &xml);
 User getUser(std::string &xml);
-std::string getErrorMessage(std::string &xml);
+Error getErrorMessage(std::string &xml);
 
 Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns);
 DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const std::string xmlns);

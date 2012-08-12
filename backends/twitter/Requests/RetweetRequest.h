@@ -18,11 +18,11 @@ class RetweetRequest : public Thread
 	std::string user;
 	std::string replyMsg;
 	bool success;
-	boost::function < void (std::string&, std::string &) > callBack;
+	boost::function < void (std::string&, Error&) > callBack;
 
 	public:
 	RetweetRequest(twitCurl *obj, const std::string &_user, const std::string &_data,
-			       boost::function < void (std::string &, std::string &) > _cb) {
+			       boost::function < void (std::string &, Error&) > _cb) {
 		twitObj = obj->clone();
 		data = _data;
 		user = _user;

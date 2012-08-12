@@ -533,11 +533,11 @@ std::string TwitterPlugin::getMostRecentDMID(const std::string user)
 }
 
 /************************************** Twitter response functions **********************************/
-void TwitterPlugin::statusUpdateResponse(std::string &user, std::string &errMsg)
+void TwitterPlugin::statusUpdateResponse(std::string &user, Error &errMsg)
 {
-	if(errMsg.length()) {
+	if(errMsg.getMessage().length()) {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							"Status Update successful", userdb[user].twitterMode == CHATROOM ? adminNickName : "");
@@ -561,9 +561,9 @@ void TwitterPlugin::clearRoster(const std::string user)
 	userdb[user].buddies.clear();
 }
 
-void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg) 
+void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, Error &errMsg) 
 {
-	if(errMsg.length() == 0) 
+	if(errMsg.getMessage().length() == 0) 
 	{
 		for(int i=0 ; i<friends.size() ; i++) {
 			userdb[user].buddies.insert(friends[i].getScreenName());
@@ -584,14 +584,14 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 								userdb[user].twitterMode == CHATROOM ? adminNickName : "");*/
 		}
 	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							   std::string("Error populating roster - ") + errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+							   std::string("Error populating roster - ") + errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 
 	if(userdb[user].twitterMode == CHATROOM) handleParticipantChanged(user, userdb[user].nickName, adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 }
 
-void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg)
+void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, Error &errMsg)
 {
-	if(errMsg.length() == 0) 
+	if(errMsg.getMessage().length() == 0) 
 	{
 		std::string userlist = "\n***************USER LIST****************\n";
 		for(int i=0 ; i < friends.size() ; i++) {
@@ -601,13 +601,13 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							userlist, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
-							   errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+							   errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
  
 }
 
-void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg)
+void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , Error &errMsg)
 {
-	if(errMsg.length() == 0) {
+	if(errMsg.getMessage().length() == 0) {
 		
 		std::string timeline = "";
 		std::map<std::string, int> lastTweet;
@@ -643,14 +643,21 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 		if(timeline.length()) handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 												  timeline, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							   errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+							   errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 }
 
-void TwitterPlugin::directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, std::string &errMsg)
+void TwitterPlugin::directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, Error &errMsg)
 {
-	if(errMsg.length()) {
-		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							std::string("Error while sending direct message! - ") + errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+	if(errMsg.getCode() == "93") //Permission Denied
+		return;
+
+	if(errMsg.getMessage().length()) {
+		if(username != "")
+			handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+						  std::string("Error while sending direct message! - ") + errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+		else
+			handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+						  std::string("Error while fetching direct messages! - ") + errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
 	}
 
@@ -698,11 +705,11 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 	}
 }
 
-void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::string &img, std::string &errMsg)
+void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::string &img, Error &errMsg)
 {
-	if(errMsg.length()) {
+	if(errMsg.getMessage().length()) {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
 	}
 
@@ -721,11 +728,11 @@ void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::str
 	}
 }
 
-void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, std::string &errMsg)
+void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, Error &errMsg)
 {
-	if(errMsg.length()) {
+	if(errMsg.getMessage().length()) {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
-							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
 	} 
 	
@@ -745,22 +752,22 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, std::str
 }
 
 
-void TwitterPlugin::RetweetResponse(std::string &user, std::string &errMsg)
+void TwitterPlugin::RetweetResponse(std::string &user, Error &errMsg)
 {
-	if(errMsg.length()) {
+	if(errMsg.getMessage().length()) {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							"Retweet successful", userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	}
 }
 
-void TwitterPlugin::profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, std::string &errMsg)
+void TwitterPlugin::profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, Error &errMsg)
 {
-	if(errMsg.length()) {
+	if(errMsg.getMessage().length()) {
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							errMsg, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
 		LOG4CXX_INFO(logger, user << " - Sending VCard for " << buddy)
 		handleVCard(user, reqID, buddy, buddy, "", img);

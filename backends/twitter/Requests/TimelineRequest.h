@@ -19,12 +19,12 @@ class TimelineRequest : public Thread
 	std::string replyMsg;
 	std::string since_id;
 	bool success;
-	boost::function< void (std::string&, std::string&, std::vector<Status> &, std::string&) > callBack;
+	boost::function< void (std::string&, std::string&, std::vector<Status> &, Error&) > callBack;
 	std::vector<Status> tweets;
 
 	public:
 	TimelineRequest(twitCurl *obj, const std::string &_user, const std::string &_user2, const std::string &_since_id,
-					boost::function< void (std::string&, std::string&, std::vector<Status> &, std::string&) > cb) {
+					boost::function< void (std::string&, std::string&, std::vector<Status> &, Error&) > cb) {
 		twitObj = obj->clone();
 		user = _user;
 		userRequested = _user2;
