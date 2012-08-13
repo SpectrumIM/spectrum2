@@ -25,13 +25,23 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(setBuddy);
 	CPPUNIT_TEST(sendCurrentPresences);
 	CPPUNIT_TEST(sendCurrentPresence);
+	CPPUNIT_TEST(removeBuddy);
+	CPPUNIT_TEST(subscribeExistingBuddy);
+	CPPUNIT_TEST(subscribeNewBuddy);
+	CPPUNIT_TEST(unsubscribeExistingBuddy);
+	CPPUNIT_TEST(unsubscribeNewBuddy);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
+		std::string m_buddy;
+
 		void setUp (void) {
+			m_buddy.clear();
 			setMeUp();
-			userManager->onUserCreated.connect(boost::bind(&RosterManagerTest::handleUserCreated, this, _1));
 			connectUser();
+			User *user = userManager->getUser("user@localhost");
+			user->getRosterManager()->onBuddyAdded.connect(boost::bind(&RosterManagerTest::handleBuddyAdded, this, _1));
+			user->getRosterManager()->onBuddyRemoved.connect(boost::bind(&RosterManagerTest::handleBuddyRemoved, this, _1));
 			received.clear();
 		}
 
@@ -41,8 +51,12 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			tearMeDown();
 		}
 
-	void handleUserCreated(User *user) {
-		
+	void handleBuddyAdded(Buddy *buddy) {
+		m_buddy = buddy->getName();
+	}
+
+	void handleBuddyRemoved(Buddy *buddy) {
+		m_buddy = buddy->getName();
 	}
 
 	void connectUser() {
@@ -151,6 +165,106 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
+	}
+
+	void removeBuddy() {
+		add2Buddies();
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+		received.clear();
+		User *user = userManager->getUser("user@localhost");
+		user->getRosterManager()->removeBuddy("buddy1");
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT(payload1);
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
+		Swift::RosterItemPayload item = payload1->getItems()[0];
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
+		CPPUNIT_ASSERT_EQUAL(Swift::RosterItemPayload::Remove, item.getSubscription());
+	}
+
+	void subscribeExistingBuddy() {
+		add2Buddies();
+		received.clear();
+
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("buddy1@localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Subscribe);
+
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribed, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), m_buddy);
+	}
+
+	void subscribeNewBuddy() {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("buddy1@localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Subscribe);
+
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
+		Swift::RosterItemPayload item = payload1->getItems()[0];
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribed, dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getType());
+
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), m_buddy);
+	}
+
+	void unsubscribeExistingBuddy() {
+		add2Buddies();
+		received.clear();
+
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("buddy1@localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unsubscribe);
+
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
+		Swift::RosterItemPayload item = payload1->getItems()[0];
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
+
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unsubscribed, dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getType());
+
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), m_buddy);
+	}
+
+	void unsubscribeNewBuddy() {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("buddy1@localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unsubscribe);
+
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unsubscribed, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), m_buddy);
 	}
 
 	void disconnectUser() {

@@ -374,6 +374,8 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					break;
 				case Swift::Presence::Unsubscribe:
 					onBuddyRemoved(buddy);
+					removeBuddy(buddy->getName());
+					buddy = NULL;
 					response->setType(Swift::Presence::Unsubscribed);
 					break;
 				case Swift::Presence::Subscribed:
@@ -405,8 +407,17 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				case Swift::Presence::Subscribed:
 // 					onBuddyAdded(buddy);
 					return;
-				// buddy is already there, so nothing to do, just answer
+				// buddy is not there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
+					buddyInfo.id = -1;
+					buddyInfo.alias = "";
+					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
+					buddyInfo.subscription = "both";
+					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
+
+					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+					onBuddyRemoved(buddy);
+					delete buddy;
 					response->setType(Swift::Presence::Unsubscribed);
 					break;
 				default:

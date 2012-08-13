@@ -26,6 +26,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(buddyFlagsFromJID);
 	CPPUNIT_TEST(JIDToLegacyName);
 	CPPUNIT_TEST(handleBuddyChanged);
+	CPPUNIT_TEST(setAlias);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -112,6 +113,27 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());
 		CPPUNIT_ASSERT_EQUAL(std::string("status1"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getStatus());
+	}
+
+	void setAlias() {
+		User *user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(user);
+
+		std::vector<std::string> grp;
+		grp.push_back("group1");
+		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
+		user->getRosterManager()->setBuddy(buddy);
+		received.clear();
+
+		buddy->setAlias("Buddy 2");
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT(payload1);
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
+		Swift::RosterItemPayload item = payload1->getItems()[0];
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
+		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 2"), item.getName());
 	}
 
 	void disconnectUser() {
