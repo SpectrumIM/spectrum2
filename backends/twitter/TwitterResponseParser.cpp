@@ -212,19 +212,30 @@ std::vector<std::string> getIDs(std::string &xml)
 	return IDs;
 }
 
-std::string getErrorMessage(std::string &xml)
+Error getErrorMessage(std::string &xml)
 {
-	std::string error;
+	std::string error = "";
+	std::string code = "";
+	Error resp;
+
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
 
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML");
-		return "";
+		return resp;
 	}
 
 	const std::string xmlns = rootElement->getNamespace();
 	const Swift::ParserElement::ref errorElement = rootElement->getChild(TwitterReponseTypes::error, xmlns);
+	Swift::AttributeMap attributes = errorElement->getAttributes();
 	
-	if(errorElement != NULL) error = errorElement->getText();
-	return error;
+	if(errorElement != NULL) {
+		error = errorElement->getText();
+		code = (errorElement->getAttributes()).getAttribute("code");
+	}
+
+	resp.setCode(code);
+	resp.setMessage(error);
+
+	return resp;
 }

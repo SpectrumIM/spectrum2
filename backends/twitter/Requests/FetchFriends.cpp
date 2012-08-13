@@ -35,13 +35,16 @@ void FetchFriends::run()
 
 void FetchFriends::finalize()
 {
+	Error error;
 	if(!success) {
-		twitObj->getLastCurlError( replyMsg );
-		LOG4CXX_ERROR(logger,  user << " - " << replyMsg)
-		callBack(user, friends, friendAvatars, replyMsg);
+		std::string curlerror;
+		twitObj->getLastCurlError(curlerror);
+		error.setMessage(curlerror);	
+		LOG4CXX_ERROR(logger,  user << " - " << curlerror)
+		callBack(user, friends, friendAvatars, error);
 	} else {
-		std::string error = getErrorMessage(replyMsg);
-		if(error.length()) LOG4CXX_ERROR(logger,  user << " - " << error)
+		error = getErrorMessage(replyMsg);
+		if(error.getMessage().length()) LOG4CXX_ERROR(logger,  user << " - " << error.getMessage())
 		callBack(user, friends, friendAvatars, error);	
 	} 
 }

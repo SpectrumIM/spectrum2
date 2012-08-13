@@ -18,13 +18,13 @@ class DirectMessageRequest : public Thread
 	std::string user;
 	std::string username;
 	std::string replyMsg;
-	boost::function< void (std::string&, std::string &, std::vector<DirectMessage>&, std::string&) > callBack;
+	boost::function< void (std::string&, std::string &, std::vector<DirectMessage>&, Error&) > callBack;
 	std::vector<DirectMessage> messages;
 	bool success;
 
 	public:
 	DirectMessageRequest(twitCurl *obj, const std::string &_user, const std::string & _username, const std::string &_data,
-			     		boost::function< void (std::string&, std::string &, std::vector<DirectMessage>&, std::string&) >  cb) {
+			     		boost::function< void (std::string&, std::string &, std::vector<DirectMessage>&, Error&) >  cb) {
 		twitObj = obj->clone();
 		data = _data;
 		user = _user;

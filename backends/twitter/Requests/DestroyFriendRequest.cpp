@@ -18,15 +18,16 @@ void DestroyFriendRequest::run()
 
 void DestroyFriendRequest::finalize()
 {
+	Error error;
 	if(!success) {
-		std::string error;
-		twitObj->getLastCurlError(error);
-		LOG4CXX_ERROR(logger, user << " Curl error: " << error)
+		std::string curlerror;
+		twitObj->getLastCurlError(curlerror);
+		error.setMessage(curlerror);	
+		LOG4CXX_ERROR(logger, user << " Curl error: " << curlerror)
 		callBack(user, friendInfo, error);
 	} else {
-		std::string error;
 		error = getErrorMessage(replyMsg);
-		if(error.length()) LOG4CXX_ERROR(logger, user << " - " << error)
+		if(error.getMessage().length()) LOG4CXX_ERROR(logger, user << " - " << error.getMessage())
 		callBack(user, friendInfo, error);
 	}
 }
