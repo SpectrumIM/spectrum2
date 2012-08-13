@@ -22,7 +22,7 @@ class ProfileImageRequest : public Thread
 	std::string url;
 	std::string img;
 	unsigned int reqID;
-	boost::function< void (std::string&, std::string&, std::string&, int, std::string&) > callBack;
+	boost::function< void (std::string&, std::string&, std::string&, int, Error&) > callBack;
 
 	std::string ip, port, puser, ppasswd;
 
@@ -33,7 +33,7 @@ class ProfileImageRequest : public Thread
 
 	public:
 	ProfileImageRequest(Config *config, const std::string &_user, const std::string &_buddy, const std::string &_url, unsigned int _reqID,
-			     boost::function< void (std::string&, std::string&, std::string&, int, std::string&) >  cb) {
+			     boost::function< void (std::string&, std::string&, std::string&, int, Error&) >  cb) {
 
 		if(CONFIG_HAS_KEY(config,"proxy.server")) {
 			ip = CONFIG_STRING(config,"proxy.server");

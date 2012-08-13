@@ -12,13 +12,15 @@ void ProfileImageRequest::run()
 
 void ProfileImageRequest::finalize()
 {
+	Error errResponse;
 	if(!success) {
 		LOG4CXX_ERROR(logger,  user << " - " << error)
 		img = "";
-		callBack(user, buddy, img, reqID, error);
+		errResponse.setMessage(error);
+		callBack(user, buddy, img, reqID, errResponse);
 	} else {
 		LOG4CXX_INFO(logger, user << " - " << callbackdata);
 		img = callbackdata;
-		callBack(user, buddy, img, reqID, error);	
+		callBack(user, buddy, img, reqID, errResponse);	
 	} 
 }

@@ -44,6 +44,7 @@ class TwitterPlugin;
 extern TwitterPlugin *np;
 extern Swift::SimpleEventLoop *loop_; // Event Loop
 
+
 class TwitterPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
@@ -111,25 +112,25 @@ class TwitterPlugin : public NetworkPlugin {
 		bool setTwitterMode(const std::string user, int m);
 
 		/****************** Twitter response handlers **************************************/
-		void statusUpdateResponse(std::string &user, std::string &errMsg);
+		void statusUpdateResponse(std::string &user, Error &errMsg);
 		
 		void helpMessageResponse(std::string &user, std::string &msg);
 		
-		void populateRoster(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg);
+		void populateRoster(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, Error &errMsg);
 		
-		void displayFriendlist(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, std::string &errMsg);
+		void displayFriendlist(std::string &user, std::vector<User> &friends, std::vector<std::string> &friendAvatars, Error &errMsg);
 		
-		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , std::string &errMsg);
+		void displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , Error &errMsg);
 		
-		void directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, std::string &errMsg);
+		void directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, Error &errMsg);
 		
-		void createFriendResponse(std::string &user, User &frnd, std::string &img, std::string &errMsg);
+		void createFriendResponse(std::string &user, User &frnd, std::string &img, Error &errMsg);
 		
-		void deleteFriendResponse(std::string &user, User &frnd, std::string &errMsg);
+		void deleteFriendResponse(std::string &user, User &frnd, Error &errMsg);
 		
-		void RetweetResponse(std::string &user, std::string &errMsg);
+		void RetweetResponse(std::string &user, Error &errMsg);
 		
-		void profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, std::string &errMsg);
+		void profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, Error &errMsg);
 		/***********************************************************************************/
 
 	private:
