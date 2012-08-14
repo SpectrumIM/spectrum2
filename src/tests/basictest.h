@@ -33,6 +33,7 @@
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/userregistration.h"
+#include "transport/discoitemsresponder.h"
 #include "transport/localbuddy.h"
 #include "transport/storagebackend.h"
 
@@ -217,5 +218,6 @@ class BasicTest : public Swift::XMPPParserClient {
 		std::string receivedData;
 		StorageBackend *storage;
 		UserRegistration *userRegistration;
+		DiscoItemsResponder *itemsResponder;
 };
 

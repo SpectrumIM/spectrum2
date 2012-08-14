@@ -62,6 +62,9 @@ void BasicTest::setMeUp (void) {
 	userRegistration = new UserRegistration(component, userManager, storage);
 	userRegistration->start();
 
+	itemsResponder = new DiscoItemsResponder(component);
+	itemsResponder->start();
+
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
 
@@ -108,6 +111,7 @@ void BasicTest::tearMeDown (void) {
 	delete parser;
 	delete storage;
 	delete userRegistration;
+	delete itemsResponder;
 	received.clear();
 	receivedData.clear();
 }
