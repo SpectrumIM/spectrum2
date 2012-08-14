@@ -27,6 +27,9 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 	CPPUNIT_TEST(getFormRegistered);
 	CPPUNIT_TEST(registerUser);
 	CPPUNIT_TEST(unregisterUser);
+	CPPUNIT_TEST(unregisterEmptyPayload);
+	CPPUNIT_TEST(changePassword);
+	CPPUNIT_TEST(registerUserEmpty);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -113,6 +116,101 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Set, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+
+			UserInfo user;
+			CPPUNIT_ASSERT_EQUAL(false, storage->getUser("user@localhost", user));
+		}
+
+		void changePassword() {
+			registerUser();
+			received.clear();
+
+			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
+			reg->setUsername("legacyname");
+			reg->setPassword("another");
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+
+			UserInfo user;
+			CPPUNIT_ASSERT_EQUAL(true, storage->getUser("user@localhost", user));
+
+			CPPUNIT_ASSERT_EQUAL(std::string("legacyname"), user.uin);
+			CPPUNIT_ASSERT_EQUAL(std::string("another"), user.password);
+		}
+
+		void registerUserEmpty() {
+			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
+			reg->setUsername("");
+			reg->setPassword("password");
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Error, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+
+			UserInfo user;
+			CPPUNIT_ASSERT_EQUAL(false, storage->getUser("user@localhost", user));
+		}
+
+		void unregisterEmptyPayload() {
+			registerUser();
+			received.clear();
+
+			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
+			reg->setRemove(true);
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID());
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unsubscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unsubscribed, dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getType());
 		}
 
 };

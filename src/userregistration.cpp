@@ -90,7 +90,7 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 	if (!registered)
 		return;
 
-	if (remoteRosterNotSupported) {
+	if (remoteRosterNotSupported || !payload) {
 		std::list <BuddyInfo> roster;
 		m_storageBackend->getBuddies(userInfo.id, roster);
 		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
@@ -133,7 +133,7 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		m_userManager->removeUser(user);
 	}
 
-	if (remoteRosterNotSupported) {
+	if (remoteRosterNotSupported || !payload) {
 		Swift::Presence::ref response;
 		response = Swift::Presence::create();
 		response->setTo(Swift::JID(barejid));
