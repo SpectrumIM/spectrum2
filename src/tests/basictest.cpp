@@ -2,6 +2,7 @@
 #include "transport/userregistry.h"
 #include "transport/config.h"
 #include "transport/storagebackend.h"
+#include "transport/userregistration.h"
 #include "transport/user.h"
 #include "transport/transport.h"
 #include "transport/conversation.h"
@@ -46,6 +47,8 @@ void BasicTest::setMeUp (void) {
 
 	factory = new TestingFactory();
 
+	storage = new TestingStorageBackend();
+
 	loop = new Swift::DummyEventLoop();
 	factories = new Swift::DummyNetworkFactories(loop);
 
@@ -54,7 +57,10 @@ void BasicTest::setMeUp (void) {
 	component = new Component(loop, factories, cfg, factory, userRegistry);
 	component->start();
 
-	userManager = new UserManager(component, userRegistry);
+	userManager = new UserManager(component, userRegistry, storage);
+
+	userRegistration = new UserRegistration(component, userManager, storage);
+	userRegistration->start();
 
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
@@ -100,6 +106,8 @@ void BasicTest::tearMeDown (void) {
 	delete loop;
 	delete cfg;
 	delete parser;
+	delete storage;
+	delete userRegistration;
 	received.clear();
 	receivedData.clear();
 }

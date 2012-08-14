@@ -397,8 +397,6 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		}
 	}
 
-	printf("here\n");
-
 	if (!payload->getUsername() || !payload->getPassword()) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;

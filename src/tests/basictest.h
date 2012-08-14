@@ -32,7 +32,9 @@
 #include "transport/transport.h"
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
+#include "transport/userregistration.h"
 #include "transport/localbuddy.h"
+#include "transport/storagebackend.h"
 
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
@@ -81,6 +83,100 @@ class TestingFactory : public Factory {
 		}
 };
 
+class TestingStorageBackend : public StorageBackend {
+	public:
+		bool connected;
+		std::map<std::string, UserInfo> users;
+		std::map<std::string, bool> online_users;
+		long buddyid;
+
+		TestingStorageBackend() {
+			buddyid = 0;
+			connected = false;
+		}
+
+		/// connect
+		virtual bool connect() {
+			connected = true;
+			return true;
+		}
+
+		/// createDatabase
+		virtual bool createDatabase() {return true;}
+
+		/// setUser
+		virtual void setUser(const UserInfo &user) {
+			users[user.jid] = user;
+		}
+
+		/// getuser
+		virtual bool getUser(const std::string &barejid, UserInfo &user) {
+			if (users.find(barejid) == users.end()) {
+				return false;
+			}
+			user = users[barejid];
+			return true;
+		}
+
+		std::string findUserByID(long id) {
+			for (std::map<std::string, UserInfo>::const_iterator it = users.begin(); it != users.end(); it++) {
+				if (it->second.id == id) {
+					return it->first;
+				}
+			}
+			return "";
+		}
+
+		/// setUserOnline
+		virtual void setUserOnline(long id, bool online) {
+			std::string user = findUserByID(id);
+			if (user.empty()) {
+				return;
+			}
+			online_users[user] = online;
+		}
+
+		/// removeUser
+		virtual bool removeUser(long id) {
+			std::string user = findUserByID(id);
+			if (user.empty()) {
+				return false;
+			}
+			users.erase(user);
+			return true;
+		}
+
+		/// getBuddies
+		virtual bool getBuddies(long id, std::list<BuddyInfo> &roster) {
+			return true;
+		}
+
+		/// getOnlineUsers
+		virtual bool getOnlineUsers(std::vector<std::string> &users) {
+			return true;
+		}
+
+		virtual long addBuddy(long userId, const BuddyInfo &buddyInfo) {
+			return buddyid++;
+		}
+		virtual void updateBuddy(long userId, const BuddyInfo &buddyInfo) {
+			
+		}
+
+		virtual void removeBuddy(long id) {
+			
+		}
+
+		virtual void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {}
+		virtual void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {}
+
+		virtual void getUserSetting(long userId, const std::string &variable, int &type, std::string &value) {}
+		virtual void updateUserSetting(long userId, const std::string &variable, const std::string &value) {}
+
+		virtual void beginTransaction() {}
+		virtual void commitTransaction() {}
+};
+
 class BasicTest : public Swift::XMPPParserClient {
 
 	public:
@@ -119,5 +215,7 @@ class BasicTest : public Swift::XMPPParserClient {
 		Component *component;
 		std::vector<boost::shared_ptr<Swift::Element> > received;
 		std::string receivedData;
+		StorageBackend *storage;
+		UserRegistration *userRegistration;
 };
 
