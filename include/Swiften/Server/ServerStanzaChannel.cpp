@@ -173,9 +173,4 @@ void ServerStanzaChannel::handleSessionInitialized() {
 	onAvailableChanged(true);
 }
 
-std::vector<Certificate::ref> ServerStanzaChannel::getPeerCertificateChain() const {
-	return std::vector<Certificate::ref>();
-}
-
-
 }

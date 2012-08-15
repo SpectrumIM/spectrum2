@@ -32,7 +32,6 @@ namespace Swift {
 			bool getStreamManagementEnabled() const {
 				return false;
 			}
-		        virtual std::vector<Certificate::ref> getPeerCertificateChain() const;
 	
 			bool isAvailable() const {
 				return true;

@@ -82,12 +82,10 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+#ifndef _WIN32
+//TODO: fix
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
-#ifdef _MSC_VER
-			TLSServerContextFactory *f = new SchannelServerContextFactory();
-			m_server->addTLSEncryption(f, boost::make_shared<CAPICertificate>(CONFIG_STRING(m_config, "service.cert")));
-#else
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
 			m_server->addTLSEncryption(f, boost::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
 #endif
