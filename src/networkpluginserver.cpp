@@ -44,6 +44,8 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 
+#include "utf8.h"
+
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
 
@@ -82,6 +84,8 @@ class NetworkFactory : public Factory {
 			m_nps = nps;
 		}
 
+		virtual ~NetworkFactory() {}
+
 		// Creates new conversation (NetworkConversation in this case)
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
 			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName);
@@ -91,17 +95,17 @@ class NetworkFactory : public Factory {
 
 		// Creates new LocalBuddy
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
-			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
-			buddy->setAlias(buddyInfo.alias);
-			buddy->setName(buddyInfo.legacyName);
+			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id, buddyInfo.legacyName, buddyInfo.alias, buddyInfo.groups, (BuddyFlag) buddyInfo.flags);
+			if (!buddy->isValid()) {
+				delete buddy;
+				return NULL;
+			}
 			if (buddyInfo.subscription == "both") {
 				buddy->setSubscription(Buddy::Both);
 			}
 			else {
 				buddy->setSubscription(Buddy::Ask);
 			}
-			buddy->setGroups(buddyInfo.groups);
-			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
@@ -201,7 +205,6 @@ static void SigCatcher(int n) {
 #endif
 
 static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payload) {
-	buddy->setName(payload.buddyname());
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
@@ -265,29 +268,35 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
-	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
-	LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
-	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+	while (true) {
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
+		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
 #ifndef _WIN32
-	// wait if the backend process will still be alive after 1 second
-	sleep(1);
-	pid_t result;
-	int status;
-	result = waitpid(-1, &status, WNOHANG);
-	if (result != 0) {
-		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status) != 0) {
-				LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+		// wait if the backend process will still be alive after 1 second
+		sleep(1);
+		pid_t result;
+		int status;
+		result = waitpid(-1, &status, WNOHANG);
+		if (result != 0) {
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+					continue;
+				}
+			}
+			else {
+				LOG4CXX_ERROR(logger, "Backend can not be started");
+				continue;
 			}
 		}
-		else {
-			LOG4CXX_ERROR(logger, "Backend can not be started");
-		}
-	}
 
-	signal(SIGCHLD, SigCatcher);
+		signal(SIGCHLD, SigCatcher);
 #endif
+		// quit the while loop
+		break;
+	}
 
 }
 
@@ -416,11 +425,17 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
+	std::string field;
 
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
-	vcard->setFullName(payload.fullname());
+
+	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), field.begin(), '_');
+	vcard->setFullName(field);
+
+	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), field.begin(), '_');
+	vcard->setNickname(field);
+
 	vcard->setPhoto(Swift::createByteArray(payload.photo()));
-	vcard->setNickname(payload.nickname());
 
 	m_vcardResponder->sendVCard(payload.id(), vcard);
 }
@@ -494,9 +509,18 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		buddy->handleBuddyChanged();
 	}
 	else {
-		buddy = new LocalBuddy(user->getRosterManager(), -1);
-		buddy->setFlags(BUDDY_JID_ESCAPING);
-		handleBuddyPayload(buddy, payload);
+		std::vector<std::string> groups;
+		for (int i = 0; i < payload.group_size(); i++) {
+			groups.push_back(payload.group(i));
+		}
+		buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		if (!buddy->isValid()) {
+			delete buddy;
+			return;
+		}
+		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+		buddy->setIconHash(payload.iconhash());
+		buddy->setBlocked(payload.blocked());
 		user->getRosterManager()->setBuddy(buddy);
 	}
 }

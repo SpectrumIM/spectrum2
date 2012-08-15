@@ -289,6 +289,8 @@ void MySQLBackend::disconnect() {
 	delete m_removeUserSettings;
 	delete m_removeUserBuddiesSettings;
 	delete m_addBuddy;
+	delete m_removeBuddy;
+	delete m_removeBuddySettings;
 	delete m_updateBuddy;
 	delete m_getBuddies;
 	delete m_getBuddiesSettings;
@@ -296,6 +298,7 @@ void MySQLBackend::disconnect() {
 	delete m_setUserSetting;
 	delete m_updateUserSetting;
 	delete m_updateBuddySetting;
+	delete m_getBuddySetting;
 	delete m_setUserOnline;
 	delete m_getOnlineUsers;
 	mysql_close(&m_conn);
@@ -331,10 +334,13 @@ bool MySQLBackend::connect() {
 	m_removeUserBuddiesSettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
 
 	m_addBuddy = new Statement(&m_conn, "issssi", "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
+	m_removeBuddy = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies WHERE id=?");
+	m_removeBuddySettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE buddy_id=?");
 	m_updateBuddy = new Statement(&m_conn, "ssisis", "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
 	m_getBuddies = new Statement(&m_conn, "i|issssi", "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	m_getBuddiesSettings = new Statement(&m_conn, "i|iiss", "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	m_updateBuddySetting = new Statement(&m_conn, "iisiss", "INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value=?");
+	m_getBuddySetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
 	
 	m_getUserSetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	m_setUserSetting = new Statement(&m_conn, "isis", "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
@@ -477,6 +483,36 @@ long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	}
 
 	return id;
+}
+
+void MySQLBackend::updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {
+	*m_updateBuddySetting << userId << buddyId << variable << type << value << value;
+	EXEC(m_updateBuddySetting, updateBuddySetting(userId, buddyId, variable, type, value));
+}
+
+void MySQLBackend::getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {
+// 	"SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?"
+	*m_getBuddySetting << userId << buddyId << variable;
+	EXEC(m_getBuddySetting, getBuddySetting(userId, buddyId, variable, type, value));
+	if (m_getBuddySetting->fetch() == 0) {
+		*m_getBuddySetting >> type >> value;
+	}
+
+	while (m_getBuddySetting->fetch() == 0) {
+
+	}
+}
+
+void MySQLBackend::removeBuddy(long id) {
+	*m_removeBuddy << (int) id;
+	EXEC(m_removeBuddy, removeBuddy(id));
+	if (!exec_ok)
+		return;
+
+	*m_removeBuddySettings << (int) id;
+	EXEC(m_removeBuddySettings, removeBuddy(id));
+	if (!exec_ok)
+		return;
 }
 
 void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {

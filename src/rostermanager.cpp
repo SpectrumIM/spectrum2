@@ -299,11 +299,13 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 		buddyInfo.alias = item.getName();
 		buddyInfo.legacyName = legacyName;
 		buddyInfo.subscription = "both";
-		buddyInfo.flags = Buddy::buddFlagsFromJID(item.getJID());
+		buddyInfo.flags = Buddy::buddyFlagsFromJID(item.getJID());
 		buddyInfo.groups = item.getGroups();
 
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-		setBuddy(buddy);
+		if (buddy) {
+			setBuddy(buddy);
+		}
 	}
 }
 
@@ -372,6 +374,8 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					break;
 				case Swift::Presence::Unsubscribe:
 					onBuddyRemoved(buddy);
+					removeBuddy(buddy->getName());
+					buddy = NULL;
 					response->setType(Swift::Presence::Unsubscribed);
 					break;
 				case Swift::Presence::Subscribed:
@@ -392,7 +396,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddyInfo.alias = "";
 					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
 					buddyInfo.subscription = "both";
-					buddyInfo.flags = Buddy::buddFlagsFromJID(presence->getTo());
+					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
 					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
 
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
@@ -403,8 +407,17 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				case Swift::Presence::Subscribed:
 // 					onBuddyAdded(buddy);
 					return;
-				// buddy is already there, so nothing to do, just answer
+				// buddy is not there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
+					buddyInfo.id = -1;
+					buddyInfo.alias = "";
+					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
+					buddyInfo.subscription = "both";
+					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
+
+					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+					onBuddyRemoved(buddy);
+					delete buddy;
 					response->setType(Swift::Presence::Unsubscribed);
 					break;
 				default:
@@ -471,7 +484,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddyInfo.alias = "";
 					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
 					buddyInfo.subscription = "both";
-					buddyInfo.flags = Buddy::buddFlagsFromJID(presence->getTo());
+					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
 
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 					setBuddy(buddy);
@@ -522,9 +535,11 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 
 	for (std::list<BuddyInfo>::const_iterator it = roster.begin(); it != roster.end(); it++) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
-		m_buddies[buddy->getName()] = buddy;
-		onBuddySet(buddy);
+		if (buddy) {
+			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
+			m_buddies[buddy->getName()] = buddy;
+			onBuddySet(buddy);
+		}
 	}
 
 	m_rosterStorage = storage;

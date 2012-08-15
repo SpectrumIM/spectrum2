@@ -22,6 +22,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(ComponentTest);
 	CPPUNIT_TEST(handlePresenceWithNode);
 	CPPUNIT_TEST(handlePresenceWithoutNode);
+	CPPUNIT_TEST(handleErrorPresence);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -50,6 +51,18 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("somebody@localhost");
 		response->setFrom("user@localhost/resource");
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+	}
+
+	// Error presence should be ignored
+	void handleErrorPresence() {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Error);
 		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
 		
 		loop->processEvents();

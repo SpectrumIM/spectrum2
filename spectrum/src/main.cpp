@@ -26,6 +26,7 @@
 #include <grp.h>
 #include <sys/resource.h>
 #include "libgen.h"
+#include <malloc.h>
 #else
 #include <process.h>
 #define getpid _getpid
@@ -127,6 +128,10 @@ int main(int argc, char **argv)
 	std::string jid;
 
 	setlocale(LC_ALL, "");
+#ifndef WIN32
+	mallopt(M_CHECK_ACTION, 2);
+	mallopt(M_PERTURB, 0xb);
+#endif
 
 #ifndef WIN32
 	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {

@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <cstdlib>
 #include "signal.h"
 #include "sys/wait.h"
 
@@ -118,7 +119,7 @@ static int isRunning(const std::string &pidfile) {
 	return boost::lexical_cast<int>(pid);
 }
 
-static void start_all_instances(ManagerConfig *config) {
+static void start_instances(ManagerConfig *config, const std::string &_jid = "") {
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -160,6 +161,10 @@ static void start_all_instances(ManagerConfig *config) {
 						continue;
 					}
 
+					if (!_jid.empty() && _jid != vhost) {
+						continue;
+					}
+
 					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
 					if (pid == 0) {
 						std::cout << "Starting " << itr->path() << ": OK\n";
@@ -178,7 +183,7 @@ static void start_all_instances(ManagerConfig *config) {
 	}
 }
 
-static void stop_all_instances(ManagerConfig *config) {
+static void stop_instances(ManagerConfig *config, const std::string &_jid = "") {
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -212,10 +217,28 @@ static void stop_all_instances(ManagerConfig *config) {
 						continue;
 					}
 
+					if (!_jid.empty() && _jid != vhost) {
+						continue;
+					}
+
 					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
 					if (pid) {
-						std::cout << "Stopping " << itr->path() << ": OK\n";
+						std::cout << "Stopping " << itr->path() << ": ";
 						kill(pid, SIGTERM);
+
+						sleep(1);
+						int count = 20;
+						while (kill(pid, 0) == 0 && count != 0) {
+							std::cout << ".";
+							sleep(1);
+							count--;
+						}
+						if (count == 0) {
+							std::cout << " ERROR (timeout)\n";
+						}
+						else {
+							std::cout << " OK\n";
+						}
 					}
 					else {
 						std::cout << "Stopping " << itr->path() << ": Not running\n";
@@ -547,10 +570,10 @@ int main(int argc, char **argv)
 	}
 
 	if (command[0] == "start") {
-		start_all_instances(&config);
+		start_instances(&config);
 	}
 	else if (command[0] == "stop") {
-		stop_all_instances(&config);
+		stop_instances(&config);
 	}
 	else if (command[0] == "status") {
 		return show_status(&config);
@@ -569,6 +592,15 @@ int main(int argc, char **argv)
 		std::string jid = command[0];
 		command.erase(command.begin());
 		std::string cmd = boost::algorithm::join(command, " ");
+
+		if (cmd == "start") {
+			start_instances(&config, jid);
+			return 0;
+		}
+		else if (cmd == "stop") {
+			stop_instances(&config, jid);
+			return 0;
+		}
 
 		ask_local_server(&config, networkFactories, jid, cmd);
 // 		std::string message = command;

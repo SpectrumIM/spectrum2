@@ -26,7 +26,7 @@
 
 namespace Transport {
 
-Buddy::Buddy(RosterManager *rosterManager, long id) : m_id(id), m_flags(BUDDY_NO_FLAG), m_rosterManager(rosterManager),
+Buddy::Buddy(RosterManager *rosterManager, long id, BuddyFlag flags) : m_id(id), m_flags(flags), m_rosterManager(rosterManager),
 	m_subscription(Ask) {
 // 	m_rosterManager->setBuddy(this);
 }
@@ -51,7 +51,12 @@ long Buddy::getID() {
 void Buddy::setFlags(BuddyFlag flags) {
 	m_flags = flags;
 
-// 	generateJID();
+	if (!getSafeName().empty()) {
+		try {
+			generateJID();
+		} catch (...) {
+		}
+	}
 }
 
 BuddyFlag Buddy::getFlags() {
@@ -173,7 +178,7 @@ std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	return name;
 }
 
-BuddyFlag Buddy::buddFlagsFromJID(const Swift::JID &jid) {
+BuddyFlag Buddy::buddyFlagsFromJID(const Swift::JID &jid) {
 	if (jid.getUnescapedNode() == jid.getNode()) {
 		return BUDDY_NO_FLAG;
 	}

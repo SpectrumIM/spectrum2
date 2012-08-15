@@ -60,7 +60,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	void handleUserCreated(User *user) {
 		user->onReadyToConnect.connect(boost::bind(&UserTest::handleUserReadyToConnect, this, user));
 		user->onPresenceChanged.connect(boost::bind(&UserTest::handleUserPresenceChanged, this, user, _1));
-		user->onRoomJoined.connect(boost::bind(&UserTest::handleRoomJoined, this, user, _1, _2, _3));
+		user->onRoomJoined.connect(boost::bind(&UserTest::handleRoomJoined, this, user, _1, _2, _3, _4));
 		user->onRoomLeft.connect(boost::bind(&UserTest::handleRoomLeft, this, user, _1));
 	}
 
@@ -72,7 +72,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		changedPresence = presence;
 	}
 
-	void handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
+	void handleRoomJoined(User *user, const std::string &jid, const std::string &r, const std::string &nickname, const std::string &password) {
 		room = r;
 		roomNickname = nickname;
 		roomPassword = password;
@@ -172,7 +172,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	void handleDisconnected() {
 		User *user = userManager->getUser("user@localhost");
-		user->handleDisconnected("Connection error");
+		user->handleDisconnected("Connection error", Swift::SpectrumErrorPayload::CONNECTION_ERROR_AUTHENTICATION_FAILED);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT(streamEnded);

@@ -1651,6 +1651,9 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 		ssize_t n = read(source, ptr, sizeof(buffer));
 #endif
 		if (n <= 0) {
+			if (errno == EAGAIN) {
+				return;
+			}
 			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
 			exit(errno);
 		}
@@ -1692,6 +1695,9 @@ int main(int argc, char **argv) {
 	}
 	else {
 #ifndef WIN32
+		mallopt(M_CHECK_ACTION, 2);
+		mallopt(M_PERTURB, 0xb);
+
 		signal(SIGPIPE, SIG_IGN);
 
 		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
