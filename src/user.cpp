@@ -217,6 +217,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 			onRoomLeft(room);
+
+			Conversation *conv = m_conversationManager->getConversation(room);
+			if (conv) {
+				m_conversationManager->removeConversation(conv);
+				delete conv;
+			}
 		}
 		else {
 			// force connection to legacy network to let backend to handle auto-join on connect.

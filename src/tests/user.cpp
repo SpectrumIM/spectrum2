@@ -26,6 +26,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
     CPPUNIT_TEST(handlePresence);
 	CPPUNIT_TEST(handlePresenceJoinRoom);
 	CPPUNIT_TEST(handlePresenceLeaveRoom);
+	CPPUNIT_TEST(leaveJoinedRoom);
 	CPPUNIT_TEST(handleDisconnected);
 	CPPUNIT_TEST_SUITE_END();
 
@@ -189,6 +190,18 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+	}
+
+	void leaveJoinedRoom() {
+		User *user = userManager->getUser("user@localhost");
+		handlePresenceJoinRoom();
+
+		CPPUNIT_ASSERT(user->getConversationManager()->getConversation("#room"));
+
+		received.clear();
+		handlePresenceLeaveRoom();
+
+		CPPUNIT_ASSERT(!user->getConversationManager()->getConversation("#room"));
 	}
 
 	void handleDisconnected() {

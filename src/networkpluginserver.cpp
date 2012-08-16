@@ -1181,15 +1181,6 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 		return;
 	}
 	send(c->connection, message);
-
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(r);
-	if (!conv) {
-		return;
-	}
-
-	user->getConversationManager()->removeConversation(conv);
-
-	delete conv;
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {
