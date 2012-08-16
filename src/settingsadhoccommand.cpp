@@ -53,13 +53,16 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::sh
 	
 	
 
-	boost::shared_ptr<Swift::Command> response;
-	response->setStatus(Swift::Command::Completed);
+	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 	return response;
 }
 
 boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleRequest(boost::shared_ptr<Swift::Command> payload) {
 	boost::shared_ptr<Swift::Command> response;
+	if (payload->getAction() == Swift::Command::Cancel) {
+		response = boost::shared_ptr<Swift::Command>(new Swift::Command("settings", m_id, Swift::Command::Canceled));
+		return response;
+	}
 
 	switch (m_state) {
 		case Init:

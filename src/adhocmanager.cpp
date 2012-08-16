@@ -113,8 +113,15 @@ bool AdHocManager::handleGetRequest(const Swift::JID& from, const Swift::JID& to
 bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::Command> payload) {
 	AdHocCommand *command = NULL;
 	// Try to find AdHocCommand according to 'from' and session_id
-	if (m_sessions.find(from) != m_sessions.end() && m_sessions[from].find(payload->getSessionID()) != m_sessions[from].end()) {
-		command = m_sessions[from][payload->getSessionID()];
+	if (m_sessions.find(from) != m_sessions.end()) {
+		if (m_sessions[from].find(payload->getSessionID()) != m_sessions[from].end()) {
+			command = m_sessions[from][payload->getSessionID()];
+		}
+		else {
+			LOG4CXX_ERROR(logger, from.toString() << ": Unknown session id " << payload->getSessionID() << " - ignoring");
+			sendError(from, id, Swift::ErrorPayload::BadRequest, Swift::ErrorPayload::Modify);
+			return true;
+		}
 	}
 	// Check if we can create command with this node
 	else if (m_factories.find(payload->getNode()) != m_factories.end()) {
@@ -148,7 +155,7 @@ bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to
 	command->refreshLastActivity();
 
 	// Command completed, so we can remove it now
-	if (response->getStatus() == Swift::Command::Completed) {
+	if (response->getStatus() == Swift::Command::Completed || response->getStatus() == Swift::Command::Canceled) {
 		m_sessions[from].erase(command->getId());
 		if (m_sessions[from].empty()) {
 			m_sessions.erase(from);
