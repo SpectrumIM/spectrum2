@@ -226,6 +226,11 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				onReadyToConnect();
 			}
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			if (m_conversationManager->getConversation(room) != NULL) {
+				LOG4CXX_INFO(logger, m_jid.toString() << ": User has already tried to join room " << room << " as " << presence->getTo().getResource());
+				return;
+			}
+
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
 			std::string password = "";
 			if (presence->getPayload<Swift::MUCPayload>() != NULL) {

@@ -132,6 +132,8 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handlePresenceJoinRoom() {
+		User *user = userManager->getUser("user@localhost");
+
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("#room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
@@ -149,6 +151,25 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
+
+		room = "";
+		roomNickname = "";
+		roomPassword = "";
+
+		// simulate that backend joined the room
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+
+		received.clear();
+		injectPresence(response);
+		loop->processEvents();
+
+		// no presence received in server mode, just disco#info
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 	}
 
 	void handlePresenceLeaveRoom() {
