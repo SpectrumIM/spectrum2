@@ -23,6 +23,7 @@ using namespace Transport;
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(UserManagerTest);
 	CPPUNIT_TEST(connectUser);
+	CPPUNIT_TEST(connectUserTransportDisabled);
 	CPPUNIT_TEST(handleProbePresence);
 	CPPUNIT_TEST(disconnectUser);
 	CPPUNIT_TEST_SUITE_END();
@@ -55,6 +56,18 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+	}
+
+	void connectUserTransportDisabled() {
+		addUser();
+		storage->updateUserSetting(1, "enable_transport", "0");
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+
+		User *user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(!user);
 	}
 
 	void disconnectUser() {

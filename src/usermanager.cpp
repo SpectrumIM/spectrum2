@@ -151,25 +151,24 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	if (!user) {
 		// Admin user is not legacy network user, so do not create User class instance for him
 		if (m_component->inServerMode()) {
-		    std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
-		    if (std::find(x.begin(), x.end(), presence->getFrom().toBare().toString()) != x.end()) {
-		
-			// Send admin contact to the user.
-			Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
-			Swift::RosterItemPayload item;
-			item.setJID(m_component->getJID());
-			item.setName("Admin");
-			item.setSubscription(Swift::RosterItemPayload::Both);
-			payload->addItem(item);
+			std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
+			if (std::find(x.begin(), x.end(), presence->getFrom().toBare().toString()) != x.end()) {
+				// Send admin contact to the user.
+				Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+				Swift::RosterItemPayload item;
+				item.setJID(m_component->getJID());
+				item.setName("Admin");
+				item.setSubscription(Swift::RosterItemPayload::Both);
+				payload->addItem(item);
 
-			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
-			request->send();
+				Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
+				request->send();
 
-			Swift::Presence::ref response = Swift::Presence::create();
-			response->setTo(presence->getFrom());
-			response->setFrom(m_component->getJID());
-			m_component->getStanzaChannel()->sendPresence(response);
-			return;
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(m_component->getJID());
+				m_component->getStanzaChannel()->sendPresence(response);
+				return;
 		    }
 		}
 
@@ -245,10 +244,22 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			}
 		}
 
-
 		// Unregistered users are not able to login
 		if (!registered) {
 			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");
+			return;
+		}
+
+		bool transport_enabled = true;
+		if (m_storageBackend) {
+			std::string value = "1";
+			int type = (int) TYPE_BOOLEAN;
+			m_storageBackend->getUserSetting(res.id, "enable_transport", type, value);
+			transport_enabled = value == "1";
+		}
+		// User can disabled the transport using adhoc commands
+		if (!transport_enabled) {
+			LOG4CXX_INFO(logger, "User " << userkey << " has disabled transport, not logging");
 			return;
 		}
 

@@ -89,6 +89,7 @@ class TestingStorageBackend : public StorageBackend {
 		bool connected;
 		std::map<std::string, UserInfo> users;
 		std::map<std::string, bool> online_users;
+		std::map<int, std::map<std::string, std::string> > settings;
 		long buddyid;
 
 		TestingStorageBackend() {
@@ -171,8 +172,17 @@ class TestingStorageBackend : public StorageBackend {
 		virtual void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {}
 		virtual void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {}
 
-		virtual void getUserSetting(long userId, const std::string &variable, int &type, std::string &value) {}
-		virtual void updateUserSetting(long userId, const std::string &variable, const std::string &value) {}
+		virtual void getUserSetting(long userId, const std::string &variable, int &type, std::string &value) {
+			if (settings[userId].find(variable) == settings[userId].end()) {
+				settings[userId][variable] = value;
+				return;
+			}
+			value = settings[userId][variable];
+		}
+
+		virtual void updateUserSetting(long userId, const std::string &variable, const std::string &value) {
+			settings[userId][variable] = value;
+		}
 
 		virtual void beginTransaction() {}
 		virtual void commitTransaction() {}
@@ -197,6 +207,15 @@ class BasicTest : public Swift::XMPPParserClient {
 	void injectIQ(boost::shared_ptr<Swift::IQ> iq);
 
 	void dumpReceived();
+
+	void addUser() {
+		UserInfo user;
+		user.id = 1;
+		user.jid = "user@localhost";
+		user.uin = "legacyname";
+		user.password = "password";
+		storage->setUser(user);
+	}
 
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element);
 

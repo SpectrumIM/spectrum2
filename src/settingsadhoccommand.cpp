@@ -34,16 +34,46 @@ DEFINE_LOGGER(logger, "SettingsAdHocCommand");
 
 SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) : AdHocCommand(component, userManager, storageBackend, initiator, to) {
 	m_state = Init;
+	Swift::BooleanFormField::ref field;
+
+	field = Swift::BooleanFormField::create(true);
+	field->setName("enable_transport");
+	field->setLabel("Enable transport");
+	addFormField(field);
 }
 
 SettingsAdHocCommand::~SettingsAdHocCommand() {
 }
 
 boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
+	if (!m_storageBackend) {
+		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
+		boost::shared_ptr<Swift::Form> form(new Swift::Form());
+		form->addField(Swift::FixedFormField::create("This server does not support transport settings. There is no storage backend configured"));
+		return response;
+	}
+
+	UserInfo user;
+	if (m_storageBackend->getUser(m_initiator.toBare().toString(), user) == false) {
+		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
+		boost::shared_ptr<Swift::Form> form(new Swift::Form());
+		form->addField(Swift::FixedFormField::create("You are not registered."));
+		return response;
+	}
+
 	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Executing));
 	boost::shared_ptr<Swift::Form> form(new Swift::Form());
 
 	BOOST_FOREACH(Swift::FormField::ref field, m_fields) {
+		// FIXME: Support for more types than boolean
+		if (boost::dynamic_pointer_cast<Swift::BooleanFormField>(field)) {
+			Swift::BooleanFormField::ref f(boost::dynamic_pointer_cast<Swift::BooleanFormField>(field));
+			std::string value = f->getValue() ? "1" : "0";
+			int type = (int) TYPE_BOOLEAN;
+			m_storageBackend->getUserSetting(user.id, f->getName(), type, value);
+			f->setValue(value == "1");
+		}
+		
 		form->addField(field);
 	}
 
@@ -52,8 +82,24 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 }
 
 boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::shared_ptr<Swift::Command> payload) {
-	
-	
+	UserInfo user;
+	bool registered = m_storageBackend->getUser(m_initiator.toBare().toString(), user);
+
+	if (registered && payload->getForm()) {
+		BOOST_FOREACH(Swift::FormField::ref field, m_fields) {
+			Swift::FormField::ref received = payload->getForm()->getField(field->getName());
+			if (!received) {
+				continue;
+			}
+
+			// FIXME: Support for more types than boolean
+			if (boost::dynamic_pointer_cast<Swift::BooleanFormField>(received)) {
+				Swift::BooleanFormField::ref f(boost::dynamic_pointer_cast<Swift::BooleanFormField>(received));
+				std::string value = f->getValue() ? "1" : "0";
+				m_storageBackend->updateUserSetting(user.id, f->getName(), value);
+			}
+		}
+	}
 
 	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 	return response;
