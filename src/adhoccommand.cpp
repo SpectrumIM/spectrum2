@@ -22,6 +22,7 @@
 #include "transport/adhoccommandfactory.h"
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
+#include "transport/storagebackend.h"
 #include "transport/buddy.h"
 #include "transport/factory.h"
 #include "transport/user.h"
@@ -31,8 +32,10 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "AdHocCommand");
 
-AdHocCommand::AdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to) {
+AdHocCommand::AdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) {
 	m_component = component;
+	m_userManager = userManager;
+	m_storageBackend = storageBackend;
 	m_initiator = initiator;
 	m_to = to;
 

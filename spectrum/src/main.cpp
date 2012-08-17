@@ -351,7 +351,7 @@ int main(int argc, char **argv)
 	DiscoItemsResponder discoItemsResponder(&transport);
 	discoItemsResponder.start();
 
-	AdHocManager adhocmanager(&transport, &discoItemsResponder);
+	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
 	adhocmanager.start();
 
 	SettingsAdHocCommandFactory settings;

@@ -28,13 +28,15 @@
 namespace Transport {
 
 class Component;
+class UserManager;
+class StorageBackend;
 
 class AdHocCommand {
 	public:
 		/// Creates new AdHocManager.
 
 		/// \param component Transport instance associated with this AdHocManager.
-		AdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to);
+		AdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to);
 
 		/// Destructor.
 		virtual ~AdHocCommand();
@@ -57,6 +59,8 @@ class AdHocCommand {
 
 	protected:
 		Component *m_component;
+		UserManager *m_userManager;
+		StorageBackend *m_storageBackend;
 		Swift::JID m_initiator;
 		Swift::JID m_to;
 		std::vector<Swift::FormField::ref> m_fields;

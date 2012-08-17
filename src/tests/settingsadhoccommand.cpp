@@ -38,7 +38,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 		void setUp (void) {
 			setMeUp();
 
-			adhoc = new AdHocManager(component, itemsResponder);
+			adhoc = new AdHocManager(component, itemsResponder, userManager);
 			adhoc->start();
 			settings = new SettingsAdHocCommandFactory();
 			adhoc->addAdHocCommand(settings);

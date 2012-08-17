@@ -31,12 +31,14 @@
 namespace Transport {
 
 class Component;
+class UserManager;
+class StorageBackend;
 
 class SettingsAdHocCommand : public AdHocCommand {
 	public:
 		typedef enum { Init, WaitingForResponse } State;
 
-		SettingsAdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to);
+		SettingsAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to);
 
 		/// Destructor.
 		virtual ~SettingsAdHocCommand();
@@ -54,8 +56,8 @@ class SettingsAdHocCommandFactory : public AdHocCommandFactory {
 		SettingsAdHocCommandFactory() {}
 		virtual ~SettingsAdHocCommandFactory() {}
 
-		AdHocCommand *createAdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to) {
-			return new SettingsAdHocCommand(component, initiator, to);
+		AdHocCommand *createAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) {
+			return new SettingsAdHocCommand(component, userManager, storageBackend, initiator, to);
 		}
 
 		std::string getNode() {

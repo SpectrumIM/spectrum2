@@ -33,6 +33,8 @@ class Component;
 class DiscoItemsResponder;
 class AdHocCommandFactory;
 class AdHocCommand;
+class UserManager;
+class StorageBackend;
 
 /// Listens for AdHoc commands and manages all AdHoc commands sessions
 class AdHocManager : public Swift::Responder<Swift::Command> {
@@ -42,7 +44,7 @@ class AdHocManager : public Swift::Responder<Swift::Command> {
 		/// Creates new AdHocManager.
 
 		/// \param component Transport instance associated with this AdHocManager.
-		AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder);
+		AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder, UserManager *userManager, StorageBackend *storageBackend = NULL);
 
 		/// Destructor.
 		virtual ~AdHocManager();
@@ -70,6 +72,8 @@ class AdHocManager : public Swift::Responder<Swift::Command> {
 		std::map<std::string, AdHocCommandFactory *> m_factories;
 		SessionsMap m_sessions;
 		Swift::Timer::ref m_collectTimer;
+		UserManager *m_userManager;
+		StorageBackend *m_storageBackend;
 };
 
 }

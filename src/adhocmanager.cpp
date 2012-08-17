@@ -27,14 +27,17 @@
 #include "transport/factory.h"
 #include "transport/user.h"
 #include "transport/logging.h"
+#include "transport/storagebackend.h"
 
 namespace Transport {
 
 DEFINE_LOGGER(logger, "AdHocManager");
 
-AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder) : Swift::Responder<Swift::Command>(component->getIQRouter()){
+AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::Command>(component->getIQRouter()){
 	m_component = component;
 	m_discoItemsResponder = discoItemsResponder;
+	m_userManager = userManager;
+	m_storageBackend = storageBackend;
 
 	m_collectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20);
 	m_collectTimer->onTick.connect(boost::bind(&AdHocManager::removeOldSessions, this));
@@ -125,7 +128,7 @@ bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to
 	}
 	// Check if we can create command with this node
 	else if (m_factories.find(payload->getNode()) != m_factories.end()) {
-		command = m_factories[payload->getNode()]->createAdHocCommand(m_component, from, to);
+		command = m_factories[payload->getNode()]->createAdHocCommand(m_component, m_userManager, m_storageBackend, from, to);
 		m_sessions[from][command->getId()] = command;
 		LOG4CXX_INFO(logger, from.toString() << ": Started new AdHoc command session with node " << payload->getNode());
 	}

@@ -29,6 +29,8 @@
 namespace Transport {
 
 class Component;
+class UserManager;
+class StorageBackend;
 
 class AdHocCommandFactory {
 	public:
@@ -37,7 +39,7 @@ class AdHocCommandFactory {
 		/// Destructor.
 		virtual ~AdHocCommandFactory() {}
 
-		virtual AdHocCommand *createAdHocCommand(Component *component, const Swift::JID &initiator, const Swift::JID &to) = 0;
+		virtual AdHocCommand *createAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) = 0;
 
 		virtual std::string getNode() = 0;
 
