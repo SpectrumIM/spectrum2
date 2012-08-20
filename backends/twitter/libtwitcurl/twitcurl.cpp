@@ -2,6 +2,16 @@
 #include "twitcurl.h"
 #include "urlencode.h"
 
+static int myDebugCallback(CURL *,
+                    curl_infotype type,
+                    char *data,
+                    size_t size,
+                    void *handle)
+{
+	std::cerr << std::string(data, size);
+  return 0;
+};
+
 /*++
 * @method: twitCurl::twitCurl
 *
@@ -30,6 +40,8 @@ m_eProtocolType( twitCurlTypes::eTwitCurlProtocolHttp )
         std::string dummyStr;
         getLastCurlError( dummyStr );
     }
+    curl_easy_setopt(m_curlHandle, CURLOPT_VERBOSE, 1);
+	curl_easy_setopt(m_curlHandle, CURLOPT_DEBUGFUNCTION, myDebugCallback);
 }
 
 /*++

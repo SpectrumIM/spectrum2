@@ -66,8 +66,8 @@ protected:
     virtual std::streamsize xsputn(const char *msg, std::streamsize count){
 
         //Output to log4cxx logger
-        std::string s(msg,count);
-		LOG4CXX_INFO(_logger, msg);
+        std::string s(msg, count - 1); // remove last \n
+		LOG4CXX_INFO(_logger, s);
         return count;
     }
 

@@ -236,8 +236,6 @@
         REQUIRED_VARS
           OPENSSL_LIBRARIES
           OPENSSL_INCLUDE_DIR
-        VERSION_VAR
-          OPENSSL_VERSION
         FAIL_MESSAGE
           "Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR"
       )
