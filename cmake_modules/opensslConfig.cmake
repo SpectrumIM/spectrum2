@@ -230,21 +230,11 @@
     endif (OPENSSL_INCLUDE_DIR)
      
     include(FindPackageHandleStandardArgs)
-     
-    if (OPENSSL_VERSION)
-      find_package_handle_standard_args(OpenSSL
-        REQUIRED_VARS
-          OPENSSL_LIBRARIES
-          OPENSSL_INCLUDE_DIR
-        FAIL_MESSAGE
-          "Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR"
-      )
-    else (OPENSSL_VERSION)
-      find_package_handle_standard_args(OpenSSL "Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR"
-        OPENSSL_LIBRARIES
-        OPENSSL_INCLUDE_DIR
-      )
-    endif (OPENSSL_VERSION)
-     
-    MARK_AS_ADVANCED(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES)
+
+    IF(OPENSSL_INCLUDE_DIR AND OPENSSL_LIBRARIES)
+		message(STATUS "Found OpenSSL: ${OPENSSL_INCLUDE_DIR}" ", " ${OPENSSL_LIBRARIES})
+		MARK_AS_ADVANCED(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARIES)
+	else()
+		message(FATAL_ERROR "Could not find OpenSSL: ${OPENSSL_INCLUDE_DIR}" ", " ${OPENSSL_LIBRARIES})
+	endif()
      
