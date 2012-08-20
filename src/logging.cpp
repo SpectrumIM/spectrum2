@@ -52,6 +52,43 @@ namespace Logging {
 using namespace log4cxx;
 static LoggerPtr root;
 
+
+class intercept_stream : public std::streambuf{
+public:
+    intercept_stream(std::ostream& stream, char const* logger):
+      _logger(log4cxx::Logger::getLogger(logger))
+    {
+		stream.rdbuf(this);
+    }
+    ~intercept_stream(){
+    }
+protected:
+    virtual std::streamsize xsputn(const char *msg, std::streamsize count){
+
+        //Output to log4cxx logger
+        std::string s(msg,count);
+		LOG4CXX_INFO(_logger, msg);
+        return count;
+    }
+
+	int overflow(int c)
+	{
+		return 0;
+	}
+
+	int sync()
+	{
+		return 0;
+	}
+
+private:
+    log4cxx::LoggerPtr _logger;
+};
+
+static intercept_stream* intercepter_cout;
+static intercept_stream* intercepter_cerr;
+
+
 static void initLogging(Config *config, std::string key) {
 	if (CONFIG_STRING(config, key).empty()) {
 		root = log4cxx::Logger::getRootLogger();
@@ -129,6 +166,9 @@ static void initLogging(Config *config, std::string key) {
 
 		log4cxx::PropertyConfigurator::configure(p);
 	}
+
+	 intercepter_cerr = new intercept_stream(std::cerr, "cerr");
+	 intercepter_cout = new intercept_stream(std::cout, "cout");
 }
 
 void initBackendLogging(Config *config) {
@@ -140,6 +180,8 @@ void initMainLogging(Config *config) {
 }
 
 void shutdownLogging() {
+	delete intercepter_cerr;
+	delete intercepter_cout;
 	log4cxx::LogManager::shutdown();
 }
 
