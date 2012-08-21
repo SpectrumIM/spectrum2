@@ -1,8 +1,9 @@
 h2. About
 
-h2. Installing
+h2. Installation
+* "From source code":from_source_code.html
 
-h2. Configuring
+h2. Configuration
 
 * "Configuration file description":config_file.html
 * "MySQL Support":mysql.html

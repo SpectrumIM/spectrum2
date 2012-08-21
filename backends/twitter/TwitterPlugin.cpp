@@ -41,19 +41,28 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	this->config = config;
 	this->storagebackend = storagebackend;
 
-	if(CONFIG_HAS_KEY(config, "twitter.consumer_key") == false ||
-	   CONFIG_HAS_KEY(config, "twitter.consumer_secret") == false) {
-		LOG4CXX_ERROR(logger, "Couldn't find consumer key and/or secret. Please check config file.");
-		exit(0);
+	if (CONFIG_HAS_KEY(config, "twitter.consumer_key") == false) {
+		consumerKey = "5mFePMiJi0KpeURONkelg";
 	}
-	
+	else {
+		consumerKey = CONFIG_STRING(config, "twitter.consumer_key");
+	}
+	if (CONFIG_HAS_KEY(config, "twitter.consumer_secret") == false) {
+		consumerSecret = "YFZCDJwRhbkccXEnaYr1waCQejTJcOY8F7l5Wim3FA";
+	}
+	else {
+		consumerSecret = CONFIG_STRING(config, "twitter.consumer_secret");
+	}
+
+	if (consumerSecret.empty() || consumerKey.empty()) {
+		LOG4CXX_ERROR(logger, "Consumer key and Consumer secret can't be empty.");
+		exit(1);
+	}
+
 	adminLegacyName = "twitter.com"; 
 	adminChatRoom = "#twitter"; 
 	adminNickName = "twitter"; 
 	adminAlias = "twitter";
-
-	consumerKey = CONFIG_STRING(config, "twitter.consumer_key");
-	consumerSecret = CONFIG_STRING(config, "twitter.consumer_secret");
 
 	OAUTH_KEY = "twitter_oauth_token";
 	OAUTH_SECRET = "twitter_oauth_secret";
