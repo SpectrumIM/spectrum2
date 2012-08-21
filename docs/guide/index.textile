@@ -1,7 +1,8 @@
 h2. About
 
 h2. Installation
-* "From source code":from_source_code.html
+
+* "Installing from source code":from_source_code.html
 
 h2. Configuration
 
@@ -10,3 +11,16 @@ h2. Configuration
 * "PostgreSQL Support":postgresql.html
 * "Using SSL in server mode":server_ssl.html
 * "Logging":logging.html
+
+h2. Backends
+
+* "Backends overview":backends.html
+* "Libpurple backend":libpurple.html
+* "Swiften backend":swiften.html
+* "Libcommuni backend":swiften.html
+* "Skype backend":skype.html
+
+h2. Management
+
+* "spectrum2_manager tool":spectrum2_manager.html
+* "Munin integration":munin.html
