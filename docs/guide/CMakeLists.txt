@@ -32,6 +32,7 @@ ADD_TEXTILE("libcommuni.textile" "Spectrum 2 - Libcommuni backend")
 ADD_TEXTILE("swiften.textile" "Spectrum 2 - Swiften backend")
 ADD_TEXTILE("skype.textile" "Spectrum 2 - Skype backend")
 ADD_TEXTILE("spectrum2_manager.textile" "Spectrum 2 - spectrum2_manager tool")
+ADD_TEXTILE("twitter.textile" "Spectrum 2 - Twitter backend")
 
 
 # Setup a target to drive the conversion

@@ -19,6 +19,7 @@ h2. Backends
 * "Swiften backend":swiften.html
 * "Libcommuni backend":swiften.html
 * "Skype backend":skype.html
+* "Twitter backend":twitter.html
 
 h2. Management
 
