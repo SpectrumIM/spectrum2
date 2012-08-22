@@ -1,0 +1,72 @@
+
+To use Spectrum 2 in gateway mode, you have to configure your XMPP server to work with your Spectrum 2 instances.
+The configuration details you give to your XMPP server of course have to correspond to the details you give in the Spectrum 2 configuration file.
+
+h2. DNS records configuration
+
+For every Spectrum 2 instance you have to create a nameserver record for the transport's Jabber ID, if you want users of other servers to connect to your transport. A SRV record for "server to server" connections like in the following example is preferred:
+
+<pre>
+_xmpp-server._tcp.j2j.example.com. IN SRV 0 5 5269 jabber.example.com.
+</pre>
+
+Otherwise you could set an A level record for the JID of your instances.
+
+See also: "http://prosody.im/doc/dns":http://prosody.im/doc/dns
+
+h2. Ejabberd
+
+In the Ejabberd configuration file (by default in /etc/ejabberd/ejabberd.cfg), you have to add a field to the "listen" directive. 
+
+In the section that says: ‘{listen,’ add these lines:
+
+<pre>
+{{5347, "127.0.0.1"}, ejabberd_service, [
+                                        {access, all},
+                                        {host, "icq.example.com", [{password, "secret"}]}
+]}
+</pre>
+
+* @5347@ is port on which Ejabberd will listen for Spectrum 2 so Spectrum 2 can connect this port and start serving the hostname you've configured. Each Spectrum 2 instance has to be connected to different port.
+* "@icq.example.com@" is the hostname of your Spectrum 2 transport.
+* "@secret@" is the password which will be used by Spectrum 2 to authenticate itself to the Ejabberd server.
+* "@{access, all}@" lets everybody use your transport. 
+
+To use the new settings, you can either just restart Ejabberd or use Ejabberd's web-interface to add the new port to the running instance. You can find the Settings under Nodes -> <your node> -> Listened Ports. For full information on how to add external components (like Spectrum 2) to your Ejabberd installation, also refer to the "Ejabberd guide":http://www.process-one.net/en/ejabberd/guide_en.
+
+h2. Prosody
+
+In the prosody configuration file (normally in /etc/prosody/prosody.cfg.lua) there is configuration line for components.
+
+It looks like this:
+
+<pre>
+--Component "gateway.example.com"
+--      component_secret = "password"
+</pre>
+
+You have to edit this line to make Spectrum 2 work:
+
+Example: ICQ
+
+<pre>
+Component "icq.example.com"
+     component_secret = "mysecreticqpassword"
+</pre>
+ 
+For every spectrum transport you want to use, you have to add those two lines:
+
+Example:
+
+<pre>
+Component "icq.example.com"
+     component_secret = "mysecreticqpassword"
+
+Component "msn.example.com"
+     component_secret = "mysecretmsnpassword"
+
+Component "yahoo.example.com"
+     component_secret = "mysecretyahoopassword"
+</pre>
+
+Save the file and restart your Prosody server.

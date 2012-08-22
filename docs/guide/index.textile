@@ -1,8 +1,14 @@
 h2. About
 
+* "What is Spectrum 2?":about.html
+
 h2. Installation
 
 * "Installing from source code":from_source_code.html
+
+h2. Tutorials
+
+* "Spectrum 2 in gateway mode":tutorial_gateway_mode.html
 
 h2. Configuration
 
