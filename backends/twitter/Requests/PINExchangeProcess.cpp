@@ -12,7 +12,7 @@ void PINExchangeProcess::finalize()
 {
 	if(!success) {
 		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
-		np->handleMessage(user, "twitter-account", "Error while exchanging PIN for Access Token!");
+		np->handleMessage(user, "twitter.com", "Error while exchanging PIN for Access Token!");
 		np->handleLogoutRequest(user, "");
 	} else {
 		std::string replyMsg;
@@ -23,7 +23,7 @@ void PINExchangeProcess::finalize()
 		Error error = getErrorMessage(replyMsg);
 		if(error.getMessage().length()) {
 			LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token! " << error.getMessage())
-			np->handleMessage(user, "twitter-account", error.getMessage());
+			np->handleMessage(user, "twitter.com", error.getMessage());
 			np->handleLogoutRequest(user, "");
 			return;
 		}
@@ -38,6 +38,7 @@ void PINExchangeProcess::finalize()
 			return;
 		}
 		np->pinExchangeComplete(user, OAuthAccessTokenKey, OAuthAccessTokenSecret);
+		np->handleMessage(user, "twitter.com", "PIN is OK. You are now authorized.");
 		LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
 	}
 }
