@@ -37,6 +37,9 @@ ADD_TEXTILE("skype.textile" "Spectrum 2 - Skype backend")
 ADD_TEXTILE("spectrum2_manager.textile" "Spectrum 2 - spectrum2_manager tool")
 ADD_TEXTILE("twitter.textile" "Spectrum 2 - Twitter backend")
 
+ADD_TEXTILE("developer_arch.textile" "Spectrum 2 - Architecture")
+ADD_TEXTILE("developer_lowlevel.textile" "Spectrum 2 - Low level backend creation")
+
 
 # Setup a target to drive the conversion
 ADD_CUSTOM_TARGET(guide DEPENDS ${outFiles})

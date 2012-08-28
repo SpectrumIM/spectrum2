@@ -31,3 +31,8 @@ h2. Management
 
 * "spectrum2_manager tool":spectrum2_manager.html
 * "Munin integration":munin.html
+
+h2. Development
+
+* "Spectrum 2 architecture":developer_arch.html
+* "Low level backend creation":developer_lowlevel.html
