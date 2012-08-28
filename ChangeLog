@@ -18,10 +18,27 @@ Version 2.0.0-beta3 (2012-XX-XX):
 	* Options from config file can now be set also using command line like
 	  --service.jid=domain.tld .
 	* Do not send password in IQ-get registration response.
+	* Added support for AdHoc commands.
+	* Do not store buddies with empty name in database.
+	* Improved MySQL storage backend performance.
+	* Do not handle error messages as normal ones.
+	* Added Munin script for Spectrum 2.
+	* Use utf-8 encoding as default for MySQL.
+	* Added a way to disable xhtml-im.
+	* Fix crash caused by two XMPP users using single PurpleAccount instance.
+	* Support for [registration] allowed_usernames.
+	* Fixed compilation with boost-1.50.
+
+	Spectrum2_manager:
+	* Rewritten to provide more features. Check the documentation.
 
 	Libpurple:
 	* prpl-gg: Fetch the contact list properly (#252).
 	* Added support for prpl-novell as it was in spectrum1.
+
+	Twitter:
+	* Added Twitter support using Twitter backend. Thanks to Sarang and
+	  Google Summer of Code.
 
 	Skype:
 	* Log more errors.

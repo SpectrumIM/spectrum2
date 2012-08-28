@@ -235,7 +235,11 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			directory_iterator end_itr;
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 				if (extension(itr->path()) == ".z5") {
+#if BOOST_FILESYSTEM_VERSION == 2
 					games.push_back(itr->path().leaf());
+#else
+					games.push_back(itr->path().filename().string());
+#endif
 				}
 			}
 			return games;
