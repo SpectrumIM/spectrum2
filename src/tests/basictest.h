@@ -217,6 +217,10 @@ class BasicTest : public Swift::XMPPParserClient {
 		storage->setUser(user);
 	}
 
+	void connectUser();
+	void disconnectUser();
+	void add2Buddies();
+
 	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element);
 
 	protected:

@@ -54,7 +54,9 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		void tearDown (void) {
 			received.clear();
-			disconnectUser();
+			if (!disconnected) {
+				disconnectUser();
+			}
 			tearMeDown();
 		}
 
@@ -83,29 +85,6 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		room = r;
 	}
 
-	void connectUser() {
-		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
-		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
-		loop->processEvents();
-		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
-
-		User *user = userManager->getUser("user@localhost");
-		CPPUNIT_ASSERT(user);
-
-		UserInfo userInfo = user->getUserInfo();
-		CPPUNIT_ASSERT_EQUAL(std::string("password"), userInfo.password);
-		CPPUNIT_ASSERT(user->isReadyToConnect() == true);
-		CPPUNIT_ASSERT(user->isConnected() == false);
-
-		CPPUNIT_ASSERT_EQUAL(true, readyToConnect);
-
-		user->setConnected(true);
-		CPPUNIT_ASSERT(user->isConnected() == true);
-
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-		received.clear();
-	}
 
 	void sendCurrentPresence() {
 		User *user = userManager->getUser("user@localhost");
@@ -221,18 +200,6 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("Connection error"), dynamic_cast<Swift::StreamError *>(received[1].get())->getText());
 
 		disconnected = true;
-	}
-
-	void disconnectUser() {
-		if (disconnected)
-			return;
-		userManager->disconnectUser("user@localhost");
-		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
-		loop->processEvents();
-
-		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 	}
 
 };

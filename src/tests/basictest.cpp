@@ -152,3 +152,52 @@ Swift::Stanza *BasicTest::getStanza(boost::shared_ptr<Swift::Element> element) {
 	return stanza;
 }
 
+void BasicTest::connectUser() {
+	CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+	userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+	loop->processEvents();
+	CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
+
+	User *user = userManager->getUser("user@localhost");
+	CPPUNIT_ASSERT(user);
+
+	UserInfo userInfo = user->getUserInfo();
+	CPPUNIT_ASSERT_EQUAL(std::string("password"), userInfo.password);
+	CPPUNIT_ASSERT(user->isReadyToConnect() == true);
+	CPPUNIT_ASSERT(user->isConnected() == false);
+
+	user->setConnected(true);
+	CPPUNIT_ASSERT(user->isConnected() == true);
+
+	CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+	CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+	received.clear();
+}
+
+void BasicTest::disconnectUser() {
+	userManager->disconnectUser("user@localhost");
+	dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
+	loop->processEvents();
+
+	CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+	CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+	CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+}
+
+void BasicTest::add2Buddies() {
+	User *user = userManager->getUser("user@localhost");
+	CPPUNIT_ASSERT(user);
+
+	std::vector<std::string> grp;
+	grp.push_back("group1");
+	LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
+	user->getRosterManager()->setBuddy(buddy);
+
+	std::vector<std::string> grp2;
+	grp2.push_back("group2");
+	buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy2", "Buddy 2", grp2, BUDDY_JID_ESCAPING);
+	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status2");
+	user->getRosterManager()->setBuddy(buddy);
+}
+
