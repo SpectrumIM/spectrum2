@@ -185,7 +185,7 @@ int main(int argc, char **argv)
 			elapsed = 1000000.0 * (td_end.tv_sec -td_start.tv_sec); \
 			elapsed += (td_end.tv_usec - td_start.tv_usec); \
 			elapsed = elapsed / 1000 / 1000; \
-			std::cout << "Response received after " << (elapsed) << " seconds\n";
+// 			std::cout << "Response received after " << (elapsed) << " seconds\n";
 		}
 	}
 }

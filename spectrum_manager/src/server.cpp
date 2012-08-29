@@ -306,6 +306,28 @@ void Server::serve_login(struct mg_connection *conn, const struct mg_request_inf
 	print_html(conn, request_info, html);
 }
 
+void Server::serve_start(struct mg_connection *conn, const struct mg_request_info *request_info) {
+	std::string html= get_header() ;
+	char jid[255];
+	get_qsvar(request_info, "jid", jid, sizeof(jid));
+
+	start_instances(m_config, jid);
+	html += "<b>" + get_response() + "</b>";
+	html += "</body></html>";
+	print_html(conn, request_info, html);
+}
+
+void Server::serve_stop(struct mg_connection *conn, const struct mg_request_info *request_info) {
+	std::string html= get_header();
+	char jid[255];
+	get_qsvar(request_info, "jid", jid, sizeof(jid));
+
+	stop_instances(m_config, jid);
+	html += "<b>" + get_response() + "</b>";
+	html += "</body></html>";
+	print_html(conn, request_info, html);
+}
+
 void Server::serve_root(struct mg_connection *conn, const struct mg_request_info *request_info) {
 	std::vector<std::string> list = show_list(m_config, false);
 	std::string html= get_header() + "<h2>List of instances</h2><table><tr><th>JID<th>Status</th><th>Command</th></tr>";
@@ -348,6 +370,10 @@ void *Server::event_handler(enum mg_event event, struct mg_connection *conn) {
 			serve_login(conn, request_info);
 		} else if (strcmp(request_info->uri, "/") == 0) {
 			serve_root(conn, request_info);
+		} else if (strcmp(request_info->uri, "/start") == 0) {
+			serve_start(conn, request_info);
+		} else if (strcmp(request_info->uri, "/stop") == 0) {
+			serve_stop(conn, request_info);
 		} else {
 			// No suitable handler found, mark as not processed. Mongoose will
 			// try to serve the request.

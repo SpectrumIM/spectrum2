@@ -53,6 +53,8 @@ class Server {
 	private:
 		void serve_login(struct mg_connection *conn, const struct mg_request_info *request_info);
 		void serve_root(struct mg_connection *conn, const struct mg_request_info *request_info);
+		void serve_start(struct mg_connection *conn, const struct mg_request_info *request_info);
+		void serve_stop(struct mg_connection *conn, const struct mg_request_info *request_info);
 		void print_html(struct mg_connection *conn, const struct mg_request_info *request_info, const std::string &html);
 
 	private:

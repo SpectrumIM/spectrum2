@@ -176,10 +176,12 @@ void start_instances(ManagerConfig *config, const std::string &_jid) {
 
 					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
 					if (pid == 0) {
+						response = "Starting " + itr->path().string() + ": OK\n";
 						std::cout << "Starting " << itr->path() << ": OK\n";
 						exec_(spectrum2_binary, itr->path().string(), vhost);
 					}
 					else {
+						response = "Starting " + itr->path().string() + ": Already started (PID=" + boost::lexical_cast<std::string>(pid) + ")\n";
 						std::cout << "Starting " << itr->path() << ": Already started (PID=" << pid << ")\n";
 					}
 				}
@@ -232,6 +234,7 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 
 					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
 					if (pid) {
+						response ="Stopping " + itr->path().string() + ": ";
 						std::cout << "Stopping " << itr->path() << ": ";
 						kill(pid, SIGTERM);
 
@@ -243,13 +246,16 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 							count--;
 						}
 						if (count == 0) {
+							response += "ERROR (timeout)\n";
 							std::cout << " ERROR (timeout)\n";
 						}
 						else {
+							response += "OK\n";
 							std::cout << " OK\n";
 						}
 					}
 					else {
+						response = "Stopping " + itr->path().string() + ": Not running\n";
 						std::cout << "Stopping " << itr->path() << ": Not running\n";
 					}
 				}
