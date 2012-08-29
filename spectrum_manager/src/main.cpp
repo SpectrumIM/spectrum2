@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	}
 	else if (command[0] == "server") {
 		Server server(&config);
-		server.start(8080);
+		server.start();
 		while (1) { sleep(10); }
 	}
 	else {

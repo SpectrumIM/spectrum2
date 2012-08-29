@@ -158,9 +158,9 @@ static void *_event_handler(enum mg_event event, struct mg_connection *conn) {
 	return static_cast<Server *>(request_info->user_data)->event_handler(event, conn);
 }
 
-bool Server::start(int port) {
+bool Server::start() {
 	const char *options[] = {
-		"listening_ports", boost::lexical_cast<std::string>(port).c_str(),
+		"listening_ports", boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port")).c_str(),
 		"num_threads", "1",
 		NULL
 	};
@@ -296,7 +296,7 @@ void Server::serve_login(struct mg_connection *conn, const struct mg_request_inf
       <br/>\
       <form action=\"/authorize\">\
         Username: <input type=\"text\" name=\"user\"></input><br/>\
-        Password: <input type=\"text\" name=\"password\"></input><br/>\
+        Password: <input type=\"password\" name=\"password\"></input><br/>\
         <input type=\"submit\" value=\"Login\"></input>\
       </form>\
     </center>\

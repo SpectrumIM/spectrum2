@@ -46,7 +46,7 @@ class Server {
 		/// Destructor
 		virtual ~Server();
 
-		bool start(int port);
+		bool start();
 
 		void *event_handler(enum mg_event event, struct mg_connection *conn);
 
