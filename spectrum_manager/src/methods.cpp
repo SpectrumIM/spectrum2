@@ -129,6 +129,7 @@ int isRunning(const std::string &pidfile) {
 }
 
 void start_instances(ManagerConfig *config, const std::string &_jid) {
+	response = "";
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -195,6 +196,7 @@ void start_instances(ManagerConfig *config, const std::string &_jid) {
 }
 
 void stop_instances(ManagerConfig *config, const std::string &_jid) {
+	response = "";
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -361,6 +363,7 @@ static void handleDataRead(boost::shared_ptr<Swift::Connection> m_conn, boost::s
 				continue;
 			}
 			m_conn->onDataRead.disconnect(boost::bind(&handleDataRead, m_conn, _1));
+			m_conn->disconnect();
 			response = payload.config();
 			std::cout << payload.config() << "\n";
 // 			exit(0);
@@ -396,6 +399,7 @@ static void handleConnected(boost::shared_ptr<Swift::Connection> m_conn, const s
 }
 
 void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &jid, const std::string &message) {
+	response = "";
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -444,8 +448,9 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 		}
 
 		if (!found) {
+			response = "Config file for Spectrum instance with this JID was not found\n";
 			std::cerr << "Config file for Spectrum instance with this JID was not found\n";
-			exit(20);
+// 			exit(20);
 		}
 	}
 	catch (const filesystem_error& ex) {

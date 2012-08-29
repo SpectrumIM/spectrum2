@@ -46,7 +46,7 @@ class Server {
 		/// Destructor
 		virtual ~Server();
 
-		bool start(int port, const std::string &user, const std::string &password);
+		bool start(int port);
 
 		void *event_handler(enum mg_event event, struct mg_connection *conn);
 
@@ -55,6 +55,8 @@ class Server {
 		void serve_root(struct mg_connection *conn, const struct mg_request_info *request_info);
 		void serve_start(struct mg_connection *conn, const struct mg_request_info *request_info);
 		void serve_stop(struct mg_connection *conn, const struct mg_request_info *request_info);
+		void serve_onlineusers(struct mg_connection *conn, const struct mg_request_info *request_info);
+		void serve_cmd(struct mg_connection *conn, const struct mg_request_info *request_info);
 		void print_html(struct mg_connection *conn, const struct mg_request_info *request_info, const std::string &html);
 
 	private:

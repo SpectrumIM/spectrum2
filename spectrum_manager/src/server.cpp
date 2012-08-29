@@ -144,6 +144,8 @@ static void generate_session_id(char *buf, const char *random,
 Server::Server(ManagerConfig *config) {
 	srand((unsigned) time(0));
 	m_config = config;
+	m_user = CONFIG_STRING(m_config, "service.admin_username");
+	m_password = CONFIG_STRING(m_config, "service.admin_password");
 }
 
 Server::~Server() {
@@ -156,9 +158,7 @@ static void *_event_handler(enum mg_event event, struct mg_connection *conn) {
 	return static_cast<Server *>(request_info->user_data)->event_handler(event, conn);
 }
 
-bool Server::start(int port, const std::string &user, const std::string &password) {
-	m_user = user;
-	m_password = password;
+bool Server::start(int port) {
 	const char *options[] = {
 		"listening_ports", boost::lexical_cast<std::string>(port).c_str(),
 		"num_threads", "1",
@@ -306,13 +306,69 @@ void Server::serve_login(struct mg_connection *conn, const struct mg_request_inf
 	print_html(conn, request_info, html);
 }
 
+void Server::serve_onlineusers(struct mg_connection *conn, const struct mg_request_info *request_info) {
+	std::string html = get_header();
+	char jid[255];
+	get_qsvar(request_info, "jid", jid, sizeof(jid));
+
+	html += std::string("<h2>") + jid + " online users</h2><table><tr><th>JID<th>Command</th></tr>";
+
+	Swift::SimpleEventLoop eventLoop;
+	Swift::BoostNetworkFactories networkFactories(&eventLoop);
+
+	ask_local_server(m_config, networkFactories, jid, "online_users");
+	eventLoop.runUntilEvents();
+	while(get_response().empty()) {
+		eventLoop.runUntilEvents();
+	}
+
+	std::string response = get_response();
+	std::vector<std::string> users;
+	boost::split(users, response, boost::is_any_of("\n"));
+
+	BOOST_FOREACH(std::string &user, users) {
+		html += "<tr><td>" + user + "</td><td></td></tr>";
+	}
+
+	html += "</table><a href=\"/\">Back to main page</a>";
+	html += "</body></html>";
+	print_html(conn, request_info, html);
+}
+
+void Server::serve_cmd(struct mg_connection *conn, const struct mg_request_info *request_info) {
+	std::string html = get_header();
+	char jid[255];
+	get_qsvar(request_info, "jid", jid, sizeof(jid));
+	char cmd[4096];
+	get_qsvar(request_info, "cmd", cmd, sizeof(cmd));
+
+	html += std::string("<h2>") + jid + " command result</h2>";
+
+	Swift::SimpleEventLoop eventLoop;
+	Swift::BoostNetworkFactories networkFactories(&eventLoop);
+
+	ask_local_server(m_config, networkFactories, jid, cmd);
+	while(get_response().empty()) {
+		eventLoop.runUntilEvents();
+	}
+
+	std::string response = get_response();
+	
+	html += "<pre>" + response + "</pre>";
+
+	html += "<a href=\"/\">Back to main page</a>";
+	html += "</body></html>";
+	print_html(conn, request_info, html);
+}
+
+
 void Server::serve_start(struct mg_connection *conn, const struct mg_request_info *request_info) {
 	std::string html= get_header() ;
 	char jid[255];
 	get_qsvar(request_info, "jid", jid, sizeof(jid));
 
 	start_instances(m_config, jid);
-	html += "<b>" + get_response() + "</b>";
+	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
 	html += "</body></html>";
 	print_html(conn, request_info, html);
 }
@@ -323,18 +379,18 @@ void Server::serve_stop(struct mg_connection *conn, const struct mg_request_info
 	get_qsvar(request_info, "jid", jid, sizeof(jid));
 
 	stop_instances(m_config, jid);
-	html += "<b>" + get_response() + "</b>";
+	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
 	html += "</body></html>";
 	print_html(conn, request_info, html);
 }
 
 void Server::serve_root(struct mg_connection *conn, const struct mg_request_info *request_info) {
 	std::vector<std::string> list = show_list(m_config, false);
-	std::string html= get_header() + "<h2>List of instances</h2><table><tr><th>JID<th>Status</th><th>Command</th></tr>";
+	std::string html= get_header() + "<h2>List of instances</h2><table><tr><th>JID<th>Status</th><th>Command</th><th>Run command</th></tr>";
 
 	BOOST_FOREACH(std::string &instance, list) {
 		html += "<tr>";
-		html += "<td>" + instance + "</td>";
+		html += "<td><a href=\"/onlineusers?jid=" + instance + "\">" + instance + "</a></td>";
 		Swift::SimpleEventLoop eventLoop;
 		Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
@@ -346,10 +402,17 @@ void Server::serve_root(struct mg_connection *conn, const struct mg_request_info
 		html += "<td>" + get_response() + "</td>";
 		if (get_response().find("Running") == 0) {
 			html += "<td><a href=\"/stop?jid=" + instance + "\">Stop</a></td>";
+			html += "<td><form action=\"/cmd\">";
+			html += "<input type=\"hidden\" name=\"jid\" value=\"" + instance + "\"></input>";
+			html += "<input type=\"text\" name=\"cmd\"></input>";
+			html += "<input type=\"submit\" value=\"Run\"></input>";
+			html += "</form></td>";
 		}
 		else {
 			html += "<td><a href=\"/start?jid=" + instance + "\">Start</a></td>";
+			html += "<td></td>";
 		}
+
 		html += "</tr>";
 	}
 
@@ -370,6 +433,10 @@ void *Server::event_handler(enum mg_event event, struct mg_connection *conn) {
 			serve_login(conn, request_info);
 		} else if (strcmp(request_info->uri, "/") == 0) {
 			serve_root(conn, request_info);
+		} else if (strcmp(request_info->uri, "/onlineusers") == 0) {
+			serve_onlineusers(conn, request_info);
+		} else if (strcmp(request_info->uri, "/cmd") == 0) {
+			serve_cmd(conn, request_info);
 		} else if (strcmp(request_info->uri, "/start") == 0) {
 			serve_start(conn, request_info);
 		} else if (strcmp(request_info->uri, "/stop") == 0) {

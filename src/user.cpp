@@ -58,7 +58,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_resources = 0;
 	m_reconnectCounter = 0;
 
-	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
+	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
 
 	m_rosterManager = new RosterManager(this, m_component);
@@ -198,6 +198,9 @@ void User::handlePresence(Swift::Presence::ref presence) {
 					LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
 					m_readyForConnect = true;
 					onReadyToConnect();
+				}
+				else {
+					m_reconnectTimer->start();
 				}
 			}
 			else if (m_component->inServerMode()) {
