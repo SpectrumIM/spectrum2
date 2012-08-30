@@ -55,8 +55,10 @@ class TestingConversation : public Conversation {
 
 		// Called when there's new message to legacy network from XMPP network
 		void sendMessage(boost::shared_ptr<Swift::Message> &message) {
-
+			onMessageToSend(this, message);
 		}
+
+		boost::signal<void (TestingConversation *, boost::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class TestingFactory : public Factory {
@@ -66,8 +68,13 @@ class TestingFactory : public Factory {
 
 		// Creates new conversation (NetworkConversation in this case)
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
-			Conversation *nc = new TestingConversation(conversationManager, legacyName);
+			TestingConversation *nc = new TestingConversation(conversationManager, legacyName);
+			nc->onMessageToSend.connect(boost::bind(&TestingFactory::handleMessageToSend, this, _1, _2));
 			return nc;
+		}
+
+		void handleMessageToSend(TestingConversation *_conv, boost::shared_ptr<Swift::Message> &_msg) {
+			onMessageToSend(_conv, _msg);
 		}
 
 		// Creates new LocalBuddy
@@ -82,6 +89,8 @@ class TestingFactory : public Factory {
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
 		}
+
+		boost::signal<void (TestingConversation *, boost::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class TestingStorageBackend : public StorageBackend {
@@ -205,6 +214,7 @@ class BasicTest : public Swift::XMPPParserClient {
 
 	void injectPresence(boost::shared_ptr<Swift::Presence> &response);
 	void injectIQ(boost::shared_ptr<Swift::IQ> iq);
+	void injectMessage(boost::shared_ptr<Swift::Message> msg);
 
 	void dumpReceived();
 

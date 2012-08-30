@@ -609,6 +609,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
 
@@ -636,6 +637,7 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
 
@@ -1157,6 +1159,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 	send(c->connection, message);
 
 	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
+	user->getConversationManager()->addConversation(conv);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
 	conv->setJID(who);

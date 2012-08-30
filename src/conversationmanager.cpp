@@ -46,6 +46,25 @@ ConversationManager::~ConversationManager() {
 	}
 }
 
+Conversation *ConversationManager::getConversation(const std::string &name) {
+	if (m_convs.find(name) != m_convs.end())
+		return m_convs[name];
+
+	if (name.find("/") == std::string::npos) {
+		return NULL;
+	}
+
+	// handle PMs
+	std::string room = name.substr(0, name.find("/"));
+	std::string nick = name.substr(name.find("/") + 1);
+
+	if (getConversation(room) == NULL) {
+		return NULL;
+	}
+
+	return getConversation(nick);
+}
+
 void ConversationManager::addConversation(Conversation *conv) {
 	m_convs[conv->getLegacyName()] = conv;
 	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding conversation " << conv->getLegacyName());
@@ -82,16 +101,18 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 
 	// create conversation if it does not exist.
 	if (!m_convs[name]) {
-		m_convs[name] = m_component->getFactory()->createConversation(this, name);
+		Conversation *conv = m_component->getFactory()->createConversation(this, name);
+		addConversation(conv);
 	}
 	// if it exists and it's MUC, but this message is PM, get PM conversation or create new one.
 	else if (m_convs[name]->isMUC() && message->getType() != Swift::Message::Groupchat) {
 		std::string room_name = name;
-		name = message->getTo().getResource();
-		if (!m_convs[name]) {
-			m_convs[name] = m_component->getFactory()->createConversation(this, name);
-			m_convs[name]->setRoom(room_name);
-			m_convs[name]->setNickname(name);
+		name = room_name + "/" + message->getTo().getResource();
+		if (m_convs.find(name) == m_convs.end()) {
+			Conversation *conv = m_component->getFactory()->createConversation(this, message->getTo().getResource());
+			conv->setRoom(room_name);
+			conv->setNickname(name);
+			addConversation(conv);
 		}
 	}
 

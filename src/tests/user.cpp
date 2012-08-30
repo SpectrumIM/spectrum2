@@ -138,6 +138,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// simulate that backend joined the room
 		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		user->getConversationManager()->addConversation(conv);
 
 		received.clear();
 		injectPresence(response);

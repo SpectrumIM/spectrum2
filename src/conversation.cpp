@@ -30,7 +30,7 @@ namespace Transport {
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
-	m_conversationManager->addConversation(this);
+// 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
 }
