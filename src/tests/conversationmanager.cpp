@@ -27,7 +27,6 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleGroupchatMessages);
 	CPPUNIT_TEST(handleParticipantChanged);
 	CPPUNIT_TEST(handlePMFromXMPP);
-	CPPUNIT_TEST(handlePMFromLegacy);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
