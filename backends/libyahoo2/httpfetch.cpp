@@ -2,6 +2,10 @@
 #include "httpfetch.h"
 #include "transport/logging.h"
 
+#if WIN32
+#define snprintf sprintf_s
+#endif
+
 DEFINE_LOGGER(logger, "HTTPFetch");
 
 static int url_to_host_port_path(const char *url,
