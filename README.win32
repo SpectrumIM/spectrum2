@@ -30,11 +30,11 @@ launch "Visual Studio 2010 command prompt" or
 
 2. clone swift repository and build it. Don't forget to point it to our env directory:
 
-	git clone http://swift.im/git/swift
+	git clone git://swift.im/swift
 	cd swift
-	echo boost_includedir="c:/env-msvc-x64/include" > config.py
+	echo boost_includedir="c:/env-msvc-x64/include/boost-1_49" > config.py
 	echo boost_libdir="c:/env-msvc-x64/lib" >> config.py 
-	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64
+	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 force_configure=1
 	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 C:\env-msvc-x64
 
 TODO: fix in upstream
@@ -52,7 +52,7 @@ Move protoc.exe to C:\env-msvc-x64\bin\ and libprotobuf.lib to C:\env-msvc-x64\l
 Compile it as:
 
 	set CMAKE_INCLUDE_PATH=C:\env-msvc-x64\include
-	cmake . -G "NMake Makefiles" -DBOOST_VERSION=1.49.0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
+	cmake . -G "NMake Makefiles" -DBOOST_VERSION=1.49.0 -DBOOST_LIBRARYDIR=../lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
 	nmake
 
 TODO: libpurple_backend compilation
