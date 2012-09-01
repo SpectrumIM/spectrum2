@@ -16,12 +16,6 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLContextFactory.h"
 
-// for signal handler
-#include "unistd.h"
-#include "signal.h"
-#include "sys/wait.h"
-#include "sys/signal.h"
-
 // Boost
 #include <boost/algorithm/string.hpp>
 
