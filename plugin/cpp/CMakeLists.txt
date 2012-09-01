@@ -10,13 +10,17 @@ set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/tra
 if (NOT WIN32)
 	ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ${EXTRA_SOURCES})
 else()
-	ADD_LIBRARY(transport-plugin STATIC ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ${EXTRA_SOURCES})
+	ADD_LIBRARY(transport-plugin STATIC ${HEADERS} ${SRC} ${EXTRA_SOURCES})
+	include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/protobuf/libprotobuf")
+	ADD_DEPENDENCIES(transport-plugin libprotobuf)
 endif()
 ADD_DEPENDENCIES(transport-plugin pb)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
+	if (NOT WIN32)
 	ADD_DEFINITIONS(-fPIC)
+	endif()
 endif()
 
 if (NOT WIN32)

@@ -4,7 +4,11 @@ FILE(GLOB SRC *.cpp)
 
 ADD_EXECUTABLE(spectrum2_swiften_backend ${SRC})
 
+IF (NOT WIN32)
 target_link_libraries(spectrum2_swiften_backend transport pthread ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
+else()
+target_link_libraries(spectrum2_swiften_backend transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
+endif()
 
 INSTALL(TARGETS spectrum2_swiften_backend RUNTIME DESTINATION bin)
 

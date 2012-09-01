@@ -7,8 +7,6 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
-	ADD_SUBDIRECTORY(smstools3)
-
 	ADD_SUBDIRECTORY(swiften)
 
 # 	if(YAHOO2_FOUND)
@@ -20,6 +18,7 @@ if (PROTOBUF_FOUND)
 	ADD_SUBDIRECTORY(twitter)
 
 if (NOT WIN32)
+	ADD_SUBDIRECTORY(smstools3)
 	ADD_SUBDIRECTORY(frotz)
 	if (${LIBDBUSGLIB_FOUND})
 		ADD_SUBDIRECTORY(skype)

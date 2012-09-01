@@ -11,6 +11,7 @@
 
 #include "Swiften/Base/SafeByteArray.h"
 #include "Swiften/TLS/Certificate.h"
+#include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/TLS/CertificateVerificationError.h"
 
 namespace Swift {
@@ -22,7 +23,7 @@ namespace Swift {
 
 			virtual void connect() = 0;
 
-			virtual bool setServerCertificate(const PKCS12Certificate& cert) = 0;
+			virtual bool setServerCertificate(CertificateWithKey::ref cert) = 0;
 
 			virtual void handleDataFromNetwork(const SafeByteArray&) = 0;
 			virtual void handleDataFromApplication(const SafeByteArray&) = 0;

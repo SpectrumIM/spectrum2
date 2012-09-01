@@ -6,12 +6,13 @@
 // Swiften
 #include "Swiften/Swiften.h"
 
+#ifndef _WIN32
 // for signal handler
 #include "unistd.h"
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
-
+#endif
 // Boost
 #include <boost/algorithm/string.hpp>
 using namespace boost::filesystem;
@@ -83,6 +84,8 @@ class TemplatePlugin : public NetworkPlugin {
 		Config *config;
 };
 
+#ifndef _WIN32
+
 static void spectrum_sigchld_handler(int sig)
 {
 	int status;
@@ -98,17 +101,18 @@ static void spectrum_sigchld_handler(int sig)
 		perror(errmsg);
 	}
 }
-
+#endif
 
 int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
 
+#ifndef _WIN32
 	if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 		std::cout << "SIGCHLD handler can't be set\n";
 		return -1;
 	}
-
+#endif
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
 		("host,h", value<std::string>(&host), "host")

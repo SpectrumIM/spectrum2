@@ -20,11 +20,13 @@
 
 #include "transport/config.h"
 #include <fstream>
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <direct.h>
 #define getcwd _getcwd
 #include <windows.h>
+#ifdef _MSC_VER
 #define PATH_MAX MAX_PATH
+#endif
 #endif
 
 #include "iostream"
@@ -53,12 +55,13 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 	m_file = configfile;
 	bool ret = load(ifs, opts, jid);
 	ifs.close();
-
+#ifndef WIN32
 	char path[PATH_MAX] = "";
 	if (m_file.find_first_of("/") != 0) {
 		getcwd(path, PATH_MAX);
 		m_file = std::string(path) + "/" + m_file;
 	}
+#endif
 
 	return ret;
 }

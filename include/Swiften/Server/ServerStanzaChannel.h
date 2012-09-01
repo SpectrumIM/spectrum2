@@ -32,7 +32,7 @@ namespace Swift {
 			bool getStreamManagementEnabled() const {
 				return false;
 			}
-
+	
 			bool isAvailable() const {
 				return true;
 			}

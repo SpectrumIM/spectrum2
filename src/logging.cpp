@@ -92,7 +92,7 @@ static intercept_stream* intercepter_cerr;
 static void initLogging(Config *config, std::string key) {
 	if (CONFIG_STRING(config, key).empty()) {
 		root = log4cxx::Logger::getRootLogger();
-#ifdef WIN32
+#ifdef _MSC_VER
 		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
 #else
 		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
@@ -120,7 +120,7 @@ static void initLogging(Config *config, std::string key) {
 		LogString pid, jid;
 		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(config, "service.jid"), jid);
-#ifdef WIN32
+#ifdef _MSC_VER
 		p.setProperty(L"pid", pid);
 		p.setProperty(L"jid", jid);
 #else

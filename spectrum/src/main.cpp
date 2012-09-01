@@ -28,7 +28,9 @@
 #include "libgen.h"
 #include <malloc.h>
 #else
-#include <windows.h>
+#include <process.h>
+#define getpid _getpid
+#include "win32/SpectrumService.h"
 #endif
 #include <sys/stat.h>
 
@@ -151,6 +153,11 @@ int main(int argc, char **argv)
 		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
 		("version,v", "Shows Spectrum version")
 		;
+#ifdef WIN32
+	desc.add_options()
+		("install-service,i", "Install spectrum as Windows service")
+		("uninstall-service,u", "Uninstall Windows service");
+#endif
 	try
 	{
 		boost::program_options::positional_options_description p;
@@ -178,6 +185,46 @@ int main(int argc, char **argv)
 		if(vm.count("no-daemonize")) {
 			no_daemon = true;
 		}
+#ifdef WIN32
+		if (vm.count("install-service")) {
+			SpectrumService ntservice;
+			if (!ntservice.IsInstalled()) {
+					// determine the name of the currently executing file
+				char szFilePath[MAX_PATH];
+				GetModuleFileName(NULL, szFilePath, sizeof(szFilePath));
+				std::string exe_file(szFilePath);
+				std::string config_file = exe_file.replace(exe_file.end() - 4, exe_file.end(), ".cfg");
+				std::string service_path = std::string(szFilePath) + std::string(" --config ") + config_file;
+
+				if (ntservice.Install(service_path.c_str())) {
+					std::cout << "Successfully installed" << std::endl;
+					return 0;
+				} else {
+					std::cout << "Error installing service, are you an Administrator?" << std::endl;
+					return 1;
+				}                				
+			} else {
+				std::cout << "Already installed" << std::endl;
+				return 1;
+			}
+		}
+		if (vm.count("uninstall-service")) {
+			SpectrumService ntservice;
+			if (ntservice.IsInstalled()) {
+				if (ntservice.Remove()) {
+					std::cout << "Successfully removed" << std::endl;
+					return 0;
+				} else {
+					std::cout << "Error removing service, are you an Administrator?" << std::endl;
+					return 1;
+				}                               				
+			} else {
+				std::cout << "Service not installed" << std::endl;
+				return 1;
+			}
+		}
+
+#endif
 	}
 	catch (std::runtime_error& e)
 	{
@@ -318,7 +365,7 @@ int main(int argc, char **argv)
 			return -2;
 		}
 	}
-	else if (!storageBackend->connect()) {
+	else if (!storageBackend->connect()) {        
 		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 		return -1;
 	}
