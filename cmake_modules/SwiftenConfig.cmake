@@ -1,8 +1,8 @@
-FIND_LIBRARY(SWIFTEN_LIBRARY NAMES Swiften)
-FIND_PATH(SWIFTEN_INCLUDE_DIR NAMES "Swiften/Swiften.h" PATH_SUFFIXES libSwiften Swiften )
+FIND_LIBRARY(SWIFTEN_LIBRARY NAMES Swiften HINTS ../lib)
+FIND_PATH(SWIFTEN_INCLUDE_DIR NAMES "Swiften/Swiften.h" PATH_SUFFIXES libSwiften Swiften HINTS ../include)
 
 if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
-	find_program(SWIFTEN_CONFIG_EXECUTABLE NAMES swiften-config DOC "swiften-config executable")
+	find_program(SWIFTEN_CONFIG_EXECUTABLE NAMES swiften-config DOC "swiften-config executable" HINTS ../bin)
 	set( SWIFTEN_CFLAGS "" )
 	if (SWIFTEN_CONFIG_EXECUTABLE)
 		execute_process(
