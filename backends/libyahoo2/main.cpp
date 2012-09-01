@@ -19,11 +19,13 @@
 #include "Swiften/Network/TLSConnectionFactory.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLContextFactory.h"
 
+#ifndef _WIN32
 // for signal handler
 #include "unistd.h"
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
+#endif
 
 // Boost
 #include <boost/algorithm/string.hpp>
@@ -732,10 +734,12 @@ int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
 
+#ifndef _WIN32
 	if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 		std::cout << "SIGCHLD handler can't be set\n";
 		return -1;
 	}
+#endif
 
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
