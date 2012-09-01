@@ -43,7 +43,7 @@ C:\env-msvc-x64\lib\3rdParty\LibIDN, C:\env-msvc-x64\lib\3rdParty\Zlib
 
 3. unpack and compile protobuf as described in its documentation. 
 
-Run extract_includes.bat in vsprojects/ directory and move resulting google/ directory to our C:\env-msvc-x64\include
+Run extract_includes.bat in vsprojects/ directory and move resulting vsprojects/include/google/ directory to our C:\env-msvc-x64\include
 
 Move protoc.exe to C:\env-msvc-x64\bin\ and libprotobuf.lib to C:\env-msvc-x64\lib
 
