@@ -1,15 +1,34 @@
 cmake_minimum_required(VERSION 2.6)
 project(libtransport)
 
+message(STATUS "Variables to override default places where to find libraries:")
+message(STATUS "|- cppunit : -DCPPUNIT_INCLUDE_DIR,  -DCPPUNIT_LIBRARY")
+message(STATUS "|- swiften : -DSWIFTEN_INCLUDE_DIR,  -DSWIFTEN_LIBRARY")
+message(STATUS "  |- zlib  :                         -DZLIB_LIBRARY")
+message(STATUS "  |- expat :                         -DEXPAT_LIBRARY")
+message(STATUS "  |-libidn :                         -DLIBIDN_LIBRARY")
+message(STATUS "  |-libxml :                         -DLIBXML_LIBRARY")
+message(STATUS "|- boost   : -DBOOST_INCLUDEDIR,     -DBOOST_LIBRARYDIR")
+message(STATUS "|- protobuf: -DPROTOBUF_INCLUDE_DIR, -DPROTOBUF_LIBRARY")
+message(STATUS "|- log4cxx : -DLOG4CXX_INCLUDE_DIR,  -DLOG4CXX_LIBRARY")
+message(STATUS "|- purple  : -DPURPLE_INCLUDE_DIR,   -DPURPLE_LIBRARY")
+
 if(NOT LIB_INSTALL_DIR)
 	set(LIB_INSTALL_DIR "lib")
 endif()
 
 set(CMAKE_MODULE_PATH "cmake_modules")
 
-set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(cppunit)
+# FIND CPPUNIT
+if(CPPUNIT_INCLUDE_DIR AND CPPUNIT_LIBRARY)
+	set(CCPUNIT_LIBRARIES ${CPPUNIT_LIBRARY})
+	message(STATUS "Using cppunit: ${CPPUNIT_INCLUDE_DIR} ${CPPUNIT_LIBRARIES}")
+else()
+	set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+	find_package(cppunit)
+endif()
 
+# FIND SQLITE3
 if (NOT CMAKE_COMPILER_IS_GNUCXX)
 ADD_SUBDIRECTORY(msvc-deps)
 else()
@@ -21,70 +40,114 @@ find_package(sqlite3)
 endif()
 endif()
 
+# FIND MYSQL
 set(mysql_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(mysql)
 
-set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(purple)
+# FIND LIBPURPLE
+if( PURPLE_LIBRARY AND PURPLE_INCLUDE_DIR )
+	set(PURPLE_FOUND 1)
+	message(STATUS "Using purple: ${PURPLE_INCLUDE_DIR} ${PURPLE_LIBRARY}")
+else()
+	set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+	find_package(purple)
+endif()
 
+# FIND GLIB
 set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(glib)
 
-set(libxml2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(libxml2)
+# FIND LIBXML2
+# set(libxml2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+# find_package(libxml2)
 
-
+# FIND POPT
 if (NOT WIN32)
 	set(popt_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(popt)
 endif()
 
+# FIND LIBEVENT
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
-set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(Swiften)
+# FIND SWIFTEN
+if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
+	if (ZLIB_LIBRARY)
+		set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} ${ZLIB_LIBRARY})
+	endif()
+	if (EXPAT_LIBRARY)
+		set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} ${EXPAT_LIBRARY})
+	endif()
+	if (LIBIDN_LIBRARY)
+		set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} ${LIBIDN_LIBRARY})
+	endif()
+	if (LIBXML_LIBRARY)
+		set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} ${LIBXML_LIBRARY})
+	endif()
+	message(STATUS "Using swiften: ${SWIFTEN_INCLUDE_DIR} ${SWIFTEN_LIBRARY}")
+else()
+	set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+	find_package(Swiften)
+endif()
 
 if (WIN32)
-add_definitions(-DSWIFTEN_STATIC=1)
+	add_definitions(-DSWIFTEN_STATIC=1)
+	ADD_DEFINITIONS(-D_UNICODE)
+	ADD_DEFINITIONS(-DUNICODE)
 endif()
+
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(openssl)
 endif()
 
+# FIND BOOST
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)
-if (BOOST_VERSION)
-	set(Boost_USE_STATIC_LIBS      ON)
-	set(Boost_USE_MULTITHREADED      ON)
-	set(Boost_USE_STATIC_RUNTIME    OFF)
-	find_package(Boost ${BOOST_VERSION} COMPONENTS program_options date_time system filesystem regex  signals REQUIRED)
-else()
-	message(FATAL_ERROR "Set BOOST_VERSION using for example cmake . -DBOOST_VERSION=1.49.0")
-endif()
-else()
-find_package(Boost COMPONENTS program_options date_time system filesystem regex  signals REQUIRED)
-endif()
+	if (BOOST_VERSION)
+		set(Boost_USE_STATIC_LIBS      ON)
+		set(Boost_USE_MULTITHREADED      ON)
+		set(Boost_USE_STATIC_RUNTIME    OFF)
+		find_package(Boost ${BOOST_VERSION} COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
+	else(BOOST_VERSION)
+		message(FATAL_ERROR "Set BOOST_VERSION using for example cmake . -DBOOST_VERSION=1.49.0")
+	endif(BOOST_VERSION)
+else(WIN32)
+	find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
+endif(WIN32)
 
 message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
-if (WIN32)
-#TODO: Use bundled protobuf here...?
-set(PROTOBUF_FOUND 1)
-set(PROTOBUF_INCLUDE_DIRS "../include")
-set(PROTOBUF_LIBRARY "../lib/libprotobuf.lib")
+# FIND PROTOBUF
+if (PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
+	set(PROTOBUF_FOUND 1)
+	set(PROTOBUF_INCLUDE_DIRS ${PROTOBUF_INCLUDE_DIRS})
+	message(STATUS "Using protobuf: ${PROTOBUF_INCLUDE_DIRS} ${PROTOBUF_LIBRARY}")
 else()
-set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(Protobuf REQUIRED)
+	if (WIN32)
+		#TODO: Use bundled protobuf here...?
+		set(PROTOBUF_FOUND 1)
+		set(PROTOBUF_INCLUDE_DIRS "../include")
+		set(PROTOBUF_LIBRARY "../lib/libprotobuf.lib")
+	else(WIN32)
+		set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+		find_package(Protobuf REQUIRED)
+	endif(WIN32)
 endif()
 
 set(Communi_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Communi)
 
-set(log4cxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(log4cxx)
+if(LOG4CXX_INCLUDE_DIR AND LOG4CXX_LIBRARY)
+	set(LOG4CXX_LIBRARIES ${LOG4CXX_LIBRARY})
+	set(LOG4CXX_FOUND 1)
+	message(STATUS "Using log4cxx: ${CPPUNIT_INCLUDE_DIR} ${LOG4CXX_INCLUDE_DIR}")
+else()
+	set(log4cxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+	find_package(log4cxx)
+endif()
 
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
