@@ -30,7 +30,7 @@
 #else
 #include <process.h>
 #define getpid _getpid
-#include "win32/SpectrumService.h"
+// #include "win32/SpectrumService.h"
 #endif
 #include <sys/stat.h>
 
@@ -155,9 +155,9 @@ int main(int argc, char **argv)
 		("version,v", "Shows Spectrum version")
 		;
 #ifdef WIN32
-	desc.add_options()
-		("install-service,i", "Install spectrum as Windows service")
-		("uninstall-service,u", "Uninstall Windows service");
+// 	desc.add_options()
+// 		("install-service,i", "Install spectrum as Windows service")
+// 		("uninstall-service,u", "Uninstall Windows service");
 #endif
 	try
 	{
@@ -187,6 +187,7 @@ int main(int argc, char **argv)
 			no_daemon = true;
 		}
 #ifdef WIN32
+#if 0
 		if (vm.count("install-service")) {
 			SpectrumService ntservice;
 			if (!ntservice.IsInstalled()) {
@@ -224,7 +225,7 @@ int main(int argc, char **argv)
 				return 1;
 			}
 		}
-
+#endif
 #endif
 	}
 	catch (std::runtime_error& e)
