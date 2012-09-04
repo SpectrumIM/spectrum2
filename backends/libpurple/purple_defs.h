@@ -1,5 +1,5 @@
 #pragma once
-#ifdef WIN32
+#if PURPLE_RUNTIME
 
 #include <Windows.h>
 #include <purple.h>

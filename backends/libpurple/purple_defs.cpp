@@ -1,6 +1,6 @@
 #include "purple_defs.h"
 
-#ifdef WIN32
+#if PURPLE_RUNTIME
 static HMODULE f_hPurple = NULL;
 purple_debug_set_ui_ops_wrapped_fnc purple_debug_set_ui_ops_wrapped = NULL;
 purple_debug_set_verbose_wrapped_fnc purple_debug_set_verbose_wrapped = NULL;
@@ -138,7 +138,7 @@ purple_account_option_get_setting_wrapped_fnc purple_account_option_get_setting_
 wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_win32_new_socket_wrapped = NULL;
 #endif
 bool resolvePurpleFunctions() {
-#ifdef WIN32
+#if PURPLE_RUNTIME
 	f_hPurple = LoadLibrary("libpurple.dll");
 	if (!f_hPurple)
 			return false;

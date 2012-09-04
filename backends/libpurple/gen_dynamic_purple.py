@@ -132,7 +132,7 @@ def output():
 
 	header = open("purple_defs.h", "w")
 	print >> header, "#pragma once"
-	print >> header, "#ifdef WIN32"
+	print >> header, "#if PURPLE_RUNTIME"
 
 	print >> header, """
 #include <Windows.h>
@@ -186,7 +186,7 @@ def output():
 	cpp = open("purple_defs.cpp", "w")
 	print >> cpp, "#include \"purple_defs.h\""
 	print >> cpp, ""
-	print >> cpp, "#ifdef WIN32"
+	print >> cpp, "#if PURPLE_RUNTIME"
 	print >> cpp, "static HMODULE f_hPurple = NULL;"
 	for d in definitions:
 		#purple_util_set_user_wrapped_fnc purple_util_set_user_wrapped = NULL;
@@ -195,7 +195,7 @@ def output():
 	print >> cpp, "#endif"
 
 	print >> cpp, "bool resolvePurpleFunctions() {"
-	print >> cpp, "#ifdef WIN32"
+	print >> cpp, "#if PURPLE_RUNTIME"
 	print >> cpp, "\tf_hPurple = LoadLibrary(\"libpurple.dll\");"
 	print >> cpp, "\tif (!f_hPurple)"
 	print >> cpp, "\t\t\treturn false;"
