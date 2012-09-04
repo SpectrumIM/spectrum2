@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
 if (PROTOBUF_FOUND)
-    if (WIN32)
-	set (PROTOBUF_PROTOC_EXECUTABLE protoc)
-    endif()
     ADD_CUSTOM_COMMAND(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol_pb2.py
         COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} --python_out  ${CMAKE_CURRENT_SOURCE_DIR} --proto_path ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/ ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.proto
