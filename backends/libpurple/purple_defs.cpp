@@ -139,7 +139,7 @@ wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_win32_new
 #endif
 bool resolvePurpleFunctions() {
 #if PURPLE_RUNTIME
-	f_hPurple = LoadLibrary("libpurple.dll");
+	f_hPurple = LoadLibrary(L"libpurple.dll");
 	if (!f_hPurple)
 			return false;
 	purple_debug_set_ui_ops_wrapped = (purple_debug_set_ui_ops_wrapped_fnc)GetProcAddress(f_hPurple, "purple_debug_set_ui_ops");

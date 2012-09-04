@@ -248,7 +248,7 @@ extern purple_account_set_privacy_type_wrapped_fnc purple_account_set_privacy_ty
 typedef PurpleStatusType * (_cdecl * purple_account_get_status_type_with_primitive_wrapped_fnc)( const PurpleAccount *account, PurpleStatusPrimitive primitive);
 extern purple_account_get_status_type_with_primitive_wrapped_fnc purple_account_get_status_type_with_primitive_wrapped;
 
-typedef void  (_cdecl * purple_account_set_status_wrapped_fnc)(PurpleAccount *account, const char *status_id, gboolean active, ...) );
+typedef void  (_cdecl * purple_account_set_status_wrapped_fnc)(PurpleAccount *account, const char *status_id, gboolean active, ...);
 extern purple_account_set_status_wrapped_fnc purple_account_set_status_wrapped;
 
 typedef int  (_cdecl * purple_account_get_int_wrapped_fnc)(const PurpleAccount *account, const char *name, int default_value);

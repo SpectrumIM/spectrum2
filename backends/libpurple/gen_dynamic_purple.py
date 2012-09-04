@@ -196,7 +196,7 @@ def output():
 
 	print >> cpp, "bool resolvePurpleFunctions() {"
 	print >> cpp, "#if PURPLE_RUNTIME"
-	print >> cpp, "\tf_hPurple = LoadLibrary(\"libpurple.dll\");"
+	print >> cpp, "\tf_hPurple = LoadLibrary(L\"libpurple.dll\");"
 	print >> cpp, "\tif (!f_hPurple)"
 	print >> cpp, "\t\t\treturn false;"
 	for d in definitions:
