@@ -1022,10 +1022,10 @@ static gboolean pingTimeout(void *data) {
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
 	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
-	Dis *d = new Dis;
-	d->name = purple_account_get_username_wrapped(account);
-	d->protocol = purple_account_get_protocol_id_wrapped(account);
-	purple_timeout_add_seconds_wrapped(10, disconnectMe, d);
+// 	Dis *d = new Dis;
+// 	d->name = purple_account_get_username_wrapped(account);
+// 	d->protocol = purple_account_get_protocol_id_wrapped(account);
+// 	purple_timeout_add_seconds_wrapped(10, disconnectMe, d);
 }
 
 static PurpleConnectionUiOps conn_ui_ops =
