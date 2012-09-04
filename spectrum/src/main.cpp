@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 
 using namespace Transport;
+using namespace Transport::Util;
 
 DEFINE_LOGGER(logger, "Spectrum");
 
@@ -270,6 +271,10 @@ int main(int argc, char **argv)
 		std::cerr << "Can't create service.portfile directory " << CONFIG_STRING(&config, "service.portfile") << ".\n";
 		return 1;
 	}
+
+#ifdef WIN32
+	SetCurrentDirectory( utf8ToUtf16(CONFIG_STRING(&config, "service.working_dir")).c_str() );
+#endif
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {

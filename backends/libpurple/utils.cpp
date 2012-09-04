@@ -52,7 +52,7 @@
 static GHashTable *ui_info = NULL;
 
 void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name) {
-	PurplePlugin *plugin = gc && PURPLE_CONNECTION_IS_CONNECTED(gc) ? gc->prpl : NULL;
+	PurplePlugin *plugin = gc && PURPLE_CONNECTION_IS_CONNECTED_WRAPPED(gc) ? gc->prpl : NULL;
 	if (plugin && PURPLE_PLUGIN_HAS_ACTIONS(plugin)) {
 		PurplePluginAction *action = NULL;
 		GList *actions, *l;
@@ -67,7 +67,7 @@ void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name)
 				if ((std::string) action->label == name) {
 					action->callback(action);
 				}
-				purple_plugin_action_free(action);
+				purple_plugin_action_free_wrapped(action);
 			}
 		}
 	}
