@@ -245,20 +245,21 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
+		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+	}
+	catch (...) {
+		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+		return 1;
+	}
+#ifndef WIN32
+	// create directories
+	try {
 		boost::filesystem::create_directories(
 			boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
 		);
 	}
 	catch (...) {
 		std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
-		return 1;
-	}
-	// create directories
-	try {
-		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
-	}
-	catch (...) {
-		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
 		return 1;
 	}
 	// create directories
@@ -271,6 +272,7 @@ int main(int argc, char **argv)
 		std::cerr << "Can't create service.portfile directory " << CONFIG_STRING(&config, "service.portfile") << ".\n";
 		return 1;
 	}
+#endif
 
 #ifdef WIN32
 	SetCurrentDirectory( utf8ToUtf16(CONFIG_STRING(&config, "service.working_dir")).c_str() );
