@@ -47,7 +47,10 @@ set(mysql_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(mysql)
 
 # FIND LIBPURPLE
-if( PURPLE_LIBRARY AND PURPLE_INCLUDE_DIR )
+if( PURPLE_INCLUDE_DIR )
+	if (PURPLE_NOT_RUNTIME)
+		set(PURPLE_LIBRARY "")
+	endif(PURPLE_NOT_RUNTIME)
 	set(PURPLE_FOUND 1)
 	message(STATUS "Using purple: ${PURPLE_INCLUDE_DIR} ${PURPLE_LIBRARY}")
 else()
