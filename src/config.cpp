@@ -278,4 +278,56 @@ std::string Config::getCommandLineArgs() const {
 	return commandLineArgs.str();
 }
 
+Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {
+	std::ostringstream os;
+	std::string configFile;
+	boost::program_options::variables_map vm;
+	boost::program_options::options_description desc("Usage: spectrum <config_file.cfg>\nAllowed options");
+	desc.add_options()
+		("help", "help")
+		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
+		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
+		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
+		;
+
+	os << desc;
+	try
+	{
+		boost::program_options::positional_options_description p;
+		p.add("config", -1);
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+			options(desc).positional(p).allow_unregistered().run(), vm);
+		boost::program_options::notify(vm);
+			
+		if(vm.count("help"))
+		{
+			error = os.str();
+			return NULL;
+		}
+
+		if(vm.count("config") == 0) {
+			error = os.str();
+			return NULL;
+		}
+	}
+	catch (std::runtime_error& e)
+	{
+		error = os.str();
+		return NULL;
+	}
+	catch (...)
+	{
+		error = os.str();
+		return NULL;
+	}
+
+	Config *config = new Config(argc, argv);
+	if (!config->load(configFile)) {
+		error = "Can't open " + configFile + " configuration file.\n";
+		delete config;
+		return NULL;
+	}
+	return config;
+}
+
 }

@@ -106,6 +106,8 @@ class Config {
 
 		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
+
+		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
 	
 	private:
 		int m_argc;

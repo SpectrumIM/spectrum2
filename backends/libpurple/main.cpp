@@ -1641,51 +1641,14 @@ int main(int argc, char **argv) {
 		}
 #endif
 
-	std::string configFile;
-	boost::program_options::variables_map vm;
-	boost::program_options::options_description desc("Usage: spectrum <config_file.cfg>\nAllowed options");
-	desc.add_options()
-		("help", "help")
-		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
-		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
-		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
-		;
-
-	try
-	{
-		boost::program_options::positional_options_description p;
-		p.add("config", -1);
-		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-			options(desc).positional(p).allow_unregistered().run(), vm);
-		boost::program_options::notify(vm);
-			
-		if(vm.count("help"))
-		{
-			std::cout << desc << "\n";
-			return 1;
-		}
-
-		if(vm.count("config") == 0) {
-			std::cout << desc << "\n";
-			return 1;
-		}
-	}
-	catch (std::runtime_error& e)
-	{
-		std::cout << desc << "\n";
-		return 1;
-	}
-	catch (...)
-	{
-		std::cout << desc << "\n";
+	std::string error;
+	Config *cfg = Config::createFromArgs(argc, argv, error, host, port);
+	if (cfg == NULL) {
+		std::cerr << error;
 		return 1;
 	}
 
-	config = boost::make_shared<Config>(argc, argv);
-	if (!config->load(vm["config"].as<std::string>())) {
-		std::cerr << "Can't load configuration file.\n";
-		return 1;
-	}
+	config = boost::shared_ptr<Config>(cfg);
  
 	Logging::initBackendLogging(config.get());
 	initPurple();
