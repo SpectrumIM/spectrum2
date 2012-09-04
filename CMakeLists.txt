@@ -14,7 +14,6 @@ message(STATUS "           : -DPROTOBUF_PROTOC_EXECUTABLE")
 message(STATUS "|- log4cxx : -DLOG4CXX_INCLUDE_DIR,  -DLOG4CXX_LIBRARY")
 message(STATUS "|- purple  : -DPURPLE_INCLUDE_DIR,   -DPURPLE_LIBRARY")
 message(STATUS "           : -DPURPLE_NOT_RUNTIME - enables compilation with libpurple.lib")
-message(STATUS "|- glib2   : -DGLIB2_INCLUDE_DIR,    -DGLIB2_LIBRARIES")
 
 if(NOT LIB_INSTALL_DIR)
 	set(LIB_INSTALL_DIR "lib")
@@ -70,12 +69,12 @@ else()
 endif()
 
 # FIND GLIB
-if (GLIB2_INCLUDE_DIR AND GLIB2_LIBRARIES)
-	set(GLIB2_FOUND TRUE)
-else()
+# if (GLIB2_INCLUDE_DIR AND GLIB2_LIBRARIES)
+# 	set(GLIB2_FOUND TRUE)
+# else()
 	set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(glib)
-endif()
+# endif()
 
 # FIND LIBXML2
 # set(libxml2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
