@@ -10,9 +10,7 @@ set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/tra
 if (NOT WIN32)
 	ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ${EXTRA_SOURCES})
 else()
-	ADD_LIBRARY(transport-plugin STATIC ${HEADERS} ${SRC} ${EXTRA_SOURCES})
-	include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/protobuf/libprotobuf")
-	ADD_DEPENDENCIES(transport-plugin libprotobuf)
+	ADD_LIBRARY(transport-plugin STATIC ${HEADERS} ${SRC} ${EXTRA_SOURCES} )
 endif()
 ADD_DEPENDENCIES(transport-plugin pb)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
@@ -24,9 +22,9 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 if (NOT WIN32)
-	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
+	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
 else()
-	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARIES} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ws2_32.lib)
+	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ws2_32.lib)
 endif() 
 
 SET_TARGET_PROPERTIES(transport-plugin PROPERTIES
