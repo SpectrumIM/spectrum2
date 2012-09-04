@@ -42,27 +42,11 @@ class SpectrumNetworkPlugin;
 
 SpectrumNetworkPlugin *np;
 
-static gboolean nodaemon = FALSE;
-static gchar *logfile = NULL;
-static gchar *lock_file = NULL;
-static gchar *host = NULL;
-static int port = 10000;
-static gboolean ver = FALSE;
-static gboolean list_purple_settings = FALSE;
-
 int m_sock;
 static int writeInput;
 
-static GOptionEntry options_entries[] = {
-	{ "nodaemon", 'n', 0, G_OPTION_ARG_NONE, &nodaemon, "Disable background daemon mode", NULL },
-	{ "logfile", 'l', 0, G_OPTION_ARG_STRING, &logfile, "Set file to log", NULL },
-	{ "pidfile", 'p', 0, G_OPTION_ARG_STRING, &lock_file, "File where to write transport PID", NULL },
-	{ "version", 'v', 0, G_OPTION_ARG_NONE, &ver, "Shows Spectrum version", NULL },
-	{ "list-purple-settings", 's', 0, G_OPTION_ARG_NONE, &list_purple_settings, "Lists purple settings which can be used in config file", NULL },
-	{ "host", 'h', 0, G_OPTION_ARG_STRING, &host, "Host to connect to", NULL },
-	{ "port", 'p', 0, G_OPTION_ARG_INT, &port, "Port to connect to", NULL },
-	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
-};
+static std::string host;
+static int port = 10000;
 
 DBusHandlerResult skype_notify_handler(DBusConnection *connection, DBusMessage *message, gpointer user_data);
 
@@ -790,7 +774,7 @@ static void spectrum_sigchld_handler(int sig)
 	}
 }
 
-static int create_socket(char *host, int portno) {
+static int create_socket(const char *host, int portno) {
 	struct sockaddr_in serv_addr;
 	
 	int m_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -843,97 +827,82 @@ static void log_glib_error(const gchar *string) {
 }
 
 int main(int argc, char **argv) {
-	GError *error = NULL;
-	GOptionContext *context;
-	context = g_option_context_new("config_file_name or profile name");
-	g_option_context_add_main_entries(context, options_entries, "");
-	if (!g_option_context_parse (context, &argc, &argv, &error)) {
-		std::cout << "option parsing failed: " << error->message << "\n";
-		return -1;
-	}
-
-	if (ver) {
-// 		std::cout << VERSION << "\n";
-		std::cout << "verze\n";
-		g_option_context_free(context);
-		return 0;
-	}
-
-	if (argc != 2) {
-#ifdef WIN32
-		std::cout << "Usage: spectrum.exe <configuration_file.cfg>\n";
-#else
-
-#if GLIB_CHECK_VERSION(2,14,0)
-	std::cout << g_option_context_get_help(context, FALSE, NULL);
-#else
-	std::cout << "Usage: spectrum <configuration_file.cfg>\n";
-	std::cout << "See \"man spectrum\" for more info.\n";
-#endif
-		
-#endif
-	}
-	else {
 #ifndef WIN32
 		signal(SIGPIPE, SIG_IGN);
 
 		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 			std::cout << "SIGCHLD handler can't be set\n";
-			g_option_context_free(context);
 			return -1;
 		}
-// 
-// 		if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
-// 			std::cout << "SIGINT handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-// 		}
-// 
-// 		if (signal(SIGTERM, spectrum_sigterm_handler) == SIG_ERR) {
-// 			std::cout << "SIGTERM handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-// 		}
-// 
-// 		struct sigaction sa;
-// 		memset(&sa, 0, sizeof(sa)); 
-// 		sa.sa_handler = spectrum_sighup_handler;
-// 		if (sigaction(SIGHUP, &sa, NULL)) {
-// 			std::cout << "SIGHUP handler can't be set\n";
-// 			g_option_context_free(context);
-// 			return -1;
-//		}
 #endif
-		Config config;
-		if (!config.load(argv[1])) {
-			std::cout << "Can't open " << argv[1] << " configuration file.\n";
+
+	std::string configFile;
+	boost::program_options::variables_map vm;
+	boost::program_options::options_description desc("Usage: spectrum <config_file.cfg>\nAllowed options");
+	desc.add_options()
+		("help", "help")
+		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
+		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
+		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
+		;
+
+	try
+	{
+		boost::program_options::positional_options_description p;
+		p.add("config", -1);
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+			options(desc).positional(p).allow_unregistered().run(), vm);
+		boost::program_options::notify(vm);
+			
+		if(vm.count("help"))
+		{
+			std::cout << desc << "\n";
 			return 1;
 		}
 
-		Logging::initBackendLogging(&config);
+		if(vm.count("config") == 0) {
+			std::cout << desc << "\n";
+			return 1;
+		}
+	}
+	catch (std::runtime_error& e)
+	{
+		std::cout << desc << "\n";
+		return 1;
+	}
+	catch (...)
+	{
+		std::cout << desc << "\n";
+		return 1;
+	}
 
-// 		initPurple(config);
 
-		g_type_init();
+	Config config(argc, argv);
+	if (!config.load(configFile)) {
+		std::cout << "Can't open " << argv[1] << " configuration file.\n";
+		return 1;
+	}
 
-		m_sock = create_socket(host, port);
+	Logging::initBackendLogging(&config);
 
-		g_set_printerr_handler(log_glib_error);
+	g_type_init();
+
+	m_sock = create_socket(host.c_str(), port);
+
+	g_set_printerr_handler(log_glib_error);
 
 	GIOChannel *channel;
 	GIOCondition cond = (GIOCondition) G_IO_IN;
 	channel = g_io_channel_unix_new(m_sock);
 	g_io_add_watch_full(channel, G_PRIORITY_DEFAULT, cond, transportDataReceived, NULL, io_destroy);
 
-		np = new SpectrumNetworkPlugin(&config, host, port);
+	np = new SpectrumNetworkPlugin(&config, host, port);
 
-		GMainLoop *m_loop;
-		m_loop = g_main_loop_new(NULL, FALSE);
+	GMainLoop *m_loop;
+	m_loop = g_main_loop_new(NULL, FALSE);
 
-		if (m_loop) {
-			g_main_loop_run(m_loop);
-		}
+	if (m_loop) {
+		g_main_loop_run(m_loop);
 	}
 
-	g_option_context_free(context);
 }
