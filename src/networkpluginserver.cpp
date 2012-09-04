@@ -43,6 +43,7 @@
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
+#include "transport/util.h"
 
 #include "utf8.h"
 
@@ -57,6 +58,8 @@
 #include "sys/signal.h"
 #include "popt.h"
 #endif
+
+using namespace Transport::Util;
 
 namespace Transport {
 
@@ -122,16 +125,24 @@ class NetworkFactory : public Factory {
 	wrap.SerializeToString(&MESSAGE);
 
 // Executes new backend
-static unsigned long exec_(std::string path, const char *host, const char *port, const char *config) {
-	std::string original_path = path;
+static unsigned long exec_(const std::string& exePath, const char *host, const char *port, const char *cmdlineArgs) {
 	// BACKEND_ID is replaced with unique ID. The ID is increasing for every backend.
-	boost::replace_all(path, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));
-
-	// Add host and port.
-	path += std::string(" --host ") + host + " --port " + port + " " + config;
-	LOG4CXX_INFO(logger, "Starting new backend " << path);
+	std::string finalExePath = boost::replace_all_copy(exePath, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));	
 
 #ifdef _WIN32
+	// Add host and port.
+	std::ostringstream fullCmdLine;
+	fullCmdLine << "\"" << finalExePath << "\" --host " << host << " --port " << port;
+
+	if (cmdlineArgs)
+		fullCmdLine << " " << cmdlineArgs;
+
+	LOG4CXX_INFO(logger, "Starting new backend " << fullCmdLine.str());
+
+	// We must provide a non-const buffer to CreateProcess below
+	std::vector<wchar_t> rawCommandLineArgs( fullCmdLine.str().size() + 1 );
+	wcscpy_s(&rawCommandLineArgs[0], rawCommandLineArgs.size(), utf8ToUtf16(fullCmdLine.str()).c_str());
+
 	STARTUPINFO         si;
 	PROCESS_INFORMATION pi;
 
@@ -139,26 +150,30 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	si.cb=sizeof (si);
 
 	if (! CreateProcess(
-	NULL,
-	(LPSTR)path.c_str(),         // command line
-	0,                    // process attributes
-	0,                    // thread attributes
-	0,                    // inherit handles
-	0,                    // creation flags
-	0,                    // environment
-	0,                    // cwd
-	&si,
-	&pi
-	)
+		utf8ToUtf16(finalExePath).c_str(),
+		&rawCommandLineArgs[0],
+		0,                    // process attributes
+		0,                    // thread attributes
+		0,                    // inherit handles
+		0,                    // creation flags
+		0,                    // environment
+		0,                    // cwd
+		&si,
+		&pi
+		)
 	)  {
 		LOG4CXX_ERROR(logger, "Could not start process");
 	}
 
 	return 0;
 #else
+	// Add host and port.
+	finalExePath += std::string(" --host ") + host + " --port " + port + " " + cmdlineArgs;
+	LOG4CXX_INFO(logger, "Starting new backend " << finalExePath);
+
 	// Create array of char * from string using -lpopt library
-	char *p = (char *) malloc(path.size() + 1);
-	strcpy(p, path.c_str());
+	char *p = (char *) malloc(finalExePath.size() + 1);
+	strcpy(p, finalExePath.c_str());
 	int argc;
 	char **argv;
 	poptParseArgvString(p, &argc, (const char ***) &argv);
@@ -269,7 +284,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
 	while (true) {
-		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
 		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
 		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
@@ -1509,7 +1524,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 	if (c == NULL && !m_startingBackend) {
 		m_isNextLongRun = longRun;
 		m_startingBackend = true;
-		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
 	}
 
 	return c;

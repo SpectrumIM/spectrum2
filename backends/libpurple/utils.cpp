@@ -125,7 +125,7 @@ void spectrum_sigchld_handler(int sig)
 }
 #endif
 
-int create_socket(char *host, int portno) {
+int create_socket(const char *host, int portno) {
 	struct sockaddr_in serv_addr;
 	
 	int main_socket = socket(AF_INET, SOCK_STREAM, 0);

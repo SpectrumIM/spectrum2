@@ -27,7 +27,7 @@
 void spectrum_sigchld_handler(int sig);
 #endif
 
-int create_socket(char *host, int portno);
+int create_socket(const char *host, int portno);
 GHashTable *spectrum_ui_get_info(void);
 
 void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name);

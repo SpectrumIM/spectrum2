@@ -15,6 +15,7 @@
 #include "malloc.h"
 #include <algorithm>
 #include "errno.h"
+#include <boost/make_shared.hpp>
 
 #ifdef WITH_LIBEVENT
 #include <event.h>
@@ -69,60 +70,16 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 class SpectrumNetworkPlugin;
 
-GKeyFile *keyfile;
+boost::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
 
-static std::string replaceAll(
-  std::string result,
-  const std::string& replaceWhat,
-  const std::string& replaceWithWhat)
-{
-  while(1)
-  {
-	const int pos = result.find(replaceWhat);
-	if (pos==-1) break;
-	result.replace(pos,replaceWhat.size(),replaceWithWhat);
-  }
-  return result;
-}
-
-static std::string KEYFILE_STRING(const std::string &cat, const std::string &key, const std::string &def = "") {
-	gchar *str = g_key_file_get_string(keyfile, cat.c_str(), key.c_str(), 0);
-	if (!str) {
-		return def;
-	}
-	std::string ret(str);
-	g_free(str);
-
-	if (ret.find("#") != std::string::npos) {
-		ret = ret.substr(0, ret.find("#"));
-		while(*(ret.end() - 1) == ' ') {
-			ret.erase(ret.end() - 1);
-		}
-	}
-
-	if (ret.find("$jid") != std::string::npos) {
-		std::string jid = KEYFILE_STRING("service", "jid");
-		ret = replaceAll(ret, "$jid", jid);
-	}
-	return ret;
-}
-
-#define KEYFILE_BOOL(CAT, KEY) g_key_file_get_boolean(keyfile, CAT, KEY, 0)
-
-static gchar *host = NULL;
+static std::string host;
 static int port = 10000;
 
 struct FTData {
 	unsigned long id;
 	unsigned long timer;
 	bool paused;
-};
-
-static GOptionEntry options_entries[] = {
-	{ "host", 'h', 0, G_OPTION_ARG_STRING, &host, "Host to connect to", NULL },
-	{ "port", 'p', 0, G_OPTION_ARG_INT, &port, "Port to connect to", NULL },
-	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
 };
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
@@ -231,7 +188,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void getProtocolAndName(const std::string &legacyName, std::string &name, std::string &protocol) {
 			name = legacyName;
-			protocol = KEYFILE_STRING("service", "protocol");
+			protocol = CONFIG_STRING(config, "service.protocol");
 			if (protocol == "any") {
 				protocol = name.substr(0, name.find("."));
 				name = name.substr(name.find(".") + 1);
@@ -242,13 +199,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			char* contents;
 			gsize length;
 			gboolean ret = false;
-			if (!KEYFILE_STRING("backend", "avatars_directory").empty()) {
-				std::string f = KEYFILE_STRING("backend", "avatars_directory") + "/" + legacyName;
+			if (!CONFIG_STRING(config, "backend.avatars_directory").empty()) {
+				std::string f = CONFIG_STRING(config, "backend.avatars_directory") + "/" + legacyName;
 				ret = g_file_get_contents (f.c_str(), &contents, &length, NULL);
 			}
 
-			if (!KEYFILE_STRING("backend", "default_avatar").empty() && !ret) {
-				ret = g_file_get_contents (KEYFILE_STRING("backend", "default_avatar").c_str(),
+			if (!CONFIG_STRING(config, "backend.default_avatar").empty() && !ret) {
+				ret = g_file_get_contents (CONFIG_STRING(config, "backend.default_avatar").c_str(),
 											&contents, &length, NULL);
 			}
 
@@ -259,13 +216,16 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void setDefaultAccountOptions(PurpleAccount *account) {
 			int i = 0;
-			gchar **keys = g_key_file_get_keys (keyfile, "purple", NULL, NULL);
-			while (keys && keys[i] != NULL) {
-				std::string key = keys[i];
+			Config::SectionValuesCont purpleConfigValues = config->getSectionValues("purple");
 
-				if (key == "fb_api_key" || key == "fb_api_secret") {
+			BOOST_FOREACH ( const Config::SectionValuesCont::value_type & keyItem, purpleConfigValues )
+			{
+				std::string key = keyItem.first;
+				std::string strippedKey = boost::erase_first_copy(key, "purple.");
+
+				if (strippedKey == "fb_api_key" || strippedKey == "fb_api_secret") {
 					purple_account_set_bool(account, "auth_fb", TRUE);
-				}
+ 				}
 
 				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
 				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
@@ -274,23 +234,23 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					PurpleAccountOption *option = (PurpleAccountOption *) l->data;
 					PurplePrefType type = purple_account_option_get_type(option);
 					std::string key2(purple_account_option_get_setting(option));
-					if (key != key2) {
+					if (strippedKey != key2) {
 						continue;
 					}
 					
 					found = true;
 					switch (type) {
 						case PURPLE_PREF_BOOLEAN:
-							purple_account_set_bool(account, key.c_str(), fromString<bool>(KEYFILE_STRING("purple", key)));
+							purple_account_set_bool(account, strippedKey.c_str(), fromString<bool>(keyItem.second.as<std::string>()));
 							break;
 
 						case PURPLE_PREF_INT:
-							purple_account_set_int(account, key.c_str(), fromString<int>(KEYFILE_STRING("purple", key)));
+							purple_account_set_int(account, strippedKey.c_str(), fromString<int>(keyItem.second.as<std::string>()));
 							break;
 
 						case PURPLE_PREF_STRING:
 						case PURPLE_PREF_STRING_LIST:
-							purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+							purple_account_set_string(account, strippedKey.c_str(), keyItem.second.as<std::string>().c_str());
 							break;
 						default:
 							continue;
@@ -299,11 +259,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 
 				if (!found) {
-					purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+					purple_account_set_string(account, strippedKey.c_str(), keyItem.second.as<std::string>().c_str());
 				}
 				i++;
 			}
-			g_strfreev (keys);
 
 			char* contents;
 			gsize length;
@@ -313,7 +272,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 
-			if (KEYFILE_STRING("service", "protocol") == "prpl-novell") {
+			if (CONFIG_STRING(config, "service.protocol") == "prpl-novell") {
 				std::string username(purple_account_get_username(account));
 				std::vector <std::string> u = split(username, '@');
 				purple_account_set_username(account, (const char*) u.front().c_str());
@@ -372,7 +331,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			// Enable account + privacy lists
 			purple_account_set_enabled(account, "spectrum", TRUE);
-			if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
+			if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
 				purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
 			}
 
@@ -493,12 +452,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				std::string name = legacyName;
-				if (KEYFILE_STRING("service", "protocol") == "any" && legacyName.find("prpl-") == 0) {
+				if (CONFIG_STRING(config, "service.protocol") == "any" && legacyName.find("prpl-") == 0) {
 					name = name.substr(name.find(".") + 1);
 				}
 				m_vcards[user + name] = id;
 
-				if (KEYFILE_BOOL("backend", "no_vcard_fetch") && name != purple_account_get_username(account)) {
+				if (CONFIG_BOOL(config, "backend.no_vcard_fetch") && name != purple_account_get_username(account)) {
 					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
 					notify_user_info(purple_account_get_connection(account), name.c_str(), user_info);
 					purple_notify_user_info_destroy(user_info);
@@ -580,7 +539,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		}
 
 		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
-			if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
+			if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
 				PurpleAccount *account = m_sessions[user];
 				if (account) {
 					if (blocked) {
@@ -848,7 +807,7 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
 
 	bool blocked = false;
-	if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
+	if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
 		if (prpl_info && prpl_info->tooltip_text) {
 			PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
 			prpl_info->tooltip_text(buddy, user_info, true);
@@ -1578,13 +1537,13 @@ static bool initPurple() {
 	purple_debug_set_verbose(true);
 
 	purple_core_set_ui_ops(&coreUiOps);
-	if (KEYFILE_STRING("service", "eventloop") == "libev") {
+	if (CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev") {
 		LOG4CXX_INFO(logger, "Will use libev based event loop");
 	}
 	else {
 		LOG4CXX_INFO(logger, "Will use glib based event loop");
 	}
-	purple_eventloop_set_ui_ops(getEventLoopUiOps(KEYFILE_STRING("service", "eventloop") == "libev"));
+	purple_eventloop_set_ui_ops(getEventLoopUiOps(CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev"));
 
 	ret = purple_core_init("spectrum");
 	if (ret) {
@@ -1670,30 +1629,6 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 }
 
 int main(int argc, char **argv) {
-	GError *error = NULL;
-	GOptionContext *context;
-	context = g_option_context_new("config_file_name or profile name");
-	g_option_context_add_main_entries(context, options_entries, "");
-	if (!g_option_context_parse (context, &argc, &argv, &error)) {
-		std::cerr << "option parsing failed: " << error->message << "\n";
-		return -1;
-	}
-
-	if (argc != 2) {
-#ifdef WIN32
-		std::cout << "Usage: spectrum.exe <configuration_file.cfg>\n";
-#else
-
-#if GLIB_CHECK_VERSION(2,14,0)
-	std::cout << g_option_context_get_help(context, FALSE, NULL);
-#else
-	std::cout << "Usage: spectrum <configuration_file.cfg>\n";
-	std::cout << "See \"man spectrum\" for more info.\n";
-#endif
-		
-#endif
-	}
-	else {
 #ifndef WIN32
 		mallopt(M_CHECK_ACTION, 2);
 		mallopt(M_PERTURB, 0xb);
@@ -1702,53 +1637,84 @@ int main(int argc, char **argv) {
 
 		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 			std::cout << "SIGCHLD handler can't be set\n";
-			g_option_context_free(context);
 			return -1;
 		}
 #endif
-		keyfile = g_key_file_new ();
-		if (!g_key_file_load_from_file (keyfile, argv[1], (GKeyFileFlags) 0, 0)) {
-			std::cout << "Can't open " << argv[1] << " configuration file.\n";
+
+	std::string configFile;
+	boost::program_options::variables_map vm;
+	boost::program_options::options_description desc("Usage: spectrum <config_file.cfg>\nAllowed options");
+	desc.add_options()
+		("help", "help")
+		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
+		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
+		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
+		;
+
+	try
+	{
+		boost::program_options::positional_options_description p;
+		p.add("config", -1);
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+			options(desc).positional(p).allow_unregistered().run(), vm);
+		boost::program_options::notify(vm);
+			
+		if(vm.count("help"))
+		{
+			std::cout << desc << "\n";
 			return 1;
 		}
 
-		Config config;
-		if (!config.load(argv[1])) {
-			std::cerr << "Can't open " << argv[1] << " configuration file.\n";
+		if(vm.count("config") == 0) {
+			std::cout << desc << "\n";
 			return 1;
 		}
-		Logging::initBackendLogging(&config);
-
-		initPurple();
-
-		main_socket = create_socket(host, port);
-		purple_input_add(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
-		purple_timeout_add_seconds(30, pingTimeout, NULL);
-
-		np = new SpectrumNetworkPlugin();
-		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
-
-		GMainLoop *m_loop;
-#ifdef WITH_LIBEVENT
-		if (!libev) {
-			m_loop = g_main_loop_new(NULL, FALSE);
-		}
-		else {
-			event_init();
-		}
-#endif
-		m_loop = g_main_loop_new(NULL, FALSE);
-
-		if (m_loop) {
-			g_main_loop_run(m_loop);
-		}
-#ifdef WITH_LIBEVENT
-		else {
-			event_loop(0);
-		}
-#endif
+	}
+	catch (std::runtime_error& e)
+	{
+		std::cout << desc << "\n";
+		return 1;
+	}
+	catch (...)
+	{
+		std::cout << desc << "\n";
+		return 1;
 	}
 
-	g_option_context_free(context);
+	config = boost::make_shared<Config>(argc, argv);
+	if (!config->load(vm["config"].as<std::string>())) {
+		std::cerr << "Can't load configuration file.\n";
+		return 1;
+	}
+ 
+	Logging::initBackendLogging(config.get());
+	initPurple();
+ 
+	main_socket = create_socket(host.c_str(), port);
+	purple_input_add(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+	purple_timeout_add_seconds(30, pingTimeout, NULL);
+ 
+	np = new SpectrumNetworkPlugin();
+	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
+
+	GMainLoop *m_loop;
+#ifdef WITH_LIBEVENT
+	if (!libev) {
+		m_loop = g_main_loop_new(NULL, FALSE);
+	}
+	else {
+		event_init();
+	}
+#endif
+	m_loop = g_main_loop_new(NULL, FALSE);
+	if (m_loop) {
+		g_main_loop_run(m_loop);
+	}
+#ifdef WITH_LIBEVENT
+	else {
+		event_loop(0);
+	}
+#endif
+
 	return 0;
 }
