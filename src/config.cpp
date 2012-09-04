@@ -31,6 +31,7 @@
 
 #include "iostream"
 #include "boost/version.hpp"
+#include "boost/algorithm/string.hpp"
 
 #define BOOST_MAJOR_VERSION BOOST_VERSION / 100000
 #define BOOST_MINOR_VERSION BOOST_VERSION / 100 % 1000
@@ -247,6 +248,34 @@ bool Config::reload() {
 	}
 
 	return load(m_file);
+}
+
+Config::SectionValuesCont Config::getSectionValues(const std::string& sectionName) {
+	SectionValuesCont sectionValues;
+
+	std::string sectionSearchString = sectionName + ".";
+	BOOST_FOREACH (const Variables::value_type & varItem, m_variables) {
+		if (boost::istarts_with(varItem.first, sectionSearchString))
+			sectionValues[varItem.first] = varItem.second;
+	}
+
+	BOOST_FOREACH (const UnregisteredCont::value_type & varItem, m_unregistered) {
+		if (boost::istarts_with(varItem.first, sectionSearchString))
+			sectionValues[varItem.first] = varItem.second;
+	}
+
+	return sectionValues;
+}
+
+std::string Config::getCommandLineArgs() const {
+	std::ostringstream commandLineArgs;
+
+	// Return the command-line arguments that were passed to us originally (but remove the initial .exe part)
+	for (int i = 1; i < m_argc; ++i) 	{
+		commandLineArgs << "\"" << m_argv[i] << "\" ";
+	}
+
+	return commandLineArgs.str();
 }
 
 }

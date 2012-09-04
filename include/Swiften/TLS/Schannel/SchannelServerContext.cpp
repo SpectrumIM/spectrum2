@@ -60,7 +60,7 @@ void SchannelServerContext::connect()
 	{
 		if (m_my_cert_store == NULL)
 		{
-			m_my_cert_store = CertOpenSystemStore(0, m_cert_store_name.c_str());
+			m_my_cert_store = CertOpenSystemStoreA(0, m_cert_store_name.c_str());
 			if (!m_my_cert_store)
 			{
 /////			printf( "**** Error 0x%x returned by CertOpenSystemStore\n", GetLastError() );

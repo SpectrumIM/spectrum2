@@ -35,6 +35,9 @@
 #define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
 #define CONFIG_VECTOR(PTR, KEY) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::vector<std::string> >() : std::vector<std::string>())
 
+#define CONFIG_STRING_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::string>() : DEF)
+#define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<bool>() : DEF)
+
 
 namespace Transport {
 
@@ -49,6 +52,9 @@ typedef boost::program_options::variables_map Variables;
 /// class documentation to get a list of all relevant variables for that class.
 class Config {
 	public:
+		typedef std::map<std::string, boost::program_options::variable_value> SectionValuesCont;
+		typedef std::map<std::string, boost::program_options::variable_value> UnregisteredCont;
+
 		/// Constructor.
 		Config(int argc = 0, char **argv = NULL) : m_argc(argc), m_argv(argv) {}
 
@@ -90,6 +96,10 @@ class Config {
 			}
 			return m_unregistered[key];
 		}
+
+		SectionValuesCont getSectionValues(const std::string& sectionName);
+ 
+		std::string getCommandLineArgs() const;
 
 		/// Returns path to config file from which data were loaded.
 		const std::string &getConfigFile() { return m_file; }
