@@ -263,7 +263,7 @@ if (PROTOBUF_FOUND)
 	include_directories(${PROTOBUF_INCLUDE_DIRS})
 	message("Network plugins   : yes")
 
-	if(PURPLE_LIBRARY AND PURPLE_INCLUDE_DIR)
+	if(PURPLE_FOUND)
 		message("Libpurple plugin  : yes")
 		include_directories(${PURPLE_INCLUDE_DIR})
 		include_directories(${GLIB2_INCLUDE_DIR})
