@@ -1,7 +1,5 @@
 #include "purple_defs.h"
-#include "transport/util.h"
-
-using namespace Transport::Util;
+#include "utils.h"
 
 #if PURPLE_RUNTIME
 

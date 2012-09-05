@@ -156,3 +156,34 @@ int create_socket(const char *host, int portno) {
 // 	fcntl(main_socket, F_SETFL, flags);
 	return main_socket;
 }
+
+#ifdef _WIN32
+std::wstring utf8ToUtf16(const std::string& str)
+{
+	try
+	{
+		if (str.empty())
+			return L"";
+
+		// First request the size of the required UTF-16 buffer
+		int numRequiredBytes = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), boost::numeric_cast<int>(str.size()), NULL, 0);
+		if (!numRequiredBytes)
+			return L"";
+
+		// Allocate memory for the UTF-16 string
+		std::vector<wchar_t> utf16Str(numRequiredBytes);
+
+		int numConverted = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), boost::numeric_cast<int>(str.size()), &utf16Str[0], numRequiredBytes);
+		if (!numConverted)
+			return L"";
+
+		std::wstring wstr(&utf16Str[0], numConverted);
+		return wstr;
+	}
+	catch (...)
+	{
+		// I don't believe libtransport is exception-safe so we'll just return an empty string instead
+		return L"";
+	}
+}
+#endif // _WIN32
