@@ -1528,7 +1528,9 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 static bool initPurple() {
 	bool ret;
 
-	if (!resolvePurpleFunctions()) {
+	std::string libPurpleDllPath = CONFIG_STRING_DEFAULTED(config, "purple.libpurple_dll_path", "");
+
+	if (!resolvePurpleFunctions(libPurpleDllPath)) {
 		LOG4CXX_ERROR(logger, "Unable to load libpurple.dll or some of the needed methods");
 		return false;
 	}
@@ -1538,7 +1540,7 @@ static bool initPurple() {
 	purple_plugins_add_search_path_wrapped(pluginsDir.c_str());
 
 	std::string cacertsDir = CONFIG_STRING_DEFAULTED(config, "purple.cacerts_dir", "./ca-certs");
-	LOG4CXX_INFO(logger, "Setting libpurple plugins directory to: " << cacertsDir);
+	LOG4CXX_INFO(logger, "Setting libpurple cacerts directory to: " << cacertsDir);
 	purple_certificate_add_ca_search_path_wrapped(cacertsDir.c_str());
  
 	std::string userDir = CONFIG_STRING_DEFAULTED(config, "service.working_dir", "./");
