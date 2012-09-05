@@ -440,12 +440,14 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-	std::string field;
+	std::string field = payload.fullname();
 
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
 
 	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), field.begin(), '_');
 	vcard->setFullName(field);
+
+	field = payload.nickname();
 
 	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), field.begin(), '_');
 	vcard->setNickname(field);
