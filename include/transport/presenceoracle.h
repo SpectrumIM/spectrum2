@@ -39,6 +39,8 @@ class PresenceOracle {
 		Swift::Presence::ref getHighestPriorityPresence(const Swift::JID& bareJID) const;
 		std::vector<Swift::Presence::ref> getAllPresence(const Swift::JID& bareJID) const;
 
+		void clearPresences(const Swift::JID& bareJID);
+
 	public:
 		boost::signal<void (Swift::Presence::ref)> onPresenceChange;
 

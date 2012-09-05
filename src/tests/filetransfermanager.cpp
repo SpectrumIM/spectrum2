@@ -143,8 +143,6 @@ class FileTransferManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectIQ(Swift::IQ::createResult(getStanza(received[0])->getFrom(), getStanza(received[0])->getTo(), getStanza(received[0])->getID()));
 		loop->processEvents();
 		received.erase(received.begin());
-// 		dumpReceived();
-		// TODO: Check that we receive Swift::IBB:Close stanza. This is not done right now because of Swiften bug...
 	}
 
 

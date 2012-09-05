@@ -110,6 +110,12 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 	if (m_component->inServerMode()) {
 		disconnectUser(user->getJID());
 	}
+	else {
+		// User could be disconnected by User::handleDisconnect() method, but
+		// Transport::PresenceOracle could still contain his last presence.
+		// We have to clear all received presences for this user in PresenceOracle.
+		m_component->getPresenceOracle()->clearPresences(user->getJID().toBare());
+	}
 
 	if (m_storageBackend && onUserBehalf) {
 		m_storageBackend->setUserOnline(user->getUserInfo().id, false);
