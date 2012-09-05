@@ -1,6 +1,11 @@
 #include "utils.h"
 
 #include "glib.h"
+
+// win32/libc_interface.h defines its own socket(), read() and so on.
+// We don't want to use it here.
+#define _LIBC_INTERFACE_H_ 1
+
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
@@ -23,6 +28,7 @@
 
 #ifdef WIN32
 #include "win32/win32dep.h"
+#define close closesocket
 #define ssize_t SSIZE_T
 #include <process.h>
 #define getpid _getpid
