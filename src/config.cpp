@@ -279,6 +279,7 @@ std::string Config::getCommandLineArgs() const {
 }
 
 Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {
+	std::string jid;
 	std::ostringstream os;
 	std::string configFile;
 	boost::program_options::variables_map vm;
@@ -287,6 +288,9 @@ Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::s
 		("help", "help")
 		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
 		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
+		("no-daemonize,n", "Do not run spectrum as daemon")
+		("no-debug,d", "Create coredumps on crash")
+		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
 		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
 		;
 
