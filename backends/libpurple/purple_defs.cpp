@@ -44,6 +44,7 @@ purple_blist_get_handle_wrapped_fnc purple_blist_get_handle_wrapped = NULL;
 purple_xfer_ui_ready_wrapped_fnc purple_xfer_ui_ready_wrapped = NULL;
 purple_xfer_request_accepted_wrapped_fnc purple_xfer_request_accepted_wrapped = NULL;
 purple_xfer_request_denied_wrapped_fnc purple_xfer_request_denied_wrapped = NULL;
+purple_certificate_add_ca_search_path_wrapped_fnc purple_certificate_add_ca_search_path_wrapped = NULL;
 purple_xfer_get_account_wrapped_fnc purple_xfer_get_account_wrapped = NULL;
 purple_xfer_get_filename_wrapped_fnc purple_xfer_get_filename_wrapped = NULL;
 purple_xfer_get_size_wrapped_fnc purple_xfer_get_size_wrapped = NULL;
@@ -192,6 +193,10 @@ bool resolvePurpleFunctions() {
 
 	purple_util_set_user_dir_wrapped = (purple_util_set_user_dir_wrapped_fnc)GetProcAddress(f_hPurple, "purple_util_set_user_dir");
 	if (!purple_util_set_user_dir_wrapped)
+		return false;
+
+	purple_certificate_add_ca_search_path_wrapped = (purple_util_set_user_dir_wrapped_fnc)GetProcAddress(f_hPurple, "purple_certificate_add_ca_search_path");
+	if (!purple_certificate_add_ca_search_path_wrapped)
 		return false;
 
 	purple_blist_node_get_type_wrapped = (purple_blist_node_get_type_wrapped_fnc)GetProcAddress(f_hPurple, "purple_blist_node_get_type");

@@ -353,6 +353,9 @@ extern purple_plugin_action_free_wrapped_fnc purple_plugin_action_free_wrapped;
 typedef void  (_cdecl * purple_plugins_add_search_path_wrapped_fnc)(const char *path);
 extern purple_plugins_add_search_path_wrapped_fnc purple_plugins_add_search_path_wrapped;
 
+typedef void  (_cdecl * purple_certificate_add_ca_search_path_wrapped_fnc)(const char *path);
+extern purple_certificate_add_ca_search_path_wrapped_fnc purple_certificate_add_ca_search_path_wrapped;
+
 typedef PurpleConnectionState  (_cdecl * purple_connection_get_state_wrapped_fnc)(const PurpleConnection *gc);
 extern purple_connection_get_state_wrapped_fnc purple_connection_get_state_wrapped;
 
@@ -542,6 +545,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_conversations_set_ui_ops_wrapped purple_conversations_set_ui_ops
 #define purple_conversations_get_handle_wrapped purple_conversations_get_handle
 #define purple_plugin_action_free_wrapped purple_plugin_action_free
+#define purple_certificate_add_ca_search_path_wrapped purple_certificate_add_ca_search_path
 #define purple_plugins_add_search_path_wrapped purple_plugins_add_search_path
 #define purple_connection_get_state_wrapped purple_connection_get_state
 #define purple_connection_get_account_wrapped purple_connection_get_account

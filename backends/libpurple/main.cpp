@@ -1533,9 +1533,18 @@ static bool initPurple() {
 		return false;
 	}
 
-	purple_plugins_add_search_path_wrapped("./plugins");
+	std::string pluginsDir = CONFIG_STRING_DEFAULTED(config, "purple.plugins_dir", "./plugins");
+	LOG4CXX_INFO(logger, "Setting libpurple plugins directory to: " << pluginsDir);
+	purple_plugins_add_search_path_wrapped(pluginsDir.c_str());
 
-	purple_util_set_user_dir_wrapped("./");
+	std::string cacertsDir = CONFIG_STRING_DEFAULTED(config, "purple.cacerts_dir", "./ca-certs");
+	LOG4CXX_INFO(logger, "Setting libpurple plugins directory to: " << cacertsDir);
+	purple_certificate_add_ca_search_path_wrapped(cacertsDir.c_str());
+ 
+	std::string userDir = CONFIG_STRING_DEFAULTED(config, "service.working_dir", "./");
+	LOG4CXX_INFO(logger, "Setting libpurple user directory to: " << userDir);
+
+	purple_util_set_user_dir_wrapped(userDir.c_str());
 	remove("./accounts.xml");
 	remove("./blist.xml");
 
