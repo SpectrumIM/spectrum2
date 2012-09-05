@@ -140,7 +140,7 @@ wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_win32_new
 #endif
 bool resolvePurpleFunctions(const std::string& libPurpleDllPath) {
 #if PURPLE_RUNTIME
-	wstring dllPath;
+	std::wstring dllPath;
 	if (!libPurpleDllPath.empty())
 	{
 		dllPath = utf8ToUtf16(libPurpleDllPath);
