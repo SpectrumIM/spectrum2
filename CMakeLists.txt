@@ -49,6 +49,10 @@ endif()
 set(mysql_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(mysql)
 
+# FIND LIBPURPLE
+set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(purple)
+
 if (WIN32)
 	if (PURPLE_NOT_RUNTIME)
 		add_definitions(-DPURPLE_RUNTIME=0)
@@ -58,10 +62,6 @@ if (WIN32)
 else()
 	add_definitions(-DPURPLE_RUNTIME=0)
 endif()
-
-# FIND LIBPURPLE
-set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(purple)
 
 # FIND GLIB
 # if (GLIB2_INCLUDE_DIR AND GLIB2_LIBRARIES)
