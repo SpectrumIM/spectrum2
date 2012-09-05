@@ -16,7 +16,7 @@ if (CPPUNIT_FOUND)
 
 	ADD_EXECUTABLE(libtransport_test ${SRC_TEST})
 
-	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARIES} ${Boost_LIBRARIES})
+	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARY} ${Boost_LIBRARIES})
 endif()
 
 if (NOT WIN32)

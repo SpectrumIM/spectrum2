@@ -28,6 +28,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(handlePresenceLeaveRoom);
 	CPPUNIT_TEST(leaveJoinedRoom);
 	CPPUNIT_TEST(handleDisconnected);
+	CPPUNIT_TEST(handleDisconnectedReconnect);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -201,6 +202,16 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("Connection error"), dynamic_cast<Swift::StreamError *>(received[1].get())->getText());
 
 		disconnected = true;
+	}
+
+	void handleDisconnectedReconnect() {
+		User *user = userManager->getUser("user@localhost");
+		user->handleDisconnected("Connection error");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT(!streamEnded);
+		user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(user);
 	}
 
 };
