@@ -1,6 +1,9 @@
 #include "purple_defs.h"
+#include "transport/util.h"
+
+using namespace Transport::Util;
+
 #if PURPLE_RUNTIME
-#include "utils.h"
 
 using std::string;
 using std::wstring;
