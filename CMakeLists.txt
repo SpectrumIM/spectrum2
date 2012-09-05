@@ -22,13 +22,15 @@ endif()
 set(CMAKE_MODULE_PATH "cmake_modules")
 
 # FIND CPPUNIT
-if(CPPUNIT_INCLUDE_DIR AND CPPUNIT_LIBRARY)
+set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(cppunit)
+
+if(NOT CPPUNIT_FOUND AND CPPUNIT_INCLUDE_DIR AND CPPUNIT_LIBRARY)
 	set(CCPUNIT_LIBRARIES ${CPPUNIT_LIBRARY})
 	set(CPPUNIT_FOUND 1)
 	message(STATUS "Using cppunit: ${CPPUNIT_INCLUDE_DIR} ${CPPUNIT_LIBRARIES}")
 else()
-	set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-	find_package(cppunit)
+
 endif()
 
 # FIND SQLITE3
@@ -48,16 +50,8 @@ set(mysql_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(mysql)
 
 # FIND LIBPURPLE
-if( PURPLE_INCLUDE_DIR )
-	if (PURPLE_NOT_RUNTIME)
-		set(PURPLE_LIBRARY "")
-	endif(PURPLE_NOT_RUNTIME)
-	set(PURPLE_FOUND 1)
-	message(STATUS "Using purple: ${PURPLE_INCLUDE_DIR} ${PURPLE_LIBRARY}")
-else()
-	set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-	find_package(purple)
-endif()
+set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(purple)
 
 if (WIN32)
 	if (PURPLE_NOT_RUNTIME)
@@ -92,7 +86,11 @@ set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
 # FIND SWIFTEN
-if(WIN32 AND SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
+
+set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(Swiften)
+
+if(NOT SWIFTEN_FOUND)
 	if (ZLIB_LIBRARY)
 		set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} ${ZLIB_LIBRARY})
 	endif()
@@ -111,9 +109,6 @@ if(WIN32 AND SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Iphlpapi")
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Winscard")
 	message(STATUS "Using swiften: ${SWIFTEN_INCLUDE_DIR} ${SWIFTEN_LIBRARY}")
-else()
-	set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-	find_package(Swiften)
 endif()
 
 if (WIN32)
@@ -131,39 +126,30 @@ endif()
 # FIND BOOST
 set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)
-	if (BOOST_VERSION)
-		set(Boost_USE_STATIC_LIBS      ON)
-		set(Boost_USE_MULTITHREADED      ON)
-		set(Boost_USE_STATIC_RUNTIME    OFF)
-		find_package(Boost ${BOOST_VERSION} COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
-	else(BOOST_VERSION)
-		message(FATAL_ERROR "Set BOOST_VERSION using for example cmake . -DBOOST_VERSION=1.49.0")
-	endif(BOOST_VERSION)
+	set(Boost_USE_STATIC_LIBS      ON)
+	set(Boost_USE_MULTITHREADED      ON)
+	set(Boost_USE_STATIC_RUNTIME    OFF)
+	find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
 else(WIN32)
 	find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals REQUIRED)
 endif(WIN32)
 
 message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
+set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(Protobuf)
+
 # FIND PROTOBUF
-if (WIN32 AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
+if (NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
 	set(PROTOBUF_FOUND 1)
 	set(PROTOBUF_INCLUDE_DIRS ${PROTOBUF_INCLUDE_DIR})
-	if (NOT PROTOBUF_PROTOC_EXECUTABLE)
+	if (PROTOBUF_PROTOC_EXECUTABLE)
+	else()
 		set(PROTOBUF_PROTOC_EXECUTABLE protoc)
 	endif()
 	message(STATUS "Using protobuf: ${PROTOBUF_INCLUDE_DIRS} ${PROTOBUF_LIBRARY}")
-else()
-	if (WIN32)
-		#TODO: Use bundled protobuf here...?
-		set(PROTOBUF_FOUND 1)
-		set(PROTOBUF_INCLUDE_DIRS "../include")
-		set(PROTOBUF_LIBRARY "../lib/libprotobuf.lib")
-	else(WIN32)
-		set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-		find_package(Protobuf REQUIRED)
-	endif(WIN32)
 endif()
+
 
 set(Communi_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Communi)
