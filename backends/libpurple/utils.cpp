@@ -28,6 +28,7 @@
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 #include "errno.h"
 
@@ -53,6 +54,10 @@
 #endif
 
 #include "purple_defs.h"
+
+#include <boost/numeric/conversion/cast.hpp>
+
+using std::vector;
 
 static GHashTable *ui_info = NULL;
 
