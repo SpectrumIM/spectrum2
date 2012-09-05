@@ -18,6 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
+// win32/libc_interface.h defines its own socket(), read() and so on.
+// We don't want to use it here.
+#define _LIBC_INTERFACE_H_ 1
+
 #include "utils.h"
 
 #include "glib.h"
@@ -45,6 +49,7 @@
 #define getpid _getpid 
 #define ssize_t SSIZE_T
 #include "win32/win32dep.h"
+#define close closesocket
 #endif
 
 #include "purple_defs.h"
