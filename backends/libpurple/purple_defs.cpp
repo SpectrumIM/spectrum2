@@ -1,6 +1,10 @@
 #include "purple_defs.h"
-
 #if PURPLE_RUNTIME
+#include "utils.h"
+
+using std::string;
+using std::wstring;
+
 static HMODULE f_hPurple = NULL;
 purple_debug_set_ui_ops_wrapped_fnc purple_debug_set_ui_ops_wrapped = NULL;
 purple_debug_set_verbose_wrapped_fnc purple_debug_set_verbose_wrapped = NULL;
