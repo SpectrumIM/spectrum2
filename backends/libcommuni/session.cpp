@@ -142,6 +142,13 @@ void MyIrcSession::on_topicChanged(IrcMessage *message) {
 
 void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	IrcPrivateMessage *m = (IrcPrivateMessage *) message;
+	if (m->isRequest()) {
+		QString request = m->message().split(" ", QString::SkipEmptyParts).value(0).toUpper();
+		if (request == "PING" || request == "TIME" || request == "VERSION") {
+			LOG4CXX_INFO(logger, user << ": " << TO_UTF8(request) << " received and has been answered");
+			return;
+		}
+	}
 
 	std::string target = TO_UTF8(m->target());
 	LOG4CXX_INFO(logger, user << ": Message from " << target);
