@@ -138,6 +138,11 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	if (m_argc != 0 && m_argv) {
 		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
 		parsed_options parsed = parser.run();
+		BOOST_FOREACH(option &opt, parsed.options) {
+			if (opt.unregistered && !opt.value.empty()) {
+				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
+			}
+		}
 		store(parsed, m_variables);
 	}
 

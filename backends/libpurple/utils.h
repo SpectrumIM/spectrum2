@@ -31,3 +31,7 @@ int create_socket(const char *host, int portno);
 GHashTable *spectrum_ui_get_info(void);
 
 void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name);
+
+#ifdef _WIN32
+	std::wstring utf8ToUtf16(const std::string& str);
+#endif

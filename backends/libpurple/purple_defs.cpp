@@ -1,6 +1,11 @@
 #include "purple_defs.h"
+#include "utils.h"
 
 #if PURPLE_RUNTIME
+
+using std::string;
+using std::wstring;
+
 static HMODULE f_hPurple = NULL;
 purple_debug_set_ui_ops_wrapped_fnc purple_debug_set_ui_ops_wrapped = NULL;
 purple_debug_set_verbose_wrapped_fnc purple_debug_set_verbose_wrapped = NULL;
@@ -138,9 +143,19 @@ purple_account_option_get_type_wrapped_fnc purple_account_option_get_type_wrappe
 purple_account_option_get_setting_wrapped_fnc purple_account_option_get_setting_wrapped = NULL;
 wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_win32_new_socket_wrapped = NULL;
 #endif
-bool resolvePurpleFunctions() {
+bool resolvePurpleFunctions(const std::string& libPurpleDllPath) {
 #if PURPLE_RUNTIME
-	f_hPurple = LoadLibrary(L"libpurple.dll");
+	std::wstring dllPath;
+	if (!libPurpleDllPath.empty())
+	{
+		dllPath = utf8ToUtf16(libPurpleDllPath);
+	}
+	else
+	{
+		// No path was specified, so try loading libpurple from the current working directory
+		dllPath = L"libpurple.dll";
+	}
+	f_hPurple = LoadLibrary(dllPath.c_str());
 	if (!f_hPurple)
 			return false;
 	purple_debug_set_ui_ops_wrapped = (purple_debug_set_ui_ops_wrapped_fnc)GetProcAddress(f_hPurple, "purple_debug_set_ui_ops");

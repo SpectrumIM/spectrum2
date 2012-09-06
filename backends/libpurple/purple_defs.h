@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+
 #if PURPLE_RUNTIME
 
 #include <Windows.h>
@@ -570,5 +572,5 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define wpurple_g_io_channel_win32_new_socket_wrapped wpurple_g_io_channel_win32_new_socket
 #endif
 
-bool resolvePurpleFunctions();
+bool resolvePurpleFunctions(const std::string& libPurpleDllPath);
 
