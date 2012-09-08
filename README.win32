@@ -47,12 +47,20 @@ Run extract_includes.bat in vsprojects/ directory and move resulting vsprojects/
 
 Move protoc.exe to C:\env-msvc-x64\bin\ and libprotobuf.lib to C:\env-msvc-x64\lib
 
-4. You're ready! :) Clone libtransport into C:\env-msvc-x64\libtransport (You *must* clone it into this directory, because libtransport will try to find the dependencies in ../lib and ../include)
+4. Install gtkmm
+
+Download installer from https://live.gnome.org/gtkmm/MSWindows and install gtkmm into C:\env-msvc-x64\
+
+5. Install libpurple headers
+
+Download http://www.pidgin.im/download/source/ , extract it and copy libpurple directory in C:\env-msvc-x64\include
+
+6. You're ready! :) Clone libtransport into C:\env-msvc-x64\libtransport (You *must* clone it into this directory, because libtransport will try to find the dependencies in ../lib and ../include)
 
 Compile it as:
 
 	set CMAKE_INCLUDE_PATH=C:\env-msvc-x64\include
-	cmake . -G "NMake Makefiles" -DBOOST_VERSION=1.49.0 -DBOOST_LIBRARYDIR=../lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
+	cmake . -G "NMake Makefiles" -DBOOST_INCLUDEDIR=../include/boost-1_49 -DBOOST_LIBRARYDIR=../lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
 	nmake
 
 TODO: libpurple_backend compilation
