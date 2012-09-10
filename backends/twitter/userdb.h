@@ -1,3 +1,5 @@
+#if 0
+
 #ifndef USERDB_H
 #define USERDB_H
 
@@ -39,5 +41,8 @@ class UserDB {
 		std::set<std::string> getRegisteredUsers();
 		~UserDB();
 };
+
+#endif
+
 
 #endif
