@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "errno.h"
+#include <string.h>
 
 #ifndef WIN32 
 #include "sys/wait.h"
