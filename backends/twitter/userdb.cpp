@@ -1,5 +1,7 @@
 #include "userdb.h"
 
+#if 0
+
 DEFINE_LOGGER(logger, "Twitter Backend Database");
 
 UserDB::UserDB(std::string database): errMsg(0), rc(0), dbOpen(false) 
@@ -74,3 +76,5 @@ UserDB::~UserDB()
 {
 	sqlite3_close(db);
 }
+
+#endif
