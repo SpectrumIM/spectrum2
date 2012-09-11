@@ -110,6 +110,11 @@ elif suffix == 'backends_count':
 	title = "Backends count"
 	vlabel = "backends"
 	info = 'Total number of backends.'
+elif suffix == 'crashed_backends_count':
+	stat = { "crashed_backends_count": None }
+	title = "Crashed backends count"
+	vlabel = "backends"
+	info = 'Total number of backends.'
 elif suffix == 'online':
 	stat = { 'online_users_count': None }
 	title = "Online users"
