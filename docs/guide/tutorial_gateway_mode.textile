@@ -31,6 +31,8 @@ h3. Choose the storage backend
 |_. Category|_. Option|_. Change to value|_. Meaning|
 |database|type|sqlite3|Spectrum 2 will use SQLite3 as storage backend|
 
+You can also use "MySQL":mysql.html or "PostgreSQL":postgresql.html instead of SQLite3 backend.
+
 h2. Start Spectrum 2
 
 The following command should now start your first Spectrum 2 instance:
