@@ -72,7 +72,7 @@ std::string searchForBinary(const std::string &binary) {
 }
 
 // Executes new backend
-unsigned long exec_(std::string path, std::string config, std::string jid) {
+unsigned long exec_(std::string path, std::string config, std::string jid, int &rc) {
 	// fork and exec
 	pid_t pid = fork();
 	if ( pid == 0 ) {
@@ -87,7 +87,7 @@ unsigned long exec_(std::string path, std::string config, std::string jid) {
 		// fork failed
 	}
 	else {
-		waitpid(pid, 0, 0);
+		waitpid(pid, &rc, 0);
 	}
 
 	return (unsigned long) pid;
@@ -128,25 +128,26 @@ int isRunning(const std::string &pidfile) {
 	return boost::lexical_cast<int>(pid);
 }
 
-void start_instances(ManagerConfig *config, const std::string &_jid) {
+int start_instances(ManagerConfig *config, const std::string &_jid) {
+	int rv = 0;
 	response = "";
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
 		if (!exists(p)) {
 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(6);
+			return 6;
 		}
 
 		if (!is_directory(p)) {
 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(7);
+			return 7;
 		}
 
 		std::string spectrum2_binary = searchForBinary("spectrum2");
 		if (spectrum2_binary.empty()) {
 			std::cerr << "spectrum2 binary not found in PATH\n";
-			exit(8);
+			return 8;
 		}
 
 		directory_iterator end_itr;
@@ -177,9 +178,13 @@ void start_instances(ManagerConfig *config, const std::string &_jid) {
 
 					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
 					if (pid == 0) {
+						int rc;
 						response = "Starting " + itr->path().string() + ": OK\n";
 						std::cout << "Starting " << itr->path() << ": OK\n";
-						exec_(spectrum2_binary, itr->path().string(), vhost);
+						exec_(spectrum2_binary, itr->path().string(), vhost, rc);
+						if (rv == 0) {
+							rv = rc;
+						}
 					}
 					else {
 						response = "Starting " + itr->path().string() + ": Already started (PID=" + boost::lexical_cast<std::string>(pid) + ")\n";
@@ -191,8 +196,9 @@ void start_instances(ManagerConfig *config, const std::string &_jid) {
 	}
 	catch (const filesystem_error& ex) {
 		std::cerr << "boost filesystem error\n";
-		exit(5);
+		return 6;
 	}
+	return rv;
 }
 
 void stop_instances(ManagerConfig *config, const std::string &_jid) {

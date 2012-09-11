@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 	}
 
 	if (command[0] == "start") {
-		start_instances(&config);
+		return start_instances(&config);
 	}
 	else if (command[0] == "stop") {
 		stop_instances(&config);
@@ -155,8 +155,7 @@ int main(int argc, char **argv)
 		std::string cmd = boost::algorithm::join(command, " ");
 
 		if (cmd == "start") {
-			start_instances(&config, jid);
-			return 0;
+			return start_instances(&config, jid);
 		}
 		else if (cmd == "stop") {
 			stop_instances(&config, jid);

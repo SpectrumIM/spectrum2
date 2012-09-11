@@ -44,7 +44,7 @@ unsigned long exec_(std::string path, std::string config, std::string jid = "");
 int getPort(const std::string &portfile);
 
 int isRunning(const std::string &pidfile);
-void start_instances(ManagerConfig *config, const std::string &_jid = "");
+int start_instances(ManagerConfig *config, const std::string &_jid = "");
 void stop_instances(ManagerConfig *config, const std::string &_jid = "");
 
 int show_status(ManagerConfig *config);

@@ -315,7 +315,6 @@ int main(int argc, char **argv)
     }
 #endif
 
-	Logging::initMainLogging(&config);
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
@@ -373,10 +372,14 @@ int main(int argc, char **argv)
 			return -2;
 		}
 	}
-	else if (!storageBackend->connect()) {        
+	else if (!storageBackend->connect()) {
 		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
 		return -1;
 	}
+
+	// Logging has to be initialized after all std:cerr output here, because
+	// it forwards std::cerr to log file.
+	Logging::initMainLogging(&config);
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	userManager_ = &userManager;
