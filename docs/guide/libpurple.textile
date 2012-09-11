@@ -7,8 +7,8 @@ h2. Configuration
 You have to choose this backend in Spectrum 2 configuration file to use it:
 
 <pre>
-[service]
-backend=/usr/bin/spectrum2_libpurple_backend
+	[service]
+	backend=/usr/bin/spectrum2_libpurple_backend
 </pre>
 
 There is also special configuration variable in "service" called @protocol@ which decides which Libpurple's protocol will be used:

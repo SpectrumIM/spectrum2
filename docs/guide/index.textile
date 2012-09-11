@@ -23,7 +23,7 @@ h2. Backends
 * "Backends overview":backends.html
 * "Libpurple backend":libpurple.html
 * "Swiften backend":swiften.html
-* "Libcommuni backend":swiften.html
+* "Libcommuni backend":libcommuni.html
 * "Skype backend":skype.html
 * "Twitter backend":twitter.html
 

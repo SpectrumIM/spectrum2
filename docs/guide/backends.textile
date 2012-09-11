@@ -1,5 +1,4 @@
-Spectrum 2 introduces backends. Backends are external application which provides a way how to connect to legacy networks, so it's possible to use
-even different libraries than Libpurple to connect the legacy network. However, Libpurple is still the best library to use so far.
+Spectrum 2 introduces backends. Backends are external application which provides a way how to connect to legacy networks, so it's possible to use even different libraries than Libpurple to connect the legacy network. However, Libpurple is still the best library to use so far.
 
 This page contains the list of currently supported backends with the basic information about them.
 
@@ -13,10 +12,10 @@ Backends are switched in Spectrum 2 config file using the following option:
 h2. List of backends
 
 |_. Name|_. Supported networks|_. Default path to backend|
-|Libpurple backend|AIM, Jabber, Facebook, GTalk, ICQ, MSN, Yahoo|/usr/bin/spectrum2_libpurple_backend|
-|Swiften backend|Jabber, Facebook, GTalk|/usr/bin/spectrum2_swiften_backend|
-|SLibCommuni backend|IRC|/usr/bin/spectrum2_libcommuni_backend|
-|Frotz backend|Allows playing interactive-fiction games|/usr/bin/spectrum2_frotz_backend|
-|Skype backend|Skype using the official client|/usr/bin/spectrum2_skype_backend|
-|SMSTools3 backend|SMS using connected mobile phone|/usr/bin/spectrum2_smstools3_backend|
-|Twitter backend|Twitter|/usr/bin/spectrum2_twitter_backend|
+|Libpurple backend|AIM, Jabber, Facebook, GTalk, ICQ, MSN, Yahoo|@/usr/bin/spectrum2_libpurple_backend@|
+|Swiften backend|Jabber, Facebook, GTalk|@/usr/bin/spectrum2_swiften_backend@|
+|SLibCommuni backend|IRC|@/usr/bin/spectrum2_libcommuni_backend@|
+|Frotz backend|Allows playing interactive-fiction games|@/usr/bin/spectrum2_frotz_backend@|
+|Skype backend|Skype using the official client|@/usr/bin/spectrum2_skype_backend@|
+|SMSTools3 backend|SMS using connected mobile phone|@/usr/bin/spectrum2_smstools3_backend@|
+|Twitter backend|Twitter|@/usr/bin/spectrum2_twitter_backend@|

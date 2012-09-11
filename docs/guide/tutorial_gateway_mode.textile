@@ -1,6 +1,6 @@
 h2. Before you start
 
-* Check that you really want to run Spectrum 2 in gateway mode and not in server mode. The difference is documentation on "What is Spectrum 2?":about.html page.
+* Check that you really want to run Spectrum 2 in gateway mode and not in server mode. The difference is documentation on "What is Spectrum 2":about.html page.
 * Install Spectrum 2.  Installation is covered in "Installation section on the main page":index.html.
 
 h2. Configure your XMPP server
