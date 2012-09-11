@@ -4,6 +4,8 @@ h2. About
 
 h2. Installation
 
+* "Debian/Ubuntu packages":debian_ubuntu.html
+* "Fedora/RHEL/CentOS packages":fedora_rhel.html
 * "Installing from source code":from_source_code.html
 
 h2. Tutorials

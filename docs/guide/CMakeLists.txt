@@ -25,6 +25,8 @@ ADD_TEXTILE("configure_xmpp_server.textile" "Spectrum 2 - Configure XMPP server"
 ADD_TEXTILE("tutorial_gateway_mode.textile" "Spectrum 2 - Spectrum 2 in gateway mode")
 ADD_TEXTILE("config_file.textile" "Spectrum 2 - Config File")
 ADD_TEXTILE("from_source_code.textile" "Spectrum 2 - Installing from source code")
+ADD_TEXTILE("debian_ubuntu.textile" "Spectrum 2 - Debian/Ubuntu packages")
+ADD_TEXTILE("fedora_rhel.textile" "Spectrum 2 - Fedora/RHEL/CentOS packages")
 ADD_TEXTILE("server_ssl.textile" "Spectrum 2 - Server mode SSL support")
 ADD_TEXTILE("mysql.textile" "Spectrum 2 - MySQL Support")
 ADD_TEXTILE("postgresql.textile" "Spectrum 2 - PostgreSQL Support")
