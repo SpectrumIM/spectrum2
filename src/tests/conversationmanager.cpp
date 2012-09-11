@@ -243,7 +243,6 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg2->setBody("response!");
 
 		pmconv->handleMessage(msg2);
-		dumpReceived();
 	}
 
 };
