@@ -315,6 +315,7 @@ int main(int argc, char **argv)
     }
 #endif
 
+	Logging::initMainLogging(&config);
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
@@ -377,9 +378,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	// Logging has to be initialized after all std:cerr output here, because
-	// it forwards std::cerr to log file.
-	Logging::initMainLogging(&config);
+	Logging::redirect_stderr();
 
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	userManager_ = &userManager;

@@ -166,17 +166,21 @@ static void initLogging(Config *config, std::string key) {
 
 		log4cxx::PropertyConfigurator::configure(p);
 	}
-
-	 intercepter_cerr = new intercept_stream(std::cerr, "cerr");
-	 intercepter_cout = new intercept_stream(std::cout, "cout");
 }
 
 void initBackendLogging(Config *config) {
 	initLogging(config, "logging.backend_config");
+
+	redirect_stderr();
 }
 
 void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
+}
+
+void redirect_stderr() {
+	 intercepter_cerr = new intercept_stream(std::cerr, "cerr");
+	 intercepter_cout = new intercept_stream(std::cout, "cout");
 }
 
 void shutdownLogging() {
@@ -193,6 +197,10 @@ void initMainLogging(Config */*config*/) {
 }
 
 void shutdownLogging() {
+	
+}
+
+void redirect_stderr() {
 	
 }
 #endif /* WITH_LOG4CXX */

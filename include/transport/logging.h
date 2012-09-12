@@ -57,6 +57,7 @@ namespace Logging {
 void initBackendLogging(Config *config);
 void initMainLogging(Config *config);
 void shutdownLogging();
+void redirect_stderr();
 
 }
 
