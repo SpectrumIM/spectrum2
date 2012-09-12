@@ -54,6 +54,7 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		return false;
 
 	m_file = configfile;
+	m_jid = jid;
 	bool ret = load(ifs, opts, jid);
 	ifs.close();
 #ifndef WIN32
@@ -252,7 +253,7 @@ bool Config::reload() {
 		return false;
 	}
 
-	return load(m_file);
+	return load(m_file, m_jid);
 }
 
 Config::SectionValuesCont Config::getSectionValues(const std::string& sectionName) {

@@ -115,6 +115,7 @@ class Config {
 		Variables m_variables;
 		std::map<std::string, boost::program_options::variable_value> m_unregistered;
 		std::string m_file;
+		std::string m_jid;
 };
 
 }
