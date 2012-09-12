@@ -1,4 +1,3 @@
-
 h2. Compatibility with Spectrum 1
 
 Spectrum 2 config file is not compatible with Spectrum 1, although some important config options are named the same as in Spectrum 1.
@@ -60,7 +59,7 @@ h2. [database] section
 
 |_. Key |_. Type |_. Default |_. Description |
 | type | string | none | Database type - "none", "mysql", "sqlite3". |
-| database | string | | Database used to store data. |
+| database | string | /var/lib/spectrum2/$jid/database.sql | Database used to store data. Path for SQLite3 or name for other types. |
 | server | string | localhost | Database server. |
 | user | string | | Database user. |
 | password | string | | Database Password. |
