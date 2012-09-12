@@ -825,15 +825,25 @@ void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data
 	msg->setBody(payload.config());
 	m_adminInterface->handleQuery(msg);
 
-	pbnetwork::BackendConfig vcard;
-	vcard.set_config(msg->getBody());
+	pbnetwork::BackendConfig response;
+	response.set_config(msg->getBody());
 
 	std::string message;
-	vcard.SerializeToString(&message);
+	response.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_QUERY);
 
 	send(b->connection, message);
+}
+
+void NetworkPluginServer::handleBackendConfigPayload(const std::string &data) {
+	pbnetwork::BackendConfig payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	m_config->updateBackendConfig(payload.config());
 }
 
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
@@ -929,6 +939,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_QUERY:
 				handleQueryPayload(c, wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG:
+				handleBackendConfigPayload(wrapper.payload());
 				break;
 			default:
 				return;

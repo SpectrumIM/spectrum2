@@ -108,6 +108,7 @@ class NetworkPluginServer {
 		void handleFTFinishPayload(const std::string &payload);
 		void handleFTDataPayload(Backend *b, const std::string &payload);
 		void handleQueryPayload(Backend *b, const std::string &payload);
+		void handleBackendConfigPayload(const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);

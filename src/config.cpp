@@ -284,6 +284,20 @@ std::string Config::getCommandLineArgs() const {
 	return commandLineArgs.str();
 }
 
+void Config::updateBackendConfig(const std::string &backendConfig) {
+	options_description opts("Backend options");
+	opts.add_options()
+		("registration.needPassword", value<bool>()->default_value(true), "")
+		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
+	;
+
+	std::stringstream ifs(backendConfig);
+	parsed_options parsed = parse_config_file(ifs, opts, true);
+
+	store(parsed, m_backendConfig);
+	notify(m_backendConfig);
+}
+
 Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {
 	std::string jid;
 	std::ostringstream os;

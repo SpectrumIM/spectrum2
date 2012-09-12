@@ -83,7 +83,8 @@ class Config {
 		bool reload();
 
 		bool hasKey(const std::string &key) {
-			return m_variables.find(key) != m_variables.end() || m_unregistered.find(key) != m_unregistered.end();
+			return (m_variables.find(key) != m_variables.end() || m_unregistered.find(key) != m_unregistered.end()
+					|| m_backendConfig.find(key) != m_backendConfig.end());
 		}
 
 		/// Returns value of variable defined by key.
@@ -93,6 +94,9 @@ class Config {
 		const boost::program_options::variable_value &operator[] (const std::string &key) {
 			if (m_variables.find(key) != m_variables.end()) {
 				return m_variables[key];
+			}
+			if (m_backendConfig.find(key) != m_backendConfig.end()) {
+				return m_backendConfig[key];
 			}
 			return m_unregistered[key];
 		}
@@ -107,12 +111,15 @@ class Config {
 		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
 
+		void updateBackendConfig(const std::string &backendConfig);
+
 		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
 	
 	private:
 		int m_argc;
 		char **m_argv;
 		Variables m_variables;
+		Variables m_backendConfig;
 		std::map<std::string, boost::program_options::variable_value> m_unregistered;
 		std::string m_file;
 		std::string m_jid;
