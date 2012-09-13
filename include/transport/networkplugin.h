@@ -37,14 +37,16 @@ class NetworkPlugin {
 
 		class PluginConfig {
 			public:
-				PluginConfig() : m_needPassword(true) {}
+				PluginConfig() : m_needPassword(true), m_needRegistration(false) {}
 				virtual ~PluginConfig() {}
 
+				void setNeedRegistration(bool needRegistration = false) { m_needRegistration = needRegistration; }
 				void setNeedPassword(bool needPassword = true) { m_needPassword = needPassword; }
 				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
 
 			private:
 				bool m_needPassword;
+				bool m_needRegistration;
 				std::vector<std::string> m_extraFields;
 
 				friend class NetworkPlugin;

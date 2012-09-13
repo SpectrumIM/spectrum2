@@ -200,11 +200,16 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		UserInfo res;
 		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
 
-		// In server mode, there's no registration, but we store users into database
-		// (if storagebackend is available) because of caching. Passwords are not stored
-		// in server mode.
+		// In server mode, we don't need registration normally, but for networks like IRC
+		// or Twitter where there's no real authorization using password, we have to force
+		// registration otherwise some data (like bookmarked rooms) could leak.
 		if (m_component->inServerMode()) {
 			if (!registered) {
+				// If we need registration, stop login process because user is not registered
+				if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", false)) {
+					m_userRegistry->onPasswordInvalid(presence->getFrom());
+					return;
+				}
 				res.password = "";
 				res.uin = presence->getFrom().getNode();
 				res.jid = userkey;

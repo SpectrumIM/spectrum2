@@ -65,6 +65,7 @@ NetworkPlugin::~NetworkPlugin() {
 void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
 	std::string data = "[registration]";
 	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0") + "\n";
+	data += std::string("needRegistration=") + (cfg.m_needRegistration ? "1" : "0") + "\n";
 
 	for (std::vector<std::string>::const_iterator it = cfg.m_extraFields.begin(); it != cfg.m_extraFields.end(); it++) {
 		data += std::string("extraField=") + (*it) + "\n";
