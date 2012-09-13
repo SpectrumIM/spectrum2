@@ -189,8 +189,9 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	reg->setInstructions(instructions);
 	reg->setRegistered(registered);
 	reg->setUsername(res.uin);
-	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
 		reg->setPassword("");
+	}
 
 
 	// form
@@ -210,7 +211,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	username->setRequired(true);
 	form->addField(username);
 
-	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour") {
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
 		TextPrivateFormField::ref password = TextPrivateFormField::create();
 		password->setName("password");
 		password->setLabel((("Password")));
@@ -397,9 +398,13 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		}
 	}
 
-	if (!payload->getUsername() || !payload->getPassword()) {
+	if (!payload->getUsername() || (!payload->getPassword() && CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true))) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
+	}
+
+	if (!payload->getPassword()) {
+		payload->setPassword("");
 	}
 
 	// Register or change password

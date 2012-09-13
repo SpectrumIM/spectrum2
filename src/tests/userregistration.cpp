@@ -30,6 +30,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 	CPPUNIT_TEST(unregisterEmptyPayload);
 	CPPUNIT_TEST(changePassword);
 	CPPUNIT_TEST(registerUserEmpty);
+	CPPUNIT_TEST(registerUserNoNeedPassword);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -211,6 +212,30 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unsubscribed, dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getType());
+		}
+
+		void registerUserNoNeedPassword() {
+			cfg->updateBackendConfig("[registration]\nneedPassword=0\n");
+			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
+			reg->setUsername("legacyname");
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			UserInfo user;
+			CPPUNIT_ASSERT_EQUAL(true, storage->getUser("user@localhost", user));
+
+			CPPUNIT_ASSERT_EQUAL(std::string("legacyname"), user.uin);
+			CPPUNIT_ASSERT_EQUAL(std::string(""), user.password);
 		}
 
 };
