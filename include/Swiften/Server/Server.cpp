@@ -149,7 +149,7 @@ void Server::handleSessionFinished(boost::shared_ptr<ServerFromClientSession> se
 			boost::bind(&Server::handleSessionFinished, this, session));
 }
 
-void Server::addTLSEncryption(TLSServerContextFactory* tlsContextFactory, const PKCS12Certificate& cert) {
+void Server::addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert) {
 	tlsFactory = tlsContextFactory;
 	this->cert = cert;
 }

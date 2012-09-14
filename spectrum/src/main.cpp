@@ -14,6 +14,9 @@
 #include "transport/util.h"
 #include "transport/gatewayresponder.h"
 #include "transport/logging.h"
+#include "transport/discoitemsresponder.h"
+#include "transport/adhocmanager.h"
+#include "transport/settingsadhoccommand.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -23,12 +26,16 @@
 #include <grp.h>
 #include <sys/resource.h>
 #include "libgen.h"
+#include <malloc.h>
 #else
-#include <windows.h>
+#include <process.h>
+#define getpid _getpid
+// #include "win32/SpectrumService.h"
 #endif
 #include <sys/stat.h>
 
 using namespace Transport;
+using namespace Transport::Util;
 
 DEFINE_LOGGER(logger, "Spectrum");
 
@@ -120,7 +127,12 @@ int main(int argc, char **argv)
 	bool no_daemon = false;
 	std::string config_file;
 	std::string jid;
-	
+
+	setlocale(LC_ALL, "");
+#ifndef WIN32
+	mallopt(M_CHECK_ACTION, 2);
+	mallopt(M_PERTURB, 0xb);
+#endif
 
 #ifndef WIN32
 	if (signal(SIGINT, spectrum_sigint_handler) == SIG_ERR) {
@@ -142,6 +154,11 @@ int main(int argc, char **argv)
 		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
 		("version,v", "Shows Spectrum version")
 		;
+#ifdef WIN32
+// 	desc.add_options()
+// 		("install-service,i", "Install spectrum as Windows service")
+// 		("uninstall-service,u", "Uninstall Windows service");
+#endif
 	try
 	{
 		boost::program_options::positional_options_description p;
@@ -169,6 +186,47 @@ int main(int argc, char **argv)
 		if(vm.count("no-daemonize")) {
 			no_daemon = true;
 		}
+#ifdef WIN32
+#if 0
+		if (vm.count("install-service")) {
+			SpectrumService ntservice;
+			if (!ntservice.IsInstalled()) {
+					// determine the name of the currently executing file
+				char szFilePath[MAX_PATH];
+				GetModuleFileName(NULL, szFilePath, sizeof(szFilePath));
+				std::string exe_file(szFilePath);
+				std::string config_file = exe_file.replace(exe_file.end() - 4, exe_file.end(), ".cfg");
+				std::string service_path = std::string(szFilePath) + std::string(" --config ") + config_file;
+
+				if (ntservice.Install(service_path.c_str())) {
+					std::cout << "Successfully installed" << std::endl;
+					return 0;
+				} else {
+					std::cout << "Error installing service, are you an Administrator?" << std::endl;
+					return 1;
+				}                				
+			} else {
+				std::cout << "Already installed" << std::endl;
+				return 1;
+			}
+		}
+		if (vm.count("uninstall-service")) {
+			SpectrumService ntservice;
+			if (ntservice.IsInstalled()) {
+				if (ntservice.Remove()) {
+					std::cout << "Successfully removed" << std::endl;
+					return 0;
+				} else {
+					std::cout << "Error removing service, are you an Administrator?" << std::endl;
+					return 1;
+				}                               				
+			} else {
+				std::cout << "Service not installed" << std::endl;
+				return 1;
+			}
+		}
+#endif
+#endif
 	}
 	catch (std::runtime_error& e)
 	{
@@ -188,6 +246,15 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
+		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+	}
+	catch (...) {
+		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+		return 1;
+	}
+#ifndef WIN32
+	// create directories
+	try {
 		boost::filesystem::create_directories(
 			boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
 		);
@@ -198,12 +265,19 @@ int main(int argc, char **argv)
 	}
 	// create directories
 	try {
-		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+		boost::filesystem::create_directories(
+			boost::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
+		);
 	}
 	catch (...) {
-		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
+		std::cerr << "Can't create service.portfile directory " << CONFIG_STRING(&config, "service.portfile") << ".\n";
 		return 1;
 	}
+#endif
+
+#ifdef WIN32
+	SetCurrentDirectory( utf8ToUtf16(CONFIG_STRING(&config, "service.working_dir")).c_str() );
+#endif
 
 #ifndef WIN32
 	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
@@ -219,6 +293,20 @@ int main(int argc, char **argv)
 		}
 		chown(CONFIG_STRING(&config, "service.working_dir").c_str(), pw->pw_uid, gr->gr_gid);
 	}
+
+	char backendport[20];
+	FILE* port_file_f;
+	port_file_f = fopen(CONFIG_STRING(&config, "service.portfile").c_str(), "w+");
+	if (port_file_f == NULL) {
+		std::cerr << "Cannot create port_file file " << CONFIG_STRING(&config, "service.portfile").c_str() << ". Exiting\n";
+		exit(1);
+	}
+	sprintf(backendport,"%s\n",CONFIG_STRING(&config, "service.backend_port").c_str());
+	if (fwrite(backendport,1,strlen(backendport),port_file_f) < strlen(backendport)) {
+		std::cerr << "Cannot write to port file " << CONFIG_STRING(&config, "service.portfile") << ". Exiting\n";
+		exit(1);
+	}
+	fclose(port_file_f);
 
 	if (!no_daemon) {
 		// daemonize
@@ -290,6 +378,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	Logging::redirect_stderr();
+
 	UserManager userManager(&transport, &userRegistry, storageBackend);
 	userManager_ = &userManager;
 
@@ -306,12 +396,23 @@ int main(int argc, char **argv)
 
 	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
 
-	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend);
+	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
+	plugin.setAdminInterface(&adminInterface);
+
 	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
 	statsResponder.start();
 
 	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
 	gatewayResponder.start();
+
+	DiscoItemsResponder discoItemsResponder(&transport);
+	discoItemsResponder.start();
+
+	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
+	adhocmanager.start();
+
+	SettingsAdHocCommandFactory settings;
+	adhocmanager.addAdHocCommand(&settings);
 
 	eventLoop_ = &eventLoop;
 

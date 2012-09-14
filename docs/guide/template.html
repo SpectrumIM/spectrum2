@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"$if(lang)$ lang="$lang$" xml:lang="$lang$"$endif$>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+$for(author-meta)$
+  <meta name="author" content="$author-meta$" />
+$endfor$
+$if(date-meta)$
+  <meta name="date" content="$date-meta$" />
+$endif$
+  <title>$title-prefix$</title>
+$if(highlighting-css)$
+  <style type="text/css">
+$highlighting-css$
+  </style>
+$endif$
+  <style type="text/css">
+/* html, body, */
+/* h1, h2, h3, h4, h5, h6, */
+/* p, ul, ol, li, dl, dd, dt, pre, form, fieldset{ margin: 0; padding: 0; }  */
+
+body{ background-color: #F9F9F9; color: #444444; font: normal normal 14px "Helvetica", "Arial", Sans-Serif; }
+
+pre, kbd, var, samp, tt{ font-family: "Courier", Monospace; }
+
+pre { font-size: 12px; }
+
+h1, h2, h3, h4, h5, h6, pre{ color: #094776; }
+
+h1{ font-size: 28px; }
+
+h2{ font-size: 24px; font-weight: normal; }
+
+h1, h2, h3, h4, h5, h6{ margin-bottom: 20px; }
+
+h2, h3{ border-bottom: 2px solid #EEEEEE; padding: 0 0 3px; }	
+
+h3{ border-color: #E5E5E5; border-width: 1px; }
+
+h4{ font-size: 18px; }
+
+	h1 a, h2 a{ font-weight: normal; }
+
+	h1 a, h2 a, h3 a{ text-decoration: none; }
+	
+h3, h5, h6{ font-size: 18px; }
+
+	h4, h5, h6{ font-size: 14px; }
+
+p, dl, ul, ol{ margin: 20px 0; }
+
+	p, dl, ul, ol, h3, h4, h5, h6{ margin-left: 20px; }
+
+	li > ul,
+	li > ol{ margin: 0; margin-left: 40px; }
+
+	dl > dd{ margin-left: 20px; }
+	
+	li > p { margin: 0; }
+
+p, li, dd, dt, pre{ line-height: 1.5; }
+
+table {
+	border-collapse: collapse;
+    margin-bottom: 20px;
+	margin-left:20px;
+	}
+
+th {
+	padding: 0 0.5em;
+	text-align: center;
+	}
+
+th {
+	border: 1px solid #FB7A31;
+	background: #FFC;
+	}
+
+td {
+	border-bottom: 1px solid #CCC;
+	border-right: 1px solid #CCC;
+	border-left: 1px solid #CCC;
+	padding: 0 0.5em;
+	}
+
+
+a:link,
+a:visited{ color: #1A5B8D; }
+
+a:hover,
+a:active{ color: #742CAC; }
+
+a.headerlink{ visibility: hidden; }
+
+	:hover > a.headerlink { visibility: visible; }
+
+a img{ 
+	border: 0;
+	outline: 0;
+}
+
+img{ display: block; max-width: 100%; }
+
+body.code {
+	border: 1px solid #FB7A31;
+	background: #FFC;
+}
+
+pre {
+ white-space: pre-wrap;
+ white-space: -moz-pre-wrap;
+ white-space: -o-pre-wrap;
+border: 1px solid #FB7A31;
+background: #FFC;
+padding:5px;
+padding-left: 15px;
+}
+
+  </style>
+$for(css)$
+  <link rel="stylesheet" href="$css$" $if(html5)$$else$type="text/css" $endif$/>
+$endfor$
+$if(math)$
+  $math$
+$endif$
+$for(header-includes)$
+  $header-includes$
+$endfor$
+</head>
+<body>
+<h1>$title-prefix$</h1>
+$for(include-before)$
+$include-before$
+$endfor$
+$if(title)$
+<div id="$idprefix$header">
+<h1 class="title">$title$</h1>
+$for(author)$
+<h2 class="author">$author$</h2>
+$endfor$
+$if(date)$
+<h3 class="date">$date$</h3>
+$endif$
+</div>
+$endif$
+$if(toc)$
+<div id="$idprefix$TOC">
+$toc$
+</div>
+$endif$
+$body$
+$for(include-after)$
+$include-after$
+$endfor$
+</body>
+</html>

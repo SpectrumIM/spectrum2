@@ -1,6 +1,11 @@
 #include "utils.h"
 
 #include "glib.h"
+
+// win32/libc_interface.h defines its own socket(), read() and so on.
+// We don't want to use it here.
+#define _LIBC_INTERFACE_H_ 1
+
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
@@ -15,6 +20,7 @@
 #include "malloc.h"
 #include <algorithm>
 #include "errno.h"
+#include <boost/make_shared.hpp>
 
 #ifdef WITH_LIBEVENT
 #include <event.h>
@@ -22,6 +28,7 @@
 
 #ifdef WIN32
 #include "win32/win32dep.h"
+#define close closesocket
 #define ssize_t SSIZE_T
 #include <process.h>
 #define getpid _getpid
@@ -69,48 +76,10 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 class SpectrumNetworkPlugin;
 
-GKeyFile *keyfile;
+boost::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
 
-static std::string replaceAll(
-  std::string result,
-  const std::string& replaceWhat,
-  const std::string& replaceWithWhat)
-{
-  while(1)
-  {
-	const int pos = result.find(replaceWhat);
-	if (pos==-1) break;
-	result.replace(pos,replaceWhat.size(),replaceWithWhat);
-  }
-  return result;
-}
-
-static std::string KEYFILE_STRING(const std::string &cat, const std::string &key, const std::string &def = "") {
-	gchar *str = g_key_file_get_string(keyfile, cat.c_str(), key.c_str(), 0);
-	if (!str) {
-		return def;
-	}
-	std::string ret(str);
-	g_free(str);
-
-	if (ret.find("#") != std::string::npos) {
-		ret = ret.substr(0, ret.find("#"));
-		while(*(ret.end() - 1) == ' ') {
-			ret.erase(ret.end() - 1);
-		}
-	}
-
-	if (ret.find("$jid") != std::string::npos) {
-		std::string jid = KEYFILE_STRING("service", "jid");
-		ret = replaceAll(ret, "$jid", jid);
-	}
-	return ret;
-}
-
-#define KEYFILE_BOOL(CAT, KEY) g_key_file_get_boolean(keyfile, CAT, KEY, 0)
-
-static gchar *host = NULL;
+static std::string host;
 static int port = 10000;
 
 struct FTData {
@@ -119,19 +88,13 @@ struct FTData {
 	bool paused;
 };
 
-static GOptionEntry options_entries[] = {
-	{ "host", 'h', 0, G_OPTION_ARG_STRING, &host, "Host to connect to", NULL },
-	{ "port", 'p', 0, G_OPTION_ARG_INT, &port, "Port to connect to", NULL },
-	{ NULL, 0, 0, G_OPTION_ARG_NONE, NULL, "", NULL }
-};
-
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
 
 static gboolean ft_ui_ready(void *data) {
 	PurpleXfer *xfer = (PurpleXfer *) data;
 	FTData *ftdata = (FTData *) xfer->ui_data;
 	ftdata->timer = 0;
-	purple_xfer_ui_ready((PurpleXfer *) data);
+	purple_xfer_ui_ready_wrapped((PurpleXfer *) data);
 	return FALSE;
 }
 
@@ -209,11 +172,11 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 	if (contact && contact->alias) {
 		alias = contact->alias;
 	}
-	else if (purple_buddy_get_alias(m_buddy)) {
-		alias = (std::string) purple_buddy_get_alias(m_buddy);
+	else if (purple_buddy_get_alias_wrapped(m_buddy)) {
+		alias = (std::string) purple_buddy_get_alias_wrapped(m_buddy);
 	}
 	else {
-		alias = (std::string) purple_buddy_get_server_alias(m_buddy);
+		alias = (std::string) purple_buddy_get_server_alias_wrapped(m_buddy);
 	}
 	return alias;
 }
@@ -231,7 +194,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void getProtocolAndName(const std::string &legacyName, std::string &name, std::string &protocol) {
 			name = legacyName;
-			protocol = KEYFILE_STRING("service", "protocol");
+			protocol = CONFIG_STRING(config, "service.protocol");
 			if (protocol == "any") {
 				protocol = name.substr(0, name.find("."));
 				name = name.substr(name.find(".") + 1);
@@ -242,55 +205,58 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			char* contents;
 			gsize length;
 			gboolean ret = false;
-			if (!KEYFILE_STRING("backend", "avatars_directory").empty()) {
-				std::string f = KEYFILE_STRING("backend", "avatars_directory") + "/" + legacyName;
+			if (!CONFIG_STRING(config, "backend.avatars_directory").empty()) {
+				std::string f = CONFIG_STRING(config, "backend.avatars_directory") + "/" + legacyName;
 				ret = g_file_get_contents (f.c_str(), &contents, &length, NULL);
 			}
 
-			if (!KEYFILE_STRING("backend", "default_avatar").empty() && !ret) {
-				ret = g_file_get_contents (KEYFILE_STRING("backend", "default_avatar").c_str(),
+			if (!CONFIG_STRING(config, "backend.default_avatar").empty() && !ret) {
+				ret = g_file_get_contents (CONFIG_STRING(config, "backend.default_avatar").c_str(),
 											&contents, &length, NULL);
 			}
 
 			if (ret) {
-				purple_buddy_icons_set_account_icon(account, (guchar *) contents, length);
+				purple_buddy_icons_set_account_icon_wrapped(account, (guchar *) contents, length);
 			}
 		}
 
 		void setDefaultAccountOptions(PurpleAccount *account) {
 			int i = 0;
-			gchar **keys = g_key_file_get_keys (keyfile, "purple", NULL, NULL);
-			while (keys && keys[i] != NULL) {
-				std::string key = keys[i];
+			Config::SectionValuesCont purpleConfigValues = config->getSectionValues("purple");
 
-				if (key == "fb_api_key" || key == "fb_api_secret") {
-					purple_account_set_bool(account, "auth_fb", TRUE);
-				}
+			BOOST_FOREACH ( const Config::SectionValuesCont::value_type & keyItem, purpleConfigValues )
+			{
+				std::string key = keyItem.first;
+				std::string strippedKey = boost::erase_first_copy(key, "purple.");
 
-				PurplePlugin *plugin = purple_find_prpl(purple_account_get_protocol_id(account));
+				if (strippedKey == "fb_api_key" || strippedKey == "fb_api_secret") {
+					purple_account_set_bool_wrapped(account, "auth_fb", TRUE);
+ 				}
+
+				PurplePlugin *plugin = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(account));
 				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
 				bool found = false;
 				for (GList *l = prpl_info->protocol_options; l != NULL; l = l->next) {
 					PurpleAccountOption *option = (PurpleAccountOption *) l->data;
-					PurplePrefType type = purple_account_option_get_type(option);
-					std::string key2(purple_account_option_get_setting(option));
-					if (key != key2) {
+					PurplePrefType type = purple_account_option_get_type_wrapped(option);
+					std::string key2(purple_account_option_get_setting_wrapped(option));
+					if (strippedKey != key2) {
 						continue;
 					}
 					
 					found = true;
 					switch (type) {
 						case PURPLE_PREF_BOOLEAN:
-							purple_account_set_bool(account, key.c_str(), fromString<bool>(KEYFILE_STRING("purple", key)));
+							purple_account_set_bool_wrapped(account, strippedKey.c_str(), fromString<bool>(keyItem.second.as<std::string>()));
 							break;
 
 						case PURPLE_PREF_INT:
-							purple_account_set_int(account, key.c_str(), fromString<int>(KEYFILE_STRING("purple", key)));
+							purple_account_set_int_wrapped(account, strippedKey.c_str(), fromString<int>(keyItem.second.as<std::string>()));
 							break;
 
 						case PURPLE_PREF_STRING:
 						case PURPLE_PREF_STRING_LIST:
-							purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+							purple_account_set_string_wrapped(account, strippedKey.c_str(), keyItem.second.as<std::string>().c_str());
 							break;
 						default:
 							continue;
@@ -299,27 +265,26 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 
 				if (!found) {
-					purple_account_set_string(account, key.c_str(), KEYFILE_STRING("purple", key).c_str());
+					purple_account_set_string_wrapped(account, strippedKey.c_str(), keyItem.second.as<std::string>().c_str());
 				}
 				i++;
 			}
-			g_strfreev (keys);
 
 			char* contents;
 			gsize length;
 			gboolean ret = g_file_get_contents ("gfire.cfg", &contents, &length, NULL);
 			if (ret) {
-				purple_account_set_int(account, "version", fromString<int>(std::string(contents, length)));
+				purple_account_set_int_wrapped(account, "version", fromString<int>(std::string(contents, length)));
 			}
 
 
-			if (KEYFILE_STRING("service", "protocol") == "prpl-novell") {
-				std::string username(purple_account_get_username(account));
+			if (CONFIG_STRING(config, "service.protocol") == "prpl-novell") {
+				std::string username(purple_account_get_username_wrapped(account));
 				std::vector <std::string> u = split(username, '@');
-				purple_account_set_username(account, (const char*) u.front().c_str());
+				purple_account_set_username_wrapped(account, (const char*) u.front().c_str());
 				std::vector <std::string> s = split(u.back(), ':'); 
-				purple_account_set_string(account, "server", s.front().c_str());
-				purple_account_set_int(account, "port", atoi(s.back().c_str()));  
+				purple_account_set_string_wrapped(account, "server", s.front().c_str());
+				purple_account_set_int_wrapped(account, "port", atoi(s.back().c_str()));  
 			}
 
 		}
@@ -337,20 +302,25 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			if (!purple_find_prpl(protocol.c_str())) {
+			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
 				np->handleDisconnected(user, 0, "Invalid protocol " + protocol);
 				return;
 			}
 
-			if (purple_accounts_find(name.c_str(), protocol.c_str()) != NULL) {
+			if (purple_accounts_find_wrapped(name.c_str(), protocol.c_str()) != NULL) {
+				account = purple_accounts_find_wrapped(name.c_str(), protocol.c_str());
+				if (m_accounts.find(account) != m_accounts.end() && m_accounts[account] != user) {
+					LOG4CXX_INFO(logger, "Account '" << name << "' is already used by '" << m_accounts[account] << "'");
+					np->handleDisconnected(user, 0, "Account '" + name + "' is already used by '" + m_accounts[account] + "'");
+					return;
+				}
 				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
-				account = purple_accounts_find(name.c_str(), protocol.c_str());
 			}
 			else {
 				LOG4CXX_INFO(logger, "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
-				account = purple_account_new(name.c_str(), protocol.c_str());
-				purple_accounts_add(account);
+				account = purple_account_new_wrapped(name.c_str(), protocol.c_str());
+				purple_accounts_add_wrapped(account);
 			}
 
 			m_sessions[user] = account;
@@ -359,42 +329,40 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			// Default avatar
 			setDefaultAvatar(account, legacyName);
 
-			purple_account_set_password(account, password.c_str());
-			purple_account_set_bool(account, "custom_smileys", FALSE);
-			purple_account_set_bool(account, "direct_connect", FALSE);
+			purple_account_set_password_wrapped(account, password.c_str());
+			purple_account_set_bool_wrapped(account, "custom_smileys", FALSE);
+			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
 
 			setDefaultAccountOptions(account);
 
 			// Enable account + privacy lists
-			purple_account_set_enabled(account, "spectrum", TRUE);
-			if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
-				purple_account_set_privacy_type(account, PURPLE_PRIVACY_DENY_USERS);
+			purple_account_set_enabled_wrapped(account, "spectrum", TRUE);
+			if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
+				purple_account_set_privacy_type_wrapped(account, PURPLE_PRIVACY_DENY_USERS);
 			}
 
 			// Set the status
-			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AVAILABLE);
+			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive_wrapped(account, PURPLE_STATUS_AVAILABLE);
 			if (status_type != NULL) {
-				purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, NULL);
+				purple_account_set_status_wrapped(account, purple_status_type_get_id_wrapped(status_type), TRUE, NULL);
 			}
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				if (purple_account_get_int(account, "version", 0) != 0) {
-					std::string data = stringOf(purple_account_get_int(account, "version", 0));
+				if (purple_account_get_int_wrapped(account, "version", 0) != 0) {
+					std::string data = stringOf(purple_account_get_int_wrapped(account, "version", 0));
 					g_file_set_contents ("gfire.cfg", data.c_str(), data.size(), NULL);
 				}
 // 				VALGRIND_DO_LEAK_CHECK;
 				m_sessions.erase(user);
-				purple_account_disconnect(account);
-				purple_account_set_enabled(account, "spectrum", FALSE);
+				purple_account_disconnect_wrapped(account);
+				purple_account_set_enabled_wrapped(account, "spectrum", FALSE);
 
-				g_free(account->ui_data);
-				account->ui_data = NULL;
 				m_accounts.erase(account);
 
-				purple_accounts_delete(account);
+				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
 				malloc_trim(0);
 #endif
@@ -409,7 +377,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				switch(status) {
 					case pbnetwork::STATUS_AWAY: {
 						st = PURPLE_STATUS_AWAY;
-						if (!purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_AWAY))
+						if (!purple_account_get_status_type_with_primitive_wrapped(account, PURPLE_STATUS_AWAY))
 							st = PURPLE_STATUS_EXTENDED_AWAY;
 						else
 							st = PURPLE_STATUS_AWAY;
@@ -420,7 +388,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 						break;
 					}
 					case pbnetwork::STATUS_XA: {
-						if (!purple_account_get_status_type_with_primitive(account, PURPLE_STATUS_EXTENDED_AWAY))
+						if (!purple_account_get_status_type_with_primitive_wrapped(account, PURPLE_STATUS_EXTENDED_AWAY))
 							st = PURPLE_STATUS_AWAY;
 						else
 							st = PURPLE_STATUS_EXTENDED_AWAY;
@@ -437,19 +405,19 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 						st = PURPLE_STATUS_AVAILABLE;
 						break;
 				}
-				gchar *_markup = purple_markup_escape_text(statusMessage.c_str(), -1);
+				gchar *_markup = purple_markup_escape_text_wrapped(statusMessage.c_str(), -1);
 				std::string markup(_markup);
 				g_free(_markup);
 
 				// we are already connected so we have to change status
-				const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive(account, (PurpleStatusPrimitive) st);
+				const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive_wrapped(account, (PurpleStatusPrimitive) st);
 				if (status_type != NULL) {
 					// send presence to legacy network
 					if (!markup.empty()) {
-						purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, "message", markup.c_str(), NULL);
+						purple_account_set_status_wrapped(account, purple_status_type_get_id_wrapped(status_type), TRUE, "message", markup.c_str(), NULL);
 					}
 					else {
-						purple_account_set_status(account, purple_status_type_get_id(status_type), TRUE, NULL);
+						purple_account_set_status_wrapped(account, purple_status_type_get_id_wrapped(status_type), TRUE, NULL);
 					}
 				}
 			}
@@ -458,29 +426,29 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
+				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
-					conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
 					if (!conv) {
-						conv = purple_conversation_new(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+						conv = purple_conversation_new_wrapped(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
 					}
 				}
 				if (xhtml.empty()) {
-					gchar *_markup = purple_markup_escape_text(message.c_str(), -1);
-					if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
-						purple_conv_im_send(PURPLE_CONV_IM(conv), _markup);
+					gchar *_markup = purple_markup_escape_text_wrapped(message.c_str(), -1);
+					if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
+						purple_conv_im_send_wrapped(PURPLE_CONV_IM_WRAPPED(conv), _markup);
 					}
-					else if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_CHAT) {
-						purple_conv_chat_send(PURPLE_CONV_CHAT(conv), _markup);
+					else if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_CHAT) {
+						purple_conv_chat_send_wrapped(PURPLE_CONV_CHAT_WRAPPED(conv), _markup);
 					}
 					g_free(_markup);
 				}
 				else {
-					if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
-						purple_conv_im_send(PURPLE_CONV_IM(conv), xhtml.c_str());
+					if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
+						purple_conv_im_send_wrapped(PURPLE_CONV_IM_WRAPPED(conv), xhtml.c_str());
 					}
-					else if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_CHAT) {
-						purple_conv_chat_send(PURPLE_CONV_CHAT(conv), xhtml.c_str());
+					else if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_CHAT) {
+						purple_conv_chat_send_wrapped(PURPLE_CONV_CHAT_WRAPPED(conv), xhtml.c_str());
 					}
 				}
 			}
@@ -490,18 +458,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				std::string name = legacyName;
-				if (KEYFILE_STRING("service", "protocol") == "any" && legacyName.find("prpl-") == 0) {
+				if (CONFIG_STRING(config, "service.protocol") == "any" && legacyName.find("prpl-") == 0) {
 					name = name.substr(name.find(".") + 1);
 				}
 				m_vcards[user + name] = id;
 
-				if (KEYFILE_BOOL("backend", "no_vcard_fetch") && name != purple_account_get_username(account)) {
-					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
-					notify_user_info(purple_account_get_connection(account), name.c_str(), user_info);
-					purple_notify_user_info_destroy(user_info);
+				if (CONFIG_BOOL(config, "backend.no_vcard_fetch") && name != purple_account_get_username_wrapped(account)) {
+					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new_wrapped();
+					notify_user_info(purple_account_get_connection_wrapped(account), name.c_str(), user_info);
+					purple_notify_user_info_destroy_wrapped(user_info);
 				}
 				else {
-					serv_get_info(purple_account_get_connection(account), name.c_str());
+					serv_get_info_wrapped(purple_account_get_connection_wrapped(account), name.c_str());
 				}
 				
 			}
@@ -510,8 +478,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleVCardUpdatedRequest(const std::string &user, const std::string &image, const std::string &nickname) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				purple_account_set_alias(account, nickname.c_str());
-				purple_account_set_public_alias(account, nickname.c_str(), NULL, NULL);
+				purple_account_set_alias_wrapped(account, nickname.c_str());
+				purple_account_set_public_alias_wrapped(account, nickname.c_str(), NULL, NULL);
 				gssize size = image.size();
 				// this will be freed by libpurple
 				guchar *photo = (guchar *) g_malloc(size * sizeof(guchar));
@@ -519,7 +487,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 				if (!photo)
 					return;
-				purple_buddy_icons_set_account_icon(account, photo, size);
+				purple_buddy_icons_set_account_icon_wrapped(account, photo, size);
 			}
 		}
 
@@ -530,10 +498,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					m_authRequests[user + buddyName]->deny_cb(m_authRequests[user + buddyName]->user_data);
 					m_authRequests.erase(user + buddyName);
 				}
-				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
+				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
 				if (buddy) {
-					purple_account_remove_buddy(account, buddy, purple_buddy_get_group(buddy));
-					purple_blist_remove_buddy(buddy);
+					purple_account_remove_buddy_wrapped(account, buddy, purple_buddy_get_group_wrapped(buddy));
+					purple_blist_remove_buddy_wrapped(buddy);
 				}
 			}
 		}
@@ -548,43 +516,43 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					m_authRequests.erase(user + buddyName);
 				}
 
-				PurpleBuddy *buddy = purple_find_buddy(account, buddyName.c_str());
+				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
 				if (buddy) {
 					if (getAlias(buddy) != alias) {
-						purple_blist_alias_buddy(buddy, alias.c_str());
-						purple_blist_server_alias_buddy(buddy, alias.c_str());
-						serv_alias_buddy(buddy);
+						purple_blist_alias_buddy_wrapped(buddy, alias.c_str());
+						purple_blist_server_alias_buddy_wrapped(buddy, alias.c_str());
+						serv_alias_buddy_wrapped(buddy);
 					}
 
-					PurpleGroup *group = purple_find_group(groups.c_str());
+					PurpleGroup *group = purple_find_group_wrapped(groups.c_str());
 					if (!group) {
-						group = purple_group_new(groups.c_str());
+						group = purple_group_new_wrapped(groups.c_str());
 					}
-					purple_blist_add_contact(purple_buddy_get_contact(buddy), group ,NULL);
+					purple_blist_add_contact_wrapped(purple_buddy_get_contact_wrapped(buddy), group ,NULL);
 				}
 				else {
-					PurpleBuddy *buddy = purple_buddy_new(account, buddyName.c_str(), alias.c_str());
+					PurpleBuddy *buddy = purple_buddy_new_wrapped(account, buddyName.c_str(), alias.c_str());
 
 					// Add newly created buddy to legacy network roster.
-					PurpleGroup *group = purple_find_group(groups.c_str());
+					PurpleGroup *group = purple_find_group_wrapped(groups.c_str());
 					if (!group) {
-						group = purple_group_new(groups.c_str());
+						group = purple_group_new_wrapped(groups.c_str());
 					}
-					purple_blist_add_buddy(buddy, NULL, group ,NULL);
-					purple_account_add_buddy(account, buddy);
+					purple_blist_add_buddy_wrapped(buddy, NULL, group ,NULL);
+					purple_account_add_buddy_wrapped(account, buddy);
 				}
 			}
 		}
 
 		void handleBuddyBlockToggled(const std::string &user, const std::string &buddyName, bool blocked) {
-			if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
+			if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
 				PurpleAccount *account = m_sessions[user];
 				if (account) {
 					if (blocked) {
-						purple_privacy_deny(account, buddyName.c_str(), FALSE, FALSE);
+						purple_privacy_deny_wrapped(account, buddyName.c_str(), FALSE, FALSE);
 					}
 					else {
-						purple_privacy_allow(account, buddyName.c_str(), FALSE, FALSE);
+						purple_privacy_allow_wrapped(account, buddyName.c_str(), FALSE, FALSE);
 					}
 				}
 			}
@@ -593,28 +561,28 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleTypingRequest(const std::string &user, const std::string &buddyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				serv_send_typing(purple_account_get_connection(account), buddyName.c_str(), PURPLE_TYPING);
+				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_TYPING);
 			}
 		}
 
 		void handleTypedRequest(const std::string &user, const std::string &buddyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				serv_send_typing(purple_account_get_connection(account), buddyName.c_str(), PURPLE_TYPED);
+				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_TYPED);
 			}
 		}
 
 		void handleStoppedTypingRequest(const std::string &user, const std::string &buddyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				serv_send_typing(purple_account_get_connection(account), buddyName.c_str(), PURPLE_NOT_TYPING);
+				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_NOT_TYPING);
 			}
 		}
 
 		void handleAttentionRequest(const std::string &user, const std::string &buddyName, const std::string &message) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				purple_prpl_send_attention(purple_account_get_connection(account), buddyName.c_str(), 0);
+				purple_prpl_send_attention_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), 0);
 			}
 		}
 
@@ -624,13 +592,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			PurpleConnection *gc = purple_account_get_connection(account);
+			PurpleConnection *gc = purple_account_get_connection_wrapped(account);
 			GHashTable *comps = NULL;
 
 			// Check if the PurpleChat is not stored in buddy list
-			PurpleChat *chat = purple_blist_find_chat(account, room.c_str());
+			PurpleChat *chat = purple_blist_find_chat_wrapped(account, room.c_str());
 			if (chat) {
-				comps = purple_chat_get_components(chat);
+				comps = purple_chat_get_components_wrapped(chat);
 			}
 			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
 				comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
@@ -638,7 +606,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			LOG4CXX_INFO(logger, user << ": Joining the room " << room);
 			if (comps) {
-				serv_join_chat(gc, comps);
+				serv_join_chat_wrapped(gc, comps);
 				g_hash_table_destroy(comps);
 			}
 		}
@@ -649,8 +617,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			PurpleConversation *conv = purple_find_conversation_with_account(PURPLE_CONV_TYPE_CHAT, room.c_str(), account);
-			purple_conversation_destroy(conv);
+			PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, room.c_str(), account);
+			purple_conversation_destroy_wrapped(conv);
 		}
 
 		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
@@ -661,8 +629,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				
 				ftData->id = ftID;
 				m_xfers[ftID] = xfer;
-				purple_xfer_request_accepted(xfer, fileName.c_str());
-				purple_xfer_ui_ready(xfer);
+				purple_xfer_request_accepted_wrapped(xfer, fileName.c_str());
+				purple_xfer_ui_ready_wrapped(xfer);
 			}
 		}
 
@@ -670,7 +638,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
 			if (xfer) {
 				m_unhandledXfers.erase(user + fileName + buddyName);
-				purple_xfer_request_denied(xfer);
+				purple_xfer_request_denied_wrapped(xfer);
 			}
 		}
 
@@ -688,7 +656,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			FTData *ftData = (FTData *) xfer->ui_data;
 			ftData->paused = false;
-			purple_xfer_ui_ready(xfer);
+			purple_xfer_ui_ready_wrapped(xfer);
 		}
 
 		void sendData(const std::string &string) {
@@ -698,7 +666,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			write(main_socket, string.c_str(), string.size());
 #endif
 			if (writeInput == 0)
-				writeInput = purple_input_add(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
+				writeInput = purple_input_add_wrapped(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
 
 		void readyForData() {
@@ -710,9 +678,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			for (std::vector<PurpleXfer *>::const_iterator it = tmp.begin(); it != tmp.end(); it++) {
 				FTData *ftData = (FTData *) (*it)->ui_data;
 				if (ftData->timer == 0) {
-					ftData->timer = purple_timeout_add(1, ft_ui_ready, *it);
+					ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, *it);
 				}
-// 				purple_xfer_ui_ready(xfer);
+// 				purple_xfer_ui_ready_wrapped(xfer);
 			}
 		}
 
@@ -726,13 +694,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 };
 
 static bool getStatus(PurpleBuddy *m_buddy, pbnetwork::StatusType &status, std::string &statusMessage) {
-	PurplePresence *pres = purple_buddy_get_presence(m_buddy);
+	PurplePresence *pres = purple_buddy_get_presence_wrapped(m_buddy);
 	if (pres == NULL)
 		return false;
-	PurpleStatus *stat = purple_presence_get_active_status(pres);
+	PurpleStatus *stat = purple_presence_get_active_status_wrapped(pres);
 	if (stat == NULL)
 		return false;
-	int st = purple_status_type_get_primitive(purple_status_get_type(stat));
+	int st = purple_status_type_get_primitive_wrapped(purple_status_get_type_wrapped(stat));
 
 	switch(st) {
 		case PURPLE_STATUS_AVAILABLE: {
@@ -760,10 +728,10 @@ static bool getStatus(PurpleBuddy *m_buddy, pbnetwork::StatusType &status, std::
 			break;
 	}
 
-	const char *message = purple_status_get_attr_string(stat, "message");
+	const char *message = purple_status_get_attr_string_wrapped(stat, "message");
 
 	if (message != NULL) {
-		char *stripped = purple_markup_strip_html(message);
+		char *stripped = purple_markup_strip_html_wrapped(message);
 		statusMessage = std::string(stripped);
 		g_free(stripped);
 	}
@@ -774,10 +742,10 @@ static bool getStatus(PurpleBuddy *m_buddy, pbnetwork::StatusType &status, std::
 
 static std::string getIconHash(PurpleBuddy *m_buddy) {
 	char *avatarHash = NULL;
-	PurpleBuddyIcon *icon = purple_buddy_icons_find(purple_buddy_get_account(m_buddy), purple_buddy_get_name(m_buddy));
+	PurpleBuddyIcon *icon = purple_buddy_icons_find_wrapped(purple_buddy_get_account_wrapped(m_buddy), purple_buddy_get_name_wrapped(m_buddy));
 	if (icon) {
-		avatarHash = purple_buddy_icon_get_full_path(icon);
-		purple_buddy_icon_unref(icon);
+		avatarHash = purple_buddy_icon_get_full_path_wrapped(icon);
+		purple_buddy_icon_unref_wrapped(icon);
 	}
 
 	if (avatarHash) {
@@ -807,14 +775,14 @@ static std::string getIconHash(PurpleBuddy *m_buddy) {
 
 static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 	std::vector<std::string> groups;
-	if (purple_buddy_get_name(m_buddy)) {
-		GSList *buddies = purple_find_buddies(purple_buddy_get_account(m_buddy), purple_buddy_get_name(m_buddy));
+	if (purple_buddy_get_name_wrapped(m_buddy)) {
+		GSList *buddies = purple_find_buddies_wrapped(purple_buddy_get_account_wrapped(m_buddy), purple_buddy_get_name_wrapped(m_buddy));
 		while(buddies) {
-			PurpleGroup *g = purple_buddy_get_group((PurpleBuddy *) buddies->data);
+			PurpleGroup *g = purple_buddy_get_group_wrapped((PurpleBuddy *) buddies->data);
 			buddies = g_slist_delete_link(buddies, buddies);
 
-			if(g && purple_group_get_name(g)) {
-				groups.push_back(purple_group_get_name(g));
+			if(g && purple_group_get_name_wrapped(g)) {
+				groups.push_back(purple_group_get_name_wrapped(g));
 			}
 		}
 	}
@@ -827,13 +795,13 @@ static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 }
 
 static void buddyListNewNode(PurpleBlistNode *node) {
-	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
-	PurpleAccount *account = purple_buddy_get_account(buddy);
+	PurpleAccount *account = purple_buddy_get_account_wrapped(buddy);
 
 	std::vector<std::string> groups = getGroups(buddy);
-	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name(buddy) << " " << getAlias(buddy) << " group (" << groups.size() << ")=" << groups[0]);
+	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name_wrapped(buddy) << " " << getAlias(buddy) << " group (" << groups.size() << ")=" << groups[0]);
 
 	// Status
 	pbnetwork::StatusType status = pbnetwork::STATUS_NONE;
@@ -841,22 +809,22 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 	getStatus(buddy, status, message);
 
 	// Tooltip
-	PurplePlugin *prpl = purple_find_prpl(purple_account_get_protocol_id(account));
+	PurplePlugin *prpl = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(account));
 	PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
 
 	bool blocked = false;
-	if (KEYFILE_BOOL("service", "enable_privacy_lists")) {
+	if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
 		if (prpl_info && prpl_info->tooltip_text) {
-			PurpleNotifyUserInfo *user_info = purple_notify_user_info_new();
+			PurpleNotifyUserInfo *user_info = purple_notify_user_info_new_wrapped();
 			prpl_info->tooltip_text(buddy, user_info, true);
-			GList *entries = purple_notify_user_info_get_entries(user_info);
+			GList *entries = purple_notify_user_info_get_entries_wrapped(user_info);
 
 			while (entries) {
 				PurpleNotifyUserInfoEntry *entry = (PurpleNotifyUserInfoEntry *)(entries->data);
-				if (purple_notify_user_info_entry_get_label(entry) && purple_notify_user_info_entry_get_value(entry)) {
-					std::string label = purple_notify_user_info_entry_get_label(entry);
+				if (purple_notify_user_info_entry_get_label_wrapped(entry) && purple_notify_user_info_entry_get_value_wrapped(entry)) {
+					std::string label = purple_notify_user_info_entry_get_label_wrapped(entry);
 					if (label == "Blocked" ) {
-						if (std::string(purple_notify_user_info_entry_get_value(entry)) == "Yes") {
+						if (std::string(purple_notify_user_info_entry_get_value_wrapped(entry)) == "Yes") {
 							blocked = true;
 							break;
 						}
@@ -864,39 +832,39 @@ static void buddyListNewNode(PurpleBlistNode *node) {
 				}
 				entries = entries->next;
 			}
-			purple_notify_user_info_destroy(user_info);
+			purple_notify_user_info_destroy_wrapped(user_info);
 		}
 
 		if (!blocked) {
-			blocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
+			blocked = purple_privacy_check_wrapped(account, purple_buddy_get_name_wrapped(buddy)) == false;
 		}
 		else {
-			bool purpleBlocked = purple_privacy_check(account, purple_buddy_get_name(buddy)) == false;
+			bool purpleBlocked = purple_privacy_check_wrapped(account, purple_buddy_get_name_wrapped(buddy)) == false;
 			if (blocked != purpleBlocked) {
-				purple_privacy_deny(account, purple_buddy_get_name(buddy), FALSE, FALSE);
+				purple_privacy_deny_wrapped(account, purple_buddy_get_name_wrapped(buddy), FALSE, FALSE);
 			}
 		}
 	}
 
-	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name(buddy), getAlias(buddy), getGroups(buddy), status, message, getIconHash(buddy),
+	np->handleBuddyChanged(np->m_accounts[account], purple_buddy_get_name_wrapped(buddy), getAlias(buddy), getGroups(buddy), status, message, getIconHash(buddy),
 		blocked
 	);
 }
 
 static void buddyListUpdate(PurpleBuddyList *list, PurpleBlistNode *node) {
-	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
 		return;
 	buddyListNewNode(node);
 }
 
 static void buddyPrivacyChanged(PurpleBlistNode *node, void *data) {
-	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
 		return;
 	buddyListUpdate(NULL, node);
 }
 
 static void NodeRemoved(PurpleBlistNode *node, void *data) {
-	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
 		return;
 // 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 }
@@ -921,24 +889,24 @@ static PurpleBlistUiOps blistUiOps =
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
-	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
+	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
 		return;
 	}
-	PurpleAccount *account = purple_conversation_get_account(conv);
+	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
-// 	char *striped = purple_markup_strip_html(message);
+// 	char *striped = purple_markup_strip_html_wrapped(message);
 // 	std::string msg = striped;
 // 	g_free(striped);
 
-	std::string w = purple_normalize(account, who);
+	std::string w = purple_normalize_wrapped(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
 
 	// Escape HTML characters.
-	char *newline = purple_strdup_withhtml(msg);
+	char *newline = purple_strdup_withhtml_wrapped(msg);
 	char *strip, *xhtml;
-	purple_markup_html_to_xhtml(newline, &xhtml, &strip);
+	purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
 // 	xhtml_linkified = spectrum_markup_linkify(xhtml);
 	std::string message_(strip);
 
@@ -962,17 +930,17 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 // 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
 
-	if (purple_conversation_get_type(conv) == PURPLE_CONV_TYPE_IM) {
+	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
 		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
 	}
 	else {
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name(conv) << "' " << w);
-		np->handleMessage(np->m_accounts[account], purple_conversation_get_name(conv), message_, w, xhtml_);
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << w);
+		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, w, xhtml_);
 	}
 }
 
 static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gboolean new_arrivals) {
-	PurpleAccount *account = purple_conversation_get_account(conv);
+	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
 	GList *l = cbuddies;
 	while (l != NULL) {
@@ -995,19 +963,19 @@ static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gbool
 // 			item->addAttribute("role", "participant");
 		}
 
-		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name(conv), (int) flags, pbnetwork::STATUS_ONLINE);
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name_wrapped(conv), (int) flags, pbnetwork::STATUS_ONLINE);
 
 		l = l->next;
 	}
 }
 
 static void conv_chat_remove_users(PurpleConversation *conv, GList *users) {
-	PurpleAccount *account = purple_conversation_get_account(conv);
+	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
 	GList *l = users;
 	while (l != NULL) {
 		std::string name((char *) l->data);
-		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name(conv), 0, pbnetwork::STATUS_NONE);
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name_wrapped(conv), 0, pbnetwork::STATUS_NONE);
 
 		l = l->next;
 	}
@@ -1043,11 +1011,11 @@ struct Dis {
 
 static gboolean disconnectMe(void *data) {
 	Dis *d = (Dis *) data;
-	PurpleAccount *account = purple_accounts_find(d->name.c_str(), d->protocol.c_str());
+	PurpleAccount *account = purple_accounts_find_wrapped(d->name.c_str(), d->protocol.c_str());
 	delete d;
 
 	if (account) {
-		np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username(account));
+		np->handleLogoutRequest(np->m_accounts[account], purple_account_get_username_wrapped(account));
 	}
 	return FALSE;
 }
@@ -1058,12 +1026,12 @@ static gboolean pingTimeout(void *data) {
 }
 
 static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionError reason, const char *text){
-	PurpleAccount *account = purple_connection_get_account(gc);
+	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleDisconnected(np->m_accounts[account], (int) reason, text ? text : "");
-	Dis *d = new Dis;
-	d->name = purple_account_get_username(account);
-	d->protocol = purple_account_get_protocol_id(account);
-	purple_timeout_add_seconds(10, disconnectMe, d);
+// 	Dis *d = new Dis;
+// 	d->name = purple_account_get_username_wrapped(account);
+// 	d->protocol = purple_account_get_protocol_id_wrapped(account);
+// 	purple_timeout_add_seconds_wrapped(10, disconnectMe, d);
 }
 
 static PurpleConnectionUiOps conn_ui_ops =
@@ -1082,8 +1050,8 @@ static PurpleConnectionUiOps conn_ui_ops =
 };
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info) {
-	PurpleAccount *account = purple_connection_get_account(gc);
-	std::string name(purple_normalize(account, who));
+	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
+	std::string name(purple_normalize_wrapped(account, who));
 	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
 	size_t pos = name.find("/");
@@ -1091,7 +1059,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		name.erase((int) pos, name.length() - (int) pos);
 
 	
-	GList *vcardEntries = purple_notify_user_info_get_entries(user_info);
+	GList *vcardEntries = purple_notify_user_info_get_entries_wrapped(user_info);
 	PurpleNotifyUserInfoEntry *vcardEntry;
 	std::string firstName;
 	std::string lastName;
@@ -1103,22 +1071,22 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 
 	while (vcardEntries) {
 		vcardEntry = (PurpleNotifyUserInfoEntry *)(vcardEntries->data);
-		if (purple_notify_user_info_entry_get_label(vcardEntry) && purple_notify_user_info_entry_get_value(vcardEntry)){
-			label = purple_notify_user_info_entry_get_label(vcardEntry);
+		if (purple_notify_user_info_entry_get_label_wrapped(vcardEntry) && purple_notify_user_info_entry_get_value_wrapped(vcardEntry)){
+			label = purple_notify_user_info_entry_get_label_wrapped(vcardEntry);
 			if (label == "Given Name" || label == "First Name") {
-				firstName = purple_notify_user_info_entry_get_value(vcardEntry);
+				firstName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else if (label == "Family Name" || label == "Last Name") {
-				lastName = purple_notify_user_info_entry_get_value(vcardEntry);
+				lastName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else if (label=="Nickname" || label == "Nick") {
-				nickname = purple_notify_user_info_entry_get_value(vcardEntry);
+				nickname = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else if (label=="Full Name") {
-				fullName = purple_notify_user_info_entry_get_value(vcardEntry);
+				fullName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else {
-				LOG4CXX_WARN(logger, "Unhandled VCard Label '" << purple_notify_user_info_entry_get_label(vcardEntry) << "' " << purple_notify_user_info_entry_get_value(vcardEntry));
+				LOG4CXX_WARN(logger, "Unhandled VCard Label '" << purple_notify_user_info_entry_get_label_wrapped(vcardEntry) << "' " << purple_notify_user_info_entry_get_value_wrapped(vcardEntry));
 			}
 		}
 		vcardEntries = vcardEntries->next;
@@ -1131,12 +1099,12 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		nickname = fullName;
 	}
 
-	bool ownInfo = name == purple_account_get_username(account);
+	bool ownInfo = name == purple_account_get_username_wrapped(account);
 
 	if (ownInfo) {
-		const gchar *displayname = purple_connection_get_display_name(gc);
+		const gchar *displayname = purple_connection_get_display_name_wrapped(gc);
 		if (!displayname) {
-			displayname = purple_account_get_name_for_display(account);
+			displayname = purple_account_get_name_for_display_wrapped(account);
 		}
 
 		if (displayname && nickname.empty()) {
@@ -1144,26 +1112,26 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 		}
 
 		// avatar
-		PurpleStoredImage *avatar = purple_buddy_icons_find_account_icon(account);
+		PurpleStoredImage *avatar = purple_buddy_icons_find_account_icon_wrapped(account);
 		if (avatar) {
-			const gchar * data = (const gchar *) purple_imgstore_get_data(avatar);
-			size_t len = purple_imgstore_get_size(avatar);
+			const gchar * data = (const gchar *) purple_imgstore_get_data_wrapped(avatar);
+			size_t len = purple_imgstore_get_size_wrapped(avatar);
 			if (len < 300000 && data) {
 				photo = std::string(data, len);
 			}
-			purple_imgstore_unref(avatar);
+			purple_imgstore_unref_wrapped(avatar);
 		}
 	}
 
-	PurpleBuddy *buddy = purple_find_buddy(purple_connection_get_account(gc), who);
+	PurpleBuddy *buddy = purple_find_buddy_wrapped(purple_connection_get_account_wrapped(gc), who);
 	if (buddy && photo.size() == 0) {
 		gsize len;
 		PurpleBuddyIcon *icon = NULL;
-		icon = purple_buddy_icons_find(purple_connection_get_account(gc), name.c_str());
+		icon = purple_buddy_icons_find_wrapped(purple_connection_get_account_wrapped(gc), name.c_str());
 		if (icon) {
 			if (true) {
 				gchar *data;
-				gchar *path = purple_buddy_icon_get_full_path(icon);
+				gchar *path = purple_buddy_icon_get_full_path_wrapped(icon);
 				if (path) {
 					if (g_file_get_contents(path, &data, &len, NULL)) {
 						photo = std::string(data, len);
@@ -1173,12 +1141,12 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 				}
 			}
 			else {
-				const gchar * data = (gchar*)purple_buddy_icon_get_data(icon, &len);
+				const gchar * data = (gchar*)purple_buddy_icon_get_data_wrapped(icon, &len);
 				if (len < 300000 && data) {
 					photo = std::string(data, len);
 				}
 			}
-			purple_buddy_icon_unref(icon);
+			purple_buddy_icon_unref_wrapped(icon);
 		}
 	}
 
@@ -1259,7 +1227,7 @@ static void XferCreated(PurpleXfer *xfer) {
 		return;
 	}
 
-// 	PurpleAccount *account = purple_xfer_get_account(xfer);
+// 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
 // 	np->handleFTStart(np->m_accounts[account], xfer->who, xfer, "", xhtml_);
 }
 
@@ -1267,7 +1235,7 @@ static void XferDestroyed(PurpleXfer *xfer) {
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	FTData *ftdata = (FTData *) xfer->ui_data;
 	if (ftdata && ftdata->timer) {
-		purple_timeout_remove(ftdata->timer);
+		purple_timeout_remove_wrapped(ftdata->timer);
 	}
 	if (ftdata) {
 		np->m_xfers.erase(ftdata->id);
@@ -1275,8 +1243,8 @@ static void XferDestroyed(PurpleXfer *xfer) {
 }
 
 static void xferCanceled(PurpleXfer *xfer) {
-	PurpleAccount *account = purple_xfer_get_account(xfer);
-	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
+	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
+	std::string filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
 	std::string w = xfer->who;
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
@@ -1284,12 +1252,12 @@ static void xferCanceled(PurpleXfer *xfer) {
 
 	FTData *ftdata = (FTData *) xfer->ui_data;
 
-	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer), ftdata ? ftdata->id : 0);
+	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size_wrapped(xfer), ftdata ? ftdata->id : 0);
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	if (ftdata && ftdata->timer) {
-		purple_timeout_remove(ftdata->timer);
+		purple_timeout_remove_wrapped(ftdata->timer);
 	}
-	purple_xfer_unref(xfer);
+	purple_xfer_unref_wrapped(xfer);
 }
 
 static void fileSendStart(PurpleXfer *xfer) {
@@ -1302,14 +1270,14 @@ static void fileRecvStart(PurpleXfer *xfer) {
 // 	repeater->fileRecvStart();
 	FTData *ftData = (FTData *) xfer->ui_data;
 	if (ftData->timer == 0) {
-		ftData->timer = purple_timeout_add(1, ft_ui_ready, xfer);
+		ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, xfer);
 	}
 }
 
 static void newXfer(PurpleXfer *xfer) {
-	PurpleAccount *account = purple_xfer_get_account(xfer);
-	std::string filename(xfer ? purple_xfer_get_filename(xfer) : "");
-	purple_xfer_ref(xfer);
+	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
+	std::string filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
+	purple_xfer_ref_wrapped(xfer);
 	std::string w = xfer->who;
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
@@ -1323,7 +1291,7 @@ static void newXfer(PurpleXfer *xfer) {
 
 	np->m_unhandledXfers[np->m_accounts[account] + filename + w] = xfer;
 
-	np->handleFTStart(np->m_accounts[account], w, filename, purple_xfer_get_size(xfer));
+	np->handleFTStart(np->m_accounts[account], w, filename, purple_xfer_get_size_wrapped(xfer));
 }
 
 static void XferReceiveComplete(PurpleXfer *xfer) {
@@ -1333,9 +1301,9 @@ static void XferReceiveComplete(PurpleXfer *xfer) {
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	FTData *ftdata = (FTData *) xfer->ui_data;
 	if (ftdata && ftdata->timer) {
-		purple_timeout_remove(ftdata->timer);
+		purple_timeout_remove_wrapped(ftdata->timer);
 	}
-	purple_xfer_unref(xfer);
+	purple_xfer_unref_wrapped(xfer);
 }
 
 static void XferSendComplete(PurpleXfer *xfer) {
@@ -1344,9 +1312,9 @@ static void XferSendComplete(PurpleXfer *xfer) {
 	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
 	FTData *ftdata = (FTData *) xfer->ui_data;
 	if (ftdata && ftdata->timer) {
-		purple_timeout_remove(ftdata->timer);
+		purple_timeout_remove_wrapped(ftdata->timer);
 	}
-	purple_xfer_unref(xfer);
+	purple_xfer_unref_wrapped(xfer);
 }
 
 static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
@@ -1392,15 +1360,15 @@ static PurpleXferUiOps xferUiOps =
 
 static void transport_core_ui_init(void)
 {
-	purple_blist_set_ui_ops(&blistUiOps);
-	purple_accounts_set_ui_ops(&accountUiOps);
-	purple_notify_set_ui_ops(&notifyUiOps);
-	purple_request_set_ui_ops(&requestUiOps);
-	purple_xfers_set_ui_ops(&xferUiOps);
-	purple_connections_set_ui_ops(&conn_ui_ops);
-	purple_conversations_set_ui_ops(&conversation_ui_ops);
+	purple_blist_set_ui_ops_wrapped(&blistUiOps);
+	purple_accounts_set_ui_ops_wrapped(&accountUiOps);
+	purple_notify_set_ui_ops_wrapped(&notifyUiOps);
+	purple_request_set_ui_ops_wrapped(&requestUiOps);
+	purple_xfers_set_ui_ops_wrapped(&xferUiOps);
+	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
+	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
 // #ifndef WIN32
-// 	purple_dnsquery_set_ui_ops(getDNSUiOps());
+// 	purple_dnsquery_set_ui_ops_wrapped(getDNSUiOps());
 // #endif
 }
 
@@ -1433,10 +1401,10 @@ spectrum_glib_log_handler(const gchar *domain,
 	}
 
 	if (message != NULL)
-		new_msg = purple_utf8_try_convert(message);
+		new_msg = purple_utf8_try_convert_wrapped(message);
 
 	if (domain != NULL)
-		new_domain = purple_utf8_try_convert(domain);
+		new_domain = purple_utf8_try_convert_wrapped(domain);
 
 	if (new_msg != NULL) {
 		std::string area("glib");
@@ -1487,7 +1455,7 @@ static PurpleCoreUiOps coreUiOps =
 };
 
 static void signed_on(PurpleConnection *gc, gpointer unused) {
-	PurpleAccount *account = purple_connection_get_account(gc);
+	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleConnected(np->m_accounts[account]);
 #ifndef WIN32
 	// force returning of memory chunks allocated by libxml2 to kernel
@@ -1526,7 +1494,7 @@ static PurpleDebugUiOps debugUiOps =
 };
 
 static void buddyTyping(PurpleAccount *account, const char *who, gpointer null) {
-	std::string w = purple_normalize(account, who);
+	std::string w = purple_normalize_wrapped(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1534,7 +1502,7 @@ static void buddyTyping(PurpleAccount *account, const char *who, gpointer null) 
 }
 
 static void buddyTyped(PurpleAccount *account, const char *who, gpointer null) {
-	std::string w = purple_normalize(account, who);
+	std::string w = purple_normalize_wrapped(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1542,7 +1510,7 @@ static void buddyTyped(PurpleAccount *account, const char *who, gpointer null) {
 }
 
 static void buddyTypingStopped(PurpleAccount *account, const char *who, gpointer null){
-	std::string w = purple_normalize(account, who);
+	std::string w = purple_normalize_wrapped(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1550,7 +1518,7 @@ static void buddyTypingStopped(PurpleAccount *account, const char *who, gpointer
 }
 
 static void gotAttention(PurpleAccount *account, const char *who, PurpleConversation *conv, guint type) {
-	std::string w = purple_normalize(account, who);
+	std::string w = purple_normalize_wrapped(account, who);
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
@@ -1560,76 +1528,87 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 static bool initPurple() {
 	bool ret;
 
-	if (!resolvePurpleFunctions()) {
+	std::string libPurpleDllPath = CONFIG_STRING_DEFAULTED(config, "purple.libpurple_dll_path", "");
+
+	if (!resolvePurpleFunctions(libPurpleDllPath)) {
 		LOG4CXX_ERROR(logger, "Unable to load libpurple.dll or some of the needed methods");
 		return false;
 	}
 
-	purple_plugins_add_search_path("./plugins");
+	std::string pluginsDir = CONFIG_STRING_DEFAULTED(config, "purple.plugins_dir", "./plugins");
+	LOG4CXX_INFO(logger, "Setting libpurple plugins directory to: " << pluginsDir);
+	purple_plugins_add_search_path_wrapped(pluginsDir.c_str());
 
-	purple_util_set_user_dir("./");
+	std::string cacertsDir = CONFIG_STRING_DEFAULTED(config, "purple.cacerts_dir", "./ca-certs");
+	LOG4CXX_INFO(logger, "Setting libpurple cacerts directory to: " << cacertsDir);
+	purple_certificate_add_ca_search_path_wrapped(cacertsDir.c_str());
+ 
+	std::string userDir = CONFIG_STRING_DEFAULTED(config, "service.working_dir", "./");
+	LOG4CXX_INFO(logger, "Setting libpurple user directory to: " << userDir);
+
+	purple_util_set_user_dir_wrapped(userDir.c_str());
 	remove("./accounts.xml");
 	remove("./blist.xml");
 
-	purple_debug_set_ui_ops(&debugUiOps);
-	purple_debug_set_verbose(true);
+	purple_debug_set_ui_ops_wrapped(&debugUiOps);
+	purple_debug_set_verbose_wrapped(true);
 
-	purple_core_set_ui_ops(&coreUiOps);
-	if (KEYFILE_STRING("service", "eventloop") == "libev") {
+	purple_core_set_ui_ops_wrapped(&coreUiOps);
+	if (CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev") {
 		LOG4CXX_INFO(logger, "Will use libev based event loop");
 	}
 	else {
 		LOG4CXX_INFO(logger, "Will use glib based event loop");
 	}
-	purple_eventloop_set_ui_ops(getEventLoopUiOps(KEYFILE_STRING("service", "eventloop") == "libev"));
+	purple_eventloop_set_ui_ops_wrapped(getEventLoopUiOps(CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev"));
 
-	ret = purple_core_init("spectrum");
+	ret = purple_core_init_wrapped("spectrum");
 	if (ret) {
 		static int blist_handle;
 		static int conversation_handle;
 
-		purple_set_blist(purple_blist_new());
-		purple_blist_load();
+		purple_set_blist_wrapped(purple_blist_new_wrapped());
+		purple_blist_load_wrapped();
 
-		purple_prefs_load();
+		purple_prefs_load_wrapped();
 
 		/* Good default preferences */
 		/* The combination of these two settings mean that libpurple will never
 		 * (of its own accord) set all the user accounts idle.
 		 */
-		purple_prefs_set_bool("/purple/away/away_when_idle", false);
+		purple_prefs_set_bool_wrapped("/purple/away/away_when_idle", false);
 		/*
 		 * This must be set to something not "none" for idle reporting to work
 		 * for, e.g., the OSCAR prpl. We don't implement the UI ops, so this is
 		 * okay for now.
 		 */
-		purple_prefs_set_string("/purple/away/idle_reporting", "system");
+		purple_prefs_set_string_wrapped("/purple/away/idle_reporting", "system");
 
 		/* Disable all logging */
-		purple_prefs_set_bool("/purple/logging/log_ims", false);
-		purple_prefs_set_bool("/purple/logging/log_chats", false);
-		purple_prefs_set_bool("/purple/logging/log_system", false);
+		purple_prefs_set_bool_wrapped("/purple/logging/log_ims", false);
+		purple_prefs_set_bool_wrapped("/purple/logging/log_chats", false);
+		purple_prefs_set_bool_wrapped("/purple/logging/log_system", false);
 
 
-// 		purple_signal_connect(purple_conversations_get_handle(), "received-im-msg", &conversation_handle, PURPLE_CALLBACK(newMessageReceived), NULL);
-		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
-		purple_signal_connect(purple_conversations_get_handle(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
-		purple_signal_connect(purple_conversations_get_handle(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
-		purple_signal_connect(purple_blist_get_handle(), "buddy-privacy-changed", &conversation_handle, PURPLE_CALLBACK(buddyPrivacyChanged), NULL);
-		purple_signal_connect(purple_conversations_get_handle(), "got-attention", &conversation_handle, PURPLE_CALLBACK(gotAttention), NULL);
-		purple_signal_connect(purple_connections_get_handle(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
-// 		purple_signal_connect(purple_blist_get_handle(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
-// 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
-// 		purple_signal_connect(purple_blist_get_handle(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);
-// 		purple_signal_connect(purple_blist_get_handle(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
-		purple_signal_connect(purple_blist_get_handle(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
-// 		purple_signal_connect(purple_conversations_get_handle(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
+// 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "received-im-msg", &conversation_handle, PURPLE_CALLBACK(newMessageReceived), NULL);
+		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
+		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "buddy-typed", &conversation_handle, PURPLE_CALLBACK(buddyTyped), NULL);
+		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
+		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-privacy-changed", &conversation_handle, PURPLE_CALLBACK(buddyPrivacyChanged), NULL);
+		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "got-attention", &conversation_handle, PURPLE_CALLBACK(gotAttention), NULL);
+		purple_signal_connect_wrapped(purple_connections_get_handle_wrapped(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
+// 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
+// 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
+// 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);
+// 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
+		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
+// 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
 		static int xfer_handle;
-		purple_signal_connect(purple_xfers_get_handle(), "file-send-start", &xfer_handle, PURPLE_CALLBACK(fileSendStart), NULL);
-		purple_signal_connect(purple_xfers_get_handle(), "file-recv-start", &xfer_handle, PURPLE_CALLBACK(fileRecvStart), NULL);
-		purple_signal_connect(purple_xfers_get_handle(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
-		purple_signal_connect(purple_xfers_get_handle(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
-		purple_signal_connect(purple_xfers_get_handle(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-start", &xfer_handle, PURPLE_CALLBACK(fileSendStart), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-start", &xfer_handle, PURPLE_CALLBACK(fileRecvStart), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
 // 
 // 		purple_commands_init();
 
@@ -1648,6 +1627,9 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 		ssize_t n = read(source, ptr, sizeof(buffer));
 #endif
 		if (n <= 0) {
+			if (errno == EAGAIN) {
+				return;
+			}
 			LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
 			exit(errno);
 		}
@@ -1656,7 +1638,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 	}
 	else {
 		if (writeInput != 0) {
-			purple_input_remove(writeInput);
+			purple_input_remove_wrapped(writeInput);
 			writeInput = 0;
 		}
 		np->readyForData();
@@ -1664,82 +1646,55 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 }
 
 int main(int argc, char **argv) {
-	GError *error = NULL;
-	GOptionContext *context;
-	context = g_option_context_new("config_file_name or profile name");
-	g_option_context_add_main_entries(context, options_entries, "");
-	if (!g_option_context_parse (context, &argc, &argv, &error)) {
-		std::cerr << "option parsing failed: " << error->message << "\n";
-		return -1;
-	}
-
-	if (argc != 2) {
-#ifdef WIN32
-		std::cout << "Usage: spectrum.exe <configuration_file.cfg>\n";
-#else
-
-#if GLIB_CHECK_VERSION(2,14,0)
-	std::cout << g_option_context_get_help(context, FALSE, NULL);
-#else
-	std::cout << "Usage: spectrum <configuration_file.cfg>\n";
-	std::cout << "See \"man spectrum\" for more info.\n";
-#endif
-		
-#endif
-	}
-	else {
 #ifndef WIN32
+		mallopt(M_CHECK_ACTION, 2);
+		mallopt(M_PERTURB, 0xb);
+
 		signal(SIGPIPE, SIG_IGN);
 
 		if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 			std::cout << "SIGCHLD handler can't be set\n";
-			g_option_context_free(context);
 			return -1;
 		}
 #endif
-		keyfile = g_key_file_new ();
-		if (!g_key_file_load_from_file (keyfile, argv[1], (GKeyFileFlags) 0, 0)) {
-			std::cout << "Can't open " << argv[1] << " configuration file.\n";
-			return 1;
-		}
 
-		Config config;
-		if (!config.load(argv[1])) {
-			std::cerr << "Can't open " << argv[1] << " configuration file.\n";
-			return 1;
-		}
-		Logging::initBackendLogging(&config);
-
-		initPurple();
-
-		main_socket = create_socket(host, port);
-		purple_input_add(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
-		purple_timeout_add_seconds(30, pingTimeout, NULL);
-
-		np = new SpectrumNetworkPlugin();
-		bool libev = KEYFILE_STRING("service", "eventloop") == "libev";
-
-		GMainLoop *m_loop;
-#ifdef WITH_LIBEVENT
-		if (!libev) {
-			m_loop = g_main_loop_new(NULL, FALSE);
-		}
-		else {
-			event_init();
-		}
-#endif
-		m_loop = g_main_loop_new(NULL, FALSE);
-
-		if (m_loop) {
-			g_main_loop_run(m_loop);
-		}
-#ifdef WITH_LIBEVENT
-		else {
-			event_loop(0);
-		}
-#endif
+	std::string error;
+	Config *cfg = Config::createFromArgs(argc, argv, error, host, port);
+	if (cfg == NULL) {
+		std::cerr << error;
+		return 1;
 	}
 
-	g_option_context_free(context);
+	config = boost::shared_ptr<Config>(cfg);
+ 
+	Logging::initBackendLogging(config.get());
+	initPurple();
+ 
+	main_socket = create_socket(host.c_str(), port);
+	purple_input_add_wrapped(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
+	purple_timeout_add_seconds_wrapped(30, pingTimeout, NULL);
+ 
+	np = new SpectrumNetworkPlugin();
+	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
+
+	GMainLoop *m_loop;
+#ifdef WITH_LIBEVENT
+	if (!libev) {
+		m_loop = g_main_loop_new(NULL, FALSE);
+	}
+	else {
+		event_init();
+	}
+#endif
+	m_loop = g_main_loop_new(NULL, FALSE);
+	if (m_loop) {
+		g_main_loop_run(m_loop);
+	}
+#ifdef WITH_LIBEVENT
+	else {
+		event_loop(0);
+	}
+#endif
+
 	return 0;
 }

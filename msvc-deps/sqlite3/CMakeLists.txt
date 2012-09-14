@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 2.6)
+FILE(GLOB SRC *.c *.h)
+
+ADD_LIBRARY(sqlite3 STATIC ${HEADERS} ${SRC})
+
+INSTALL(TARGETS sqlite3 LIBRARY DESTINATION lib ARCHIVE DESTINATION lib COMPONENT libraries)

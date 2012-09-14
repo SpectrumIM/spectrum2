@@ -20,15 +20,18 @@
 
 #include "transport/config.h"
 #include <fstream>
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <direct.h>
 #define getcwd _getcwd
 #include <windows.h>
+#ifdef _MSC_VER
 #define PATH_MAX MAX_PATH
+#endif
 #endif
 
 #include "iostream"
 #include "boost/version.hpp"
+#include "boost/algorithm/string.hpp"
 
 #define BOOST_MAJOR_VERSION BOOST_VERSION / 100000
 #define BOOST_MINOR_VERSION BOOST_VERSION / 100 % 1000
@@ -51,14 +54,16 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 		return false;
 
 	m_file = configfile;
+	m_jid = jid;
 	bool ret = load(ifs, opts, jid);
 	ifs.close();
-
+#ifndef WIN32
 	char path[PATH_MAX] = "";
 	if (m_file.find_first_of("/") != 0) {
 		getcwd(path, PATH_MAX);
 		m_file = std::string(path) + "/" + m_file;
 	}
+#endif
 
 	return ret;
 }
@@ -75,6 +80,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.backend", value<std::string>()->default_value("libpurple_backend"), "Backend")
 		("service.protocol", value<std::string>()->default_value(""), "Protocol")
 		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
+		("service.portfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.port"), "File to store backend_port to. It's used by spectrum2_manager.")
 		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
 		("service.allowed_servers", value<std::vector<std::string> >()->multitoken(), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
@@ -90,6 +96,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.memory_collector_time", value<int>()->default_value(0), "Time in seconds after which backend with most memory is set to die.")
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
+		("service.enable_xhtml", value<bool>()->default_value(true), "")
 		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
@@ -99,6 +106,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("registration.instructions", value<std::string>()->default_value("Enter your legacy network username and password."), "Instructions showed to user in registration form")
 		("registration.username_label", value<std::string>()->default_value("Legacy network username:"), "Label for username field")
 		("registration.username_mask", value<std::string>()->default_value(""), "Username mask")
+		("registration.allowed_usernames", value<std::string>()->default_value(""), "Allowed usernames")
 		("registration.auto_register", value<bool>()->default_value(false), "Register new user automatically when the presence arrives.")
 		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
 		("registration.require_local_account", value<bool>()->default_value(false), "True if users have to have a local account to register to this transport from remote servers.")
@@ -120,12 +128,22 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")
 		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
 		("backend.no_vcard_fetch", value<bool>()->default_value(false), "True if VCards for buddies should not be fetched. Only avatars will be forwarded.")
+		("proxy.server", value<std::string>()->default_value("localhost"), "Proxy IP.")
+		("proxy.user", value<std::string>()->default_value(""), "Proxy user.")
+		("proxy.password", value<std::string>()->default_value(""), "Proxy Password.")
+		("proxy.port", value<int>()->default_value(0), "Proxy port.")
+
 	;
 
 	// Load configs passed by command line
 	if (m_argc != 0 && m_argv) {
 		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
 		parsed_options parsed = parser.run();
+		BOOST_FOREACH(option &opt, parsed.options) {
+			if (opt.unregistered && !opt.value.empty()) {
+				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
+			}
+		}
 		store(parsed, m_variables);
 	}
 
@@ -133,6 +151,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	bool found_working = false;
 	bool found_pidfile = false;
+	bool found_portfile = false;
 	bool found_backend_port = false;
 	bool found_database = false;
 	std::string jid = "";
@@ -158,6 +177,9 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.string_key == "service.pidfile") {
 			found_pidfile = true;
 		}
+		else if (opt.string_key == "service.portfile") {
+			found_portfile = true;
+		}
 		else if (opt.string_key == "database.database") {
 			found_database = true;
 		}
@@ -173,6 +195,11 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		value.push_back("/var/run/spectrum2/$jid.pid");
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
 	}
+	if (!found_portfile) {
+		std::vector<std::string> value;
+		value.push_back("/var/run/spectrum2/$jid.port");
+		parsed.options.push_back(boost::program_options::basic_option<char>("service.portfile", value));
+	}
 	if (!found_backend_port) {
 		std::vector<std::string> value;
 		std::string p = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
@@ -187,7 +214,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
-			m_unregistered[opt.string_key] = opt.value[0];
+			m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {
 			boost::replace_all(opt.value[0], "$jid", jid);
@@ -226,7 +253,106 @@ bool Config::reload() {
 		return false;
 	}
 
-	return load(m_file);
+	return load(m_file, m_jid);
+}
+
+Config::SectionValuesCont Config::getSectionValues(const std::string& sectionName) {
+	SectionValuesCont sectionValues;
+
+	std::string sectionSearchString = sectionName + ".";
+	BOOST_FOREACH (const Variables::value_type & varItem, m_variables) {
+		if (boost::istarts_with(varItem.first, sectionSearchString))
+			sectionValues[varItem.first] = varItem.second;
+	}
+
+	BOOST_FOREACH (const UnregisteredCont::value_type & varItem, m_unregistered) {
+		if (boost::istarts_with(varItem.first, sectionSearchString))
+			sectionValues[varItem.first] = varItem.second;
+	}
+
+	return sectionValues;
+}
+
+std::string Config::getCommandLineArgs() const {
+	std::ostringstream commandLineArgs;
+
+	// Return the command-line arguments that were passed to us originally (but remove the initial .exe part)
+	for (int i = 1; i < m_argc; ++i) 	{
+		commandLineArgs << "\"" << m_argv[i] << "\" ";
+	}
+
+	return commandLineArgs.str();
+}
+
+void Config::updateBackendConfig(const std::string &backendConfig) {
+	options_description opts("Backend options");
+	opts.add_options()
+		("registration.needPassword", value<bool>()->default_value(true), "")
+		("registration.needRegistration", value<bool>()->default_value(false), "")
+		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
+	;
+
+	std::stringstream ifs(backendConfig);
+	parsed_options parsed = parse_config_file(ifs, opts, true);
+
+	store(parsed, m_backendConfig);
+	notify(m_backendConfig);
+}
+
+Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {
+	std::string jid;
+	std::ostringstream os;
+	std::string configFile;
+	boost::program_options::variables_map vm;
+	boost::program_options::options_description desc("Usage: spectrum <config_file.cfg>\nAllowed options");
+	desc.add_options()
+		("help", "help")
+		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
+		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
+		("no-daemonize,n", "Do not run spectrum as daemon")
+		("no-debug,d", "Create coredumps on crash")
+		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
+		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
+		;
+
+	os << desc;
+	try
+	{
+		boost::program_options::positional_options_description p;
+		p.add("config", -1);
+		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+			options(desc).positional(p).allow_unregistered().run(), vm);
+		boost::program_options::notify(vm);
+			
+		if(vm.count("help"))
+		{
+			error = os.str();
+			return NULL;
+		}
+
+		if(vm.count("config") == 0) {
+			error = os.str();
+			return NULL;
+		}
+	}
+	catch (std::runtime_error& e)
+	{
+		error = os.str();
+		return NULL;
+	}
+	catch (...)
+	{
+		error = os.str();
+		return NULL;
+	}
+
+	Config *config = new Config(argc, argv);
+	if (!config->load(configFile)) {
+		error = "Can't open " + configFile + " configuration file.\n";
+		delete config;
+		return NULL;
+	}
+	return config;
 }
 
 }

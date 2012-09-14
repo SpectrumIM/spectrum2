@@ -58,7 +58,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_resources = 0;
 	m_reconnectCounter = 0;
 
-	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(10000);
+	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
 
 	m_rosterManager = new RosterManager(this, m_component);
@@ -179,6 +179,7 @@ void User::setConnected(bool connected) {
 }
 
 void User::handlePresence(Swift::Presence::ref presence) {
+
 	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
 
 	m_conversationManager->resetResources();
@@ -198,6 +199,9 @@ void User::handlePresence(Swift::Presence::ref presence) {
 					m_readyForConnect = true;
 					onReadyToConnect();
 				}
+				else {
+					m_reconnectTimer->start();
+				}
 			}
 			else if (m_component->inServerMode()) {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
@@ -216,6 +220,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 			onRoomLeft(room);
+
+			Conversation *conv = m_conversationManager->getConversation(room);
+			if (conv) {
+				m_conversationManager->removeConversation(conv);
+				delete conv;
+			}
 		}
 		else {
 			// force connection to legacy network to let backend to handle auto-join on connect.
@@ -225,6 +235,11 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				onReadyToConnect();
 			}
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			if (m_conversationManager->getConversation(room) != NULL) {
+				LOG4CXX_INFO(logger, m_jid.toString() << ": User has already tried to join room " << room << " as " << presence->getTo().getResource());
+				return;
+			}
+
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
 			std::string password = "";
 			if (presence->getPayload<Swift::MUCPayload>() != NULL) {

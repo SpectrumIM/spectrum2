@@ -30,14 +30,14 @@ namespace Transport {
 
 class LocalBuddy : public Buddy {
 	public:
-		LocalBuddy(RosterManager *rosterManager, long id);
+		LocalBuddy(RosterManager *rosterManager, long id, const std::string &name, const std::string &alias = "", const std::vector<std::string> &groups = std::vector<std::string>(), BuddyFlag flags = BUDDY_NO_FLAG);
 		virtual ~LocalBuddy();
 
 		std::string getAlias() { return m_alias; }
 		void setAlias(const std::string &alias);
 
 		std::string getName() { return m_name; }
-		void setName(const std::string &name) { m_name = name; }
+		bool setName(const std::string &name);
 
 		bool getStatus(Swift::StatusShow &status, std::string &statusMessage) {
 			status = m_status;
@@ -61,6 +61,11 @@ class LocalBuddy : public Buddy {
 		std::vector<std::string> getGroups() { return m_groups; }
 		void setGroups(const std::vector<std::string> &groups);
 
+		bool isValid() {
+			std::string safeName = getSafeName();
+			return m_jid.isValid() && safeName.find("/") == std::string::npos;
+		}
+
 	private:
 		std::string m_name;
 		std::string m_alias;
@@ -68,7 +73,6 @@ class LocalBuddy : public Buddy {
 		std::string m_statusMessage;
 		std::string m_iconHash;
 		Swift::StatusShow m_status;
-		bool m_firstSet;
 };
 
 }

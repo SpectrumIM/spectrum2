@@ -30,7 +30,7 @@ namespace Transport {
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
-	m_conversationManager->addConversation(this);
+// 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
 }
@@ -84,8 +84,13 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		if (legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
+
+		std::string n = nickname;
+		if (n.empty()) {
+			n = " ";
+		}
 		message->setTo(m_jid);
-		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
+		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 	}
 }

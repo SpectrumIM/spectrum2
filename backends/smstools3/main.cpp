@@ -124,8 +124,8 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 		void handleSMSDir() {
 			std::string dir = "/var/spool/sms/incoming/";
-			if (config->getUnregistered().find("backend.incoming_dir") != config->getUnregistered().end()) {
-				dir = config->getUnregistered().find("backend.incoming_dir")->second;
+			if (CONFIG_HAS_KEY(config, "backend.incoming_dir")) {
+				dir = CONFIG_STRING(config, "backend.incoming_dir");
 			}
 			LOG4CXX_INFO(logger, "Checking directory " << dir << " for incoming SMS.");
 
@@ -260,54 +260,16 @@ int main (int argc, char* argv[]) {
 		return -1;
 	}
 
-	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
-	desc.add_options()
-		("host,h", value<std::string>(&host), "host")
-		("port,p", value<int>(&port), "port")
-		;
-	try
-	{
-		boost::program_options::variables_map vm;
-		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
-		boost::program_options::notify(vm);
-	}
-	catch (std::runtime_error& e)
-	{
-		std::cout << desc << "\n";
-		exit(1);
-	}
-	catch (...)
-	{
-		std::cout << desc << "\n";
-		exit(1);
-	}
-
-
-	if (argc < 5) {
-		return 1;
-	}
-
-// 	QStringList channels;
-// 	for (int i = 3; i < argc; ++i)
-// 	{
-// 		channels.append(argv[i]);
-// 	}
-// 
-// 	MyIrcSession session;
-// 	session.setNick(argv[2]);
-// 	session.setAutoJoinChannels(channels);
-// 	session.connectToServer(argv[1], 6667);
-
-	Config config;
-	if (!config.load(argv[5])) {
-		std::cerr << "Can't open " << argv[1] << " configuration file.\n";
-		return 1;
-	}
-
-	Logging::initBackendLogging(&config);
-
 	std::string error;
-	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
+	Config *cfg = Config::createFromArgs(argc, argv, error, host, port);
+	if (cfg == NULL) {
+		std::cerr << error;
+		return 1;
+	}
+
+	Logging::initBackendLogging(cfg);
+
+	StorageBackend *storageBackend = StorageBackend::createBackend(cfg, error);
 	if (storageBackend == NULL) {
 		if (!error.empty()) {
 			std::cerr << error << "\n";
@@ -321,7 +283,7 @@ int main (int argc, char* argv[]) {
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
-	np = new SMSNetworkPlugin(&config, &eventLoop, host, port);
+	np = new SMSNetworkPlugin(cfg, &eventLoop, host, port);
 	loop_->run();
 
 	return 0;

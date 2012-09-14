@@ -35,6 +35,9 @@
 #define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
 #define CONFIG_VECTOR(PTR, KEY) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::vector<std::string> >() : std::vector<std::string>())
 
+#define CONFIG_STRING_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::string>() : DEF)
+#define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<bool>() : DEF)
+
 
 namespace Transport {
 
@@ -49,6 +52,9 @@ typedef boost::program_options::variables_map Variables;
 /// class documentation to get a list of all relevant variables for that class.
 class Config {
 	public:
+		typedef std::map<std::string, boost::program_options::variable_value> SectionValuesCont;
+		typedef std::map<std::string, boost::program_options::variable_value> UnregisteredCont;
+
 		/// Constructor.
 		Config(int argc = 0, char **argv = NULL) : m_argc(argc), m_argv(argv) {}
 
@@ -77,7 +83,8 @@ class Config {
 		bool reload();
 
 		bool hasKey(const std::string &key) {
-			return m_variables.find(key) != m_variables.end();
+			return (m_variables.find(key) != m_variables.end() || m_unregistered.find(key) != m_unregistered.end()
+					|| m_backendConfig.find(key) != m_backendConfig.end());
 		}
 
 		/// Returns value of variable defined by key.
@@ -85,25 +92,37 @@ class Config {
 		/// For variables in sections you can use "section.variable" key format.
 		/// \param key config variable name
 		const boost::program_options::variable_value &operator[] (const std::string &key) {
-			return m_variables[key];
+			if (m_variables.find(key) != m_variables.end()) {
+				return m_variables[key];
+			}
+			if (m_backendConfig.find(key) != m_backendConfig.end()) {
+				return m_backendConfig[key];
+			}
+			return m_unregistered[key];
 		}
+
+		SectionValuesCont getSectionValues(const std::string& sectionName);
+ 
+		std::string getCommandLineArgs() const;
 
 		/// Returns path to config file from which data were loaded.
 		const std::string &getConfigFile() { return m_file; }
 
-		const std::map<std::string, std::string> &getUnregistered() {
-			return m_unregistered;
-		}
-
 		/// This signal is emitted when config is loaded/reloaded.
 		boost::signal<void ()> onConfigReloaded;
+
+		void updateBackendConfig(const std::string &backendConfig);
+
+		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
 	
 	private:
 		int m_argc;
 		char **m_argv;
 		Variables m_variables;
-		std::map<std::string, std::string> m_unregistered;
+		Variables m_backendConfig;
+		std::map<std::string, boost::program_options::variable_value> m_unregistered;
 		std::string m_file;
+		std::string m_jid;
 };
 
 }

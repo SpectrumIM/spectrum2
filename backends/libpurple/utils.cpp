@@ -18,14 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
+// win32/libc_interface.h defines its own socket(), read() and so on.
+// We don't want to use it here.
+#define _LIBC_INTERFACE_H_ 1
+
 #include "utils.h"
 
 #include "glib.h"
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
+#include <vector>
 
 #include "errno.h"
+#include <string.h>
 
 #ifndef WIN32 
 #include "sys/wait.h"
@@ -45,14 +51,19 @@
 #define getpid _getpid 
 #define ssize_t SSIZE_T
 #include "win32/win32dep.h"
+#define close closesocket
 #endif
 
 #include "purple_defs.h"
 
+#include <boost/numeric/conversion/cast.hpp>
+
+using std::vector;
+
 static GHashTable *ui_info = NULL;
 
 void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name) {
-	PurplePlugin *plugin = gc && PURPLE_CONNECTION_IS_CONNECTED(gc) ? gc->prpl : NULL;
+	PurplePlugin *plugin = gc && PURPLE_CONNECTION_IS_CONNECTED_WRAPPED(gc) ? gc->prpl : NULL;
 	if (plugin && PURPLE_PLUGIN_HAS_ACTIONS(plugin)) {
 		PurplePluginAction *action = NULL;
 		GList *actions, *l;
@@ -67,7 +78,7 @@ void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name)
 				if ((std::string) action->label == name) {
 					action->callback(action);
 				}
-				purple_plugin_action_free(action);
+				purple_plugin_action_free_wrapped(action);
 			}
 		}
 	}
@@ -125,7 +136,7 @@ void spectrum_sigchld_handler(int sig)
 }
 #endif
 
-int create_socket(char *host, int portno) {
+int create_socket(const char *host, int portno) {
 	struct sockaddr_in serv_addr;
 	
 	int main_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -151,3 +162,34 @@ int create_socket(char *host, int portno) {
 // 	fcntl(main_socket, F_SETFL, flags);
 	return main_socket;
 }
+
+#ifdef _WIN32
+std::wstring utf8ToUtf16(const std::string& str)
+{
+	try
+	{
+		if (str.empty())
+			return L"";
+
+		// First request the size of the required UTF-16 buffer
+		int numRequiredBytes = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), boost::numeric_cast<int>(str.size()), NULL, 0);
+		if (!numRequiredBytes)
+			return L"";
+
+		// Allocate memory for the UTF-16 string
+		std::vector<wchar_t> utf16Str(numRequiredBytes);
+
+		int numConverted = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), boost::numeric_cast<int>(str.size()), &utf16Str[0], numRequiredBytes);
+		if (!numConverted)
+			return L"";
+
+		std::wstring wstr(&utf16Str[0], numConverted);
+		return wstr;
+	}
+	catch (...)
+	{
+		// I don't believe libtransport is exception-safe so we'll just return an empty string instead
+		return L"";
+	}
+}
+#endif // _WIN32

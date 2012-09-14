@@ -235,7 +235,11 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			directory_iterator end_itr;
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 				if (extension(itr->path()) == ".z5") {
+#if BOOST_FILESYSTEM_VERSION == 3
+					games.push_back(itr->path().filename().string());
+#else
 					games.push_back(itr->path().leaf());
+#endif
 				}
 			}
 			return games;
@@ -335,54 +339,19 @@ int main (int argc, char* argv[]) {
 		return -1;
 	}
 
-	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
-	desc.add_options()
-		("host,h", value<std::string>(&host), "host")
-		("port,p", value<int>(&port), "port")
-		;
-	try
-	{
-		boost::program_options::variables_map vm;
-		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
-		boost::program_options::notify(vm);
-	}
-	catch (std::runtime_error& e)
-	{
-		std::cout << desc << "\n";
-		exit(1);
-	}
-	catch (...)
-	{
-		std::cout << desc << "\n";
-		exit(1);
-	}
-
-
-	if (argc < 5) {
-		return 1;
-	}
-
-// 	QStringList channels;
-// 	for (int i = 3; i < argc; ++i)
-// 	{
-// 		channels.append(argv[i]);
-// 	}
-// 
-// 	MyIrcSession session;
-// 	session.setNick(argv[2]);
-// 	session.setAutoJoinChannels(channels);
-// 	session.connectToServer(argv[1], 6667);
-
-	Config config;
-	if (!config.load(argv[5])) {
-		std::cerr << "Can't open " << argv[1] << " configuration file.\n";
+	std::string error;
+	Config *cfg = Config::createFromArgs(argc, argv, error, host, port);
+	if (cfg == NULL) {
+		std::cerr << error;
 		return 1;
 	}
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
-	np = new FrotzNetworkPlugin(&config, &eventLoop, host, port);
+	np = new FrotzNetworkPlugin(cfg, &eventLoop, host, port);
 	loop_->run();
+
+	delete cfg;
 
 	return 0;
 }

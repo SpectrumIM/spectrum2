@@ -20,17 +20,23 @@
 
 #include "transport/transport.h"
 #include <boost/bind.hpp>
+#include <boost/smart_ptr/make_shared.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include "transport/storagebackend.h"
 #include "transport/factory.h"
 #include "transport/userregistry.h"
 #include "transport/logging.h"
 #include "discoinforesponder.h"
-#include "discoitemsresponder.h"
 #include "storageparser.h"
-#include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
+#ifdef _MSC_VER
+#include <Swiften/TLS/CAPICertificate.h>
+#include "Swiften/TLS/Schannel/SchannelServerContext.h"
+#include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"
+#else
 #include "Swiften/TLS/PKCS12Certificate.h"
+#include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContextFactory.h"
+#endif
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
 #include "Swiften/Serializer/PayloadSerializers/AttentionSerializer.h"
 #include "Swiften/Parser/PayloadParsers/XHTMLIMParser.h"
@@ -76,10 +82,14 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+#ifndef _WIN32
+//TODO: fix
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
-			m_server->addTLSEncryption(f, PKCS12Certificate(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+			m_server->addTLSEncryption(f, boost::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+#endif
+			
 		}
 		else {
 			LOG4CXX_WARN(logger, "No PKCS#12 certificate used. TLS is disabled.");
@@ -149,9 +159,6 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
 	m_discoInfoResponder->start();
 
-	m_discoItemsResponder = new DiscoItemsResponder(m_iqRouter);
-	m_discoItemsResponder->start();
-
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
 // 	m_registerHandler->start();
@@ -163,7 +170,6 @@ Component::~Component() {
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
 	delete m_discoInfoResponder;
-	delete m_discoItemsResponder;
 	if (m_component)
 		delete m_component;
 	if (m_server) {
@@ -196,6 +202,9 @@ void Component::setBuddyFeatures(std::list<std::string> &features) {
 void Component::start() {
 	if (m_component && !m_component->isAvailable()) {
 		LOG4CXX_INFO(logger, "Connecting XMPP server " << CONFIG_STRING(m_config, "service.server") << " port " << CONFIG_INT(m_config, "service.port"));
+		if (CONFIG_INT(m_config, "service.port") == 5222) {
+			LOG4CXX_WARN(logger, "Port 5222 is usually used for client connections, not for component connections! Are you sure you are using right port?");
+		}
 		m_reconnectCount++;
 		m_component->connect(CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		m_reconnectTimer->stop();
@@ -206,7 +215,9 @@ void Component::start() {
 
 		//Type casting to BoostConnectionServer since onStopped signal is not defined in ConnectionServer
 		//Ideally, onStopped must be defined in ConnectionServer
-		boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&Component::handleServerStopped, this, _1));
+		if (boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
+			boost::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&Component::handleServerStopped, this, _1));
+		}
 		
 		// We're connected right here, because we're in server mode...
 		handleConnected();
@@ -229,6 +240,7 @@ void Component::stop() {
 void Component::handleConnected() {
 	onConnected();
 	m_reconnectCount = 0;
+	m_reconnectTimer->stop();
 }
 
 void Component::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
@@ -280,6 +292,10 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 
 	// filter out bad presences
 	if (!presence->getFrom().isValid()) {
+		return;
+	}
+
+	if (presence->getType() == Presence::Error) {
 		return;
 	}
 

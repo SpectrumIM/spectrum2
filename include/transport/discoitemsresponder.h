@@ -27,14 +27,22 @@
 
 namespace Transport {
 
+class Component;
+
 class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 	public:
-		DiscoItemsResponder(Swift::IQRouter *router);
+		DiscoItemsResponder(Component *component);
 		~DiscoItemsResponder();
+
+		void addAdHocCommand(const std::string &node, const std::string &name);
+// 		void removeAdHocCommand(const std::string &node);
 
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoItems> payload);
+
+		Component *m_component;
+		boost::shared_ptr<Swift::DiscoItems> m_commands;
 };
 
 }

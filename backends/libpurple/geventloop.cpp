@@ -98,7 +98,7 @@ static guint input_add(gint fd,
 	}
 
 #ifdef WIN32
-	channel = wpurple_g_io_channel_win32_new_socket(fd);
+	channel = wpurple_g_io_channel_win32_new_socket_wrapped(fd);
 #else
 	channel = g_io_channel_unix_new(fd);
 #endif

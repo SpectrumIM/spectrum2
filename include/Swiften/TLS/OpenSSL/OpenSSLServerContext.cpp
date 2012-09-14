@@ -180,15 +180,16 @@ void OpenSSLServerContext::sendPendingDataToApplication() {
 	}
 }
 
-bool OpenSSLServerContext::setServerCertificate(const PKCS12Certificate& certificate) {
-	if (certificate.isNull()) {
+bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref) {
+	boost::shared_ptr<PKCS12Certificate> certificate = boost::dynamic_pointer_cast<PKCS12Certificate>(certref);
+	if (certificate->isNull()) {
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate can't be loaded.");
 		return false;
 	}
 
 	// Create a PKCS12 structure
 	BIO* bio = BIO_new(BIO_s_mem());
-	BIO_write(bio, vecptr(certificate.getData()), certificate.getData().size());
+	BIO_write(bio, vecptr(certificate->getData()), certificate->getData().size());
 	boost::shared_ptr<PKCS12> pkcs12(d2i_PKCS12_bio(bio, NULL), PKCS12_free);
 	BIO_free(bio);
 	if (!pkcs12) {
@@ -200,7 +201,7 @@ bool OpenSSLServerContext::setServerCertificate(const PKCS12Certificate& certifi
 	X509 *certPtr = 0;
 	EVP_PKEY* privateKeyPtr = 0;
 	STACK_OF(X509)* caCertsPtr = 0;
-	int result = PKCS12_parse(pkcs12.get(), reinterpret_cast<const char*>(vecptr(certificate.getPassword())), &privateKeyPtr, &certPtr, &caCertsPtr);
+	int result = PKCS12_parse(pkcs12.get(), reinterpret_cast<const char*>(vecptr(certificate->getPassword())), &privateKeyPtr, &certPtr, &caCertsPtr);
 	if (result != 1) { 
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
 		return false;

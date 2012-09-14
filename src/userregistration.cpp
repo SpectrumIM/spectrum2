@@ -29,6 +29,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/regex.hpp> 
 
 using namespace Swift;
 
@@ -89,7 +90,7 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 	if (!registered)
 		return;
 
-	if (remoteRosterNotSupported) {
+	if (remoteRosterNotSupported || !payload) {
 		std::list <BuddyInfo> roster;
 		m_storageBackend->getBuddies(userInfo.id, roster);
 		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
@@ -132,7 +133,7 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		m_userManager->removeUser(user);
 	}
 
-	if (remoteRosterNotSupported) {
+	if (remoteRosterNotSupported || !payload) {
 		Swift::Presence::ref response;
 		response = Swift::Presence::create();
 		response->setTo(Swift::JID(barejid));
@@ -188,8 +189,9 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	reg->setInstructions(instructions);
 	reg->setRegistered(registered);
 	reg->setUsername(res.uin);
-	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour")
-		reg->setPassword(res.password);
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
+		reg->setPassword("");
+	}
 
 
 	// form
@@ -209,7 +211,7 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	username->setRequired(true);
 	form->addField(username);
 
-	if (CONFIG_STRING(m_config, "service.protocol") != "twitter" && CONFIG_STRING(m_config, "service.protocol") != "bonjour") {
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
 		TextPrivateFormField::ref password = TextPrivateFormField::create();
 		password->setName("password");
 		password->setLabel((("Password")));
@@ -396,11 +398,13 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		}
 	}
 
-	printf("here\n");
-
-	if (!payload->getUsername() || !payload->getPassword()) {
+	if (!payload->getUsername() || (!payload->getPassword() && CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true))) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
+	}
+
+	if (!payload->getPassword()) {
+		payload->setPassword("");
 	}
 
 	// Register or change password
@@ -441,15 +445,15 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 // 		return true;
 // 	}
 
-//TODO: Part of spectrum1 registration stuff, this should be potentially rewritten for S2 too
-// #if GLIB_CHECK_VERSION(2,14,0)
-// 	if (!CONFIG_STRING(m_config, "registration.reg_allowed_usernames").empty() &&
-// 		!g_regex_match_simple(CONFIG_STRING(m_config, "registration.reg_allowed_usernames"), newUsername.c_str(),(GRegexCompileFlags) (G_REGEX_CASELESS | G_REGEX_EXTENDED), (GRegexMatchFlags) 0)) {
-// 		Log("UserRegistration", "This is not valid username: "<< newUsername);
-// 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
-// 		return true;
-// 	}
-// #endif
+	if (!CONFIG_STRING(m_config, "registration.allowed_usernames").empty()) {
+		boost::regex expression(CONFIG_STRING(m_config, "registration.allowed_usernames"));
+		if (!regex_match(newUsername, expression)) {
+			LOG4CXX_INFO(logger, "This is not valid username: " << newUsername);
+			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
+			return true;
+		}
+	}
+
 	if (!registered) {
 		res.jid = barejid;
 		res.uin = newUsername;

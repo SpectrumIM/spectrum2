@@ -32,6 +32,7 @@
 #include "transport/rosterresponder.h"
 #include "transport/memoryreadbytestream.h"
 #include "transport/logging.h"
+#include "transport/admininterface.h"
 #include "blockresponder.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -42,6 +43,9 @@
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
+#include "transport/util.h"
+
+#include "utf8.h"
 
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
@@ -54,6 +58,8 @@
 #include "sys/signal.h"
 #include "popt.h"
 #endif
+
+using namespace Transport::Util;
 
 namespace Transport {
 
@@ -81,6 +87,8 @@ class NetworkFactory : public Factory {
 			m_nps = nps;
 		}
 
+		virtual ~NetworkFactory() {}
+
 		// Creates new conversation (NetworkConversation in this case)
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
 			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName);
@@ -90,17 +98,17 @@ class NetworkFactory : public Factory {
 
 		// Creates new LocalBuddy
 		Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) {
-			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id);
-			buddy->setAlias(buddyInfo.alias);
-			buddy->setName(buddyInfo.legacyName);
+			LocalBuddy *buddy = new LocalBuddy(rosterManager, buddyInfo.id, buddyInfo.legacyName, buddyInfo.alias, buddyInfo.groups, (BuddyFlag) buddyInfo.flags);
+			if (!buddy->isValid()) {
+				delete buddy;
+				return NULL;
+			}
 			if (buddyInfo.subscription == "both") {
 				buddy->setSubscription(Buddy::Both);
 			}
 			else {
 				buddy->setSubscription(Buddy::Ask);
 			}
-			buddy->setGroups(buddyInfo.groups);
-			buddy->setFlags((BuddyFlag) (buddyInfo.flags));
 			if (buddyInfo.settings.find("icon_hash") != buddyInfo.settings.end())
 				buddy->setIconHash(buddyInfo.settings.find("icon_hash")->second.s);
 			return buddy;
@@ -117,16 +125,24 @@ class NetworkFactory : public Factory {
 	wrap.SerializeToString(&MESSAGE);
 
 // Executes new backend
-static unsigned long exec_(std::string path, const char *host, const char *port, const char *config) {
-	std::string original_path = path;
+static unsigned long exec_(const std::string& exePath, const char *host, const char *port, const char *cmdlineArgs) {
 	// BACKEND_ID is replaced with unique ID. The ID is increasing for every backend.
-	boost::replace_all(path, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));
-
-	// Add host and port.
-	path += std::string(" --host ") + host + " --port " + port + " " + config;
-	LOG4CXX_INFO(logger, "Starting new backend " << path);
+	std::string finalExePath = boost::replace_all_copy(exePath, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));	
 
 #ifdef _WIN32
+	// Add host and port.
+	std::ostringstream fullCmdLine;
+	fullCmdLine << "\"" << finalExePath << "\" --host " << host << " --port " << port;
+
+	if (cmdlineArgs)
+		fullCmdLine << " " << cmdlineArgs;
+
+	LOG4CXX_INFO(logger, "Starting new backend " << fullCmdLine.str());
+
+	// We must provide a non-const buffer to CreateProcess below
+	std::vector<wchar_t> rawCommandLineArgs( fullCmdLine.str().size() + 1 );
+	wcscpy_s(&rawCommandLineArgs[0], rawCommandLineArgs.size(), utf8ToUtf16(fullCmdLine.str()).c_str());
+
 	STARTUPINFO         si;
 	PROCESS_INFORMATION pi;
 
@@ -134,26 +150,30 @@ static unsigned long exec_(std::string path, const char *host, const char *port,
 	si.cb=sizeof (si);
 
 	if (! CreateProcess(
-	NULL,
-	(LPSTR)path.c_str(),         // command line
-	0,                    // process attributes
-	0,                    // thread attributes
-	0,                    // inherit handles
-	0,                    // creation flags
-	0,                    // environment
-	0,                    // cwd
-	&si,
-	&pi
-	)
+		utf8ToUtf16(finalExePath).c_str(),
+		&rawCommandLineArgs[0],
+		0,                    // process attributes
+		0,                    // thread attributes
+		0,                    // inherit handles
+		0,                    // creation flags
+		0,                    // environment
+		0,                    // cwd
+		&si,
+		&pi
+		)
 	)  {
 		LOG4CXX_ERROR(logger, "Could not start process");
 	}
 
 	return 0;
 #else
+	// Add host and port.
+	finalExePath += std::string(" --host ") + host + " --port " + port + " " + cmdlineArgs;
+	LOG4CXX_INFO(logger, "Starting new backend " << finalExePath);
+
 	// Create array of char * from string using -lpopt library
-	char *p = (char *) malloc(path.size() + 1);
-	strcpy(p, path.c_str());
+	char *p = (char *) malloc(finalExePath.size() + 1);
+	strcpy(p, finalExePath.c_str());
 	int argc;
 	char **argv;
 	poptParseArgvString(p, &argc, (const char ***) &argv);
@@ -200,11 +220,9 @@ static void SigCatcher(int n) {
 #endif
 
 static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payload) {
-	buddy->setName(payload.buddyname());
 	// Set alias only if it's not empty. Backends are allowed to send empty alias if it has
 	// not changed.
 	if (!payload.alias().empty()) {
-		LOG4CXX_INFO(logger, "Setting alias to " << payload.alias() << " " << buddy->getAlias());
 		buddy->setAlias(payload.alias());
 	}
 
@@ -228,6 +246,8 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_config = config;
 	m_component = component;
 	m_isNextLongRun = false;
+	m_adminInterface = NULL;
+	m_startingBackend = false;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -263,28 +283,35 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
-	unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
-	LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+	while (true) {
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
+		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
+		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
 #ifndef _WIN32
-	// wait if the backend process will still be alive after 1 second
-	sleep(1);
-	pid_t result;
-	int status;
-	result = waitpid(-1, &status, WNOHANG);
-	if (result != 0) {
-		if (WIFEXITED(status)) {
-			if (WEXITSTATUS(status) != 0) {
-				LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+		// wait if the backend process will still be alive after 1 second
+		sleep(1);
+		pid_t result;
+		int status;
+		result = waitpid(-1, &status, WNOHANG);
+		if (result != 0) {
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+					continue;
+				}
+			}
+			else {
+				LOG4CXX_ERROR(logger, "Backend can not be started");
+				continue;
 			}
 		}
-		else {
-			LOG4CXX_ERROR(logger, "Backend can not be started");
-		}
-	}
 
-	signal(SIGCHLD, SigCatcher);
+		signal(SIGCHLD, SigCatcher);
 #endif
+		// quit the while loop
+		break;
+	}
 
 }
 
@@ -317,17 +344,15 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	client->res = 0;
 	client->init_res = 0;
 	client->shared = 0;
-	client->willDie = 0;
+	// Until we receive first PONG from backend, backend is in willDie state.
+	client->willDie = true;
 	// Backend does not accept new clients automatically if it's long-running
 	client->acceptUsers = !m_isNextLongRun;
 	client->longRun = m_isNextLongRun;
 
-	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
+	m_startingBackend = false;
 
-	if (m_clients.size() == 0) {
-		// first backend connected, start the server, we're ready.
-		m_component->start();
-	}
+	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
 	m_clients.push_front(client);
 
@@ -339,28 +364,6 @@ void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Con
 	// in first ::pingTimeout call, because it can be called right after this function
 	// and backend wouldn't have any time to response to ping.
 	client->pongReceived = -1;
-
-	// some users are in queue waiting for this backend
-	while(!m_waitingUsers.empty()) {
-		// There's no new backend, so stop associating users and wait for new backend,
-		// which has been already spawned in getFreeClient() call.
-		if (getFreeClient() == NULL)
-			break;
-
-		User *u = m_waitingUsers.front();
-		m_waitingUsers.pop_front();
-
-		LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
-
-		// associate backend with user
-		handleUserCreated(u);
-
-		// connect user if it's ready
-		if (u->isReadyToConnect()) {
-			handleUserReadyToConnect(u);
-		}
-
-	}
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
@@ -437,11 +440,19 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
+	std::string field = payload.fullname();
 
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
-	vcard->setFullName(payload.fullname());
+
+	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), field.begin(), '_');
+	vcard->setFullName(field);
+
+	field = payload.nickname();
+
+	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), field.begin(), '_');
+	vcard->setNickname(field);
+
 	vcard->setPhoto(Swift::createByteArray(payload.photo()));
-	vcard->setNickname(payload.nickname());
 
 	m_vcardResponder->sendVCard(payload.id(), vcard);
 }
@@ -509,19 +520,40 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	LOG4CXX_INFO(logger, "HANDLE BUDDY CHANGED " << payload.buddyname() << "-" << payload.alias());
-
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
 		buddy->handleBuddyChanged();
 	}
 	else {
-		buddy = new LocalBuddy(user->getRosterManager(), -1);
-		buddy->setFlags(BUDDY_JID_ESCAPING);
-		handleBuddyPayload(buddy, payload);
+		std::vector<std::string> groups;
+		for (int i = 0; i < payload.group_size(); i++) {
+			groups.push_back(payload.group(i));
+		}
+		buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		if (!buddy->isValid()) {
+			delete buddy;
+			return;
+		}
+		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+		buddy->setIconHash(payload.iconhash());
+		buddy->setBlocked(payload.blocked());
 		user->getRosterManager()->setBuddy(buddy);
 	}
+}
+
+void NetworkPluginServer::handleBuddyRemovedPayload(const std::string &data) {
+	pbnetwork::Buddy payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+	user->getRosterManager()->removeBuddy(payload.buddyname());
 }
 
 void NetworkPluginServer::handleParticipantChangedPayload(const std::string &data) {
@@ -586,7 +618,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	// Add xhtml-im payload.
-	if (!payload.xhtml().empty()) {
+	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
 		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
@@ -594,6 +626,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
 
@@ -621,6 +654,7 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
+		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
 
@@ -740,6 +774,78 @@ void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
 	send(b->connection, message);
 }
 
+void NetworkPluginServer::handlePongReceived(Backend *c) {
+	// This could be first PONG from the backend
+	if (c->pongReceived == -1) {
+		// Backend is fully ready to handle requests
+		c->willDie = false;
+
+		if (m_clients.size() == 1) {
+			// first backend connected, start the server, we're ready.
+			m_component->start();
+		}
+
+		// some users are in queue waiting for this backend
+		while(!m_waitingUsers.empty()) {
+			// There's no new backend, so stop associating users and wait for new backend,
+			// which has been already spawned in getFreeClient() call.
+			if (getFreeClient() == NULL)
+				break;
+
+			User *u = m_waitingUsers.front();
+			m_waitingUsers.pop_front();
+
+			LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
+
+			// associate backend with user
+			handleUserCreated(u);
+
+			// connect user if it's ready
+			if (u->isReadyToConnect()) {
+				handleUserReadyToConnect(u);
+			}
+		}
+	}
+
+	c->pongReceived = true;
+}
+
+void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data) {
+	pbnetwork::BackendConfig payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	if (!m_adminInterface) {
+		return;
+	}
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(payload.config());
+	m_adminInterface->handleQuery(msg);
+
+	pbnetwork::BackendConfig response;
+	response.set_config(msg->getBody());
+
+	std::string message;
+	response.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_QUERY);
+
+	send(b->connection, message);
+}
+
+void NetworkPluginServer::handleBackendConfigPayload(const std::string &data) {
+	pbnetwork::BackendConfig payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	m_config->updateBackendConfig(payload.config());
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -790,7 +896,7 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				handleConvMessagePayload(wrapper.payload(), true);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PONG:
-				c->pongReceived = true;
+				handlePongReceived(c);
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_PARTICIPANT_CHANGED:
 				handleParticipantChangedPayload(wrapper.payload());
@@ -827,6 +933,15 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
 				handleFTDataPayload(c, wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
+				handleBuddyRemovedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_QUERY:
+				handleQueryPayload(c, wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG:
+				handleBackendConfigPayload(wrapper.payload());
 				break;
 			default:
 				return;
@@ -874,6 +989,9 @@ void NetworkPluginServer::pingTimeout() {
 		}
 	}
 
+	// We have to remove startingBackend flag otherwise 1 broken backend start could
+	// block the backend.
+	m_startingBackend = false;
 
 	// check ping responses
 	std::vector<Backend *> toRemove;
@@ -881,11 +999,26 @@ void NetworkPluginServer::pingTimeout() {
 		// pong has been received OR backend just connected and did not have time to answer the ping
 		// request.
 		if ((*it)->pongReceived || (*it)->pongReceived == -1) {
-			sendPing((*it));
+			// Don't send another ping if pongReceived == -1, because we've already sent one
+			// when registering backend.
+			if ((*it)->pongReceived) {
+				sendPing((*it));
+			}
 		}
 		else {
 			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
+
+#ifndef WIN32
+			// generate coredump for this backend to find out why it wasn't able to respond to PING
+			std::string pid = (*it)->id;
+			if (!pid.empty()) {
+				try {
+					kill(boost::lexical_cast<int>(pid), SIGABRT);
+				}
+				catch (...) { }
+			}
+#endif
 		}
 
 		if ((*it)->users.size() == 0) {
@@ -1056,6 +1189,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 	send(c->connection, message);
 
 	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
+	user->getConversationManager()->addConversation(conv);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
 	conv->setJID(who);
@@ -1080,15 +1214,6 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 		return;
 	}
 	send(c->connection, message);
-
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(r);
-	if (!conv) {
-		return;
-	}
-
-	user->getConversationManager()->removeConversation(conv);
-
-	delete conv;
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {
@@ -1234,7 +1359,6 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 
 	dynamic_cast<LocalBuddy *>(b)->setAlias(item.getName());
 	dynamic_cast<LocalBuddy *>(b)->setGroups(item.getGroups());
-	user->getRosterManager()->storeBuddy(b);
 
 	pbnetwork::Buddy buddy;
 	buddy.set_username(user->getJID().toBare());
@@ -1412,9 +1536,10 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 	}
 
 	// there's no free backend, so spawn one.
-	if (c == NULL) {
+	if (c == NULL && !m_startingBackend) {
 		m_isNextLongRun = longRun;
-		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getConfigFile().c_str());
+		m_startingBackend = true;
+		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
 	}
 
 	return c;

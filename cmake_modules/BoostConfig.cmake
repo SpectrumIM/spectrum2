@@ -637,14 +637,14 @@ ELSE (_boost_IN_CACHE)
   endif(Boost_COMPILER)
 
 
-  if(${Boost_MINOR_VERSION} GREATER 41 AND NOT WIN32 AND NOT APPLE)
-      set (_boost_MULTITHREADED "")
-  else()
+#   if(${Boost_MINOR_VERSION} GREATER 41 AND NOT WIN32 AND NOT APPLE)
+#       set (_boost_MULTITHREADED "")
+#   else()
     SET (_boost_MULTITHREADED "-mt")
     if( NOT Boost_USE_MULTITHREADED )
       set (_boost_MULTITHREADED "")
     endif()
-  endif()
+#   endif()
 
   if(Boost_DEBUG)
     message(STATUS "[ ${CMAKE_CURRENT_LIST_FILE}:${CMAKE_CURRENT_LIST_LINE} ] "
@@ -727,7 +727,7 @@ ELSE (_boost_IN_CACHE)
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}
-        HINTS  ${_boost_LIBRARIES_SEARCH_DIRS}
+        HINTS  ${_boost_LIBRARIES_SEARCH_DIRS} ../lib
     )
 
     FIND_LIBRARY(Boost_${UPPERCOMPONENT}_LIBRARY_DEBUG
@@ -738,7 +738,7 @@ ELSE (_boost_IN_CACHE)
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}-${_boost_ABI_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}${_boost_MULTITHREADED}${_boost_STATIC_TAG}${_boost_ABI_TAG}
                ${Boost_LIB_PREFIX}boost_${COMPONENT}-${_boost_ABI_TAG}
-        HINTS  ${_boost_LIBRARIES_SEARCH_DIRS}
+        HINTS  ${_boost_LIBRARIES_SEARCH_DIRS} ../lib
     )
 
     _Boost_ADJUST_LIB_VARS(${UPPERCOMPONENT})

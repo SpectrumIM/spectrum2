@@ -44,6 +44,11 @@ void PresenceOracle::handleStanzaChannelAvailableChanged(bool available) {
 	}
 }
 
+void PresenceOracle::clearPresences(const Swift::JID& bareJID) {
+	std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
+	jidMap.clear();
+	entries_[bareJID] = jidMap;
+}
 
 void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 	// ignore presences for some contact, we're checking only presences for the transport itself here.

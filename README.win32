@@ -1,0 +1,66 @@
+Prerequisites
+=============
+
+1. Microsoft Visual C++ 2010 Express or higher edition (http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express)
+2. Git for Windows (http://code.google.com/p/msysgit/downloads/list)
+3. CMake 2.8 or newer (http://www.cmake.org/cmake/resources/software.html)
+
+Libraries
+=========
+3. Swiften library and Python for run scons (http://swift.im/git/swift)
+4. Boost 1.48 or newer (http://sourceforge.net/projects/boost/files/boost/1.49.0/)
+5. Google ProtoBuf library (http://code.google.com/p/protobuf/downloads/list)
+
+
+Environment
+===========
+
+To create spectrum build environment do:
+
+0. Create directory where we'll install all dependencies, e.g. C:\env-msvc-x64.
+Create C:\env-msvc-x64\bin and add it to %PATH%.
+Assuming you have git, python and cmake in %PATH%, 
+launch "Visual Studio 2010 command prompt" or
+"Visual Studio 2010(x64) command prompt", depends on your target (Windows x86 or Windows x86_64).
+1. unpack and build boost libraries:
+
+	bootstrap.bat
+	b2.exe --without-mpi --without-python
+	b2.exe --without-mpi --without-python install --prefix=C:\env-msvc-x64 release
+
+2. clone swift repository and build it. Don't forget to point it to our env directory:
+
+	git clone git://swift.im/swift
+	cd swift
+	echo boost_includedir="c:/env-msvc-x64/include/boost-1_49" > config.py
+	echo boost_libdir="c:/env-msvc-x64/lib" >> config.py 
+	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 force_configure=1
+	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 C:\env-msvc-x64
+
+TODO: fix in upstream
+You may need manually copy compiled 3rdParty libs to C:\env-msvc-x64\lib\3rdParty\Expat, 
+C:\env-msvc-x64\lib\3rdParty\LibIDN, C:\env-msvc-x64\lib\3rdParty\Zlib
+
+3. unpack and compile protobuf as described in its documentation. 
+
+Run extract_includes.bat in vsprojects/ directory and move resulting vsprojects/include/google/ directory to our C:\env-msvc-x64\include
+
+Move protoc.exe to C:\env-msvc-x64\bin\ and libprotobuf.lib to C:\env-msvc-x64\lib
+
+4. Install gtkmm
+
+Download installer from https://live.gnome.org/gtkmm/MSWindows and install gtkmm into C:\env-msvc-x64\
+
+5. Install libpurple headers
+
+Download http://www.pidgin.im/download/source/ , extract it and copy libpurple directory in C:\env-msvc-x64\include
+
+6. You're ready! :) Clone libtransport into C:\env-msvc-x64\libtransport (You *must* clone it into this directory, because libtransport will try to find the dependencies in ../lib and ../include)
+
+Compile it as:
+
+	set CMAKE_INCLUDE_PATH=C:\env-msvc-x64\include
+	cmake . -G "NMake Makefiles" -DBOOST_INCLUDEDIR=../include/boost-1_49 -DBOOST_LIBRARYDIR=../lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
+	nmake
+
+TODO: libpurple_backend compilation

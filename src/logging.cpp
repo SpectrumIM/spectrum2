@@ -52,10 +52,47 @@ namespace Logging {
 using namespace log4cxx;
 static LoggerPtr root;
 
+
+class intercept_stream : public std::streambuf{
+public:
+    intercept_stream(std::ostream& stream, char const* logger):
+      _logger(log4cxx::Logger::getLogger(logger))
+    {
+		stream.rdbuf(this);
+    }
+    ~intercept_stream(){
+    }
+protected:
+    virtual std::streamsize xsputn(const char *msg, std::streamsize count){
+
+        //Output to log4cxx logger
+        std::string s(msg, count - 1); // remove last \n
+		LOG4CXX_INFO(_logger, s);
+        return count;
+    }
+
+	int overflow(int c)
+	{
+		return 0;
+	}
+
+	int sync()
+	{
+		return 0;
+	}
+
+private:
+    log4cxx::LoggerPtr _logger;
+};
+
+static intercept_stream* intercepter_cout;
+static intercept_stream* intercepter_cerr;
+
+
 static void initLogging(Config *config, std::string key) {
 	if (CONFIG_STRING(config, key).empty()) {
 		root = log4cxx::Logger::getRootLogger();
-#ifdef WIN32
+#ifdef _MSC_VER
 		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
 #else
 		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
@@ -83,7 +120,7 @@ static void initLogging(Config *config, std::string key) {
 		LogString pid, jid;
 		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(config, "service.jid"), jid);
-#ifdef WIN32
+#ifdef _MSC_VER
 		p.setProperty(L"pid", pid);
 		p.setProperty(L"jid", jid);
 #else
@@ -133,13 +170,22 @@ static void initLogging(Config *config, std::string key) {
 
 void initBackendLogging(Config *config) {
 	initLogging(config, "logging.backend_config");
+
+	redirect_stderr();
 }
 
 void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
 }
 
+void redirect_stderr() {
+	 intercepter_cerr = new intercept_stream(std::cerr, "cerr");
+	 intercepter_cout = new intercept_stream(std::cout, "cout");
+}
+
 void shutdownLogging() {
+	delete intercepter_cerr;
+	delete intercepter_cout;
 	log4cxx::LogManager::shutdown();
 }
 
@@ -151,6 +197,10 @@ void initMainLogging(Config */*config*/) {
 }
 
 void shutdownLogging() {
+	
+}
+
+void redirect_stderr() {
 	
 }
 #endif /* WITH_LOG4CXX */

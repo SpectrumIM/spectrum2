@@ -95,7 +95,12 @@ void MyOutgoingSIFileTransfer::finish(boost::optional<FileTransferError> error) 
 		ibbSession.reset();
 	}
 	socksServer->removeReadBytestream(id, from, to);
-	onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
+	if(error) {
+		onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
+	}
+	else {
+		onStateChange(FileTransfer::State(FileTransfer::State::Finished));
+	}
 	onFinished(error);
 }
 

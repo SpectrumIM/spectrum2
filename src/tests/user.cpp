@@ -26,7 +26,9 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
     CPPUNIT_TEST(handlePresence);
 	CPPUNIT_TEST(handlePresenceJoinRoom);
 	CPPUNIT_TEST(handlePresenceLeaveRoom);
+	CPPUNIT_TEST(leaveJoinedRoom);
 	CPPUNIT_TEST(handleDisconnected);
+	CPPUNIT_TEST(handleDisconnectedReconnect);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -53,14 +55,16 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		void tearDown (void) {
 			received.clear();
-			disconnectUser();
+			if (!disconnected) {
+				disconnectUser();
+			}
 			tearMeDown();
 		}
 
 	void handleUserCreated(User *user) {
 		user->onReadyToConnect.connect(boost::bind(&UserTest::handleUserReadyToConnect, this, user));
 		user->onPresenceChanged.connect(boost::bind(&UserTest::handleUserPresenceChanged, this, user, _1));
-		user->onRoomJoined.connect(boost::bind(&UserTest::handleRoomJoined, this, user, _1, _2, _3));
+		user->onRoomJoined.connect(boost::bind(&UserTest::handleRoomJoined, this, user, _1, _2, _3, _4));
 		user->onRoomLeft.connect(boost::bind(&UserTest::handleRoomLeft, this, user, _1));
 	}
 
@@ -72,7 +76,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		changedPresence = presence;
 	}
 
-	void handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
+	void handleRoomJoined(User *user, const std::string &jid, const std::string &r, const std::string &nickname, const std::string &password) {
 		room = r;
 		roomNickname = nickname;
 		roomPassword = password;
@@ -82,29 +86,6 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		room = r;
 	}
 
-	void connectUser() {
-		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
-		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
-		loop->processEvents();
-		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
-
-		User *user = userManager->getUser("user@localhost");
-		CPPUNIT_ASSERT(user);
-
-		UserInfo userInfo = user->getUserInfo();
-		CPPUNIT_ASSERT_EQUAL(std::string("password"), userInfo.password);
-		CPPUNIT_ASSERT(user->isReadyToConnect() == true);
-		CPPUNIT_ASSERT(user->isConnected() == false);
-
-		CPPUNIT_ASSERT_EQUAL(true, readyToConnect);
-
-		user->setConnected(true);
-		CPPUNIT_ASSERT(user->isConnected() == true);
-
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-		received.clear();
-	}
 
 	void sendCurrentPresence() {
 		User *user = userManager->getUser("user@localhost");
@@ -132,6 +113,8 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handlePresenceJoinRoom() {
+		User *user = userManager->getUser("user@localhost");
+
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("#room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
@@ -149,6 +132,26 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
+
+		room = "";
+		roomNickname = "";
+		roomPassword = "";
+
+		// simulate that backend joined the room
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		user->getConversationManager()->addConversation(conv);
+
+		received.clear();
+		injectPresence(response);
+		loop->processEvents();
+
+		// no presence received in server mode, just disco#info
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 	}
 
 	void handlePresenceLeaveRoom() {
@@ -170,9 +173,21 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 	}
 
+	void leaveJoinedRoom() {
+		User *user = userManager->getUser("user@localhost");
+		handlePresenceJoinRoom();
+
+		CPPUNIT_ASSERT(user->getConversationManager()->getConversation("#room"));
+
+		received.clear();
+		handlePresenceLeaveRoom();
+
+		CPPUNIT_ASSERT(!user->getConversationManager()->getConversation("#room"));
+	}
+
 	void handleDisconnected() {
 		User *user = userManager->getUser("user@localhost");
-		user->handleDisconnected("Connection error");
+		user->handleDisconnected("Connection error", Swift::SpectrumErrorPayload::CONNECTION_ERROR_AUTHENTICATION_FAILED);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT(streamEnded);
@@ -189,16 +204,14 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		disconnected = true;
 	}
 
-	void disconnectUser() {
-		if (disconnected)
-			return;
-		userManager->disconnectUser("user@localhost");
-		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
+	void handleDisconnectedReconnect() {
+		User *user = userManager->getUser("user@localhost");
+		user->handleDisconnected("Connection error");
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(!streamEnded);
+		user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(user);
 	}
 
 };

@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 
-# Build without openssl on windows
-if (WIN32)
+# Build without openssl on msvc
+if (CMAKE_COMPILER_IS_GNUCXX)
+	string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
+else()
 	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
 endif()
 
@@ -14,7 +16,7 @@ if (CPPUNIT_FOUND)
 
 	ADD_EXECUTABLE(libtransport_test ${SRC_TEST})
 
-	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARIES} ${Boost_LIBRARIES})
+	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARY} ${Boost_LIBRARIES})
 endif()
 
 if (NOT WIN32)
@@ -25,11 +27,11 @@ endif()
 
 
 if (PROTOBUF_FOUND)
-	if (CMAKE_COMPILER_IS_GNUCXX)
+	if (NOT WIN32)
 		ADD_LIBRARY(transport SHARED ${HEADERS} ${SRC} ${SWIFTEN_SRC})
-	else(CMAKE_COMPILER_IS_GNUCXX)
+	else()
 		ADD_LIBRARY(transport STATIC ${HEADERS} ${SRC} ${SWIFTEN_SRC})
-	endif(CMAKE_COMPILER_IS_GNUCXX)
+	endif()
 #	SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_BINARY_DIR}/../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 	ADD_DEPENDENCIES(transport pb) 
 else(PROTOBUF_FOUND)
@@ -37,14 +39,16 @@ else(PROTOBUF_FOUND)
 endif(PROTOBUF_FOUND)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-	ADD_DEFINITIONS(-fPIC)
+	if (NOT WIN32)
+		ADD_DEFINITIONS(-fPIC)
+	endif()
 endif()
 
 if (WIN32)
-	TARGET_LINK_LIBRARIES(transport transport-plugin ${PQXX_LIBRARY} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
-else (WIN32)
-	TARGET_LINK_LIBRARIES(transport transport-plugin ${PQXX_LIBRARY} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY})
-endif(WIN32)
+	TARGET_LINK_LIBRARIES(transport transport-plugin sqlite3 ${PQXX_LIBRARY} ${PQ_LIBRARY} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+else()
+	TARGET_LINK_LIBRARIES(transport transport-plugin ${PQXX_LIBRARY} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY} ${PROTOBUF_LIBRARY})
+endif()
 
 SET_TARGET_PROPERTIES(transport PROPERTIES
       VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}

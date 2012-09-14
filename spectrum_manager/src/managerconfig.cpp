@@ -31,6 +31,7 @@ bool ManagerConfig::load(const std::string &configfile, boost::program_options::
 	opts.add_options()
 		("service.admin_username", value<std::string>()->default_value(""), "Administrator username.")
 		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
+		("service.port", value<int>()->default_value(8081), "Web interface port.")
 		("service.config_directory", value<std::string>()->default_value("/etc/spectrum2/transports/"), "Directory with spectrum2 configuration files. One .cfg file per one instance")
 		("servers.server", value<std::vector<std::string> >()->multitoken(), "Server.")
 	;

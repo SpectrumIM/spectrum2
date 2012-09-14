@@ -23,6 +23,9 @@ using namespace Transport;
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(UserManagerTest);
 	CPPUNIT_TEST(connectUser);
+	CPPUNIT_TEST(connectUserTransportDisabled);
+	CPPUNIT_TEST(connectUserRegistrationNeeded);
+	CPPUNIT_TEST(connectUserRegistrationNeededRegistered);
 	CPPUNIT_TEST(handleProbePresence);
 	CPPUNIT_TEST(disconnectUser);
 	CPPUNIT_TEST_SUITE_END();
@@ -36,38 +39,35 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			tearMeDown();
 		}
 
-	void connectUser() {
+	void connectUserTransportDisabled() {
+		addUser();
+		storage->updateUserSetting(1, "enable_transport", "0");
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+
+		User *user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(!user);
+	}
+
+	void connectUserRegistrationNeeded() {
+		cfg->updateBackendConfig("[registration]\nneedRegistration=1\n");
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		CPPUNIT_ASSERT(streamEnded);
+	}
+
+	void connectUserRegistrationNeededRegistered() {
+		addUser();
+		cfg->updateBackendConfig("[registration]\nneedRegistration=1\n");
 		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
 		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
-
-		User *user = userManager->getUser("user@localhost");
-		CPPUNIT_ASSERT(user);
-
-		UserInfo userInfo = user->getUserInfo();
-		CPPUNIT_ASSERT_EQUAL(std::string("password"), userInfo.password);
-		CPPUNIT_ASSERT(user->isReadyToConnect() == true);
-		CPPUNIT_ASSERT(user->isConnected() == false);
-
-		user->setConnected(true);
-		CPPUNIT_ASSERT(user->isConnected() == true);
-
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-	}
-
-	void disconnectUser() {
-		connectUser();
-		received.clear();
-
-		userManager->disconnectUser("user@localhost");
-		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
-		loop->processEvents();
-
-		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(!streamEnded);
 	}
 
 	void handleProbePresence() {

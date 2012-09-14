@@ -21,7 +21,7 @@
 #include "Swiften/Entity/Entity.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
-#include "Swiften/TLS/PKCS12Certificate.h"
+#include <Swiften/TLS/CertificateWithKey.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
 
 namespace Swift {
@@ -60,7 +60,7 @@ namespace Swift {
 			boost::signal<void (const SafeByteArray&)> onDataRead;
 			boost::signal<void (const SafeByteArray&)> onDataWritten;
 
-			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, const PKCS12Certificate& cert);
+			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert);
 
 		private:
 			void handleNewClientConnection(boost::shared_ptr<Connection> c);
@@ -84,7 +84,7 @@ namespace Swift {
 			StanzaChannel *stanzaChannel_;
 			IQRouter *iqRouter_;
 			TLSServerContextFactory *tlsFactory;
-			PKCS12Certificate cert;
+			CertificateWithKey::ref cert;
 			PlatformXMLParserFactory *parserFactory_;
 	};
 }

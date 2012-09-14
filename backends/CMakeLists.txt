@@ -1,5 +1,5 @@
 if (PROTOBUF_FOUND)
-	if ( PURPLE_LIBRARY AND PURPLE_INCLUDE_DIR )
+	if (PURPLE_FOUND)
 		ADD_SUBDIRECTORY(libpurple)
 	endif()
 
@@ -7,12 +7,18 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
-	ADD_SUBDIRECTORY(smstools3)
+	ADD_SUBDIRECTORY(swiften)
 
 	ADD_SUBDIRECTORY(template)
 
+
 if (NOT WIN32)
+	ADD_SUBDIRECTORY(smstools3)
 	ADD_SUBDIRECTORY(frotz)
+# 	if(YAHOO2_FOUND)
+		ADD_SUBDIRECTORY(libyahoo2)
+# 	endif()
+	ADD_SUBDIRECTORY(twitter)
 	if (${LIBDBUSGLIB_FOUND})
 		ADD_SUBDIRECTORY(skype)
 	endif()

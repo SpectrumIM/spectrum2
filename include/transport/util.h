@@ -42,6 +42,10 @@ std::vector<std::string> deserializeGroups(std::string &groups);
 
 int getRandomPort(const std::string &s);
 
+#ifdef _WIN32
+	std::wstring utf8ToUtf16(const std::string& str);
+#endif
+
 }
 
 }

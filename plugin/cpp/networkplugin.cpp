@@ -26,6 +26,8 @@
 
 #ifndef WIN32
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <unistd.h>
 #else 
 #include <winsock2.h>
 #include <stdint.h>
@@ -63,6 +65,7 @@ NetworkPlugin::~NetworkPlugin() {
 void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
 	std::string data = "[registration]";
 	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0") + "\n";
+	data += std::string("needRegistration=") + (cfg.m_needRegistration ? "1" : "0") + "\n";
 
 	for (std::vector<std::string>::const_iterator it = cfg.m_extraFields.begin(); it != cfg.m_extraFields.end(); it++) {
 		data += std::string("extraField=") + (*it) + "\n";
@@ -159,6 +162,19 @@ void NetworkPlugin::handleBuddyChanged(const std::string &user, const std::strin
 	buddy.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
+
+	send(message);
+}
+
+void NetworkPlugin::handleBuddyRemoved(const std::string &user, const std::string &buddyName) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user);
+	buddy.set_buddyname(buddyName);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED);
 
 	send(message);
 }

@@ -14,6 +14,7 @@
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/IQ.h"
 #include "Swiften/Elements/Presence.h"
+#include "Swiften/TLS/Certificate.h"
 
 namespace Swift {
 	class Error;
@@ -31,9 +32,13 @@ namespace Swift {
 			bool getStreamManagementEnabled() const {
 				return false;
 			}
-
+	
 			bool isAvailable() const {
 				return true;
+			}
+			
+			std::vector<Certificate::ref> getPeerCertificateChain() const {
+				return std::vector<Certificate::ref>();
 			}
 
 		private:

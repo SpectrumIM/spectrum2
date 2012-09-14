@@ -37,14 +37,16 @@ class NetworkPlugin {
 
 		class PluginConfig {
 			public:
-				PluginConfig() : m_needPassword(true) {}
+				PluginConfig() : m_needPassword(true), m_needRegistration(false) {}
 				virtual ~PluginConfig() {}
 
+				void setNeedRegistration(bool needRegistration = false) { m_needRegistration = needRegistration; }
 				void setNeedPassword(bool needPassword = true) { m_needPassword = needPassword; }
 				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
 
 			private:
 				bool m_needPassword;
+				bool m_needRegistration;
 				std::vector<std::string> m_extraFields;
 
 				friend class NetworkPlugin;
@@ -74,6 +76,11 @@ class NetworkPlugin {
 			const std::vector<std::string> &groups, pbnetwork::StatusType status, const std::string &statusMessage = "", const std::string &iconHash = "",
 			bool blocked = false
 		);
+
+		/// Call this method when buddy is removed from legacy network contact list.
+		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
+		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
+		void handleBuddyRemoved(const std::string &user, const std::string &buddyName);
 
 		/// Call this function when participant in room changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")

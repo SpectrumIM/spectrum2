@@ -27,62 +27,24 @@ int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
 
-
-	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
-	desc.add_options()
-		("host,h", value<std::string>(&host), "host")
-		("port,p", value<int>(&port), "port")
-		;
-	try
-	{
-		boost::program_options::variables_map vm;
-		boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
-		boost::program_options::notify(vm);
-	}
-	catch (std::runtime_error& e)
-	{
-		std::cout << desc << "\n";
-		exit(1);
-	}
-	catch (...)
-	{
-		std::cout << desc << "\n";
-		exit(1);
-	}
-
-
-	if (argc < 5) {
-		qDebug("Usage: %s <config>", argv[0]);
+	std::string error;
+	Config *cfg = Config::createFromArgs(argc, argv, error, host, port);
+	if (cfg == NULL) {
+		std::cerr << error;
 		return 1;
 	}
 
-// 	QStringList channels;
-// 	for (int i = 3; i < argc; ++i)
-// 	{
-// 		channels.append(argv[i]);
-// 	}
-// 
-// 	MyIrcSession session;
-// 	session.setNick(argv[2]);
-// 	session.setAutoJoinChannels(channels);
-// 	session.connectToServer(argv[1], 6667);
-
-	Config config;
-	if (!config.load(argv[5])) {
-		std::cerr << "Can't open " << argv[1] << " configuration file.\n";
-		return 1;
-	}
 	QCoreApplication app(argc, argv);
 
-	Logging::initBackendLogging(&config);
+	Logging::initBackendLogging(cfg);
 
 	Swift::QtEventLoop eventLoop;
 
-	if (config.getUnregistered().find("service.irc_server") == config.getUnregistered().end()) {
-		np = new IRCNetworkPlugin(&config, &eventLoop, host, port);
+	if (!CONFIG_HAS_KEY(cfg, "service.irc_server")) {
+		np = new IRCNetworkPlugin(cfg, &eventLoop, host, port);
 	}
 	else {
-		np = new SingleIRCNetworkPlugin(&config, &eventLoop, host, port);
+		np = new SingleIRCNetworkPlugin(cfg, &eventLoop, host, port);
 	}
 
 	return app.exec();

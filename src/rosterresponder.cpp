@@ -96,7 +96,7 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		buddyInfo.alias = item.getName();
 		buddyInfo.legacyName = Buddy::JIDToLegacyName(item.getJID());
 		buddyInfo.subscription = "both";
-		buddyInfo.flags = Buddy::buddFlagsFromJID(item.getJID());
+		buddyInfo.flags = Buddy::buddyFlagsFromJID(item.getJID());
 		LOG4CXX_INFO(logger, from.toBare().toString() << ": Adding buddy " << buddyInfo.legacyName);
 
 		buddy = user->getComponent()->getFactory()->createBuddy(user->getRosterManager(), buddyInfo);

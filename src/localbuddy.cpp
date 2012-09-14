@@ -23,20 +23,36 @@
 
 namespace Transport {
 
-LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id) : Buddy(rosterManager, id) {
+LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id, const std::string &name, const std::string &alias, const std::vector<std::string> &groups, BuddyFlag flags) : Buddy(rosterManager, id, flags) {
 	m_status = Swift::StatusShow::None;
-	m_firstSet = true;
+	m_alias = alias;
+	m_name = name;
+	m_groups = groups;
+	try {
+		generateJID();
+	} catch (...) {
+	}
 }
 
 LocalBuddy::~LocalBuddy() {
 }
 
+bool LocalBuddy::setName(const std::string &name) {
+	if (name == m_name) {
+		return true;
+	}
+	std::string oldName = name;
+	m_name = name;
+	try {
+		generateJID();
+		return m_jid.isValid();
+	} catch (...) {
+		m_name = oldName;
+		return false;
+	}
+}
+
 void LocalBuddy::setAlias(const std::string &alias) {
-//	if (m_firstSet) {
-//		m_firstSet = false;
-//		m_alias = alias;
-//		return;
-//	}
 	bool changed = m_alias != alias;
 	m_alias = alias;
 
