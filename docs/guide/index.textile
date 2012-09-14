@@ -32,6 +32,7 @@ h2. Backends
 h2. Management
 
 * "spectrum2_manager tool":spectrum2_manager.html
+* "Getting a backtrace":getting_backtrace.html
 * "Munin integration":munin.html
 
 h2. Development
