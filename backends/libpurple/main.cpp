@@ -561,6 +561,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleTypingRequest(const std::string &user, const std::string &buddyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				LOG4CXX_INFO(logger, user << ": sending typing notify to " << buddyName);
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_TYPING);
 			}
 		}
