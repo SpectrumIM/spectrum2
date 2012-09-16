@@ -25,6 +25,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
 	CPPUNIT_TEST(handleNormalMessages);
 	CPPUNIT_TEST(handleGroupchatMessages);
+	CPPUNIT_TEST(handleChatstateMessages);
 	CPPUNIT_TEST(handleParticipantChanged);
 	CPPUNIT_TEST(handlePMFromXMPP);
 	CPPUNIT_TEST_SUITE_END();
@@ -53,6 +54,38 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleMessageReceived(TestingConversation *_conv, boost::shared_ptr<Swift::Message> &_msg) {
 		m_conv = _conv;
 		m_msg = _msg;
+	}
+
+	void handleChatstateMessages() {
+		User *user = userManager->getUser("user@localhost");
+
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1");
+		user->getConversationManager()->addConversation(conv);
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->addPayload(boost::make_shared<Swift::ChatState>(Swift::ChatState::Composing));
+
+		// Forward it
+		conv->handleMessage(msg);
+		loop->processEvents();
+		
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0]))->getPayload<Swift::ChatState>());
+		received.clear();
+
+		// send response
+		msg->setFrom("user@localhost/resource");
+		msg->setTo("buddy1@localhost/bot");
+		injectMessage(msg);
+		loop->processEvents();
+		
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT(m_msg);
+		CPPUNIT_ASSERT(m_msg->getPayload<Swift::ChatState>());
+
+		received.clear();
 	}
 
 	void handleNormalMessages() {
