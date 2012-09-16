@@ -348,6 +348,7 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 			// TODO: If this stops working, create onReconnect signal
 			m_userManager->onUserDestroyed(this);
 			m_userManager->onUserCreated(this);
+			onReadyToConnect();
 			return;
 		}
 	}

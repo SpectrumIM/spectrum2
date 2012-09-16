@@ -205,6 +205,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handleDisconnectedReconnect() {
+		readyToConnect = false;
 		User *user = userManager->getUser("user@localhost");
 		user->handleDisconnected("Connection error");
 		loop->processEvents();
@@ -212,6 +213,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(!streamEnded);
 		user = userManager->getUser("user@localhost");
 		CPPUNIT_ASSERT(user);
+		CPPUNIT_ASSERT(readyToConnect);
 	}
 
 };
