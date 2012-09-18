@@ -334,7 +334,13 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 		return;
 	}
 
-	if (message->getBody().empty()) {
+	// Do not count chatstate notification...
+	boost::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
+	if (!statePayload) {
+		messageToBackendSent();
+	}
+
+	if (message->getBody().empty() && !statePayload) {
 		return;
 	}
 
@@ -344,12 +350,6 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	user->getConversationManager()->handleMessageReceived(message);
-
-	// Do not count chatstate notification...
-	boost::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
-	if (!statePayload) {
-		messageToBackendSent();
-	}
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
