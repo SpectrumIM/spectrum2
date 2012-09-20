@@ -34,6 +34,7 @@
 #include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"
 #else
 #include "Swiften/TLS/PKCS12Certificate.h"
+#include "Swiften/TLS/CertificateWithKey.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContext.h"
 #include "Swiften/TLS/OpenSSL/OpenSSLServerContextFactory.h"
 #endif
@@ -87,7 +88,8 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
-			m_server->addTLSEncryption(f, boost::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password"))));
+			CertificateWithKey::ref certificate = boost::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password")));
+			m_server->addTLSEncryption(f, certificate);
 #endif
 			
 		}
