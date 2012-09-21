@@ -1,6 +1,9 @@
 #include "ircnetworkplugin.h"
 #include <IrcCommand>
 #include <IrcMessage>
+#include "transport/logging.h"
+
+DEFINE_LOGGER(logger, "IRCNetworkPlugin");
 
 #define FROM_UTF8(WHAT) QString::fromUtf8((WHAT).c_str(), (WHAT).size())
 #define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
@@ -17,7 +20,6 @@ void IRCNetworkPlugin::readData() {
 	if (availableBytes == 0)
 		return;
 
-	std::cout << "READ\n";
 	std::string d = std::string(m_socket->readAll().data(), availableBytes);
 	handleDataRead(d);
 }
@@ -27,7 +29,8 @@ void IRCNetworkPlugin::sendData(const std::string &string) {
 }
 
 void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-	// Server is in server-mode, so user is JID of server when we want to connect
+	// In server mode, hostname of the server we want to connect to is stored in "user" JID.
+	// In component mode we will connect user to the IRC network once he joins the room.
 	if (CONFIG_BOOL(config, "service.server_mode")) {
 		MyIrcSession *session = new MyIrcSession(user, this);
 		std::string h = user.substr(0, user.find("@"));
@@ -35,10 +38,11 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 		session->setHost(FROM_UTF8(h.substr(h.find("%") + 1)));
 		session->setPort(6667);
 		session->open();
-		std::cout << "CONNECTING IRC NETWORK " << h.substr(h.find("%") + 1) << "\n";
+		LOG4CXX_INFO(logger, user << ": Connecting IRC network " << h.substr(h.find("%") + 1));
 		m_sessions[user] = session;
 	}
 	else {
+		LOG4CXX_INFO(logger, user << ": Ready for connections");
 		handleConnected(user);
 	}
 }
@@ -53,7 +57,6 @@ void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::s
 
 void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
 	std::string u = user;
-	std::cout << "AAAAA " << legacyName << "\n";
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
 		u = user + legacyName.substr(legacyName.find("@") + 1);
 		if (u.find("/") != std::string::npos) {
@@ -61,7 +64,7 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 		}
 	}
 	if (m_sessions[u] == NULL) {
-		std::cout << "No session for " << u << "\n";
+		LOG4CXX_WARN(logger, user << ": Session name: " << u << ", No session for user");
 		return;
 	}
 
@@ -74,19 +77,19 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 			r = legacyName.substr(legacyName.find("/") + 1);
 		}
 	}
-	std::cout << "MESSAGE " << u << " " << r << "\n";
+	LOG4CXX_INFO(logger, user << ": Session name: " << u << ", message to " << r);
 	m_sessions[u]->sendCommand(IrcCommand::createMessage(FROM_UTF8(r), FROM_UTF8(message)));
-	std::cout << "SENT\n";
 }
 
 void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
-	std::cout << "JOIN\n";
 	std::string r = room;
 	std::string u = user;
 	if (!CONFIG_BOOL(config, "service.server_mode")) {
 		u = user + room.substr(room.find("@") + 1);
 		r = room.substr(0, room.find("@"));
 	}
+
+	LOG4CXX_INFO(logger, user << ": Session name: " << u << ", Joining room " << r);
 	if (m_sessions[u] == NULL) {
 		// in gateway mode we want to login this user to network according to legacyName
 		if (room.find("@") != std::string::npos) {
@@ -96,15 +99,15 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 			session->setHost(FROM_UTF8(room.substr(room.find("@") + 1)));
 			session->setPort(6667);
 			session->open();
-			std::cout << "CONNECTING IRC NETWORK " << room.substr(room.find("@") + 1) << "\n";
-			std::cout << "SUFFIX " << room.substr(room.find("@")) << "\n";
+			LOG4CXX_INFO(logger, user << ": Connecting IRC network " << room.substr(room.find("@") + 1));
 			m_sessions[u] = session;
 		}
 		else {
+			LOG4CXX_WARN(logger, user << ": There's no proper server defined in room to which this user wants to join: " << room);
 			return;
 		}
 	}
-	std::cout << "JOINING " << r << "\n";
+
 	m_sessions[u]->addAutoJoinChannel(r, password);
 	m_sessions[u]->sendCommand(IrcCommand::createJoin(FROM_UTF8(r), FROM_UTF8(password)));
 	m_sessions[u]->rooms += 1;
@@ -123,11 +126,14 @@ void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std
 	if (m_sessions[u] == NULL)
 		return;
 
+	LOG4CXX_INFO(logger, user << ": Session name: " << u << ", Leaving room " << r);
+
 	m_sessions[u]->sendCommand(IrcCommand::createPart(FROM_UTF8(r)));
 	m_sessions[u]->removeAutoJoinChannel(r);
 	m_sessions[u]->rooms -= 1;
 
 	if (m_sessions[u]->rooms <= 0) {
+		LOG4CXX_INFO(logger, user << ": Session name: " << u << ", User is not in room, disconnecting from network");
 		m_sessions[u]->close();
 		m_sessions[u]->deleteLater();
 		m_sessions.erase(u);

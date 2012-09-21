@@ -28,6 +28,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleChatstateMessages);
 	CPPUNIT_TEST(handleParticipantChanged);
 	CPPUNIT_TEST(handlePMFromXMPP);
+	CPPUNIT_TEST(handleGroupchatRemoved);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -276,6 +277,22 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg2->setBody("response!");
 
 		pmconv->handleMessage(msg2);
+	}
+
+	void handleGroupchatRemoved() {
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		conv->setNickname("nickname");
+		conv->setJID("user@localhost/resource");
+		received.clear();
+		conv->destroyRoom();
+		delete conv;
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::None, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/nickname"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
 	}
 
 };
