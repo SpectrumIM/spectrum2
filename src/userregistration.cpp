@@ -316,6 +316,12 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 				else if (textSingle->getName() == "local_password") {
 					local_password = textSingle->getValue();
 				}
+				// Pidgin sends it as textSingle, not sure why...
+				else if (textSingle->getName() == "unregister") {
+					if (textSingle->getValue() == "1" || textSingle->getValue() == "true") {
+						payload->setRemove(true);
+					}
+				}
 				continue;
 			}
 
