@@ -1,10 +1,13 @@
 %global groupname spectrum
 %global username spectrum
 
+%define _version 2.0
+%define _release %{?_release}%{!?_release:1}
+
 Summary: XMPP transport
 Name: spectrum2
-Version: 2.0
-Release: 392%{?dist}
+Version: %{_version}
+Release: %{_release}%{?dist}
 Group: Applications/Internet
 License: GPLv3
 Source0: spectrum2.tar.gz
@@ -49,6 +52,7 @@ Spectrum 2.0
 make VERBOSE=1 %{?_smp_mflags}
 
 %install
+rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 install -d %{buildroot}%{_localstatedir}/{lib,run,log}/spectrum2
 install -p -D -m 755 packaging/spectrum2.init \
