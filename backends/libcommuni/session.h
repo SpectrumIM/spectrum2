@@ -13,6 +13,8 @@
 
 #include <IrcSession>
 #include <transport/networkplugin.h>
+#include "Swiften/Swiften.h"
+#include <boost/smart_ptr/make_shared.hpp>
 
 using namespace Transport;
 
@@ -21,17 +23,31 @@ class MyIrcSession : public IrcSession
     Q_OBJECT
 
 public:
+	class AutoJoinChannel {
+		public:
+			AutoJoinChannel(const std::string &channel = "", const std::string &password = "") : m_channel(channel), m_password(password) {}
+			virtual ~AutoJoinChannel() {}
+
+			const std::string &getChannel() { return m_channel; }
+			const std::string &getPassword() { return m_password; }
+		private:
+			std::string m_channel;
+			std::string m_password;
+	};
+
+	typedef std::map<std::string, boost::shared_ptr<AutoJoinChannel> > AutoJoinMap;
+
 	MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	std::map<std::string, bool> m_modes;
 	std::string suffix;
 	int rooms;
 
-	void addAutoJoinChannel(const std::string &channel) {
-		m_autoJoin.push_back(channel);
+	void addAutoJoinChannel(const std::string &channel, const std::string &password) {
+		m_autoJoin[channel] = boost::make_shared<AutoJoinChannel>(channel, password);
 	}
 
 	void removeAutoJoinChannel(const std::string &channel) {
-		m_autoJoin.remove(channel);
+		m_autoJoin.erase(channel);
 	}
 
 	void setIdentify(const std::string &identify) {
@@ -63,7 +79,7 @@ protected:
 	NetworkPlugin *np;
 	std::string user;
 	std::string m_identify;
-	std::list<std::string> m_autoJoin;
+	AutoJoinMap m_autoJoin;
 	std::string m_topicData;
 	bool m_connected;
 };

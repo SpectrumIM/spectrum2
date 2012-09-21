@@ -114,7 +114,7 @@ void SingleIRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, cons
 	}
 
 	LOG4CXX_INFO(logger, user << ": Joining " << room);
-	m_sessions[user]->addAutoJoinChannel(room);
+	m_sessions[user]->addAutoJoinChannel(room, password);
 	m_sessions[user]->sendCommand(IrcCommand::createJoin(FROM_UTF8(room), FROM_UTF8(password)));
 	m_sessions[user]->rooms += 1;
 

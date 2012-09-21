@@ -105,7 +105,7 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 		}
 	}
 	std::cout << "JOINING " << r << "\n";
-	m_sessions[u]->addAutoJoinChannel(r);
+	m_sessions[u]->addAutoJoinChannel(r, password);
 	m_sessions[u]->sendCommand(IrcCommand::createJoin(FROM_UTF8(r), FROM_UTF8(password)));
 	m_sessions[u]->rooms += 1;
 	// update nickname, because we have nickname per session, no nickname per room.
