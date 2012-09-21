@@ -26,8 +26,6 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room);
 
-		std::map<std::string, MyIrcSession *> m_sessions;
-
 	public slots:
 		void readData();
 		void sendData(const std::string &string);
@@ -35,4 +33,5 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 	private:
 		Config *config;
 		QTcpSocket *m_socket;
+		std::map<std::string, MyIrcSession *> m_sessions;
 };

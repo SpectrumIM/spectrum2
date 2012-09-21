@@ -38,6 +38,28 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 Conversation::~Conversation() {
 }
 
+void Conversation::destroyRoom() {
+	if (m_muc) {
+		Swift::Presence::ref presence = Swift::Presence::create();
+		std::string legacyName = m_legacyName;
+		if (legacyName.find_last_of("@") != std::string::npos) {
+			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
+		}
+		presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), m_nickname));
+		presence->setTo(m_jid);
+		presence->setType(Swift::Presence::Unavailable);
+
+		Swift::MUCItem item;
+		item.affiliation = Swift::MUCOccupant::NoAffiliation;
+		item.role = Swift::MUCOccupant::NoRole;
+		Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
+		p->addItem(item);
+
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
+		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	}
+}
+
 void Conversation::setRoom(const std::string &room) {
 	m_room = room;
 	m_legacyName = m_room + "/" + m_legacyName;

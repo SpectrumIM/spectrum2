@@ -28,7 +28,7 @@
 #include "transport/logging.h"
 #include "discoinforesponder.h"
 #include "storageparser.h"
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
 #include "Swiften/TLS/Schannel/SchannelServerContext.h"
 #include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"

@@ -114,6 +114,8 @@ class Conversation {
 			return m_room;
 		}
 
+		void destroyRoom();
+
 	private:
 		ConversationManager *m_conversationManager;
 		std::string m_legacyName;
