@@ -55,6 +55,10 @@ void Conversation::destroyRoom() {
 		Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
 		p->addItem(item);
 
+		Swift::MUCUserPayload::StatusCode c;
+		c.code = 332;
+		p->addStatusCode(c);
+
 		presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
 	}
