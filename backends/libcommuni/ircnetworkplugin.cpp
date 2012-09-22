@@ -35,6 +35,8 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 		MyIrcSession *session = new MyIrcSession(user, this);
 		std::string h = user.substr(0, user.find("@"));
 		session->setNickName(FROM_UTF8(h.substr(0, h.find("%"))));
+		session->setUserName(FROM_UTF8(h.substr(0, h.find("%"))));
+		session->setRealName(FROM_UTF8(h.substr(0, h.find("%"))));
 		session->setHost(FROM_UTF8(h.substr(h.find("%") + 1)));
 		session->setPort(6667);
 		session->open();
@@ -79,6 +81,10 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	}
 	LOG4CXX_INFO(logger, user << ": Session name: " << u << ", message to " << r);
 	m_sessions[u]->sendCommand(IrcCommand::createMessage(FROM_UTF8(r), FROM_UTF8(message)));
+
+	if (r.find("#") == 0) {
+		handleMessage(user, legacyName, message, TO_UTF8(m_sessions[u]->nickName()));
+	}
 }
 
 void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
@@ -96,6 +102,8 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 			// suffix is %irc.freenode.net to let MyIrcSession return #room%irc.freenode.net
 			MyIrcSession *session = new MyIrcSession(user, this, room.substr(room.find("@")));
 			session->setNickName(FROM_UTF8(nickname));
+			session->setUserName(FROM_UTF8(nickname));
+			session->setRealName(FROM_UTF8(nickname));
 			session->setHost(FROM_UTF8(room.substr(room.find("@") + 1)));
 			session->setPort(6667);
 			session->open();

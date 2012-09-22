@@ -161,7 +161,8 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		bool flags = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
 		flags = correctNickname(nickname);
-		np->handleMessage(user, nickname, TO_UTF8(m->message()));
+		LOG4CXX_INFO(logger, nickname + suffix);
+		np->handleMessage(user, nickname + suffix, TO_UTF8(m->message()));
 	}
 }
 
