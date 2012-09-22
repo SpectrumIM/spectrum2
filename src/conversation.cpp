@@ -115,9 +115,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		if (n.empty()) {
 			n = " ";
 		}
-		message->setTo(m_jid);
-		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
-		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+			message->setTo(jid);
+			message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
+			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+		}
 	}
 }
 
@@ -131,7 +133,6 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 		}
 	}
 	presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
-	presence->setTo(m_jid);
 	presence->setType(Swift::Presence::Available);
 
 	if (!statusMessage.empty())
@@ -174,7 +175,10 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 	p->addItem(item);
 
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
-	m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+		presence->setTo(jid);
+		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	}
 	if (!newname.empty()) {
 		handleParticipantChanged(newname, flag, status, statusMessage);
 	}

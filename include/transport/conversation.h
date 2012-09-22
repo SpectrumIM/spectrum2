@@ -82,6 +82,18 @@ class Conversation {
 			m_jid = jid;
 		}
 
+		void addJID(const Swift::JID &jid) {
+			m_jids.push_back(jid);
+		}
+
+		void removeJID(const Swift::JID &jid) {
+			m_jids.remove(jid);
+		}
+
+		const std::list<Swift::JID> &getJIDs() {
+			return m_jids;
+		}
+
 		/// Sends message to Legacy network.
 
 		/// \param message Message.
@@ -123,6 +135,7 @@ class Conversation {
 		std::string m_room;
 		bool m_muc;
 		Swift::JID m_jid;
+		std::list<Swift::JID> m_jids;
 };
 
 }

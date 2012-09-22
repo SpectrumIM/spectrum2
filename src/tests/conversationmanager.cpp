@@ -158,7 +158,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
-		conv->setJID("user@localhost/resource");
+		conv->addJID("user@localhost/resource");
 
 		// reset resources should not touch this resource
 		user->getConversationManager()->resetResources();
@@ -197,7 +197,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
-		conv->setJID("user@localhost/resource");
+		conv->addJID("user@localhost/resource");
 
 		// normal presence
 		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");

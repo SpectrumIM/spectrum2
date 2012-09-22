@@ -1192,7 +1192,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 	user->getConversationManager()->addConversation(conv);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
-	conv->setJID(who);
+	conv->addJID(who);
 }
 
 void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {

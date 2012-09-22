@@ -25,7 +25,9 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(sendCurrentPresence);
     CPPUNIT_TEST(handlePresence);
 	CPPUNIT_TEST(handlePresenceJoinRoom);
+	CPPUNIT_TEST(handlePresenceJoinRoomTwoResources);
 	CPPUNIT_TEST(handlePresenceLeaveRoom);
+	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResources);
 	CPPUNIT_TEST(leaveJoinedRoom);
 	CPPUNIT_TEST(handleDisconnected);
 	CPPUNIT_TEST(handleDisconnectedReconnect);
@@ -139,6 +141,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// simulate that backend joined the room
 		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		conv->addJID("user@localhost/resource");
 		user->getConversationManager()->addConversation(conv);
 
 		received.clear();
@@ -154,6 +157,24 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 	}
 
+	void handlePresenceJoinRoomTwoResources() {
+		handlePresenceJoinRoom();
+		connectSecondResource();
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource2");
+
+		Swift::MUCPayload *payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+	}
+
 	void handlePresenceLeaveRoom() {
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("#room@localhost/hanzz");
@@ -161,6 +182,48 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setType(Swift::Presence::Unavailable);
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+	}
+
+	void handlePresenceLeaveRoomTwoResources() {
+		handlePresenceJoinRoomTwoResources();
+		received.clear();
+
+		// User is still connected from resource2, so he should not leave the room
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unavailable);
+
+		Swift::MUCPayload *payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		// disconnect also from resource
+		// User is still connected from resource2, so he should not leave the room
+		response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource2");
+		response->setType(Swift::Presence::Unavailable);
+
+		payload = new Swift::MUCPayload();
 		payload->setPassword("password");
 		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
