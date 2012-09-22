@@ -182,6 +182,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			channel = m->parameters().value(2);
 			members = m->parameters().value(3).split(" ");
 
+			LOG4CXX_INFO(logger, user << ": Received members for " << TO_UTF8(channel) << suffix);
 			for (int i = 0; i < members.size(); i++) {
 				bool flags = 0;
 				std::string nickname = TO_UTF8(members.at(i));

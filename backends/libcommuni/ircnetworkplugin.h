@@ -31,7 +31,14 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 		void sendData(const std::string &string);
 
 	private:
+		MyIrcSession *createSession(const std::string &user, const std::string &hostname, const std::string &nickname, const std::string &password, const std::string &suffix = "");
+		std::string getSessionName(const std::string &user, const std::string &legacyName);
+		std::string getTargetName(const std::string &legacyName);
+
+	private:
 		Config *config;
 		QTcpSocket *m_socket;
 		std::map<std::string, MyIrcSession *> m_sessions;
+		std::string m_server;
+		std::string m_identify;
 };
