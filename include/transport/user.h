@@ -110,6 +110,10 @@ class User : public Swift::EntityCapsProvider {
 			return m_connected;
 		}
 
+		int getResourceCount() {
+			return m_resources;
+		}
+
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
 		boost::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;

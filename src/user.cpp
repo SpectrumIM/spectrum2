@@ -266,11 +266,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		}
 		else {
 			sendCurrentPresence();
-			// This resource is new, so we have to send buddies presences
-			if (currentResourcesCount != m_resources) {
-				m_rosterManager->sendCurrentPresences(presence->getFrom());
-			}
 		}
+	}
+
+	// This resource is new, so we have to send buddies presences
+	if (presence->getType() != Swift::Presence::Unavailable && currentResourcesCount != m_resources) {
+		m_rosterManager->sendCurrentPresences(presence->getFrom());
 	}
 
 	m_resources = currentResourcesCount;

@@ -41,7 +41,7 @@ using namespace Transport;
 
 void BasicTest::setMeUp (void) {
 	streamEnded = false;
-	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost");
+	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost\nservice.more_resources=1\n");
 	cfg = new Config();
 	cfg->load(ifs);
 
@@ -86,6 +86,7 @@ void BasicTest::setMeUp (void) {
 	payloadSerializers->addSerializer(new Swift::GatewayPayloadSerializer());
 
 	parser = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
+	parser2 = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
 
 	serverFromClientSession = boost::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
 			payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource")));
@@ -95,13 +96,19 @@ void BasicTest::setMeUp (void) {
 
 	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->addSession(serverFromClientSession);
 	parser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
+	parser2->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 	received.clear();
+	received2.clear();
 	receivedData.clear();
 	loop->processEvents();
 }
 
 void BasicTest::tearMeDown (void) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->removeSession(serverFromClientSession);
+	if (serverFromClientSession2) {
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->removeSession(serverFromClientSession2);
+		serverFromClientSession2.reset();
+	}
 	delete component;
 	delete userRegistry;
 	delete factories;
@@ -109,17 +116,28 @@ void BasicTest::tearMeDown (void) {
 	delete loop;
 	delete cfg;
 	delete parser;
+	delete parser2;
 	delete storage;
 	delete userRegistration;
 	delete itemsResponder;
 	received.clear();
+	received2.clear();
 	receivedData.clear();
+	receivedData2.clear();
 }
 
 void BasicTest::handleDataReceived(const Swift::SafeByteArray &data) {
 // 	std::cout << safeByteArrayToString(data) << "\n";
+	stream1_active = true;
 	receivedData += safeByteArrayToString(data) + "\n";
 	parser->parse(safeByteArrayToString(data));
+}
+
+void BasicTest::handleDataReceived2(const Swift::SafeByteArray &data) {
+// 	std::cout << safeByteArrayToString(data) << "\n";
+	stream1_active = false;
+	receivedData2 += safeByteArrayToString(data) + "\n";
+	parser2->parse(safeByteArrayToString(data));
 }
 
 void BasicTest::handleStreamStart(const Swift::ProtocolHeader&) {
@@ -127,11 +145,19 @@ void BasicTest::handleStreamStart(const Swift::ProtocolHeader&) {
 }
 
 void BasicTest::dumpReceived() {
+	std::cout << "\nStream1:\n";
 	std::cout << receivedData << "\n";
+	std::cout << "Stream2:\n";
+	std::cout << receivedData2 << "\n";
 }
 
 void BasicTest::handleElement(boost::shared_ptr<Swift::Element> element) {
-	received.push_back(element);
+	if (stream1_active) {
+		received.push_back(element);
+	}
+	else {
+		received2.push_back(element);
+	}
 }
 
 void BasicTest::handleStreamEnd() {
@@ -159,6 +185,7 @@ Swift::Stanza *BasicTest::getStanza(boost::shared_ptr<Swift::Element> element) {
 void BasicTest::connectUser() {
 	CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
 	userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+	userRegistry->onPasswordValid(Swift::JID("user@localhost/resource"));
 	loop->processEvents();
 	CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
 
@@ -173,9 +200,39 @@ void BasicTest::connectUser() {
 	user->setConnected(true);
 	CPPUNIT_ASSERT(user->isConnected() == true);
 
-	CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+	CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 	CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 	received.clear();
+	receivedData.clear();
+}
+
+void BasicTest::connectSecondResource() {
+	serverFromClientSession2 = boost::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
+			payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource2")));
+	serverFromClientSession2->startSession();
+
+	serverFromClientSession2->onDataWritten.connect(boost::bind(&BasicTest::handleDataReceived2, this, _1));
+
+	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->addSession(serverFromClientSession2);
+
+	userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource2"), serverFromClientSession2.get(), Swift::createSafeByteArray("password"));
+	userRegistry->onPasswordValid(Swift::JID("user@localhost/resource2"));
+
+	loop->processEvents();
+
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo("localhost");
+	response->setFrom("user@localhost/resource2");
+	injectPresence(response);
+	loop->processEvents();
+
+	CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
+
+	User *user = userManager->getUser("user@localhost");
+	CPPUNIT_ASSERT(user);
+	CPPUNIT_ASSERT_EQUAL(2, user->getResourceCount());
+
+	CPPUNIT_ASSERT(getStanza(received2[1])->getPayload<Swift::DiscoInfo>());
 }
 
 void BasicTest::disconnectUser() {

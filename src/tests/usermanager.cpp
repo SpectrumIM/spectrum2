@@ -23,6 +23,7 @@ using namespace Transport;
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(UserManagerTest);
 	CPPUNIT_TEST(connectUser);
+	CPPUNIT_TEST(connectTwoResources);
 	CPPUNIT_TEST(connectUserTransportDisabled);
 	CPPUNIT_TEST(connectUserRegistrationNeeded);
 	CPPUNIT_TEST(connectUserRegistrationNeededRegistered);
@@ -84,6 +85,22 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::Presence *presence = dynamic_cast<Swift::Presence *>(getStanza(received[1]));
 		CPPUNIT_ASSERT(presence);
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, presence->getType());
+	}
+
+	void connectTwoResources() {
+		connectUser();
+		add2Buddies();
+		connectSecondResource();
+
+		// we should get presences
+		CPPUNIT_ASSERT_EQUAL(4, (int) received2.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[2])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[2]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("status1"), dynamic_cast<Swift::Presence *>(getStanza(received2[2]))->getStatus());
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[3])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[3]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received2[3]))->getStatus());
 	}
 
 };
