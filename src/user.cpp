@@ -249,6 +249,7 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				}
 				else {
 					conv->addJID(presence->getFrom());
+					conv->sendParticipants(presence->getFrom());
 				}
 				return;
 			}

@@ -123,7 +123,15 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 	}
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
+void Conversation::sendParticipants(const Swift::JID &to) {
+	for (std::map<std::string, Participant>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
+		Swift::Presence::ref presence = generatePresence(it->first, it->second.flag, it->second.status, it->second.statusMessage, "");
+		presence->setTo(to);
+		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	}
+}
+
+Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
 	std::string nickname = nick;
 	Swift::Presence::ref presence = Swift::Presence::create();
 	std::string legacyName = m_legacyName;
@@ -173,8 +181,25 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 	}
 
 	p->addItem(item);
-
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
+	return presence;
+}
+
+void Conversation::handleParticipantChanged(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
+	Swift::Presence::ref presence = generatePresence(nick, flag, status, statusMessage, newname);
+
+	if (presence->getType() == Swift::Presence::Unavailable) {
+		m_participants.erase(nick);
+	}
+	else {
+		Participant p;
+		p.flag = flag;
+		p.status = status;
+		p.statusMessage = statusMessage;
+		m_participants[nick] = p;
+	}
+
+
 	BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 		presence->setTo(jid);
 		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);

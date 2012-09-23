@@ -25,8 +25,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
 	CPPUNIT_TEST(handleNormalMessages);
 	CPPUNIT_TEST(handleGroupchatMessages);
+	CPPUNIT_TEST(handleGroupchatMessagesTwoResources);
 	CPPUNIT_TEST(handleChatstateMessages);
 	CPPUNIT_TEST(handleParticipantChanged);
+	CPPUNIT_TEST(handleParticipantChangedTwoResources);
 	CPPUNIT_TEST(handlePMFromXMPP);
 	CPPUNIT_TEST(handleGroupchatRemoved);
 	CPPUNIT_TEST_SUITE_END();
@@ -191,6 +193,48 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
 	}
 
+	void handleGroupchatMessagesTwoResources() {
+		connectSecondResource();
+		received2.clear();
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		user->getConversationManager()->addConversation(conv);
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+		conv->addJID("user@localhost/resource2");
+
+		// reset resources should not touch this resource
+		user->getConversationManager()->resetResources();
+
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody("hi there!");
+
+		// Forward it
+		conv->handleMessage(msg, "anotheruser");
+
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(1, (int) received2.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received2[0])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource2"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getFrom().toString());
+
+		received.clear();
+
+		// send response
+		msg->setFrom("user@localhost/resource2");
+		msg->setTo("#room@localhost");
+		msg->setBody("response!");
+		msg->setType(Swift::Message::Groupchat);
+		injectMessage(msg);
+		loop->processEvents();
+		
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT(m_msg);
+		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+	}
+
 	void handleParticipantChanged() {
 		User *user = userManager->getUser("user@localhost");
 		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
@@ -244,6 +288,31 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Moderator, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].nick);
 		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[0].code);
+	}
+
+	void handleParticipantChangedTwoResources() {
+		connectSecondResource();
+		received2.clear();
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+		conv->addJID("user@localhost/resource2");
+
+		// normal presence
+		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received2.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[0]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource2"), dynamic_cast<Swift::Presence *>(getStanza(received2[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Presence *>(getStanza(received2[0]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received2[0])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received2[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received2[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
 	}
 
 	void handlePMFromXMPP() {

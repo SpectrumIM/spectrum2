@@ -159,7 +159,15 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	void handlePresenceJoinRoomTwoResources() {
 		handlePresenceJoinRoom();
+		User *user = userManager->getUser("user@localhost");
+
+		// Add 1 participant
+		Conversation *conv = user->getConversationManager()->getConversation("#room");
+		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");
+
+		// Connect 2nd resource
 		connectSecondResource();
+		received2.clear();
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("#room@localhost/hanzz");
 		response->setFrom("user@localhost/resource2");
@@ -173,6 +181,16 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		dumpReceived();
+		CPPUNIT_ASSERT_EQUAL(2, (int) received2.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[1])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource2"), dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received2[1])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received2[1])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received2[1])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
 	}
 
 	void handlePresenceLeaveRoom() {
