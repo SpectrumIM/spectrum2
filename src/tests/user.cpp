@@ -182,7 +182,6 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		dumpReceived();
 		CPPUNIT_ASSERT_EQUAL(2, (int) received2.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[1])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getShow());
