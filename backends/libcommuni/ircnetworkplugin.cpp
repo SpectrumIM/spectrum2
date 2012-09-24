@@ -129,6 +129,17 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	}
 }
 
+void IRCNetworkPlugin::handleRoomSubjectChangedRequest(const std::string &user, const std::string &room, const std::string &message) {
+	std::string session = getSessionName(user, room);
+	if (m_sessions[session] == NULL) {
+		LOG4CXX_WARN(logger, user << ": Session name: " << session << ", No session for user");
+		return;
+	}
+
+	std::string target = getTargetName(room);
+	m_sessions[session]->sendCommand(IrcCommand::createTopic(FROM_UTF8(target), FROM_UTF8(message)));
+}
+
 void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
 	std::string session = getSessionName(user, room);
 	std::string target = getTargetName(room);

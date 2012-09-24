@@ -26,6 +26,8 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room);
 
+		void handleRoomSubjectChangedRequest(const std::string &user, const std::string &room, const std::string &message);
+
 	public slots:
 		void readData();
 		void sendData(const std::string &string);

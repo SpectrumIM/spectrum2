@@ -340,7 +340,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 		messageToBackendSent();
 	}
 
-	if (message->getBody().empty() && !statePayload) {
+	if (message->getBody().empty() && !statePayload && message->getSubject().empty()) {
 		return;
 	}
 

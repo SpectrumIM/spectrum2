@@ -218,6 +218,7 @@ class NetworkPlugin {
 		/// \param photo Raw photo data.
 		virtual void handleVCardUpdatedRequest(const std::string &/*user*/, const std::string &/*photo*/, const std::string &nickname) {}
 
+		virtual void handleRoomSubjectChangedRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*message*/) {}
 
 		virtual void handleJoinRoomRequest(const std::string &/*user*/, const std::string &/*room*/, const std::string &/*nickname*/, const std::string &/*pasword*/) {}
 		virtual void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/) {}
@@ -260,6 +261,7 @@ class NetworkPlugin {
 		void handleFTFinishPayload(const std::string &payload);
 		void handleFTPausePayload(const std::string &payload);
 		void handleFTContinuePayload(const std::string &payload);
+		void handleRoomSubjectChangedPayload(const std::string &payload);
 
 		void send(const std::string &data);
 		void sendPong();

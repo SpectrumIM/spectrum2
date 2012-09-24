@@ -1301,6 +1301,22 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		send(c->connection, message);
 		return;
 	}
+
+	if (!msg->getSubject().empty()) {
+		pbnetwork::ConversationMessage m;
+		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
+		m.set_buddyname(conv->getLegacyName());
+		m.set_message(msg->getSubject());
+
+		std::string message;
+		m.SerializeToString(&message);
+
+		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED);
+
+		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
+		send(c->connection, message);
+		return;
+	}
 	
 
 	std::string xhtml;
