@@ -263,6 +263,10 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		}
 		return;
 	}
+	
+	if (presence->getType() == Swift::Presence::Unavailable) {
+		m_conversationManager->removeJID(presence->getFrom());
+	}
 
 
 	// User wants to disconnect this resource

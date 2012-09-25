@@ -89,6 +89,12 @@ void ConversationManager::resetResources() {
 	}
 }
 
+void ConversationManager::removeJID(const Swift::JID &jid) {
+	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
+		(*it).second->removeJID(jid);
+	}
+}
+
 void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 // 	std::string name = message->getTo().getUnescapedNode();
 // 	if (name.find_last_of("%") != std::string::npos) { // OK when commented
