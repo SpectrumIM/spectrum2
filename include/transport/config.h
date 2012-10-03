@@ -37,6 +37,7 @@
 
 #define CONFIG_STRING_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::string>() : DEF)
 #define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<bool>() : DEF)
+#define CONFIG_LIST_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::list<std::string> >() : DEF)
 
 
 namespace Transport {
