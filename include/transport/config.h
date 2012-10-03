@@ -28,6 +28,20 @@
 #include <boost/bind.hpp>
 #include <boost/signal.hpp>
 
+namespace Transport {
+
+template <class myType>
+const myType &safeAs(const boost::program_options::variable_value &var, const myType &def) {
+	try  {
+		return var.as<myType>();
+	}
+	catch(...) {
+		return def;
+	}
+}
+
+}
+
 #define CONFIG_HAS_KEY(PTR, KEY) (*PTR).hasKey(KEY)
 #define CONFIG_STRING(PTR, KEY) (*PTR)[KEY].as<std::string>()
 #define CONFIG_INT(PTR, KEY) (*PTR)[KEY].as<int>()
@@ -35,9 +49,9 @@
 #define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
 #define CONFIG_VECTOR(PTR, KEY) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::vector<std::string> >() : std::vector<std::string>())
 
-#define CONFIG_STRING_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::string>() : DEF)
-#define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<bool>() : DEF)
-#define CONFIG_LIST_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::list<std::string> >() : DEF)
+#define CONFIG_STRING_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<std::string>((*PTR)[KEY], DEF) : DEF)
+#define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<bool>((*PTR)[KEY], DEF) : DEF)
+#define CONFIG_LIST_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<std::list<std::string> >((*PTR)[KEY], DEF) : DEF)
 
 
 namespace Transport {

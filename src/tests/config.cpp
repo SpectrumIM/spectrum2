@@ -28,6 +28,8 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST(updateBackendConfig);
 	CPPUNIT_TEST(unregisteredList);
 	CPPUNIT_TEST(unregisteredString);
+	CPPUNIT_TEST(unregisteredListAsString);
+	CPPUNIT_TEST(unregisteredStringAsList);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -67,6 +69,21 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		std::istringstream ifs("service.irc_server = irc.freenode.org");
 		cfg.load(ifs);
 		CPPUNIT_ASSERT_EQUAL(std::string("irc.freenode.org"), CONFIG_STRING(&cfg, "service.irc_server"));
+	}
+
+	void unregisteredListAsString() {
+		Config cfg;
+		std::istringstream ifs("service.irc_server = irc.freenode.orgn\nservice.irc_server = irc2.freenode.org");
+		cfg.load(ifs);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), CONFIG_STRING_DEFAULTED(&cfg, "service.irc_server", ""));
+	}
+
+	void unregisteredStringAsList() {
+		Config cfg;
+		std::istringstream ifs("service.irc_server = irc.freenode.org");
+		cfg.load(ifs);
+		std::list<std::string> list;
+		CPPUNIT_ASSERT_EQUAL(0, (int) CONFIG_LIST_DEFAULTED(&cfg, "service.irc_server", list).size());
 	}
 
 };
