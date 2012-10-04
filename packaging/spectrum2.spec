@@ -1,13 +1,10 @@
 %global groupname spectrum
 %global username spectrum
 
-%define _version 2.0
-%define _release %{?_release}%{!?_release:1}
-
 Summary: XMPP transport
 Name: spectrum2
-Version: %{_version}
-Release: %{_release}%{?dist}
+Version: 2.0
+Release: %{?_release}%{!?_release:1}%{?dist}
 Group: Applications/Internet
 License: GPLv3
 Source0: spectrum2.tar.gz
