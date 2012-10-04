@@ -10,16 +10,36 @@ DEFINE_LOGGER(logger, "IRCNetworkPlugin");
 
 IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
 	this->config = config;
+	m_currentServer = 0;
 	m_socket = new QTcpSocket();
 	m_socket->connectToHost(FROM_UTF8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
-	m_server = CONFIG_STRING_DEFAULTED(config, "service.irc_server", "");
+	std::string server = CONFIG_STRING_DEFAULTED(config, "service.irc_server", "");
+	if (!server.empty()) {
+		m_servers.push_back(server);
+	}
+	else {
+		
+		std::list<std::string> list;
+		list = CONFIG_LIST_DEFAULTED(config, "service.irc_server", list);
+		
+		m_servers.insert(m_servers.begin(), list.begin(), list.end());
+	}
+
 	if (CONFIG_HAS_KEY(config, "service.irc_identify")) {
 		m_identify = CONFIG_STRING(config, "service.irc_identify");
 	}
 	else {
 		m_identify = "NickServ identify $name $password";
+	}
+}
+
+void IRCNetworkPlugin::tryNextServer() {
+	if (!m_servers.empty()) {
+		int nextServer = (m_currentServer + 1) % m_servers.size();
+		LOG4CXX_INFO(logger, "Server " << m_servers[m_currentServer] << " disconnected user. Next server to try will be " << m_servers[nextServer]);
+		m_currentServer = nextServer;
 	}
 }
 
@@ -60,14 +80,14 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 }
 
 void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
-	if (!m_server.empty()) {
+	if (!m_servers.empty()) {
 		// legacy name is users nickname
 		if (m_sessions[user] != NULL) {
 			LOG4CXX_WARN(logger, user << ": Already logged in.");
 			return;
 		}
 
-		m_sessions[user] = createSession(user, m_server, legacyName, password, "");
+		m_sessions[user] = createSession(user, m_servers[m_currentServer], legacyName, password, "");
 	}
 	else {
 		// We are waiting for first room join to connect user to IRC network, because we don't know which
@@ -90,7 +110,7 @@ void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::s
 
 std::string IRCNetworkPlugin::getSessionName(const std::string &user, const std::string &legacyName) {
 	std::string u = user;
-	if (!CONFIG_BOOL(config, "service.server_mode") && m_server.empty()) {
+	if (!CONFIG_BOOL(config, "service.server_mode") && m_servers.empty()) {
 		u = user + legacyName.substr(legacyName.find("@") + 1);
 		if (u.find("/") != std::string::npos) {
 			u = u.substr(0, u.find("/"));
@@ -146,7 +166,7 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 
 	LOG4CXX_INFO(logger, user << ": Session name: " << session << ", Joining room " << target);
 	if (m_sessions[session] == NULL) {
-		if (m_server.empty()) {
+		if (m_servers.empty()) {
 			// in gateway mode we want to login this user to network according to legacyName
 			if (room.find("@") != std::string::npos) {
 				// suffix is %irc.freenode.net to let MyIrcSession return #room%irc.freenode.net
@@ -182,7 +202,7 @@ void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std
 	m_sessions[session]->removeAutoJoinChannel(target);
 	m_sessions[session]->rooms -= 1;
 
-	if (m_sessions[session]->rooms <= 0 && m_server.empty()) {
+	if (m_sessions[session]->rooms <= 0 && m_servers.empty()) {
 		LOG4CXX_INFO(logger, user << ": Session name: " << session << ", User is not in any room, disconnecting from network");
 		m_sessions[session]->close();
 		m_sessions[session]->deleteLater();

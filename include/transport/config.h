@@ -53,7 +53,6 @@ const myType &safeAs(const boost::program_options::variable_value &var, const my
 #define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<bool>((*PTR)[KEY], DEF) : DEF)
 #define CONFIG_LIST_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<std::list<std::string> >((*PTR)[KEY], DEF) : DEF)
 
-
 namespace Transport {
 
 /// Represents variable:value pairs.

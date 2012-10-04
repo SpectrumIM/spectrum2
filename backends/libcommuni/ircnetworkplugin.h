@@ -28,6 +28,8 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 
 		void handleRoomSubjectChangedRequest(const std::string &user, const std::string &room, const std::string &message);
 
+		void tryNextServer();
+
 	public slots:
 		void readData();
 		void sendData(const std::string &string);
@@ -41,6 +43,7 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 		Config *config;
 		QTcpSocket *m_socket;
 		std::map<std::string, MyIrcSession *> m_sessions;
-		std::string m_server;
+		std::vector<std::string> m_servers;
+		int m_currentServer;
 		std::string m_identify;
 };
