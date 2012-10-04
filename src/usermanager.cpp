@@ -31,7 +31,7 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
-#ifndef BSD
+#ifndef __FreeBSD__
 #include "malloc.h"
 #endif
 // #include "valgrind/memcheck.h"
@@ -126,7 +126,7 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 	onUserDestroyed(user);
 	delete user;
 #ifndef WIN32
-#ifndef BSD
+#ifndef __FreeBSD__
 	malloc_trim(0);
 #endif
 #endif

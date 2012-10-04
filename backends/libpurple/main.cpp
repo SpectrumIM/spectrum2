@@ -17,7 +17,7 @@
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"
-#ifndef BSD
+#ifndef __FreeBSD__
 #include "malloc.h"
 #endif
 #include <algorithm>
@@ -366,7 +366,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
-#ifndef BSD
+#ifndef __FreeBSD__
 				malloc_trim(0);
 #endif
 #endif
