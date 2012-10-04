@@ -195,7 +195,7 @@ int start_instances(ManagerConfig *config, const std::string &_jid) {
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "boost filesystem error\n";
+		std::cerr << "Filesystem error: " << ex.what() << "\n";
 		return 6;
 	}
 	return rv;
@@ -271,7 +271,7 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "boost filesystem error\n";
+		std::cerr << "Filesystem error: " << ex.what() << "\n";
 		exit(5);
 	}
 }
@@ -324,7 +324,7 @@ int show_status(ManagerConfig *config) {
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "boost filesystem error\n";
+		std::cerr << "Filesystem error: " << ex.what() << "\n";
 		exit(5);
 	}
 	return ret;
@@ -460,7 +460,7 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "boost filesystem error\n";
+		std::cerr << "Filesystem error: " << ex.what() << "\n";
 		exit(5);
 	}
 }
@@ -498,7 +498,7 @@ std::vector<std::string> show_list(ManagerConfig *config, bool show) {
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "boost filesystem error\n";
+		std::cerr << "Filesystem error: " << ex.what() << "\n";
 	}
 	return list;
 }
