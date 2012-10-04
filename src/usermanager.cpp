@@ -31,7 +31,9 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#ifndef BSD
 #include "malloc.h"
+#endif
 // #include "valgrind/memcheck.h"
 
 namespace Transport {
@@ -124,7 +126,9 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 	onUserDestroyed(user);
 	delete user;
 #ifndef WIN32
+#ifndef BSD
 	malloc_trim(0);
+#endif
 #endif
 // 	VALGRIND_DO_LEAK_CHECK;
 }

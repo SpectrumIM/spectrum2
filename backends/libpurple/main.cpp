@@ -17,7 +17,9 @@
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"
+#ifndef BSD
 #include "malloc.h"
+#endif
 #include <algorithm>
 #include "errno.h"
 #include <boost/make_shared.hpp>
@@ -364,7 +366,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
+#ifndef BSD
 				malloc_trim(0);
+#endif
 #endif
 // 				VALGRIND_DO_LEAK_CHECK;
 			}
