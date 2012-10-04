@@ -70,6 +70,7 @@ class ConversationManager {
 		void removeConversation(Conversation *conv);
 
 		void resetResources();
+		void removeJID(const Swift::JID &jid);
 
 	private:
 		void handleMessageReceived(Swift::Message::ref message);

@@ -14,6 +14,8 @@
 #include <IrcCommand>
 #include <IrcMessage>
 
+#include "ircnetworkplugin.h"
+
 #define FROM_UTF8(WHAT) QString::fromUtf8((WHAT).c_str(), (WHAT).size())
 #define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
 
@@ -21,7 +23,7 @@
 
 DEFINE_LOGGER(logger, "IRCSession");
 
-MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcSession(parent)
+MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcSession(parent)
 {
 	this->np = np;
 	this->user = user;
@@ -29,6 +31,7 @@ MyIrcSession::MyIrcSession(const std::string &user, NetworkPlugin *np, const std
 	m_connected = false;
 	rooms = 0;
 	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
+	connect(this, SIGNAL(socketError(QAbstractSocket::SocketError)), SLOT(on_socketError(QAbstractSocket::SocketError)));
 	connect(this, SIGNAL(connected()), SLOT(on_connected()));
 	connect(this, SIGNAL(messageReceived(IrcMessage*)), this, SLOT(onMessageReceived(IrcMessage*)));
 }
@@ -50,9 +53,15 @@ void MyIrcSession::on_connected() {
 	}
 }
 
+void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
+	on_disconnected();
+}
+
 void MyIrcSession::on_disconnected() {
-	if (suffix.empty())
+	if (suffix.empty()) {
 		np->handleDisconnected(user, 0, "");
+		np->tryNextServer();
+	}
 	m_connected = false;
 }
 
@@ -161,7 +170,8 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		bool flags = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
 		flags = correctNickname(nickname);
-		np->handleMessage(user, nickname, TO_UTF8(m->message()));
+		LOG4CXX_INFO(logger, nickname + suffix);
+		np->handleMessage(user, nickname + suffix, TO_UTF8(m->message()));
 	}
 }
 
@@ -181,6 +191,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			channel = m->parameters().value(2);
 			members = m->parameters().value(3).split(" ");
 
+			LOG4CXX_INFO(logger, user << ": Received members for " << TO_UTF8(channel) << suffix);
 			for (int i = 0; i < members.size(); i++) {
 				bool flags = 0;
 				std::string nickname = TO_UTF8(members.at(i));
@@ -190,9 +201,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			}
 			break;
 		case 432:
-			if (m_connected) {
-				np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
-			}
+			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
 			break;
 		default:
 			break;

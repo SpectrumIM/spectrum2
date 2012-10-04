@@ -218,10 +218,17 @@ void User::handlePresence(Swift::Presence::ref presence) {
 	if (isMUC) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
+			Conversation *conv = m_conversationManager->getConversation(room);
+			if (conv) {
+				conv->removeJID(presence->getFrom());
+				if (!conv->getJIDs().empty()) {
+					return;
+				}
+			}
+
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 			onRoomLeft(room);
 
-			Conversation *conv = m_conversationManager->getConversation(room);
 			if (conv) {
 				m_conversationManager->removeConversation(conv);
 				delete conv;
@@ -235,8 +242,15 @@ void User::handlePresence(Swift::Presence::ref presence) {
 				onReadyToConnect();
 			}
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
-			if (m_conversationManager->getConversation(room) != NULL) {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": User has already tried to join room " << room << " as " << presence->getTo().getResource());
+			Conversation *conv = m_conversationManager->getConversation(room);
+			if (conv != NULL) {
+				if (std::find(conv->getJIDs().begin(), conv->getJIDs().end(), presence->getFrom()) != conv->getJIDs().end()) {
+					LOG4CXX_INFO(logger, m_jid.toString() << ": User has already tried to join room " << room << " as " << presence->getTo().getResource());
+				}
+				else {
+					conv->addJID(presence->getFrom());
+					conv->sendParticipants(presence->getFrom());
+				}
 				return;
 			}
 
@@ -248,6 +262,10 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 		}
 		return;
+	}
+	
+	if (presence->getType() == Swift::Presence::Unavailable) {
+		m_conversationManager->removeJID(presence->getFrom());
 	}
 
 
@@ -266,11 +284,12 @@ void User::handlePresence(Swift::Presence::ref presence) {
 		}
 		else {
 			sendCurrentPresence();
-			// This resource is new, so we have to send buddies presences
-			if (currentResourcesCount != m_resources) {
-				m_rosterManager->sendCurrentPresences(presence->getFrom());
-			}
 		}
+	}
+
+	// This resource is new, so we have to send buddies presences
+	if (presence->getType() != Swift::Presence::Unavailable && currentResourcesCount != m_resources) {
+		m_rosterManager->sendCurrentPresences(presence->getFrom());
 	}
 
 	m_resources = currentResourcesCount;

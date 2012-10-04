@@ -17,7 +17,9 @@
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"
+#ifndef __FreeBSD__
 #include "malloc.h"
+#endif
 #include <algorithm>
 #include "errno.h"
 #include <boost/make_shared.hpp>
@@ -364,7 +366,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
+#ifndef __FreeBSD__
 				malloc_trim(0);
+#endif
 #endif
 // 				VALGRIND_DO_LEAK_CHECK;
 			}
@@ -1459,8 +1463,10 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleConnected(np->m_accounts[account]);
 #ifndef WIN32
+#ifndef __FreeBSD__
 	// force returning of memory chunks allocated by libxml2 to kernel
 	malloc_trim(0);
+#endif
 #endif
 
 	// For prpl-gg
@@ -1648,8 +1654,10 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 int main(int argc, char **argv) {
 #ifndef WIN32
+#ifndef __FreeBSD__
 		mallopt(M_CHECK_ACTION, 2);
 		mallopt(M_PERTURB, 0xb);
+#endif
 
 		signal(SIGPIPE, SIG_IGN);
 

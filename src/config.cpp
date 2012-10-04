@@ -135,18 +135,6 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 
 	;
 
-	// Load configs passed by command line
-	if (m_argc != 0 && m_argv) {
-		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
-		parsed_options parsed = parser.run();
-		BOOST_FOREACH(option &opt, parsed.options) {
-			if (opt.unregistered && !opt.value.empty()) {
-				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
-			}
-		}
-		store(parsed, m_variables);
-	}
-
 	parsed_options parsed = parse_config_file(ifs, opts, true);
 
 	bool found_working = false;
@@ -212,13 +200,41 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		parsed.options.push_back(boost::program_options::basic_option<char>("database.database", value));
 	}
 
+	std::list<std::string> has_key;
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
-			m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
+			if (std::find(has_key.begin(), has_key.end(), opt.string_key) == has_key.end()) {
+				has_key.push_back(opt.string_key);
+				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
+			}
+			else {
+				std::list<std::string> list;
+				try {
+					list = m_unregistered[opt.string_key].as<std::list<std::string> >();
+				}
+				catch(...) {
+					list.push_back(m_unregistered[opt.string_key].as<std::string>());
+				}
+				
+				list.push_back(opt.value[0]);
+				m_unregistered[opt.string_key] = variable_value(list, false);
+			}
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {
 			boost::replace_all(opt.value[0], "$jid", jid);
 		}
+	}
+
+	// Load configs passed by command line
+	if (m_argc != 0 && m_argv) {
+		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
+		parsed_options parsed = parser.run();
+		BOOST_FOREACH(option &opt, parsed.options) {
+			if (opt.unregistered && !opt.value.empty()) {
+				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
+			}
+		}
+		store(parsed, m_variables);
 	}
 
 	store(parsed, m_variables);

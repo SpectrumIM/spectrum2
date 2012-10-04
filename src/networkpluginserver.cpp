@@ -56,6 +56,8 @@
 #else
 #include "sys/wait.h"
 #include "sys/signal.h"
+#include <sys/types.h>
+#include <signal.h>
 #include "popt.h"
 #endif
 
@@ -1192,7 +1194,7 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 	user->getConversationManager()->addConversation(conv);
 	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	conv->setNickname(nickname);
-	conv->setJID(who);
+	conv->addJID(who);
 }
 
 void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
@@ -1296,6 +1298,22 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		m.SerializeToString(&message);
 
 		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ATTENTION);
+
+		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
+		send(c->connection, message);
+		return;
+	}
+
+	if (!msg->getSubject().empty()) {
+		pbnetwork::ConversationMessage m;
+		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
+		m.set_buddyname(conv->getLegacyName());
+		m.set_message(msg->getSubject());
+
+		std::string message;
+		m.SerializeToString(&message);
+
+		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED);
 
 		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
 		send(c->connection, message);

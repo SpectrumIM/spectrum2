@@ -205,6 +205,7 @@ class BasicTest : public Swift::XMPPParserClient {
 		void tearMeDown (void);
 
 	void handleDataReceived(const Swift::SafeByteArray &data);
+	void handleDataReceived2(const Swift::SafeByteArray &data);
 
 	void handleStreamStart(const Swift::ProtocolHeader&);
 
@@ -228,6 +229,7 @@ class BasicTest : public Swift::XMPPParserClient {
 	}
 
 	void connectUser();
+	void connectSecondResource();
 	void disconnectUser();
 	void add2Buddies();
 
@@ -237,9 +239,11 @@ class BasicTest : public Swift::XMPPParserClient {
 		bool streamEnded;
 		UserManager *userManager;
 		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
+		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession2;
 		Swift::FullPayloadSerializerCollection* payloadSerializers;
 		Swift::FullPayloadParserFactoryCollection* payloadParserFactories;
 		Swift::XMPPParser *parser;
+		Swift::XMPPParser *parser2;
 		UserRegistry *userRegistry;
 		Config *cfg;
 		Swift::Server *server;
@@ -248,9 +252,12 @@ class BasicTest : public Swift::XMPPParserClient {
 		TestingFactory *factory;
 		Component *component;
 		std::vector<boost::shared_ptr<Swift::Element> > received;
+		std::vector<boost::shared_ptr<Swift::Element> > received2;
 		std::string receivedData;
+		std::string receivedData2;
 		StorageBackend *storage;
 		UserRegistration *userRegistration;
 		DiscoItemsResponder *itemsResponder;
+		bool stream1_active;
 };
 

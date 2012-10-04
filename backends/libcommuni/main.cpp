@@ -16,7 +16,6 @@
 #include <QtNetwork>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
 #include "ircnetworkplugin.h"
-#include "singleircnetworkplugin.h"
 
 using namespace boost::program_options;
 using namespace Transport;
@@ -40,12 +39,7 @@ int main (int argc, char* argv[]) {
 
 	Swift::QtEventLoop eventLoop;
 
-	if (!CONFIG_HAS_KEY(cfg, "service.irc_server")) {
-		np = new IRCNetworkPlugin(cfg, &eventLoop, host, port);
-	}
-	else {
-		np = new SingleIRCNetworkPlugin(cfg, &eventLoop, host, port);
-	}
 
+	np = new IRCNetworkPlugin(cfg, &eventLoop, host, port);
 	return app.exec();
 }

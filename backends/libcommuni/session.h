@@ -18,6 +18,8 @@
 
 using namespace Transport;
 
+class IRCNetworkPlugin;
+
 class MyIrcSession : public IrcSession
 {
     Q_OBJECT
@@ -37,7 +39,7 @@ public:
 
 	typedef std::map<std::string, boost::shared_ptr<AutoJoinChannel> > AutoJoinMap;
 
-	MyIrcSession(const std::string &user, NetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
+	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	std::map<std::string, bool> m_modes;
 	std::string suffix;
 	int rooms;
@@ -72,11 +74,12 @@ public:
 protected Q_SLOTS:
 	void on_connected();
 	void on_disconnected();
+	void on_socketError(QAbstractSocket::SocketError error);
 
 	void onMessageReceived(IrcMessage* message);
 
 protected:
-	NetworkPlugin *np;
+	IRCNetworkPlugin *np;
 	std::string user;
 	std::string m_identify;
 	AutoJoinMap m_autoJoin;

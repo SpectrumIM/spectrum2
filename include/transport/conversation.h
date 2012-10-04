@@ -34,6 +34,12 @@ class ConversationManager;
 /// Represents one XMPP-Legacy network conversation.
 class Conversation {
 	public:
+		typedef struct _Participant {
+			int flag;
+			int status;
+			std::string statusMessage;
+		} Participant;
+
 		/// Type of participants in MUC rooms.
 		enum ParticipantFlag {None, Moderator};
 
@@ -82,6 +88,18 @@ class Conversation {
 			m_jid = jid;
 		}
 
+		void addJID(const Swift::JID &jid) {
+			m_jids.push_back(jid);
+		}
+
+		void removeJID(const Swift::JID &jid) {
+			m_jids.remove(jid);
+		}
+
+		const std::list<Swift::JID> &getJIDs() {
+			return m_jids;
+		}
+
 		/// Sends message to Legacy network.
 
 		/// \param message Message.
@@ -116,6 +134,11 @@ class Conversation {
 
 		void destroyRoom();
 
+		void sendParticipants(const Swift::JID &to);
+
+	private:
+		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");
+
 	private:
 		ConversationManager *m_conversationManager;
 		std::string m_legacyName;
@@ -123,6 +146,8 @@ class Conversation {
 		std::string m_room;
 		bool m_muc;
 		Swift::JID m_jid;
+		std::list<Swift::JID> m_jids;
+		std::map<std::string, Participant> m_participants;
 };
 
 }

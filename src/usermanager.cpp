@@ -31,7 +31,9 @@
 #include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#ifndef __FreeBSD__
 #include "malloc.h"
+#endif
 // #include "valgrind/memcheck.h"
 
 namespace Transport {
@@ -124,7 +126,9 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 	onUserDestroyed(user);
 	delete user;
 #ifndef WIN32
+#ifndef __FreeBSD__
 	malloc_trim(0);
+#endif
 #endif
 // 	VALGRIND_DO_LEAK_CHECK;
 }
@@ -340,7 +344,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 		messageToBackendSent();
 	}
 
-	if (message->getBody().empty() && !statePayload) {
+	if (message->getBody().empty() && !statePayload && message->getSubject().empty()) {
 		return;
 	}
 

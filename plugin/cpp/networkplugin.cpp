@@ -374,6 +374,16 @@ void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
 	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message(), payload.xhtml());
 }
 
+void NetworkPlugin::handleRoomSubjectChangedPayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	handleRoomSubjectChangedRequest(payload.username(), payload.buddyname(), payload.message());
+}
+
 void NetworkPlugin::handleAttentionPayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
 	if (payload.ParseFromString(data) == false) {
@@ -549,6 +559,9 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE:
 				handleConvMessagePayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED:
+				handleRoomSubjectChangedPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM:
 				handleJoinRoomPayload(wrapper.payload());

@@ -26,12 +26,24 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 
 		void handleLeaveRoomRequest(const std::string &user, const std::string &room);
 
+		void handleRoomSubjectChangedRequest(const std::string &user, const std::string &room, const std::string &message);
+
+		void tryNextServer();
+
 	public slots:
 		void readData();
 		void sendData(const std::string &string);
 
 	private:
+		MyIrcSession *createSession(const std::string &user, const std::string &hostname, const std::string &nickname, const std::string &password, const std::string &suffix = "");
+		std::string getSessionName(const std::string &user, const std::string &legacyName);
+		std::string getTargetName(const std::string &legacyName);
+
+	private:
 		Config *config;
 		QTcpSocket *m_socket;
 		std::map<std::string, MyIrcSession *> m_sessions;
+		std::vector<std::string> m_servers;
+		int m_currentServer;
+		std::string m_identify;
 };
