@@ -56,6 +56,8 @@
 #else
 #include "sys/wait.h"
 #include "sys/signal.h"
+#include <sys/types.h>
+#include <signal.h>
 #include "popt.h"
 #endif
 
