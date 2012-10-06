@@ -231,7 +231,9 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Change groups if it's not empty. The same as above...
 	std::vector<std::string> groups;
 	for (int i = 0; i < payload.group_size(); i++) {
-		groups.push_back(payload.group(i));
+		std::string group = payload.group(i);
+		utf8::replace_invalid(payload.group(i).begin(), payload.group(i).end(), group.begin(), '_');
+		groups.push_back(group);
 	}
 	if (!groups.empty()) {
 		buddy->setGroups(groups);
