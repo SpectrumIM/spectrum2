@@ -92,8 +92,8 @@ class NetworkFactory : public Factory {
 		virtual ~NetworkFactory() {}
 
 		// Creates new conversation (NetworkConversation in this case)
-		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
-			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName);
+		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc) {
+			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName, isMuc);
 			nc->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, m_nps, _1, _2));
 			return nc;
 		}
@@ -1191,12 +1191,6 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 		return;
 	}
 	send(c->connection, message);
-
-	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
-	user->getConversationManager()->addConversation(conv);
-	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
-	conv->setNickname(nickname);
-	conv->addJID(who);
 }
 
 void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {

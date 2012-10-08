@@ -67,8 +67,8 @@ class TestingFactory : public Factory {
 		}
 
 		// Creates new conversation (NetworkConversation in this case)
-		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
-			TestingConversation *nc = new TestingConversation(conversationManager, legacyName);
+		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc = false) {
+			TestingConversation *nc = new TestingConversation(conversationManager, legacyName, isMuc);
 			nc->onMessageToSend.connect(boost::bind(&TestingFactory::handleMessageToSend, this, _1, _2));
 			return nc;
 		}

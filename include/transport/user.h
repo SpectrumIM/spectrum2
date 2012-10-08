@@ -142,6 +142,7 @@ class User : public Swift::EntityCapsProvider {
 		std::vector<boost::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
 		int m_reconnectCounter;
+		std::vector<Swift::Presence::ref> m_joinedRooms;
 };
 
 }
