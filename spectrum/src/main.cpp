@@ -130,8 +130,10 @@ int main(int argc, char **argv)
 
 	setlocale(LC_ALL, "");
 #ifndef WIN32
+#ifndef __FreeBSD__
 	mallopt(M_CHECK_ACTION, 2);
 	mallopt(M_PERTURB, 0xb);
+#endif
 #endif
 
 #ifndef WIN32
