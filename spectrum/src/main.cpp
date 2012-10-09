@@ -26,7 +26,9 @@
 #include <grp.h>
 #include <sys/resource.h>
 #include "libgen.h"
+#ifndef __FreeBSD__
 #include <malloc.h>
+#endif
 #else
 #include <process.h>
 #define getpid _getpid

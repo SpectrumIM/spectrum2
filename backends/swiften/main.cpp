@@ -14,8 +14,10 @@
 #include "sys/signal.h"
 #endif
 
+#ifndef __FreeBSD__
 // malloc_trim
 #include "malloc.h"
+#endif
 
 // Boost
 #include <boost/algorithm/string.hpp>
@@ -106,8 +108,10 @@ class SwiftenPlugin : public NetworkPlugin {
 			}
 
 #ifndef WIN32
+#ifndef __FreeBSD__
 			// force returning of memory chunks allocated by libxml2 to kernel
 			malloc_trim(0);
+#endif
 #endif
 		}
 
