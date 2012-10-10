@@ -144,7 +144,7 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	LOG4CXX_INFO(logger, user << ": Session name: " << session << ", message to " << target);
 
 	if (message.find("/me") == 0) {
-		m_sessions[session]->sendCommand(IrcCommand::createCtcpAction(FROM_UTF8(target), FROM_UTF8(message)));
+		m_sessions[session]->sendCommand(IrcCommand::createCtcpAction(FROM_UTF8(target), FROM_UTF8(message.substr(4))));
 	}
 	else {
 		m_sessions[session]->sendCommand(IrcCommand::createMessage(FROM_UTF8(target), FROM_UTF8(message)));
