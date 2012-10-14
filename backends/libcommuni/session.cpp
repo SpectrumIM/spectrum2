@@ -158,20 +158,25 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		}
 	}
 
+	QString msg = m->message();
+	if (m->isAction()) {
+		msg = QString("/me ") + msg;
+	}
+
 	std::string target = TO_UTF8(m->target());
 	LOG4CXX_INFO(logger, user << ": Message from " << target);
 	if (target.find("#") == 0) {
 		bool flags = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
 		flags = correctNickname(nickname);
-		np->handleMessage(user, target + suffix, TO_UTF8(m->message()), nickname);
+		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname);
 	}
 	else {
 		bool flags = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
 		flags = correctNickname(nickname);
 		LOG4CXX_INFO(logger, nickname + suffix);
-		np->handleMessage(user, nickname + suffix, TO_UTF8(m->message()));
+		np->handleMessage(user, nickname + suffix, TO_UTF8(msg));
 	}
 }
 
