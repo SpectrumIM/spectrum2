@@ -44,6 +44,7 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 #include "transport/util.h"
+#include "transport/discoitemsresponder.h"
 
 #include "utf8.h"
 
@@ -244,7 +245,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	buddy->setBlocked(payload.blocked());
 }
 
-NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager) {
+NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder) {
 	m_ftManager = ftManager;
 	m_userManager = userManager;
 	m_config = config;
@@ -252,6 +253,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_isNextLongRun = false;
 	m_adminInterface = NULL;
 	m_startingBackend = false;
+	m_discoItemsResponder = discoItemsResponder;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -850,6 +852,19 @@ void NetworkPluginServer::handleBackendConfigPayload(const std::string &data) {
 	m_config->updateBackendConfig(payload.config());
 }
 
+void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
+	pbnetwork::RoomList payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	m_discoItemsResponder->clearRooms();
+	for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
+		m_discoItemsResponder->addRoom(payload.room(i), payload.name(i));
+	}
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -946,6 +961,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG:
 				handleBackendConfigPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_LIST:
+				handleRoomListPayload(wrapper.payload());
 				break;
 			default:
 				return;

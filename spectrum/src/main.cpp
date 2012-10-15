@@ -398,7 +398,10 @@ int main(int argc, char **argv)
 
 	FileTransferManager ftManager(&transport, &userManager);
 
-	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
+	DiscoItemsResponder discoItemsResponder(&transport);
+	discoItemsResponder.start();
+
+	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager, &discoItemsResponder);
 
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
 	plugin.setAdminInterface(&adminInterface);
@@ -408,9 +411,6 @@ int main(int argc, char **argv)
 
 	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
 	gatewayResponder.start();
-
-	DiscoItemsResponder discoItemsResponder(&transport);
-	discoItemsResponder.start();
 
 	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
 	adhocmanager.start();

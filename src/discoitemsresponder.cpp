@@ -38,6 +38,8 @@ DiscoItemsResponder::DiscoItemsResponder(Component *component) : Swift::GetRespo
 	m_component = component;
 	m_commands = boost::shared_ptr<DiscoItems>(new DiscoItems());
 	m_commands->setNode("http://jabber.org/protocol/commands");
+
+	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
 }
 
 DiscoItemsResponder::~DiscoItemsResponder() {
@@ -48,6 +50,14 @@ void DiscoItemsResponder::addAdHocCommand(const std::string &node, const std::st
 	m_commands->addItem(DiscoItems::Item(name, m_component->getJID(), node));
 }
 
+void DiscoItemsResponder::addRoom(const std::string &node, const std::string &name) {
+	m_rooms->addItem(DiscoItems::Item(name, m_component->getJID(), node));
+}
+
+void DiscoItemsResponder::clearRooms() {
+	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+}
+
 
 bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoItems> info) {
 	LOG4CXX_INFO(logger, "get request received with node " << info->getNode());
@@ -55,7 +65,7 @@ bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::
 		sendResponse(from, id, m_commands);
 	}
 	else if (to.getNode().empty()) {
-		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));
+		sendResponse(from, id, m_rooms);
 	}
 	else {
 		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));

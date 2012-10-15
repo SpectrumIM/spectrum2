@@ -37,12 +37,17 @@ class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 		void addAdHocCommand(const std::string &node, const std::string &name);
 // 		void removeAdHocCommand(const std::string &node);
 
+		void addRoom(const std::string &node, const std::string &name);
+		void clearRooms();
+
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoItems> payload);
 
+	private:
 		Component *m_component;
 		boost::shared_ptr<Swift::DiscoItems> m_commands;
+		boost::shared_ptr<Swift::DiscoItems> m_rooms;
 };
 
 }

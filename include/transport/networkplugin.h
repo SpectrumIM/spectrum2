@@ -24,6 +24,7 @@
 #include "transport/protocol.pb.h"
 // #include "conversation.h"
 #include <iostream>
+#include <list>
 
 namespace Transport {
 
@@ -163,6 +164,8 @@ class NetworkPlugin {
 		void handleFTFinish(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size, unsigned long ftid);
 
 		void handleFTData(unsigned long ftID, const std::string &data);
+
+		void handleRoomList(const std::string &user, const std::list<std::string> &rooms, const std::list<std::string> &names);
 
 		/// Called when XMPP user wants to connect legacy network.
 		/// You should connect him to legacy network and call handleConnected or handleDisconnected function later.

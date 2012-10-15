@@ -43,6 +43,7 @@ class RosterResponder;
 class BlockResponder;
 class DummyReadBytestream;
 class AdminInterface;
+class DiscoItemsResponder;
 
 class NetworkPluginServer {
 	public:
@@ -60,7 +61,7 @@ class NetworkPluginServer {
 			std::string id;
 		};
 
-		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
+		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder);
 
 		virtual ~NetworkPluginServer();
 
@@ -109,6 +110,7 @@ class NetworkPluginServer {
 		void handleFTDataPayload(Backend *b, const std::string &payload);
 		void handleQueryPayload(Backend *b, const std::string &payload);
 		void handleBackendConfigPayload(const std::string &payload);
+		void handleRoomListPayload(const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);
@@ -154,6 +156,7 @@ class NetworkPluginServer {
 		std::vector<std::string> m_crashedBackends;
 		AdminInterface *m_adminInterface;
 		bool m_startingBackend;
+		DiscoItemsResponder *m_discoItemsResponder;
 };
 
 }

@@ -336,6 +336,24 @@ void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
 	send(message);
 }
 
+void NetworkPlugin::handleRoomList(const std::string &user, const std::list<std::string> &rooms, const std::list<std::string> &names) {
+	pbnetwork::RoomList d;
+	for (std::list<std::string>::const_iterator it = rooms.begin(); it != rooms.end(); it++) {
+		d.add_room(*it);
+	}
+
+	for (std::list<std::string>::const_iterator it = names.begin(); it != names.end(); it++) {
+		d.add_name(*it);
+	}
+
+	std::string message;
+	d.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_LIST);
+ 
+	send(message);
+}
+
 void NetworkPlugin::handleLoginPayload(const std::string &data) {
 	pbnetwork::Login payload;
 	if (payload.ParseFromString(data) == false) {

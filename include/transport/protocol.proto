@@ -78,6 +78,11 @@ message Room {
 	optional string password = 4;
 }
 
+message RoomList {
+	repeated string room = 1;
+	repeated string name = 2;
+}
+
 message Participant {
 	required string userName = 1;
 	required string room = 2;
@@ -159,6 +164,7 @@ message WrapperMessage {
 		TYPE_EXIT					= 29;
 		TYPE_BACKEND_CONFIG			= 30;
 		TYPE_QUERY					= 31;
+		TYPE_ROOM_LIST				= 32;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
