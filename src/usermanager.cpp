@@ -26,6 +26,7 @@
 #include "transport/rostermanager.h"
 #include "transport/userregistry.h"
 #include "transport/logging.h"
+#include "transport/discoitemsresponder.h"
 #include "storageresponder.h"
 
 #include "Swiften/Swiften.h"
@@ -40,7 +41,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "UserManager");
 
-UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
+UserManager::UserManager(Component *component, UserRegistry *userRegistry, DiscoItemsResponder *discoItemsResponder, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
 	m_sentToXMPP = 0;
@@ -49,6 +50,7 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;
 	m_userRegistry = userRegistry;
+	m_discoItemsResponder = discoItemsResponder;
 
 	if (m_storageBackend) {
 		m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);

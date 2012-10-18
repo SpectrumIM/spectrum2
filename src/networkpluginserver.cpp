@@ -861,7 +861,7 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 
 	m_discoItemsResponder->clearRooms();
 	for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
-		m_discoItemsResponder->addRoom(payload.room(i), payload.name(i));
+		m_discoItemsResponder->addRoom(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
 	}
 }
 

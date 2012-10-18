@@ -26,7 +26,6 @@
 #include "transport/factory.h"
 #include "transport/userregistry.h"
 #include "transport/logging.h"
-#include "discoinforesponder.h"
 #include "storageparser.h"
 #ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
@@ -158,8 +157,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_presenceOracle = new Transport::PresenceOracle(m_stanzaChannel);
 	m_presenceOracle->onPresenceChange.connect(bind(&Component::handlePresence, this, _1));
 
-	m_discoInfoResponder = new DiscoInfoResponder(m_iqRouter, m_config);
-	m_discoInfoResponder->start();
+
 
 // 
 // 	m_registerHandler = new SpectrumRegisterHandler(m_component);
@@ -171,7 +169,6 @@ Component::~Component() {
 	delete m_entityCapsManager;
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
-	delete m_discoInfoResponder;
 	if (m_component)
 		delete m_component;
 	if (m_server) {
@@ -186,19 +183,6 @@ Swift::StanzaChannel *Component::getStanzaChannel() {
 
 Transport::PresenceOracle *Component::getPresenceOracle() {
 	return m_presenceOracle;
-}
-
-void Component::setTransportFeatures(std::list<std::string> &features) {
-	m_discoInfoResponder->setTransportFeatures(features);
-}
-
-Swift::CapsInfo &Component::getBuddyCapsInfo() {
-		return m_discoInfoResponder->getBuddyCapsInfo();
-}
-
-void Component::setBuddyFeatures(std::list<std::string> &features) {
-	// TODO: handle caps change
-	m_discoInfoResponder->setBuddyFeatures(features);
 }
 
 void Component::start() {

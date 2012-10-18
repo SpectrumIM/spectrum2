@@ -384,7 +384,10 @@ int main(int argc, char **argv)
 
 	Logging::redirect_stderr();
 
-	UserManager userManager(&transport, &userRegistry, storageBackend);
+	DiscoItemsResponder discoItemsResponder(&transport);
+	discoItemsResponder.start();
+
+	UserManager userManager(&transport, &userRegistry, &discoItemsResponder, storageBackend);
 	userManager_ = &userManager;
 
 	UserRegistration *userRegistration = NULL;
@@ -397,9 +400,6 @@ int main(int argc, char **argv)
 	}
 
 	FileTransferManager ftManager(&transport, &userManager);
-
-	DiscoItemsResponder discoItemsResponder(&transport);
-	discoItemsResponder.start();
 
 	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager, &discoItemsResponder);
 

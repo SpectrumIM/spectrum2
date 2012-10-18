@@ -85,6 +85,8 @@ protected:
 	AutoJoinMap m_autoJoin;
 	std::string m_topicData;
 	bool m_connected;
+	std::list<std::string> m_rooms;
+	std::list<std::string> m_names;
 };
 
 //class MyIrcBuffer : public Irc::Buffer

@@ -28,11 +28,14 @@
 namespace Transport {
 
 class Component;
+class DiscoInfoResponder;
 
 class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 	public:
 		DiscoItemsResponder(Component *component);
 		~DiscoItemsResponder();
+
+		Swift::CapsInfo &getBuddyCapsInfo();
 
 		void addAdHocCommand(const std::string &node, const std::string &name);
 // 		void removeAdHocCommand(const std::string &node);
@@ -48,6 +51,7 @@ class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 		Component *m_component;
 		boost::shared_ptr<Swift::DiscoItems> m_commands;
 		boost::shared_ptr<Swift::DiscoItems> m_rooms;
+		DiscoInfoResponder *m_discoInfoResponder;
 };
 
 }

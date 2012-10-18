@@ -32,6 +32,7 @@ class Component;
 class StorageBackend;
 class StorageResponder;
 class RosterResponder;
+class DiscoItemsResponder;
 
 /// Manages online XMPP Users.
 
@@ -55,7 +56,7 @@ class UserManager : public Swift::EntityCapsProvider {
 		/// Creates new UserManager.
 		/// \param component Component which's presence will be handled
 		/// \param storageBackend Storage backend used to fetch UserInfos
-		UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
+		UserManager(Component *component, UserRegistry *userRegistry, DiscoItemsResponder *discoItemsResponder, StorageBackend *storageBackend = NULL);
 
 		/// Destroys UserManager.
 		~UserManager();
@@ -83,6 +84,8 @@ class UserManager : public Swift::EntityCapsProvider {
 		void removeAllUsers(bool onUserBehalf = true);
 
 		Swift::DiscoInfo::ref getCaps(const Swift::JID&) const;
+
+		DiscoItemsResponder *getDiscoResponder() { return m_discoItemsResponder; }
 
 		/// Called when new User class is created.
 		/// \param user newly created User class
@@ -143,6 +146,7 @@ class UserManager : public Swift::EntityCapsProvider {
 		Swift::Timer::ref m_removeTimer;
 		unsigned long m_sentToXMPP;
 		unsigned long m_sentToBackend;
+		DiscoItemsResponder *m_discoItemsResponder;
 		friend class RosterResponder;
 };
 

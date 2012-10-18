@@ -23,6 +23,8 @@
 #include "transport/user.h"
 #include "transport/transport.h"
 #include "transport/BlockPayload.h"
+#include "transport/usermanager.h"
+#include "transport/discoitemsresponder.h"
 
 namespace Transport {
 
@@ -106,7 +108,7 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 	if (presence->getType() != Swift::Presence::Unavailable) {
 		// caps
 		
-		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo(m_rosterManager->getUser()->getComponent()->getBuddyCapsInfo())));
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo(m_rosterManager->getUser()->getUserManager()->getDiscoResponder()->getBuddyCapsInfo())));
 
 // 		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));

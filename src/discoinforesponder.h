@@ -38,6 +38,9 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		void setTransportFeatures(std::list<std::string> &features);
 		void setBuddyFeatures(std::list<std::string> &features);
 
+		void addRoom(const std::string &jid, const std::string &name);
+		void clearRooms();
+
 		boost::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
 
 		Swift::CapsInfo &getBuddyCapsInfo() {
@@ -51,6 +54,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		Swift::DiscoInfo m_buddyInfo;
 		Config *m_config;
 		Swift::CapsInfo m_capsInfo;
+		std::map<std::string, std::string> m_rooms;
 };
 
 }

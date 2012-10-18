@@ -23,6 +23,8 @@
 
 DEFINE_LOGGER(logger, "IRCSession");
 
+static bool sentList;
+
 MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcSession(parent)
 {
 	this->np = np;
@@ -40,6 +42,10 @@ void MyIrcSession::on_connected() {
 	m_connected = true;
 	if (suffix.empty()) {
 		np->handleConnected(user);
+		if (!sentList) {
+			sendCommand(IrcCommand::createList(""));
+			sentList = true;
+		}
 	}
 
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
@@ -207,6 +213,17 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		case 432:
 			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
+			break;
+		case 321:
+			m_rooms.clear();
+			m_names.clear();
+			break;
+		case 322:
+			m_rooms.push_back(TO_UTF8(m->parameters().value(1)));
+			m_names.push_back(TO_UTF8(m->parameters().value(1)));
+			break;
+		case 323:
+			np->handleRoomList("", m_rooms, m_names);
 			break;
 		default:
 			break;

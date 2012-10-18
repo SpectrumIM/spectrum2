@@ -47,7 +47,6 @@ namespace Transport {
 	// 				} SpectrumImportantFeatures;
 	// 
 	class StorageBackend;
-	class DiscoInfoResponder;
 	class Factory;
 	class UserRegistry;
 
@@ -81,8 +80,6 @@ namespace Transport {
 			/// \return Swift::StanzaChannel associated with this Transport::Component.
 			Swift::StanzaChannel *getStanzaChannel();
 
-			Swift::CapsInfo &getBuddyCapsInfo();
-
 			/// Returns Swift::IQRouter associated with this Component.
 
 			/// \return Swift::IQRouter associated with this Component.
@@ -103,18 +100,6 @@ namespace Transport {
 
 			void start();
 			void stop();
-
-			/// Sets disco#info features which are sent as answer to disco#info IQ-get.
-			
-			/// This sets features of transport contact (For example "j2j.domain.tld").
-			/// \param features list of features as sent in disco#info response
-			void setTransportFeatures(std::list<std::string> &features);
-
-			/// Sets disco#info features which are sent as answer to disco#info IQ-get.
-			
-			/// This sets features of legacy network buddies (For example "me\40gmail.com@j2j.domain.tld").
-			/// \param features list of features as sent in disco#info response
-			void setBuddyFeatures(std::list<std::string> &features);
 
 			/// Returns Jabber ID of this transport.
 
@@ -186,7 +171,6 @@ namespace Transport {
 			
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
- 			DiscoInfoResponder *m_discoInfoResponder;
 			int m_reconnectCount;
 			Config* m_config;
 			std::string m_protocol;

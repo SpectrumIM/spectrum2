@@ -71,6 +71,8 @@ class User : public Swift::EntityCapsProvider {
 
 		Component *getComponent() { return m_component; }
 
+		UserManager *getUserManager() { return m_userManager; }
+
 		void setData(void *data) { m_data = data; }
 		void *getData() { return m_data; }
 

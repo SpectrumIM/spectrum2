@@ -97,6 +97,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
 		("service.enable_xhtml", value<bool>()->default_value(true), "")
+		("service.max_room_list_size", value<int>()->default_value(100), "")
 		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")

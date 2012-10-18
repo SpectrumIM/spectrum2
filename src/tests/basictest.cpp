@@ -57,13 +57,13 @@ void BasicTest::setMeUp (void) {
 	component = new Component(loop, factories, cfg, factory, userRegistry);
 	component->start();
 
-	userManager = new UserManager(component, userRegistry, storage);
+	itemsResponder = new DiscoItemsResponder(component);
+	itemsResponder->start();
+
+	userManager = new UserManager(component, userRegistry, itemsResponder, storage);
 
 	userRegistration = new UserRegistration(component, userManager, storage);
 	userRegistration->start();
-
-	itemsResponder = new DiscoItemsResponder(component);
-	itemsResponder->start();
 
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
