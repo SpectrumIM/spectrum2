@@ -933,14 +933,21 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		xhtml_ = "";
 	}
 
+	std::string timestamp;
+	if (mtime && (unsigned long) time(NULL)-10 > (unsigned long) mtime/* && (unsigned long) time(NULL) - 31536000 < (unsigned long) mtime*/) {
+		char buf[80];
+		strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", gmtime(&mtime));
+		timestamp = buf;
+	}
+
 // 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
 
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
-		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_);
+		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
 	}
 	else {
 		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << w);
-		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, w, xhtml_);
+		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, w, xhtml_, timestamp);
 	}
 }
 

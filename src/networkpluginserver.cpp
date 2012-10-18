@@ -628,6 +628,11 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
+	if (!payload.timestamp().empty()) {
+		boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
+		msg->addPayload(boost::make_shared<Swift::Delay>(timestamp));
+	}
+
 	// Create new Conversation if it does not exist
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
