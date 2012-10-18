@@ -68,7 +68,6 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectIQ(iq);
 		loop->processEvents();
 
-		dumpReceived();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
