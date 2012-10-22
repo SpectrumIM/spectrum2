@@ -633,8 +633,16 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->addPayload(boost::make_shared<Swift::Delay>(timestamp));
 	}
 
-	// Create new Conversation if it does not exist
+	
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+
+	// We can't create Conversation for payload with nickname, because this means the message is from room,
+	// but this user is not in any room, so it's OK to just reject this message
+	if (!conv && !payload.nickname().empty()) {
+		return;
+	}
+
+	// Create new Conversation if it does not exist
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
 		user->getConversationManager()->addConversation(conv);
