@@ -763,6 +763,11 @@ void NetworkPluginServer::handleFTDataPayload(Backend *b, const std::string &dat
 // 	if (!user)
 // 		return;
 
+	if (m_filetransfers.find(payload.ftid()) == m_filetransfers.end()) {
+		LOG4CXX_ERROR(logger, "Uknown filetransfer with id " << payload.ftid());
+		return;
+	}
+
 	FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
 	MemoryReadBytestream *bytestream = (MemoryReadBytestream *) transfer.readByteStream.get();
 
