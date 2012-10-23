@@ -155,7 +155,7 @@ int create_socket(const char *host, int portno) {
 
 	stSockAddr.sin_family = AF_INET;
 	stSockAddr.sin_port = htons(portno);
-	bcopy(hos->h_addr, &(stSockAddr.sin_addr.s_addr), hos->h_length);
+	memcpy(&(stSockAddr.sin_addr.s_addr), hos->h_addr,  hos->h_length);
 
 	if (-1 == connect(SocketFD, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))) {
 		close(SocketFD);

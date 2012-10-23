@@ -184,13 +184,32 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		    }
 		}
 
+		UserInfo res;
+		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
+
 		// No user and unavailable presence -> answer with unavailable
-		if (presence->getType() == Swift::Presence::Unavailable) {
+		if (presence->getType() == Swift::Presence::Unavailable || presence->getType() == Swift::Presence::Probe) {
 			Swift::Presence::ref response = Swift::Presence::create();
 			response->setTo(presence->getFrom());
 			response->setFrom(presence->getTo());
 			response->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(response);
+
+			// bother him with subscribe presence, just to be
+			// sure he is subscribed to us.
+			if (/*registered && */presence->getType() == Swift::Presence::Probe) {
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(presence->getTo());
+				response->setType(Swift::Presence::Subscribe);
+				m_component->getStanzaChannel()->sendPresence(response);
+
+				response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(presence->getTo());
+				response->setType(Swift::Presence::Subscribed);
+				m_component->getStanzaChannel()->sendPresence(response);
+			}
 
 			// Set user offline in database
 			if (m_storageBackend) {
@@ -202,9 +221,6 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			}
 			return;
 		}
-
-		UserInfo res;
-		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
 
 		// In server mode, we don't need registration normally, but for networks like IRC
 		// or Twitter where there's no real authorization using password, we have to force
@@ -378,6 +394,11 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 }
 
 void UserManager::handleProbePresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
+		return;
+	}
+
 	User *user = getUser(presence->getFrom().toBare().toString());
 
  	if (user) {
