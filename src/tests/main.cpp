@@ -22,6 +22,16 @@ int main (int argc, char* argv[])
 	root->addAppender(new FileAppender(new PatternLayout("%d %-5p %c: %m%n"), "libtransport_test.log", false));
 #endif
 
+	std::vector<std::string> testsToRun;
+	for (int i = 1; i < argc; ++i) {
+		std::string param(argv[i]);
+		testsToRun.push_back(param);
+	}
+
+	if (testsToRun.empty()) {
+		testsToRun.push_back("");
+	}
+
 	// informs test-listener about testresults
 	CPPUNIT_NS :: TestResult testresult;
 
@@ -36,7 +46,15 @@ int main (int argc, char* argv[])
 	// insert test-suite at test-runner by registry
 	CPPUNIT_NS :: TestRunner testrunner;
 	testrunner.addTest (CPPUNIT_NS :: TestFactoryRegistry :: getRegistry ().makeTest ());
-	testrunner.run (testresult);
+	for (std::vector<std::string>::const_iterator i = testsToRun.begin(); i != testsToRun.end(); ++i) {
+		try {
+			testrunner.run(testresult, *i);
+		}
+		catch (const std::exception& e) {
+			std::cerr << "Error: " << e.what() << std::endl;
+			return -1;
+		}
+	}
 
 	// output results in compiler-format
 	CPPUNIT_NS :: CompilerOutputter compileroutputter (&collectedresults, std::cerr);
