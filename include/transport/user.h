@@ -78,7 +78,7 @@ class User : public Swift::EntityCapsProvider {
 
 		/// Handles presence from XMPP JID associated with this user.
 		/// \param presence Swift::Presence.
-		void handlePresence(Swift::Presence::ref presence);
+		void handlePresence(Swift::Presence::ref presence, bool forceJoin = false);
 
 		void handleSubscription(Swift::Presence::ref presence);
 
@@ -144,7 +144,7 @@ class User : public Swift::EntityCapsProvider {
 		std::vector<boost::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
 		int m_reconnectCounter;
-		std::vector<Swift::Presence::ref> m_joinedRooms;
+		std::list<Swift::Presence::ref> m_joinedRooms;
 };
 
 }

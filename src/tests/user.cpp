@@ -33,6 +33,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(joinRoomBeforeConnected);
 	CPPUNIT_TEST(handleDisconnected);
 	CPPUNIT_TEST(handleDisconnectedReconnect);
+	CPPUNIT_TEST(joinRoomHandleDisconnectedRejoin);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -319,6 +320,12 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		user = userManager->getUser("user@localhost");
 		CPPUNIT_ASSERT(user);
 		CPPUNIT_ASSERT(readyToConnect);
+
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost/resource");
+		injectPresence(response);
+		loop->processEvents();
 	}
 
 	void joinRoomBeforeConnected() {
@@ -347,15 +354,22 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
+	}
 
+	void joinRoomHandleDisconnectedRejoin() {
+		User *user = userManager->getUser("user@localhost");
+		handlePresenceJoinRoom();
+		handleDisconnectedReconnect();
 		room = "";
 		roomNickname = "";
 		roomPassword = "";
-		
+		received.clear();
 		user->setConnected(true);
-		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
-		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
-		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 	}
 
 };

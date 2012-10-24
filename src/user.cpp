@@ -179,18 +179,18 @@ void User::setConnected(bool connected) {
 
 	if (m_connected) {
 		BOOST_FOREACH(Swift::Presence::ref &presence, m_joinedRooms) {
-			handlePresence(presence);
+			handlePresence(presence, true);
 		}
-		m_joinedRooms.clear();
 	}
 }
 
-void User::handlePresence(Swift::Presence::ref presence) {
+void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
 
 	m_conversationManager->resetResources();
 
+	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {
@@ -236,6 +236,13 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 			onRoomLeft(room);
 
+			BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
+				if (p->getTo() == presence->getTo()) {
+					m_joinedRooms.remove(p);
+					break;
+				}
+			}
+
 			if (conv) {
 				m_conversationManager->removeConversation(conv);
 				delete conv;
@@ -250,14 +257,11 @@ void User::handlePresence(Swift::Presence::ref presence) {
 			}
 
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
-
-			if (!m_connected) {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": Joining room " << room << " postponed, because use is not connected to legacy network yet.");
-				m_joinedRooms.push_back(presence);
-				return;
+			std::string password = "";
+			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
+				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";
 			}
 
-			
 			Conversation *conv = m_conversationManager->getConversation(room);
 			if (conv != NULL) {
 				if (std::find(conv->getJIDs().begin(), conv->getJIDs().end(), presence->getFrom()) != conv->getJIDs().end()) {
@@ -267,14 +271,29 @@ void User::handlePresence(Swift::Presence::ref presence) {
 					conv->addJID(presence->getFrom());
 					conv->sendParticipants(presence->getFrom());
 				}
+
+				if (forceJoin) {
+					onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
+				}
+				return;
+			}
+
+			bool isInJoined = false;
+			BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
+				if (p->getTo() == presence->getTo()) {
+					isInJoined = true;
+				}
+			}
+			if (!isInJoined) {
+				m_joinedRooms.push_back(presence);
+			}
+
+			if (!m_connected) {
+				LOG4CXX_INFO(logger, m_jid.toString() << ": Joining room " << room << " postponed, because use is not connected to legacy network yet.");
 				return;
 			}
 
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
-			std::string password = "";
-			if (presence->getPayload<Swift::MUCPayload>() != NULL) {
-				password = presence->getPayload<Swift::MUCPayload>()->getPassword() ? *presence->getPayload<Swift::MUCPayload>()->getPassword() : "";
-			}
 
 			conv = m_component->getFactory()->createConversation(m_conversationManager, room, true);
 			m_conversationManager->addConversation(conv);
