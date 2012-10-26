@@ -63,14 +63,15 @@ class SwiftenPlugin : public NetworkPlugin {
 
 		void handleSwiftDisconnected(const std::string &user, const boost::optional<Swift::ClientError> &error) {
 			std::string message = "";
+			bool reconnect = false;
 			if (error) {
 				switch(error->getType()) {
-					case Swift::ClientError::UnknownError: message = ("Unknown Error"); break;
+					case Swift::ClientError::UnknownError: message = ("Unknown Error"); reconnect = true; break;
 					case Swift::ClientError::DomainNameResolveError: message = ("Unable to find server"); break;
 					case Swift::ClientError::ConnectionError: message = ("Error connecting to server"); break;
-					case Swift::ClientError::ConnectionReadError: message = ("Error while receiving server data"); break;
-					case Swift::ClientError::ConnectionWriteError: message = ("Error while sending data to the server"); break;
-					case Swift::ClientError::XMLError: message = ("Error parsing server data"); break;
+					case Swift::ClientError::ConnectionReadError: message = ("Error while receiving server data"); reconnect = true; break;
+					case Swift::ClientError::ConnectionWriteError: message = ("Error while sending data to the server"); reconnect = true; break;
+					case Swift::ClientError::XMLError: message = ("Error parsing server data"); reconnect = true; break;
 					case Swift::ClientError::AuthenticationFailedError: message = ("Login/password invalid"); break;
 					case Swift::ClientError::CompressionFailedError: message = ("Error while compressing stream"); break;
 					case Swift::ClientError::ServerVerificationFailedError: message = ("Server verification failed"); break;
@@ -97,7 +98,7 @@ class SwiftenPlugin : public NetworkPlugin {
 				}
 			}
 			LOG4CXX_INFO(logger, user << ": Disconnected " << message);
-			handleDisconnected(user, 3, message);
+			handleDisconnected(user, reconnect ? 0 : 3, message);
 
 			boost::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
