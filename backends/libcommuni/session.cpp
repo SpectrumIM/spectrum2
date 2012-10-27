@@ -43,7 +43,7 @@ void MyIrcSession::on_connected() {
 	if (suffix.empty()) {
 		np->handleConnected(user);
 		if (!sentList) {
-			sendCommand(IrcCommand::createList(""));
+			sendCommand(IrcCommand::createList("", ""));
 			sentList = true;
 		}
 	}
