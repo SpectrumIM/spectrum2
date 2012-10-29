@@ -127,7 +127,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleNormalMessages() {
 		User *user = userManager->getUser("user@localhost");
 
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
@@ -142,13 +142,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
 
 		// send response
 		msg->setFrom("user@localhost/resource");
-		msg->setTo("buddy1@localhost/bot");
+		msg->setTo("buddy1\\40test@localhost/bot");
 		msg->setBody("response!");
 		injectMessage(msg);
 		loop->processEvents();
@@ -169,20 +169,28 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
+
+		// disable jid_escaping
+		std::istringstream ifs("service.server_mode = 1\nservice.jid_escaping=0\nservice.jid=localhost\nservice.more_resources=1\n");
+		cfg->load(ifs);
 
 		// and now to bare JID again...
 		user->getConversationManager()->resetResources();
 		conv->handleMessage(msg2);
 		loop->processEvents();
+
+		// enable jid_escaping again
+		std::istringstream ifs2("service.server_mode = 1\nservice.jid_escaping=1\nservice.jid=localhost\nservice.more_resources=1\n");
+		cfg->load(ifs2);
 		
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
 	}

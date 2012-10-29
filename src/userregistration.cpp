@@ -94,7 +94,15 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		std::list <BuddyInfo> roster;
 		m_storageBackend->getBuddies(userInfo.id, roster);
 		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
-			std::string name = Swift::JID::getEscapedNode((*u).legacyName);
+			std::string name = (*u).legacyName;
+			if ((*u).flags & BUDDY_JID_ESCAPING) {
+				name = Swift::JID::getEscapedNode((*u).legacyName);
+			}
+			else {
+				if (name.find_last_of("@") != std::string::npos) {
+					name.replace(name.find_last_of("@"), 1, "%");
+				}
+			}
 
 			Swift::Presence::ref response;
 			response = Swift::Presence::create();

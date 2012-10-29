@@ -91,7 +91,17 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(buddy->getJID());
 			}
 			else {
-				message->setFrom(Swift::JID(Swift::JID::getEscapedNode(m_legacyName), m_conversationManager->getComponent()->getJID().toBare()));
+				std::string name = m_legacyName;
+				if (CONFIG_BOOL_DEFAULTED(m_conversationManager->getComponent()->getConfig(), "service.jid_escaping", true)) {
+					name = Swift::JID::getEscapedNode(m_legacyName);
+				}
+				else {
+					if (name.find_last_of("@") != std::string::npos) {
+						name.replace(name.find_last_of("@"), 1, "%");
+					}
+				}
+
+				message->setFrom(Swift::JID(name, m_conversationManager->getComponent()->getJID().toBare(), "bot"));
 			}
 		}
 		// PM message

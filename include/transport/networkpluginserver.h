@@ -65,6 +65,8 @@ class NetworkPluginServer {
 
 		virtual ~NetworkPluginServer();
 
+		void start();
+
 		void setAdminInterface(AdminInterface *adminInterface) {
 			m_adminInterface = adminInterface;
 		}
@@ -87,7 +89,7 @@ class NetworkPluginServer {
 
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
-	private:
+	public:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Backend *c);
 		void handlePongReceived(Backend *c);
@@ -133,6 +135,7 @@ class NetworkPluginServer {
 		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size);
 		void handleFTDataNeeded(Backend *b, unsigned long ftid);
 
+	private:
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();

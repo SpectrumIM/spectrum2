@@ -402,6 +402,7 @@ int main(int argc, char **argv)
 	FileTransferManager ftManager(&transport, &userManager);
 
 	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager, &discoItemsResponder);
+	plugin.start();
 
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
 	plugin.setAdminInterface(&adminInterface);

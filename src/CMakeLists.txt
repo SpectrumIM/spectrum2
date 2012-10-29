@@ -15,6 +15,7 @@ if (CPPUNIT_FOUND)
 	FILE(GLOB SRC_TEST tests/*.cpp)
 
 	ADD_EXECUTABLE(libtransport_test ${SRC_TEST})
+	set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
 
 	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARY} ${Boost_LIBRARIES})
 endif()

@@ -285,6 +285,30 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
+}
+
+NetworkPluginServer::~NetworkPluginServer() {
+	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
+		LOG4CXX_INFO(logger, "Stopping backend " << *it);
+		std::string message;
+		pbnetwork::WrapperMessage wrap;
+		wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_EXIT);
+		wrap.SerializeToString(&message);
+
+		Backend *c = (Backend *) *it;
+		send(c->connection, message);
+	}
+
+	m_pingTimer->stop();
+	m_server->stop();
+	m_server.reset();
+	delete m_component->m_factory;
+	delete m_vcardResponder;
+	delete m_rosterResponder;
+	delete m_blockResponder;
+}
+
+void NetworkPluginServer::start() {
 	m_server->start();
 
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
@@ -318,28 +342,6 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 		// quit the while loop
 		break;
 	}
-
-}
-
-NetworkPluginServer::~NetworkPluginServer() {
-	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		LOG4CXX_INFO(logger, "Stopping backend " << *it);
-		std::string message;
-		pbnetwork::WrapperMessage wrap;
-		wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_EXIT);
-		wrap.SerializeToString(&message);
-
-		Backend *c = (Backend *) *it;
-		send(c->connection, message);
-	}
-
-	m_pingTimer->stop();
-	m_server->stop();
-	m_server.reset();
-	delete m_component->m_factory;
-	delete m_vcardResponder;
-	delete m_rosterResponder;
-	delete m_blockResponder;
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
@@ -479,11 +481,14 @@ void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
 	response->setTo(user->getJID());
 	std::string name = payload.buddyname();
 
-	name = Swift::JID::getEscapedNode(name);
-
-// 	if (name.find_last_of("@") != std::string::npos) { // OK when commented
-// 		name.replace(name.find_last_of("@"), 1, "%"); // OK when commented
-// 	}
+	if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+		name = Swift::JID::getEscapedNode(name);
+	}
+	else {
+		if (name.find_last_of("@") != std::string::npos) {
+			name.replace(name.find_last_of("@"), 1, "%");
+		}
+	}
 
 	response->setFrom(Swift::JID(name, m_component->getJID().toString()));
 	response->setType(Swift::Presence::Subscribe);
@@ -536,7 +541,12 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		for (int i = 0; i < payload.group_size(); i++) {
 			groups.push_back(payload.group(i));
 		}
-		buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+			buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		}
+		else {
+			buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_NO_FLAG);
+		}
 		if (!buddy->isValid()) {
 			delete buddy;
 			return;
