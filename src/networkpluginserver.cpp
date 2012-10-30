@@ -185,6 +185,11 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		setsid();
+		// close all files
+		int maxfd=sysconf(_SC_OPEN_MAX);
+		for(int fd=3; fd<maxfd; fd++) {
+			close(fd);
+		}
 		// child process
 		errno = 0;
 		int ret = execv(argv[0], argv);
