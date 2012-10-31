@@ -19,6 +19,7 @@
  */
 
 #include "transport/util.h"
+#include "transport/config.h"
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <iterator>
@@ -27,6 +28,19 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 
+#ifndef WIN32
+#include "sys/signal.h"
+#include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h>
+#include <sys/resource.h>
+#include "libgen.h"
+#else
+#include <windows.h>
+#include <process.h>
+#define getpid _getpid
+#endif
+
 using namespace boost::filesystem;
 
 using namespace boost;
@@ -34,6 +48,32 @@ using namespace boost;
 namespace Transport {
 
 namespace Util {
+
+void createDirectories(Transport::Config *config, const boost::filesystem::path& ph) {
+	if (ph.empty() || exists(ph)) {
+		return;
+	}
+
+	// First create branch, by calling ourself recursively
+	createDirectories(config, ph.branch_path());
+	
+	// Now that parent's path exists, create the directory
+	create_directory(ph);
+
+#ifndef WIN32
+	if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
+		struct group *gr;
+		if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {
+			std::cerr << "Invalid service.group name " << CONFIG_STRING(config, "service.group") << "\n";
+		}
+		struct passwd *pw;
+		if ((pw = getpwnam(CONFIG_STRING(config, "service.user").c_str())) == NULL) {
+			std::cerr << "Invalid service.user name " << CONFIG_STRING(config, "service.user") << "\n";
+		}
+		chown(ph.string().c_str(), pw->pw_uid, gr->gr_gid);
+	}
+#endif
+}
 
 void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t) {
 	BOOST_FOREACH(const std::string &dir, dirs) {
@@ -58,7 +98,7 @@ void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t) {
 							std::vector<std::string> nextDirs;
 							nextDirs.push_back(itr->path().string());
 							removeEverythingOlderThan(nextDirs, t);
-							if (is_empty(itr->path())) {
+							if (boost::filesystem::is_empty(itr->path())) {
 								remove_all(itr->path());
 							}
 						}
@@ -75,58 +115,6 @@ void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t) {
 			
 		}
 	}
-}
-
-std::string encryptPassword(const std::string &password, const std::string &key) {
-	std::string encrypted;
-	encrypted.resize(password.size());
-	for (int i = 0; i < password.size(); i++) {
-		char c = password[i];
-		char keychar = key[i % key.size()];
-		c += keychar;
-		encrypted[i] = c;
-	}
-
-	encrypted = Swift::Base64::encode(Swift::createByteArray(encrypted));
-	return encrypted;
-}
-
-std::string decryptPassword(std::string &encrypted, const std::string &key) {
-	encrypted = Swift::byteArrayToString(Swift::Base64::decode(encrypted));
-	std::string password;
-	password.resize(encrypted.size());
-	for (int i = 0; i < encrypted.size(); i++) {
-		char c = encrypted[i];
-		char keychar = key[i % key.size()];
-		c -= keychar;
-		password[i] = c;
-	}
-
-	return password;
-}
-
-std::string serializeGroups(const std::vector<std::string> &groups) {
-	std::string ret;
-	BOOST_FOREACH(const std::string &group, groups) {
-		ret += group + "\n";
-	}
-	if (!ret.empty()) {
-		ret.erase(ret.end() - 1);
-	}
-	return ret;
-}
-
-std::vector<std::string> deserializeGroups(std::string &groups) {
-	std::vector<std::string> ret;
-	if (groups.empty()) {
-		return ret;
-	}
-
-	boost::split(ret, groups, boost::is_any_of("\n"));
-	if (ret.back().empty()) {
-		ret.erase(ret.end() - 1);
-	}
-	return ret;
 }
 
 int getRandomPort(const std::string &s) {

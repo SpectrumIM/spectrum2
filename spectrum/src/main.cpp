@@ -22,6 +22,7 @@
 #include <boost/algorithm/string.hpp>
 #ifndef WIN32
 #include "sys/signal.h"
+#include "sys/stat.h"
 #include <pwd.h>
 #include <grp.h>
 #include <sys/resource.h>
@@ -248,9 +249,14 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#ifndef WIN32
+	mode_t old_cmask = umask(0007);
+#endif
+
 	// create directories
 	try {
-		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+		
+		Transport::Util::createDirectories(&config, CONFIG_STRING(&config, "service.working_dir"));
 	}
 	catch (...) {
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
@@ -284,20 +290,6 @@ int main(int argc, char **argv)
 #endif
 
 #ifndef WIN32
-	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
-		struct group *gr;
-		if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-			std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
-			return 1;
-		}
-		struct passwd *pw;
-		if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-			std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
-			return 1;
-		}
-		chown(CONFIG_STRING(&config, "service.working_dir").c_str(), pw->pw_uid, gr->gr_gid);
-	}
-
 	char backendport[20];
 	FILE* port_file_f;
 	port_file_f = fopen(CONFIG_STRING(&config, "service.portfile").c_str(), "w+");
@@ -422,6 +414,10 @@ int main(int argc, char **argv)
 	eventLoop_ = &eventLoop;
 
 	eventLoop.run();
+
+#ifndef WIN32
+	umask(old_cmask);
+#endif
 
 	if (userRegistration) {
 		userRegistration->stop();

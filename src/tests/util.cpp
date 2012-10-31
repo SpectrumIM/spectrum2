@@ -3,6 +3,7 @@
 #include "transport/storagebackend.h"
 #include "transport/user.h"
 #include "transport/transport.h"
+#include "transport/storagebackend.h"
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/localbuddy.h"
@@ -36,8 +37,8 @@ class UtilTest : public CPPUNIT_NS :: TestFixture{
 		}
 
 	void encryptDecryptPassword() {
-		std::string encrypted = Util::encryptPassword("password", "key");
-		CPPUNIT_ASSERT_EQUAL(std::string("password"), Util::decryptPassword(encrypted, "key"));
+		std::string encrypted = StorageBackend::encryptPassword("password", "key");
+		CPPUNIT_ASSERT_EQUAL(std::string("password"), StorageBackend::decryptPassword(encrypted, "key"));
 	}
 
 };

@@ -86,6 +86,14 @@ class Config;
 class StorageBackend
 {
 	public:
+		static std::string encryptPassword(const std::string &password, const std::string &key);
+
+		static std::string decryptPassword(std::string &encrypted, const std::string &key);
+
+		static std::string serializeGroups(const std::vector<std::string> &groups);
+
+		static std::vector<std::string> deserializeGroups(std::string &groups);
+
 		/// Virtual desctructor.
 		virtual ~StorageBackend() {}
 

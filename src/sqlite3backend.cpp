@@ -287,7 +287,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	BIND_INT(m_addBuddy, userId);
 	BIND_STR(m_addBuddy, buddyInfo.legacyName);
 	BIND_STR(m_addBuddy, buddyInfo.subscription);
-	BIND_STR(m_addBuddy, Util::serializeGroups(buddyInfo.groups));
+	BIND_STR(m_addBuddy, StorageBackend::serializeGroups(buddyInfo.groups));
 	BIND_STR(m_addBuddy, buddyInfo.alias);
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
@@ -313,7 +313,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?
 	BEGIN(m_updateBuddy);
-	BIND_STR(m_updateBuddy, Util::serializeGroups(buddyInfo.groups));
+	BIND_STR(m_updateBuddy, StorageBackend::serializeGroups(buddyInfo.groups));
 	BIND_STR(m_updateBuddy, buddyInfo.alias);
 	BIND_INT(m_updateBuddy, buddyInfo.flags);
 	BIND_STR(m_updateBuddy, buddyInfo.subscription);
@@ -355,7 +355,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		b.subscription = GET_STR(m_getBuddies);
 		b.alias = GET_STR(m_getBuddies);
 		std::string groups = GET_STR(m_getBuddies);
-		b.groups = Util::deserializeGroups(groups);
+		b.groups = StorageBackend::deserializeGroups(groups);
 		b.flags = GET_INT(m_getBuddies);
 
 		if (buddy_id == b.id) {

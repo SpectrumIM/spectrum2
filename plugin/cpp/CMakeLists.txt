@@ -5,6 +5,7 @@ FILE(GLOB HEADERS ../include/transport/*.h)
 set(EXTRA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../src/memoryusage.cpp)
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../src/logging.cpp)
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../src/config.cpp)
+set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../src/util.cpp)
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc)
 
 if (NOT WIN32)

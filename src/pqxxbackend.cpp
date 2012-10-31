@@ -157,7 +157,7 @@ bool PQXXBackend::exec(pqxx::nontransaction &txn, const std::string &query, bool
 void PQXXBackend::setUser(const UserInfo &user) {
 	std::string encrypted = user.password;
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
+		encrypted = StorageBackend::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
 	try {
 		pqxx::nontransaction txn(*m_conn);
@@ -236,7 +236,7 @@ long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 			+ "(" + pqxx::to_string(userId) + ","
 			+ quote(txn, buddyInfo.legacyName) + ","
 			+ quote(txn, buddyInfo.subscription) + ","
-			+ quote(txn, Util::serializeGroups(buddyInfo.groups)) + ","
+			+ quote(txn, StorageBackend::serializeGroups(buddyInfo.groups)) + ","
 			+ quote(txn, buddyInfo.alias) + ","
 			+ pqxx::to_string(buddyInfo.flags) + ") RETURNING id");
 
@@ -263,7 +263,7 @@ long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 	try {
 		pqxx::nontransaction txn(*m_conn);
-		txn.exec("UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, Util::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + pqxx::to_string(buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
+		txn.exec("UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, StorageBackend::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + pqxx::to_string(buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
 	}
 	catch (std::exception& e) {
 		LOG4CXX_ERROR(logger, e.what());
@@ -287,7 +287,7 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			b.flags = r[0][5].as<long>();
 
 			if (!group.empty()) {
-				b.groups = Util::deserializeGroups(group);
+				b.groups = StorageBackend::deserializeGroups(group);
 			}
 
 			roster.push_back(b);
