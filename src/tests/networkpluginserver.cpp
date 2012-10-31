@@ -29,6 +29,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST_SUITE(NetworkPluginServerTest);
 	CPPUNIT_TEST(handleBuddyChangedPayload);
 	CPPUNIT_TEST(handleBuddyChangedPayloadNoEscaping);
+	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -90,6 +91,19 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			cfg->load(ifs2);
 		}
 
+		void handleBuddyChangedPayloadUserContactInRoster() {
+			User *user = userManager->getUser("user@localhost");
+
+			pbnetwork::Buddy buddy;
+			buddy.set_username("user@localhost");
+			buddy.set_buddyname("user");
+
+			std::string message;
+			buddy.SerializeToString(&message);
+
+			serv->handleBuddyChangedPayload(message);
+			CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		}
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION (NetworkPluginServerTest);

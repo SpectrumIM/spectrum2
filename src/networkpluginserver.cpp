@@ -542,6 +542,10 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		buddy->handleBuddyChanged();
 	}
 	else {
+		if (payload.buddyname() == user->getUserInfo().uin) {
+			return;
+		}
+
 		std::vector<std::string> groups;
 		for (int i = 0; i < payload.group_size(); i++) {
 			groups.push_back(payload.group(i));
@@ -556,6 +560,7 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 			delete buddy;
 			return;
 		}
+
 		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
 		buddy->setIconHash(payload.iconhash());
 		buddy->setBlocked(payload.blocked());

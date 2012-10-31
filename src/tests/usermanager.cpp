@@ -79,7 +79,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 
 		Swift::Presence *presence = dynamic_cast<Swift::Presence *>(getStanza(received[1]));
@@ -90,9 +90,6 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(presence);
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, presence->getType());
 
-		presence = dynamic_cast<Swift::Presence *>(getStanza(received[3]));
-		CPPUNIT_ASSERT(presence);
-		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribed, presence->getType());
 	}
 
 	void connectTwoResources() {
