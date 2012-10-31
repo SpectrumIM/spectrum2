@@ -203,12 +203,6 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				response->setFrom(presence->getTo());
 				response->setType(Swift::Presence::Subscribe);
 				m_component->getStanzaChannel()->sendPresence(response);
-
-				response = Swift::Presence::create();
-				response->setTo(presence->getFrom());
-				response->setFrom(presence->getTo());
-				response->setType(Swift::Presence::Subscribed);
-				m_component->getStanzaChannel()->sendPresence(response);
 			}
 
 			// Set user offline in database
