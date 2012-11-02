@@ -72,6 +72,11 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handleProbePresence() {
+		UserInfo info;
+		info.id = 1;
+		info.jid = "user@localhost";
+		storage->setUser(info);
+
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("localhost");
 		response->setFrom("user@localhost/resource");
@@ -88,8 +93,44 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		presence = dynamic_cast<Swift::Presence *>(getStanza(received[2]));
 		CPPUNIT_ASSERT(presence);
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Probe, presence->getType());
+
+		received.clear();
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Unsubscribed);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		presence = dynamic_cast<Swift::Presence *>(getStanza(received[1]));
+		CPPUNIT_ASSERT(presence);
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, presence->getType());
 
+		received.clear();
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Error);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		presence = dynamic_cast<Swift::Presence *>(getStanza(received[0]));
+		CPPUNIT_ASSERT(presence);
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, presence->getType());
+
+		storage->removeUser(1);
+		received.clear();
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Unsubscribed);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 	}
 
 	void connectTwoResources() {

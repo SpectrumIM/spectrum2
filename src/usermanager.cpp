@@ -195,13 +195,13 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			response->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(response);
 
-			// bother him with subscribe presence, just to be
+			// bother him with probe presence, just to be
 			// sure he is subscribed to us.
 			if (/*registered && */presence->getType() == Swift::Presence::Probe) {
 				Swift::Presence::ref response = Swift::Presence::create();
 				response->setTo(presence->getFrom());
 				response->setFrom(presence->getTo());
-				response->setType(Swift::Presence::Subscribe);
+				response->setType(Swift::Presence::Probe);
 				m_component->getStanzaChannel()->sendPresence(response);
 			}
 
@@ -382,6 +382,9 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 		case Swift::Presence::Probe:
 			handleProbePresence(presence);
 			break;
+		case Swift::Presence::Error:
+			handleErrorPresence(presence);
+			break;
 		default:
 			break;
 	};
@@ -407,7 +410,25 @@ void UserManager::handleProbePresence(Swift::Presence::ref presence) {
 	}
 }
 
+void UserManager::handleErrorPresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (!presence->getTo().getNode().empty()) {
+		return;
+	}
+	std::string userkey = presence->getFrom().toBare().toString();
+	UserInfo res;
+	bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
+	if (registered) {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setFrom(presence->getTo().toBare());
+		response->setTo(presence->getFrom().toBare());
+		response->setType(Swift::Presence::Subscribe);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
+}
+
 void UserManager::handleSubscription(Swift::Presence::ref presence) {
+	
 	// answer to subscibe for transport itself
 	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -421,6 +442,19 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 // 		response->setTo(presence->getFrom());
 // 		response->setType(Swift::Presence::Subscribe);
 // 		m_component->getStanzaChannel()->sendPresence(response);
+		return;
+	}
+	else if (presence->getType() == Swift::Presence::Unsubscribed && presence->getTo().getNode().empty()) {
+		std::string userkey = presence->getFrom().toBare().toString();
+		UserInfo res;
+		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
+		if (registered) {
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setFrom(presence->getTo().toBare());
+			response->setTo(presence->getFrom().toBare());
+			response->setType(Swift::Presence::Subscribe);
+			m_component->getStanzaChannel()->sendPresence(response);
+		}
 		return;
 	}
 

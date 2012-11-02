@@ -281,9 +281,16 @@ void Component::handlePresence(Swift::Presence::ref presence) {
 		return;
 	}
 
-	if (presence->getType() == Presence::Error) {
-		return;
-	}
+	switch (presence->getType()) {
+		case Presence::Error:
+		case Presence::Subscribe:
+		case Presence::Subscribed:
+		case Presence::Unsubscribe:
+		case Presence::Unsubscribed:
+			return;
+		default:
+			break;
+	};
 
 	// check if we have this client's capabilities and ask for them
 	if (presence->getType() != Swift::Presence::Unavailable) {
