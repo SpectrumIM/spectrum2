@@ -266,7 +266,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 					registered = m_storageBackend->getUser(userkey, res);
 				}
 				else {
-					registered = false;
+					registered = true;
 				}
 			}
 		}
