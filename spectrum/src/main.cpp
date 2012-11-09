@@ -33,7 +33,7 @@
 #else
 #include <process.h>
 #define getpid _getpid
-// #include "win32/SpectrumService.h"
+#include "win32/ServiceWrapper.h"
 #endif
 #include <sys/stat.h>
 
@@ -45,6 +45,13 @@ DEFINE_LOGGER(logger, "Spectrum");
 Swift::SimpleEventLoop *eventLoop_ = NULL;
 Component *component_ = NULL;
 UserManager *userManager_ = NULL;
+Config *config_ = NULL;
+
+void stop() {
+	userManager_->removeAllUsers(false);
+	component_->stop();
+	eventLoop_->stop();
+}
 
 static void stop_spectrum() {
 	userManager_->removeAllUsers(false);
@@ -125,7 +132,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 int main(int argc, char **argv)
 {
 	Config config(argc, argv);
-
+	config_ = &config;
 	boost::program_options::variables_map vm;
 	bool no_daemon = false;
 	std::string config_file;
@@ -160,9 +167,9 @@ int main(int argc, char **argv)
 		("version,v", "Shows Spectrum version")
 		;
 #ifdef WIN32
-// 	desc.add_options()
-// 		("install-service,i", "Install spectrum as Windows service")
-// 		("uninstall-service,u", "Uninstall Windows service");
+ 	desc.add_options()
+ 		("install-service,i", "Install spectrum as Windows service")
+ 		("uninstall-service,u", "Uninstall Windows service");
 #endif
 	try
 	{
@@ -192,18 +199,17 @@ int main(int argc, char **argv)
 			no_daemon = true;
 		}
 #ifdef WIN32
-#if 0
 		if (vm.count("install-service")) {
-			SpectrumService ntservice;
+			ServiceWrapper ntservice("Spectrum2");
 			if (!ntservice.IsInstalled()) {
 					// determine the name of the currently executing file
 				char szFilePath[MAX_PATH];
-				GetModuleFileName(NULL, szFilePath, sizeof(szFilePath));
+				GetModuleFileNameA(NULL, szFilePath, sizeof(szFilePath));
 				std::string exe_file(szFilePath);
 				std::string config_file = exe_file.replace(exe_file.end() - 4, exe_file.end(), ".cfg");
 				std::string service_path = std::string(szFilePath) + std::string(" --config ") + config_file;
 
-				if (ntservice.Install(service_path.c_str())) {
+				if (ntservice.Install((char *)service_path.c_str())) {
 					std::cout << "Successfully installed" << std::endl;
 					return 0;
 				} else {
@@ -216,9 +222,9 @@ int main(int argc, char **argv)
 			}
 		}
 		if (vm.count("uninstall-service")) {
-			SpectrumService ntservice;
+			ServiceWrapper ntservice("Spectrum2");
 			if (ntservice.IsInstalled()) {
-				if (ntservice.Remove()) {
+				if (ntservice.UnInstall()) {
 					std::cout << "Successfully removed" << std::endl;
 					return 0;
 				} else {
@@ -229,8 +235,7 @@ int main(int argc, char **argv)
 				std::cout << "Service not installed" << std::endl;
 				return 1;
 			}
-		}
-#endif
+		}		
 #endif
 	}
 	catch (std::runtime_error& e)
@@ -310,36 +315,49 @@ int main(int argc, char **argv)
 // 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
     }
 #endif
+#ifdef WIN32
+	ServiceWrapper ntservice("Spectrum2");
+	if (ntservice.IsInstalled()) {
+		ntservice.RunService();
+	} else {
+		mainloop();
+	}
+#else
+	mainloop();
+#endif
+}
 
-	Logging::initMainLogging(&config);
+int mainloop() {
+
+	Logging::initMainLogging(config_);
 
 #ifndef WIN32
-	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
+	if (!CONFIG_STRING(config_, "service.group").empty() ||!CONFIG_STRING(config_, "service.user").empty() ) {
 		struct rlimit limit;
 		getrlimit(RLIMIT_CORE, &limit);
 
-		if (!CONFIG_STRING(&config, "service.group").empty()) {
+		if (!CONFIG_STRING(config_, "service.group").empty()) {
 			struct group *gr;
-			if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-				std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
+			if ((gr = getgrnam(CONFIG_STRING(config_, "service.group").c_str())) == NULL) {
+				std::cerr << "Invalid service.group name " << CONFIG_STRING(config_, "service.group") << "\n";
 				return 1;
 			}
 
-			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
-				std::cerr << "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
+			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(config_, "service.user").c_str(), gr->gr_gid) != 0)) {
+				std::cerr << "Failed to set service.group name " << CONFIG_STRING(config_, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
 				return 1;
 			}
 		}
 
-		if (!CONFIG_STRING(&config, "service.user").empty()) {
+		if (!CONFIG_STRING(config_, "service.user").empty()) {
 			struct passwd *pw;
-			if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-				std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
+			if ((pw = getpwnam(CONFIG_STRING(config_, "service.user").c_str())) == NULL) {
+				std::cerr << "Invalid service.user name " << CONFIG_STRING(config_, "service.user") << "\n";
 				return 1;
 			}
 
 			if ((setuid(pw->pw_uid)) != 0) {
-				std::cerr << "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
+				std::cerr << "Failed to set service.user name " << CONFIG_STRING(config_, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
 				return 1;
 			}
 		}
@@ -355,14 +373,14 @@ int main(int argc, char **argv)
 	Swift::SimpleEventLoop eventLoop;
 
 	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
-	UserRegistry userRegistry(&config, factories);
+	UserRegistry userRegistry(config_, factories);
 
-	Component transport(&eventLoop, factories, &config, NULL, &userRegistry);
+	Component transport(&eventLoop, factories, config_, NULL, &userRegistry);
 	component_ = &transport;
 // 	Logger logger(&transport);
 
 	std::string error;
-	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
+	StorageBackend *storageBackend = StorageBackend::createBackend(config_, error);
 	if (storageBackend == NULL) {
 		if (!error.empty()) {
 			std::cerr << error << "\n";
@@ -393,7 +411,7 @@ int main(int argc, char **argv)
 
 	FileTransferManager ftManager(&transport, &userManager);
 
-	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager, &discoItemsResponder);
+	NetworkPluginServer plugin(&transport, config_, &userManager, &ftManager, &discoItemsResponder);
 	plugin.start();
 
 	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
