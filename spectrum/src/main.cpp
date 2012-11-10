@@ -129,6 +129,135 @@ static void daemonize(const char *cwd, const char *lock_file) {
 
 #endif
 
+int mainloop() {
+
+#ifndef WIN32
+	mode_t old_cmask = umask(0007);
+#endif
+
+	Logging::initMainLogging(config_);
+
+#ifndef WIN32
+	if (!CONFIG_STRING(config_, "service.group").empty() ||!CONFIG_STRING(config_, "service.user").empty() ) {
+		struct rlimit limit;
+		getrlimit(RLIMIT_CORE, &limit);
+
+		if (!CONFIG_STRING(config_, "service.group").empty()) {
+			struct group *gr;
+			if ((gr = getgrnam(CONFIG_STRING(config_, "service.group").c_str())) == NULL) {
+				std::cerr << "Invalid service.group name " << CONFIG_STRING(config_, "service.group") << "\n";
+				return 1;
+			}
+
+			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(config_, "service.user").c_str(), gr->gr_gid) != 0)) {
+				std::cerr << "Failed to set service.group name " << CONFIG_STRING(config_, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
+				return 1;
+			}
+		}
+
+		if (!CONFIG_STRING(config_, "service.user").empty()) {
+			struct passwd *pw;
+			if ((pw = getpwnam(CONFIG_STRING(config_, "service.user").c_str())) == NULL) {
+				std::cerr << "Invalid service.user name " << CONFIG_STRING(config_, "service.user") << "\n";
+				return 1;
+			}
+
+			if ((setuid(pw->pw_uid)) != 0) {
+				std::cerr << "Failed to set service.user name " << CONFIG_STRING(config_, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
+				return 1;
+			}
+		}
+		setrlimit(RLIMIT_CORE, &limit);
+	}
+
+	struct rlimit limit;
+	limit.rlim_max = RLIM_INFINITY;
+	limit.rlim_cur = RLIM_INFINITY;
+	setrlimit(RLIMIT_CORE, &limit);
+#endif
+
+	Swift::SimpleEventLoop eventLoop;
+
+	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
+	UserRegistry userRegistry(config_, factories);
+
+	Component transport(&eventLoop, factories, config_, NULL, &userRegistry);
+	component_ = &transport;
+// 	Logger logger(&transport);
+
+	std::string error;
+	StorageBackend *storageBackend = StorageBackend::createBackend(config_, error);
+	if (storageBackend == NULL) {
+		if (!error.empty()) {
+			std::cerr << error << "\n";
+			return -2;
+		}
+	}
+	else if (!storageBackend->connect()) {
+		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+		return -1;
+	}
+
+	Logging::redirect_stderr();
+
+	DiscoItemsResponder discoItemsResponder(&transport);
+	discoItemsResponder.start();
+
+	UserManager userManager(&transport, &userRegistry, &discoItemsResponder, storageBackend);
+	userManager_ = &userManager;
+
+	UserRegistration *userRegistration = NULL;
+	UsersReconnecter *usersReconnecter = NULL;
+	if (storageBackend) {
+		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
+		userRegistration->start();
+
+		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
+	}
+
+	FileTransferManager ftManager(&transport, &userManager);
+
+	NetworkPluginServer plugin(&transport, config_, &userManager, &ftManager, &discoItemsResponder);
+	plugin.start();
+
+	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
+	plugin.setAdminInterface(&adminInterface);
+
+	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
+	statsResponder.start();
+
+	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
+	gatewayResponder.start();
+
+	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
+	adhocmanager.start();
+
+	SettingsAdHocCommandFactory settings;
+	adhocmanager.addAdHocCommand(&settings);
+
+	eventLoop_ = &eventLoop;
+
+	eventLoop.run();
+
+#ifndef WIN32
+	umask(old_cmask);
+#endif
+
+	if (userRegistration) {
+		userRegistration->stop();
+		delete userRegistration;
+	}
+
+	if (usersReconnecter) {
+		delete usersReconnecter;
+	}
+
+	delete storageBackend;
+	delete factories;
+	return 0;
+}
+
+
 int main(int argc, char **argv)
 {
 	Config config(argc, argv);
@@ -254,10 +383,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-#ifndef WIN32
-	mode_t old_cmask = umask(0007);
-#endif
-
 	// create directories
 	try {
 		
@@ -325,128 +450,4 @@ int main(int argc, char **argv)
 #else
 	mainloop();
 #endif
-}
-
-int mainloop() {
-
-	Logging::initMainLogging(config_);
-
-#ifndef WIN32
-	if (!CONFIG_STRING(config_, "service.group").empty() ||!CONFIG_STRING(config_, "service.user").empty() ) {
-		struct rlimit limit;
-		getrlimit(RLIMIT_CORE, &limit);
-
-		if (!CONFIG_STRING(config_, "service.group").empty()) {
-			struct group *gr;
-			if ((gr = getgrnam(CONFIG_STRING(config_, "service.group").c_str())) == NULL) {
-				std::cerr << "Invalid service.group name " << CONFIG_STRING(config_, "service.group") << "\n";
-				return 1;
-			}
-
-			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(config_, "service.user").c_str(), gr->gr_gid) != 0)) {
-				std::cerr << "Failed to set service.group name " << CONFIG_STRING(config_, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
-				return 1;
-			}
-		}
-
-		if (!CONFIG_STRING(config_, "service.user").empty()) {
-			struct passwd *pw;
-			if ((pw = getpwnam(CONFIG_STRING(config_, "service.user").c_str())) == NULL) {
-				std::cerr << "Invalid service.user name " << CONFIG_STRING(config_, "service.user") << "\n";
-				return 1;
-			}
-
-			if ((setuid(pw->pw_uid)) != 0) {
-				std::cerr << "Failed to set service.user name " << CONFIG_STRING(config_, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
-				return 1;
-			}
-		}
-		setrlimit(RLIMIT_CORE, &limit);
-	}
-
-	struct rlimit limit;
-	limit.rlim_max = RLIM_INFINITY;
-	limit.rlim_cur = RLIM_INFINITY;
-	setrlimit(RLIMIT_CORE, &limit);
-#endif
-
-	Swift::SimpleEventLoop eventLoop;
-
-	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
-	UserRegistry userRegistry(config_, factories);
-
-	Component transport(&eventLoop, factories, config_, NULL, &userRegistry);
-	component_ = &transport;
-// 	Logger logger(&transport);
-
-	std::string error;
-	StorageBackend *storageBackend = StorageBackend::createBackend(config_, error);
-	if (storageBackend == NULL) {
-		if (!error.empty()) {
-			std::cerr << error << "\n";
-			return -2;
-		}
-	}
-	else if (!storageBackend->connect()) {
-		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-		return -1;
-	}
-
-	Logging::redirect_stderr();
-
-	DiscoItemsResponder discoItemsResponder(&transport);
-	discoItemsResponder.start();
-
-	UserManager userManager(&transport, &userRegistry, &discoItemsResponder, storageBackend);
-	userManager_ = &userManager;
-
-	UserRegistration *userRegistration = NULL;
-	UsersReconnecter *usersReconnecter = NULL;
-	if (storageBackend) {
-		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
-		userRegistration->start();
-
-		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
-	}
-
-	FileTransferManager ftManager(&transport, &userManager);
-
-	NetworkPluginServer plugin(&transport, config_, &userManager, &ftManager, &discoItemsResponder);
-	plugin.start();
-
-	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
-	plugin.setAdminInterface(&adminInterface);
-
-	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
-	statsResponder.start();
-
-	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
-	gatewayResponder.start();
-
-	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
-	adhocmanager.start();
-
-	SettingsAdHocCommandFactory settings;
-	adhocmanager.addAdHocCommand(&settings);
-
-	eventLoop_ = &eventLoop;
-
-	eventLoop.run();
-
-#ifndef WIN32
-	umask(old_cmask);
-#endif
-
-	if (userRegistration) {
-		userRegistration->stop();
-		delete userRegistration;
-	}
-
-	if (usersReconnecter) {
-		delete usersReconnecter;
-	}
-
-	delete storageBackend;
-	delete factories;
-	return 0;
 }
