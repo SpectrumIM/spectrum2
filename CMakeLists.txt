@@ -30,7 +30,7 @@ option(ENABLE_YAHOO2 "Build Libyahoo2 plugin" ON)
 
 option(ENABLE_DOCS "Build Docs" ON)
 option(ENABLE_LOG "Build with logging using Log4cxx" ON)
-option(ENABLE_TESTS "Build Tests using CppUnit" ON)
+option(ENABLE_TESTS "Build Tests using CppUnit" OFF)
 
 MACRO(LIST_CONTAINS var value)
 	SET(${var})
