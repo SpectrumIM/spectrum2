@@ -225,6 +225,7 @@ class BasicTest : public Swift::XMPPParserClient {
 		user.jid = "user@localhost";
 		user.uin = "legacyname";
 		user.password = "password";
+		user.vip = 0;
 		storage->setUser(user);
 	}
 

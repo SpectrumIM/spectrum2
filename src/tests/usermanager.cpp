@@ -27,6 +27,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(connectUserTransportDisabled);
 	CPPUNIT_TEST(connectUserRegistrationNeeded);
 	CPPUNIT_TEST(connectUserRegistrationNeededRegistered);
+	CPPUNIT_TEST(connectUserVipOnlyNonVip);
 	CPPUNIT_TEST(handleProbePresence);
 	CPPUNIT_TEST(disconnectUser);
 	CPPUNIT_TEST_SUITE_END();
@@ -69,6 +70,26 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
 		CPPUNIT_ASSERT(!streamEnded);
+	}
+
+	void connectUserVipOnlyNonVip() {
+		addUser();
+		std::istringstream ifs("service.server_mode = 1\nservice.jid_escaping=0\nservice.jid=localhost\nservice.vip_only=1\nservice.vip_message=Ahoj\n");
+		cfg->load(ifs);
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(std::string("Ahoj"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
+
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		CPPUNIT_ASSERT(streamEnded);
+		std::istringstream ifs2("service.server_mode = 1\nservice.jid_escaping=1\nservice.jid=localhost\nservice.more_resources=1\n");
+		cfg->load(ifs2);
 	}
 
 	void handleProbePresence() {

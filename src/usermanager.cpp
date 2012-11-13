@@ -277,6 +277,22 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			return;
 		}
 
+		if (CONFIG_BOOL(m_component->getConfig(), "service.vip_only") && res.vip == false) {
+			if (!CONFIG_STRING(m_component->getConfig(), "service.vip_message").empty()) {
+				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+				msg->setBody(CONFIG_STRING(m_component->getConfig(), "service.vip_message"));
+				msg->setTo(presence->getFrom());
+				msg->setFrom(m_component->getJID());
+				m_component->getStanzaChannel()->sendMessage(msg);
+			}
+
+			LOG4CXX_WARN(logger, "Non VIP user " << userkey << " tried to login");
+			if (m_component->inServerMode()) {
+				m_userRegistry->onPasswordInvalid(presence->getFrom());
+			}
+			return;
+		}
+
 		bool transport_enabled = true;
 		if (m_storageBackend) {
 			std::string value = "1";

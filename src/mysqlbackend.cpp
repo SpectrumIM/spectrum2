@@ -443,6 +443,23 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 		}
 	}
 
+	if (!CONFIG_STRING(m_config, "database.vip_statement").empty()) {
+		std::string query = CONFIG_STRING(m_config, "database.vip_statement");
+		boost::replace_all(query, "$jid", barejid);
+		LOG4CXX_INFO(logger, "Executing '" << query << "' to find out if user " << barejid << " is VIP");
+		if (exec(query)) {
+			MYSQL_RES *result = mysql_store_result(&m_conn);
+			if (result) {
+				LOG4CXX_INFO(logger, "User " << barejid << " is VIP");
+				user.vip = 1;
+			}
+			else {
+				LOG4CXX_INFO(logger, "User " << barejid << " is not VIP");
+				user.vip = 0;
+			}
+		}
+	}
+
 	return ret;
 }
 
