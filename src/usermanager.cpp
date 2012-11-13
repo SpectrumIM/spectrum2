@@ -431,6 +431,15 @@ void UserManager::handleErrorPresence(Swift::Presence::ref presence) {
 	if (!presence->getTo().getNode().empty()) {
 		return;
 	}
+
+	if (!presence->getPayload<Swift::ErrorPayload>()) {
+		return;
+	}
+
+	if (presence->getPayload<Swift::ErrorPayload>()->getCondition() != Swift::ErrorPayload::SubscriptionRequired) {
+		return;
+	}
+
 	std::string userkey = presence->getFrom().toBare().toString();
 	UserInfo res;
 	bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
