@@ -449,7 +449,7 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 		LOG4CXX_INFO(logger, "Executing '" << query << "' to find out if user " << barejid << " is VIP");
 		if (exec(query)) {
 			MYSQL_RES *result = mysql_store_result(&m_conn);
-			if (result) {
+			if (result && mysql_num_rows(result) > 0) {
 				LOG4CXX_INFO(logger, "User " << barejid << " is VIP");
 				user.vip = 1;
 			}
