@@ -445,7 +445,7 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 
 	if (!CONFIG_STRING(m_config, "database.vip_statement").empty()) {
 		std::string query = CONFIG_STRING(m_config, "database.vip_statement");
-		boost::replace_all(query, "$jid", barejid);
+		boost::replace_all(query, "$barejid", barejid);
 		LOG4CXX_INFO(logger, "Executing '" << query << "' to find out if user " << barejid << " is VIP");
 		if (exec(query)) {
 			MYSQL_RES *result = mysql_store_result(&m_conn);
