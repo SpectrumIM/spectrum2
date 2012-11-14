@@ -181,7 +181,7 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 
 	if (buddy->getSubscription() != Buddy::Both) {
 		buddy->setSubscription(Buddy::Both);
-		handleBuddyChanged(buddy);
+		storeBuddy(buddy);
 	}
 }
 
@@ -446,13 +446,15 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					}
 					if (buddy->getSubscription() != Buddy::Both) {
 						buddy->setSubscription(Buddy::Both);
-						handleBuddyChanged(buddy);
+						storeBuddy(buddy);
 					}
 					break;
 				// remove buddy
 				case Swift::Presence::Unsubscribe:
 					response->setType(Swift::Presence::Unsubscribed);
 					onBuddyRemoved(buddy);
+					removeBuddy(buddy->getName());
+					buddy = NULL;
 					break;
 				// just send response
 				case Swift::Presence::Unsubscribed:
@@ -462,13 +464,13 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					// to be send later again
 					if (buddy->getSubscription() != Buddy::Both) {
 						buddy->setSubscription(Buddy::Both);
-						handleBuddyChanged(buddy);
+						storeBuddy(buddy);
 					}
 					break;
 				case Swift::Presence::Subscribed:
 					if (buddy->getSubscription() != Buddy::Both) {
 						buddy->setSubscription(Buddy::Both);
-						handleBuddyChanged(buddy);
+						storeBuddy(buddy);
 					}
 					return;
 				default:
@@ -491,10 +493,19 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					onBuddyAdded(buddy);
 					response->setType(Swift::Presence::Subscribed);
 					break;
-				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Unsubscribe:
+					buddyInfo.id = -1;
+					buddyInfo.alias = "";
+					buddyInfo.legacyName = Buddy::JIDToLegacyName(presence->getTo());
+					buddyInfo.subscription = "both";
+					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
+
 					response->setType(Swift::Presence::Unsubscribed);
-// 					onBuddyRemoved(buddy);
+					
+					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+					onBuddyRemoved(buddy);
+					delete buddy;
+					buddy = NULL;
 					break;
 				// just send response
 				case Swift::Presence::Unsubscribed:
