@@ -137,6 +137,16 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Error);
+		response->addPayload(boost::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		presence = dynamic_cast<Swift::Presence *>(getStanza(received[0]));
 		CPPUNIT_ASSERT(presence);
