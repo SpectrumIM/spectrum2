@@ -266,7 +266,13 @@ int main(int argc, char **argv)
 	bool no_daemon = false;
 	std::string config_file;
 	std::string jid;
-
+#ifdef WIN32
+	std::string install_service_name, uninstall_service_name, run_service_name;
+	// determine the name of the currently executing file
+	char szFilePath[MAX_PATH];
+	GetModuleFileNameA(NULL, szFilePath, sizeof(szFilePath));
+	std::string exe_file(szFilePath);					
+#endif	
 	setlocale(LC_ALL, "");
 #ifndef WIN32
 #ifndef __FreeBSD__
@@ -297,8 +303,9 @@ int main(int argc, char **argv)
 		;
 #ifdef WIN32
  	desc.add_options()
- 		("install-service,i", "Install spectrum as Windows service")
- 		("uninstall-service,u", "Uninstall Windows service");
+		("install-service,i", boost::program_options::value<std::string>(&install_service_name)->default_value(""), "Install spectrum as Windows service")
+ 		("uninstall-service,u", boost::program_options::value<std::string>(&uninstall_service_name)->default_value(""), "Uninstall Windows service")
+		("run-as-service,r", boost::program_options::value<std::string>(&run_service_name)->default_value(""), "stub for Windows Service Manager");
 #endif
 	try
 	{
@@ -327,41 +334,38 @@ int main(int argc, char **argv)
 		if(vm.count("no-daemonize")) {
 			no_daemon = true;
 		}
-#ifdef WIN32
-		if (vm.count("install-service")) {
-			ServiceWrapper ntservice("Spectrum2");
+#ifdef WIN32	
+		if (!install_service_name.empty()) {				
+			// build command line for Service Manager
+			std::string service_path = exe_file + std::string(" --config ") + vm["config"].as<std::string>() 
+						+ std::string(" --run-as-service ") + install_service_name;													
+		
+			ServiceWrapper ntservice((char *)install_service_name.c_str());
 			if (!ntservice.IsInstalled()) {
-					// determine the name of the currently executing file
-				char szFilePath[MAX_PATH];
-				GetModuleFileNameA(NULL, szFilePath, sizeof(szFilePath));
-				std::string exe_file(szFilePath);
-				std::string config_file = exe_file.replace(exe_file.end() - 4, exe_file.end(), ".cfg");
-				std::string service_path = std::string(szFilePath) + std::string(" --config ") + config_file;
-
 				if (ntservice.Install((char *)service_path.c_str())) {
-					std::cout << "Successfully installed" << std::endl;
+					std::cout << "Successfully installed " << install_service_name << std::endl;
 					return 0;
 				} else {
 					std::cout << "Error installing service, are you an Administrator?" << std::endl;
 					return 1;
 				}                				
 			} else {
-				std::cout << "Already installed" << std::endl;
+				std::cout << "Already installed " << install_service_name << std::endl;
 				return 1;
 			}
 		}
-		if (vm.count("uninstall-service")) {
-			ServiceWrapper ntservice("Spectrum2");
+		if (!uninstall_service_name.empty()) {
+			ServiceWrapper ntservice((char *)uninstall_service_name.c_str());
 			if (ntservice.IsInstalled()) {
 				if (ntservice.UnInstall()) {
-					std::cout << "Successfully removed" << std::endl;
+					std::cout << "Successfully removed " << uninstall_service_name << std::endl;
 					return 0;
 				} else {
 					std::cout << "Error removing service, are you an Administrator?" << std::endl;
 					return 1;
 				}                               				
 			} else {
-				std::cout << "Service not installed" << std::endl;
+				std::cout << "Service not installed: " << uninstall_service_name << std::endl;
 				return 1;
 			}
 		}		
@@ -441,9 +445,14 @@ int main(int argc, char **argv)
     }
 #endif
 #ifdef WIN32
-	ServiceWrapper ntservice("Spectrum2");
-	if (ntservice.IsInstalled()) {
-		ntservice.RunService();
+	if (!run_service_name.empty()) {
+		ServiceWrapper ntservice((char *)run_service_name.c_str());
+		if (ntservice.IsInstalled()) {
+			ntservice.RunService();
+		} else {
+			std::cerr << "Service not installed: " << run_service_name << std::endl;
+			return 1;
+		}
 	} else {
 		mainloop();
 	}
