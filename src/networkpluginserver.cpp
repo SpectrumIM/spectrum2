@@ -332,7 +332,13 @@ void NetworkPluginServer::start() {
 		if (result != 0) {
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
-					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+					if (status == 254) {
+						LOG4CXX_ERROR(logger, "Backend can not be started, because it needs database to store data, but the database backend is not configured.");
+					}
+					else {
+						LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+					}
+					LOG4CXX_ERROR(logger, "Check backend log for more details");
 					continue;
 				}
 			}
