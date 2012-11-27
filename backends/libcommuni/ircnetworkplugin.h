@@ -46,4 +46,5 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 		std::vector<std::string> m_servers;
 		int m_currentServer;
 		std::string m_identify;
+		bool m_firstPing;
 };
