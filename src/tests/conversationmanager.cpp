@@ -94,26 +94,35 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleSubjectMessages() {
 		User *user = userManager->getUser("user@localhost");
-
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1");
-		user->getConversationManager()->addConversation(conv);
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
 
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setSubject("subject");
+		msg->setType(Swift::Message::Groupchat);
 
-		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();
+
+		// No response, because presence with code 110 has not been sent yet and we must not send
+		// subject before this one.
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		// this user presence - status code 110
+		conv->handleParticipantChanged("nickname", 1, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
 		
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getSubject());
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getSubject());
 		received.clear();
 
 		// send response
 		msg->setFrom("user@localhost/resource");
-		msg->setTo("buddy1@localhost/bot");
+		msg->setTo("#room@localhost");
 		injectMessage(msg);
 		loop->processEvents();
 		
