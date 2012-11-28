@@ -11,11 +11,12 @@
 #include "transport/threadpool.h"
 
 #include "Swiften/Swiften.h"
+#ifndef _WIN32
 #include "unistd.h"
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
-
+#endif
 #include <boost/algorithm/string.hpp>
 #include <boost/signal.hpp>
 #include <boost/thread.hpp>

@@ -1,6 +1,7 @@
 #include "TwitterPlugin.h"
 DEFINE_LOGGER(logger, "Twitter Backend");
 
+#ifndef _WIN32
 static void spectrum_sigchld_handler(int sig)
 {
 	int status;
@@ -16,16 +17,18 @@ static void spectrum_sigchld_handler(int sig)
 		perror(errmsg);
 	}
 }
+#endif
 
 
 int main (int argc, char* argv[]) {
 	std::string host;
 	int port;
-
+#ifndef _WIN32
 	if (signal(SIGCHLD, spectrum_sigchld_handler) == SIG_ERR) {
 		std::cout << "SIGCHLD handler can't be set\n";
 		return -1;
 	}
+#endif
 
 	std::string error;
 	Config *cfg = Config::createFromArgs(argc, argv, error, host, port);
