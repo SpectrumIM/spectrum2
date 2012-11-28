@@ -141,7 +141,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-		msg->setBody("hi there!");
+		msg->setBody("hi there<>!");
 
 		// Forward it
 		conv->handleMessage(msg);
@@ -149,7 +149,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
@@ -158,13 +158,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// send response
 		msg->setFrom("user@localhost/resource");
 		msg->setTo("buddy1\\40test@localhost/bot");
-		msg->setBody("response!");
+		msg->setBody("response<>!");
 		injectMessage(msg);
 		loop->processEvents();
 		
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg->getBody());
 
 		// send another message from legacy network, should be sent to user@localhost/resource now
 		boost::shared_ptr<Swift::Message> msg2(new Swift::Message());
