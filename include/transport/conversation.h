@@ -148,6 +148,8 @@ class Conversation {
 		Swift::JID m_jid;
 		std::list<Swift::JID> m_jids;
 		std::map<std::string, Participant> m_participants;
+		boost::shared_ptr<Swift::Message> m_subject;
+		bool m_sentInitialPresence;
 };
 
 }

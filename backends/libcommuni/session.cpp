@@ -189,6 +189,7 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	QString channel;
 	QStringList members;
+	std::string nick;
 
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	switch (m->code()) {
@@ -196,7 +197,14 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			m_topicData = TO_UTF8(m->parameters().value(2));
 			break;
 		case 333:
-			 np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, TO_UTF8(m->parameters().value(2)));
+			nick = TO_UTF8(m->parameters().value(2));
+			if (nick.find("!") != std::string::npos) {
+				nick = nick.substr(0, nick.find("!"));
+			}
+			if (nick.find("/") != std::string::npos) {
+				nick = nick.substr(0, nick.find("/"));
+			}
+			np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, nick);
 			break;
 		case 353:
 			channel = m->parameters().value(2);

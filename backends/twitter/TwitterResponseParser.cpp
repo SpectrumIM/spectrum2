@@ -11,6 +11,15 @@ static std::string tolowercase(std::string inp)
 	return out;
 }
 
+static std::string toIsoTime(std::string in) {
+	time_t now = time(0);
+	struct tm *mtime = gmtime(&now);
+	strptime(in.c_str(), "%a %b %d %H:%M:%S %z %Y", mtime);
+	char buf[80];
+	strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", mtime);
+	return buf;
+}
+
 EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const std::string xmlns)
 {
 	EmbeddedStatus status;
@@ -19,7 +28,8 @@ EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const
 		return status;
 	}
 
-	status.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	status.setCreationTime( toIsoTime(std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
+
 	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
 	status.setTweet( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
 	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
@@ -60,7 +70,7 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 		return status;
 	}
 
-	status.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	status.setCreationTime( toIsoTime ( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
 	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
 	status.setTweet( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
 	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
@@ -82,7 +92,7 @@ DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const s
 		return DM;
 	}
 
-	DM.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	DM.setCreationTime( toIsoTime ( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
 	DM.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
 	DM.setMessage( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
 	DM.setSenderID( std::string( element->getChild(TwitterReponseTypes::sender_id, xmlns)->getText() ) );

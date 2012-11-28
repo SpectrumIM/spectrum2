@@ -35,6 +35,7 @@ namespace Transport {
 /// development.
 class NetworkPlugin {
 	public:
+		enum ExitCode { StorageBackendNeeded = -2 };
 
 		class PluginConfig {
 			public:

@@ -42,8 +42,9 @@ int main (int argc, char* argv[]) {
 	StorageBackend *storagebackend;
 	storagebackend = StorageBackend::createBackend(cfg, error);
 	if (storagebackend == NULL) {
-		LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error)
-		return -2;
+		LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
+		LOG4CXX_ERROR(logger, "Twitter backend needs storage backend configured to work! " << error);
+		return NetworkPlugin::StorageBackendNeeded;
 	}
 
 	else if (!storagebackend->connect()) {

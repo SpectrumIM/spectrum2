@@ -33,6 +33,7 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 // 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
+	m_sentInitialPresence = false;
 }
 
 Conversation::~Conversation() {
@@ -128,6 +129,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 			message->setTo(jid);
 			message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
+			// Subject has to be sent after our own presence (the one with code 110)
+			if (!message->getSubject().empty() && m_sentInitialPresence == false) {
+				m_subject = message;
+				return;
+			}
 			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 		}
 	}
@@ -169,6 +175,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 		Swift::MUCUserPayload::StatusCode c;
 		c.code = 110;
 		p->addStatusCode(c);
+		m_sentInitialPresence = true;
 	}
 
 	
@@ -216,6 +223,11 @@ void Conversation::handleParticipantChanged(const std::string &nick, int flag, i
 	}
 	if (!newname.empty()) {
 		handleParticipantChanged(newname, flag, status, statusMessage);
+	}
+
+	if (m_sentInitialPresence && m_subject) {
+		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(m_subject);
+		m_subject.reset();
 	}
 }
 

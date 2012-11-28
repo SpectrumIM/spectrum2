@@ -11,6 +11,7 @@ DEFINE_LOGGER(logger, "IRCNetworkPlugin");
 IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
 	this->config = config;
 	m_currentServer = 0;
+	m_firstPing = true;
 	m_socket = new QTcpSocket();
 	m_socket->connectToHost(FROM_UTF8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
@@ -47,6 +48,17 @@ void IRCNetworkPlugin::readData() {
 	size_t availableBytes = m_socket->bytesAvailable();
 	if (availableBytes == 0)
 		return;
+
+	if (m_firstPing) {
+		m_firstPing = false;
+		// Users can join the network without registering if we allow
+		// one user to connect multiple IRC networks.
+		if (m_servers.empty()) {
+			NetworkPlugin::PluginConfig cfg;
+			cfg.setNeedRegistration(false);
+			sendConfig(cfg);
+		}
+	}
 
 	std::string d = std::string(m_socket->readAll().data(), availableBytes);
 	handleDataRead(d);

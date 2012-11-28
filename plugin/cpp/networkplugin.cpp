@@ -63,7 +63,7 @@ NetworkPlugin::~NetworkPlugin() {
 }
 
 void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
-	std::string data = "[registration]";
+	std::string data = "[registration]\n";
 	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0") + "\n";
 	data += std::string("needRegistration=") + (cfg.m_needRegistration ? "1" : "0") + "\n";
 
