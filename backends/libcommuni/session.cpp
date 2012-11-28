@@ -48,6 +48,8 @@ void MyIrcSession::on_connected() {
 		}
 	}
 
+	sendCommand(IrcCommand::createCapability("REQ", QStringList("away-notify")));
+
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		sendCommand(IrcCommand::createJoin(FROM_UTF8(it->second->getChannel()), FROM_UTF8(it->second->getPassword())));
 	}
@@ -86,8 +88,8 @@ void MyIrcSession::on_joined(IrcMessage *message) {
 	bool flags = 0;
 	std::string nickname = TO_UTF8(m->sender().name());
 	flags = correctNickname(nickname);
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel()), (int) flags, pbnetwork::STATUS_ONLINE);
-	LOG4CXX_INFO(logger, user << ": Joined " << TO_UTF8(m->parameters()[0]));
+	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel()) + suffix, (int) flags, pbnetwork::STATUS_ONLINE);
+	LOG4CXX_INFO(logger, user << ": " << nickname << " joined " << TO_UTF8(m->channel()) + suffix);
 }
 
 
@@ -193,6 +195,8 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	switch (m->code()) {
+		case 301:
+			break;
 		case 332:
 			m_topicData = TO_UTF8(m->parameters().value(2));
 			break;
@@ -206,6 +210,13 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			}
 			np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, nick);
 			break;
+		case 352:
+			channel = m->parameters().value(1);
+			nick = TO_UTF8(m->parameters().value(5));
+			if (m->parameters().value(6).toUpper().startsWith("G")) {
+				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, m_modes[TO_UTF8(channel) + nick], pbnetwork::STATUS_AWAY);
+			}
+			break;
 		case 353:
 			channel = m->parameters().value(2);
 			members = m->parameters().value(3).split(" ");
@@ -218,6 +229,9 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 				m_modes[TO_UTF8(channel) + nickname] = flags;
 				np->handleParticipantChanged(user, nickname, TO_UTF8(channel) + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
 			}
+
+			// ask /who to get away states
+			sendCommand(IrcCommand::createWho(channel));
 			break;
 		case 432:
 			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
