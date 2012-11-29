@@ -331,6 +331,24 @@ Full-Width Styles
   background: url('../images/icon_download.png') no-repeat 0% 90%;
 }
 
+#menu {
+  position: absolute;
+  width: 100%;
+  z-index: 10;
+  bottom: -20px;
+  left: 0;
+  height: 35px;
+}
+
+.menuitem {
+	margin:0;
+	margin-right:7px;
+	color:white;
+	padding:10px;
+	height: 35px;
+	background: #0090FF;
+}
+
 .zip_download_link {
   display: block;
   float: right;
