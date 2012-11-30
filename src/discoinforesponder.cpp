@@ -94,18 +94,32 @@ void DiscoInfoResponder::clearRooms() {
 	m_rooms.clear();
 }
 
+void DiscoInfoResponder::addAdHocCommand(const std::string &node, const std::string &name) {
+	m_commands[node] = node;
+}
+
 bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> info) {
-	if (!info->getNode().empty()) {
-		sendError(from, id, ErrorPayload::ItemNotFound, ErrorPayload::Cancel);
-		return true;
-	}
-
-
 	// disco#info for transport
 	if (to.getNode().empty()) {
-		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
-		res->setNode(info->getNode());
-		sendResponse(from, id, res);
+		// Adhoc command
+		if (m_commands.find(info->getNode()) != m_commands.end()) {
+			boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
+			res->addFeature("http://jabber.org/protocol/commands");
+			res->addFeature("jabber:x:data");
+			res->addIdentity(DiscoInfo::Identity(m_commands[info->getNode()], "automation", "command-node"));
+			res->setNode(info->getNode());
+			sendResponse(from, to, id, res);
+		}
+		else {
+			if (!info->getNode().empty()) {
+				sendError(from, id, ErrorPayload::ItemNotFound, ErrorPayload::Cancel);
+				return true;
+			}
+
+			boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
+			res->setNode(info->getNode());
+			sendResponse(from, id, res);
+		}
 	}
 	// disco#info for room
 	else if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {

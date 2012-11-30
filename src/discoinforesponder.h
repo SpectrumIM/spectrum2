@@ -41,6 +41,8 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		void addRoom(const std::string &jid, const std::string &name);
 		void clearRooms();
 
+		void addAdHocCommand(const std::string &node, const std::string &name);
+
 		boost::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
 
 		Swift::CapsInfo &getBuddyCapsInfo() {
@@ -55,6 +57,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		Config *m_config;
 		Swift::CapsInfo m_capsInfo;
 		std::map<std::string, std::string> m_rooms;
+		std::map<std::string, std::string> m_commands;
 };
 
 }

@@ -51,6 +51,7 @@ DiscoItemsResponder::~DiscoItemsResponder() {
 
 void DiscoItemsResponder::addAdHocCommand(const std::string &node, const std::string &name) {
 	m_commands->addItem(DiscoItems::Item(name, m_component->getJID(), node));
+	m_discoInfoResponder->addAdHocCommand(node, name);
 }
 
 void DiscoItemsResponder::addRoom(const std::string &node, const std::string &name) {
