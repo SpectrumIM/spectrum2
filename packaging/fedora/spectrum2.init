@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# spectrum2    Start and stop spectrum 2.
+
+# chkconfig: - 80 20
+# description: spectrum2
+# processname: spectrum2
+
+### BEGIN INIT INFO
+# Provides: spectrum2
+# Required-Start: network
+# Required-Stop: network
+# Default-Start:
+# Default-Stop: 0 1 6
+# Short-Description: Start and stop spectrum 2
+# Description: Spectrum is an XMPP transport/gateway.
+### END INIT INFO
+
+# Source function library.
+. /etc/init.d/functions
+
+prog=$"Spectrum 2 server"
+
+RETVAL=0
+
+start() {
+	[ "$EUID" != "0" ] && exit 4
+
+#	echo -n $"Starting $prog: "
+	RETVAL=0
+
+	export PURPLE_LEAKCHECK_HELP=1;
+	export G_SLICE=always-malloc;
+	export PURPLE_VERBOSE_DEBUG=1;
+	ulimit -c unlimited;
+	spectrum2_manager start
+#	echo_success
+
+	return "$RETVAL"
+}
+
+stop() {
+    [ "$EUID" != "0" ] && exit 4
+
+	spectrum2_manager stop
+    return "$RETVAL"
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart|force-reload)
+	stop
+	sleep 3
+	start
+	;;
+  condrestart)
+	;;
+  try-restart)
+        ;;
+  status)
+	spectrum2_manager status
+	RETVAL=$?
+	;;
+  reload)
+	exit 3
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|restart|try-restart|status|force-reload}"
+	exit 2
+esac
+
+exit "$RETVAL"
+
