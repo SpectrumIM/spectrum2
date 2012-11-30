@@ -42,10 +42,10 @@ void MyIrcSession::on_connected() {
 	m_connected = true;
 	if (suffix.empty()) {
 		np->handleConnected(user);
-		if (!sentList) {
-			sendCommand(IrcCommand::createList("", ""));
-			sentList = true;
-		}
+// 		if (!sentList) {
+// 			sendCommand(IrcCommand::createList("", ""));
+// 			sentList = true;
+// 		}
 	}
 
 	sendCommand(IrcCommand::createCapability("REQ", QStringList("away-notify")));
