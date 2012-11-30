@@ -421,7 +421,7 @@ bool MySQLBackend::exec(const std::string &query) {
 void MySQLBackend::setUser(const UserInfo &user) {
 	std::string encrypted = user.password;
 	if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-		encrypted = Util::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
+		encrypted = StorageBackend::encryptPassword(encrypted, CONFIG_STRING(m_config, "database.encryption_key"));
 	}
 	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << encrypted;
 	EXEC(m_setUser, setUser(user));
@@ -439,7 +439,24 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 		*m_getUser >> user.id >> user.jid >> user.uin >> user.password >> user.encoding >> user.language >> user.vip;
 
 		if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
-			user.password = Util::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
+			user.password = StorageBackend::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
+		}
+	}
+
+	if (!CONFIG_STRING(m_config, "database.vip_statement").empty()) {
+		std::string query = CONFIG_STRING(m_config, "database.vip_statement");
+		boost::replace_all(query, "$barejid", barejid);
+		LOG4CXX_INFO(logger, "Executing '" << query << "' to find out if user " << barejid << " is VIP");
+		if (exec(query)) {
+			MYSQL_RES *result = mysql_store_result(&m_conn);
+			if (result && mysql_num_rows(result) > 0) {
+				LOG4CXX_INFO(logger, "User " << barejid << " is VIP");
+				user.vip = 1;
+			}
+			else {
+				LOG4CXX_INFO(logger, "User " << barejid << " is not VIP");
+				user.vip = 0;
+			}
 		}
 	}
 
@@ -467,7 +484,7 @@ bool MySQLBackend::getOnlineUsers(std::vector<std::string> &users) {
 
 long MySQLBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
-	std::string groups = Util::serializeGroups(buddyInfo.groups);
+	std::string groups = StorageBackend::serializeGroups(buddyInfo.groups);
 	*m_addBuddy << userId << buddyInfo.legacyName << buddyInfo.subscription;
 	*m_addBuddy << groups;
 	*m_addBuddy << buddyInfo.alias << buddyInfo.flags;
@@ -517,7 +534,7 @@ void MySQLBackend::removeBuddy(long id) {
 
 void MySQLBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?"
-	std::string groups = Util::serializeGroups(buddyInfo.groups);
+	std::string groups = StorageBackend::serializeGroups(buddyInfo.groups);
 	*m_updateBuddy << groups;
 	*m_updateBuddy << buddyInfo.alias << buddyInfo.flags << buddyInfo.subscription;
 	*m_updateBuddy << userId << buddyInfo.legacyName;
@@ -547,7 +564,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		*m_getBuddies >> b.id >> b.legacyName >> b.subscription >> b.alias >> group >> b.flags;
 
 		if (!group.empty()) {
-			b.groups = Util::deserializeGroups(group);
+			b.groups = StorageBackend::deserializeGroups(group);
 		}
 
 		roster.push_back(b);

@@ -24,6 +24,7 @@
 #include "transport/protocol.pb.h"
 // #include "conversation.h"
 #include <iostream>
+#include <list>
 
 namespace Transport {
 
@@ -34,6 +35,7 @@ namespace Transport {
 /// development.
 class NetworkPlugin {
 	public:
+		enum ExitCode { StorageBackendNeeded = -2 };
 
 		class PluginConfig {
 			public:
@@ -109,7 +111,7 @@ class NetworkPlugin {
 		/// \param message Plain text message.
 		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
 		/// \param xhtml XHTML message.
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "");
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "");
 
 		/// Call this function when subject in room changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -163,6 +165,8 @@ class NetworkPlugin {
 		void handleFTFinish(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size, unsigned long ftid);
 
 		void handleFTData(unsigned long ftID, const std::string &data);
+
+		void handleRoomList(const std::string &user, const std::list<std::string> &rooms, const std::list<std::string> &names);
 
 		/// Called when XMPP user wants to connect legacy network.
 		/// You should connect him to legacy network and call handleConnected or handleDisconnected function later.

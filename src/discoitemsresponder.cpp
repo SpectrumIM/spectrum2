@@ -26,6 +26,7 @@
 #include "Swiften/Swiften.h"
 #include "transport/transport.h"
 #include "transport/logging.h"
+#include "discoinforesponder.h"
 
 using namespace Swift;
 using namespace boost;
@@ -38,14 +39,36 @@ DiscoItemsResponder::DiscoItemsResponder(Component *component) : Swift::GetRespo
 	m_component = component;
 	m_commands = boost::shared_ptr<DiscoItems>(new DiscoItems());
 	m_commands->setNode("http://jabber.org/protocol/commands");
+
+	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+	m_discoInfoResponder = new DiscoInfoResponder(component->getIQRouter(), component->getConfig());
+	m_discoInfoResponder->start();
 }
 
 DiscoItemsResponder::~DiscoItemsResponder() {
-	
+	delete m_discoInfoResponder;
 }
 
 void DiscoItemsResponder::addAdHocCommand(const std::string &node, const std::string &name) {
 	m_commands->addItem(DiscoItems::Item(name, m_component->getJID(), node));
+	m_discoInfoResponder->addAdHocCommand(node, name);
+}
+
+void DiscoItemsResponder::addRoom(const std::string &node, const std::string &name) {
+	if (m_rooms->getItems().size() > CONFIG_INT(m_component->getConfig(), "service.max_room_list_size")) {
+		return;
+	}
+	m_rooms->addItem(DiscoItems::Item(name, node));
+	m_discoInfoResponder->addRoom(node, name);
+}
+
+void DiscoItemsResponder::clearRooms() {
+	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+	m_discoInfoResponder->clearRooms();
+}
+
+Swift::CapsInfo &DiscoItemsResponder::getBuddyCapsInfo() {
+	return m_discoInfoResponder->getBuddyCapsInfo();
 }
 
 
@@ -55,7 +78,7 @@ bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::
 		sendResponse(from, id, m_commands);
 	}
 	else if (to.getNode().empty()) {
-		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));
+		sendResponse(from, id, m_rooms);
 	}
 	else {
 		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));

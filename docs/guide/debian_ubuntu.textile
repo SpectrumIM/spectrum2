@@ -33,7 +33,7 @@ h2. Install spectrum2 - development version
 After you have done that, simply do:
 
 <pre>
-apt-get install spectrum2-git spectrum2-backend-libpurple-git
+apt-get install spectrum2 spectrum2-backend-libpurple
 </pre>
 
 Note that these repositories pull in quite a few dependencies, depending on the distribution you use.

@@ -19,7 +19,9 @@
 #include "sys/wait.h"
 #include "sys/signal.h"
 // #include "valgrind/memcheck.h"
+#ifndef __FreeBSD__
 #include "malloc.h"
+#endif
 #include <dbus-1.0/dbus/dbus-glib-lowlevel.h>
 
 

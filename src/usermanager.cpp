@@ -26,6 +26,7 @@
 #include "transport/rostermanager.h"
 #include "transport/userregistry.h"
 #include "transport/logging.h"
+#include "transport/discoitemsresponder.h"
 #include "storageresponder.h"
 
 #include "Swiften/Swiften.h"
@@ -40,7 +41,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "UserManager");
 
-UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
+UserManager::UserManager(Component *component, UserRegistry *userRegistry, DiscoItemsResponder *discoItemsResponder, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
 	m_sentToXMPP = 0;
@@ -49,6 +50,7 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;
 	m_userRegistry = userRegistry;
+	m_discoItemsResponder = discoItemsResponder;
 
 	if (m_storageBackend) {
 		m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);
@@ -182,13 +184,26 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		    }
 		}
 
+		UserInfo res;
+		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
+
 		// No user and unavailable presence -> answer with unavailable
-		if (presence->getType() == Swift::Presence::Unavailable) {
+		if (presence->getType() == Swift::Presence::Unavailable || presence->getType() == Swift::Presence::Probe) {
 			Swift::Presence::ref response = Swift::Presence::create();
 			response->setTo(presence->getFrom());
 			response->setFrom(presence->getTo());
 			response->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(response);
+
+			// bother him with probe presence, just to be
+			// sure he is subscribed to us.
+			if (/*registered && */presence->getType() == Swift::Presence::Probe) {
+				Swift::Presence::ref response = Swift::Presence::create();
+				response->setTo(presence->getFrom());
+				response->setFrom(presence->getTo());
+				response->setType(Swift::Presence::Probe);
+				m_component->getStanzaChannel()->sendPresence(response);
+			}
 
 			// Set user offline in database
 			if (m_storageBackend) {
@@ -200,9 +215,6 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			}
 			return;
 		}
-
-		UserInfo res;
-		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
 
 		// In server mode, we don't need registration normally, but for networks like IRC
 		// or Twitter where there's no real authorization using password, we have to force
@@ -235,7 +247,8 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		// We allow auto_register feature in gateway-mode. This allows IRC user to register
 		// the transport just by joining the room.
 		if (!m_component->inServerMode()) {
-			if (!registered && CONFIG_BOOL(m_component->getConfig(), "registration.auto_register")) {
+			if (!registered && (CONFIG_BOOL(m_component->getConfig(), "registration.auto_register") ||
+				!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true))) {
 				res.password = "";
 				res.jid = userkey;
 
@@ -254,7 +267,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 					registered = m_storageBackend->getUser(userkey, res);
 				}
 				else {
-					registered = false;
+					registered = true;
 				}
 			}
 		}
@@ -262,6 +275,22 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		// Unregistered users are not able to login
 		if (!registered) {
 			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");
+			return;
+		}
+
+		if (CONFIG_BOOL(m_component->getConfig(), "service.vip_only") && res.vip == false) {
+			if (!CONFIG_STRING(m_component->getConfig(), "service.vip_message").empty()) {
+				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+				msg->setBody(CONFIG_STRING(m_component->getConfig(), "service.vip_message"));
+				msg->setTo(presence->getFrom());
+				msg->setFrom(m_component->getJID());
+				m_component->getStanzaChannel()->sendMessage(msg);
+			}
+
+			LOG4CXX_WARN(logger, "Non VIP user " << userkey << " tried to login");
+			if (m_component->inServerMode()) {
+				m_userRegistry->onPasswordInvalid(presence->getFrom());
+			}
 			return;
 		}
 
@@ -370,12 +399,20 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 		case Swift::Presence::Probe:
 			handleProbePresence(presence);
 			break;
+		case Swift::Presence::Error:
+			handleErrorPresence(presence);
+			break;
 		default:
 			break;
 	};
 }
 
 void UserManager::handleProbePresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
+		return;
+	}
+
 	User *user = getUser(presence->getFrom().toBare().toString());
 
  	if (user) {
@@ -390,7 +427,34 @@ void UserManager::handleProbePresence(Swift::Presence::ref presence) {
 	}
 }
 
+void UserManager::handleErrorPresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (!presence->getTo().getNode().empty()) {
+		return;
+	}
+
+	if (!presence->getPayload<Swift::ErrorPayload>()) {
+		return;
+	}
+
+	if (presence->getPayload<Swift::ErrorPayload>()->getCondition() != Swift::ErrorPayload::SubscriptionRequired) {
+		return;
+	}
+
+	std::string userkey = presence->getFrom().toBare().toString();
+	UserInfo res;
+	bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
+	if (registered) {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setFrom(presence->getTo().toBare());
+		response->setTo(presence->getFrom().toBare());
+		response->setType(Swift::Presence::Subscribe);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
+}
+
 void UserManager::handleSubscription(Swift::Presence::ref presence) {
+	
 	// answer to subscibe for transport itself
 	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -404,6 +468,19 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 // 		response->setTo(presence->getFrom());
 // 		response->setType(Swift::Presence::Subscribe);
 // 		m_component->getStanzaChannel()->sendPresence(response);
+		return;
+	}
+	else if (presence->getType() == Swift::Presence::Unsubscribed && presence->getTo().getNode().empty()) {
+		std::string userkey = presence->getFrom().toBare().toString();
+		UserInfo res;
+		bool registered = m_storageBackend ? m_storageBackend->getUser(userkey, res) : false;
+		if (registered) {
+			Swift::Presence::ref response = Swift::Presence::create();
+			response->setFrom(presence->getTo().toBare());
+			response->setTo(presence->getFrom().toBare());
+			response->setType(Swift::Presence::Subscribe);
+			m_component->getStanzaChannel()->sendPresence(response);
+		}
 		return;
 	}
 

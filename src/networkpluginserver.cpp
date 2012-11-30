@@ -44,6 +44,7 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 #include "transport/util.h"
+#include "transport/discoitemsresponder.h"
 
 #include "utf8.h"
 
@@ -92,8 +93,8 @@ class NetworkFactory : public Factory {
 		virtual ~NetworkFactory() {}
 
 		// Creates new conversation (NetworkConversation in this case)
-		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName) {
-			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName);
+		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc) {
+			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName, isMuc);
 			nc->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, m_nps, _1, _2));
 			return nc;
 		}
@@ -184,6 +185,11 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		setsid();
+		// close all files
+		int maxfd=sysconf(_SC_OPEN_MAX);
+		for(int fd=3; fd<maxfd; fd++) {
+			close(fd);
+		}
 		// child process
 		errno = 0;
 		int ret = execv(argv[0], argv);
@@ -231,7 +237,9 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Change groups if it's not empty. The same as above...
 	std::vector<std::string> groups;
 	for (int i = 0; i < payload.group_size(); i++) {
-		groups.push_back(payload.group(i));
+		std::string group = payload.group(i);
+		utf8::replace_invalid(payload.group(i).begin(), payload.group(i).end(), group.begin(), '_');
+		groups.push_back(group);
 	}
 	if (!groups.empty()) {
 		buddy->setGroups(groups);
@@ -242,7 +250,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	buddy->setBlocked(payload.blocked());
 }
 
-NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager) {
+NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder) {
 	m_ftManager = ftManager;
 	m_userManager = userManager;
 	m_config = config;
@@ -250,6 +258,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_isNextLongRun = false;
 	m_adminInterface = NULL;
 	m_startingBackend = false;
+	m_discoItemsResponder = discoItemsResponder;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -281,40 +290,6 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 
 	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
-	m_server->start();
-
-	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
-
-	while (true) {
-		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
-		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
-		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
-
-#ifndef _WIN32
-		// wait if the backend process will still be alive after 1 second
-		sleep(1);
-		pid_t result;
-		int status;
-		result = waitpid(-1, &status, WNOHANG);
-		if (result != 0) {
-			if (WIFEXITED(status)) {
-				if (WEXITSTATUS(status) != 0) {
-					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
-					continue;
-				}
-			}
-			else {
-				LOG4CXX_ERROR(logger, "Backend can not be started");
-				continue;
-			}
-		}
-
-		signal(SIGCHLD, SigCatcher);
-#endif
-		// quit the while loop
-		break;
-	}
-
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
@@ -336,6 +311,48 @@ NetworkPluginServer::~NetworkPluginServer() {
 	delete m_vcardResponder;
 	delete m_rosterResponder;
 	delete m_blockResponder;
+}
+
+void NetworkPluginServer::start() {
+	m_server->start();
+
+	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
+
+	while (true) {
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
+		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
+		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+
+#ifndef _WIN32
+		// wait if the backend process will still be alive after 1 second
+		sleep(1);
+		pid_t result;
+		int status;
+		result = waitpid(-1, &status, WNOHANG);
+		if (result != 0) {
+			if (WIFEXITED(status)) {
+				if (WEXITSTATUS(status) != 0) {
+					if (status == 254) {
+						LOG4CXX_ERROR(logger, "Backend can not be started, because it needs database to store data, but the database backend is not configured.");
+					}
+					else {
+						LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+					}
+					LOG4CXX_ERROR(logger, "Check backend log for more details");
+					continue;
+				}
+			}
+			else {
+				LOG4CXX_ERROR(logger, "Backend can not be started");
+				continue;
+			}
+		}
+
+		signal(SIGCHLD, SigCatcher);
+#endif
+		// quit the while loop
+		break;
+	}
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
@@ -475,11 +492,14 @@ void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
 	response->setTo(user->getJID());
 	std::string name = payload.buddyname();
 
-	name = Swift::JID::getEscapedNode(name);
-
-// 	if (name.find_last_of("@") != std::string::npos) { // OK when commented
-// 		name.replace(name.find_last_of("@"), 1, "%"); // OK when commented
-// 	}
+	if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+		name = Swift::JID::getEscapedNode(name);
+	}
+	else {
+		if (name.find_last_of("@") != std::string::npos) {
+			name.replace(name.find_last_of("@"), 1, "%");
+		}
+	}
 
 	response->setFrom(Swift::JID(name, m_component->getJID().toString()));
 	response->setType(Swift::Presence::Subscribe);
@@ -528,15 +548,25 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 		buddy->handleBuddyChanged();
 	}
 	else {
+		if (payload.buddyname() == user->getUserInfo().uin) {
+			return;
+		}
+
 		std::vector<std::string> groups;
 		for (int i = 0; i < payload.group_size(); i++) {
 			groups.push_back(payload.group(i));
 		}
-		buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+			buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_JID_ESCAPING);
+		}
+		else {
+			buddy = new LocalBuddy(user->getRosterManager(), -1, payload.buddyname(), payload.alias(), groups, BUDDY_NO_FLAG);
+		}
 		if (!buddy->isValid()) {
 			delete buddy;
 			return;
 		}
+
 		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
 		buddy->setIconHash(payload.iconhash());
 		buddy->setBlocked(payload.blocked());
@@ -624,8 +654,21 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
-	// Create new Conversation if it does not exist
+	if (!payload.timestamp().empty()) {
+		boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
+		msg->addPayload(boost::make_shared<Swift::Delay>(timestamp));
+	}
+
+	
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+
+	// We can't create Conversation for payload with nickname, because this means the message is from room,
+	// but this user is not in any room, so it's OK to just reject this message
+	if (!conv && !payload.nickname().empty()) {
+		return;
+	}
+
+	// Create new Conversation if it does not exist
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
 		user->getConversationManager()->addConversation(conv);
@@ -746,6 +789,11 @@ void NetworkPluginServer::handleFTDataPayload(Backend *b, const std::string &dat
 // 	if (!user)
 // 		return;
 
+	if (m_filetransfers.find(payload.ftid()) == m_filetransfers.end()) {
+		LOG4CXX_ERROR(logger, "Uknown filetransfer with id " << payload.ftid());
+		return;
+	}
+
 	FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
 	MemoryReadBytestream *bytestream = (MemoryReadBytestream *) transfer.readByteStream.get();
 
@@ -848,6 +896,19 @@ void NetworkPluginServer::handleBackendConfigPayload(const std::string &data) {
 	m_config->updateBackendConfig(payload.config());
 }
 
+void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
+	pbnetwork::RoomList payload;
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	m_discoItemsResponder->clearRooms();
+	for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
+		m_discoItemsResponder->addRoom(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+	}
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -944,6 +1005,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG:
 				handleBackendConfigPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_LIST:
+				handleRoomListPayload(wrapper.payload());
 				break;
 			default:
 				return;
@@ -1189,12 +1253,6 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 		return;
 	}
 	send(c->connection, message);
-
-	NetworkConversation *conv = new NetworkConversation(user->getConversationManager(), r, true);
-	user->getConversationManager()->addConversation(conv);
-	conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
-	conv->setNickname(nickname);
-	conv->addJID(who);
 }
 
 void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {

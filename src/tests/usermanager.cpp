@@ -27,6 +27,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(connectUserTransportDisabled);
 	CPPUNIT_TEST(connectUserRegistrationNeeded);
 	CPPUNIT_TEST(connectUserRegistrationNeededRegistered);
+	CPPUNIT_TEST(connectUserVipOnlyNonVip);
 	CPPUNIT_TEST(handleProbePresence);
 	CPPUNIT_TEST(disconnectUser);
 	CPPUNIT_TEST_SUITE_END();
@@ -71,7 +72,32 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(!streamEnded);
 	}
 
+	void connectUserVipOnlyNonVip() {
+		addUser();
+		std::istringstream ifs("service.server_mode = 1\nservice.jid_escaping=0\nservice.jid=localhost\nservice.vip_only=1\nservice.vip_message=Ahoj\n");
+		cfg->load(ifs);
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(std::string("Ahoj"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
+
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+		CPPUNIT_ASSERT(streamEnded);
+		std::istringstream ifs2("service.server_mode = 1\nservice.jid_escaping=1\nservice.jid=localhost\nservice.more_resources=1\n");
+		cfg->load(ifs2);
+	}
+
 	void handleProbePresence() {
+		UserInfo info;
+		info.id = 1;
+		info.jid = "user@localhost";
+		storage->setUser(info);
+
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("localhost");
 		response->setFrom("user@localhost/resource");
@@ -79,12 +105,63 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 
 		Swift::Presence *presence = dynamic_cast<Swift::Presence *>(getStanza(received[1]));
 		CPPUNIT_ASSERT(presence);
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, presence->getType());
+
+		presence = dynamic_cast<Swift::Presence *>(getStanza(received[2]));
+		CPPUNIT_ASSERT(presence);
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Probe, presence->getType());
+
+		received.clear();
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Unsubscribed);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		presence = dynamic_cast<Swift::Presence *>(getStanza(received[1]));
+		CPPUNIT_ASSERT(presence);
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, presence->getType());
+
+		received.clear();
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Error);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Error);
+		response->addPayload(boost::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		presence = dynamic_cast<Swift::Presence *>(getStanza(received[0]));
+		CPPUNIT_ASSERT(presence);
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, presence->getType());
+
+		storage->removeUser(1);
+		received.clear();
+		response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost");
+		response->setType(Swift::Presence::Unsubscribed);
+		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 	}
 
 	void connectTwoResources() {

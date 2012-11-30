@@ -22,15 +22,18 @@
 #include <boost/algorithm/string.hpp>
 #ifndef WIN32
 #include "sys/signal.h"
+#include "sys/stat.h"
 #include <pwd.h>
 #include <grp.h>
 #include <sys/resource.h>
 #include "libgen.h"
+#ifndef __FreeBSD__
 #include <malloc.h>
+#endif
 #else
 #include <process.h>
 #define getpid _getpid
-// #include "win32/SpectrumService.h"
+#include "win32/ServiceWrapper.h"
 #endif
 #include <sys/stat.h>
 
@@ -42,6 +45,13 @@ DEFINE_LOGGER(logger, "Spectrum");
 Swift::SimpleEventLoop *eventLoop_ = NULL;
 Component *component_ = NULL;
 UserManager *userManager_ = NULL;
+Config *config_ = NULL;
+
+void stop() {
+	userManager_->removeAllUsers(false);
+	component_->stop();
+	eventLoop_->stop();
+}
 
 static void stop_spectrum() {
 	userManager_->removeAllUsers(false);
@@ -119,19 +129,156 @@ static void daemonize(const char *cwd, const char *lock_file) {
 
 #endif
 
+int mainloop() {
+
+#ifndef WIN32
+	mode_t old_cmask = umask(0007);
+#endif
+
+	Logging::initMainLogging(config_);
+
+#ifndef WIN32
+	if (!CONFIG_STRING(config_, "service.group").empty() ||!CONFIG_STRING(config_, "service.user").empty() ) {
+		struct rlimit limit;
+		getrlimit(RLIMIT_CORE, &limit);
+
+		if (!CONFIG_STRING(config_, "service.group").empty()) {
+			struct group *gr;
+			if ((gr = getgrnam(CONFIG_STRING(config_, "service.group").c_str())) == NULL) {
+				std::cerr << "Invalid service.group name " << CONFIG_STRING(config_, "service.group") << "\n";
+				return 1;
+			}
+
+			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(config_, "service.user").c_str(), gr->gr_gid) != 0)) {
+				std::cerr << "Failed to set service.group name " << CONFIG_STRING(config_, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
+				return 1;
+			}
+		}
+
+		if (!CONFIG_STRING(config_, "service.user").empty()) {
+			struct passwd *pw;
+			if ((pw = getpwnam(CONFIG_STRING(config_, "service.user").c_str())) == NULL) {
+				std::cerr << "Invalid service.user name " << CONFIG_STRING(config_, "service.user") << "\n";
+				return 1;
+			}
+
+			if ((setuid(pw->pw_uid)) != 0) {
+				std::cerr << "Failed to set service.user name " << CONFIG_STRING(config_, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
+				return 1;
+			}
+		}
+		setrlimit(RLIMIT_CORE, &limit);
+	}
+
+	struct rlimit limit;
+	limit.rlim_max = RLIM_INFINITY;
+	limit.rlim_cur = RLIM_INFINITY;
+	setrlimit(RLIMIT_CORE, &limit);
+#endif
+
+	Swift::SimpleEventLoop eventLoop;
+
+	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
+	UserRegistry userRegistry(config_, factories);
+
+	Component transport(&eventLoop, factories, config_, NULL, &userRegistry);
+	component_ = &transport;
+// 	Logger logger(&transport);
+
+	std::string error;
+	StorageBackend *storageBackend = StorageBackend::createBackend(config_, error);
+	if (storageBackend == NULL) {
+		if (!error.empty()) {
+			std::cerr << error << "\n";
+			return -2;
+		}
+	}
+	else if (!storageBackend->connect()) {
+		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
+		return -1;
+	}
+
+	Logging::redirect_stderr();
+
+	DiscoItemsResponder discoItemsResponder(&transport);
+	discoItemsResponder.start();
+
+	UserManager userManager(&transport, &userRegistry, &discoItemsResponder, storageBackend);
+	userManager_ = &userManager;
+
+	UserRegistration *userRegistration = NULL;
+	UsersReconnecter *usersReconnecter = NULL;
+	if (storageBackend) {
+		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
+		userRegistration->start();
+
+		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
+	}
+
+	FileTransferManager ftManager(&transport, &userManager);
+
+	NetworkPluginServer plugin(&transport, config_, &userManager, &ftManager, &discoItemsResponder);
+	plugin.start();
+
+	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
+	plugin.setAdminInterface(&adminInterface);
+
+	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
+	statsResponder.start();
+
+	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
+	gatewayResponder.start();
+
+	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
+	adhocmanager.start();
+
+	SettingsAdHocCommandFactory settings;
+	adhocmanager.addAdHocCommand(&settings);
+
+	eventLoop_ = &eventLoop;
+
+	eventLoop.run();
+
+#ifndef WIN32
+	umask(old_cmask);
+#endif
+
+	if (userRegistration) {
+		userRegistration->stop();
+		delete userRegistration;
+	}
+
+	if (usersReconnecter) {
+		delete usersReconnecter;
+	}
+
+	delete storageBackend;
+	delete factories;
+	return 0;
+}
+
+
 int main(int argc, char **argv)
 {
 	Config config(argc, argv);
-
+	config_ = &config;
 	boost::program_options::variables_map vm;
 	bool no_daemon = false;
 	std::string config_file;
 	std::string jid;
-
+#ifdef WIN32
+	std::string install_service_name, uninstall_service_name, run_service_name;
+	// determine the name of the currently executing file
+	char szFilePath[MAX_PATH];
+	GetModuleFileNameA(NULL, szFilePath, sizeof(szFilePath));
+	std::string exe_file(szFilePath);					
+#endif	
 	setlocale(LC_ALL, "");
 #ifndef WIN32
+#ifndef __FreeBSD__
 	mallopt(M_CHECK_ACTION, 2);
 	mallopt(M_PERTURB, 0xb);
+#endif
 #endif
 
 #ifndef WIN32
@@ -155,9 +302,10 @@ int main(int argc, char **argv)
 		("version,v", "Shows Spectrum version")
 		;
 #ifdef WIN32
-// 	desc.add_options()
-// 		("install-service,i", "Install spectrum as Windows service")
-// 		("uninstall-service,u", "Uninstall Windows service");
+ 	desc.add_options()
+		("install-service,i", boost::program_options::value<std::string>(&install_service_name)->default_value(""), "Install spectrum as Windows service")
+ 		("uninstall-service,u", boost::program_options::value<std::string>(&uninstall_service_name)->default_value(""), "Uninstall Windows service")
+		("run-as-service,r", boost::program_options::value<std::string>(&run_service_name)->default_value(""), "stub for Windows Service Manager");
 #endif
 	try
 	{
@@ -186,46 +334,41 @@ int main(int argc, char **argv)
 		if(vm.count("no-daemonize")) {
 			no_daemon = true;
 		}
-#ifdef WIN32
-#if 0
-		if (vm.count("install-service")) {
-			SpectrumService ntservice;
+#ifdef WIN32	
+		if (!install_service_name.empty()) {				
+			// build command line for Service Manager
+			std::string service_path = exe_file + std::string(" --config ") + vm["config"].as<std::string>() 
+						+ std::string(" --run-as-service ") + install_service_name;													
+		
+			ServiceWrapper ntservice((char *)install_service_name.c_str());
 			if (!ntservice.IsInstalled()) {
-					// determine the name of the currently executing file
-				char szFilePath[MAX_PATH];
-				GetModuleFileName(NULL, szFilePath, sizeof(szFilePath));
-				std::string exe_file(szFilePath);
-				std::string config_file = exe_file.replace(exe_file.end() - 4, exe_file.end(), ".cfg");
-				std::string service_path = std::string(szFilePath) + std::string(" --config ") + config_file;
-
-				if (ntservice.Install(service_path.c_str())) {
-					std::cout << "Successfully installed" << std::endl;
+				if (ntservice.Install((char *)service_path.c_str())) {
+					std::cout << "Successfully installed " << install_service_name << std::endl;
 					return 0;
 				} else {
 					std::cout << "Error installing service, are you an Administrator?" << std::endl;
 					return 1;
 				}                				
 			} else {
-				std::cout << "Already installed" << std::endl;
+				std::cout << "Already installed " << install_service_name << std::endl;
 				return 1;
 			}
 		}
-		if (vm.count("uninstall-service")) {
-			SpectrumService ntservice;
+		if (!uninstall_service_name.empty()) {
+			ServiceWrapper ntservice((char *)uninstall_service_name.c_str());
 			if (ntservice.IsInstalled()) {
-				if (ntservice.Remove()) {
-					std::cout << "Successfully removed" << std::endl;
+				if (ntservice.UnInstall()) {
+					std::cout << "Successfully removed " << uninstall_service_name << std::endl;
 					return 0;
 				} else {
 					std::cout << "Error removing service, are you an Administrator?" << std::endl;
 					return 1;
 				}                               				
 			} else {
-				std::cout << "Service not installed" << std::endl;
+				std::cout << "Service not installed: " << uninstall_service_name << std::endl;
 				return 1;
 			}
-		}
-#endif
+		}		
 #endif
 	}
 	catch (std::runtime_error& e)
@@ -246,7 +389,8 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
-		boost::filesystem::create_directories(CONFIG_STRING(&config, "service.working_dir"));
+		
+		Transport::Util::createDirectories(&config, CONFIG_STRING(&config, "service.working_dir"));
 	}
 	catch (...) {
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
@@ -280,20 +424,6 @@ int main(int argc, char **argv)
 #endif
 
 #ifndef WIN32
-	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
-		struct group *gr;
-		if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-			std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
-			return 1;
-		}
-		struct passwd *pw;
-		if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-			std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
-			return 1;
-		}
-		chown(CONFIG_STRING(&config, "service.working_dir").c_str(), pw->pw_uid, gr->gr_gid);
-	}
-
 	char backendport[20];
 	FILE* port_file_f;
 	port_file_f = fopen(CONFIG_STRING(&config, "service.portfile").c_str(), "w+");
@@ -314,120 +444,19 @@ int main(int argc, char **argv)
 // 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
     }
 #endif
-
-	Logging::initMainLogging(&config);
-
-#ifndef WIN32
-	if (!CONFIG_STRING(&config, "service.group").empty() ||!CONFIG_STRING(&config, "service.user").empty() ) {
-		struct rlimit limit;
-		getrlimit(RLIMIT_CORE, &limit);
-
-		if (!CONFIG_STRING(&config, "service.group").empty()) {
-			struct group *gr;
-			if ((gr = getgrnam(CONFIG_STRING(&config, "service.group").c_str())) == NULL) {
-				std::cerr << "Invalid service.group name " << CONFIG_STRING(&config, "service.group") << "\n";
-				return 1;
-			}
-
-			if (((setgid(gr->gr_gid)) != 0) || (initgroups(CONFIG_STRING(&config, "service.user").c_str(), gr->gr_gid) != 0)) {
-				std::cerr << "Failed to set service.group name " << CONFIG_STRING(&config, "service.group") << " - " << gr->gr_gid << ":" << strerror(errno) << "\n";
-				return 1;
-			}
+#ifdef WIN32
+	if (!run_service_name.empty()) {
+		ServiceWrapper ntservice((char *)run_service_name.c_str());
+		if (ntservice.IsInstalled()) {
+			ntservice.RunService();
+		} else {
+			std::cerr << "Service not installed: " << run_service_name << std::endl;
+			return 1;
 		}
-
-		if (!CONFIG_STRING(&config, "service.user").empty()) {
-			struct passwd *pw;
-			if ((pw = getpwnam(CONFIG_STRING(&config, "service.user").c_str())) == NULL) {
-				std::cerr << "Invalid service.user name " << CONFIG_STRING(&config, "service.user") << "\n";
-				return 1;
-			}
-
-			if ((setuid(pw->pw_uid)) != 0) {
-				std::cerr << "Failed to set service.user name " << CONFIG_STRING(&config, "service.user") << " - " << pw->pw_uid << ":" << strerror(errno) << "\n";
-				return 1;
-			}
-		}
-		setrlimit(RLIMIT_CORE, &limit);
+	} else {
+		mainloop();
 	}
-
-	struct rlimit limit;
-	limit.rlim_max = RLIM_INFINITY;
-	limit.rlim_cur = RLIM_INFINITY;
-	setrlimit(RLIMIT_CORE, &limit);
+#else
+	mainloop();
 #endif
-
-	Swift::SimpleEventLoop eventLoop;
-
-	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
-	UserRegistry userRegistry(&config, factories);
-
-	Component transport(&eventLoop, factories, &config, NULL, &userRegistry);
-	component_ = &transport;
-// 	Logger logger(&transport);
-
-	std::string error;
-	StorageBackend *storageBackend = StorageBackend::createBackend(&config, error);
-	if (storageBackend == NULL) {
-		if (!error.empty()) {
-			std::cerr << error << "\n";
-			return -2;
-		}
-	}
-	else if (!storageBackend->connect()) {
-		std::cerr << "Can't connect to database. Check the log to find out the reason.\n";
-		return -1;
-	}
-
-	Logging::redirect_stderr();
-
-	UserManager userManager(&transport, &userRegistry, storageBackend);
-	userManager_ = &userManager;
-
-	UserRegistration *userRegistration = NULL;
-	UsersReconnecter *usersReconnecter = NULL;
-	if (storageBackend) {
-		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
-		userRegistration->start();
-
-		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
-	}
-
-	FileTransferManager ftManager(&transport, &userManager);
-
-	NetworkPluginServer plugin(&transport, &config, &userManager, &ftManager);
-
-	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
-	plugin.setAdminInterface(&adminInterface);
-
-	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
-	statsResponder.start();
-
-	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
-	gatewayResponder.start();
-
-	DiscoItemsResponder discoItemsResponder(&transport);
-	discoItemsResponder.start();
-
-	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
-	adhocmanager.start();
-
-	SettingsAdHocCommandFactory settings;
-	adhocmanager.addAdHocCommand(&settings);
-
-	eventLoop_ = &eventLoop;
-
-	eventLoop.run();
-
-	if (userRegistration) {
-		userRegistration->stop();
-		delete userRegistration;
-	}
-
-	if (usersReconnecter) {
-		delete usersReconnecter;
-	}
-
-	delete storageBackend;
-	delete factories;
-	return 0;
 }

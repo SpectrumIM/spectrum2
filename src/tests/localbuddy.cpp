@@ -25,6 +25,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(createWithInvalidName);
 	CPPUNIT_TEST(buddyFlagsFromJID);
 	CPPUNIT_TEST(JIDToLegacyName);
+	CPPUNIT_TEST(getSafeName);
 	CPPUNIT_TEST(handleBuddyChanged);
 	CPPUNIT_TEST(setAlias);
 	CPPUNIT_TEST_SUITE_END();
@@ -68,6 +69,20 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	void JIDToLegacyName() {
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz@test"), Buddy::JIDToLegacyName("hanzz\\40test@localhost/bot"));
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz@test"), Buddy::JIDToLegacyName("hanzz%test@localhost/bot"));
+	}
+
+	void getSafeName() {
+		User *user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(user);
+
+		std::vector<std::string> grp;
+		grp.push_back("group1");
+		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1@test", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test"), buddy->getSafeName());
+
+		buddy->setFlags(BUDDY_NO_FLAG);
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test"), buddy->getSafeName());
 	}
 
 	void buddyFlagsFromJID() {

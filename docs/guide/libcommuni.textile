@@ -32,7 +32,7 @@ irc_server=irc.freenode.org
 
 h3. 2.2 One transport for more IRC networks
 
-In this mode users can connect more IRC networks, but they can't connect the network without being in the room. Currently this mode is not finished yet in Spectrum 2.
+In this mode users can connect more IRC networks, but they can't connect the network without being in the room. To connect the network, user has to join the room in following format: #room%irc.freenode.org@irc.domain.tld. The nickname used in the first join request is used as a nickname for the IRC connection.
 
 h2. 3. All configuration variables
 

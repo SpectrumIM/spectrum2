@@ -74,6 +74,10 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 
 	Swift::RosterItemPayload item = payload->getItems()[0];
 
+	if (item.getJID().getNode().empty()) {
+		return true;
+	}
+
 	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(item.getJID()));
 	if (buddy) {
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {

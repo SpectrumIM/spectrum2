@@ -57,13 +57,13 @@ void BasicTest::setMeUp (void) {
 	component = new Component(loop, factories, cfg, factory, userRegistry);
 	component->start();
 
-	userManager = new UserManager(component, userRegistry, storage);
+	itemsResponder = new DiscoItemsResponder(component);
+	itemsResponder->start();
+
+	userManager = new UserManager(component, userRegistry, itemsResponder, storage);
 
 	userRegistration = new UserRegistration(component, userManager, storage);
 	userRegistration->start();
-
-	itemsResponder = new DiscoItemsResponder(component);
-	itemsResponder->start();
 
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
@@ -202,6 +202,7 @@ void BasicTest::connectUser() {
 
 	CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 	CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+
 	received.clear();
 	receivedData.clear();
 }
@@ -236,6 +237,7 @@ void BasicTest::connectSecondResource() {
 }
 
 void BasicTest::disconnectUser() {
+	received.clear();
 	userManager->disconnectUser("user@localhost");
 	dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
 	loop->processEvents();

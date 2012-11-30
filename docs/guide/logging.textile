@@ -95,7 +95,7 @@ log4j.additivity.Component.XML=false
 
 # Create new RollingFileAppender logger and set the file name
 log4j.appender.XML=org.apache.log4j.RollingFileAppender
-log4j.appender.XML.File=/var/log/spectrum2/${jid}/spectrum2.log
+log4j.appender.XML.File=/var/log/spectrum2/${jid}/spectrum2_xml.log
 
 # Set MaxFileSize. Log will be rotated automatically when this limit is reached
 log4j.appender.XML.MaxFileSize=100000KB
@@ -105,6 +105,25 @@ log4j.appender.XML.MaxBackupIndex=4
 # Define the output pattern. Characters are mentioned here: http://logging.apache.org/log4cxx/apidocs/classlog4cxx_1_1_pattern_layout.html
 log4j.appender.XML.layout=org.apache.log4j.PatternLayout
 log4j.appender.XML.layout.ConversionPattern=%d %-5p %c: %m%n
+</pre>
+
+h3. Disable XML logging
+
+<pre>
+# We create two rootLoggers:
+#   - "debug" is internal logger used by log4cxx
+#   - "stdout" is name of our ConsoleAppender logger
+log4j.rootLogger=debug, stdout
+
+# Create new ConsoleAppender logger with custom PatternLayout
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+
+# Define the output pattern. Characters are mentioned here: http://logging.apache.org/log4cxx/apidocs/classlog4cxx_1_1_pattern_layout.html
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d %-5p %c: %m%n
+
+# Disable XML category
+log4j.category.Component.XML = OFF
 </pre>
 
 h3. Disable logging

@@ -69,6 +69,8 @@ class ConversationManager {
 		/// \param conv Conversation.
 		void removeConversation(Conversation *conv);
 
+		void deleteAllConversations();
+
 		void resetResources();
 		void removeJID(const Swift::JID &jid);
 

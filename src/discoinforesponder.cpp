@@ -22,14 +22,18 @@
 
 #include <iostream>
 #include <boost/bind.hpp>
+#include <boost/algorithm/string.hpp>
 #include "Swiften/Disco/DiscoInfoResponder.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Swiften.h"
 #include "transport/config.h"
+#include "transport/logging.h"
 
 using namespace Swift;
 using namespace boost;
+
+DEFINE_LOGGER(logger, "DiscoInfoResponder");
 
 namespace Transport {
 
@@ -80,19 +84,51 @@ void DiscoInfoResponder::setBuddyFeatures(std::list<std::string> &f) {
 	onBuddyCapsInfoChanged(m_capsInfo);
 }
 
-bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> info) {
-	if (!info->getNode().empty()) {
-		sendError(from, id, ErrorPayload::ItemNotFound, ErrorPayload::Cancel);
-		return true;
-	}
+void DiscoInfoResponder::addRoom(const std::string &jid, const std::string &name) {
+	std::string j = jid;
+	boost::algorithm::to_lower(j);
+	m_rooms[j] = name;
+}
 
-	// presence for transport
+void DiscoInfoResponder::clearRooms() {
+	m_rooms.clear();
+}
+
+void DiscoInfoResponder::addAdHocCommand(const std::string &node, const std::string &name) {
+	m_commands[node] = node;
+}
+
+bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> info) {
+	// disco#info for transport
 	if (to.getNode().empty()) {
-		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
-		res->setNode(info->getNode());
-		sendResponse(from, id, res);
+		// Adhoc command
+		if (m_commands.find(info->getNode()) != m_commands.end()) {
+			boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
+			res->addFeature("http://jabber.org/protocol/commands");
+			res->addFeature("jabber:x:data");
+			res->addIdentity(DiscoInfo::Identity(m_commands[info->getNode()], "automation", "command-node"));
+			res->setNode(info->getNode());
+			sendResponse(from, to, id, res);
+		}
+		else {
+			if (!info->getNode().empty()) {
+				sendError(from, id, ErrorPayload::ItemNotFound, ErrorPayload::Cancel);
+				return true;
+			}
+
+			boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
+			res->setNode(info->getNode());
+			sendResponse(from, id, res);
+		}
 	}
-	// presence for buddy
+	// disco#info for room
+	else if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
+		boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
+		res->addIdentity(DiscoInfo::Identity(m_rooms[to.toBare().toString()], "conference", "text"));
+		res->setNode(info->getNode());
+		sendResponse(from, to, id, res);
+	}
+	// disco#info for buddy
 	else {
 		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_buddyInfo));
 		res->setNode(info->getNode());

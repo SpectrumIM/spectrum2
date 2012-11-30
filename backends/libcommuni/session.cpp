@@ -23,6 +23,8 @@
 
 DEFINE_LOGGER(logger, "IRCSession");
 
+static bool sentList;
+
 MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcSession(parent)
 {
 	this->np = np;
@@ -40,7 +42,13 @@ void MyIrcSession::on_connected() {
 	m_connected = true;
 	if (suffix.empty()) {
 		np->handleConnected(user);
+// 		if (!sentList) {
+// 			sendCommand(IrcCommand::createList("", ""));
+// 			sentList = true;
+// 		}
 	}
+
+	sendCommand(IrcCommand::createCapability("REQ", QStringList("away-notify")));
 
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		sendCommand(IrcCommand::createJoin(FROM_UTF8(it->second->getChannel()), FROM_UTF8(it->second->getPassword())));
@@ -80,8 +88,8 @@ void MyIrcSession::on_joined(IrcMessage *message) {
 	bool flags = 0;
 	std::string nickname = TO_UTF8(m->sender().name());
 	flags = correctNickname(nickname);
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel()), (int) flags, pbnetwork::STATUS_ONLINE);
-	LOG4CXX_INFO(logger, user << ": Joined " << TO_UTF8(m->parameters()[0]));
+	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel()) + suffix, (int) flags, pbnetwork::STATUS_ONLINE);
+	LOG4CXX_INFO(logger, user << ": " << nickname << " joined " << TO_UTF8(m->channel()) + suffix);
 }
 
 
@@ -158,34 +166,56 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		}
 	}
 
+	QString msg = m->message();
+	if (m->isAction()) {
+		msg = QString("/me ") + msg;
+	}
+
 	std::string target = TO_UTF8(m->target());
 	LOG4CXX_INFO(logger, user << ": Message from " << target);
 	if (target.find("#") == 0) {
 		bool flags = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
 		flags = correctNickname(nickname);
-		np->handleMessage(user, target + suffix, TO_UTF8(m->message()), nickname);
+		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname);
 	}
 	else {
 		bool flags = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
 		flags = correctNickname(nickname);
 		LOG4CXX_INFO(logger, nickname + suffix);
-		np->handleMessage(user, nickname + suffix, TO_UTF8(m->message()));
+		np->handleMessage(user, nickname + suffix, TO_UTF8(msg));
 	}
 }
 
 void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	QString channel;
 	QStringList members;
+	std::string nick;
 
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	switch (m->code()) {
+		case 301:
+			break;
 		case 332:
 			m_topicData = TO_UTF8(m->parameters().value(2));
 			break;
 		case 333:
-			 np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, TO_UTF8(m->parameters().value(2)));
+			nick = TO_UTF8(m->parameters().value(2));
+			if (nick.find("!") != std::string::npos) {
+				nick = nick.substr(0, nick.find("!"));
+			}
+			if (nick.find("/") != std::string::npos) {
+				nick = nick.substr(0, nick.find("/"));
+			}
+			np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, nick);
+			break;
+		case 352:
+			channel = m->parameters().value(1);
+			nick = TO_UTF8(m->parameters().value(5));
+			if (m->parameters().value(6).toUpper().startsWith("G")) {
+				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, m_modes[TO_UTF8(channel) + nick], pbnetwork::STATUS_AWAY);
+			}
 			break;
 		case 353:
 			channel = m->parameters().value(2);
@@ -199,9 +229,23 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 				m_modes[TO_UTF8(channel) + nickname] = flags;
 				np->handleParticipantChanged(user, nickname, TO_UTF8(channel) + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
 			}
+
+			// ask /who to get away states
+			sendCommand(IrcCommand::createWho(channel));
 			break;
 		case 432:
 			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
+			break;
+		case 321:
+			m_rooms.clear();
+			m_names.clear();
+			break;
+		case 322:
+			m_rooms.push_back(TO_UTF8(m->parameters().value(1)));
+			m_names.push_back(TO_UTF8(m->parameters().value(1)));
+			break;
+		case 323:
+			np->handleRoomList("", m_rooms, m_names);
 			break;
 		default:
 			break;

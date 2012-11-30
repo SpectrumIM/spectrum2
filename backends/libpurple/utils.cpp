@@ -36,14 +36,14 @@
 #ifndef WIN32 
 #include "sys/wait.h"
 #include "sys/signal.h"
-#include <netinet/if_ether.h>
-#include <netinet/ip.h>
-#include <netinet/ip6.h>
-#include <netinet/udp.h>
-#include <netinet/tcp.h>
-#include <netinet/ether.h>
-#include "sys/socket.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #else 
@@ -137,30 +137,32 @@ void spectrum_sigchld_handler(int sig)
 #endif
 
 int create_socket(const char *host, int portno) {
-	struct sockaddr_in serv_addr;
-	
-	int main_socket = socket(AF_INET, SOCK_STREAM, 0);
-	memset((char *) &serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(portno);
+	struct sockaddr_in stSockAddr;
+	int SocketFD = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	hostent *hos;  // Resolve name
+	if (-1 == SocketFD) {
+		return 0;
+	}
+
+	hostent *hos;
 	if ((hos = gethostbyname(host)) == NULL) {
 		// strerror() will not work for gethostbyname() and hstrerror() 
 		// is supposedly obsolete
-		exit(1);
-	}
-	serv_addr.sin_addr.s_addr = *((unsigned long *) hos->h_addr_list[0]);
-
-	if (connect(main_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-		close(main_socket);
-		main_socket = 0;
+		return 0;
 	}
 
-// 	int flags = fcntl(main_socket, F_GETFL);
-// 	flags |= O_NONBLOCK;
-// 	fcntl(main_socket, F_SETFL, flags);
-	return main_socket;
+	memset(&stSockAddr, 0, sizeof(stSockAddr));
+
+	stSockAddr.sin_family = AF_INET;
+	stSockAddr.sin_port = htons(portno);
+	memcpy(&(stSockAddr.sin_addr.s_addr), hos->h_addr,  hos->h_length);
+
+	if (-1 == connect(SocketFD, (struct sockaddr *)&stSockAddr, sizeof(stSockAddr))) {
+		close(SocketFD);
+		return 0;
+	}
+
+	return SocketFD;
 }
 
 #ifdef _WIN32

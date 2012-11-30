@@ -12,6 +12,7 @@
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
 #include <Swiften/Server/Server.h>
+#include <Swiften/Parser/StringTreeParser.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -23,9 +24,9 @@
 
 using namespace Transport;
 
-class UtilTest : public CPPUNIT_NS :: TestFixture{
-	CPPUNIT_TEST_SUITE(UtilTest);
-	CPPUNIT_TEST(encryptDecryptPassword);
+class StringTreeParserTest : public CPPUNIT_NS :: TestFixture{
+	CPPUNIT_TEST_SUITE(StringTreeParserTest);
+	CPPUNIT_TEST(parseEscapedCharacters);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -36,11 +37,11 @@ class UtilTest : public CPPUNIT_NS :: TestFixture{
 
 		}
 
-	void encryptDecryptPassword() {
-		std::string encrypted = StorageBackend::encryptPassword("password", "key");
-		CPPUNIT_ASSERT_EQUAL(std::string("password"), StorageBackend::decryptPassword(encrypted, "key"));
+	void parseEscapedCharacters() {
+		Swift::ParserElement::ref root = Swift::StringTreeParser::parse("<body>&lt;test&gt;</body>");
+		CPPUNIT_ASSERT_EQUAL(std::string("<test>"), root->getText());
 	}
 
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION (UtilTest);
+CPPUNIT_TEST_SUITE_REGISTRATION (StringTreeParserTest);

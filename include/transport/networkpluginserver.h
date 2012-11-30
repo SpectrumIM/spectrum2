@@ -43,6 +43,7 @@ class RosterResponder;
 class BlockResponder;
 class DummyReadBytestream;
 class AdminInterface;
+class DiscoItemsResponder;
 
 class NetworkPluginServer {
 	public:
@@ -60,9 +61,11 @@ class NetworkPluginServer {
 			std::string id;
 		};
 
-		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
+		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder);
 
 		virtual ~NetworkPluginServer();
+
+		void start();
 
 		void setAdminInterface(AdminInterface *adminInterface) {
 			m_adminInterface = adminInterface;
@@ -86,7 +89,7 @@ class NetworkPluginServer {
 
 		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
 
-	private:
+	public:
 		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Backend *c);
 		void handlePongReceived(Backend *c);
@@ -109,6 +112,7 @@ class NetworkPluginServer {
 		void handleFTDataPayload(Backend *b, const std::string &payload);
 		void handleQueryPayload(Backend *b, const std::string &payload);
 		void handleBackendConfigPayload(const std::string &payload);
+		void handleRoomListPayload(const std::string &payload);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);
@@ -131,6 +135,7 @@ class NetworkPluginServer {
 		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size);
 		void handleFTDataNeeded(Backend *b, unsigned long ftid);
 
+	private:
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
@@ -154,6 +159,7 @@ class NetworkPluginServer {
 		std::vector<std::string> m_crashedBackends;
 		AdminInterface *m_adminInterface;
 		bool m_startingBackend;
+		DiscoItemsResponder *m_discoItemsResponder;
 };
 
 }

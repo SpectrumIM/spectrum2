@@ -41,6 +41,7 @@ public:
 
 	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	std::map<std::string, bool> m_modes;
+	std::map<std::string, bool> m_away;
 	std::string suffix;
 	int rooms;
 
@@ -85,39 +86,8 @@ protected:
 	AutoJoinMap m_autoJoin;
 	std::string m_topicData;
 	bool m_connected;
+	std::list<std::string> m_rooms;
+	std::list<std::string> m_names;
 };
-
-//class MyIrcBuffer : public Irc::Buffer
-//{
-//    Q_OBJECT
-
-//public:
-//	MyIrcBuffer(const QString& receiver, const std::string &user, NetworkPlugin *np, const std::string &suffix, Irc::Session* parent);
-//	NetworkPlugin *np;
-//	std::string user;
-//	MyIrcSession *p;
-//	std::string m_topicData;
-//		std::string suffix;
-
-//protected Q_SLOTS:
-//    void on_receiverChanged(const QString& receiver);
-//    void on_joined(const QString& origin);
-//    void on_parted(const QString& origin, const QString& message);
-//    void on_quit(const QString& origin, const QString& message);
-//    void on_nickChanged(const QString& origin, const QString& nick);
-//    void on_modeChanged(const QString& origin, const QString& mode, const QString& args);
-//    void on_topicChanged(const QString& origin, const QString& topic);
-//    void on_invited(const QString& origin, const QString& receiver, const QString& channel);
-//    void on_kicked(const QString& origin, const QString& nick, const QString& message);
-//    void on_messageReceived(const QString& origin, const QString& message, Irc::Buffer::MessageFlags flags);
-//    void on_noticeReceived(const QString& origin, const QString& notice, Irc::Buffer::MessageFlags flags);
-//    void on_ctcpRequestReceived(const QString& origin, const QString& request, Irc::Buffer::MessageFlags flags);
-//    void on_ctcpReplyReceived(const QString& origin, const QString& reply, Irc::Buffer::MessageFlags flags);
-//    void on_ctcpActionReceived(const QString& origin, const QString& action, Irc::Buffer::MessageFlags flags);
-//    void on_numericMessageReceived(const QString& origin, uint code, const QStringList& params);
-//    void on_unknownMessageReceived(const QString& origin, const QStringList& params);
-
-//	bool correctNickname(std::string &nickname);
-//};
 
 #endif // SESSION_H

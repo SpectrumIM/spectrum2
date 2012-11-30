@@ -69,6 +69,7 @@ message ConversationMessage {
 	required string message = 3;
 	optional string nickname = 4;
 	optional string xhtml = 5;
+	optional string timestamp = 6;
 }
 
 message Room {
@@ -76,6 +77,11 @@ message Room {
 	required string nickname = 2;
 	required string room = 3;
 	optional string password = 4;
+}
+
+message RoomList {
+	repeated string room = 1;
+	repeated string name = 2;
 }
 
 message Participant {
@@ -159,6 +165,7 @@ message WrapperMessage {
 		TYPE_EXIT					= 29;
 		TYPE_BACKEND_CONFIG			= 30;
 		TYPE_QUERY					= 31;
+		TYPE_ROOM_LIST				= 32;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

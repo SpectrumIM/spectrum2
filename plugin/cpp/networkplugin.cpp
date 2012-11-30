@@ -63,7 +63,7 @@ NetworkPlugin::~NetworkPlugin() {
 }
 
 void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
-	std::string data = "[registration]";
+	std::string data = "[registration]\n";
 	data += std::string("needPassword=") + (cfg.m_needPassword ? "1" : "0") + "\n";
 	data += std::string("needRegistration=") + (cfg.m_needRegistration ? "1" : "0") + "\n";
 
@@ -82,13 +82,14 @@ void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
 	send(message);
 }
 
-void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml) {
+void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml, const std::string &timestamp) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
 	m.set_buddyname(legacyName);
 	m.set_message(msg);
 	m.set_nickname(nickname);
 	m.set_xhtml(xhtml);
+	m.set_timestamp(timestamp);
 
 	std::string message;
 	m.SerializeToString(&message);
@@ -332,6 +333,24 @@ void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
 	d.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_DATA);
+ 
+	send(message);
+}
+
+void NetworkPlugin::handleRoomList(const std::string &user, const std::list<std::string> &rooms, const std::list<std::string> &names) {
+	pbnetwork::RoomList d;
+	for (std::list<std::string>::const_iterator it = rooms.begin(); it != rooms.end(); it++) {
+		d.add_room(*it);
+	}
+
+	for (std::list<std::string>::const_iterator it = names.begin(); it != names.end(); it++) {
+		d.add_name(*it);
+	}
+
+	std::string message;
+	d.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_LIST);
  
 	send(message);
 }

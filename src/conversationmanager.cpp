@@ -47,6 +47,15 @@ ConversationManager::~ConversationManager() {
 	}
 }
 
+void ConversationManager::deleteAllConversations() {
+	while(!m_convs.empty()) {
+		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
+		(*m_convs.begin()).second->destroyRoom();
+		delete (*m_convs.begin()).second;
+		m_convs.erase(m_convs.begin());
+	}
+}
+
 Conversation *ConversationManager::getConversation(const std::string &name) {
 	if (m_convs.find(name) != m_convs.end())
 		return m_convs[name];

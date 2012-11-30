@@ -1,5 +1,6 @@
 #include "TwitterResponseParser.h"
 #include "transport/logging.h"
+#include "boost/algorithm/string.hpp"
 #include <cctype>
 
 DEFINE_LOGGER(logger, "TwitterResponseParser")
@@ -11,6 +12,25 @@ static std::string tolowercase(std::string inp)
 	return out;
 }
 
+static std::string unescape(std::string data) {
+	using boost::algorithm::replace_all;
+	replace_all(data, "&amp;",  "&");
+	replace_all(data, "&quot;", "\"");
+	replace_all(data, "&apos;", "\'");
+	replace_all(data, "&lt;",   "<");
+	replace_all(data, "&gt;",   ">");
+	return data;
+}
+
+static std::string toIsoTime(std::string in) {
+	time_t now = time(0);
+	struct tm *mtime = gmtime(&now);
+	strptime(in.c_str(), "%a %b %d %H:%M:%S %z %Y", mtime);
+	char buf[80];
+	strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", mtime);
+	return buf;
+}
+
 EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const std::string xmlns)
 {
 	EmbeddedStatus status;
@@ -19,9 +39,10 @@ EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const
 		return status;
 	}
 
-	status.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	status.setCreationTime( toIsoTime(std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
+
 	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	status.setTweet( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
+	status.setTweet( unescape (std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) ) );
 	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
 	status.setReplyToStatusID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_status_id, xmlns)->getText() ) );
 	status.setReplyToUserID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_user_id, xmlns)->getText() ) );
@@ -60,9 +81,9 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 		return status;
 	}
 
-	status.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	status.setCreationTime( toIsoTime ( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
 	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	status.setTweet( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
+	status.setTweet( unescape ( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) ) );
 	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
 	status.setReplyToStatusID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_status_id, xmlns)->getText() ) );
 	status.setReplyToUserID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_user_id, xmlns)->getText() ) );
@@ -82,9 +103,9 @@ DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const s
 		return DM;
 	}
 
-	DM.setCreationTime( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) );
+	DM.setCreationTime( toIsoTime ( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
 	DM.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	DM.setMessage( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) );
+	DM.setMessage( unescape ( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) ) );
 	DM.setSenderID( std::string( element->getChild(TwitterReponseTypes::sender_id, xmlns)->getText() ) );
 	DM.setRecipientID( std::string( element->getChild(TwitterReponseTypes::recipient_id, xmlns)->getText() ) );
 	DM.setSenderScreenName( std::string( element->getChild(TwitterReponseTypes::sender_screen_name, xmlns)->getText() ) );

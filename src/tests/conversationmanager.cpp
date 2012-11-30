@@ -94,26 +94,35 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleSubjectMessages() {
 		User *user = userManager->getUser("user@localhost");
-
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1");
-		user->getConversationManager()->addConversation(conv);
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
 
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setSubject("subject");
+		msg->setType(Swift::Message::Groupchat);
 
-		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();
+
+		// No response, because presence with code 110 has not been sent yet and we must not send
+		// subject before this one.
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		// this user presence - status code 110
+		conv->handleParticipantChanged("nickname", 1, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
 		
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getSubject());
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getSubject());
 		received.clear();
 
 		// send response
 		msg->setFrom("user@localhost/resource");
-		msg->setTo("buddy1@localhost/bot");
+		msg->setTo("#room@localhost");
 		injectMessage(msg);
 		loop->processEvents();
 		
@@ -127,12 +136,12 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleNormalMessages() {
 		User *user = userManager->getUser("user@localhost");
 
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-		msg->setBody("hi there!");
+		msg->setBody("hi there<>!");
 
 		// Forward it
 		conv->handleMessage(msg);
@@ -140,22 +149,22 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
 
 		// send response
 		msg->setFrom("user@localhost/resource");
-		msg->setTo("buddy1@localhost/bot");
-		msg->setBody("response!");
+		msg->setTo("buddy1\\40test@localhost/bot");
+		msg->setBody("response<>!");
 		injectMessage(msg);
 		loop->processEvents();
 		
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg->getBody());
 
 		// send another message from legacy network, should be sent to user@localhost/resource now
 		boost::shared_ptr<Swift::Message> msg2(new Swift::Message());
@@ -169,20 +178,28 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
+
+		// disable jid_escaping
+		std::istringstream ifs("service.server_mode = 1\nservice.jid_escaping=0\nservice.jid=localhost\nservice.more_resources=1\n");
+		cfg->load(ifs);
 
 		// and now to bare JID again...
 		user->getConversationManager()->resetResources();
 		conv->handleMessage(msg2);
 		loop->processEvents();
+
+		// enable jid_escaping again
+		std::istringstream ifs2("service.server_mode = 1\nservice.jid_escaping=1\nservice.jid=localhost\nservice.more_resources=1\n");
+		cfg->load(ifs2);
 		
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
 	}

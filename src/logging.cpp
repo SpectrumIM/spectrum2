@@ -20,6 +20,7 @@
 
 #include "transport/logging.h"
 #include "transport/config.h"
+#include "transport/util.h"
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <iterator>
@@ -31,6 +32,7 @@
 
 #ifndef WIN32
 #include "sys/signal.h"
+#include <sys/stat.h>
 #include <pwd.h>
 #include <grp.h>
 #include <sys/resource.h>
@@ -136,35 +138,42 @@ static void initLogging(Config *config, std::string key) {
 				break;
 			}
 		}
-
+		mode_t old_cmask;
 		if (!dir.empty()) {
 			// create directories
-			try {
-				boost::filesystem::create_directories(
-					boost::filesystem::path(dir).parent_path().string()
-				);
-			}
-			catch (...) {
-				std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ".\n";
-			}
-
 #ifndef WIN32
-			if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
-				struct group *gr;
-				if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {
-					std::cerr << "Invalid service.group name " << CONFIG_STRING(config, "service.group") << "\n";
-				}
-				struct passwd *pw;
-				if ((pw = getpwnam(CONFIG_STRING(config, "service.user").c_str())) == NULL) {
-					std::cerr << "Invalid service.user name " << CONFIG_STRING(config, "service.user") << "\n";
-				}
-				chown(dir.c_str(), pw->pw_uid, gr->gr_gid);
-			}
-
+			old_cmask = umask(0007);
 #endif
+			try {
+				Transport::Util::createDirectories(config, boost::filesystem::path(dir).parent_path());
+			}
+			catch (const boost::filesystem::filesystem_error &e) {
+				std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ": " << e.what() << ".\n";
+			}
 		}
 
 		log4cxx::PropertyConfigurator::configure(p);
+
+		// Change owner of main log file
+#ifndef WIN32
+	if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
+		struct group *gr;
+		if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {
+			std::cerr << "Invalid service.group name " << CONFIG_STRING(config, "service.group") << "\n";
+		}
+		struct passwd *pw;
+		if ((pw = getpwnam(CONFIG_STRING(config, "service.user").c_str())) == NULL) {
+			std::cerr << "Invalid service.user name " << CONFIG_STRING(config, "service.user") << "\n";
+		}
+		chown(dir.c_str(), pw->pw_uid, gr->gr_gid);
+	}
+#endif
+
+#ifndef WIN32
+		if (!dir.empty()) {
+			umask(old_cmask);
+		}
+#endif
 	}
 }
 

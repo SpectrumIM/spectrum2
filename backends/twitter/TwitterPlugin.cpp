@@ -322,7 +322,7 @@ void TwitterPlugin::pollForTweets()
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new TimelineRequest(userdb[user].sessions, user, "", userdb[user].mostRecentTweetID,
+		tp->runAsThread(new TimelineRequest(userdb[user].sessions, user, "", getMostRecentTweetIDUnsafe(user),
 											boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
 		it++;
 	}
@@ -517,14 +517,39 @@ void TwitterPlugin::updateLastTweetID(const std::string user, const std::string 
 {
 	boost::mutex::scoped_lock lock(userlock);	
 	userdb[user].mostRecentTweetID = ID;
+
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+		return;
+	}
+
+	storagebackend->updateUserSetting((long)info.id, "twitter_last_tweet", ID);
+}
+
+std::string TwitterPlugin::getMostRecentTweetIDUnsafe(const std::string user)
+{	
+	std::string ID = "";
+	if(onlineUsers.count(user)) {
+		ID = userdb[user].mostRecentTweetID;
+		if (ID.empty()) {
+			int type;
+			UserInfo info;
+			if(storagebackend->getUser(user, info) == false) {
+				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+			}
+			else {
+				storagebackend->getUserSetting(info.id, "twitter_last_tweet", type, ID);
+			}
+		}
+	}
+	return ID;
 }
 
 std::string TwitterPlugin::getMostRecentTweetID(const std::string user)
-{
-	boost::mutex::scoped_lock lock(userlock);	
-	std::string ID = "-1";
-	if(onlineUsers.count(user)) ID = userdb[user].mostRecentTweetID;
-	return ID;
+{	
+	boost::mutex::scoped_lock lock(userlock);
+	return getMostRecentTweetIDUnsafe(user);
 }
 
 void TwitterPlugin::updateLastDMID(const std::string user, const std::string ID)
@@ -622,16 +647,17 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 		std::map<std::string, int> lastTweet;
 		std::map<std::string, int>::iterator it;
 
-		for(int i=0 ; i<tweets.size() ; i++) {
+		for(int i = tweets.size() - 1 ; i >= 0 ; i--) {
 			if(userdb[user].twitterMode != CHATROOM) {
-				timeline += " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")\n";
+				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")\n";
+				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime());
 
 				std::string scrname = tweets[i].getUserData().getScreenName();
 				if(lastTweet.count(scrname) == 0 || cmp(tweets[lastTweet[scrname]].getID(), tweets[i].getID()) <= 0) lastTweet[scrname] = i;
 
 			} else {
 				handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-									tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")", tweets[i].getUserData().getScreenName());
+									tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")", tweets[i].getUserData().getScreenName(), "", tweets[i].getCreationTime());
 			}
 		}
 		

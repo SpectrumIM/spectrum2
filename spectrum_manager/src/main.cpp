@@ -139,7 +139,10 @@ int main(int argc, char **argv)
 	}
 	else if (command[0] == "server") {
 		Server server(&config);
-		server.start();
+		if (server.start() == false) {
+			std::cerr << "Can't set up server handler.\n";
+			return 1;
+		}
 		while (1) { sleep(10); }
 	}
 	else {

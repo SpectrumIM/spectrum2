@@ -149,7 +149,9 @@ Server::Server(ManagerConfig *config) {
 }
 
 Server::~Server() {
-	mg_stop(ctx);
+	if (ctx) {
+		mg_stop(ctx);
+	}
 }
 
 
@@ -446,7 +448,12 @@ void *Server::event_handler(enum mg_event event, struct mg_connection *conn) {
 			// try to serve the request.
 			processed = NULL;
 		}
-	} else {
+	}
+	else if (event == MG_EVENT_LOG) {
+		// Called by Mongoose's cry()
+		std::cerr << "Mongoose error: " << request_info->log_message << "\n";
+	}
+	else {
 		processed = NULL;
 	}
 
