@@ -52,7 +52,7 @@ make VERBOSE=1 %{?_smp_mflags}
 rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 install -d %{buildroot}%{_localstatedir}/{lib,run,log}/spectrum2
-install -p -D -m 755 packaging/spectrum2.init \
+install -p -D -m 755 packaging/fedora/spectrum2.init \
     %{buildroot}%{_initddir}/spectrum2
 
 ln -s /usr/bin/spectrum2_libpurple_backend %{buildroot}/usr/bin/spectrum_libpurple_backend
