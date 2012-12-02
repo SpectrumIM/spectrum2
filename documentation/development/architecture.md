@@ -14,7 +14,7 @@ Directory| Description
 ./src|Libtransport source codes
 ./include/transport|Libtransport headers
 ./plugin/cpp|Libtransport-plugin source codes
-./backends/*|Various Spectrum 2 backends source codes
+./backends/|Various Spectrum 2 backends source codes
 
 ## Libtransport
 
