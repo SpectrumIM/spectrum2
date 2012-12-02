@@ -11,7 +11,4 @@ It supports a wide range of different networks such as ICQ, XMPP (Jabber, GTalk)
 Spectrum 2 is written in C++ and uses the [Swiften](http://swift.im/swiften) library and various different libraries for "legacy networks".
 Spectrum 2 is open source and released under the GNU GPL.
 
-## News
-
-
 
