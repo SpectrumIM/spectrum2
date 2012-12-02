@@ -15,32 +15,32 @@ title: Spectrum 2
 
 #### Tutorials
 
-* [Spectrum 2 in gateway mode](tutorial_gateway_mode.html)
+* [Spectrum 2 in gateway mode](tutorials/gateway_mode.html)
 
 #### Configuration
 
-* [Configuration file description](config_file.html)
-* [MySQL Support](mysql.html)
-* [PostgreSQL Support](postgresql.html)
-* [Using SSL in server mode](server_ssl.html)
-* [Logging](logging.html)
+* [Configuration file description](configuration/config_file.html)
+* [MySQL Support](configuration/mysql.html)
+* [PostgreSQL Support](configuration/postgresql.html)
+* [Using SSL in server mode](configuration/server_ssl.html)
+* [Logging](configuration/logging.html)
 
 #### Backends
 
-* [Backends overview](backends.html)
-* [Libpurple backend](libpurple.html)
-* [Swiften backend](swiften.html)
-* [Libcommuni backend](libcommuni.html)
-* [Skype backend](skype.html)
-* [Twitter backend](twitter.html)
+* [Backends overview](backends/backends.html)
+* [Libpurple backend](backends/libpurple.html)
+* [Swiften backend](backends/swiften.html)
+* [Libcommuni backend](backends/libcommuni.html)
+* [Skype backend](backends/skype.html)
+* [Twitter backend](backends/twitter.html)
 
 #### Management
 
-* [spectrum2_manager tool](spectrum2_manager.html)
-* [Getting a backtrace](getting_backtrace.html)
-* [Munin integration](munin.html)
+* [spectrum2_manager tool](management/spectrum2_manager.html)
+* [Getting a backtrace](management/getting_backtrace.html)
+* [Munin integration](management/munin.html)
 
 #### Development
 
-* [Spectrum 2 architecture](developer_arch.html)
+* [Spectrum 2 architecture](development/architecture.html)
 * [Low level backend creation](developer_lowlevel.html)
