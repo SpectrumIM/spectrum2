@@ -43,4 +43,3 @@ title: Spectrum 2
 #### Development
 
 * [Spectrum 2 architecture](development/architecture.html)
-* [Low level backend creation](developer_lowlevel.html)
