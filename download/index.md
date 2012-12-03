@@ -11,8 +11,8 @@ Don't forget to check [Documentation](http://hanzz.github.com/libtransport/docum
 
 * [Debian/Ubuntu packages](http://hanzz.github.com/libtransport/documentation/installation/debian_ubuntu.html)
 * [Fedora/RHEL/CentOS packages](http://hanzz.github.com/libtransport/documentation/installation/fedora_rhel.html)
-* [Spectrum 2.0-beta2 source code](http://www.spectrum.im/attachments/download/59/spectrum-2.0.0-beta2.tar.gz)
+* [Spectrum 2.0-beta2 source code](https://github.com/downloads/hanzz/libtransport/spectrum-2.0.0-beta2.tar.gz)
 
 #### Spectrum 1 - not maintained version
 
-* [Spectrum 1.4.8 source code](http://www.spectrum.im/attachments/download/43/spectrum-1.4.8.tar.gz)
+* [Spectrum 1.4.8 source code](https://github.com/downloads/hanzz/libtransport/spectrum-1.4.8.tar.gz)
