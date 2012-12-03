@@ -941,6 +941,14 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 		}
 		c->data.erase(c->data.begin(), c->data.begin() + 4 + expected_size);
 
+		// If backend is slow and it is sending us lot of message, there is possibility
+		// that we don't receive PONG response before timeout. However, if we received
+		// at least some data, it means backend is not dead and we can treat it as
+		// PONG received event.
+		if (c->pongReceived == false) {
+			c->pongReceived = true;
+		}
+
 		// Handle payload in wrapper message
 		switch(wrapper.type()) {
 			case pbnetwork::WrapperMessage_Type_TYPE_CONNECTED:

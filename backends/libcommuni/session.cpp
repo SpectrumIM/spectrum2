@@ -48,7 +48,7 @@ void MyIrcSession::on_connected() {
 // 		}
 	}
 
-	sendCommand(IrcCommand::createCapability("REQ", QStringList("away-notify")));
+// 	sendCommand(IrcCommand::createCapability("REQ", QStringList("away-notify")));
 
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		sendCommand(IrcCommand::createJoin(FROM_UTF8(it->second->getChannel()), FROM_UTF8(it->second->getPassword())));
@@ -211,9 +211,9 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, nick);
 			break;
 		case 352:
-			channel = m->parameters().value(1);
-			nick = TO_UTF8(m->parameters().value(5));
 			if (m->parameters().value(6).toUpper().startsWith("G")) {
+				channel = m->parameters().value(1);
+				nick = TO_UTF8(m->parameters().value(5));
 				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, m_modes[TO_UTF8(channel) + nick], pbnetwork::STATUS_AWAY);
 			}
 			break;
