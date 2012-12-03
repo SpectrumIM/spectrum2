@@ -12,3 +12,6 @@ Spectrum 2 is written in C++ and uses the [Swiften](http://swift.im/swiften) lib
 Spectrum 2 is open source and released under the GNU GPL.
 
 
+Spectrum 2 is not intended for strictly desktop users, ie those who have no familiarity with running server side applications.  It is intended to provide a service to desktop users, but be managed by server administrators.  If you are interested in the project but have no familiarity with running a server (and no interest in learning), please speak with your local system administrators about making Spectrum 2 available.
+
+
