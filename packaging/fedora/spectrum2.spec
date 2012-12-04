@@ -4,42 +4,32 @@
 Summary: XMPP transport
 Name: spectrum2
 Version: 2.0
-Release: %{?_release}%{!?_release:1}%{?dist}
+Release: 1%{?dist}
 Group: Applications/Internet
 License: GPLv3
 Source0: spectrum2.tar.gz
 URL: http://swift.im/
-# BuildRequires: cmake
-# BuildRequires: boost-devel
-# BuildRequires: mysql-devel
-# BuildRequires: cppunit-devel
-# BuildRequires: libsqlite3x-devel
-# BuildRequires: protobuf-devel
-# BuildRequires: protobuf-compiler
-# BuildRequires: popt-devel
-# BuildRequires: libidn-devel
-# BuildRequires: expat-devel
-# BuildRequires: avahi-devel
-# BuildRequires: log4cxx-devel
-Requires: boost
-Requires: mysql-libs
-%if 0%{?rhel}
-Requires: sqlite
+BuildRequires: cmake
+BuildRequires: boost-devel
+BuildRequires: mysql-devel
+BuildRequires: cppunit-devel
+%if 0%{?rhel} > 0 && 0%{?rhel} <= 6
+BuildRequires: sqlite-devel
 %else
-Requires: libsqlite3x
+BuildRequires: libsqlite3x-devel
 %endif
-Requires: protobuf
-Requires: popt
-Requires: libidn
-Requires: expat
-Requires: avahi
-Requires: log4cxx
-#----
+BuildRequires: protobuf-devel
+BuildRequires: protobuf-compiler
+BuildRequires: popt-devel
+BuildRequires: libidn-devel
+BuildRequires: expat-devel
+BuildRequires: avahi-devel
+BuildRequires: log4cxx-devel
+BuildRequires: swiften-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
-Requires:      swiften
 
 %description
-Spectrum 2.0
+Spectrum 2 is an XMPP transport/gateway and also simple XMPP server.
 
 %prep
 %setup -q -n spectrum2
@@ -200,7 +190,7 @@ Libtransport library
 
 
 %changelog
-* Nov 30 2012 Jan Kaluza <jkaluza@redhat.com> - 2.0
+* Mon Dec 03 2012 Jan Kaluza <jkaluza@redhat.com> - 2.0-1
 - Work in progress
 
 * Mon Jul 25 2011 Jan Kaluza <jkaluza@redhat.com> - 1.0-4
