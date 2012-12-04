@@ -78,6 +78,10 @@ public:
 		return m_buddies[channel][name];
 	}
 
+	void removeIRCBuddy(const std::string &channel, const std::string &name) {
+		m_buddies[channel].erase(name);
+	}
+
 	bool correctNickname(std::string &nickname);
 
 	void on_joined(IrcMessage *message);
