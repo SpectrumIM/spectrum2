@@ -62,27 +62,29 @@ void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 	}
 	else {
 		Presence::ref passedPresence = presence;
-		if (presence->getType() == Presence::Unsubscribe || presence->getType() == Presence::Unsubscribed) {
-			/* 3921bis says that we don't follow up with an unavailable, so simulate this ourselves */
-			passedPresence = Presence::ref(new Presence());
-			passedPresence->setType(Presence::Unavailable);
-			passedPresence->setFrom(bareJID);
-			passedPresence->setStatus(presence->getStatus());
+		if (!isMUC) {
+			if (presence->getType() == Presence::Unsubscribe || presence->getType() == Presence::Unsubscribed) {
+				/* 3921bis says that we don't follow up with an unavailable, so simulate this ourselves */
+				passedPresence = Presence::ref(new Presence());
+				passedPresence->setType(Presence::Unavailable);
+				passedPresence->setFrom(bareJID);
+				passedPresence->setStatus(presence->getStatus());
+			}
+			std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
+			if (passedPresence->getFrom().isBare() && presence->getType() == Presence::Unavailable) {
+				/* Have a bare-JID only presence of offline */
+				jidMap.clear();
+			} else if (passedPresence->getType() == Presence::Available) {
+				/* Don't have a bare-JID only offline presence once there are available presences */
+				jidMap.erase(bareJID);
+			}
+			if (passedPresence->getType() == Presence::Unavailable && jidMap.size() > 1) {
+				jidMap.erase(passedPresence->getFrom());
+			} else {
+				jidMap[passedPresence->getFrom()] = passedPresence;
+			}
+			entries_[bareJID] = jidMap;
 		}
-		std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
-		if (passedPresence->getFrom().isBare() && presence->getType() == Presence::Unavailable) {
-			/* Have a bare-JID only presence of offline */
-			jidMap.clear();
-		} else if (passedPresence->getType() == Presence::Available) {
-			/* Don't have a bare-JID only offline presence once there are available presences */
-			jidMap.erase(bareJID);
-		}
-		if (passedPresence->getType() == Presence::Unavailable && jidMap.size() > 1) {
-			jidMap.erase(passedPresence->getFrom());
-		} else {
-			jidMap[passedPresence->getFrom()] = passedPresence;
-		}
-		entries_[bareJID] = jidMap;
 		onPresenceChange(passedPresence);
 	}
 }
