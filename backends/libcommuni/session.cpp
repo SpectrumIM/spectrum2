@@ -118,9 +118,9 @@ void MyIrcSession::on_nickChanged(IrcMessage *message) {
 
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		std::string nickname = TO_UTF8(m->sender().name());
-		bool flags = m_modes[it->second->getChannel() + nickname];
+		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
 		LOG4CXX_INFO(logger, user << ": " << nickname << " changed nickname to " << TO_UTF8(m->nick()));
-		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) flags, pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->nick()));
+		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->nick()));
 	}
 }
 
@@ -134,14 +134,14 @@ void MyIrcSession::on_modeChanged(IrcMessage *message) {
 		return;
 	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode);
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
 		if (mode == "+o") {
-			m_modes[it->second->getChannel() + nickname] = 1;
+			buddy.setOp(true);
 		}
 		else {
-			m_modes[it->second->getChannel() + nickname] = 0;
+			buddy.setOp(false);
 		}
-		bool flags = m_modes[it->second->getChannel() + nickname];
-		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) flags, pbnetwork::STATUS_ONLINE, "");
+		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "");
 	}
 }
 
@@ -214,7 +214,8 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			if (m->parameters().value(6).toUpper().startsWith("G")) {
 				channel = m->parameters().value(1);
 				nick = TO_UTF8(m->parameters().value(5));
-				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, m_modes[TO_UTF8(channel) + nick], pbnetwork::STATUS_AWAY);
+				IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nick);
+				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
 			}
 			break;
 		case 353:
@@ -223,11 +224,12 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 
 			LOG4CXX_INFO(logger, user << ": Received members for " << TO_UTF8(channel) << suffix);
 			for (int i = 0; i < members.size(); i++) {
-				bool flags = 0;
+				bool op = 0;
 				std::string nickname = TO_UTF8(members.at(i));
-				flags = correctNickname(nickname);
-				m_modes[TO_UTF8(channel) + nickname] = flags;
-				np->handleParticipantChanged(user, nickname, TO_UTF8(channel) + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
+				op = correctNickname(nickname);
+				IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nickname);
+				buddy.setOp(op);
+				np->handleParticipantChanged(user, nickname, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
 			}
 
 			break;

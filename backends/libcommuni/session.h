@@ -37,11 +37,24 @@ public:
 			std::string m_password;
 	};
 
+	class IRCBuddy {
+		public:
+			IRCBuddy(bool op = false, bool away = false) : m_op(op), m_away(away) {};
+
+			void setOp(bool op) { m_op = op; }
+			bool isOp() { return m_op; }
+			void setAway(bool away) { m_away = away; }
+			bool isAway() { return m_away; }
+		
+		private:
+			bool m_op;
+			bool m_away;
+	};
+
 	typedef std::map<std::string, boost::shared_ptr<AutoJoinChannel> > AutoJoinMap;
+	typedef std::map<std::string, std::map<std::string, IRCBuddy> > IRCBuddyMap;
 
 	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
-	std::map<std::string, bool> m_modes;
-	std::map<std::string, bool> m_away;
 	std::string suffix;
 	int rooms;
 
@@ -59,6 +72,10 @@ public:
 
 	const std::string  &getIdentify() {
 		return m_identify;
+	}
+
+	IRCBuddy &getIRCBuddy(const std::string &channel, const std::string &name) {
+		return m_buddies[channel][name];
 	}
 
 	bool correctNickname(std::string &nickname);
@@ -88,6 +105,7 @@ protected:
 	bool m_connected;
 	std::list<std::string> m_rooms;
 	std::list<std::string> m_names;
+	IRCBuddyMap m_buddies;
 };
 
 #endif // SESSION_H
