@@ -64,6 +64,7 @@ public:
 
 	void removeAutoJoinChannel(const std::string &channel) {
 		m_autoJoin.erase(channel);
+		removeIRCBuddies(channel);
 	}
 
 	void setIdentify(const std::string &identify) {
@@ -80,6 +81,10 @@ public:
 
 	void removeIRCBuddy(const std::string &channel, const std::string &name) {
 		m_buddies[channel].erase(name);
+	}
+
+	void removeIRCBuddies(const std::string &channel) {
+		m_buddies.erase(channel);
 	}
 
 	bool correctNickname(std::string &nickname);
