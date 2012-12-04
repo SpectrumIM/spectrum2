@@ -15,6 +15,7 @@
 #include <transport/networkplugin.h>
 #include "Swiften/Swiften.h"
 #include <boost/smart_ptr/make_shared.hpp>
+#include <QTimer>
 
 using namespace Transport;
 
@@ -27,14 +28,26 @@ class MyIrcSession : public IrcSession
 public:
 	class AutoJoinChannel {
 		public:
-			AutoJoinChannel(const std::string &channel = "", const std::string &password = "") : m_channel(channel), m_password(password) {}
+			AutoJoinChannel(const std::string &channel = "", const std::string &password = "", int awayCycle = 12) : m_channel(channel), m_password(password),
+				m_awayCycle(awayCycle), m_currentAwayTick(0) {}
 			virtual ~AutoJoinChannel() {}
 
 			const std::string &getChannel() { return m_channel; }
 			const std::string &getPassword() { return m_password; }
+			bool shouldAskWho() {
+				if (m_currentAwayTick == m_awayCycle) {
+					m_currentAwayTick = 0;
+					return true;
+				}
+				m_currentAwayTick++;
+				return false;
+			}
+
 		private:
 			std::string m_channel;
 			std::string m_password;
+			int m_awayCycle;
+			int m_currentAwayTick;
 	};
 
 	class IRCBuddy {
@@ -55,11 +68,12 @@ public:
 	typedef std::map<std::string, std::map<std::string, IRCBuddy> > IRCBuddyMap;
 
 	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
+	virtual ~MyIrcSession();
 	std::string suffix;
 	int rooms;
 
 	void addAutoJoinChannel(const std::string &channel, const std::string &password) {
-		m_autoJoin[channel] = boost::make_shared<AutoJoinChannel>(channel, password);
+		m_autoJoin[channel] = boost::make_shared<AutoJoinChannel>(channel, password, 12 + m_autoJoin.size());
 	}
 
 	void removeAutoJoinChannel(const std::string &channel) {
@@ -104,6 +118,7 @@ protected Q_SLOTS:
 	void on_socketError(QAbstractSocket::SocketError error);
 
 	void onMessageReceived(IrcMessage* message);
+	void awayTimeout();
 
 protected:
 	IRCNetworkPlugin *np;
@@ -115,6 +130,7 @@ protected:
 	std::list<std::string> m_rooms;
 	std::list<std::string> m_names;
 	IRCBuddyMap m_buddies;
+	QTimer *m_awayTimer;
 };
 
 #endif // SESSION_H

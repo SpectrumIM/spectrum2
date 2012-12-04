@@ -36,6 +36,14 @@ MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const 
 	connect(this, SIGNAL(socketError(QAbstractSocket::SocketError)), SLOT(on_socketError(QAbstractSocket::SocketError)));
 	connect(this, SIGNAL(connected()), SLOT(on_connected()));
 	connect(this, SIGNAL(messageReceived(IrcMessage*)), this, SLOT(onMessageReceived(IrcMessage*)));
+
+	m_awayTimer = new QTimer(this);
+	connect(m_awayTimer, SIGNAL(timeout()), this, SLOT(awayTimeout()));
+	m_awayTimer->start(10*1000);
+}
+
+MyIrcSession::~MyIrcSession() {
+	delete m_awayTimer;
 }
 
 void MyIrcSession::on_connected() {
@@ -210,14 +218,23 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			}
 			np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, nick);
 			break;
-		case 352:
+		case 352: {
+			channel = m->parameters().value(1);
+			nick = TO_UTF8(m->parameters().value(5));
+			IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nick);
+
 			if (m->parameters().value(6).toUpper().startsWith("G")) {
-				channel = m->parameters().value(1);
-				nick = TO_UTF8(m->parameters().value(5));
-				IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nick);
-				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
+				if (!buddy.isAway()) {
+					buddy.setAway(true);
+					np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
+				}
+			}
+			else if (buddy.isAway()) {
+				buddy.setAway(false);
+				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
 			}
 			break;
+		}
 		case 353:
 			channel = m->parameters().value(2);
 			members = m->parameters().value(3).split(" ");
@@ -258,6 +275,15 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	}
 
 	//qDebug() << "numeric message received:" << receiver() << origin << code << params;
+}
+
+void MyIrcSession::awayTimeout() {
+	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+		if (it->second->shouldAskWho()) {
+			LOG4CXX_INFO(logger, "The time has come. Asking /who " << it->second->getChannel() << " again to get current away states.");
+			sendCommand(IrcCommand::createWho(FROM_UTF8(it->second->getChannel())));
+		}
+	}
 }
 
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
