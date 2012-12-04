@@ -230,7 +230,11 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 				np->handleParticipantChanged(user, nickname, TO_UTF8(channel) + suffix,(int) flags, pbnetwork::STATUS_ONLINE);
 			}
 
+			break;
+		case 366:
 			// ask /who to get away states
+			channel = m->parameters().value(1);
+			LOG4CXX_INFO(logger, user << "Asking /who for channel " << TO_UTF8(channel));
 			sendCommand(IrcCommand::createWho(channel));
 			break;
 		case 432:
