@@ -26,6 +26,7 @@ BuildRequires: expat-devel
 BuildRequires: avahi-devel
 BuildRequires: log4cxx-devel
 BuildRequires: swiften-devel
+BuildRequires: libcommuni-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
 
 %description
@@ -86,8 +87,6 @@ Spectrum2 libpurple backend
 %package libcommuni-backend
 Summary:    Libtransport
 Group:      Development/Libraries
-Requires:   boost
-Requires:   communi
 Requires:   libtransport%{?_isa} = %{version}-%{release}
 
 %description libcommuni-backend
