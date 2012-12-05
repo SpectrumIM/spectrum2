@@ -54,8 +54,15 @@ bool GatewayResponder::handleGetRequest(const Swift::JID& from, const Swift::JID
 bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::GatewayPayload> payload) {
 	std::string prompt = payload->getPrompt();
 	std::string escaped = Swift::JID::getEscapedNode(prompt);
+	// This code is here to workaround Gajim (and probably other clients bug too) bug
+	// https://trac.gajim.org/ticket/7277
+	if (prompt.find("\\40") != std::string::npos) {
+		LOG4CXX_WARN(logger, from.toString() << " Received already escaped JID " << prompt << ". Not escaping again.");
+		escaped = prompt;
+	}
+
 	std::string jid = escaped + "@" + m_userManager->getComponent()->getJID().toBare().toString();
-	
+
 	sendResponse(from, id, boost::shared_ptr<GatewayPayload>(new GatewayPayload(jid)));
 	return true;
 }
