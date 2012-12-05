@@ -39,7 +39,7 @@ MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const 
 
 	m_awayTimer = new QTimer(this);
 	connect(m_awayTimer, SIGNAL(timeout()), this, SLOT(awayTimeout()));
-	m_awayTimer->start(10*1000);
+	m_awayTimer->start(5*1000);
 }
 
 MyIrcSession::~MyIrcSession() {
