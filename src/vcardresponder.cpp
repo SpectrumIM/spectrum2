@@ -81,8 +81,6 @@ void VCardResponder::collectTimeouted() {
 }
 
 bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
-	// Get means we're in server mode and user wants to fetch his roster.
-	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
