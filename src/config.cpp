@@ -114,6 +114,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("registration.auto_register", value<bool>()->default_value(false), "Register new user automatically when the presence arrives.")
 		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
 		("registration.require_local_account", value<bool>()->default_value(false), "True if users have to have a local account to register to this transport from remote servers.")
+		("registration.notify_jid", value<std::vector<std::string> >()->multitoken(), "Send message to this JID if user registers/unregisters")
 		("registration.local_username_label", value<std::string>()->default_value("Local username:"), "Label for local usernme field")
 		("registration.local_account_server", value<std::string>()->default_value("localhost"), "The server on which the local accounts will be checked for validity")
 		("registration.local_account_server_timeout", value<int>()->default_value(10000), "Timeout when checking local user on local_account_server (msecs)")

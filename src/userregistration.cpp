@@ -63,6 +63,14 @@ bool UserRegistration::registerUser(const UserInfo &row) {
 	m_component->getStanzaChannel()->sendPresence(response);
 
 	onUserRegistered(row);
+
+	BOOST_FOREACH(const std::string &notify_jid, CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid")) {
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody(std::string("registered: ") + row.jid);
+		msg->setTo(notify_jid);
+		msg->setFrom(m_component->getJID());
+		m_component->getStanzaChannel()->sendMessage(msg);
+	}
 	return true;
 }
 
@@ -164,6 +172,14 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 
 		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, barejid, m_component->getIQRouter());
 		request->send();
+	}
+
+	BOOST_FOREACH(const std::string &notify_jid, CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid")) {
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody(std::string("unregistered: ") + barejid);
+		msg->setTo(notify_jid);
+		msg->setFrom(m_component->getJID());
+		m_component->getStanzaChannel()->sendMessage(msg);
 	}
 }
 
