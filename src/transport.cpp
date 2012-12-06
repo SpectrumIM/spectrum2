@@ -122,7 +122,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	else {
 		LOG4CXX_INFO(logger, "Creating component in gateway mode");
 		m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
-		m_component->setSoftwareVersion("", "");
+		m_component->setSoftwareVersion("Spectrum", SPECTRUM_VERSION);
 		m_component->onConnected.connect(bind(&Component::handleConnected, this));
 		m_component->onError.connect(boost::bind(&Component::handleConnectionError, this, _1));
 		m_component->onDataRead.connect(boost::bind(&Component::handleDataRead, this, _1));
