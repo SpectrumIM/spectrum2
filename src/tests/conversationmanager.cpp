@@ -402,7 +402,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		User *user = userManager->getUser("user@localhost");
 		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
 		conv->setNickname("nickname");
-		conv->setJID("user@localhost/resource");
+		conv->addJID("user@localhost/resource");
 		received.clear();
 		conv->destroyRoom();
 		delete conv;

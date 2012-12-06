@@ -47,21 +47,28 @@ void Conversation::destroyRoom() {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
 		presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), m_nickname));
-		presence->setTo(m_jid);
 		presence->setType(Swift::Presence::Unavailable);
 
 		Swift::MUCItem item;
 		item.affiliation = Swift::MUCOccupant::NoAffiliation;
 		item.role = Swift::MUCOccupant::NoRole;
+		item.actor = "Transport";
+		item.reason = "Spectrum 2 transport is being shut down.";
 		Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
 		p->addItem(item);
 
 		Swift::MUCUserPayload::StatusCode c;
 		c.code = 332;
 		p->addStatusCode(c);
+		Swift::MUCUserPayload::StatusCode c2;
+		c2.code = 307;
+		p->addStatusCode(c2);
 
 		presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
-		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+			presence->setTo(jid);
+			m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+		}
 	}
 }
 
