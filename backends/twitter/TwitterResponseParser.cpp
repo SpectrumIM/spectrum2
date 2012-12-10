@@ -1,6 +1,8 @@
 #include "TwitterResponseParser.h"
 #include "transport/logging.h"
 #include <cctype>
+#include "boost/date_time/local_time/local_time.hpp"
+#include "boost/date_time/time_facet.hpp"
 
 DEFINE_LOGGER(logger, "TwitterResponseParser")
 
@@ -11,13 +13,18 @@ static std::string tolowercase(std::string inp)
 	return out;
 }
 
-static std::string toIsoTime(std::string in) {
-	time_t now = time(0);
-	struct tm *mtime = gmtime(&now);
-	strptime(in.c_str(), "%a %b %d %H:%M:%S %z %Y", mtime);
-	char buf[80];
-	strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", mtime);
-	return buf;
+static std::string toIsoTime(std::string &in) {
+	std::locale locale(std::locale::classic(), new boost::local_time::local_time_input_facet("%a %b %d %H:%M:%S +0000 %Y"));
+	boost::local_time::local_time_facet* output_facet = new boost::local_time::local_time_facet();
+	boost::local_time::local_date_time ldt(boost::local_time::not_a_date_time);
+	std::stringstream ss(in);
+	ss.imbue(locale);
+	ss.imbue(std::locale(ss.getloc(), output_facet));
+	output_facet->format("%Y%m%dT%H%M%S"); // boost::local_time::local_time_facet::iso_time_format_specifier ?
+	ss >> ldt;
+	ss.str("");
+	ss << ldt;	
+	return ss.str();
 }
 
 EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const std::string xmlns)
