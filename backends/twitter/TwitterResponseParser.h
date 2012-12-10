@@ -116,6 +116,7 @@ class Status
 {
 	std::string created_at;
 	std::string ID;
+	std::string retweetID;	
 	std::string text;
 	bool truncated;
 	std::string in_reply_to_status_id;
@@ -127,12 +128,13 @@ class Status
 	bool retweeted;
 
 	public:
-	Status():created_at(""),ID(""),text(""),truncated(false),in_reply_to_status_id(""),
+		Status():created_at(""),ID(""),retweetID(""),text(""),truncated(false),in_reply_to_status_id(""),
 	         in_reply_to_user_id(""),in_reply_to_screen_name(""),user(User()),retweet_count(0),
 	         favorited(false),retweeted(0){}
 	
 	std::string getCreationTime() {return created_at;}
 	std::string getID() {return ID;}
+	std::string getRetweetID() {return retweetID;}	
 	std::string getTweet() {return text;}
 	bool isTruncated() {return truncated;}
 	std::string getReplyToStatusID() {return in_reply_to_status_id;}
@@ -145,6 +147,7 @@ class Status
 	
 	void setCreationTime(std::string _created) {created_at = _created;}
 	void setID(std::string _id) {ID = _id;}
+	void setRetweetID(std::string _id) {retweetID = _id;}	
 	void setTweet(std::string _text) {text = _text;}
 	void setTruncated(bool val) {truncated = val;}
 	void setReplyToStatusID(std::string _id) {in_reply_to_status_id = _id;}

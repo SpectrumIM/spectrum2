@@ -103,7 +103,7 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 	Swift::ParserElement::ref rt = element->getChild(TwitterReponseTypes::retweeted_status, xmlns);
 	if (rt != Swift::NullParserElement::element) {
 		status.setTweet(unescape( std::string( rt->getChild(TwitterReponseTypes::text, xmlns)->getText() + " (RT by @" + status.getUserData().getScreenName() + ")") ) );
-		status.setID( std::string ( rt->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
+		status.setRetweetID( std::string ( rt->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
 		status.setCreationTime( toIsoTime ( std::string (rt->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
 		status.setUserData( getUser ( rt->getChild(TwitterReponseTypes::user, xmlns), xmlns ) );
 	}

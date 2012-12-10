@@ -659,7 +659,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 
 		for(int i = tweets.size() - 1 ; i >= 0 ; i--) {
 			if(userdb[user].twitterMode != CHATROOM) {
-				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")\n";
+				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")\n";
 				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime());
 
 				std::string scrname = tweets[i].getUserData().getScreenName();
@@ -667,7 +667,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 
 			} else {
 				handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-									tweets[i].getTweet() + " (MsgId: " + tweets[i].getID() + ")", tweets[i].getUserData().getScreenName(), "", tweets[i].getCreationTime());
+									tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")", tweets[i].getUserData().getScreenName(), "", tweets[i].getCreationTime());
 			}
 		}
 		
