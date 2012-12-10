@@ -46,6 +46,9 @@ EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const
 	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
 	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
 	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );
+	if (status.isRetweeted()) {
+		status.setTweet( std::string( element->getChild(TwitterReponseTypes::retweeted_status, xmlns)->getText() ) );
+	}
 	return status;
 }
 
@@ -88,6 +91,9 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
 	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
 	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );
+	if (status.isRetweeted()) {
+		status.setTweet( std::string( element->getChild(TwitterReponseTypes::retweeted_status, xmlns)->getText() ) );
+	}
 	return status;
 }
 
