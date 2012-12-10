@@ -1,6 +1,8 @@
 #ifndef _TWITCURL_H_
 #define _TWITCURL_H_
-
+#ifdef _WIN32
+#define NOMINMAX 1
+#endif
 #include <string>
 #include <sstream>
 #include <cstring>
