@@ -1,7 +1,7 @@
 #ifndef HTTPREQ_H
 #define HTTPREQ_H
 
-#include "libtwitcurl/curl/curl.h"
+#include "curl/curl.h"
 #include "transport/logging.h"
 #include <iostream>
 #include <sstream>

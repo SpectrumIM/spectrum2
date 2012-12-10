@@ -9,6 +9,5 @@ if (NOT WIN32)
 else ()
 	target_link_libraries(spectrum2_libcommuni_backend ${IRC_LIBRARY} ${QT_LIBRARIES} transport)
 endif()
-
 INSTALL(TARGETS spectrum2_libcommuni_backend RUNTIME DESTINATION bin)
 
