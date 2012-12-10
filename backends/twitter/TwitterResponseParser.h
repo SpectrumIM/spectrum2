@@ -20,6 +20,7 @@ namespace TwitterReponseTypes
 	const std::string in_reply_to_user_id = "in_reply_to_user_id";
 	const std::string in_reply_to_screen_name = "in_reply_to_screen_name";
 	const std::string retweet_count = "retweet_count";
+	const std::string retweeted_status = "retweeted_status";
 	const std::string favorited = "favorited";
 	const std::string retweeted = "retweeted";
 	const std::string user = "user";
