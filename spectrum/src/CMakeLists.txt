@@ -15,7 +15,11 @@ endif()
 ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
 ADD_DEPENDENCIES(spectrum2 spectrum2_libircclient-qt_backend)
 
+if (WIN32)
 target_link_libraries(spectrum2 transport sqlite3 ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+else ()
+target_link_libraries(spectrum2 transport ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+endif()
 
 INSTALL(TARGETS spectrum2 RUNTIME DESTINATION bin)
 
