@@ -656,7 +656,9 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 	if (!payload.timestamp().empty()) {
 		boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
-		msg->addPayload(boost::make_shared<Swift::Delay>(timestamp));
+		boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+		delay->setStamp(timestamp);
+		msg->addPayload(delay);
 	}
 
 	
