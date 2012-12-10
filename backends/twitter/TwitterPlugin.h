@@ -174,5 +174,6 @@ class TwitterPlugin : public NetworkPlugin {
 			UserData() { sessions = NULL; }
 		};
 		std::map<std::string, UserData> userdb;
+		bool m_firstPing;
 };
 #endif

@@ -40,6 +40,7 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 {
 	this->config = config;
 	this->storagebackend = storagebackend;
+	this->m_firstPing = true;
 
 	if (CONFIG_HAS_KEY(config, "twitter.consumer_key") == false) {
 		consumerKey = "5mFePMiJi0KpeURONkelg";
@@ -104,6 +105,15 @@ void TwitterPlugin::sendData(const std::string &string)
 // Receive date from the NetworkPlugin server and invoke the appropirate payload handler (implement in the NetworkPlugin class)
 void TwitterPlugin::_handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) 
 {
+	if (m_firstPing) {
+		m_firstPing = false;
+		// Users can join the network without registering if we allow
+		// one user to connect multiple IRC networks.
+		NetworkPlugin::PluginConfig cfg;
+		cfg.setNeedPassword(false);
+		sendConfig(cfg);
+	}
+
 	std::string d(data->begin(), data->end());
 	handleDataRead(d);
 }
