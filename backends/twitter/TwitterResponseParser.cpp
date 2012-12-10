@@ -4,6 +4,7 @@
 #include <cctype>
 #include "boost/date_time/local_time/local_time.hpp"
 #include "boost/date_time/time_facet.hpp"
+#include "Swiften/Parser/Tree/NullParserElement.h"
 
 DEFINE_LOGGER(logger, "TwitterResponseParser")
 
@@ -56,10 +57,7 @@ EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const
 	status.setReplyToScreenName( std::string( element->getChild(TwitterReponseTypes::in_reply_to_screen_name, xmlns)->getText() ) );
 	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
 	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
-	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );
-	if (status.isRetweeted()) {
-		status.setTweet( std::string( element->getChild(TwitterReponseTypes::retweeted_status, xmlns)->getText() ) );
-	}
+	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );	
 	return status;
 }
 
@@ -102,8 +100,12 @@ Status getStatus(const Swift::ParserElement::ref &element, const std::string xml
 	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
 	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
 	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );
-	if (status.isRetweeted()) {
-		status.setTweet( std::string( element->getChild(TwitterReponseTypes::retweeted_status, xmlns)->getText() ) );
+	Swift::ParserElement::ref rt = element->getChild(TwitterReponseTypes::retweeted_status, xmlns);
+	if (rt != Swift::NullParserElement::element) {
+		status.setTweet(unescape( std::string( rt->getChild(TwitterReponseTypes::text, xmlns)->getText() + " (RT by @" + status.getUserData().getScreenName() + ")") ) );
+		status.setID( std::string ( rt->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
+		status.setCreationTime( toIsoTime ( std::string (rt->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
+		status.setUserData( getUser ( rt->getChild(TwitterReponseTypes::user, xmlns), xmlns ) );
 	}
 	return status;
 }
