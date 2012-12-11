@@ -27,6 +27,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 	CPPUNIT_TEST_SUITE(SettingsAdHocCommandTest);
 	CPPUNIT_TEST(getItems);
 	CPPUNIT_TEST(getInfo);
+	CPPUNIT_TEST(getInfoBare);
 	CPPUNIT_TEST(execute);
 	CPPUNIT_TEST(executeBadSessionID);
 	CPPUNIT_TEST(executeNotRegistered);
@@ -85,6 +86,22 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 			CPPUNIT_ASSERT_EQUAL(std::string("automation"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getCategory());
 			CPPUNIT_ASSERT_EQUAL(std::string("command-node"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getType());
+		}
+
+		void getInfoBare() {
+			boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+			payload->setNode("http://jabber.org/protocol/commands");
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+			CPPUNIT_ASSERT_EQUAL(std::string("automation"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getCategory());
+			CPPUNIT_ASSERT_EQUAL(std::string("command-list"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getType());
 		}
 
 		void executeNotRegistered() {

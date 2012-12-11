@@ -110,6 +110,12 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 			res->setNode(info->getNode());
 			sendResponse(from, to, id, res);
 		}
+		else if (info->getNode() == "http://jabber.org/protocol/commands") {
+			boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
+			res->addIdentity(DiscoInfo::Identity("Commands", "automation", "command-list"));
+			res->setNode(info->getNode());
+			sendResponse(from, to, id, res);
+		}
 		else {
 			if (!info->getNode().empty()) {
 				sendError(from, id, ErrorPayload::ItemNotFound, ErrorPayload::Cancel);
