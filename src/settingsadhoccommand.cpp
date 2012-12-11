@@ -99,6 +99,7 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::sh
 				m_storageBackend->updateUserSetting(user.id, f->getName(), value);
 			}
 			else if (boost::dynamic_pointer_cast<Swift::TextSingleFormField>(received)) {
+				Swift::TextSingleFormField::ref f(boost::dynamic_pointer_cast<Swift::TextSingleFormField>(received));
 				m_storageBackend->updateUserSetting(user.id, f->getName(), f->getValue());
 			}
 		}
