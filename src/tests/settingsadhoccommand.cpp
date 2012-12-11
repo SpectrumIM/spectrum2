@@ -180,6 +180,31 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			storage->getUserSetting(1, "enable_transport", type, value);
 			CPPUNIT_ASSERT_EQUAL(std::string("0"), value);
 			}
+
+			received.clear();
+
+			payload = boost::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>());
+			CPPUNIT_ASSERT_EQUAL(std::string("settings"), getStanza(received[0])->getPayload<Swift::Command>()->getNode());
+			CPPUNIT_ASSERT_EQUAL(Swift::Command::Executing, getStanza(received[0])->getPayload<Swift::Command>()->getStatus());
+
+			// form element
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm()->getField("enable_transport"));
+
+			// set enabled_transport = 0
+			f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("enable_transport");
+			CPPUNIT_ASSERT_EQUAL(false, boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
 		}
 
 		void executeBadSessionID() {
