@@ -116,7 +116,7 @@ bool AdHocManager::handleGetRequest(const Swift::JID& from, const Swift::JID& to
 bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::Command> payload) {
 	AdHocCommand *command = NULL;
 	// Try to find AdHocCommand according to 'from' and session_id
-	if (m_sessions.find(from) != m_sessions.end()) {
+	if (!payload->getSessionID().empty() && m_sessions.find(from) != m_sessions.end()) {
 		if (m_sessions[from].find(payload->getSessionID()) != m_sessions[from].end()) {
 			command = m_sessions[from][payload->getSessionID()];
 		}
