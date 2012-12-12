@@ -371,6 +371,9 @@ static void handleDataRead(boost::shared_ptr<Swift::Connection> m_conn, boost::s
 			m_conn->onDataRead.disconnect(boost::bind(&handleDataRead, m_conn, _1));
 			m_conn->disconnect();
 			response = payload.config();
+			if (response.empty()) {
+				response = "Empty response";
+			}
 			std::cout << payload.config() << "\n";
 // 			exit(0);
 		}
