@@ -89,6 +89,10 @@ public:
 		return m_identify;
 	}
 
+	bool hasIRCBuddy(const std::string &channel, const std::string &name) {
+		return m_buddies[channel].find(name) != m_buddies[channel].end();
+	}
+
 	IRCBuddy &getIRCBuddy(const std::string &channel, const std::string &name) {
 		return m_buddies[channel][name];
 	}

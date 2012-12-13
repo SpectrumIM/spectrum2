@@ -129,6 +129,9 @@ void MyIrcSession::on_nickChanged(IrcMessage *message) {
 
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		std::string nickname = TO_UTF8(m->sender().name());
+		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
+			continue;
+		}
 		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
 		LOG4CXX_INFO(logger, user << ": " << nickname << " changed nickname to " << TO_UTF8(m->nick()));
 		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->nick()));
@@ -145,6 +148,9 @@ void MyIrcSession::on_modeChanged(IrcMessage *message) {
 		return;
 	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode);
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
+			continue;
+		}
 		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
 		if (mode == "+o") {
 			buddy.setOp(true);
