@@ -208,28 +208,32 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	std::string nick;
 
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
+	QStringList parameters = m->parameters();
 	switch (m->code()) {
 		case 301:
 			break;
+		case 315:
+			LOG4CXX_INFO(logger, "End of /who request " << TO_UTF8(parameters[1]));
+			break;
 		case 332:
-			m_topicData = TO_UTF8(m->parameters().value(2));
+			m_topicData = TO_UTF8(parameters[2]);
 			break;
 		case 333:
-			nick = TO_UTF8(m->parameters().value(2));
+			nick = TO_UTF8(parameters[2]);
 			if (nick.find("!") != std::string::npos) {
 				nick = nick.substr(0, nick.find("!"));
 			}
 			if (nick.find("/") != std::string::npos) {
 				nick = nick.substr(0, nick.find("/"));
 			}
-			np->handleSubject(user, TO_UTF8(m->parameters().value(1)) + suffix, m_topicData, nick);
+			np->handleSubject(user, TO_UTF8(parameters[1]) + suffix, m_topicData, nick);
 			break;
 		case 352: {
-			channel = m->parameters().value(1);
-			nick = TO_UTF8(m->parameters().value(5));
+			channel = parameters[1];
+			nick = TO_UTF8(parameters[5]);
 			IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nick);
 
-			if (m->parameters().value(6).toUpper().startsWith("G")) {
+			if (parameters[6].toUpper().startsWith("G")) {
 				if (!buddy.isAway()) {
 					buddy.setAway(true);
 					np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
@@ -242,8 +246,8 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		}
 		case 353:
-			channel = m->parameters().value(2);
-			members = m->parameters().value(3).split(" ");
+			channel = parameters[2];
+			members = parameters[3].split(" ");
 
 			LOG4CXX_INFO(logger, user << ": Received members for " << TO_UTF8(channel) << suffix);
 			for (int i = 0; i < members.size(); i++) {
@@ -258,7 +262,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		case 366:
 			// ask /who to get away states
-			channel = m->parameters().value(1);
+			channel = parameters[1];
 			LOG4CXX_INFO(logger, user << "Asking /who for channel " << TO_UTF8(channel));
 			sendCommand(IrcCommand::createWho(channel));
 			break;
@@ -270,8 +274,8 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			m_names.clear();
 			break;
 		case 322:
-			m_rooms.push_back(TO_UTF8(m->parameters().value(1)));
-			m_names.push_back(TO_UTF8(m->parameters().value(1)));
+			m_rooms.push_back(TO_UTF8(parameters[1]));
+			m_names.push_back(TO_UTF8(parameters[1]));
 			break;
 		case 323:
 			np->handleRoomList("", m_rooms, m_names);
@@ -293,7 +297,7 @@ void MyIrcSession::awayTimeout() {
 }
 
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
-	LOG4CXX_INFO(logger, user << ": " << TO_UTF8(message->toString()));
+// 	LOG4CXX_INFO(logger, user << ": " << TO_UTF8(message->toString()));
 	switch (message->type()) {
 		case IrcMessage::Join:
 			on_joined(message);
