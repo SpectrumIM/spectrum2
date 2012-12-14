@@ -80,7 +80,7 @@ You should definitely have latest libpurple, so download Pidgin and compile it, 
 
 ## Install libCommuni for libCommuni IRC backend
 
-The instructions are defined on "libCommuni wiki":https://github.com/communi/communi/wiki.
+The instructions are defined on [libCommuni wiki](https://github.com/communi/communi/wiki).
 
 ## Install Spectrum 2
 
@@ -91,4 +91,4 @@ The instructions are defined on "libCommuni wiki":https://github.com/communi/com
 
 Before running make, check cmake output if the supported features are OK for you. If not, install libraries needed by Spectrum to provide specific feature.
 
-You can also install spectrum using "sudo make install"
+You can also install spectrum using `sudo make install`.
