@@ -204,6 +204,7 @@ class Error
 	Error():code(""),message(""){}
 	std::string getCode() {return code;}
 	std::string getMessage() {return message;}
+	bool isCurlError() { return code.empty(); }
 
 	void setCode(std::string &_code) {code = _code;}
 	void setMessage(std::string &_message) {message = _message;}

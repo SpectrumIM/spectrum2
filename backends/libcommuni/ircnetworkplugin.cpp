@@ -75,7 +75,7 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 	session->setRealName(FROM_UTF8(nickname));
 	session->setHost(FROM_UTF8(hostname));
 	session->setPort(6667);
-	session->setEncoding( "utf-8" );
+// 	session->setEncoding("UTF8");
 
 	if (!password.empty()) {
 		std::string identify = m_identify;

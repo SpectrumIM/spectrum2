@@ -251,7 +251,7 @@ std::vector<std::string> getIDs(std::string &xml)
 Error getErrorMessage(std::string &xml)
 {
 	std::string error = "";
-	std::string code = "";
+	std::string code = "0";
 	Error resp;
 
 	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);

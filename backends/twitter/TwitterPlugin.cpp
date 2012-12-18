@@ -580,6 +580,10 @@ std::string TwitterPlugin::getMostRecentDMID(const std::string user)
 void TwitterPlugin::statusUpdateResponse(std::string &user, Error &errMsg)
 {
 	if(errMsg.getMessage().length()) {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
@@ -627,8 +631,14 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 							   	friends[i].getScreenName() + " - " + friends[i].getLastStatus().getTweet(), 
 								userdb[user].twitterMode == CHATROOM ? adminNickName : "");*/
 		}
-	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-							   std::string("Error populating roster - ") + errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+	} else {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+							   std::string("Error populating roster - ") + errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
+	}
 
 	if(userdb[user].twitterMode == CHATROOM) handleParticipantChanged(user, userdb[user].nickName, adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 }
@@ -644,8 +654,14 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 		userlist += "***************************************\n";
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							userlist, userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
-	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
+	} else {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
 							   errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+	}
  
 }
 
@@ -683,8 +699,14 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 			if(tweetID != tweets[0].getID()) updateLastTweetID(user, tweets[0].getID());
 		}
 
-	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
+	} else {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
+		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							   errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
+	}
 }
 
 void TwitterPlugin::directMessageResponse(std::string &user, std::string &username, std::vector<DirectMessage> &messages, Error &errMsg)
@@ -693,6 +715,11 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 		return;
 
 	if(errMsg.getMessage().length()) {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
+
 		if(username != "")
 			handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 						  std::string("Error while sending direct message! - ") + errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
@@ -749,6 +776,10 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::string &img, Error &errMsg)
 {
 	if(errMsg.getMessage().length()) {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
@@ -772,6 +803,10 @@ void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::str
 void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, Error &errMsg)
 {
 	if(errMsg.getMessage().length()) {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName, 
 							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 		return;
@@ -796,6 +831,10 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, Error &e
 void TwitterPlugin::RetweetResponse(std::string &user, Error &errMsg)
 {
 	if(errMsg.getMessage().length()) {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
@@ -807,6 +846,10 @@ void TwitterPlugin::RetweetResponse(std::string &user, Error &errMsg)
 void TwitterPlugin::profileImageResponse(std::string &user, std::string &buddy, std::string &img, unsigned int reqID, Error &errMsg)
 {
 	if(errMsg.getMessage().length()) {
+		if (errMsg.isCurlError()) {
+			handleDisconnected(user, 3, errMsg.getMessage());
+			return;
+		}
 		handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else {
