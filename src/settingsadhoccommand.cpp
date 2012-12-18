@@ -40,6 +40,11 @@ SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *us
 	field->setName("enable_transport");
 	field->setLabel("Enable transport");
 	addFormField(field);
+
+	field = Swift::BooleanFormField::create(CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.send_headlines", "0") == "1");
+	field->setName("send_headlines");
+	field->setLabel("Send messages as headlines");
+	addFormField(field);
 }
 
 SettingsAdHocCommand::~SettingsAdHocCommand() {

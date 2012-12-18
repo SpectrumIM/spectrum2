@@ -42,6 +42,8 @@ AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItems
 	m_collectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20);
 	m_collectTimer->onTick.connect(boost::bind(&AdHocManager::removeOldSessions, this));
 	m_collectTimer->start();
+
+	m_userManager->onUserCreated.connect(boost::bind(&AdHocManager::handleUserCreated, this, _1));
 }
 
 AdHocManager::~AdHocManager() {
@@ -64,6 +66,21 @@ void AdHocManager::stop() {
 	}
 
 	m_sessions.clear();
+}
+
+void AdHocManager::handleUserCreated(User *user) {
+	if (!m_storageBackend) {
+		return;
+	}
+
+	for (std::map<std::string, AdHocCommandFactory *>::const_iterator it = m_factories.begin(); it != m_factories.end(); it++) {
+		for (std::map<std::string, std::string>::const_iterator it2 = it->second->getUserSettings().begin(); it2 != it->second->getUserSettings().end(); it2++) {
+			std::string value = CONFIG_STRING_DEFAULTED(m_component->getConfig(), it->second->getNode() + "." + it2->first, it2->second);
+			int type = (int) TYPE_BOOLEAN;
+			m_storageBackend->getUserSetting(user->getUserInfo().id, it2->first, type, value);
+			user->addUserSetting(it2->first, value);
+		}
+	}
 }
 
 void AdHocManager::addAdHocCommand(AdHocCommandFactory *factory) {
@@ -159,6 +176,12 @@ bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to
 
 	// Command completed, so we can remove it now
 	if (response->getStatus() == Swift::Command::Completed || response->getStatus() == Swift::Command::Canceled) {
+		// update userSettings map if user is already connected
+		User *user = m_userManager->getUser(from.toBare().toString());
+		if (user) {
+			handleUserCreated(user);
+		}
+
 		m_sessions[from].erase(command->getId());
 		if (m_sessions[from].empty()) {
 			m_sessions.erase(from);

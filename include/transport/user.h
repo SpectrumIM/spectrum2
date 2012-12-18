@@ -116,6 +116,14 @@ class User : public Swift::EntityCapsProvider {
 			return m_resources;
 		}
 
+		void addUserSetting(const std::string &key, const std::string &value) {
+			m_settings[key] = value;
+		}
+
+		const std::string &getUserSetting(const std::string &key) {
+			return m_settings[key];
+		}
+
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
 		boost::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
@@ -145,6 +153,7 @@ class User : public Swift::EntityCapsProvider {
 		int m_resources;
 		int m_reconnectCounter;
 		std::list<Swift::Presence::ref> m_joinedRooms;
+		std::map<std::string, std::string> m_settings;
 };
 
 }

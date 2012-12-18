@@ -193,6 +193,15 @@ class TestingStorageBackend : public StorageBackend {
 			settings[userId][variable] = value;
 		}
 
+		void dumpUserSettings() {
+			std::cout << "\n\nUserSettings dump:\n";
+			for (std::map<int, std::map<std::string, std::string> >::const_iterator it = settings.begin(); it != settings.end(); it++) {
+				for (std::map<std::string, std::string>::const_iterator it2 = it->second.begin(); it2 != it->second.end(); it2++) {
+					std::cout << it->first << ":" << it2->first << "=" << it2->second << "\n";
+				}
+			}
+		}
+
 		virtual void beginTransaction() {}
 		virtual void commitTransaction() {}
 };

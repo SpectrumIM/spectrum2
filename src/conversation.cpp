@@ -82,7 +82,14 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		message->setType(Swift::Message::Groupchat);
 	}
 	else {
-		message->setType(Swift::Message::Chat);
+		if (message->getType() != Swift::Message::Headline) {
+			if (m_conversationManager->getUser()->getUserSetting("send_headlines") == "1") {
+				message->setType(Swift::Message::Headline);
+			}
+			else {
+				message->setType(Swift::Message::Chat);
+			}
+		}
 	}
 
 	std::string n = nickname;

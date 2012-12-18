@@ -70,6 +70,7 @@ message ConversationMessage {
 	optional string nickname = 4;
 	optional string xhtml = 5;
 	optional string timestamp = 6;
+	optional bool headline = 7;
 }
 
 message Room {

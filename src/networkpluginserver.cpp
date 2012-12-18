@@ -649,6 +649,10 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->setBody(payload.message());
 	}
 
+	if (payload.headline()) {
+		msg->setType(Swift::Message::Headline);
+	}
+
 	// Add xhtml-im payload.
 	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
 		msg->addPayload(boost::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));

@@ -44,6 +44,13 @@ class AdHocCommandFactory {
 		virtual std::string getNode() = 0;
 
 		virtual std::string getName() = 0;
+
+		virtual std::map<std::string, std::string> &getUserSettings() {
+			return m_userSettings;
+		}
+
+	protected:
+		std::map<std::string, std::string> m_userSettings;
 };
 
 }

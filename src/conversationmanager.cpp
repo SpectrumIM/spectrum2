@@ -39,12 +39,7 @@ ConversationManager::ConversationManager(User *user, Component *component){
 }
 
 ConversationManager::~ConversationManager() {
-	while(!m_convs.empty()) {
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
-		(*m_convs.begin()).second->destroyRoom();
-		delete (*m_convs.begin()).second;
-		m_convs.erase(m_convs.begin());
-	}
+	deleteAllConversations();
 }
 
 void ConversationManager::deleteAllConversations() {

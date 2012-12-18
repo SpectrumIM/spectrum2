@@ -53,7 +53,10 @@ class SettingsAdHocCommand : public AdHocCommand {
 
 class SettingsAdHocCommandFactory : public AdHocCommandFactory {
 	public:
-		SettingsAdHocCommandFactory() {}
+		SettingsAdHocCommandFactory() {
+			m_userSettings["send_headlines"] = "0";
+		}
+
 		virtual ~SettingsAdHocCommandFactory() {}
 
 		AdHocCommand *createAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) {

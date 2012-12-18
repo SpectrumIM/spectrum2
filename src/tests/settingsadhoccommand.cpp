@@ -33,6 +33,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 	CPPUNIT_TEST(executeBadSessionID);
 	CPPUNIT_TEST(executeNotRegistered);
 	CPPUNIT_TEST(cancel);
+	CPPUNIT_TEST(propagateUserSetting);
+	CPPUNIT_TEST(defaultAccordingToConfig);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -325,6 +327,77 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>());
 			CPPUNIT_ASSERT_EQUAL(std::string("settings"), getStanza(received[0])->getPayload<Swift::Command>()->getNode());
 			CPPUNIT_ASSERT_EQUAL(Swift::Command::Canceled, getStanza(received[0])->getPayload<Swift::Command>()->getStatus());
+		}
+
+		void propagateUserSetting() {
+			connectUser();
+			User *user = userManager->getUser("user@localhost");
+			CPPUNIT_ASSERT_EQUAL(std::string("0"), user->getUserSetting("send_headlines"));
+
+			boost::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>());
+			CPPUNIT_ASSERT_EQUAL(std::string("settings"), getStanza(received[0])->getPayload<Swift::Command>()->getNode());
+			CPPUNIT_ASSERT_EQUAL(Swift::Command::Executing, getStanza(received[0])->getPayload<Swift::Command>()->getStatus());
+
+			// form element
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm()->getField("send_headlines"));
+
+			// set enabled_transport = 0
+			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("send_headlines");
+			boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(true);
+
+			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
+
+			// finish the command
+			payload = boost::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload->setSessionID(sessionId);
+			payload->setForm(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
+			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			iq->setFrom("user@localhost");
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(std::string("1"), user->getUserSetting("send_headlines"));
+		}
+
+		void defaultAccordingToConfig() {
+			std::istringstream ifs("service.server_mode = 1\nservice.jid_escaping=0\nservice.jid=localhost\nsettings.send_headlines=1\n");
+			cfg->load(ifs);
+			connectUser();
+			User *user = userManager->getUser("user@localhost");
+			CPPUNIT_ASSERT_EQUAL(std::string("1"), user->getUserSetting("send_headlines"));
+			boost::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>());
+			CPPUNIT_ASSERT_EQUAL(std::string("settings"), getStanza(received[0])->getPayload<Swift::Command>()->getNode());
+			CPPUNIT_ASSERT_EQUAL(Swift::Command::Executing, getStanza(received[0])->getPayload<Swift::Command>()->getStatus());
+
+			// form element
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm()->getField("send_headlines"));
+			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("send_headlines");
+			CPPUNIT_ASSERT_EQUAL(true, boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
 		}
 
 };

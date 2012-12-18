@@ -24,6 +24,7 @@ using namespace Transport;
 class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
 	CPPUNIT_TEST(handleNormalMessages);
+	CPPUNIT_TEST(handleNormalMessagesHeadline);
 	CPPUNIT_TEST(handleGroupchatMessages);
 	CPPUNIT_TEST(handleGroupchatMessagesTwoResources);
 	CPPUNIT_TEST(handleChatstateMessages);
@@ -202,6 +203,55 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
+	}
+
+	void handleNormalMessagesHeadline() {
+		User *user = userManager->getUser("user@localhost");
+		user->addUserSetting("send_headlines", "1");
+
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
+		user->getConversationManager()->addConversation(conv);
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody("hi there<>!");
+
+		// Forward it
+		conv->handleMessage(msg);
+		loop->processEvents();
+		
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+
+		received.clear();
+		user->addUserSetting("send_headlines", "0");
+		// Forward it - Conversation should keep the Headline type, because msg->getType() is Headline
+		conv->handleMessage(msg);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
+
+		received.clear();
+		msg->setType(Swift::Message::Chat);
+		// Forward it
+		conv->handleMessage(msg);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Message::Chat, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 	}
 
 	void handleGroupchatMessages() {
