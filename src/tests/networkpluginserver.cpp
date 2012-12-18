@@ -22,8 +22,29 @@
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "basictest.h"
+#include <cppunit/TestListener.h>
+#include <cppunit/Test.h>
+#include <time.h>    // for clock()
 
 using namespace Transport;
+
+class Clock {
+	public:
+		double m_beginTime;
+		double m_elapsedTime;
+
+		void start() {
+			m_beginTime = clock();
+		}
+
+		void end() {
+			m_elapsedTime = double(clock() - m_beginTime) / CLOCKS_PER_SEC;
+		}
+
+		double elapsedTime() const {
+			return m_elapsedTime;
+		}
+};
 
 class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(NetworkPluginServerTest);
@@ -31,6 +52,8 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadNoEscaping);
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
+
+	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -49,6 +72,44 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			disconnectUser();
 			delete serv;
 			tearMeDown();
+		}
+
+		void benchmarkHandleBuddyChangedPayload() {
+			Clock clk;
+			std::vector<std::string> lst;
+			for (int i = 0; i < 2000; i++) {
+				pbnetwork::Buddy buddy;
+				buddy.set_username("user@localhost");
+				buddy.set_buddyname("buddy" + boost::lexical_cast<std::string>(i)  + "@test");
+
+				std::string message;
+				buddy.SerializeToString(&message);
+				lst.push_back(message);
+			}
+
+			std::vector<std::string> lst2;
+			for (int i = 0; i < 2000; i++) {
+				pbnetwork::Buddy buddy;
+				buddy.set_username("user@localhost");
+				buddy.set_buddyname("buddy" + boost::lexical_cast<std::string>(i)  + "@test");
+				buddy.set_status((pbnetwork::StatusType) 2);
+
+				std::string message;
+				buddy.SerializeToString(&message);
+				lst2.push_back(message);
+			}
+
+			clk.start();
+			for (int i = 0; i < 2000; i++) {
+				serv->handleBuddyChangedPayload(lst[i]);
+				received.clear();
+			}
+			for (int i = 0; i < 2000; i++) {
+				serv->handleBuddyChangedPayload(lst2[i]);
+				received.clear();
+			}
+			clk.end();
+			std::cerr << " " << clk.elapsedTime() << " s";
 		}
 
 		void handleBuddyChangedPayload() {
