@@ -30,6 +30,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayload);
 	CPPUNIT_TEST(handleBuddyChangedPayloadNoEscaping);
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
+	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -103,6 +104,35 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 			serv->handleBuddyChangedPayload(message);
 			CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		}
+
+		void handleMessageHeadline() {
+			User *user = userManager->getUser("user@localhost");
+
+			pbnetwork::ConversationMessage m;
+			m.set_username("user@localhost");
+			m.set_buddyname("user");
+			m.set_message("msg");
+			m.set_nickname("");
+			m.set_xhtml("");
+			m.set_timestamp("");
+			m.set_headline(true);
+
+			std::string message;
+			m.SerializeToString(&message);
+
+			serv->handleConvMessagePayload(message, false);
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Message::Chat, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+
+			received.clear();
+			user->addUserSetting("send_headlines", "1");
+			serv->handleConvMessagePayload(message, false);
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+
 		}
 };
 

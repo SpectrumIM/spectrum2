@@ -215,6 +215,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there<>!");
+		msg->setType(Swift::Message::Headline);
 
 		// Forward it
 		conv->handleMessage(msg);
@@ -229,19 +230,20 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		received.clear();
 		user->addUserSetting("send_headlines", "0");
-		// Forward it - Conversation should keep the Headline type, because msg->getType() is Headline
+		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT_EQUAL(Swift::Message::Chat, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 
 		received.clear();
 		msg->setType(Swift::Message::Chat);
+		user->addUserSetting("send_headlines", "1");
 		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();

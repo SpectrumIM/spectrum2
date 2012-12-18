@@ -652,22 +652,20 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested, std::vector<Status> &tweets , Error &errMsg)
 {
 	if(errMsg.getMessage().length() == 0) {
-		
-		std::string timeline = "";
 		std::map<std::string, int> lastTweet;
 		std::map<std::string, int>::iterator it;
 
 		for(int i = tweets.size() - 1 ; i >= 0 ; i--) {
 			if(userdb[user].twitterMode != CHATROOM) {
 				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")\n";
-				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime());
+				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime(), true);
 
 				std::string scrname = tweets[i].getUserData().getScreenName();
 				if(lastTweet.count(scrname) == 0 || cmp(tweets[lastTweet[scrname]].getID(), tweets[i].getID()) <= 0) lastTweet[scrname] = i;
 
 			} else {
 				handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-									tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")", tweets[i].getUserData().getScreenName(), "", tweets[i].getCreationTime());
+									tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")", tweets[i].getUserData().getScreenName(), "", tweets[i].getCreationTime(), true);
 			}
 		}
 		
@@ -685,8 +683,6 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 			if(tweetID != tweets[0].getID()) updateLastTweetID(user, tweets[0].getID());
 		}
 
-		if(timeline.length()) handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
-												  timeline, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 	} else handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 							   errMsg.getMessage(), userdb[user].twitterMode == CHATROOM ? adminNickName : "");	
 }

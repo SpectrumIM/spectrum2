@@ -111,7 +111,7 @@ class NetworkPlugin {
 		/// \param message Plain text message.
 		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
 		/// \param xhtml XHTML message.
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "");
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false);
 
 		/// Call this function when subject in room changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")

@@ -82,13 +82,13 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		message->setType(Swift::Message::Groupchat);
 	}
 	else {
-		if (message->getType() != Swift::Message::Headline) {
-			if (m_conversationManager->getUser()->getUserSetting("send_headlines") == "1") {
-				message->setType(Swift::Message::Headline);
-			}
-			else {
+		if (message->getType() == Swift::Message::Headline) {
+			if (m_conversationManager->getUser()->getUserSetting("send_headlines") != "1") {
 				message->setType(Swift::Message::Chat);
 			}
+		}
+		else {
+			message->setType(Swift::Message::Chat);
 		}
 	}
 

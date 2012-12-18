@@ -43,7 +43,7 @@ SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *us
 
 	field = Swift::BooleanFormField::create(CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.send_headlines", "0") == "1");
 	field->setName("send_headlines");
-	field->setLabel("Send messages as headlines");
+	field->setLabel("Allow sending messages as headlines");
 	addFormField(field);
 }
 
