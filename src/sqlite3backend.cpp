@@ -283,11 +283,12 @@ bool SQLite3Backend::getOnlineUsers(std::vector<std::string> &users) {
 
 long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	"INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)"
+	std::string groups = StorageBackend::serializeGroups(buddyInfo.groups);
 	BEGIN(m_addBuddy);
 	BIND_INT(m_addBuddy, userId);
 	BIND_STR(m_addBuddy, buddyInfo.legacyName);
 	BIND_STR(m_addBuddy, buddyInfo.subscription);
-	BIND_STR(m_addBuddy, StorageBackend::serializeGroups(buddyInfo.groups));
+	BIND_STR(m_addBuddy, groups);
 	BIND_STR(m_addBuddy, buddyInfo.alias);
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
@@ -312,8 +313,9 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 
 void SQLite3Backend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 // 	UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?
+	std::string groups = StorageBackend::serializeGroups(buddyInfo.groups);
 	BEGIN(m_updateBuddy);
-	BIND_STR(m_updateBuddy, StorageBackend::serializeGroups(buddyInfo.groups));
+	BIND_STR(m_updateBuddy, groups);
 	BIND_STR(m_updateBuddy, buddyInfo.alias);
 	BIND_INT(m_updateBuddy, buddyInfo.flags);
 	BIND_STR(m_updateBuddy, buddyInfo.subscription);
