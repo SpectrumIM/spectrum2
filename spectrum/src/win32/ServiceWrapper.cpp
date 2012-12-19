@@ -87,7 +87,7 @@ void WINAPI ServiceControlHandler(DWORD controlCode) {
 		break;
 	}
 	SetServiceStatus(ServiceStatusHandle, &ServiceStatus);	
-	stop();
+	spectrum_control_handler(CTRL_CLOSE_EVENT);
 }
 
 void WINAPI ServiceMain(DWORD argc, LPSTR *argv) {

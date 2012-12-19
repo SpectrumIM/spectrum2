@@ -47,12 +47,6 @@ Component *component_ = NULL;
 UserManager *userManager_ = NULL;
 Config *config_ = NULL;
 
-void stop() {
-	userManager_->removeAllUsers(false);
-	component_->stop();
-	eventLoop_->stop();
-}
-
 static void stop_spectrum() {
 	userManager_->removeAllUsers(false);
 	component_->stop();
@@ -66,6 +60,16 @@ static void spectrum_sigint_handler(int sig) {
 static void spectrum_sigterm_handler(int sig) {
 	eventLoop_->postEvent(&stop_spectrum);
 }
+
+#ifdef WIN32
+BOOL spectrum_control_handler( DWORD fdwCtrlType ) { 
+	if (fdwCtrlType == CTRL_C_EVENT || fdwCtrlType == CTRL_CLOSE_EVENT) {
+		eventLoop_->postEvent(&stop_spectrum);
+		return TRUE;
+	}
+	return FALSE;
+} 
+#endif
 
 static void removeOldIcons(std::string iconDir) {
 	std::vector<std::string> dirs;
@@ -126,7 +130,6 @@ static void daemonize(const char *cwd, const char *lock_file) {
 		exit(1);
 	}
 }
-
 #endif
 
 int mainloop() {
@@ -291,6 +294,12 @@ int main(int argc, char **argv)
 		std::cout << "SIGTERM handler can't be set\n";
 		return -1;
 	}
+#else
+	if( !SetConsoleCtrlHandler( (PHANDLER_ROUTINE) spectrum_control_handler, TRUE ) ) 
+	{ 
+		std::cout << "control handler can't be set\n";
+		return -1;
+	} 
 #endif
 	boost::program_options::options_description desc(std::string("Spectrum version: ") + SPECTRUM_VERSION + "\nUsage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()

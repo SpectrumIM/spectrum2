@@ -15,5 +15,5 @@ public:
 };
 
 int mainloop();
-void stop();
+BOOL spectrum_control_handler( DWORD fdwCtrlType );
 
