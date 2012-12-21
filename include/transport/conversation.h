@@ -92,6 +92,10 @@ class Conversation {
 			m_jids.push_back(jid);
 		}
 
+		void clearJIDs() {
+			m_jids.clear();
+		}
+
 		void removeJID(const Swift::JID &jid) {
 			m_jids.remove(jid);
 		}
@@ -136,6 +140,8 @@ class Conversation {
 
 		void sendParticipants(const Swift::JID &to);
 
+		void sendCachedMessages(const Swift::JID &to);
+
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");
 
@@ -150,6 +156,7 @@ class Conversation {
 		std::map<std::string, Participant> m_participants;
 		boost::shared_ptr<Swift::Message> m_subject;
 		bool m_sentInitialPresence;
+		std::list<boost::shared_ptr<Swift::Message> > m_cachedMessages;
 };
 
 }

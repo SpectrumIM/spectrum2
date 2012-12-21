@@ -30,6 +30,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(connectUserVipOnlyNonVip);
 	CPPUNIT_TEST(handleProbePresence);
 	CPPUNIT_TEST(disconnectUser);
+	CPPUNIT_TEST(disconnectUserBouncer);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -178,6 +179,25 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[3])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[3]))->getShow());
 		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received2[3]))->getStatus());
+	}
+
+	void disconnectUserBouncer() {
+		connectUser();
+		User *user = userManager->getUser("user@localhost");
+		user->addUserSetting("stay_connected", "1");
+		received.clear();
+		userManager->disconnectUser("user@localhost");
+		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(userManager->getUser("user@localhost"));
+
+		userManager->removeAllUsers();
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
 	}
 
 };

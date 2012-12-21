@@ -47,6 +47,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_jid = jid.toBare();
 	m_data = NULL;
 
+	m_cacheMessages = false;
 	m_component = component;
 	m_presenceOracle = component->m_presenceOracle;
 	m_entityCapsManager = component->m_entityCapsManager;
@@ -184,6 +185,10 @@ void User::setConnected(bool connected) {
 	}
 }
 
+void User::setCacheMessages(bool cacheMessages) {
+	m_cacheMessages = cacheMessages;
+}
+
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
@@ -233,19 +238,21 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 			}
 
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
-			onRoomLeft(room);
+			if (getUserSetting("stay_connected") != "1") {
+				LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
+				onRoomLeft(room);
 
-			BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
-				if (p->getTo() == presence->getTo()) {
-					m_joinedRooms.remove(p);
-					break;
+				BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
+					if (p->getTo() == presence->getTo()) {
+						m_joinedRooms.remove(p);
+						break;
+					}
 				}
-			}
 
-			if (conv) {
-				m_conversationManager->removeConversation(conv);
-				delete conv;
+				if (conv) {
+					m_conversationManager->removeConversation(conv);
+					delete conv;
+				}
 			}
 		}
 		else {
@@ -270,6 +277,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				else {
 					conv->addJID(presence->getFrom());
 					conv->sendParticipants(presence->getFrom());
+					conv->sendCachedMessages(presence->getFrom());
 				}
 
 				if (forceJoin) {
@@ -340,13 +348,26 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	if (m_readyForConnect) {
 		Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
 		if (highest) {
+			if (highest->getType() == Swift::Presence::Unavailable && getUserSetting("stay_connected") == "1") {
+				m_resources = 0;
+				m_conversationManager->clearJIDs();
+				setCacheMessages(true);
+				return;
+			}
 			Swift::Presence::ref response = Swift::Presence::create(highest);
 			response->setTo(m_jid);
 			response->setFrom(m_component->getJID());
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
 			onPresenceChanged(highest);
+			setCacheMessages(false);
 		}
 		else {
+			if (getUserSetting("stay_connected") == "1") {
+				m_resources = 0;
+				m_conversationManager->clearJIDs();
+				setCacheMessages(true);
+				return;
+			}
 			Swift::Presence::ref response = Swift::Presence::create();
 			response->setTo(m_jid.toBare());
 			response->setFrom(m_component->getJID());

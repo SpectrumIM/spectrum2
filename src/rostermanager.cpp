@@ -145,7 +145,7 @@ void RosterManager::sendBuddyRosterRemove(Buddy *buddy) {
 void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	// user can't receive anything in server mode if he's not logged in.
 	// He will ask for roster later (handled in rosterreponsder.cpp)
-	if (m_component->inServerMode() && !m_user->isConnected())
+	if (m_component->inServerMode() && (!m_user->isConnected() || m_user->shouldCacheMessages()))
 		return;
 
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());

@@ -73,6 +73,7 @@ class ConversationManager {
 
 		void resetResources();
 		void removeJID(const Swift::JID &jid);
+		void clearJIDs();
 
 	private:
 		void handleMessageReceived(Swift::Message::ref message);

@@ -237,9 +237,13 @@ void BasicTest::connectSecondResource() {
 }
 
 void BasicTest::disconnectUser() {
+	User *user = userManager->getUser("user@localhost");
+	if (user) {
+		user->addUserSetting("stay_connected", "0");
+	}
 	received.clear();
 	userManager->disconnectUser("user@localhost");
-	dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
+	dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(100);
 	loop->processEvents();
 
 	CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());

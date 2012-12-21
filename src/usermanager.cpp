@@ -331,6 +331,10 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 	// Unavailable presence could remove this user, because he could be unavailable
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		if (user) {
+			if (user->getUserSetting("stay_connected") == "1") {
+				return;
+			}
+
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(presence->getFrom().toBare());
 			// There's no presence for this user, so disconnect
 			if (!highest || (highest && highest->getType() == Swift::Presence::Unavailable)) {

@@ -55,6 +55,7 @@ class SettingsAdHocCommandFactory : public AdHocCommandFactory {
 	public:
 		SettingsAdHocCommandFactory() {
 			m_userSettings["send_headlines"] = "0";
+			m_userSettings["stay_connected"] = "0";
 		}
 
 		virtual ~SettingsAdHocCommandFactory() {}

@@ -45,6 +45,11 @@ SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *us
 	field->setName("send_headlines");
 	field->setLabel("Allow sending messages as headlines");
 	addFormField(field);
+
+	field = Swift::BooleanFormField::create(CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.stay_connected", "0") == "1");
+	field->setName("stay_connected");
+	field->setLabel("Stay connected to legacy network when offline on XMPP");
+	addFormField(field);
 }
 
 SettingsAdHocCommand::~SettingsAdHocCommand() {

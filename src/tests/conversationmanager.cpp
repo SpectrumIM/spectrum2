@@ -26,6 +26,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleNormalMessages);
 	CPPUNIT_TEST(handleNormalMessagesHeadline);
 	CPPUNIT_TEST(handleGroupchatMessages);
+	CPPUNIT_TEST(handleGroupchatMessagesBouncer);
 	CPPUNIT_TEST(handleGroupchatMessagesTwoResources);
 	CPPUNIT_TEST(handleChatstateMessages);
 	CPPUNIT_TEST(handleSubjectMessages);
@@ -293,6 +294,65 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
 		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+	}
+
+	void handleGroupchatMessagesBouncer() {
+		User *user = userManager->getUser("user@localhost");
+		user->addUserSetting("stay_connected", "1");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		user->getConversationManager()->addConversation(conv);
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+
+		CPPUNIT_ASSERT(!user->shouldCacheMessages());
+
+		// disconnectUser
+		userManager->disconnectUser("user@localhost");
+		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT(user->shouldCacheMessages());
+
+		// reset resources should not touch this resource
+		user->getConversationManager()->resetResources();
+
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody("hi there!");
+		conv->handleMessage(msg, "anotheruser");
+
+		boost::shared_ptr<Swift::Message> msg2(new Swift::Message());
+		msg2->setBody("hi there2!");
+		conv->handleMessage(msg2, "anotheruser");
+
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
+		userRegistry->onPasswordValid(Swift::JID("user@localhost/resource"));
+		loop->processEvents();
+
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource");
+
+		Swift::MUCPayload *payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[2])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[3])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getFrom().toString());
+
 	}
 
 	void handleGroupchatMessagesTwoResources() {

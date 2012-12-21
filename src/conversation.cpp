@@ -30,7 +30,6 @@ namespace Transport {
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
-// 	m_conversationManager->addConversation(this);
 	m_muc = isMUC;
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
 	m_sentInitialPresence = false;
@@ -140,15 +139,26 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		if (n.empty()) {
 			n = " ";
 		}
-		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
-			message->setTo(jid);
-			message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
-			// Subject has to be sent after our own presence (the one with code 110)
-			if (!message->getSubject().empty() && m_sentInitialPresence == false) {
-				m_subject = message;
-				return;
+
+		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
+
+		if (m_conversationManager->getUser()->shouldCacheMessages()) {
+			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
+			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+			delay->setStamp(timestamp);
+			message->addPayload(delay);
+			m_cachedMessages.push_back(message);
+		}
+		else {
+			BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+				message->setTo(jid);
+				// Subject has to be sent after our own presence (the one with code 110)
+				if (!message->getSubject().empty() && m_sentInitialPresence == false) {
+					m_subject = message;
+					return;
+				}
+				m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 			}
-			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
 		}
 	}
 }
@@ -159,6 +169,14 @@ void Conversation::sendParticipants(const Swift::JID &to) {
 		presence->setTo(to);
 		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
 	}
+}
+
+void Conversation::sendCachedMessages(const Swift::JID &to) {
+	for (std::list<boost::shared_ptr<Swift::Message> >::const_iterator it = m_cachedMessages.begin(); it != m_cachedMessages.end(); it++) {
+		(*it)->setTo(to);
+		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(*it);
+	}
+	m_cachedMessages.clear();
 }
 
 Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {

@@ -29,6 +29,9 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(handlePresenceLeaveRoom);
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResources);
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesOneDisconnects);
+	CPPUNIT_TEST(handlePresenceLeaveRoomBouncer);
+	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesBouncer);
+	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesOneDisconnectsBouncer);
 	CPPUNIT_TEST(leaveJoinedRoom);
 	CPPUNIT_TEST(joinRoomBeforeConnected);
 	CPPUNIT_TEST(handleDisconnected);
@@ -63,6 +66,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			if (!disconnected) {
 				disconnectUser();
 			}
+			userManager->removeAllUsers();
 			tearMeDown();
 		}
 
@@ -257,6 +261,96 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handlePresenceLeaveRoomTwoResourcesOneDisconnects() {
+		handlePresenceJoinRoomTwoResources();
+		received.clear();
+		User *user = userManager->getUser("user@localhost");
+
+		// User is still connected from resource2, so he should not leave the room
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost/hanzz");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unavailable);
+		injectPresence(response);
+		loop->processEvents();
+
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		Conversation *conv = user->getConversationManager()->getConversation("#room");
+		CPPUNIT_ASSERT_EQUAL(1, (int) conv->getJIDs().size());
+		CPPUNIT_ASSERT_EQUAL(Swift::JID("user@localhost/resource2"), conv->getJIDs().front());
+	}
+
+	void handlePresenceLeaveRoomBouncer() {
+		User *user = userManager->getUser("user@localhost");
+		user->addUserSetting("stay_connected", "1");
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unavailable);
+
+		Swift::MUCPayload *payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+	}
+
+	void handlePresenceLeaveRoomTwoResourcesBouncer() {
+		User *user = userManager->getUser("user@localhost");
+		user->addUserSetting("stay_connected", "1");
+		handlePresenceJoinRoomTwoResources();
+		received.clear();
+
+		// User is still connected from resource2, so he should not leave the room
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unavailable);
+
+		Swift::MUCPayload *payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		room = "something";
+		// disconnect also from resource
+		// User is still connected from resource2, so he should not leave the room
+		response = Swift::Presence::create();
+		response->setTo("#room@localhost/hanzz");
+		response->setFrom("user@localhost/resource2");
+		response->setType(Swift::Presence::Unavailable);
+
+		payload = new Swift::MUCPayload();
+		payload->setPassword("password");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(payload));
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+
+		CPPUNIT_ASSERT_EQUAL(std::string("something"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+	}
+
+	void handlePresenceLeaveRoomTwoResourcesOneDisconnectsBouncer() {
+		room = "something";
 		handlePresenceJoinRoomTwoResources();
 		received.clear();
 		User *user = userManager->getUser("user@localhost");
