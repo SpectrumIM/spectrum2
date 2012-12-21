@@ -42,6 +42,15 @@ ConversationManager::~ConversationManager() {
 	deleteAllConversations();
 }
 
+void ConversationManager::sendCachedChatMessages() {
+	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
+		if ((*it).second->isMUC()) {
+			continue;
+		}
+		(*it).second->sendCachedMessages();
+	}
+}
+
 void ConversationManager::deleteAllConversations() {
 	while(!m_convs.empty()) {
 		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);

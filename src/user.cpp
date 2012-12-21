@@ -186,6 +186,9 @@ void User::setConnected(bool connected) {
 }
 
 void User::setCacheMessages(bool cacheMessages) {
+	if (m_component->inServerMode() && !m_cacheMessages && cacheMessages) {
+		m_conversationManager->sendCachedChatMessages();
+	}
 	m_cacheMessages = cacheMessages;
 }
 

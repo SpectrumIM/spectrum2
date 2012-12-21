@@ -117,6 +117,9 @@ void MyIrcSession::on_quit(IrcMessage *message) {
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 		bool op = 0;
 		std::string nickname = TO_UTF8(m->sender().name());
+		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
+			continue;
+		}
 		op = correctNickname(nickname);
 		removeIRCBuddy(it->second->getChannel(), nickname);
 		LOG4CXX_INFO(logger, user << ": " << nickname << " quit " << it->second->getChannel() + suffix);

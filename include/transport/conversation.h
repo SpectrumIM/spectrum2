@@ -140,7 +140,7 @@ class Conversation {
 
 		void sendParticipants(const Swift::JID &to);
 
-		void sendCachedMessages(const Swift::JID &to);
+		void sendCachedMessages(const Swift::JID &to = Swift::JID());
 
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");

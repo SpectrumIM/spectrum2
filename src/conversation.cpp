@@ -127,7 +127,20 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(Swift::JID(m_room, m_conversationManager->getComponent()->getJID().toBare(), n));
 			}
 		}
-		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+
+		if (m_conversationManager->getComponent()->inServerMode() && m_conversationManager->getUser()->shouldCacheMessages()) {
+			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
+			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+			delay->setStamp(timestamp);
+			message->addPayload(delay);
+			m_cachedMessages.push_back(message);
+			if (m_cachedMessages.size() > 100) {
+				m_cachedMessages.pop_front();
+			}
+		}
+		else {
+			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+		}
 	}
 	else {
 		std::string legacyName = m_legacyName;
@@ -142,7 +155,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 
 		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 
-		if (m_conversationManager->getUser()->shouldCacheMessages()) {
+		if (m_jids.empty()) {
 			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
 			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
 			delay->setStamp(timestamp);
@@ -176,7 +189,12 @@ void Conversation::sendParticipants(const Swift::JID &to) {
 
 void Conversation::sendCachedMessages(const Swift::JID &to) {
 	for (std::list<boost::shared_ptr<Swift::Message> >::const_iterator it = m_cachedMessages.begin(); it != m_cachedMessages.end(); it++) {
-		(*it)->setTo(to);
+		if (to.isValid()) {
+			(*it)->setTo(to);
+		}
+		else {
+			(*it)->setTo(m_jid.toBare());
+		}
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(*it);
 	}
 	m_cachedMessages.clear();

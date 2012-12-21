@@ -59,6 +59,8 @@ class ConversationManager {
 		/// \return Conversation or NULL.
 		Conversation *getConversation(const std::string &name);
 
+		void sendCachedChatMessages();
+
 		/// Adds new Conversation to the manager.
 
 		/// \param conv Conversation.
