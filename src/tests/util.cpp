@@ -26,6 +26,7 @@ using namespace Transport;
 class UtilTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST_SUITE(UtilTest);
 	CPPUNIT_TEST(encryptDecryptPassword);
+	CPPUNIT_TEST(serializeGroups);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -39,6 +40,27 @@ class UtilTest : public CPPUNIT_NS :: TestFixture{
 	void encryptDecryptPassword() {
 		std::string encrypted = StorageBackend::encryptPassword("password", "key");
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), StorageBackend::decryptPassword(encrypted, "key"));
+	}
+
+	void serializeGroups() {
+		std::vector<std::string> groups;
+		std::string g = "";
+		
+		CPPUNIT_ASSERT_EQUAL(g, StorageBackend::serializeGroups(groups));
+		CPPUNIT_ASSERT_EQUAL(0, (int) StorageBackend::deserializeGroups(g).size());
+
+		groups.push_back("Buddies");
+		g = "Buddies";
+		CPPUNIT_ASSERT_EQUAL(g, StorageBackend::serializeGroups(groups));
+		CPPUNIT_ASSERT_EQUAL(1, (int) StorageBackend::deserializeGroups(g).size());
+		CPPUNIT_ASSERT_EQUAL(g, StorageBackend::deserializeGroups(g)[0]);
+
+		groups.push_back("Buddies2");
+		g = "Buddies\nBuddies2";
+		CPPUNIT_ASSERT_EQUAL(g, StorageBackend::serializeGroups(groups));
+		CPPUNIT_ASSERT_EQUAL(2, (int) StorageBackend::deserializeGroups(g).size());
+		CPPUNIT_ASSERT_EQUAL(std::string("Buddies"), StorageBackend::deserializeGroups(g)[0]);
+		CPPUNIT_ASSERT_EQUAL(std::string("Buddies2"), StorageBackend::deserializeGroups(g)[1]);
 	}
 
 };
