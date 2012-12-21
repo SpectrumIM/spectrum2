@@ -148,6 +148,9 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 			delay->setStamp(timestamp);
 			message->addPayload(delay);
 			m_cachedMessages.push_back(message);
+			if (m_cachedMessages.size() > 100) {
+				m_cachedMessages.pop_front();
+			}
 		}
 		else {
 			BOOST_FOREACH(const Swift::JID &jid, m_jids) {
