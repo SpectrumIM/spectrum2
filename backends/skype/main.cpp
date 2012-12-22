@@ -207,7 +207,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "", const std::string &id = "") {
 			Skype *skype = m_sessions[user];
 			if (skype) {
 				skype->send_command("MESSAGE " + legacyName + " " + message);

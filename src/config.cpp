@@ -312,6 +312,7 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 		("registration.needPassword", value<bool>()->default_value(true), "")
 		("registration.needRegistration", value<bool>()->default_value(false), "")
 		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
+		("features.receipts", value<bool>()->default_value(false), "")
 	;
 
 	std::stringstream ifs(backendConfig);
@@ -319,6 +320,8 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 
 	store(parsed, m_backendConfig);
 	notify(m_backendConfig);
+
+	onBackendConfigUpdated();
 }
 
 Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {

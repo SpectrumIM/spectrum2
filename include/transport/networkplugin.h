@@ -113,6 +113,8 @@ class NetworkPlugin {
 		/// \param xhtml XHTML message.
 		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false);
 
+		void handleMessageAck(const std::string &user, const std::string &legacyName, const std::string &id);
+
 		/// Call this function when subject in room changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		/// \param legacyName Name of room. (eg. "#spectrum")
@@ -199,7 +201,7 @@ class NetworkPlugin {
 		/// \param legacyName Legacy network name of buddy or room.
 		/// \param message Plain text message.
 		/// \param xhtml XHTML message.
-		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") = 0;
+		virtual void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "", const std::string &id = "") = 0;
 
 		/// Called when XMPP user requests VCard of buddy.
 		/// \param user XMPP JID of user for which this event occurs.

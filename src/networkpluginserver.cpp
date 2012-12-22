@@ -686,6 +686,33 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	m_userManager->messageToXMPPSent();
 }
 
+void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->addPayload(boost::make_shared<Swift::DeliveryReceipt>(payload.id()));
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+
+	// Receipts don't create conversation
+	if (!conv) {
+		return;
+	}
+
+	// Forward it
+	conv->handleMessage(msg);
+}
+
 void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
 	if (payload.ParseFromString(data) == false) {
@@ -1022,6 +1049,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_LIST:
 				handleRoomListPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE_ACK:
+				handleConvMessageAckPayload(wrapper.payload());
 				break;
 			default:
 				return;
@@ -1406,6 +1436,10 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		m.set_buddyname(conv->getLegacyName());
 		m.set_message(msg->getBody());
 		m.set_xhtml(xhtml);
+		boost::shared_ptr<Swift::DeliveryReceiptRequest> receiptPayload = msg->getPayload<Swift::DeliveryReceiptRequest>();
+		if (receiptPayload && !msg->getID().empty()) {
+			m.set_id(msg->getID());
+		}
 
 		std::string message;
 		m.SerializeToString(&message);

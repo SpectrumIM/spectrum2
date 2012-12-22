@@ -74,7 +74,7 @@ class TwitterPlugin : public NetworkPlugin {
 
 		void handleLeaveRoomRequest(const std::string &/*user*/, const std::string &/*room*/);
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "");
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "", const std::string &id = "");
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups);
 

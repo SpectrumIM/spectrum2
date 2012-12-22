@@ -245,7 +245,7 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			return games;
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "", const std::string &id = "") {
 			std::cout << "aaa\n";
 			if (message.find("start") == 0) {
 				std::string game = message.substr(6);

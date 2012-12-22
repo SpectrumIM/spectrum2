@@ -28,6 +28,7 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(roomList);
 	CPPUNIT_TEST(roomInfo);
 	CPPUNIT_TEST(clearRooms);
+	CPPUNIT_TEST(receipts);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -92,6 +93,32 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoItems>());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoItems>()->getItems().empty());
+	}
+
+	void receipts() {
+		boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		iq->setFrom("user@localhost");
+		iq->setTo("buddy@localhost");
+		injectIQ(iq);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+		CPPUNIT_ASSERT(!getStanza(received[0])->getPayload<Swift::DiscoInfo>()->hasFeature("urn:xmpp:receipts"));
+		received.clear();
+
+		cfg->updateBackendConfig("[features]\nreceipts=1\n");
+
+		injectIQ(iq);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>()->hasFeature("urn:xmpp:receipts"));
+		received.clear();
 	}
 
 };

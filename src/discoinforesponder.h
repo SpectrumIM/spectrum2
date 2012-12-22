@@ -51,9 +51,10 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> payload);
+		void updateBuddyFeatures();
 
 		Swift::DiscoInfo m_transportInfo;
-		Swift::DiscoInfo m_buddyInfo;
+		Swift::DiscoInfo *m_buddyInfo;
 		Config *m_config;
 		Swift::CapsInfo m_capsInfo;
 		std::map<std::string, std::string> m_rooms;

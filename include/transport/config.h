@@ -126,6 +126,7 @@ class Config {
 		boost::signal<void ()> onConfigReloaded;
 
 		void updateBackendConfig(const std::string &backendConfig);
+		boost::signal<void ()> onBackendConfigUpdated;
 
 		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
 	

@@ -100,6 +100,7 @@ class NetworkPluginServer {
 		void handleBuddyChangedPayload(const std::string &payload);
 		void handleBuddyRemovedPayload(const std::string &payload);
 		void handleConvMessagePayload(const std::string &payload, bool subject = false);
+		void handleConvMessageAckPayload(const std::string &payload);
 		void handleParticipantChangedPayload(const std::string &payload);
 		void handleRoomChangedPayload(const std::string &payload);
 		void handleVCardPayload(const std::string &payload);

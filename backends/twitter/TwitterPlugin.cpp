@@ -194,7 +194,7 @@ void TwitterPlugin::handleLeaveRoomRequest(const std::string &user, const std::s
 }
 
 // Messages to be sent to Twitter 
-void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) 
+void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml, const std::string &/*id*/) 
 {
 
 	LOG4CXX_INFO(logger, "Received " << user << " --> " << legacyName << " - " << message)

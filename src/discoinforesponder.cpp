@@ -39,11 +39,12 @@ namespace Transport {
 
 DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) : Swift::GetResponder<DiscoInfo>(router) {
 	m_config = config;
+	m_config->onBackendConfigUpdated.connect(boost::bind(&DiscoInfoResponder::updateBuddyFeatures, this));
+	m_buddyInfo = NULL;
 	m_transportInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"),
 													CONFIG_STRING(m_config, "identity.category"),
 													CONFIG_STRING(m_config, "identity.type")));
 
-	m_buddyInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"), "client", "pc"));
 	std::list<std::string> features;
 	features.push_back("jabber:iq:register");
 	features.push_back("jabber:iq:gateway");
@@ -52,16 +53,23 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) 
 	features.push_back("http://jabber.org/protocol/commands");
 	setTransportFeatures(features);
 
-	features.clear();
+	updateBuddyFeatures();
+}
+
+DiscoInfoResponder::~DiscoInfoResponder() {
+	delete m_buddyInfo;
+}
+
+void DiscoInfoResponder::updateBuddyFeatures() {
+	std::list<std::string> features;
 	features.push_back("http://jabber.org/protocol/disco#items");
 	features.push_back("http://jabber.org/protocol/disco#info");
 	features.push_back("http://jabber.org/protocol/chatstates");
 	features.push_back("http://jabber.org/protocol/xhtml-im");
+	if (CONFIG_BOOL_DEFAULTED(m_config, "features.receipts", false)) {
+		features.push_back("urn:xmpp:receipts");
+	}
 	setBuddyFeatures(features);
-}
-
-DiscoInfoResponder::~DiscoInfoResponder() {
-	
 }
 
 void DiscoInfoResponder::setTransportFeatures(std::list<std::string> &features) {
@@ -73,14 +81,18 @@ void DiscoInfoResponder::setTransportFeatures(std::list<std::string> &features) 
 }
 
 void DiscoInfoResponder::setBuddyFeatures(std::list<std::string> &f) {
+	delete m_buddyInfo;
+	m_buddyInfo = new Swift::DiscoInfo;
+	m_buddyInfo->addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"), "client", "pc"));
+
 	for (std::list<std::string>::iterator it = f.begin(); it != f.end(); it++) {
-		if (!m_buddyInfo.hasFeature(*it)) {
-			m_buddyInfo.addFeature(*it);
+		if (!m_buddyInfo->hasFeature(*it)) {
+			m_buddyInfo->addFeature(*it);
 		}
 	}
 
 	CapsInfoGenerator caps("spectrum");
-	m_capsInfo = caps.generateCapsInfo(m_buddyInfo);
+	m_capsInfo = caps.generateCapsInfo(*m_buddyInfo);
 	onBuddyCapsInfoChanged(m_capsInfo);
 }
 
@@ -136,7 +148,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 	}
 	// disco#info for buddy
 	else {
-		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_buddyInfo));
+		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(*m_buddyInfo));
 		res->setNode(info->getNode());
 		sendResponse(from, to, id, res);
 	}
