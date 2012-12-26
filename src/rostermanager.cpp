@@ -232,8 +232,8 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 		}
 		else {
 			// Send RIE only if there's resource which supports it.
-			Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
-			if (jidWithRIE.isValid()) {
+			std::vector<Swift::JID> jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
+			if (!jidWithRIE.empty()) {
 				m_RIETimer->start();
 			}
 			else {
@@ -317,10 +317,10 @@ void RosterManager::sendRIE() {
 	m_RIETimer->stop();
 
 	// Check the feature, because proper resource could logout during RIETimer.
-	Swift::JID jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
+	std::vector<Swift::JID> jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
 
 	// fallback to normal subscribe
-	if (!jidWithRIE.isValid()) {
+	if (jidWithRIE.empty()) {
 		for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 			Buddy *buddy = (*it).second;
 			if (!buddy) {
@@ -330,8 +330,6 @@ void RosterManager::sendRIE() {
 		}
 		return;
 	}
-
-	LOG4CXX_INFO(logger, "Sending RIE stanza to " << jidWithRIE.toString());
 
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
 	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
@@ -348,8 +346,11 @@ void RosterManager::sendRIE() {
 		payload->addItem(item);
 	}
 
-	boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jidWithRIE, payload, m_component->getIQRouter()));
-	request->send();
+	BOOST_FOREACH(Swift::JID &jid, jidWithRIE) {
+		LOG4CXX_INFO(logger, "Sending RIE stanza to " << jid.toString());
+		boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, m_component->getIQRouter()));
+		request->send();
+	}
 }
 
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {

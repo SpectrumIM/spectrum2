@@ -83,8 +83,8 @@ const Swift::JID &User::getJID() {
 	return m_jid;
 }
 
-Swift::JID User::getJIDWithFeature(const std::string &feature) {
-	Swift::JID jid;
+std::vector<Swift::JID> User::getJIDWithFeature(const std::string &feature) {
+	std::vector<Swift::JID> jid;
 	std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
 
 	foreach(Swift::Presence::ref presence, presences) {
@@ -111,11 +111,13 @@ Swift::JID User::getJIDWithFeature(const std::string &feature) {
 
 		if (discoInfo->hasFeature(feature)) {
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
-			return presence->getFrom();
+			jid.push_back(presence->getFrom());
 		}
 	}
 
-	LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
+	if (jid.empty()) {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
+	}
 	return jid;
 }
 
