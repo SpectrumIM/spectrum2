@@ -141,7 +141,9 @@ class NetworkPluginServer {
 
 		void pingTimeout();
 		void sendPing(Backend *c);
-		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false);
+		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false, bool check = false);
+		void connectWaitingUsers();
+		void loginDelayFinished();
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
@@ -152,6 +154,7 @@ class NetworkPluginServer {
 		std::list<Backend *>  m_clients;
 		Swift::Timer::ref m_pingTimer;
 		Swift::Timer::ref m_collectTimer;
+		Swift::Timer::ref m_loginTimer;
 		Component *m_component;
 		std::list<User *> m_waitingUsers;
 		bool m_isNextLongRun;
@@ -161,6 +164,7 @@ class NetworkPluginServer {
 		AdminInterface *m_adminInterface;
 		bool m_startingBackend;
 		DiscoItemsResponder *m_discoItemsResponder;
+		time_t m_lastLogin;
 };
 
 }
