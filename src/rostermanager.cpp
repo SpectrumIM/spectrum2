@@ -204,7 +204,9 @@ void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	response->setTo(m_user->getJID());
 	response->setFrom(buddy->getJID());
 	response->setType(Swift::Presence::Subscribe);
-// 	TODO: NICKNAME
+	if (!buddy->getAlias().empty()) {
+		response->addPayload(boost::make_shared<Swift::Nickname>(buddy->getAlias()));
+	}
 	m_component->getStanzaChannel()->sendPresence(response);
 }
 
@@ -231,14 +233,7 @@ void RosterManager::setBuddyCallback(Buddy *buddy) {
 			sendBuddyRosterPush(buddy);
 		}
 		else {
-			// Send RIE only if there's resource which supports it.
-			std::vector<Swift::JID> jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
-			if (!jidWithRIE.empty()) {
-				m_RIETimer->start();
-			}
-			else {
-				sendBuddySubscribePresence(buddy);
-			}
+			m_RIETimer->start();
 		}
 	}
 
