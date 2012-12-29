@@ -193,7 +193,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "", const std::string &id = "") {
 			// Remove trailing +, because smstools doesn't use it in "From: " field for received messages.
 			std::string n = legacyName;
 			if (n.find("+") == 0) {

@@ -258,6 +258,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_isNextLongRun = false;
 	m_adminInterface = NULL;
 	m_startingBackend = false;
+	m_lastLogin = 0;
 	m_discoItemsResponder = discoItemsResponder;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
@@ -266,6 +267,10 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
 	m_pingTimer->start();
+
+	m_loginTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(CONFIG_INT(config, "service.login_delay") * 1000);
+	m_loginTimer->onTick.connect(boost::bind(&NetworkPluginServer::loginDelayFinished, this));
+	m_loginTimer->start();
 
 	if (CONFIG_INT(m_config, "service.memory_collector_time") != 0) {
 		m_collectTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(CONFIG_INT(m_config, "service.memory_collector_time"));
@@ -353,6 +358,11 @@ void NetworkPluginServer::start() {
 		// quit the while loop
 		break;
 	}
+}
+
+void NetworkPluginServer::loginDelayFinished() {
+	m_loginTimer->stop();
+	connectWaitingUsers();
 }
 
 void NetworkPluginServer::handleNewClientConnection(boost::shared_ptr<Swift::Connection> c) {
@@ -686,6 +696,33 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	m_userManager->messageToXMPPSent();
 }
 
+void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
+	pbnetwork::ConversationMessage payload;
+
+	if (payload.ParseFromString(data) == false) {
+		// TODO: ERROR
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.username());
+	if (!user)
+		return;
+
+
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->addPayload(boost::make_shared<Swift::DeliveryReceipt>(payload.id()));
+
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+
+	// Receipts don't create conversation
+	if (!conv) {
+		return;
+	}
+
+	// Forward it
+	conv->handleMessage(msg);
+}
+
 void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	pbnetwork::ConversationMessage payload;
 	if (payload.ParseFromString(data) == false) {
@@ -830,6 +867,29 @@ void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
 	send(b->connection, message);
 }
 
+void NetworkPluginServer::connectWaitingUsers() {
+	// some users are in queue waiting for this backend
+	while(!m_waitingUsers.empty()) {
+		// There's no new backend, so stop associating users and wait for new backend,
+		// which has been already spawned in getFreeClient() call.
+		if (getFreeClient(true, false, true) == NULL)
+			break;
+
+		User *u = m_waitingUsers.front();
+		m_waitingUsers.pop_front();
+
+		LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
+
+		// associate backend with user
+		handleUserCreated(u);
+
+		// connect user if it's ready
+		if (u->isReadyToConnect()) {
+			handleUserReadyToConnect(u);
+		}
+	}
+}
+
 void NetworkPluginServer::handlePongReceived(Backend *c) {
 	// This could be first PONG from the backend
 	if (c->pongReceived == -1) {
@@ -841,26 +901,7 @@ void NetworkPluginServer::handlePongReceived(Backend *c) {
 			m_component->start();
 		}
 
-		// some users are in queue waiting for this backend
-		while(!m_waitingUsers.empty()) {
-			// There's no new backend, so stop associating users and wait for new backend,
-			// which has been already spawned in getFreeClient() call.
-			if (getFreeClient() == NULL)
-				break;
-
-			User *u = m_waitingUsers.front();
-			m_waitingUsers.pop_front();
-
-			LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
-
-			// associate backend with user
-			handleUserCreated(u);
-
-			// connect user if it's ready
-			if (u->isReadyToConnect()) {
-				handleUserReadyToConnect(u);
-			}
-		}
+		connectWaitingUsers();
 	}
 
 	c->pongReceived = true;
@@ -1022,6 +1063,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ROOM_LIST:
 				handleRoomListPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE_ACK:
+				handleConvMessageAckPayload(wrapper.payload());
 				break;
 			default:
 				return;
@@ -1406,6 +1450,10 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		m.set_buddyname(conv->getLegacyName());
 		m.set_message(msg->getBody());
 		m.set_xhtml(xhtml);
+		boost::shared_ptr<Swift::DeliveryReceiptRequest> receiptPayload = msg->getPayload<Swift::DeliveryReceiptRequest>();
+		if (receiptPayload && !msg->getID().empty()) {
+			m.set_id(msg->getID());
+		}
 
 		std::string message;
 		m.SerializeToString(&message);
@@ -1608,8 +1656,19 @@ void NetworkPluginServer::sendPing(Backend *c) {
 // 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
-NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUsers, bool longRun) {
+NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUsers, bool longRun, bool check) {
 	NetworkPluginServer::Backend *c = NULL;
+
+	unsigned long diff = CONFIG_INT(m_config, "service.login_delay");
+	time_t now = time(NULL);
+	if (diff && (now - m_lastLogin < diff)) {
+		m_loginTimer->start();
+		return NULL;
+	}
+
+	if (!check) {
+		m_lastLogin = time(NULL);
+	}
 
 	// Check all backends and find free one
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {

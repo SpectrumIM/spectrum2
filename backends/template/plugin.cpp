@@ -45,7 +45,7 @@ void Plugin::handleLoginRequest(const std::string &user, const std::string &lega
 void Plugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 }
 
-void Plugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml) {
+void Plugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml, const std::string &id) {
 	LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ".");
 	if (legacyName == "echo") {
 		handleMessage(user, legacyName, message);

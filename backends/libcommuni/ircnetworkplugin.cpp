@@ -144,7 +144,7 @@ std::string IRCNetworkPlugin::getTargetName(const std::string &legacyName) {
 	return r;
 }
 
-void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/) {
+void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &/*xhtml*/, const std::string &/*id*/) {
 	std::string session = getSessionName(user, legacyName);
 	if (m_sessions[session] == NULL) {
 		LOG4CXX_WARN(logger, user << ": Session name: " << session << ", No session for user");

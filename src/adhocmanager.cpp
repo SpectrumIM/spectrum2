@@ -69,15 +69,13 @@ void AdHocManager::stop() {
 }
 
 void AdHocManager::handleUserCreated(User *user) {
-	if (!m_storageBackend) {
-		return;
-	}
-
 	for (std::map<std::string, AdHocCommandFactory *>::const_iterator it = m_factories.begin(); it != m_factories.end(); it++) {
 		for (std::map<std::string, std::string>::const_iterator it2 = it->second->getUserSettings().begin(); it2 != it->second->getUserSettings().end(); it2++) {
 			std::string value = CONFIG_STRING_DEFAULTED(m_component->getConfig(), it->second->getNode() + "." + it2->first, it2->second);
-			int type = (int) TYPE_BOOLEAN;
-			m_storageBackend->getUserSetting(user->getUserInfo().id, it2->first, type, value);
+			if (m_storageBackend) {
+				int type = (int) TYPE_BOOLEAN;
+				m_storageBackend->getUserSetting(user->getUserInfo().id, it2->first, type, value);
+			}
 			user->addUserSetting(it2->first, value);
 		}
 	}

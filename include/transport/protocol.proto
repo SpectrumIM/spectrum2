@@ -71,6 +71,7 @@ message ConversationMessage {
 	optional string xhtml = 5;
 	optional string timestamp = 6;
 	optional bool headline = 7;
+	optional string id = 8;
 }
 
 message Room {
@@ -167,6 +168,7 @@ message WrapperMessage {
 		TYPE_BACKEND_CONFIG			= 30;
 		TYPE_QUERY					= 31;
 		TYPE_ROOM_LIST				= 32;
+		TYPE_CONV_MESSAGE_ACK		= 33;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

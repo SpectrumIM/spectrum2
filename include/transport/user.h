@@ -57,7 +57,7 @@ class User : public Swift::EntityCapsProvider {
 		/// Returns full JID which supports particular feature or invalid JID.
 		/// \param feature disco#info feature.
 		/// \return full JID which supports particular feature or invalid JID.
-		Swift::JID getJIDWithFeature(const std::string &feature);
+		std::vector<Swift::JID> getJIDWithFeature(const std::string &feature);
 
 		Swift::DiscoInfo::ref getCaps(const Swift::JID &jid) const;
 

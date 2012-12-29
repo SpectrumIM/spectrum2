@@ -98,6 +98,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
 		("service.enable_xhtml", value<bool>()->default_value(true), "")
 		("service.max_room_list_size", value<int>()->default_value(100), "")
+		("service.login_delay", value<int>()->default_value(0), "")
 		("service.jid_escaping", value<bool>()->default_value(true), "")
 		("service.vip_only", value<bool>()->default_value(false), "")
 		("service.vip_message", value<std::string>()->default_value(""), "")
@@ -312,6 +313,7 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 		("registration.needPassword", value<bool>()->default_value(true), "")
 		("registration.needRegistration", value<bool>()->default_value(false), "")
 		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
+		("features.receipts", value<bool>()->default_value(false), "")
 	;
 
 	std::stringstream ifs(backendConfig);
@@ -319,6 +321,8 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 
 	store(parsed, m_backendConfig);
 	notify(m_backendConfig);
+
+	onBackendConfigUpdated();
 }
 
 Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {

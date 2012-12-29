@@ -100,6 +100,21 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	send(message);
 }
 
+void NetworkPlugin::handleMessageAck(const std::string &user, const std::string &legacyName, const std::string &id) {
+	pbnetwork::ConversationMessage m;
+	m.set_username(user);
+	m.set_buddyname(legacyName);
+	m.set_message("");
+	m.set_id(id);
+
+	std::string message;
+	m.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE_ACK);
+
+	send(message);
+}
+
 void NetworkPlugin::handleAttention(const std::string &user, const std::string &buddyName, const std::string &msg) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
@@ -391,7 +406,7 @@ void NetworkPlugin::handleConvMessagePayload(const std::string &data) {
 		return;
 	}
 
-	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message(), payload.xhtml());
+	handleMessageSendRequest(payload.username(), payload.buddyname(), payload.message(), payload.xhtml(), payload.id());
 }
 
 void NetworkPlugin::handleRoomSubjectChangedPayload(const std::string &data) {

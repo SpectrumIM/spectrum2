@@ -145,7 +145,7 @@ class YahooPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "") {
+		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml = "", const std::string &id = "") {
 			YahooLocalAccount *account = m_users[user];
 			if (account) {
 				LOG4CXX_INFO(logger, "Sending message from " << user << " to " << legacyName << ": " << message << ".");

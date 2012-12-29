@@ -25,6 +25,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(setBuddy);
 	CPPUNIT_TEST(sendCurrentPresences);
 	CPPUNIT_TEST(sendCurrentPresence);
+	CPPUNIT_TEST(sendBuddySubscribePresence);
 	CPPUNIT_TEST(removeBuddy);
 	CPPUNIT_TEST(subscribeExistingBuddy);
 	CPPUNIT_TEST(subscribeNewBuddy);
@@ -57,6 +58,17 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	void handleBuddyRemoved(Buddy *buddy) {
 		m_buddy = buddy->getName();
+	}
+
+	void sendBuddySubscribePresence() {
+		add2Buddies();
+		received.clear();
+		User *user = userManager->getUser("user@localhost");
+		user->getRosterManager()->sendBuddySubscribePresence(user->getRosterManager()->getBuddy("buddy1"));
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Nickname>());
+		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), getStanza(received[0])->getPayload<Swift::Nickname>()->getNickname());
+		
 	}
 
 	void setBuddy() {
