@@ -52,6 +52,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadNoEscaping);
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
+	CPPUNIT_TEST(handleConvMessageAckPayload);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST_SUITE_END();
@@ -72,6 +73,31 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			disconnectUser();
 			delete serv;
 			tearMeDown();
+		}
+
+		void handleConvMessageAckPayload() {
+			handleMessageHeadline();
+			received.clear();
+			User *user = userManager->getUser("user@localhost");
+
+			pbnetwork::ConversationMessage m;
+			m.set_username("user@localhost");
+			m.set_buddyname("user");
+			m.set_message("");
+			m.set_nickname("");
+			m.set_id("testingid");
+			m.set_xhtml("");
+			m.set_timestamp("");
+			m.set_headline(true);
+
+			std::string message;
+			m.SerializeToString(&message);
+
+			serv->handleConvMessageAckPayload(message);
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0]))->getPayload<Swift::DeliveryReceipt>());
+			CPPUNIT_ASSERT_EQUAL(std::string("testingid"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getPayload<Swift::DeliveryReceipt>()->getReceivedID());
 		}
 
 		void benchmarkHandleBuddyChangedPayload() {
@@ -193,7 +219,6 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 			CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
-
 		}
 };
 
