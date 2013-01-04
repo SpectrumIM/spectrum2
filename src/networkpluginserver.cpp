@@ -708,6 +708,10 @@ void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
 	if (!user)
 		return;
 
+	if (payload.id().empty()) {
+		LOG4CXX_WARN(logger, "Received message ack with empty ID, not forwarding to XMPP.");
+		return;
+	}
 
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->addPayload(boost::make_shared<Swift::DeliveryReceipt>(payload.id()));
