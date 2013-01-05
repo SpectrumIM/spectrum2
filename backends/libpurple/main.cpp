@@ -1565,7 +1565,7 @@ static bool initPurple() {
 	remove("./blist.xml");
 
 	purple_debug_set_ui_ops_wrapped(&debugUiOps);
-	purple_debug_set_verbose_wrapped(true);
+// 	purple_debug_set_verbose_wrapped(true);
 
 	purple_core_set_ui_ops_wrapped(&coreUiOps);
 	if (CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev") {
