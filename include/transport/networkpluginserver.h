@@ -136,6 +136,7 @@ class NetworkPluginServer {
 		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size);
 		void handleFTDataNeeded(Backend *b, unsigned long ftid);
 
+		void handlePIDTerminated(unsigned long pid);
 	private:
 		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
 
@@ -152,6 +153,7 @@ class NetworkPluginServer {
 		Config *m_config;
 		boost::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Backend *>  m_clients;
+		std::vector<unsigned long> m_pids;
 		Swift::Timer::ref m_pingTimer;
 		Swift::Timer::ref m_collectTimer;
 		Swift::Timer::ref m_loginTimer;

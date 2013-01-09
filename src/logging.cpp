@@ -119,24 +119,29 @@ static void initLogging(Config *config, std::string key) {
 		}
 
 		p.load(istream);
-		LogString pid, jid;
+		LogString pid, jid, id;
 		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(config, "service.jid"), jid);
+		log4cxx::helpers::Transcoder::decode(CONFIG_STRING_DEFAULTED(config, "service.backend_id", ""), id);
 #ifdef _MSC_VER
 		p.setProperty(L"pid", pid);
 		p.setProperty(L"jid", jid);
+		p.setProperty(L"id", id);
 #else
 		p.setProperty("pid", pid);
 		p.setProperty("jid", jid);
+		p.setProperty("id", id);
 #endif
 
 		std::string dir;
 		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
-			if (boost::ends_with(prop, ".File")) {
+// 			if (boost::ends_with(prop, ".File")) {
 				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
 				boost::replace_all(dir, "${jid}", jid);
+				boost::replace_all(dir, "${pid}", pid);
+				boost::replace_all(dir, "${id}", id);
 				break;
-			}
+// 			}
 		}
 		mode_t old_cmask;
 		if (!dir.empty()) {
