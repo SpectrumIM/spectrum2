@@ -363,7 +363,7 @@ Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::s
 	}
 	catch (std::runtime_error& e)
 	{
-		error = os.str();
+		error = std::string(e.what()) + "\n" + os.str();
 		return NULL;
 	}
 	catch (...)

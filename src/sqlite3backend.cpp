@@ -349,6 +349,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	std::string key;
 
 	int ret;
+	int ret2 = -10;
 	while((ret = sqlite3_step(m_getBuddies)) == SQLITE_ROW) {
 		BuddyInfo b;
 		RESET_GET_COUNTER(m_getBuddies);
@@ -366,7 +367,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			buddy_id = -1;
 		}
 
-		while(buddy_id == -1 && (ret = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+		while(buddy_id == -1 && ret2 != SQLITE_DONE && ret2 != SQLITE_ERROR && (ret2 = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
 			RESET_GET_COUNTER(m_getBuddiesSettings);
 			buddy_id = GET_INT(m_getBuddiesSettings);
 			
@@ -403,12 +404,24 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		roster.push_back(b);
 	}
 
-	while((ret = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+	if (ret != SQLITE_DONE) {
+		LOG4CXX_ERROR(logger, "getBuddies query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
 	}
 
-	if (ret != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "getBuddies query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
-		return false;
+	if (ret2 != SQLITE_DONE) {
+		if (ret2 == SQLITE_ERROR) {
+			LOG4CXX_ERROR(logger, "getBuddiesSettings query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+			return false;
+		}
+
+		while((ret2 = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+		}
+
+		if (ret2 != SQLITE_DONE) {
+			LOG4CXX_ERROR(logger, "getBuddiesSettings query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+			return false;
+		}
 	}
 	
 	return true;
