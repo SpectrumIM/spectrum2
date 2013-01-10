@@ -56,21 +56,11 @@ bool UserRegistration::registerUser(const UserInfo &row) {
 
 	m_storageBackend->setUser(row);
 
-	Swift::Presence::ref response = Swift::Presence::create();
-	response->setFrom(m_component->getJID());
-	response->setTo(Swift::JID(row.jid));
-	response->setType(Swift::Presence::Subscribe);
-	m_component->getStanzaChannel()->sendPresence(response);
+	//same as in unregisterUser but here we have to pass UserInfo to handleRegisterRRResponse
+	AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(),row.jid));
+	request->onResponse.connect(boost::bind(&UserRegistration::handleRegisterRemoteRosterResponse, this, _1, _2, row));
+	request->send();
 
-	onUserRegistered(row);
-
-	BOOST_FOREACH(const std::string &notify_jid, CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid")) {
-		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-		msg->setBody(std::string("registered: ") + row.jid);
-		msg->setTo(notify_jid);
-		msg->setFrom(m_component->getJID());
-		m_component->getStanzaChannel()->sendMessage(msg);
-	}
 	return true;
 }
 
@@ -89,6 +79,34 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 	request->send();
 
 	return true;
+}
+
+void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported /*error*/, const UserInfo &row){
+	if (remoteRosterNotSupported || !payload) {
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setFrom(m_component->getJID());
+		response->setTo(Swift::JID(row.jid));
+		response->setType(Swift::Presence::Subscribe);
+		m_component->getStanzaChannel()->sendPresence(response);
+	}
+	else{
+		Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
+		Swift::RosterItemPayload item;
+		item.setJID(m_component->getJID());
+		item.setSubscription(Swift::RosterItemPayload::Both);
+		payload->addItem(item);
+		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, row.jid, m_component->getIQRouter());
+		request->send();
+	}
+	onUserRegistered(row);
+
+	BOOST_FOREACH(const std::string &notify_jid, CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid")) {
+	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->setBody(std::string("registered: ") + row.jid);
+	msg->setTo(notify_jid);
+	msg->setFrom(m_component->getJID());
+	m_component->getStanzaChannel()->sendMessage(msg);
+	}
 }
 
 void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported /*error*/, const std::string &barejid) {
