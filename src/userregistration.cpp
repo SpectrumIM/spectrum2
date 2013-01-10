@@ -56,10 +56,10 @@ bool UserRegistration::registerUser(const UserInfo &row) {
 
 	m_storageBackend->setUser(row);
         
-        //same as in unregisterUser but here we have to pass UserInfo to handleRegisterRRResponse
-        AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(),row.jid));
-        request->onResponse.connect(boost::bind(&UserRegistration::handleRegisterRemoteRosterResponse, this, _1, _2, row));
-        request->send();
+    //same as in unregisterUser but here we have to pass UserInfo to handleRegisterRRResponse
+    AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(),row.jid));
+    request->onResponse.connect(boost::bind(&UserRegistration::handleRegisterRemoteRosterResponse, this, _1, _2, row));
+    request->send();
 
 	return true;
 }
@@ -80,6 +80,7 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 
 	return true;
 }
+
 void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported /*error*/, const UserInfo &row){
     if (remoteRosterNotSupported || !payload) {     
 	Swift::Presence::ref response = Swift::Presence::create();
