@@ -67,7 +67,7 @@ bool PQXXBackend::connect() {
 			connection_str += " password=" + CONFIG_STRING(m_config, "database.password");
 		}
 		if (CONFIG_INT(m_config, "database.port") != 0) {
-			connection_str += " port=" + boost:lexical_cast<std::string>(CONFIG_INT(m_config, "database.port"));
+			connection_str += " port=" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "database.port"));
 		}
 	}
 	else {
