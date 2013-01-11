@@ -57,6 +57,9 @@ bool PQXXBackend::connect() {
 	str += CONFIG_STRING(m_config, "database.database") + " ";
 
 	str += "user=" + CONFIG_STRING(m_config, "database.user") + " ";
+	if (!CONFIG_STRING(m_config, "database.password").empty()) {
+		str += "password=" + CONFIG_STRING(m_config, "database.password") + " ";
+	}
 
 	try {
 		m_conn = new pqxx::connection(str);
