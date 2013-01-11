@@ -49,10 +49,10 @@ void PQXXBackend::disconnect() {
 
 bool PQXXBackend::connect() {
 	std::string connection_str;
-	connection_str = CONFIG_STRING(m_config, "database.connectionstring");
+	connection_str = CONFIG_STRING_DEFAULTED(m_config, "database.connectionstring", "");
 	if (connection_str.empty()) {
 		LOG4CXX_INFO(logger, "Connecting PostgreSQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
-			CONFIG_STRING(m_config, "database.user") << ", database " << CONFIG_STRING(m_config, "database.database") <<
+			CONFIG_STRING(m_config, "database.user") << ", dbname " << CONFIG_STRING(m_config, "database.database") <<
 			", port " << CONFIG_INT(m_config, "database.port")
 		);
 		connection_str = "dbname=";
@@ -66,8 +66,8 @@ bool PQXXBackend::connect() {
 		if (!CONFIG_STRING(m_config, "database.password").empty()) {
 			connection_str += " password=" + CONFIG_STRING(m_config, "database.password");
 		}
-		if (!CONFIG_STRING(m_config, "database.port").empty()) {
-			connection_str += " port=" + CONFIG_STRING(m_config, "database.password");
+		if (CONFIG_INT(m_config, "database.port") != 0) {
+			connection_str += " port=" + boost:lexical_cast<std::string>(CONFIG_INT(m_config, "database.port"));
 		}
 	}
 	else {
