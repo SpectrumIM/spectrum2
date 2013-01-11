@@ -26,6 +26,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 	CPPUNIT_TEST(getForm);
 	CPPUNIT_TEST(getFormRegistered);
 	CPPUNIT_TEST(registerUser);
+	CPPUNIT_TEST(registerUserWithoutRR);
 	CPPUNIT_TEST(unregisterUser);
 	CPPUNIT_TEST(unregisterEmptyPayload);
 	CPPUNIT_TEST(registerUserNotify);
@@ -96,17 +97,52 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 
-			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
-			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Set, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+
+			CPPUNIT_ASSERT_EQUAL(std::string("localhost"), getStanza(received[0])->getPayload<Swift::RosterPayload>()->getItems()[0].getJID().toString());
 
 			UserInfo user;
 			CPPUNIT_ASSERT_EQUAL(true, storage->getUser("user@localhost", user));
 
 			CPPUNIT_ASSERT_EQUAL(std::string("legacyname"), user.uin);
 			CPPUNIT_ASSERT_EQUAL(std::string("password"), user.password);
+		}
+
+		void registerUserWithoutRR(){
+			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
+			reg->setUsername("legacyname");
+			reg->setPassword("password");
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createError(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID());
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
 		}
 
 		void unregisterUser() {
@@ -153,16 +189,26 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			injectIQ(iq);
 			loop->processEvents();
 
-			CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 
-			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
-			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Set, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+			CPPUNIT_ASSERT_EQUAL(std::string("localhost"), getStanza(received[0])->getPayload<Swift::RosterPayload>()->getItems()[0].getJID().toString());
 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(std::string("registered: user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
-
-			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[2])));
-			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[2]))->getType());
 
 			UserInfo user;
 			CPPUNIT_ASSERT_EQUAL(true, storage->getUser("user@localhost", user));
@@ -293,11 +339,21 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 
-			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
-			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
-
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Set, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+
+			CPPUNIT_ASSERT_EQUAL(std::string("localhost"), getStanza(received[0])->getPayload<Swift::RosterPayload>()->getItems()[0].getJID().toString());
 
 			UserInfo user;
 			CPPUNIT_ASSERT_EQUAL(true, storage->getUser("user@localhost", user));
