@@ -48,32 +48,32 @@ void PQXXBackend::disconnect() {
 }
 
 bool PQXXBackend::connect() {
-	
 	std::string connection_str;
 	connection_str = CONFIG_STRING(m_config, "database.connectionstring");
-	if (!connection_str) {
+	if (connection_str.empty()) {
 		LOG4CXX_INFO(logger, "Connecting PostgreSQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
 			CONFIG_STRING(m_config, "database.user") << ", database " << CONFIG_STRING(m_config, "database.database") <<
 			", port " << CONFIG_INT(m_config, "database.port")
 		);
 		connection_str = "dbname=";
 		connection_str += CONFIG_STRING(m_config, "database.database");
-		if (CONFIG_STRING(m_config, "database.server")) {
+		if (!CONFIG_STRING(m_config, "database.server").empty()) {
 			connection_str += " host=" + CONFIG_STRING(m_config, "database.server");
 		}
-		if (CONFIG_STRING(m_config, "database.user")) {
+		if (!CONFIG_STRING(m_config, "database.user").empty()) {
 			connection_str += " user=" + CONFIG_STRING(m_config, "database.user");
 		}
-		if (CONFIG_STRING(m_config, "database.password")) {
+		if (!CONFIG_STRING(m_config, "database.password").empty()) {
 			connection_str += " password=" + CONFIG_STRING(m_config, "database.password");
 		}
-		if (CONFIG_STRING(m_config, "database.port")) {
+		if (!CONFIG_STRING(m_config, "database.port").empty()) {
 			connection_str += " port=" + CONFIG_STRING(m_config, "database.password");
 		}
 	}
 	else {
 		LOG4CXX_INFO(logger, "Connecting PostgreSQL server via provided connection string.");
 	}
+
 	try {
 		m_conn = new pqxx::connection(connection_str);
 	}
