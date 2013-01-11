@@ -25,7 +25,7 @@ BuildRequires: libidn-devel
 BuildRequires: expat-devel
 BuildRequires: avahi-devel
 BuildRequires: log4cxx-devel
-BuildRequires: swiften-devel
+#BuildRequires: swiften-devel
 BuildRequires: libcommuni-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
 
