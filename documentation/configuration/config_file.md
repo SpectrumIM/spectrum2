@@ -13,7 +13,7 @@ Spectrum 2 config file is not compatible with Spectrum 1, although some importan
 
 Key | Type | Default | Description
 ----|------|---------|------------
-server_mode | boolean | 0 | True if Spectrum should run as server in [server-mode](http://hanzz.github.com/libtransport/documentation/about.html#server_mode).
+server_mode | boolean | 0 | True if Spectrum should run as server in [server-mode](http://spectrum.im/documentation/about.html#server_mode).
 jid | string | | Jabber ID of Spectrum2 instance. For example "localhost", "icq.domain.tld".
 server | string | | Hostname or IP address of server to which Spectrum connects in gateway-mode.
 port | integer | 0 | Port on which Spectrum listens to in server-mode or to which connects in gateway-mode.

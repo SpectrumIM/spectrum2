@@ -5,8 +5,8 @@ title: Spectrum 2
 
 ### Before you start
 
-* Check that you really want to run Spectrum 2 in gateway mode and not in server mode. The difference is documentation on [What is Spectrum 2](http://hanzz.github.com/libtransport/documentation/about.html) page.
-* Install Spectrum 2.  Installation is covered in [Installation section on the main page](http://hanzz.github.com/libtransport/documentation/).
+* Check that you really want to run Spectrum 2 in gateway mode and not in server mode. The difference is documentation on [What is Spectrum 2](http://spectrum.im/documentation/about.html) page.
+* Install Spectrum 2.  Installation is covered in [Installation section on the main page](http://spectrum.im/documentation/).
 
 ### Configure your XMPP server
 
@@ -33,7 +33,7 @@ All config options with description are located at [Config file page](config_fil
 
 You have to choose the Spectrum 2 backend and legacy network to which this Spectrum 2 gateway will connect the users.
 
-The default backend is [Libpurple backend](http://hanzz.github.com/libtransport/documentation/backends/libpurple.html). Read the [Libpurple backend documentation](http://hanzz.github.com/libtransport/documentation/backends/libpurple.html) to see how to choose particular legacy network. If you want to use different backend, change the path to it according to [List of backends](http://hanzz.github.com/libtransport/documentation/backends/backends.html).
+The default backend is [Libpurple backend](http://spectrum.im/documentation/backends/libpurple.html). Read the [Libpurple backend documentation](http://hanzz.github.com/libtransport/documentation/backends/libpurple.html) to see how to choose particular legacy network. If you want to use different backend, change the path to it according to [List of backends](http://hanzz.github.com/libtransport/documentation/backends/backends.html).
 
 #### Choose the storage backend
 
@@ -41,7 +41,7 @@ Category| Option| Change to value| Meaning
 -|-|-|-
 database|type|sqlite3|Spectrum 2 will use SQLite3 as storage backend
 
-You can also use [MySQL](http://hanzz.github.com/libtransport/documentation/configuration/mysql.html) or [PostgreSQL](http://hanzz.github.com/libtransport/documentation/configuration/postgresql.html) instead of SQLite3 backend.
+You can also use [MySQL](http://spectrum.im/documentation/configuration/mysql.html) or [PostgreSQL](http://hanzz.github.com/libtransport/documentation/configuration/postgresql.html) instead of SQLite3 backend.
 
 ### Start Spectrum 2
 
