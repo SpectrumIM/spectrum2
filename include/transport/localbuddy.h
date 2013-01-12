@@ -45,18 +45,10 @@ class LocalBuddy : public Buddy {
 			return true;
 		}
 
-		void setStatus(const Swift::StatusShow &status, const std::string &statusMessage) {
-			m_status = status;
-			m_statusMessage = statusMessage;
-		}
+		void setStatus(const Swift::StatusShow &status, const std::string &statusMessage);
 
 		std::string getIconHash() { return m_iconHash; }
-		void setIconHash(const std::string &iconHash) {
-			bool changed = m_iconHash != iconHash;
-			m_iconHash = iconHash;
-			if (changed)
-				getRosterManager()->storeBuddy(this);
-		}
+		void setIconHash(const std::string &iconHash);
 
 		std::vector<std::string> getGroups() { return m_groups; }
 		void setGroups(const std::vector<std::string> &groups);

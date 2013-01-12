@@ -561,7 +561,6 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
-		buddy->handleBuddyChanged();
 	}
 	else {
 		if (payload.buddyname() == user->getUserInfo().uin) {
@@ -583,10 +582,10 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 			return;
 		}
 
-		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
-		buddy->setIconHash(payload.iconhash());
 		buddy->setBlocked(payload.blocked());
 		user->getRosterManager()->setBuddy(buddy);
+		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+		buddy->setIconHash(payload.iconhash());
 	}
 }
 

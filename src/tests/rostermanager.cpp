@@ -73,7 +73,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	void setBuddy() {
 		add2Buddies();
-		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
 
 		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
 		CPPUNIT_ASSERT(payload1);
@@ -82,7 +82,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), item.getName());
 
-		Swift::RosterPayload::ref payload2 = getStanza(received[1])->getPayload<Swift::RosterPayload>();
+		Swift::RosterPayload::ref payload2 = getStanza(received[2])->getPayload<Swift::RosterPayload>();
 		CPPUNIT_ASSERT(payload2);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload2->getItems().size());
 		item = payload2->getItems()[0];
@@ -91,17 +91,17 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// send responses back
 		injectIQ(Swift::IQ::createResult(getStanza(received[0])->getFrom(), getStanza(received[0])->getTo(), getStanza(received[0])->getID()));
-		injectIQ(Swift::IQ::createResult(getStanza(received[1])->getFrom(), getStanza(received[1])->getTo(), getStanza(received[1])->getID()));
+		injectIQ(Swift::IQ::createResult(getStanza(received[2])->getFrom(), getStanza(received[2])->getTo(), getStanza(received[2])->getID()));
 
 		// we should get presences
-		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[2])));
-		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getShow());
-		CPPUNIT_ASSERT_EQUAL(std::string("status1"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getStatus());
+		CPPUNIT_ASSERT_EQUAL(6, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[4])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[4]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("status1"), dynamic_cast<Swift::Presence *>(getStanza(received[4]))->getStatus());
 
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[3])));
-		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[3]))->getShow());
-		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received[3]))->getStatus());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[5])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[5]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received[5]))->getStatus());
 	}
 
 	void sendCurrentPresences() {
@@ -142,7 +142,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	void removeBuddy() {
 		add2Buddies();
-		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
 
 		received.clear();
 		User *user = userManager->getUser("user@localhost");

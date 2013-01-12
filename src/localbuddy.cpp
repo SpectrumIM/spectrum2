@@ -37,6 +37,24 @@ LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id, const std::string 
 LocalBuddy::~LocalBuddy() {
 }
 
+void LocalBuddy::setStatus(const Swift::StatusShow &status, const std::string &statusMessage) {
+	bool changed = ((m_status.getType() != status.getType()) || (m_statusMessage != statusMessage));
+	if (changed) {
+		m_status = status;
+		m_statusMessage = statusMessage;
+		sendPresence();
+	}
+}
+
+void LocalBuddy::setIconHash(const std::string &iconHash) {
+	bool changed = m_iconHash != iconHash;
+	m_iconHash = iconHash;
+	if (changed) {
+		getRosterManager()->storeBuddy(this);
+		sendPresence();
+	}
+}
+
 bool LocalBuddy::setName(const std::string &name) {
 	if (name == m_name) {
 		return true;

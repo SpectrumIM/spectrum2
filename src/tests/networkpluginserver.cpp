@@ -107,6 +107,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 				pbnetwork::Buddy buddy;
 				buddy.set_username("user@localhost");
 				buddy.set_buddyname("buddy" + boost::lexical_cast<std::string>(i)  + "@test");
+				buddy.set_status((pbnetwork::StatusType) 5);
 
 				std::string message;
 				buddy.SerializeToString(&message);
@@ -144,6 +145,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			pbnetwork::Buddy buddy;
 			buddy.set_username("user@localhost");
 			buddy.set_buddyname("buddy1@test");
+			buddy.set_status(pbnetwork::STATUS_NONE);
 
 			std::string message;
 			buddy.SerializeToString(&message);
@@ -164,6 +166,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			pbnetwork::Buddy buddy;
 			buddy.set_username("user@localhost");
 			buddy.set_buddyname("buddy1@test");
+			buddy.set_status(pbnetwork::STATUS_NONE);
 
 			std::string message;
 			buddy.SerializeToString(&message);

@@ -37,6 +37,13 @@ Buddy::~Buddy() {
 // 	m_rosterManager->unsetBuddy(this);
 }
 
+void Buddy::sendPresence() {
+	Swift::Presence::ref presence = generatePresenceStanza(255);
+	if (presence) {
+		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
+	}
+}
+
 void Buddy::generateJID() {
 	m_jid = Swift::JID();
 	m_jid = Swift::JID(getSafeName(), m_rosterManager->getUser()->getComponent()->getJID().toString(), "bot");
@@ -148,13 +155,6 @@ std::string Buddy::getSafeName() {
 // 		Log("SpectrumBuddy::getSafeName", "Name is EMPTY! Previous was " << getName() << ".");
 // 	}
 	return name;
-}
-
-void Buddy::handleBuddyChanged() {
-	Swift::Presence::ref presence = generatePresenceStanza(255);
-	if (presence) {
-		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
-	}
 }
 
 void Buddy::handleVCardReceived(const std::string &id, Swift::VCard::ref vcard) {

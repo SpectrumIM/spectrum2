@@ -258,13 +258,13 @@ void BasicTest::add2Buddies() {
 	std::vector<std::string> grp;
 	grp.push_back("group1");
 	LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
-	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
 	user->getRosterManager()->setBuddy(buddy);
+	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
 
 	std::vector<std::string> grp2;
 	grp2.push_back("group2");
 	buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy2", "Buddy 2", grp2, BUDDY_JID_ESCAPING);
-	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status2");
 	user->getRosterManager()->setBuddy(buddy);
+	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status2");
 }
 
