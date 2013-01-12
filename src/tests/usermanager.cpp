@@ -217,7 +217,6 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT(userManager->getUser("user@localhost"));
 
 		userManager->removeAllUsers();

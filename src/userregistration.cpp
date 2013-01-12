@@ -509,6 +509,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		res.language = language;
 		res.encoding = encoding;
 		res.vip = 0;
+		res.id = 0;
 		registerUser(res);
 	}
 	else {
