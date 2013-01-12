@@ -24,6 +24,7 @@ title: Spectrum 2
 * [PostgreSQL Support](configuration/postgresql.html)
 * [Using SSL in server mode](configuration/server_ssl.html)
 * [Logging](configuration/logging.html)
+* [Spectrum as bouncer](configuration/bouncer.html)
 
 #### Backends
 
