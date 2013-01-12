@@ -24,6 +24,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(RosterManagerTest);
 	CPPUNIT_TEST(setBuddy);
 	CPPUNIT_TEST(sendCurrentPresences);
+	CPPUNIT_TEST(sendUnavailablePresences);
 	CPPUNIT_TEST(sendCurrentPresence);
 	CPPUNIT_TEST(sendBuddySubscribePresence);
 	CPPUNIT_TEST(removeBuddy);
@@ -116,6 +117,22 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		for (int i = 0; i < 2; i++) {
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[i])));
 			CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[i]))->getShow());
+			CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[i]))->getTo().toString());
+		}
+	}
+
+	void sendUnavailablePresences() {
+		setBuddy();
+		received.clear();
+
+		User *user = userManager->getUser("user@localhost");
+		user->getRosterManager()->sendUnavailablePresences("user@localhost/resource");
+
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+
+		for (int i = 0; i < 3; i++) {
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[i])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[i]))->getType());
 			CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[i]))->getTo().toString());
 		}
 	}

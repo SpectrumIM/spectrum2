@@ -609,7 +609,7 @@ void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
 			continue;
 		}
 		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
-		if (presence) {
+		if (presence && presence->getType() == Swift::Presence::Available) {
 			presence->setTo(to);
 			presence->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(presence);
