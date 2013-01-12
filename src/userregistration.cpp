@@ -100,12 +100,13 @@ void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swif
 	}
 	onUserRegistered(row);
 
-	BOOST_FOREACH(const std::string &notify_jid, CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid")) {
-	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->setBody(std::string("registered: ") + row.jid);
-	msg->setTo(notify_jid);
-	msg->setFrom(m_component->getJID());
-	m_component->getStanzaChannel()->sendMessage(msg);
+	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
+	BOOST_FOREACH(const std::string &notify_jid, x) {
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody(std::string("registered: ") + row.jid);
+		msg->setTo(notify_jid);
+		msg->setFrom(m_component->getJID());
+		m_component->getStanzaChannel()->sendMessage(msg);
 	}
 }
 
@@ -192,7 +193,8 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		request->send();
 	}
 
-	BOOST_FOREACH(const std::string &notify_jid, CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid")) {
+	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
+	BOOST_FOREACH(const std::string &notify_jid, x) {
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody(std::string("unregistered: ") + barejid);
 		msg->setTo(notify_jid);
