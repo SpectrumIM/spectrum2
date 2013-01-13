@@ -1722,7 +1722,11 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 	unsigned long diff = CONFIG_INT(m_config, "service.login_delay");
 	time_t now = time(NULL);
 	if (diff && (now - m_lastLogin < diff)) {
+		m_loginTimer->stop();
+		m_loginTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer((diff - (now - m_lastLogin)) * 1000);
+		m_loginTimer->onTick.connect(boost::bind(&NetworkPluginServer::loginDelayFinished, this));
 		m_loginTimer->start();
+		LOG4CXX_INFO(logger, "Postponing login because of service.login_delay setting");
 		return NULL;
 	}
 
@@ -1736,7 +1740,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 			c = *it;
 			// if we're not reusing all backends and backend is full, stop accepting new users on this backend
 			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
-				if (c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
+				if (!check && c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
 					c->acceptUsers = false;
 				}
 			}
