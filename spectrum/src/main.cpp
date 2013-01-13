@@ -398,7 +398,6 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
-		
 		Transport::Util::createDirectories(&config, CONFIG_STRING(&config, "service.working_dir"));
 	}
 	catch (...) {
@@ -451,7 +450,13 @@ int main(int argc, char **argv)
 		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
 // 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
-    }
+	}
+	else {
+		if ((chdir(CONFIG_STRING(&config, "service.working_dir").c_str())) < 0) {
+			std::cerr << "Cannot change directory to " << CONFIG_STRING(&config, "service.working_dir") << "\n";
+			exit(1);
+		}
+	}
 #endif
 #ifdef WIN32
 	if (!run_service_name.empty()) {
