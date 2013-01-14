@@ -27,7 +27,7 @@ service|password|Password to connect the Jabber server|You have configured the p
 service|server|Your Jabber server IP od hostname|Spectrum 2 will connect that IP/hostname.
 service|port|Jabber server port to which Spectrum 2 connects|You have configured the port in your Jabber server config file in previous step.
 
-All config options with description are located at [Config file page](config_file.html).
+All config options with description are located at [Config file page](http://spectrum.im/documentation/configuration/config_file.html).
 
 #### Choose the Spectrum 2 backend and legacy network
 
