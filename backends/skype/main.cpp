@@ -6,7 +6,6 @@
 #include "transport/transport.h"
 #include "transport/usermanager.h"
 #include "transport/memoryusage.h"
-#include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/userregistration.h"
 #include "transport/user.h"
@@ -14,7 +13,6 @@
 #include "transport/rostermanager.h"
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
-#include "transport/logger.h"
 #include <boost/filesystem.hpp>
 #include "sys/wait.h"
 #include "sys/signal.h"
