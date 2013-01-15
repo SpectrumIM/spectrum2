@@ -257,7 +257,10 @@ void RosterManager::storeBuddy(Buddy *buddy) {
 void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key) {
 	LOG4CXX_INFO(logger, "handleBuddyRosterPushResponse called for buddy " << key);
 	if (m_buddies[key] != NULL) {
-		m_buddies[key]->sendPresence();
+		Swift::Presence::ref presence = m_buddies[key]->generatePresenceStanza(255);
+		if (presence && presence->getType() == Swift::Presence::Available) {
+			m_component->getStanzaChannel()->sendPresence(presence);
+		}
 	}
 	else {
 		LOG4CXX_WARN(logger, "handleBuddyRosterPushResponse called for unknown buddy " << key);
