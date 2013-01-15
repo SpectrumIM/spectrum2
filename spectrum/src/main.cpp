@@ -2,7 +2,6 @@
 #include "transport/transport.h"
 #include "transport/filetransfermanager.h"
 #include "transport/usermanager.h"
-#include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/mysqlbackend.h"
 #include "transport/pqxxbackend.h"
