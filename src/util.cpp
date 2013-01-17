@@ -49,7 +49,7 @@ namespace Transport {
 
 namespace Util {
 
-void createDirectories(Transport::Config *config, const boost::filesystem::path& ph) {
+void createDirectories(Transport::Config *config, path ph) {
 	if (ph.empty() || exists(ph)) {
 		return;
 	}

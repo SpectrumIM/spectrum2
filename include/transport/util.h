@@ -33,7 +33,7 @@ namespace Transport {
 
 namespace Util {
 
-void createDirectories(Transport::Config *config, const boost::filesystem::path& ph);
+void createDirectories(Transport::Config *config, boost::filesystem::path ph);
 
 void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t);
 
