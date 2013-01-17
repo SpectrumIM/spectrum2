@@ -216,6 +216,9 @@ int mainloop() {
 
 		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
 	}
+	else if (!CONFIG_BOOL(config_, "service.server_mode")) {
+		LOG4CXX_WARN(logger, "Registrations won't work, you have specified [database] type=none in config file.");
+	}
 
 	FileTransferManager ftManager(&transport, &userManager);
 
@@ -397,7 +400,7 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
-		Transport::Util::createDirectories(&config, CONFIG_STRING(&config, "service.working_dir"));
+		Transport::Util::createDirectories(&config, boost::filesystem::path(CONFIG_STRING(&config, "service.working_dir")));
 	}
 	catch (...) {
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";

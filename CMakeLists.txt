@@ -214,10 +214,10 @@ set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(dbus)
 endif()
 
-if(ENABLE_YAHOO2)
-	set(yahoo2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-	find_package(yahoo2)
-endif()
+# if(ENABLE_YAHOO2)
+# 	set(yahoo2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+# 	find_package(yahoo2)
+# endif()
 
 ####### Miscallanous ######
 
