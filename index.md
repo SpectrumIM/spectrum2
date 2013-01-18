@@ -16,8 +16,8 @@ Spectrum 2 is not intended for strictly desktop users, ie those who have no fami
 
 ## News
 
-ICQ has changed it's server and protocol. Some really old versions of libpurple
-in some cases fails to login. If (and only if) the default configuration does not work for you,
+ICQ has changed its server and protocol. Some really old versions of libpurple
+in some cases fail to login. If (and only if) the default configuration does not work for you,
 you should add these settings to your config file:
 
 	[purple]
