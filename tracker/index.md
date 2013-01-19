@@ -10,6 +10,8 @@ contact us in our XMPP room.
 
 Case | Title | Status
 -----|-------|-------
+5 | Add registered_users statistic field to AdminInterface | Active
+4 | Skype: Support adding/removing contacts | Active
 
 
 
