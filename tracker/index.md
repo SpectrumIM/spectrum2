@@ -11,7 +11,6 @@ contact us in our XMPP room.
 Case | Title | Status
 -----|-------|-------
 3 | testing case | Active
-2 | testing case | Active
 
 
 
@@ -19,4 +18,3 @@ Case | Title | Status
 
 Case | Title | Status
 -----|-------|-------
-1 | "Welcome to FogBugz" Sample Case | Closed (Fixed)
