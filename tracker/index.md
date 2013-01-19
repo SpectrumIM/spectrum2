@@ -10,7 +10,6 @@ contact us in our XMPP room.
 
 Case | Title | Status
 -----|-------|-------
-3 | testing case | Active
 
 
 
