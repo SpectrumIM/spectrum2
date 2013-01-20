@@ -91,8 +91,11 @@ static intercept_stream* intercepter_cout;
 static intercept_stream* intercepter_cerr;
 
 
-static void initLogging(Config *config, std::string key) {
+static void initLogging(Config *config, std::string key, bool only_create_dir = false) {
 	if (CONFIG_STRING(config, key).empty()) {
+		if (only_create_dir) {
+			return;
+		}
 		root = log4cxx::Logger::getRootLogger();
 #ifdef _MSC_VER
 		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
@@ -157,6 +160,10 @@ static void initLogging(Config *config, std::string key) {
 			}
 		}
 
+		if (only_create_dir) {
+			return;
+		}
+
 		log4cxx::PropertyConfigurator::configure(p);
 
 		// Change owner of main log file
@@ -190,6 +197,7 @@ void initBackendLogging(Config *config) {
 
 void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
+	initLogging(config, "logging.backend_config", true);
 }
 
 void redirect_stderr() {
