@@ -96,9 +96,9 @@ void MyIrcSession::on_joined(IrcMessage *message) {
 	bool op = 0;
 	std::string nickname = TO_UTF8(m->sender().name());
 	op = correctNickname(nickname);
-	getIRCBuddy(TO_UTF8(m->channel()), nickname).setOp(op);
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel()) + suffix, op, pbnetwork::STATUS_ONLINE);
-	LOG4CXX_INFO(logger, user << ": " << nickname << " joined " << TO_UTF8(m->channel()) + suffix);
+	getIRCBuddy(TO_UTF8(m->channel().toLower()), nickname).setOp(op);
+	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel().toLower()) + suffix, op, pbnetwork::STATUS_ONLINE);
+	LOG4CXX_INFO(logger, user << ": " << nickname << " joined " << TO_UTF8(m->channel().toLower()) + suffix);
 }
 
 
@@ -107,9 +107,9 @@ void MyIrcSession::on_parted(IrcMessage *message) {
 	bool op = 0;
 	std::string nickname = TO_UTF8(m->sender().name());
 	op = correctNickname(nickname);
-	removeIRCBuddy(TO_UTF8(m->channel()), nickname);
-	LOG4CXX_INFO(logger, user << ": " << nickname << " parted " << TO_UTF8(m->channel()) + suffix);
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel()) + suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
+	removeIRCBuddy(TO_UTF8(m->channel().toLower()), nickname);
+	LOG4CXX_INFO(logger, user << ": " << nickname << " parted " << TO_UTF8(m->channel().toLower()) + suffix);
+	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel().toLower()) + suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
 }
 
 void MyIrcSession::on_quit(IrcMessage *message) {
@@ -172,7 +172,7 @@ void MyIrcSession::on_topicChanged(IrcMessage *message) {
 	correctNickname(nickname);
 
 	LOG4CXX_INFO(logger, user << ": " << nickname << " topic changed to " << TO_UTF8(m->topic()));
-	np->handleSubject(user, TO_UTF8(m->channel()) + suffix, TO_UTF8(m->topic()), nickname);
+	np->handleSubject(user, TO_UTF8(m->channel().toLower()) + suffix, TO_UTF8(m->topic()), nickname);
 }
 
 void MyIrcSession::on_messageReceived(IrcMessage *message) {
@@ -190,7 +190,7 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		msg = QString("/me ") + msg;
 	}
 
-	std::string target = TO_UTF8(m->target());
+	std::string target = TO_UTF8(m->target().toLower());
 	LOG4CXX_INFO(logger, user << ": Message from " << target);
 	if (target.find("#") == 0) {
 		std::string nickname = TO_UTF8(m->sender().name());
@@ -229,10 +229,10 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			if (nick.find("/") != std::string::npos) {
 				nick = nick.substr(0, nick.find("/"));
 			}
-			np->handleSubject(user, TO_UTF8(parameters[1]) + suffix, m_topicData, nick);
+			np->handleSubject(user, TO_UTF8(parameters[1].toLower()) + suffix, m_topicData, nick);
 			break;
 		case 352: {
-			channel = parameters[1];
+			channel = parameters[1].toLower();
 			nick = TO_UTF8(parameters[5]);
 			IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nick);
 
@@ -249,7 +249,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		}
 		case 353:
-			channel = parameters[2];
+			channel = parameters[2].toLower();
 			members = parameters[3].split(" ");
 
 			LOG4CXX_INFO(logger, user << ": Received members for " << TO_UTF8(channel) << suffix);
@@ -265,7 +265,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		case 366:
 			// ask /who to get away states
-			channel = parameters[1];
+			channel = parameters[1].toLower();
 			LOG4CXX_INFO(logger, user << "Asking /who for channel " << TO_UTF8(channel));
 			sendCommand(IrcCommand::createWho(channel));
 			break;

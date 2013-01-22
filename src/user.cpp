@@ -320,6 +320,21 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		m_conversationManager->removeJID(presence->getFrom());
+
+		std::string presences;
+		std::vector<Swift::Presence::ref> ps = m_presenceOracle->getAllPresence(m_jid);
+		BOOST_FOREACH(Swift::Presence::ref p, ps) {
+			if (p != presence) {
+				presences += p->getFrom().toString() + " ";
+			}
+		};
+
+		if (!presences.empty()) {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": User is still connected from following clients: " << presences);
+		}
+		else {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Last client disconnected");
+		}
 	}
 
 

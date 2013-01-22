@@ -79,9 +79,6 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 			LOG4CXX_WARN(logger, key << ": Stopping login process (user probably disconnected while logging in), but this is not active session");
 		}
 	}
-	else {
-		LOG4CXX_WARN(logger, key << ": Stopping login process (user probably disconnected while logging in) for invalid user");
-	}
 
 	// ::removeLater can be called only by libtransport, not by Swift and libtransport
 	// takes care about user disconnecting itself, so don't call our signal.
@@ -96,20 +93,14 @@ void UserRegistry::onPasswordValid(const Swift::JID &user) {
 		users[key].session->handlePasswordValid();
 		users.erase(key);
 	}
-	else {
-		LOG4CXX_INFO(logger, key << ": onPasswordValid called for invalid user");
-	}
 }
 
 void UserRegistry::onPasswordInvalid(const Swift::JID &user, const std::string &error) {
 	std::string key = user.toBare().toString();
 	if (users.find(key) != users.end()) {
-		LOG4CXX_INFO(logger, key << ": Password is invalid");
+		LOG4CXX_INFO(logger, key << ": Password is invalid or there was an error when connecting the legacy network");
 		users[key].session->handlePasswordInvalid(error);
 		users.erase(key);
-	}
-	else {
-		LOG4CXX_INFO(logger, key << ": onPasswordInvalid called for invalid user");
 	}
 }
 
