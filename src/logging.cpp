@@ -91,8 +91,11 @@ static intercept_stream* intercepter_cout;
 static intercept_stream* intercepter_cerr;
 
 
-static void initLogging(Config *config, std::string key) {
+static void initLogging(Config *config, std::string key, bool only_create_dir = false) {
 	if (CONFIG_STRING(config, key).empty()) {
+		if (only_create_dir) {
+			return;
+		}
 		root = log4cxx::Logger::getRootLogger();
 #ifdef _MSC_VER
 		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
@@ -133,51 +136,59 @@ static void initLogging(Config *config, std::string key) {
 		p.setProperty("id", id);
 #endif
 
-		std::string dir;
+		std::vector<std::string> dirs;
 		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
-// 			if (boost::ends_with(prop, ".File")) {
+			if (boost::ends_with(prop, ".File")) {
+				std::string dir;
 				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
 				boost::replace_all(dir, "${jid}", jid);
 				boost::replace_all(dir, "${pid}", pid);
 				boost::replace_all(dir, "${id}", id);
-				break;
-// 			}
+				dirs.push_back(dir);
+			}
 		}
 		mode_t old_cmask;
-		if (!dir.empty()) {
-			// create directories
+		// create directories
 #ifndef WIN32
-			old_cmask = umask(0007);
+		old_cmask = umask(0007);
 #endif
-			try {
-				Transport::Util::createDirectories(config, boost::filesystem::path(dir).parent_path());
+
+		BOOST_FOREACH(std::string &dir, dirs) {
+			if (!dir.empty()) {
+				try {
+					Transport::Util::createDirectories(config, boost::filesystem::path(dir).parent_path());
+				}
+				catch (const boost::filesystem::filesystem_error &e) {
+					std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ": " << e.what() << ".\n";
+				}
 			}
-			catch (const boost::filesystem::filesystem_error &e) {
-				std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ": " << e.what() << ".\n";
-			}
+		}
+
+#ifndef WIN32
+		umask(old_cmask);
+#endif
+
+		if (only_create_dir) {
+			return;
 		}
 
 		log4cxx::PropertyConfigurator::configure(p);
 
 		// Change owner of main log file
 #ifndef WIN32
-	if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
-		struct group *gr;
-		if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {
-			std::cerr << "Invalid service.group name " << CONFIG_STRING(config, "service.group") << "\n";
+	BOOST_FOREACH(std::string &dir, dirs) {
+		if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
+			struct group *gr;
+			if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {
+				std::cerr << "Invalid service.group name " << CONFIG_STRING(config, "service.group") << "\n";
+			}
+			struct passwd *pw;
+			if ((pw = getpwnam(CONFIG_STRING(config, "service.user").c_str())) == NULL) {
+				std::cerr << "Invalid service.user name " << CONFIG_STRING(config, "service.user") << "\n";
+			}
+			chown(dir.c_str(), pw->pw_uid, gr->gr_gid);
 		}
-		struct passwd *pw;
-		if ((pw = getpwnam(CONFIG_STRING(config, "service.user").c_str())) == NULL) {
-			std::cerr << "Invalid service.user name " << CONFIG_STRING(config, "service.user") << "\n";
-		}
-		chown(dir.c_str(), pw->pw_uid, gr->gr_gid);
 	}
-#endif
-
-#ifndef WIN32
-		if (!dir.empty()) {
-			umask(old_cmask);
-		}
 #endif
 	}
 }
@@ -190,6 +201,7 @@ void initBackendLogging(Config *config) {
 
 void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
+	initLogging(config, "logging.backend_config", true);
 }
 
 void redirect_stderr() {
