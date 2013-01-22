@@ -281,12 +281,14 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
 	m_supportRemoteRoster = true;
 
-	//If we receive empty RosterPayload initiate full RosterPush
-	if(payload->getItems().empty()){
-		LOG4CXX_INFO(logger, "Received empty Roster. Pushing full Roster.");
-		for(std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
-				c_it != m_buddies.end(); c_it++) {
-			sendBuddyRosterPush(c_it->second);
+	//If we receive empty RosterPayload on login (not register) initiate full RosterPush
+	if(!m_buddies.empty()){
+		if(payload->getItems().empty()){
+			LOG4CXX_INFO(logger, "Received empty Roster upon login. Pushing full Roster.");
+			for(std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
+					c_it != m_buddies.end(); c_it++) {
+				sendBuddyRosterPush(c_it->second);
+			}
 		}
 	}
 	return;
