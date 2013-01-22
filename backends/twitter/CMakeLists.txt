@@ -5,6 +5,7 @@ add_executable(spectrum2_twitter_backend ${SRC})
 if (NOT WIN32)
 target_link_libraries(spectrum2_twitter_backend curl transport pthread ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 else ()
+include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/curl/include")
 target_link_libraries(spectrum2_twitter_backend libcurl_imp transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 endif()
 

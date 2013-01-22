@@ -2,7 +2,6 @@
 #include "transport/transport.h"
 #include "transport/filetransfermanager.h"
 #include "transport/usermanager.h"
-#include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/mysqlbackend.h"
 #include "transport/pqxxbackend.h"
@@ -132,6 +131,32 @@ static void daemonize(const char *cwd, const char *lock_file) {
 }
 #endif
 
+static void _createDirectories(Transport::Config *config, boost::filesystem::path ph) {
+	if (ph.empty() || exists(ph)) {
+		return;
+	}
+
+	// First create branch, by calling ourself recursively
+	_createDirectories(config, ph.branch_path());
+	
+	// Now that parent's path exists, create the directory
+	boost::filesystem::create_directory(ph);
+
+#ifndef WIN32
+	if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
+		struct group *gr;
+		if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {
+			std::cerr << "Invalid service.group name " << CONFIG_STRING(config, "service.group") << "\n";
+		}
+		struct passwd *pw;
+		if ((pw = getpwnam(CONFIG_STRING(config, "service.user").c_str())) == NULL) {
+			std::cerr << "Invalid service.user name " << CONFIG_STRING(config, "service.user") << "\n";
+		}
+		chown(ph.string().c_str(), pw->pw_uid, gr->gr_gid);
+	}
+#endif
+}
+
 int mainloop() {
 
 #ifndef WIN32
@@ -216,6 +241,9 @@ int mainloop() {
 		userRegistration->start();
 
 		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
+	}
+	else if (!CONFIG_BOOL(config_, "service.server_mode")) {
+		LOG4CXX_WARN(logger, "Registrations won't work, you have specified [database] type=none in config file.");
 	}
 
 	FileTransferManager ftManager(&transport, &userManager);
@@ -398,8 +426,7 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
-		
-		Transport::Util::createDirectories(&config, CONFIG_STRING(&config, "service.working_dir"));
+		_createDirectories(&config, boost::filesystem::path(CONFIG_STRING(&config, "service.working_dir")));
 	}
 	catch (...) {
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
@@ -451,7 +478,13 @@ int main(int argc, char **argv)
 		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
 // 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
-    }
+	}
+	else {
+		if ((chdir(CONFIG_STRING(&config, "service.working_dir").c_str())) < 0) {
+			std::cerr << "Cannot change directory to " << CONFIG_STRING(&config, "service.working_dir") << "\n";
+			exit(1);
+		}
+	}
 #endif
 #ifdef WIN32
 	if (!run_service_name.empty()) {

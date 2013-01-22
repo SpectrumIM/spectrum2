@@ -122,10 +122,7 @@ class Buddy {
 		/// so it can be used in JIDs.
 		std::string getSafeName();
 
-		/// This method should be called whenever some information returned by virtual functions changes.
-
-		/// This method sends presence to XMPP user.
-		void handleBuddyChanged();
+		void sendPresence();
 
 		/// Handles VCard from legacy network and forwards it to XMPP user.
 

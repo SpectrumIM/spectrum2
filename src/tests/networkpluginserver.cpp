@@ -52,6 +52,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadNoEscaping);
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
+	CPPUNIT_TEST(handleConvMessageAckPayload);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST_SUITE_END();
@@ -74,6 +75,31 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			tearMeDown();
 		}
 
+		void handleConvMessageAckPayload() {
+			handleMessageHeadline();
+			received.clear();
+			User *user = userManager->getUser("user@localhost");
+
+			pbnetwork::ConversationMessage m;
+			m.set_username("user@localhost");
+			m.set_buddyname("user");
+			m.set_message("");
+			m.set_nickname("");
+			m.set_id("testingid");
+			m.set_xhtml("");
+			m.set_timestamp("");
+			m.set_headline(true);
+
+			std::string message;
+			m.SerializeToString(&message);
+
+			serv->handleConvMessageAckPayload(message);
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0]))->getPayload<Swift::DeliveryReceipt>());
+			CPPUNIT_ASSERT_EQUAL(std::string("testingid"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getPayload<Swift::DeliveryReceipt>()->getReceivedID());
+		}
+
 		void benchmarkHandleBuddyChangedPayload() {
 			Clock clk;
 			std::vector<std::string> lst;
@@ -81,6 +107,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 				pbnetwork::Buddy buddy;
 				buddy.set_username("user@localhost");
 				buddy.set_buddyname("buddy" + boost::lexical_cast<std::string>(i)  + "@test");
+				buddy.set_status((pbnetwork::StatusType) 5);
 
 				std::string message;
 				buddy.SerializeToString(&message);
@@ -118,6 +145,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			pbnetwork::Buddy buddy;
 			buddy.set_username("user@localhost");
 			buddy.set_buddyname("buddy1@test");
+			buddy.set_status(pbnetwork::STATUS_NONE);
 
 			std::string message;
 			buddy.SerializeToString(&message);
@@ -138,6 +166,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			pbnetwork::Buddy buddy;
 			buddy.set_username("user@localhost");
 			buddy.set_buddyname("buddy1@test");
+			buddy.set_status(pbnetwork::STATUS_NONE);
 
 			std::string message;
 			buddy.SerializeToString(&message);
@@ -193,7 +222,6 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 			CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
-
 		}
 };
 

@@ -26,7 +26,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(buddyFlagsFromJID);
 	CPPUNIT_TEST(JIDToLegacyName);
 	CPPUNIT_TEST(getSafeName);
-	CPPUNIT_TEST(handleBuddyChanged);
+	CPPUNIT_TEST(sendPresence);
 	CPPUNIT_TEST(setAlias);
 	CPPUNIT_TEST_SUITE_END();
 
@@ -90,7 +90,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(BUDDY_NO_FLAG, Buddy::buddyFlagsFromJID("hanzz%test@localhost/bot"));
 	}
 
-	void handleBuddyChanged() {
+	void sendPresence() {
 		User *user = userManager->getUser("user@localhost");
 		CPPUNIT_ASSERT(user);
 
@@ -101,7 +101,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		user->getRosterManager()->setBuddy(buddy);
 		received.clear();
 
-		buddy->handleBuddyChanged();
+		buddy->sendPresence();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());

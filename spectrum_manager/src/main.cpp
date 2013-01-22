@@ -82,6 +82,7 @@ int main(int argc, char **argv)
 													 "       spectrum [OPTIONS] <instance_JID> <other>\nCommands:\n"
 													 " start - start all local Spectrum2 instances\n"
 													 " stop  - stop all local Spectrum2 instances\n"
+													 " restart  - restart all local Spectrum2 instances\n"
 													 " status - status of local Spectrum2 instances\n"
 													 " <other> - send command to local Spectrum2 instance and print output\n"
 													 "Allowed options");
@@ -163,6 +164,9 @@ int main(int argc, char **argv)
 		else if (cmd == "stop") {
 			stop_instances(&config, jid);
 			return 0;
+		}
+		else if (cmd == "restart") {
+			return restart_instances(&config, jid);
 		}
 
 		ask_local_server(&config, networkFactories, jid, cmd);

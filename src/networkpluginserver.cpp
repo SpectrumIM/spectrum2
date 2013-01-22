@@ -71,6 +71,8 @@ static unsigned long bytestream_id;
 
 DEFINE_LOGGER(logger, "NetworkPluginServer");
 
+static NetworkPluginServer *_server;
+
 class NetworkConversation : public Conversation {
 	public:
 		NetworkConversation(ConversationManager *conversationManager, const std::string &legacyName, bool muc = false) : Conversation(conversationManager, legacyName, muc) {
@@ -128,7 +130,7 @@ class NetworkFactory : public Factory {
 	wrap.SerializeToString(&MESSAGE);
 
 // Executes new backend
-static unsigned long exec_(const std::string& exePath, const char *host, const char *port, const char *cmdlineArgs) {
+static unsigned long exec_(const std::string& exePath, const char *host, const char *port, const char *log_id, const char *cmdlineArgs) {
 	// BACKEND_ID is replaced with unique ID. The ID is increasing for every backend.
 	std::string finalExePath = boost::replace_all_copy(exePath, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));	
 
@@ -171,7 +173,7 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 	return 0;
 #else
 	// Add host and port.
-	finalExePath += std::string(" --host ") + host + " --port " + port + " " + cmdlineArgs;
+	finalExePath += std::string(" --host ") + host + " --port " + port + " --service.backend_id=" + log_id + " " + cmdlineArgs;
 	LOG4CXX_INFO(logger, "Starting new backend " << finalExePath);
 
 	// Create array of char * from string using -lpopt library
@@ -214,6 +216,7 @@ static void SigCatcher(int n) {
 	// WARNING: Do not put LOG4CXX_ here, because it can lead to deadlock
 	while ((result = waitpid(-1, &status, WNOHANG)) > 0) {
 		if (result != 0) {
+			_server->handlePIDTerminated((unsigned long)result);
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
 // 					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status));
@@ -251,6 +254,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 }
 
 NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder) {
+	_server = this;
 	m_ftManager = ftManager;
 	m_userManager = userManager;
 	m_config = config;
@@ -324,7 +328,7 @@ void NetworkPluginServer::start() {
 	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
 	while (true) {
-		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), "1", m_config->getCommandLineArgs().c_str());
 		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
 		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
@@ -352,6 +356,8 @@ void NetworkPluginServer::start() {
 				continue;
 			}
 		}
+
+		m_pids.push_back(pid);
 
 		signal(SIGCHLD, SigCatcher);
 #endif
@@ -555,7 +561,6 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
 	if (buddy) {
 		handleBuddyPayload(buddy, payload);
-		buddy->handleBuddyChanged();
 	}
 	else {
 		if (payload.buddyname() == user->getUserInfo().uin) {
@@ -577,10 +582,10 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 			return;
 		}
 
-		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
-		buddy->setIconHash(payload.iconhash());
 		buddy->setBlocked(payload.blocked());
 		user->getRosterManager()->setBuddy(buddy);
+		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+		buddy->setIconHash(payload.iconhash());
 	}
 }
 
@@ -708,6 +713,10 @@ void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
 	if (!user)
 		return;
 
+	if (payload.id().empty()) {
+		LOG4CXX_WARN(logger, "Received message ack with empty ID, not forwarding to XMPP.");
+		return;
+	}
 
 	boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->addPayload(boost::make_shared<Swift::DeliveryReceipt>(payload.id()));
@@ -1656,13 +1665,68 @@ void NetworkPluginServer::sendPing(Backend *c) {
 // 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
+void NetworkPluginServer::handlePIDTerminated(unsigned long pid) {
+	std::vector<unsigned long>::iterator log_id_it;
+	log_id_it = std::find(m_pids.begin(), m_pids.end(), pid);
+	if (log_id_it != m_pids.end()) {
+		*log_id_it = 0;
+	}
+}
+
+#ifndef _WIN32
+
+static int sig_block_count = 0;
+static sigset_t block_mask;
+
+static void __block_signals ( void )
+{
+  static int init_done = 0;
+
+  if ( (sig_block_count++) != 1 ) return;
+
+  if ( init_done == 0 ) {
+    sigemptyset ( &block_mask );
+    sigaddset ( &block_mask, SIGPIPE );
+    sigaddset ( &block_mask, SIGHUP );
+    sigaddset ( &block_mask, SIGINT );
+    sigaddset ( &block_mask, SIGQUIT );
+    sigaddset ( &block_mask, SIGTERM );
+    sigaddset ( &block_mask, SIGABRT );
+    sigaddset ( &block_mask, SIGCHLD );
+    init_done = 1;
+  }
+
+  sigprocmask ( SIG_BLOCK, &block_mask, NULL );
+  return;
+}
+
+static void __unblock_signals ( void )
+{
+  sigset_t sigset;
+
+  if ( (sig_block_count--) != 0 ) return;
+  sigprocmask ( SIG_UNBLOCK, &block_mask, NULL );
+
+  if ( sigpending ( &sigset ) == 0 ) {
+    if ( sigismember ( &sigset, SIGCHLD ) ) {
+      raise ( SIGCHLD );
+    }
+  }
+}
+
+#endif
+
 NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUsers, bool longRun, bool check) {
 	NetworkPluginServer::Backend *c = NULL;
 
 	unsigned long diff = CONFIG_INT(m_config, "service.login_delay");
 	time_t now = time(NULL);
 	if (diff && (now - m_lastLogin < diff)) {
+		m_loginTimer->stop();
+		m_loginTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer((diff - (now - m_lastLogin)) * 1000);
+		m_loginTimer->onTick.connect(boost::bind(&NetworkPluginServer::loginDelayFinished, this));
 		m_loginTimer->start();
+		LOG4CXX_INFO(logger, "Postponing login because of service.login_delay setting");
 		return NULL;
 	}
 
@@ -1676,7 +1740,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 			c = *it;
 			// if we're not reusing all backends and backend is full, stop accepting new users on this backend
 			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
-				if (c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
+				if (!check && c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
 					c->acceptUsers = false;
 				}
 			}
@@ -1688,7 +1752,29 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 	if (c == NULL && !m_startingBackend) {
 		m_isNextLongRun = longRun;
 		m_startingBackend = true;
-		exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), m_config->getCommandLineArgs().c_str());
+
+#ifndef _WIN32
+		__block_signals();
+#endif
+		std::vector<unsigned long>::iterator log_id_it;
+		log_id_it = std::find(m_pids.begin(), m_pids.end(), 0);
+		std::string log_id = "";
+		if (log_id_it == m_pids.end()) {
+			log_id = boost::lexical_cast<std::string>(m_pids.size() + 1);
+		}
+		else {
+			log_id = boost::lexical_cast<std::string>(log_id_it - m_pids.begin() + 1);
+		}
+		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), log_id.c_str(), m_config->getCommandLineArgs().c_str());
+		if (log_id_it == m_pids.end()) {
+			m_pids.push_back(pid);
+		}
+		else {
+			*log_id_it = pid;
+		}
+#ifndef _WIN32
+		__unblock_signals();
+#endif
 	}
 
 	return c;

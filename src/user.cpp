@@ -348,7 +348,6 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 	m_resources = currentResourcesCount;
 
-
 	// Change legacy network presence
 	if (m_readyForConnect) {
 		Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());

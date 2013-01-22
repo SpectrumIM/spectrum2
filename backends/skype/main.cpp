@@ -6,7 +6,6 @@
 #include "transport/transport.h"
 #include "transport/usermanager.h"
 #include "transport/memoryusage.h"
-#include "transport/logger.h"
 #include "transport/sqlite3backend.h"
 #include "transport/userregistration.h"
 #include "transport/user.h"
@@ -14,7 +13,6 @@
 #include "transport/rostermanager.h"
 #include "transport/conversation.h"
 #include "transport/networkplugin.h"
-#include "transport/logger.h"
 #include <boost/filesystem.hpp>
 #include "sys/wait.h"
 #include "sys/signal.h"
@@ -697,6 +695,20 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
 		}
+		//TODO: handle RECEIVEDAUTHREQUEST and reply it with:
+// 				void
+// 				skype_auth_allow(gpointer sender)
+// 				{
+// 					skype_send_message("SET USER %s ISAUTHORIZED TRUE", sender);
+// 					g_free(sender);
+// 				}
+// 
+// 				void
+// 				skype_auth_deny(gpointer sender)
+// 				{
+// 					skype_send_message("SET USER %s ISAUTHORIZED FALSE", sender);
+// 					g_free(sender);
+// 				}
 	}
 	else if (cmd[0] == "CHATMESSAGE") {
 		if (cmd[3] == "RECEIVED") {

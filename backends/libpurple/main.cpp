@@ -339,9 +339,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			// Enable account + privacy lists
 			purple_account_set_enabled_wrapped(account, "spectrum", TRUE);
+
+#if PURPLE_MAJOR_VERSION >= 2 && PURPLE_MINOR_VERSION >= 7
 			if (CONFIG_BOOL(config, "service.enable_privacy_lists")) {
 				purple_account_set_privacy_type_wrapped(account, PURPLE_PRIVACY_DENY_USERS);
 			}
+#endif
 
 			// Set the status
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive_wrapped(account, PURPLE_STATUS_AVAILABLE);
@@ -483,7 +486,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				purple_account_set_alias_wrapped(account, nickname.c_str());
+#if PURPLE_MAJOR_VERSION >= 2 && PURPLE_MINOR_VERSION >= 7
 				purple_account_set_public_alias_wrapped(account, nickname.c_str(), NULL, NULL);
+#endif
 				gssize size = image.size();
 				// this will be freed by libpurple
 				guchar *photo = (guchar *) g_malloc(size * sizeof(guchar));
@@ -1115,9 +1120,11 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 
 	if (ownInfo) {
 		const gchar *displayname = purple_connection_get_display_name_wrapped(gc);
+#if PURPLE_MAJOR_VERSION >= 2 && PURPLE_MINOR_VERSION >= 7
 		if (!displayname) {
 			displayname = purple_account_get_name_for_display_wrapped(account);
 		}
+#endif
 
 		if (displayname && nickname.empty()) {
 			nickname = displayname;
@@ -1565,7 +1572,7 @@ static bool initPurple() {
 	remove("./blist.xml");
 
 	purple_debug_set_ui_ops_wrapped(&debugUiOps);
-	purple_debug_set_verbose_wrapped(true);
+// 	purple_debug_set_verbose_wrapped(true);
 
 	purple_core_set_ui_ops_wrapped(&coreUiOps);
 	if (CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev") {

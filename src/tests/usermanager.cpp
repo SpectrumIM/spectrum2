@@ -34,6 +34,8 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
+		Swift::Presence::ref changedPresence;
+
 		void setUp (void) {
 			setMeUp();
 		}
@@ -165,10 +167,17 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 	}
 
+	void handleUserPresenceChanged(User *user, Swift::Presence::ref presence) {
+		changedPresence = presence;
+	}
+
 	void connectTwoResources() {
 		connectUser();
 		add2Buddies();
 		connectSecondResource();
+
+		User *user = userManager->getUser("user@localhost");
+		user->onPresenceChanged.connect(boost::bind(&UserManagerTest::handleUserPresenceChanged, this, user, _1));
 
 		// we should get presences
 		CPPUNIT_ASSERT_EQUAL(4, (int) received2.size());
@@ -179,6 +188,22 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[3])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[3]))->getShow());
 		CPPUNIT_ASSERT_EQUAL(std::string("status2"), dynamic_cast<Swift::Presence *>(getStanza(received2[3]))->getStatus());
+
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unavailable);
+		injectPresence(response);
+
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Available, changedPresence->getType());
+
+		Swift::Presence::ref response2 = Swift::Presence::create();
+		response2->setTo("localhost");
+		response2->setFrom("user@localhost/resource2");
+		response2->setType(Swift::Presence::Unavailable);
+		injectPresence(response2);
+
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, changedPresence->getType());
 	}
 
 	void disconnectUserBouncer() {
@@ -192,7 +217,6 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT(userManager->getUser("user@localhost"));
 
 		userManager->removeAllUsers();

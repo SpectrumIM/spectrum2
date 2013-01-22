@@ -276,6 +276,100 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 	}
 }
 
+int restart_instances(ManagerConfig *config, const std::string &_jid) {
+	response = "";
+	path p(CONFIG_STRING(config, "service.config_directory"));
+	int rv = 0;
+	int rc;
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		std::string spectrum2_binary = searchForBinary("spectrum2");
+		if (spectrum2_binary.empty()) {
+			std::cerr << "spectrum2 binary not found in PATH\n";
+			return 8;
+		}
+
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+				}
+
+				std::vector<std::string> vhosts;
+				if (CONFIG_HAS_KEY(&cfg, "vhosts.vhost"))
+					vhosts = CONFIG_VECTOR(&cfg, "vhosts.vhost");
+				vhosts.push_back(CONFIG_STRING(&cfg, "service.jid"));
+
+				BOOST_FOREACH(std::string &vhost, vhosts) {
+					Config vhostCfg;
+					if (vhostCfg.load(itr->path().string(), vhost) == false) {
+						std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+						continue;
+					}
+
+					if (!_jid.empty() && _jid != vhost) {
+						continue;
+					}
+
+					int pid = isRunning(CONFIG_STRING(&vhostCfg, "service.pidfile"));
+					if (pid) {
+						response ="Stopping " + itr->path().string() + ": ";
+						std::cout << "Stopping " << itr->path() << ": ";
+						kill(pid, SIGTERM);
+
+						sleep(1);
+						int count = 20;
+						while (kill(pid, 0) == 0 && count != 0) {
+							std::cout << ".";
+							sleep(1);
+							count--;
+						}
+						if (count == 0) {
+							response += "ERROR (timeout)\n";
+							std::cout << " ERROR (timeout)\n";
+						}
+						else {
+							response += "OK\n";
+							std::cout << " OK\n";
+
+							response = "Starting " + itr->path().string() + ": OK\n";
+							std::cout << "Starting " << itr->path() << ": OK\n";
+							exec_(spectrum2_binary, itr->path().string(), vhost, rc);
+							if (rv == 0) {
+								rv = rc;
+							}
+						}
+
+						
+					}
+					else {
+						response = "Stopping " + itr->path().string() + ": Not running\n";
+						std::cout << "Stopping " << itr->path() << ": Not running\n";
+					}
+				}
+			}
+		}
+	}
+	catch (const filesystem_error& ex) {
+		std::cerr << "Filesystem error: " << ex.what() << "\n";
+		exit(5);
+	}
+
+	return rv;
+}
+
 int show_status(ManagerConfig *config) {
 	int ret = 0;
 	path p(CONFIG_STRING(config, "service.config_directory"));

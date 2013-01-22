@@ -91,8 +91,11 @@ static intercept_stream* intercepter_cout;
 static intercept_stream* intercepter_cerr;
 
 
-static void initLogging(Config *config, std::string key) {
+static void initLogging(Config *config, std::string key, bool only_create_dir = false) {
 	if (CONFIG_STRING(config, key).empty()) {
+		if (only_create_dir) {
+			return;
+		}
 		root = log4cxx::Logger::getRootLogger();
 #ifdef _MSC_VER
 		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
@@ -119,24 +122,29 @@ static void initLogging(Config *config, std::string key) {
 		}
 
 		p.load(istream);
-		LogString pid, jid;
+		LogString pid, jid, id;
 		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(config, "service.jid"), jid);
+		log4cxx::helpers::Transcoder::decode(CONFIG_STRING_DEFAULTED(config, "service.backend_id", ""), id);
 #ifdef _MSC_VER
 		p.setProperty(L"pid", pid);
 		p.setProperty(L"jid", jid);
+		p.setProperty(L"id", id);
 #else
 		p.setProperty("pid", pid);
 		p.setProperty("jid", jid);
+		p.setProperty("id", id);
 #endif
 
 		std::string dir;
 		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
-			if (boost::ends_with(prop, ".File")) {
+// 			if (boost::ends_with(prop, ".File")) {
 				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
 				boost::replace_all(dir, "${jid}", jid);
+				boost::replace_all(dir, "${pid}", pid);
+				boost::replace_all(dir, "${id}", id);
 				break;
-			}
+// 			}
 		}
 		mode_t old_cmask;
 		if (!dir.empty()) {
@@ -150,6 +158,10 @@ static void initLogging(Config *config, std::string key) {
 			catch (const boost::filesystem::filesystem_error &e) {
 				std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ": " << e.what() << ".\n";
 			}
+		}
+
+		if (only_create_dir) {
+			return;
 		}
 
 		log4cxx::PropertyConfigurator::configure(p);
@@ -185,6 +197,7 @@ void initBackendLogging(Config *config) {
 
 void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
+	initLogging(config, "logging.backend_config", true);
 }
 
 void redirect_stderr() {
