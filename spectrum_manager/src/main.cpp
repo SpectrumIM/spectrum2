@@ -138,6 +138,9 @@ int main(int argc, char **argv)
 	else if (command[0] == "list") {
 		std::vector<std::string> list = show_list(&config);
 	}
+	else if (command[0] == "restart") {
+		return restart_instances(&config);
+	}
 	else if (command[0] == "server") {
 		Server server(&config);
 		if (server.start() == false) {
