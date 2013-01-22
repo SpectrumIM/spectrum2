@@ -98,7 +98,7 @@ void UserRegistry::onPasswordValid(const Swift::JID &user) {
 void UserRegistry::onPasswordInvalid(const Swift::JID &user, const std::string &error) {
 	std::string key = user.toBare().toString();
 	if (users.find(key) != users.end()) {
-		LOG4CXX_INFO(logger, key << ": Password is invalid");
+		LOG4CXX_INFO(logger, key << ": Password is invalid or there was an error when connecting the legacy network");
 		users[key].session->handlePasswordInvalid(error);
 		users.erase(key);
 	}
