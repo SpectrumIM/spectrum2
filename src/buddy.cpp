@@ -26,6 +26,8 @@
 #include "transport/usermanager.h"
 #include "transport/discoitemsresponder.h"
 
+#include "Swiften/Elements/VCardUpdate.h"
+
 namespace Transport {
 
 Buddy::Buddy(RosterManager *rosterManager, long id, BuddyFlag flags) : m_id(id), m_flags(flags), m_rosterManager(rosterManager),

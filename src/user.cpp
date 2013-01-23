@@ -26,7 +26,6 @@
 #include "transport/conversationmanager.h"
 #include "transport/presenceoracle.h"
 #include "transport/logging.h"
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"

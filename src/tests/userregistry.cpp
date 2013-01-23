@@ -6,6 +6,8 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
+#include <Swiften/Network/ConnectionFactory.h>
+#include <Swiften/Network/DummyTimerFactory.h>
 
 using namespace Transport;
 

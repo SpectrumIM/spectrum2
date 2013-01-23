@@ -26,6 +26,11 @@
 #include "transport/buddy.h"
 #include "transport/rostermanager.h"
 
+#include "Swiften/Elements/MUCItem.h"
+#include "Swiften/Elements/MUCOccupant.h"
+#include "Swiften/Elements/MUCUserPayload.h"
+#include "Swiften/Elements/Delay.h"
+
 namespace Transport {
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {

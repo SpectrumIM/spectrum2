@@ -21,7 +21,6 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/SetResponder.h"
 #include "Swiften/Elements/StatsPayload.h"
 

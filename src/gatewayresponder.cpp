@@ -24,7 +24,6 @@
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RawXMLPayload.h"
-#include "Swiften/Swiften.h"
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"

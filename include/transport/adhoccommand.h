@@ -23,7 +23,9 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include "Swiften/Swiften.h"
+
+#include "Swiften/Elements/FormField.h"
+#include "Swiften/Elements/Command.h"
 
 namespace Transport {
 

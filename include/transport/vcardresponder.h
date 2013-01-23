@@ -21,9 +21,11 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/VCard.h"
+#include "Swiften/Network/NetworkFactories.h"
+#include "Swiften/Network/Timer.h"
+#include <boost/signal.hpp>
 
 namespace Transport {
 

@@ -19,7 +19,7 @@
  */
 
 #include "transport/presenceoracle.h"
-#include "Swiften/Swiften.h"
+#include "Swiften/Elements/MUCPayload.h"
 
 #include <boost/bind.hpp>
 

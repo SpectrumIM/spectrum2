@@ -24,7 +24,6 @@
 #include <algorithm>
 #include <map>
 #include "transport/adhoccommand.h"
-#include "Swiften/Swiften.h"
 
 namespace Transport {
 

@@ -24,6 +24,8 @@
 #include "transport/storagebackend.h"
 #include "transport/logging.h"
 
+#include "Swiften/Network/NetworkFactories.h"
+
 DEFINE_LOGGER(logger, "RosterStorage");
 
 namespace Transport {

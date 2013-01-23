@@ -23,7 +23,6 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include "Swiften/Swiften.h"
 #include "transport/adhoccommand.h"
 #include "transport/adhoccommandfactory.h"
 

@@ -21,11 +21,13 @@
 #pragma once
 
 #include <time.h>
-#include "Swiften/Swiften.h"
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Network/Connection.h"
+#include "Swiften/Elements/ChatState.h"
+#include "Swiften/Elements/RosterItemPayload.h"
+#include "Swiften/Elements/VCard.h"
 #include "storagebackend.h"
 #include "transport/filetransfermanager.h"
 

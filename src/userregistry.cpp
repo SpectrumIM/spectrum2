@@ -20,7 +20,6 @@
 
 #include <string>
 #include <map>
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "transport/userregistry.h"
 #include "transport/logging.h"

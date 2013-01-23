@@ -22,8 +22,12 @@
 
 #include <string>
 #include <map>
-#include "Swiften/Swiften.h"
 #include "transport/userregistry.h"
+#include "Swiften/Elements/Message.h"
+#include "Swiften/Elements/Presence.h"
+#include "Swiften/Disco/EntityCapsProvider.h"
+#include "Swiften/Elements/DiscoInfo.h"
+#include "Swiften/Network/Timer.h"
 
 namespace Transport {
 

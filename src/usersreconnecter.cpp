@@ -23,10 +23,11 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "Swiften/Swiften.h"
 #include "transport/storagebackend.h"
 #include "transport/transport.h"
 #include "transport/logging.h"
+
+#include "Swiften/Network/NetworkFactories.h"
 
 using namespace Swift;
 using namespace boost;

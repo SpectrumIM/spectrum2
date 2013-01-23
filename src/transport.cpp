@@ -51,7 +51,7 @@
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
-#include "Swiften/Swiften.h"
+#include "Swiften/Parser/GenericPayloadParserFactory.h"
 
 using namespace Swift;
 using namespace boost;

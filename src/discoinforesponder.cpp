@@ -26,9 +26,9 @@
 #include "Swiften/Disco/DiscoInfoResponder.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/DiscoInfo.h"
-#include "Swiften/Swiften.h"
 #include "transport/config.h"
 #include "transport/logging.h"
+#include "Swiften/Disco/CapsInfoGenerator.h"
 
 using namespace Swift;
 using namespace boost;

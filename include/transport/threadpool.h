@@ -7,7 +7,7 @@
 #include <queue>
 #include <iostream>
 #include "transport/logging.h"
-#include "Swiften/Swiften.h"
+#include "Swiften/EventLoop/EventLoop.h"
 
 
 /*

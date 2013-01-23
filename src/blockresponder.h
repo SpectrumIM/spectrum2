@@ -21,9 +21,9 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/SetResponder.h"
 #include "transport/BlockPayload.h"
+#include <boost/signal.hpp>
 
 namespace Transport {
 

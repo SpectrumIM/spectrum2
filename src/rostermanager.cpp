@@ -30,7 +30,10 @@
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
 #include "Swiften/Elements/RosterItemExchangePayload.h"
+#include "Swiften/Elements/Nickname.h"
+#include "Swiften/Queries/IQRouter.h"
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 
 #include <map>
 #include <iterator>

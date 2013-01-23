@@ -23,8 +23,8 @@
 #include <string>
 #include <algorithm>
 #include "transport/transport.h"
+#include "Swiften/Elements/VCard.h"
 
-#include "Swiften/Swiften.h"
 
 namespace Transport {
 

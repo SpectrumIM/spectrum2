@@ -22,8 +22,10 @@
 
 #include <string>
 #include <map>
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/UserRegistry.h"
+#include "Swiften/Network/NetworkFactories.h"
+#include "Swiften/Network/Timer.h"
+#include "Swiften/Network/TimerFactory.h"
 #include "transport/config.h"
 
 namespace Transport {

@@ -29,9 +29,10 @@
 #include "transport/discoitemsresponder.h"
 #include "storageresponder.h"
 
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/ChatState.h"
 #ifndef __FreeBSD__
 #include "malloc.h"
 #endif

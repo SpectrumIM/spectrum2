@@ -23,7 +23,8 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include "Swiften/Swiften.h"
+
+#include "Swiften/Elements/Message.h"
 
 namespace Transport {
 

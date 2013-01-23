@@ -21,7 +21,8 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
+#include <list>
+#include <boost/signal.hpp>
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
