@@ -625,7 +625,7 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 		return;
 	}
 
-	conv->handleParticipantChanged(payload.nickname(), payload.flag(), payload.status(), payload.statusmessage(), payload.newname());
+	conv->handleParticipantChanged(payload.nickname(), (Conversation::ParticipantFlag) payload.flag(), payload.status(), payload.statusmessage(), payload.newname());
 }
 
 void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {

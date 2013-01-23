@@ -242,7 +242,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 	item.affiliation = Swift::MUCOccupant::Member;
 	item.role = Swift::MUCOccupant::Participant;
 
-	if (flag & Moderator) {
+	if (flag & PARTICIPANT_FLAG_MODERATOR) {
 		item.affiliation = Swift::MUCOccupant::Admin;
 		item.role = Swift::MUCOccupant::Moderator;
 	}
@@ -260,7 +260,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 	return presence;
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
+void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname) {
 	Swift::Presence::ref presence = generatePresence(nick, flag, status, statusMessage, newname);
 
 	if (presence->getType() == Swift::Presence::Unavailable) {

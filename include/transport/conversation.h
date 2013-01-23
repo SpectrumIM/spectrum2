@@ -33,14 +33,21 @@ class ConversationManager;
 /// Represents one XMPP-Legacy network conversation.
 class Conversation {
 	public:
+		typedef enum {
+			PARTICIPANT_FLAG_NONE = 0,
+			PARTICIPANT_FLAG_MODERATOR = 1,
+			PARTICIPANT_FLAG_CONFLICT = 2,
+			PARTICIPANT_FLAG_BANNED = 4,
+			PARTICIPANT_FLAG_NOT_AUTHORIZED = 8,
+			PARTICIPANT_FLAG_ME = 16,
+			PARTICIPANT_FLAG_KICKED = 32
+		} ParticipantFlag;
+
 		typedef struct _Participant {
-			int flag;
+			ParticipantFlag flag;
 			int status;
 			std::string statusMessage;
 		} Participant;
-
-		/// Type of participants in MUC rooms.
-		enum ParticipantFlag {None, Moderator};
 
 		/// Creates new conversation.
 
@@ -70,7 +77,7 @@ class Conversation {
 		/// \param status Current status of this participant.
 		/// \param statusMessage Current status message of this participant.
 		/// \param newname If participant was renamed, this variable contains his new name.
-		void handleParticipantChanged(const std::string &nickname, int flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
+		void handleParticipantChanged(const std::string &nickname, ParticipantFlag flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
 
 		/// Sets XMPP user nickname in MUC rooms.
 

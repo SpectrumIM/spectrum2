@@ -86,6 +86,16 @@ message RoomList {
 	repeated string name = 2;
 }
 
+enum ParticipantFlag {
+	PARTICIPANT_FLAG_NONE = 0;
+	PARTICIPANT_FLAG_MODERATOR = 1;
+	PARTICIPANT_FLAG_CONFLICT = 2;
+	PARTICIPANT_FLAG_BANNED = 4;
+	PARTICIPANT_FLAG_NOT_AUTHORIZED = 8;
+	PARTICIPANT_FLAG_ME = 16;
+	PARTICIPANT_FLAG_KICKED = 32;
+}
+
 message Participant {
 	required string userName = 1;
 	required string room = 2;
