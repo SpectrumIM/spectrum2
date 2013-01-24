@@ -170,7 +170,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// Add 1 participant
 		Conversation *conv = user->getConversationManager()->getConversation("#room");
-		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
 
 		// Connect 2nd resource
 		connectSecondResource();

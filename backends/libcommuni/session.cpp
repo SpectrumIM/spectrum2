@@ -272,6 +272,22 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 		case 432:
 			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
 			break;
+		case 433:
+			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+			}
+			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
+			break;
+		case 436:
+			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+			}
+			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname collision KILL");
+		case 464:
+			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_NOT_AUTHORIZED);
+			}
+			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Password incorrect");
 		case 321:
 			m_rooms.clear();
 			m_names.clear();
@@ -285,6 +301,10 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		default:
 			break;
+	}
+
+	if (m->code() >= 400 && m->code() < 500) {
+			LOG4CXX_INFO(logger, user << ": Error message received: " << message->toData().data());
 	}
 
 	//qDebug() << "numeric message received:" << receiver() << origin << code << params;
