@@ -908,10 +908,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 // 	std::string msg = striped;
 // 	g_free(striped);
 
-	std::string w = purple_normalize_wrapped(account, who);
-	size_t pos = w.find("/");
-	if (pos != std::string::npos)
-		w.erase((int) pos, w.length() - (int) pos);
 
 	// Escape HTML characters.
 	char *newline = purple_strdup_withhtml_wrapped(msg);
@@ -948,11 +944,15 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 // 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
 
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
+		std::string w = purple_normalize_wrapped(account, who);
+		size_t pos = w.find("/");
+		if (pos != std::string::npos)
+			w.erase((int) pos, w.length() - (int) pos);
 		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
 	}
 	else {
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << w);
-		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, w, xhtml_, timestamp);
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
+		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, who, xhtml_, timestamp);
 	}
 }
 
