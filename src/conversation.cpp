@@ -30,6 +30,7 @@
 #include "Swiften/Elements/MUCOccupant.h"
 #include "Swiften/Elements/MUCUserPayload.h"
 #include "Swiften/Elements/Delay.h"
+#include "Swiften/Elements/MUCPayload.h"
 
 namespace Transport {
 
@@ -230,13 +231,29 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 
 	Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
 	if (m_nickname == nickname) {
-		Swift::MUCUserPayload::StatusCode c;
-		c.code = 110;
-		p->addStatusCode(c);
-		m_sentInitialPresence = true;
+		if (flag & PARTICIPANT_FLAG_CONFLICT) {
+			delete p;
+			presence->setType(Swift::Presence::Error);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::Conflict)));
+			return presence;
+		}
+		else if (flag & PARTICIPANT_FLAG_NOT_AUTHORIZED) {
+			delete p;
+			presence->setType(Swift::Presence::Error);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth)));
+			return presence;
+		}
+		else {
+			Swift::MUCUserPayload::StatusCode c;
+			c.code = 110;
+			p->addStatusCode(c);
+			m_sentInitialPresence = true;
+		}
 	}
 
-	
+
 	Swift::MUCItem item;
 	
 	item.affiliation = Swift::MUCOccupant::Member;
@@ -254,7 +271,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 		p->addStatusCode(c);
 		presence->setType(Swift::Presence::Unavailable);
 	}
-
+	
 	p->addItem(item);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 	return presence;
