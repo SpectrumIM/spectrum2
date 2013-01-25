@@ -127,6 +127,8 @@ class NetworkPluginServer {
 		void handleBuddyUpdated(Buddy *buddy, const Swift::RosterItemPayload &item);
 		void handleBuddyRemoved(Buddy *buddy);
 		void handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item);
+		void handleUserBuddyAdded(User *user, Buddy *buddy);
+		void handleUserBuddyRemoved(User *user, Buddy *buddy);
 
 		void handleBlockToggled(Buddy *buddy);
 

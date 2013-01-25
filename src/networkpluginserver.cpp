@@ -1253,6 +1253,9 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+
+	user->getRosterManager()->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleUserBuddyAdded, this, user, _1));
+	user->getRosterManager()->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleUserBuddyRemoved, this, user, _1));
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
@@ -1357,6 +1360,9 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	user->onPresenceChanged.disconnect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.disconnect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.disconnect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+
+	user->getRosterManager()->onBuddyAdded.disconnect(boost::bind(&NetworkPluginServer::handleUserBuddyAdded, this, user, _1));
+	user->getRosterManager()->onBuddyRemoved.disconnect(boost::bind(&NetworkPluginServer::handleUserBuddyRemoved, this, user, _1));
 
 	pbnetwork::Logout logout;
 	logout.set_user(user->getJID().toBare());
@@ -1536,6 +1542,32 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 
 void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item) {
 	handleBuddyUpdated(buddy, item);
+}
+
+void NetworkPluginServer::handleUserBuddyAdded(User *user, Buddy *b) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user->getJID().toBare());
+	buddy.set_buddyname(b->getName());
+	buddy.set_alias(b->getAlias());
+	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+		buddy.add_group(g);
+	}
+	buddy.set_status(pbnetwork::STATUS_NONE);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleUserBuddyRemoved(User *user, Buddy *b) {
+	handleBuddyRemoved(b);
 }
 
 void NetworkPluginServer::handleBlockToggled(Buddy *b) {

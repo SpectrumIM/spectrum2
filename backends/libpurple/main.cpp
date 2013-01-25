@@ -549,6 +549,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					}
 					purple_blist_add_buddy_wrapped(buddy, NULL, group ,NULL);
 					purple_account_add_buddy_wrapped(account, buddy);
+					LOG4CXX_INFO(logger, "Adding new buddy " << buddyName.c_str() << " to legacy network roster");
 				}
 			}
 		}

@@ -237,6 +237,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 					return;
 				}
 			}
+			else {
+				return;
+			}
 
 			if (getUserSetting("stay_connected") != "1") {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);

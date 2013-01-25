@@ -502,6 +502,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 					setBuddy(buddy);
 					onBuddyAdded(buddy);
+					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
 					response->setType(Swift::Presence::Subscribed);
 					break;
 				case Swift::Presence::Unsubscribe:
