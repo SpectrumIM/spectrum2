@@ -276,7 +276,9 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
 			}
-			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
+			if (suffix.empty()) {
+				np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
+			}
 			break;
 		case 436:
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
@@ -287,7 +289,9 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
 				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_NOT_AUTHORIZED);
 			}
-			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Password incorrect");
+			if (suffix.empty()) {
+				np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Password incorrect");
+			}
 		case 321:
 			m_rooms.clear();
 			m_names.clear();
