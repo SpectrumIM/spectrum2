@@ -400,6 +400,7 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 			break;
 		case Swift::Presence::Available:
 		case Swift::Presence::Unavailable:
+			handleMUCPresence(presence);
 			break;
 		case Swift::Presence::Probe:
 			handleProbePresence(presence);
@@ -410,6 +411,24 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 		default:
 			break;
 	};
+}
+
+void UserManager::handleMUCPresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
+		return;
+	}
+
+	if (presence->getType() == Swift::Presence::Available) {
+		handlePresence(presence);
+	}
+	else if (presence->getType() == Swift::Presence::Unavailable) {
+		std::string userkey = presence->getFrom().toBare().toString();
+		User *user = getUser(userkey);
+		if (user) {
+			user->handlePresence(presence);
+		}
+	}
 }
 
 void UserManager::handleProbePresence(Swift::Presence::ref presence) {

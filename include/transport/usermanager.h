@@ -137,6 +137,7 @@ class UserManager : public Swift::EntityCapsProvider {
 		void handleProbePresence(Swift::Presence::ref presence);
 		void handleErrorPresence(Swift::Presence::ref presence);
 		void handleSubscription(Swift::Presence::ref presence);
+		void handleMUCPresence(Swift::Presence::ref presence);
 		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
 		void handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info);
 		void addUser(User *user);

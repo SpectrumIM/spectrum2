@@ -52,9 +52,8 @@ void PresenceOracle::clearPresences(const Swift::JID& bareJID) {
 
 void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 	// ignore presences for some contact, we're checking only presences for the transport itself here.
-	bool isMUC = presence->getPayload<MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	// filter out login/logout presence spam
-	if (!presence->getTo().getNode().empty() && isMUC == false)
+	if (!presence->getTo().getNode().empty())
 		return;
 
 	JID bareJID(presence->getFrom().toBare());
@@ -62,29 +61,27 @@ void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 	}
 	else {
 		Presence::ref passedPresence = presence;
-		if (!isMUC) {
-			if (presence->getType() == Presence::Unsubscribe || presence->getType() == Presence::Unsubscribed) {
-				/* 3921bis says that we don't follow up with an unavailable, so simulate this ourselves */
-				passedPresence = Presence::ref(new Presence());
-				passedPresence->setType(Presence::Unavailable);
-				passedPresence->setFrom(bareJID);
-				passedPresence->setStatus(presence->getStatus());
-			}
-			std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
-			if (passedPresence->getFrom().isBare() && presence->getType() == Presence::Unavailable) {
-				/* Have a bare-JID only presence of offline */
-				jidMap.clear();
-			} else if (passedPresence->getType() == Presence::Available) {
-				/* Don't have a bare-JID only offline presence once there are available presences */
-				jidMap.erase(bareJID);
-			}
-			if (passedPresence->getType() == Presence::Unavailable && jidMap.size() > 1) {
-				jidMap.erase(passedPresence->getFrom());
-			} else {
-				jidMap[passedPresence->getFrom()] = passedPresence;
-			}
-			entries_[bareJID] = jidMap;
+		if (presence->getType() == Presence::Unsubscribe || presence->getType() == Presence::Unsubscribed) {
+			/* 3921bis says that we don't follow up with an unavailable, so simulate this ourselves */
+			passedPresence = Presence::ref(new Presence());
+			passedPresence->setType(Presence::Unavailable);
+			passedPresence->setFrom(bareJID);
+			passedPresence->setStatus(presence->getStatus());
 		}
+		std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
+		if (passedPresence->getFrom().isBare() && presence->getType() == Presence::Unavailable) {
+			/* Have a bare-JID only presence of offline */
+			jidMap.clear();
+		} else if (passedPresence->getType() == Presence::Available) {
+			/* Don't have a bare-JID only offline presence once there are available presences */
+			jidMap.erase(bareJID);
+		}
+		if (passedPresence->getType() == Presence::Unavailable && jidMap.size() > 1) {
+			jidMap.erase(passedPresence->getFrom());
+		} else {
+			jidMap[passedPresence->getFrom()] = passedPresence;
+		}
+		entries_[bareJID] = jidMap;
 		onPresenceChange(passedPresence);
 	}
 }

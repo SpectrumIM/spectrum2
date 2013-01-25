@@ -194,11 +194,6 @@ void User::setCacheMessages(bool cacheMessages) {
 }
 
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
-
-	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
-
-	m_conversationManager->resetResources();
-
 	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
@@ -230,8 +225,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 		}
 	}
 
-	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
-	if (isMUC) {
+	
+	if (!presence->getTo().getNode().empty()) {
+		bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
 			Conversation *conv = m_conversationManager->getConversation(room);
@@ -259,7 +255,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 			}
 		}
-		else {
+		else if (isMUC) {
 			// force connection to legacy network to let backend to handle auto-join on connect.
 			if (!m_readyForConnect) {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
@@ -316,7 +312,12 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 		}
 		return;
 	}
-	
+
+	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
+
+	m_conversationManager->resetResources();
+
+
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		m_conversationManager->removeJID(presence->getFrom());
 

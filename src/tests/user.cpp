@@ -125,7 +125,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		User *user = userManager->getUser("user@localhost");
 
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
@@ -134,11 +134,8 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		// no presence received in server mode, just disco#info
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-
-		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
 
@@ -147,7 +144,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		roomPassword = "";
 
 		// simulate that backend joined the room
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "room", true);
 		conv->addJID("user@localhost/resource");
 		user->getConversationManager()->addConversation(conv);
 
@@ -156,8 +153,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		loop->processEvents();
 
 		// no presence received in server mode, just disco#info
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
@@ -169,14 +165,14 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		User *user = userManager->getUser("user@localhost");
 
 		// Add 1 participant
-		Conversation *conv = user->getConversationManager()->getConversation("#room");
+		Conversation *conv = user->getConversationManager()->getConversation("room");
 		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
 
 		// Connect 2nd resource
 		connectSecondResource();
 		received2.clear();
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource2");
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
@@ -189,19 +185,19 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		CPPUNIT_ASSERT_EQUAL(2, (int) received2.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[1])));
-		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getShow());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource2"), dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Presence *>(getStanza(received2[1]))->getFrom().toString());
-		CPPUNIT_ASSERT(getStanza(received2[1])->getPayload<Swift::MUCUserPayload>());
-		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received2[1])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
-		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received2[1])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+		CPPUNIT_ASSERT_EQUAL(1, (int) received2.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received2[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received2[0]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource2"), dynamic_cast<Swift::Presence *>(getStanza(received2[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("room@localhost/anotheruser"), dynamic_cast<Swift::Presence *>(getStanza(received2[0]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received2[0])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received2[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received2[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
 	}
 
 	void handlePresenceLeaveRoom() {
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
 		response->setType(Swift::Presence::Unavailable);
 
@@ -213,7 +209,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 
-		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 	}
@@ -224,7 +220,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// User is still connected from resource2, so he should not leave the room
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
 		response->setType(Swift::Presence::Unavailable);
 
@@ -243,7 +239,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		// disconnect also from resource
 		// User is still connected from resource2, so he should not leave the room
 		response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource2");
 		response->setType(Swift::Presence::Unavailable);
 
@@ -255,7 +251,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 
-		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 	}
@@ -278,7 +274,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		Conversation *conv = user->getConversationManager()->getConversation("#room");
+		Conversation *conv = user->getConversationManager()->getConversation("room");
 		CPPUNIT_ASSERT_EQUAL(1, (int) conv->getJIDs().size());
 		CPPUNIT_ASSERT_EQUAL(Swift::JID("user@localhost/resource2"), conv->getJIDs().front());
 	}
@@ -287,7 +283,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		User *user = userManager->getUser("user@localhost");
 		user->addUserSetting("stay_connected", "1");
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
 		response->setType(Swift::Presence::Unavailable);
 
@@ -312,7 +308,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// User is still connected from resource2, so he should not leave the room
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
 		response->setType(Swift::Presence::Unavailable);
 
@@ -332,7 +328,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		// disconnect also from resource
 		// User is still connected from resource2, so he should not leave the room
 		response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource2");
 		response->setType(Swift::Presence::Unavailable);
 
@@ -368,7 +364,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		Conversation *conv = user->getConversationManager()->getConversation("#room");
+		Conversation *conv = user->getConversationManager()->getConversation("room");
 		CPPUNIT_ASSERT_EQUAL(1, (int) conv->getJIDs().size());
 		CPPUNIT_ASSERT_EQUAL(Swift::JID("user@localhost/resource2"), conv->getJIDs().front());
 	}
@@ -377,12 +373,12 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		User *user = userManager->getUser("user@localhost");
 		handlePresenceJoinRoom();
 
-		CPPUNIT_ASSERT(user->getConversationManager()->getConversation("#room"));
+		CPPUNIT_ASSERT(user->getConversationManager()->getConversation("room"));
 
 		received.clear();
 		handlePresenceLeaveRoom();
 
-		CPPUNIT_ASSERT(!user->getConversationManager()->getConversation("#room"));
+		CPPUNIT_ASSERT(!user->getConversationManager()->getConversation("room"));
 	}
 
 	void handleDisconnected() {
@@ -427,7 +423,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		user->setConnected(false);
 
 		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo("#room@localhost/hanzz");
+		response->setTo("room@localhost/hanzz");
 		response->setFrom("user@localhost/resource");
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
@@ -436,16 +432,13 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		// no presence received in server mode, just disco#info
-		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
-		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
 		user->setConnected(true);
-		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
 	}
@@ -460,7 +453,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		received.clear();
 		user->setConnected(true);
 
-		CPPUNIT_ASSERT_EQUAL(std::string("#room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
