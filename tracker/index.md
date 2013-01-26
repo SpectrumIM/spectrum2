@@ -10,7 +10,6 @@ contact us in our XMPP room.
 
 Case | Title | Status
 -----|-------|-------
-12 | Libtransport: include MUC feature in disco#Info response if backend supports it | Active
 11 | Libtransport: call sendBuddyRosterPush from sendRIE to cache buddy changes | Active
 9 | Communi: Allow logging traffic | Active
 6 | Libtransport: Add support for sending headline message from backend. | Active
@@ -25,4 +24,5 @@ Case | Title | Status
 
 Case | Title | Status
 -----|-------|-------
+12 | Libtransport: include MUC feature in disco#Info response if backend supports it | Closed (Fixed)
 10 | Communi: Log 4xx errors and forward 433, 436 and 464 to XMPP client | Closed (Fixed)
