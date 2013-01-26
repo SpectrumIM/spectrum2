@@ -43,6 +43,7 @@ DEFINE_LOGGER(logger, "backend");
 
 int main_socket;
 static int writeInput;
+bool firstPing = true;
 
 using namespace Transport;
 
@@ -1656,6 +1657,14 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			exit(errno);
 		}
 		std::string d = std::string(buffer, n);
+
+		if (firstPing) {
+			firstPing = false;
+			NetworkPlugin::PluginConfig cfg;
+			cfg.setSupportMUC(true);
+			np->sendConfig(cfg);
+		}
+
 		np->handleDataRead(d);
 	}
 	else {

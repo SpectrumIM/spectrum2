@@ -56,6 +56,7 @@ void IRCNetworkPlugin::readData() {
 		if (m_servers.empty()) {
 			NetworkPlugin::PluginConfig cfg;
 			cfg.setNeedRegistration(false);
+			cfg.setSupportMUC(true);
 			sendConfig(cfg);
 		}
 	}
