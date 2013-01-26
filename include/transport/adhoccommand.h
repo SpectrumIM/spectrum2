@@ -23,6 +23,7 @@
 #include <string>
 #include <algorithm>
 #include <map>
+#include <time.h>
 
 #include "Swiften/Elements/FormField.h"
 #include "Swiften/Elements/Command.h"
