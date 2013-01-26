@@ -86,6 +86,9 @@ bool MyIrcSession::correctNickname(std::string &nickname) {
 	switch(nickname.at(0)) {
 		case '@': nickname = nickname.substr(1); flags = 1; break;
 		case '+': nickname = nickname.substr(1); break;
+		case '~': nickname = nickname.substr(1); break;
+		case '&': nickname = nickname.substr(1); break;
+		case '%': nickname = nickname.substr(1); break;
 		default: break;
 	}
 	return flags;
