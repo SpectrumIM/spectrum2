@@ -85,7 +85,7 @@ void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
 	send(message);
 }
 
-void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml, const std::string &timestamp, bool headline) {
+void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml, const std::string &timestamp, bool headline, bool pm) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
 	m.set_buddyname(legacyName);
@@ -94,6 +94,7 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	m.set_xhtml(xhtml);
 	m.set_timestamp(timestamp);
 	m.set_headline(headline);
+	m.set_pm(pm);
 
 	std::string message;
 	m.SerializeToString(&message);

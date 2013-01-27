@@ -130,7 +130,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(Swift::JID(n, m_conversationManager->getComponent()->getJID().toBare(), "user"));
 			}
 			else {
-				message->setFrom(Swift::JID(m_room, m_conversationManager->getComponent()->getJID().toBare(), n));
+				std::string legacyName = m_room;
+				if (legacyName.find_last_of("@") != std::string::npos) {
+					legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
+				}
+				message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 			}
 		}
 

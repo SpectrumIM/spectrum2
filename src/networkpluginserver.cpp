@@ -686,13 +686,25 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->addPayload(delay);
 	}
 
-	
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 
 	// We can't create Conversation for payload with nickname, because this means the message is from room,
 	// but this user is not in any room, so it's OK to just reject this message
 	if (!conv && !payload.nickname().empty()) {
 		return;
+	}
+
+	if (conv && payload.pm()) {
+		conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname() + "/" + payload.nickname());
+		if (!conv) {
+			conv = new NetworkConversation(user->getConversationManager(), payload.nickname());
+			std::string name = payload.buddyname();
+			conv->setRoom(name);
+			conv->setNickname(payload.buddyname() + "/" + payload.nickname());
+
+			user->getConversationManager()->addConversation(conv);
+			conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+		}
 	}
 
 	// Create new Conversation if it does not exist

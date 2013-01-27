@@ -72,6 +72,7 @@ message ConversationMessage {
 	optional string timestamp = 6;
 	optional bool headline = 7;
 	optional string id = 8;
+	optional bool pm = 9;
 }
 
 message Room {
