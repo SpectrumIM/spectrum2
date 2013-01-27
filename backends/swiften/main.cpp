@@ -226,12 +226,45 @@ class SwiftenPlugin : public NetworkPlugin {
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-			LOG4CXX_INFO(logger, user << ": Added/Updated buddy " << buddyName << ".");
-// 			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client) {
+				LOG4CXX_INFO(logger, user << ": Added/Updated buddy " << buddyName << ".");
+				if (!client->getRoster()->containsJID(buddyName)) {
+					Swift::RosterItemPayload item;
+					item.setName(alias);
+					item.setJID(buddyName);
+					item.setGroups(groups);
+					boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+					roster->addItem(item);
+					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
+// 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+					request->send();
+					client->getSubscriptionManager()->requestSubscription(buddyName);
+				}
+				else {
+					Swift::JID contact(buddyName);
+					Swift::RosterItemPayload item(contact, alias, client->getRoster()->getSubscriptionStateForJID(contact));
+					item.setGroups(groups);
+					boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+					roster->addItem(item);
+					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
+// 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+					request->send();
+				}
+
+			}
 		}
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
-
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client) {
+				Swift::RosterItemPayload item(buddyName, "", Swift::RosterItemPayload::Remove);
+				boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+				roster->addItem(item);
+				Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
+// 				request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+				request->send();
+			}
 		}
 
 	private:
