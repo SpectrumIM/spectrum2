@@ -7,7 +7,7 @@ We have APT repositories for Debian and Ubuntu that make it very easy to install
 
 To use the repositories, just add the following lines to @/etc/apt/sources.list@:
 
-	deb http://repo.spectrum.im $dist spectrum2
+	deb http://repo.spectrum.im $dist main
 
 where $dist is either lucid, oneiric, precise, quantal, sid, squeeze, wheezy. If you are unsure, you can usually find your distribution in the file /etc/lsb-release. We also have a source repository at the same location if you want to build the package yourself.
 
