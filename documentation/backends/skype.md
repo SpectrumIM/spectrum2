@@ -17,4 +17,4 @@ You have to have:
 If you have those depencencies ready, you just have to set the proper backend configuration variable:
 
 	[service]
-	backend=/usr/bin/xvfb-run -n BACKEND_ID -s "-screen 0 10x10x8" -f /tmp/x-skype-gw /usr/bin/spectrum2_skype_backend
+	backend=/usr/bin/xvfb-run -a -s "-screen 0 10x10x8" -f /tmp/x-skype-gw /usr/bin/spectrum2_skype_backend
