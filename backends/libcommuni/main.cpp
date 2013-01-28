@@ -33,9 +33,9 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	QCoreApplication app(argc, argv);
-
 	Logging::initBackendLogging(cfg);
+
+	QCoreApplication app(argc, argv);
 
 	Swift::QtEventLoop eventLoop;
 
