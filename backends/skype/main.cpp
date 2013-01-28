@@ -606,10 +606,12 @@ bool Skype::loadSkypeBuddies() {
 
 void Skype::logout() {
 	if (m_pid != 0) {
-		send_command("SET USERSTATUS INVISIBLE");
-		send_command("SET USERSTATUS OFFLINE");
-		sleep(2);
-		g_object_unref(m_proxy);
+		if (m_proxy) {
+			send_command("SET USERSTATUS INVISIBLE");
+			send_command("SET USERSTATUS OFFLINE");
+			sleep(2);
+			g_object_unref(m_proxy);
+		}
 		LOG4CXX_INFO(logger,  m_username << ": Terminating Skype instance (SIGTERM)");
 		kill((int) m_pid, SIGTERM);
 		// Give skype a chance
