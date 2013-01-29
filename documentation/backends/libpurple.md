@@ -26,3 +26,14 @@ prpl-yahoo|Yahoo
 prpl-gg|Gadu Gadu
 prpl-novell|Groupwise
 
+### Third-party plugins
+
+Spectrum 2 should work with any third-party libpurple plugin which is properly installed. For example, popular pidgin-sipe plugin:
+
+Protocol variable| Description
+-----------------|------------
+prpl-sipe| Microsoft OCS/LCS Messaging
+
+Microsoft LCS account may require username, which is SIP URI, and server login, so use , in username field like this:
+
+	username%domain.com,login%loginserver.tld
