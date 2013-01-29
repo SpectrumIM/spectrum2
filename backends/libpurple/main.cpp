@@ -1101,7 +1101,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			else if (label=="Nickname" || label == "Nick") {
 				nickname = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label=="Full Name") {
+			else if (label=="Full Name" || label == "Display name") {
 				fullName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else {
