@@ -17,6 +17,7 @@
 #include "transport/adhocmanager.h"
 #include "transport/settingsadhoccommand.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
+#include "Swiften/Network/BoostNetworkFactories.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #ifndef WIN32

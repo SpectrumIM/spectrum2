@@ -51,7 +51,7 @@
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
-#include "Swiften/Swiften.h"
+#include "Swiften/Parser/GenericPayloadParserFactory.h"
 
 using namespace Swift;
 using namespace boost;
@@ -275,9 +275,8 @@ void Component::handleDataWritten(const Swift::SafeByteArray &data) {
 }
 
 void Component::handlePresence(Swift::Presence::ref presence) {
-	bool isMUC = presence->getPayload<MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	// filter out login/logout presence spam
-	if (!presence->getTo().getNode().empty() && isMUC == false)
+	if (!presence->getTo().getNode().empty())
 		return;
 
 	// filter out bad presences

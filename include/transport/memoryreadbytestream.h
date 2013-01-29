@@ -22,7 +22,8 @@
 
 #include <string>
 #include <map>
-#include "Swiften/Swiften.h"
+
+#include "Swiften/FileTransfer/ReadBytestream.h"
 
 namespace Transport {
 

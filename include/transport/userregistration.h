@@ -20,9 +20,10 @@
 
 #pragma once
 
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
+#include "Swiften/Elements/RosterPayload.h"
+#include <boost/signal.hpp>
 
 namespace Transport {
 

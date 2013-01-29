@@ -26,6 +26,12 @@
 #include "transport/buddy.h"
 #include "transport/rostermanager.h"
 
+#include "Swiften/Elements/MUCItem.h"
+#include "Swiften/Elements/MUCOccupant.h"
+#include "Swiften/Elements/MUCUserPayload.h"
+#include "Swiften/Elements/Delay.h"
+#include "Swiften/Elements/MUCPayload.h"
+
 namespace Transport {
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
@@ -124,7 +130,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(Swift::JID(n, m_conversationManager->getComponent()->getJID().toBare(), "user"));
 			}
 			else {
-				message->setFrom(Swift::JID(m_room, m_conversationManager->getComponent()->getJID().toBare(), n));
+				std::string legacyName = m_room;
+				if (legacyName.find_last_of("@") != std::string::npos) {
+					legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
+				}
+				message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 			}
 		}
 
@@ -225,19 +235,35 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 
 	Swift::MUCUserPayload *p = new Swift::MUCUserPayload ();
 	if (m_nickname == nickname) {
-		Swift::MUCUserPayload::StatusCode c;
-		c.code = 110;
-		p->addStatusCode(c);
-		m_sentInitialPresence = true;
+		if (flag & PARTICIPANT_FLAG_CONFLICT) {
+			delete p;
+			presence->setType(Swift::Presence::Error);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::Conflict)));
+			return presence;
+		}
+		else if (flag & PARTICIPANT_FLAG_NOT_AUTHORIZED) {
+			delete p;
+			presence->setType(Swift::Presence::Error);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth)));
+			return presence;
+		}
+		else {
+			Swift::MUCUserPayload::StatusCode c;
+			c.code = 110;
+			p->addStatusCode(c);
+			m_sentInitialPresence = true;
+		}
 	}
 
-	
+
 	Swift::MUCItem item;
 	
 	item.affiliation = Swift::MUCOccupant::Member;
 	item.role = Swift::MUCOccupant::Participant;
 
-	if (flag & Moderator) {
+	if (flag & PARTICIPANT_FLAG_MODERATOR) {
 		item.affiliation = Swift::MUCOccupant::Admin;
 		item.role = Swift::MUCOccupant::Moderator;
 	}
@@ -249,13 +275,13 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 		p->addStatusCode(c);
 		presence->setType(Swift::Presence::Unavailable);
 	}
-
+	
 	p->addItem(item);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 	return presence;
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
+void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname) {
 	Swift::Presence::ref presence = generatePresence(nick, flag, status, statusMessage, newname);
 
 	if (presence->getType() == Swift::Presence::Unavailable) {

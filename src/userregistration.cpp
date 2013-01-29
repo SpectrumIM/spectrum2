@@ -26,6 +26,9 @@
 #include "transport/user.h"
 #include "transport/logging.h"
 #include "Swiften/Elements/ErrorPayload.h"
+#include "Swiften/EventLoop/SimpleEventLoop.h"
+#include "Swiften/Network/BoostNetworkFactories.h"
+#include "Swiften/Client/Client.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>

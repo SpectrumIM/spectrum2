@@ -34,17 +34,23 @@
 #include "transport/logging.h"
 #include "transport/admininterface.h"
 #include "blockresponder.h"
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Network/BoostConnectionServer.h"
+#include "Swiften/Network/ConnectionServerFactory.h"
 #include "Swiften/Elements/AttentionPayload.h"
 #include "Swiften/Elements/XHTMLIMPayload.h"
+#include "Swiften/Elements/Delay.h"
+#include "Swiften/Elements/DeliveryReceipt.h"
+#include "Swiften/Elements/DeliveryReceiptRequest.h"
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 #include "transport/util.h"
 #include "transport/discoitemsresponder.h"
+
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/signal.hpp"
 
 #include "utf8.h"
 
@@ -619,7 +625,7 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 		return;
 	}
 
-	conv->handleParticipantChanged(payload.nickname(), payload.flag(), payload.status(), payload.statusmessage(), payload.newname());
+	conv->handleParticipantChanged(payload.nickname(), (Conversation::ParticipantFlag) payload.flag(), payload.status(), payload.statusmessage(), payload.newname());
 }
 
 void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
@@ -680,13 +686,25 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->addPayload(delay);
 	}
 
-	
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 
 	// We can't create Conversation for payload with nickname, because this means the message is from room,
 	// but this user is not in any room, so it's OK to just reject this message
 	if (!conv && !payload.nickname().empty()) {
 		return;
+	}
+
+	if (conv && payload.pm()) {
+		conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname() + "/" + payload.nickname());
+		if (!conv) {
+			conv = new NetworkConversation(user->getConversationManager(), payload.nickname());
+			std::string name = payload.buddyname();
+			conv->setRoom(name);
+			conv->setNickname(payload.buddyname() + "/" + payload.nickname());
+
+			user->getConversationManager()->addConversation(conv);
+			conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+		}
 	}
 
 	// Create new Conversation if it does not exist
@@ -1247,6 +1265,9 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+
+	user->getRosterManager()->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleUserBuddyAdded, this, user, _1));
+	user->getRosterManager()->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleUserBuddyRemoved, this, user, _1));
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
@@ -1351,6 +1372,9 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	user->onPresenceChanged.disconnect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
 	user->onRoomJoined.disconnect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.disconnect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+
+	user->getRosterManager()->onBuddyAdded.disconnect(boost::bind(&NetworkPluginServer::handleUserBuddyAdded, this, user, _1));
+	user->getRosterManager()->onBuddyRemoved.disconnect(boost::bind(&NetworkPluginServer::handleUserBuddyRemoved, this, user, _1));
 
 	pbnetwork::Logout logout;
 	logout.set_user(user->getJID().toBare());
@@ -1530,6 +1554,32 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 
 void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item) {
 	handleBuddyUpdated(buddy, item);
+}
+
+void NetworkPluginServer::handleUserBuddyAdded(User *user, Buddy *b) {
+	pbnetwork::Buddy buddy;
+	buddy.set_username(user->getJID().toBare());
+	buddy.set_buddyname(b->getName());
+	buddy.set_alias(b->getAlias());
+	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+		buddy.add_group(g);
+	}
+	buddy.set_status(pbnetwork::STATUS_NONE);
+
+	std::string message;
+	buddy.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+	send(c->connection, message);
+}
+
+void NetworkPluginServer::handleUserBuddyRemoved(User *user, Buddy *b) {
+	handleBuddyRemoved(b);
 }
 
 void NetworkPluginServer::handleBlockToggled(Buddy *b) {

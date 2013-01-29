@@ -23,7 +23,6 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "Swiften/Swiften.h"
 #include "transport/transport.h"
 #include "transport/logging.h"
 #include "discoinforesponder.h"

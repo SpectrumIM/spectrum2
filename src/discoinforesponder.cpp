@@ -26,9 +26,9 @@
 #include "Swiften/Disco/DiscoInfoResponder.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/DiscoInfo.h"
-#include "Swiften/Swiften.h"
 #include "transport/config.h"
 #include "transport/logging.h"
+#include "Swiften/Disco/CapsInfoGenerator.h"
 
 using namespace Swift;
 using namespace boost;
@@ -39,28 +39,31 @@ namespace Transport {
 
 DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) : Swift::GetResponder<DiscoInfo>(router) {
 	m_config = config;
-	m_config->onBackendConfigUpdated.connect(boost::bind(&DiscoInfoResponder::updateBuddyFeatures, this));
+	m_config->onBackendConfigUpdated.connect(boost::bind(&DiscoInfoResponder::updateFeatures, this));
 	m_buddyInfo = NULL;
 	m_transportInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"),
 													CONFIG_STRING(m_config, "identity.category"),
 													CONFIG_STRING(m_config, "identity.type")));
 
-	std::list<std::string> features;
-	features.push_back("jabber:iq:register");
-	features.push_back("jabber:iq:gateway");
-	features.push_back("jabber:iq:private");
-	features.push_back("http://jabber.org/protocol/disco#info");
-	features.push_back("http://jabber.org/protocol/commands");
-	setTransportFeatures(features);
-
-	updateBuddyFeatures();
+	updateFeatures();
 }
 
 DiscoInfoResponder::~DiscoInfoResponder() {
 	delete m_buddyInfo;
 }
 
-void DiscoInfoResponder::updateBuddyFeatures() {
+void DiscoInfoResponder::updateFeatures() {
+	std::list<std::string> features2;
+	features2.push_back("jabber:iq:register");
+	features2.push_back("jabber:iq:gateway");
+	features2.push_back("jabber:iq:private");
+	features2.push_back("http://jabber.org/protocol/disco#info");
+	features2.push_back("http://jabber.org/protocol/commands");
+	if (CONFIG_BOOL_DEFAULTED(m_config, "features.muc", false)) {
+		features2.push_back("http://jabber.org/protocol/muc");
+	}
+	setTransportFeatures(features2);
+
 	std::list<std::string> features;
 	features.push_back("http://jabber.org/protocol/disco#items");
 	features.push_back("http://jabber.org/protocol/disco#info");

@@ -22,7 +22,9 @@
 
 #include <string>
 #include <algorithm>
-#include "Swiften/Swiften.h"
+#include <map>
+
+#include "Swiften/Network/Timer.h"
 
 namespace Transport {
 

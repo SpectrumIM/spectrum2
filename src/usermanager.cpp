@@ -29,9 +29,10 @@
 #include "transport/discoitemsresponder.h"
 #include "storageresponder.h"
 
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
+#include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/ChatState.h"
 #ifndef __FreeBSD__
 #include "malloc.h"
 #endif
@@ -229,7 +230,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				res.password = "";
 				res.uin = presence->getFrom().getNode();
 				res.jid = userkey;
-				if (res.uin.find_last_of("%") != std::string::npos) { // OK
+				while (res.uin.find_last_of("%") != std::string::npos) { // OK
 					res.uin.replace(res.uin.find_last_of("%"), 1, "@"); // OK
 				}
 				if (m_storageBackend) {
@@ -399,6 +400,7 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 			break;
 		case Swift::Presence::Available:
 		case Swift::Presence::Unavailable:
+			handleMUCPresence(presence);
 			break;
 		case Swift::Presence::Probe:
 			handleProbePresence(presence);
@@ -409,6 +411,24 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 		default:
 			break;
 	};
+}
+
+void UserManager::handleMUCPresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
+		return;
+	}
+
+	if (presence->getType() == Swift::Presence::Available) {
+		handlePresence(presence);
+	}
+	else if (presence->getType() == Swift::Presence::Unavailable) {
+		std::string userkey = presence->getFrom().toBare().toString();
+		User *user = getUser(userkey);
+		if (user) {
+			user->handlePresence(presence);
+		}
+	}
 }
 
 void UserManager::handleProbePresence(Swift::Presence::ref presence) {

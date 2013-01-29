@@ -202,6 +202,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			Skype *skype = m_sessions[user];
 			if (skype) {
 				skype->send_command("SET USER " + buddyName + " BUDDYSTATUS 1");
+				skype->send_command("SET USER " + buddyName + " ISAUTHORIZED FALSE");
 			}
 		}
 
@@ -605,10 +606,12 @@ bool Skype::loadSkypeBuddies() {
 
 void Skype::logout() {
 	if (m_pid != 0) {
-		send_command("SET USERSTATUS INVISIBLE");
-		send_command("SET USERSTATUS OFFLINE");
-		sleep(2);
-		g_object_unref(m_proxy);
+		if (m_proxy) {
+			send_command("SET USERSTATUS INVISIBLE");
+			send_command("SET USERSTATUS OFFLINE");
+			sleep(2);
+			g_object_unref(m_proxy);
+		}
 		LOG4CXX_INFO(logger,  m_username << ": Terminating Skype instance (SIGTERM)");
 		kill((int) m_pid, SIGTERM);
 		// Give skype a chance
@@ -695,20 +698,9 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 			std::vector<std::string> groups;
 			np->handleBuddyChanged(sk->getUser(), cmd[1], alias, groups, status, mood_text);
 		}
-		//TODO: handle RECEIVEDAUTHREQUEST and reply it with:
-// 				void
-// 				skype_auth_allow(gpointer sender)
-// 				{
-// 					skype_send_message("SET USER %s ISAUTHORIZED TRUE", sender);
-// 					g_free(sender);
-// 				}
-// 
-// 				void
-// 				skype_auth_deny(gpointer sender)
-// 				{
-// 					skype_send_message("SET USER %s ISAUTHORIZED FALSE", sender);
-// 					g_free(sender);
-// 				}
+		else if(cmd[2] == "RECEIVEDAUTHREQUEST") {
+			np->handleAuthorization(sk->getUser(), cmd[1]);
+		}
 	}
 	else if (cmd[0] == "CHATMESSAGE") {
 		if (cmd[3] == "RECEIVED") {

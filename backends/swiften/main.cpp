@@ -3,6 +3,8 @@
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+
 // Swiften
 #include "Swiften/Swiften.h"
 
@@ -32,7 +34,83 @@ Swift::SimpleEventLoop *loop_;
 
 // Plugins
 class SwiftenPlugin;
-SwiftenPlugin *np = NULL;
+NetworkPlugin *np = NULL;
+
+class MUCController {
+	public:
+		MUCController(const std::string &user, boost::shared_ptr<Swift::Client> client, const std::string &room, const std::string &nickname, const std::string &password) {
+			m_user = user;
+			m_room = room;
+			muc = client->getMUCManager()->createMUC(room);
+			if (!password.empty()) {
+				muc->setPassword(password);
+			}
+
+			muc->onJoinComplete.connect(boost::bind(&MUCController::handleJoinComplete, this, _1));
+			muc->onJoinFailed.connect(boost::bind(&MUCController::handleJoinFailed, this, _1));
+			muc->onOccupantJoined.connect(boost::bind(&MUCController::handleOccupantJoined, this, _1));
+			muc->onOccupantPresenceChange.connect(boost::bind(&MUCController::handleOccupantPresenceChange, this, _1));
+			muc->onOccupantLeft.connect(boost::bind(&MUCController::handleOccupantLeft, this, _1, _2, _3));
+			muc->onOccupantRoleChanged.connect(boost::bind(&MUCController::handleOccupantRoleChanged, this, _1, _2, _3));
+			muc->onOccupantAffiliationChanged.connect(boost::bind(&MUCController::handleOccupantAffiliationChanged, this, _1, _2, _3));
+
+			muc->joinAs(nickname);
+		}
+
+		virtual ~MUCController() {
+			muc->onJoinComplete.disconnect(boost::bind(&MUCController::handleJoinComplete, this, _1));
+			muc->onJoinFailed.disconnect(boost::bind(&MUCController::handleJoinFailed, this, _1));
+			muc->onOccupantJoined.disconnect(boost::bind(&MUCController::handleOccupantJoined, this, _1));
+			muc->onOccupantPresenceChange.disconnect(boost::bind(&MUCController::handleOccupantPresenceChange, this, _1));
+			muc->onOccupantLeft.disconnect(boost::bind(&MUCController::handleOccupantLeft, this, _1, _2, _3));
+			muc->onOccupantRoleChanged.disconnect(boost::bind(&MUCController::handleOccupantRoleChanged, this, _1, _2, _3));
+			muc->onOccupantAffiliationChanged.disconnect(boost::bind(&MUCController::handleOccupantAffiliationChanged, this, _1, _2, _3));
+		}
+
+		const std::string &getNickname() {
+			//return muc->getCurrentNick();
+			return m_nick;
+		}
+
+		void handleOccupantJoined(const Swift::MUCOccupant& occupant) {
+			np->handleParticipantChanged(m_user, occupant.getNick(), m_room, occupant.getRole() == Swift::MUCOccupant::Moderator, pbnetwork::STATUS_ONLINE);
+		}
+
+		void handleOccupantLeft(const Swift::MUCOccupant& occupant, Swift::MUC::LeavingType type, const std::string& reason) {
+			np->handleParticipantChanged(m_user, occupant.getNick(), m_room, occupant.getRole() == Swift::MUCOccupant::Moderator, pbnetwork::STATUS_NONE);
+		}
+
+		void handleOccupantPresenceChange(boost::shared_ptr<Swift::Presence> presence) {
+			const Swift::MUCOccupant& occupant = muc->getOccupant(presence->getFrom().getResource());
+			np->handleParticipantChanged(m_user, presence->getFrom().getResource(), m_room, (int) occupant.getRole() == Swift::MUCOccupant::Moderator, (pbnetwork::StatusType) presence->getShow(), presence->getStatus());
+		}
+
+		void handleOccupantRoleChanged(const std::string& nick, const Swift::MUCOccupant& occupant, const Swift::MUCOccupant::Role& oldRole) {
+
+		}
+
+		void handleOccupantAffiliationChanged(const std::string& nick, const Swift::MUCOccupant::Affiliation& affiliation, const Swift::MUCOccupant::Affiliation& oldAffiliation) {
+// 			np->handleParticipantChanged(m_user, occupant->getNick(), m_room, (int) occupant.getRole() == Swift::MUCOccupant::Moderator, pbnetwork::STATUS_ONLINE);
+		}
+
+		void handleJoinComplete(const std::string& nick) {
+			m_nick = nick;
+		}
+
+		void handleJoinFailed(boost::shared_ptr<Swift::ErrorPayload> error) {
+			
+		}
+
+		void part() {
+			muc->part();
+		}
+
+	private:
+		Swift::MUC::ref muc;
+		std::string m_user;
+		std::string m_room;
+		std::string m_nick;
+};
 
 class SwiftenPlugin : public NetworkPlugin {
 	public:
@@ -106,6 +184,7 @@ class SwiftenPlugin : public NetworkPlugin {
 				client->onDisconnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftDisconnected, this, user, _1));
 				client->onMessageReceived.disconnect(boost::bind(&SwiftenPlugin::handleSwiftMessageReceived, this, user, _1));
 				m_users.erase(user);
+				m_mucs.erase(user);
 			}
 
 #ifndef WIN32
@@ -136,6 +215,11 @@ class SwiftenPlugin : public NetworkPlugin {
 		}
 
 		void handleSwiftPresenceChanged(const std::string &user, Swift::Presence::ref presence) {
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client->getMUCRegistry()->isMUC(presence->getFrom().toBare())) {
+				return;
+			}
+
 			LOG4CXX_INFO(logger, user << ": " << presence->getFrom().toBare().toString() << " presence changed");
 
 			std::string message = presence->getStatus();
@@ -160,7 +244,22 @@ class SwiftenPlugin : public NetworkPlugin {
 			std::string body = message->getBody();
 			boost::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
-				handleMessage(user, message->getFrom().toBare().toString(), body, "", "");
+				if (message->getType() == Swift::Message::Groupchat) {
+					boost::shared_ptr<Swift::Delay> delay = message->getPayload<Swift::Delay>();
+					std::string timestamp = "";
+					if (delay) {
+						timestamp = boost::posix_time::to_iso_string(delay->getStamp());
+					}
+					handleMessage(user, message->getFrom().toBare().toString(), body, message->getFrom().getResource(), "", timestamp);
+				}
+				else {
+					if (client->getMUCRegistry()->isMUC(message->getFrom().toBare())) {
+						handleMessage(user, message->getFrom().toBare().toString(), body, message->getFrom().getResource(), "", "", false, true);
+					}
+					else {
+						handleMessage(user, message->getFrom().toBare().toString(), body, "", "");
+					}
+				}
 			}
 		}
 
@@ -199,6 +298,8 @@ class SwiftenPlugin : public NetworkPlugin {
 				client->getRoster()->onInitialRosterPopulated.disconnect(boost::bind(&SwiftenPlugin::handleSwiftRosterReceived, this, user));
 				client->getPresenceOracle()->onPresenceChange.disconnect(boost::bind(&SwiftenPlugin::handleSwiftPresenceChanged, this, user, _1));
 				client->disconnect();
+				m_mucs.erase(user);
+				m_users.erase(user);
 			}
 		}
 
@@ -210,6 +311,11 @@ class SwiftenPlugin : public NetworkPlugin {
 				message->setTo(Swift::JID(legacyName));
 				message->setFrom(client->getJID());
 				message->setBody(msg);
+				if (client->getMUCRegistry()->isMUC(legacyName)) {
+					message->setType(Swift::Message::Groupchat);
+					boost::shared_ptr<MUCController> muc = m_mucs[user][legacyName];
+					handleMessage(user, legacyName, msg, muc->getNickname(), xhtml);
+				}
 
 				client->sendMessage(message);
 			}
@@ -226,17 +332,81 @@ class SwiftenPlugin : public NetworkPlugin {
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-			LOG4CXX_INFO(logger, user << ": Added/Updated buddy " << buddyName << ".");
-// 			handleBuddyChanged(user, buddyName, alias, groups, pbnetwork::STATUS_ONLINE);
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client) {
+				LOG4CXX_INFO(logger, user << ": Added/Updated buddy " << buddyName << ".");
+				if (!client->getRoster()->containsJID(buddyName)) {
+					Swift::RosterItemPayload item;
+					item.setName(alias);
+					item.setJID(buddyName);
+					item.setGroups(groups);
+					boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+					roster->addItem(item);
+					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
+// 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+					request->send();
+					client->getSubscriptionManager()->requestSubscription(buddyName);
+				}
+				else {
+					Swift::JID contact(buddyName);
+					Swift::RosterItemPayload item(contact, alias, client->getRoster()->getSubscriptionStateForJID(contact));
+					item.setGroups(groups);
+					boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+					roster->addItem(item);
+					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
+// 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+					request->send();
+				}
+
+			}
 		}
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client) {
+				Swift::RosterItemPayload item(buddyName, "", Swift::RosterItemPayload::Remove);
+				boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+				roster->addItem(item);
+				Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
+// 				request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+				request->send();
+			}
+		}
 
+		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password) {
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client) {
+				if (client->getMUCRegistry()->isMUC(room)) {
+					return;
+				}
+
+				boost::shared_ptr<MUCController> muc = boost::shared_ptr<MUCController>( new MUCController(user, client, room, nickname, password));
+				m_mucs[user][room] = muc;
+			}
+		}
+
+		void handleLeaveRoomRequest(const std::string &user, const std::string &room) {
+			boost::shared_ptr<Swift::Client> client = m_users[user];
+			if (client) {
+				if (!client->getMUCRegistry()->isMUC(room)) {
+					return;
+				}
+
+				boost::shared_ptr<MUCController> muc = m_mucs[user][room];
+				if (!muc) {
+					m_mucs[user].erase(room);
+					return;
+				}
+
+				muc->part();
+				m_mucs[user].erase(room);
+			}
 		}
 
 	private:
 		Config *config;
 		std::map<std::string, boost::shared_ptr<Swift::Client> > m_users;
+		std::map<std::string, std::map<std::string, boost::shared_ptr<MUCController> > > m_mucs;
 };
 
 #ifndef WIN32

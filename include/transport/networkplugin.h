@@ -39,16 +39,18 @@ class NetworkPlugin {
 
 		class PluginConfig {
 			public:
-				PluginConfig() : m_needPassword(true), m_needRegistration(false) {}
+				PluginConfig() : m_needPassword(true), m_needRegistration(false), m_supportMUC(false) {}
 				virtual ~PluginConfig() {}
 
 				void setNeedRegistration(bool needRegistration = false) { m_needRegistration = needRegistration; }
 				void setNeedPassword(bool needPassword = true) { m_needPassword = needPassword; }
+				void setSupportMUC(bool supportMUC = true) { m_supportMUC = supportMUC; }
 				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
 
 			private:
 				bool m_needPassword;
 				bool m_needRegistration;
+				bool m_supportMUC;
 				std::vector<std::string> m_extraFields;
 
 				friend class NetworkPlugin;
@@ -111,7 +113,7 @@ class NetworkPlugin {
 		/// \param message Plain text message.
 		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
 		/// \param xhtml XHTML message.
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false);
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false, bool pm = false);
 
 		void handleMessageAck(const std::string &user, const std::string &legacyName, const std::string &id);
 

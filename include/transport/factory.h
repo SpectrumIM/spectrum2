@@ -24,7 +24,6 @@
 #include <algorithm>
 #include "transport/transport.h"
 
-#include "Swiften/Swiften.h"
 #include "Swiften/Elements/Message.h"
 #include "transport/conversation.h"
 #include "transport/buddy.h"
