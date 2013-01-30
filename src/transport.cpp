@@ -80,7 +80,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
-		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
+		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 #ifndef _WIN32
 //TODO: fix

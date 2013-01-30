@@ -38,6 +38,7 @@ Server::Server(
 		NetworkFactories* networkFactories,
 		UserRegistry *userRegistry,
 		const JID& jid,
+		const std::string &address,
 		int port) :
 			userRegistry_(userRegistry),
 			port_(port),
@@ -45,7 +46,8 @@ Server::Server(
 			networkFactories_(networkFactories),
 			stopping(false),
 			selfJID(jid),
-			stanzaChannel_(){
+			stanzaChannel_(),
+			address_(address){
 	stanzaChannel_ = new ServerStanzaChannel();
 	iqRouter_ = new IQRouter(stanzaChannel_);
 	tlsFactory = NULL;
@@ -63,7 +65,12 @@ void Server::start() {
 	if (serverFromClientConnectionServer) {
 		return;
 	}
-	serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
+	if (address_ == "0.0.0.0") {
+		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
+	}
+	else {
+		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(address_), port_);
+	}
 	serverFromClientConnectionServerSignalConnections.push_back(
 		serverFromClientConnectionServer->onNewConnection.connect(
 				boost::bind(&Server::handleNewClientConnection, this, _1)));
