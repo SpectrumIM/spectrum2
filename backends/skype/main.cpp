@@ -325,7 +325,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 							if(sqlite3_step(stmt) == SQLITE_ROW) {
 								int size = sqlite3_column_bytes(stmt, 0);
 								const void *data = sqlite3_column_blob(stmt, 0);
-								photo = std::string((const char *)data, size);
+								photo = std::string((const char *)data + 1, size - 1);
 							}
 							else {
 								LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
