@@ -311,8 +311,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				if (photo.empty()) {
 					sqlite3 *db;
 					std::string db_path = std::string("/tmp/skype/") + skype->getUsername() + "/" + skype->getUsername() + "/main.db";
+					LOG4CXX_INFO(logger, "Opening database " << db_path);
 					if (sqlite3_open(db_path.c_str(), &db)) {
 						sqlite3_close(db);
+						LOG4CXX_ERROR(logger, "Can't open database");
 					}
 					else {
 						sqlite3_stmt *stmt;
@@ -325,11 +327,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 								const void *data = sqlite3_column_blob(stmt, 0);
 								photo = std::string((const char *)data, size);
 							}
+							else {
+								LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
+							}
 
 							int ret;
 							while((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
 							}
 							FINALIZE_STMT(stmt);
+						}
+						else {
+							LOG4CXX_ERROR(logger, "Can't created prepared statement");
+							LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
 						}
 						sqlite3_close(db);
 					}
