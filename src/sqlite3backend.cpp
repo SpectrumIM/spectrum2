@@ -55,6 +55,7 @@
 #define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
 #define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
 #define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
+#define GET_BLOB(STATEMENT)	(const void *) sqlite3_column_blob(STATEMENT, STATEMENT##_id_get++)
 #define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
 		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
 			}
