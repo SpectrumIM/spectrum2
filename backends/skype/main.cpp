@@ -704,9 +704,32 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 		}
 	}
 	else if (cmd[0] == "GROUP") {
-		if (cmd[2] == "DISPLAYNAME") {
-			//GROUP 810 DISPLAYNAME My Friends
-			std::string grp = GET_RESPONSE_DATA(message, "DISPLAYNAME");
+// 		if (cmd[2] == "DISPLAYNAME") {
+// 			//GROUP 810 DISPLAYNAME My Friends
+// 			std::string grp = GET_RESPONSE_DATA(message, "DISPLAYNAME");
+// 			std::string users = sk->send_command("GET GROUP " + cmd[1] + " USERS");
+// 			try {
+// 				users = GET_RESPONSE_DATA(users, "USERS");
+// 			}
+// 			catch (std::out_of_range& oor) {
+// 				return;
+// 			}
+// 
+// 			std::vector<std::string> data;
+// 			boost::split(data, users, boost::is_any_of(","));
+// 			BOOST_FOREACH(std::string u, data) {
+// 				GET_PROPERTY(alias, "USER", u, "FULLNAME");
+// 				GET_PROPERTY(mood_text, "USER", u, "MOOD_TEXT");
+// 				GET_PROPERTY(st, "USER", u, "ONLINESTATUS");
+// 				pbnetwork::StatusType status = getStatus(st);
+// 
+// 				std::vector<std::string> groups;
+// 				groups.push_back(grp);
+// 				np->handleBuddyChanged(sk->getUser(), u, alias, groups, status, mood_text);
+// 			}
+// 		}
+		if (cmd[2] == "NROFUSERS" && cmd[3] != "0") {
+			GET_PROPERTY(grp, "GROUP", cmd[1], "DISPLAYNAME");
 			std::string users = sk->send_command("GET GROUP " + cmd[1] + " USERS");
 			try {
 				users = GET_RESPONSE_DATA(users, "USERS");
@@ -718,9 +741,9 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 			std::vector<std::string> data;
 			boost::split(data, users, boost::is_any_of(","));
 			BOOST_FOREACH(std::string u, data) {
-				GET_PROPERTY(alias, "USER", cmd[1], "FULLNAME");
-				GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
-				GET_PROPERTY(st, "USER", cmd[1], "ONLINESTATUS");
+				GET_PROPERTY(alias, "USER", u, "FULLNAME");
+				GET_PROPERTY(mood_text, "USER", u, "MOOD_TEXT");
+				GET_PROPERTY(st, "USER", u, "ONLINESTATUS");
 				pbnetwork::StatusType status = getStatus(st);
 
 				std::vector<std::string> groups;
