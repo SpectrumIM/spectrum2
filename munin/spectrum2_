@@ -21,10 +21,9 @@
 #     You have to configure the plugin to run as user and group "spectrum".
 #
 #     By default, the plugin monitors all instances configured in a config-file
-#     in /etc/spectrum. If you use a different directory, you can specify the
-#     environment-variable "base". If you do not want to monitor all instances,
-#     you can give an explicit listing of the corresponding configuration files
-#     with the environment variable "cfgs".
+#     in /etc/spectrum2/transports. If you do not want to monitor all instances,
+#     you can give an explicit listing of the corresponding instances
+#     with the environment variable "jids".
 #     
 #     Here is an example of a configuration. Note again that you can ommit both
 #     env.cfgs and env.base:
@@ -32,8 +31,7 @@
 #     [spectrum_*]
 #     user spectrum
 #     group spectrum
-#     env.cfgs xmpp.example.com.cfg,irc.example.com.cfg
-#     env.base /etc/spectrum
+#     env.jids xmpp.example.com,irc.example.com
 #
 # Author:
 #     Mathias Ertl <mati@fsinf.at>
@@ -94,9 +92,16 @@ def handle_field( string ):
 # get runtime variables
 suffix = sys.argv[0].partition('_')[2]
 verbose = os.environ.get( 'verbose' )
-proc = Popen(['spectrum2_manager', 'list'], stdout=PIPE, stderr=PIPE)
-out, err = proc.communicate()
-jids = out.split('\n')[:-1]
+
+jids = []
+
+base = os.environ.get( 'base', '/etc/spectrum' )
+if 'jids' in os.environ.keys():
+	jids = os.environ.get( 'cfgs' ).split(',')
+else:
+	proc = Popen(['spectrum2_manager', 'list'], stdout=PIPE, stderr=PIPE)
+	out, err = proc.communicate()
+	jids = out.split('\n')[:-1]
 
 # set variables based on wildcard 
 if suffix == 'uptime':
