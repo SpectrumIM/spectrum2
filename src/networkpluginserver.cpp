@@ -352,6 +352,10 @@ void NetworkPluginServer::start() {
 					}
 					else {
 						LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+						if (WEXITSTATUS(status) == ENOENT) {
+							LOG4CXX_ERROR(logger, "This usually means the path to backend executable defined in config file as '[service] backend=\"...\"' is wrong or the executable does not exists.");
+						}
+						
 					}
 					LOG4CXX_ERROR(logger, "Check backend log for more details");
 					continue;
