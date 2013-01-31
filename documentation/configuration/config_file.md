@@ -7,6 +7,16 @@ title: Spectrum 2
 
 Spectrum 2 config file is not compatible with Spectrum 1, although some important config options are named the same as in Spectrum 1.
 
+Following types are used:
+
+* integer - Examples: key=0
+* string - Examples: key=something
+* boolean - Examples: key=0 or key=1
+* list - List of strings. You can specify this options more than once:
+
+  allowed_servers=domain.tld
+  allowed_servers=example.com
+
 ### [service] section
 
 #### General settings
@@ -23,6 +33,7 @@ cert_password | string | | PKCS#12 certificate password.
 admin_jid | JID | | Jabber ID of administrator with admin rights.
 admin_password | string | | Administrator password.
 enable_privacy_lists | boolean | 1 | True if privacy lists should be enabled.
+allowed_servers | list | | List of servers from which users can connect or register.
 
 #### Daemon related settings
 
