@@ -10,6 +10,7 @@ contact us in our XMPP room.
 
 Case | Title | Status
 -----|-------|-------
+13 | Swiften: handleLogoutRequest can crash the backend in some situations | Active
 11 | Libtransport: call sendBuddyRosterPush from sendRIE to cache buddy changes | Active
 9 | Communi: Allow logging traffic | Active
 6 | Libtransport: Add support for sending headline message from backend. | Active
