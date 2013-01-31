@@ -9,10 +9,13 @@ Spectrum 2 config file is not compatible with Spectrum 1, although some importan
 
 Following types are used:
 
-- integer - Examples: key=0
-- string - Examples: key=something
-- boolean - Examples: key=0 or key=1
-- list - List of strings. You can specify this options more than once:
+integer - Examples: key=0
+
+string - Examples: key=something
+
+boolean - Examples: key=0 or key=1
+
+list - List of strings. You can specify this options more than once:
 
 	allowed_servers=domain.tld
 	allowed_servers=example.com
