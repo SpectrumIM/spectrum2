@@ -44,4 +44,4 @@ title: Spectrum 2
 #### Development
 
 * [Spectrum 2 architecture](development/architecture.html)
-* [Writing backend in any language (also the basic principle of How the backend works inside)](development/protocol.html)
+* [Writing backend in any language (or How the backend works inside)](development/protocol.html)
