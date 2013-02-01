@@ -97,7 +97,7 @@ jids = []
 
 base = os.environ.get( 'base', '/etc/spectrum' )
 if 'jids' in os.environ.keys():
-	jids = os.environ.get( 'cfgs' ).split(',')
+	jids = os.environ.get( 'jids' ).split(',')
 else:
 	proc = Popen(['spectrum2_manager', 'list'], stdout=PIPE, stderr=PIPE)
 	out, err = proc.communicate()
