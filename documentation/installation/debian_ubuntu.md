@@ -13,8 +13,6 @@ where $dist is either lucid, oneiric, precise, quantal, sid, squeeze, wheezy. If
 
 	apt-get update
 
-Don’t worry about the warnings that the packages can’t be identified, they will be gone after you installed the fsinf-keyring package.
-
 ### Install spectrum2
 
 After you have done that, simply do:
