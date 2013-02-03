@@ -17,8 +17,10 @@
 #endif
 
 #ifndef __FreeBSD__
+#ifndef __MACH__
 // malloc_trim
 #include "malloc.h"
+#endif
 #endif
 
 // Boost
@@ -189,8 +191,10 @@ class SwiftenPlugin : public NetworkPlugin {
 
 #ifndef WIN32
 #ifndef __FreeBSD__
+#ifndef __MACH__
 			// force returning of memory chunks allocated by libxml2 to kernel
 			malloc_trim(0);
+#endif
 #endif
 #endif
 		}

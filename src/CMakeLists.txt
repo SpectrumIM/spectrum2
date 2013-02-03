@@ -3,7 +3,7 @@ FILE(GLOB SRC *.cpp *.h)
 FILE(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 
 # Build without openssl on msvc
-if (CMAKE_COMPILER_IS_GNUCXX)
+if (NOT MSVC)
 	string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
 else()
 	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
@@ -55,6 +55,9 @@ endif()
 SET_TARGET_PROPERTIES(transport PROPERTIES
       VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
 )
+if (APPLE)
+	TARGET_LINK_LIBRARIES(transport ${APPLE_FRAMEWORKS})
+endif()
 
 INSTALL(TARGETS transport LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
