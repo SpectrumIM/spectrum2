@@ -28,6 +28,9 @@
 #include <boost/lexical_cast.hpp>
 #ifndef WIN32
 #include <sys/param.h>
+#else 
+#include <windows.h>
+#include <psapi.h>
 #endif
 #ifdef __MACH__
 #include <mach/mach.h>
@@ -138,6 +141,15 @@ void process_mem_usage(double& shared, double& resident_set, pid_t pid) {
 	resident_set = rss * page_size_kb;
 }
 #endif /* else BSD */
+#else
+#define PSAPI_VERSION 1
+#define pid_t void*
+	void process_mem_usage(double& shared, double& resident_set, pid_t pid) {
+		PROCESS_MEMORY_COUNTERS_EX pmc;
+		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+		shared =  (double)pmc.PrivateUsage;
+		resident_set = (double)pmc.WorkingSetSize;
+	}
 #endif /* WIN32 */
 
 }
