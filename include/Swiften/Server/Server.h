@@ -35,7 +35,7 @@ namespace Swift {
 
 	class Server : public Entity {
 		public:
-			Server(EventLoop* eventLoop, NetworkFactories* networkFactories, UserRegistry *userRegistry, const JID& jid, int port);
+			Server(EventLoop* eventLoop, NetworkFactories* networkFactories, UserRegistry *userRegistry, const JID& jid, const std::string &address, int port);
 			~Server();
 
 			void start();
@@ -86,5 +86,6 @@ namespace Swift {
 			TLSServerContextFactory *tlsFactory;
 			CertificateWithKey::ref cert;
 			PlatformXMLParserFactory *parserFactory_;
+			std::string address_;
 	};
 }

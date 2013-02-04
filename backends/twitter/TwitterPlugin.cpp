@@ -274,7 +274,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 	} 
 
 	else {	
-		std::string buddy;
+		std::string buddy = legacyName;
 		if(userdb[user].twitterMode == CHATROOM) buddy = legacyName.substr(legacyName.find("/") + 1);
 		if(legacyName != "twitter") {
 			tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, buddy, message,

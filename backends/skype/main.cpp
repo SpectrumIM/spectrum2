@@ -22,6 +22,8 @@
 #endif
 #include <dbus-1.0/dbus/dbus-glib-lowlevel.h>
 
+#include "sqlite3.h"
+
 
 DEFINE_LOGGER(logger, "backend");
 
@@ -39,6 +41,34 @@ class SpectrumNetworkPlugin;
 					}
 					
 
+					
+// Prepare the SQL statement
+#define PREP_STMT(sql, str) \
+	if(sqlite3_prepare_v2(db, std::string(str).c_str(), -1, &sql, NULL)) { \
+		LOG4CXX_ERROR(logger, str<< (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db))); \
+		sql = NULL; \
+	}
+
+// Finalize the prepared statement
+#define FINALIZE_STMT(prep) \
+	if(prep != NULL) { \
+		sqlite3_finalize(prep); \
+	}
+	
+#define BEGIN(STATEMENT) 	sqlite3_reset(STATEMENT);\
+							int STATEMENT##_id = 1;\
+							int STATEMENT##_id_get = 0;\
+							(void)STATEMENT##_id_get;
+
+#define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE)
+#define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC)
+#define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
+#define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
+#define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
+#define GET_BLOB(STATEMENT)	(const void *) sqlite3_column_blob(STATEMENT, STATEMENT##_id_get++)
+#define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
+		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));\
+			}
 
 SpectrumNetworkPlugin *np;
 
@@ -100,6 +130,7 @@ class Skype {
 		int m_timer;
 		int m_counter;
 		int fd_output;
+		std::map<std::string, std::string> m_groups;
 };
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
@@ -276,7 +307,43 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					g_free(filename);
 				}
 				g_free(username);
-				
+
+				if (photo.empty()) {
+					sqlite3 *db;
+					std::string db_path = std::string("/tmp/skype/") + skype->getUsername() + "/" + skype->getUsername() + "/main.db";
+					LOG4CXX_INFO(logger, "Opening database " << db_path);
+					if (sqlite3_open(db_path.c_str(), &db)) {
+						sqlite3_close(db);
+						LOG4CXX_ERROR(logger, "Can't open database");
+					}
+					else {
+						sqlite3_stmt *stmt;
+						PREP_STMT(stmt, "SELECT avatar_image FROM Contacts WHERE skypename=?");
+						if (stmt) {
+							BEGIN(stmt);
+							BIND_STR(stmt, name);
+							if(sqlite3_step(stmt) == SQLITE_ROW) {
+								int size = sqlite3_column_bytes(stmt, 0);
+								const void *data = sqlite3_column_blob(stmt, 0);
+								photo = std::string((const char *)data + 1, size - 1);
+							}
+							else {
+								LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
+							}
+
+							int ret;
+							while((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
+							}
+							FINALIZE_STMT(stmt);
+						}
+						else {
+							LOG4CXX_ERROR(logger, "Can't created prepared statement");
+							LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
+						}
+						sqlite3_close(db);
+					}
+				}
+
 				std::string alias = "";
 				std::cout << skype->getUsername() << " " << name << "\n";
 				if (skype->getUsername() == name) {
@@ -700,6 +767,55 @@ static void handle_skype_message(std::string &message, Skype *sk) {
 		}
 		else if(cmd[2] == "RECEIVEDAUTHREQUEST") {
 			np->handleAuthorization(sk->getUser(), cmd[1]);
+		}
+	}
+	else if (cmd[0] == "GROUP") {
+// 		if (cmd[2] == "DISPLAYNAME") {
+// 			//GROUP 810 DISPLAYNAME My Friends
+// 			std::string grp = GET_RESPONSE_DATA(message, "DISPLAYNAME");
+// 			std::string users = sk->send_command("GET GROUP " + cmd[1] + " USERS");
+// 			try {
+// 				users = GET_RESPONSE_DATA(users, "USERS");
+// 			}
+// 			catch (std::out_of_range& oor) {
+// 				return;
+// 			}
+// 
+// 			std::vector<std::string> data;
+// 			boost::split(data, users, boost::is_any_of(","));
+// 			BOOST_FOREACH(std::string u, data) {
+// 				GET_PROPERTY(alias, "USER", u, "FULLNAME");
+// 				GET_PROPERTY(mood_text, "USER", u, "MOOD_TEXT");
+// 				GET_PROPERTY(st, "USER", u, "ONLINESTATUS");
+// 				pbnetwork::StatusType status = getStatus(st);
+// 
+// 				std::vector<std::string> groups;
+// 				groups.push_back(grp);
+// 				np->handleBuddyChanged(sk->getUser(), u, alias, groups, status, mood_text);
+// 			}
+// 		}
+		if (cmd[2] == "NROFUSERS" && cmd[3] != "0") {
+			GET_PROPERTY(grp, "GROUP", cmd[1], "DISPLAYNAME");
+			std::string users = sk->send_command("GET GROUP " + cmd[1] + " USERS");
+			try {
+				users = GET_RESPONSE_DATA(users, "USERS");
+			}
+			catch (std::out_of_range& oor) {
+				return;
+			}
+
+			std::vector<std::string> data;
+			boost::split(data, users, boost::is_any_of(","));
+			BOOST_FOREACH(std::string u, data) {
+				GET_PROPERTY(alias, "USER", u, "FULLNAME");
+				GET_PROPERTY(mood_text, "USER", u, "MOOD_TEXT");
+				GET_PROPERTY(st, "USER", u, "ONLINESTATUS");
+				pbnetwork::StatusType status = getStatus(st);
+
+				std::vector<std::string> groups;
+				groups.push_back(grp);
+				np->handleBuddyChanged(sk->getUser(), u, alias, groups, status, mood_text);
+			}
 		}
 	}
 	else if (cmd[0] == "CHATMESSAGE") {
