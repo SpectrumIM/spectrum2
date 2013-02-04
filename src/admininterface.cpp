@@ -136,10 +136,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 	else if (message->getBody() == "res_memory") {
 		double shared = 0;
 		double rss = 0;
-#ifndef WIN32
 		process_mem_usage(shared, rss);
-#endif
-
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
 			rss += backend->res;
@@ -150,10 +147,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 	else if (message->getBody() == "shr_memory") {
 		double shared = 0;
 		double rss = 0;
-#ifndef WIN32
 		process_mem_usage(shared, rss);
-#endif
-
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
 			shared += backend->shared;
@@ -164,9 +158,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 	else if (message->getBody() == "used_memory") {
 		double shared = 0;
 		double rss = 0;
-#ifndef WIN32
 		process_mem_usage(shared, rss);
-#endif
 		rss -= shared;
 
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();

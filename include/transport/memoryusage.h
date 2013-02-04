@@ -24,12 +24,10 @@
 
 #ifndef WIN32
 #include "signal.h"
+#else 
+#define pid_t void*
 #endif
 
 namespace Transport {
-
-#ifndef WIN32
 	void process_mem_usage(double& shared, double& resident_set, pid_t pid = 0);
-#endif
-
 }
