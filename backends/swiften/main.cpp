@@ -315,11 +315,11 @@ class SwiftenPlugin : public NetworkPlugin {
 				message->setTo(Swift::JID(legacyName));
 				message->setFrom(client->getJID());
 				message->setBody(msg);
-// 				if (client->getMUCRegistry()->isMUC(legacyName)) {
-// 					message->setType(Swift::Message::Groupchat);
-// 					boost::shared_ptr<MUCController> muc = m_mucs[user][legacyName];
+				if (client->getMUCRegistry()->isMUC(legacyName)) {
+					message->setType(Swift::Message::Groupchat);
+					boost::shared_ptr<MUCController> muc = m_mucs[user][legacyName];
 // 					handleMessage(user, legacyName, msg, muc->getNickname(), xhtml);
-// 				}
+				}
 
 				client->sendMessage(message);
 			}
