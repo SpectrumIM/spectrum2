@@ -224,6 +224,10 @@ class SwiftenPlugin : public NetworkPlugin {
 				return;
 			}
 
+			if (presence->getPayload<Swift::MUCUserPayload>() != NULL || presence->getPayload<Swift::MUCPayload>() != NULL) {
+				return;
+			}
+
 			LOG4CXX_INFO(logger, user << ": " << presence->getFrom().toBare().toString() << " presence changed");
 
 			std::string message = presence->getStatus();
