@@ -307,7 +307,6 @@ class SwiftenPlugin : public NetworkPlugin {
 				client->getPresenceOracle()->onPresenceChange.disconnect(boost::bind(&SwiftenPlugin::handleSwiftPresenceChanged, this, user, _1));
 				client->disconnect();
 				m_mucs.erase(user);
-				m_users.erase(user);
 			}
 		}
 
