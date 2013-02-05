@@ -10,6 +10,7 @@ contact us in our XMPP room.
 
 Case | Title | Status
 -----|-------|-------
+15 | Libtransport, Swiften: Support all roles and affiliations | Active
 14 | Libtransport: Unregister user even when remote-roster query in unregisterUser() timeouts | Active
 13 | Swiften: handleLogoutRequest can crash the backend in some situations | Active
 11 | Libtransport: call sendBuddyRosterPush from sendRIE to cache buddy changes | Active
