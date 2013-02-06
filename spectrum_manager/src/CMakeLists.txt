@@ -8,6 +8,9 @@ SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/
 
 target_link_libraries(spectrum2_manager ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES})
 
+if(APPLE)
+target_link_libraries(spectrum2_manager ${APPLE_FRAMEWORKS})
+endif()
 INSTALL(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 
 INSTALL(FILES

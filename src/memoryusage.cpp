@@ -28,20 +28,41 @@
 #include <boost/lexical_cast.hpp>
 #ifndef WIN32
 #include <sys/param.h>
+#else 
+#include <windows.h>
+#include <psapi.h>
 #endif
-#ifdef BSD
+#ifdef __MACH__
+#include <mach/mach.h>
+#elif BSD
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <sys/user.h>
-
 #endif
 
 namespace Transport {
 
 #ifndef WIN32
-#ifdef BSD
+#ifdef __MACH__
+
+void process_mem_usage(double& vm_usage, double& resident_set, pid_t pid) {
+
+	struct task_basic_info t_info;
+	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+
+	if (KERN_SUCCESS != task_info(mach_task_self(),
+                              TASK_BASIC_INFO, (task_info_t)&t_info, 
+                              &t_info_count)) {
+		vm_usage = 0;
+		resident_set = 0;
+    		return;
+	}
+	vm_usage = t_info.virtual_size;
+	resident_set = t_info.resident_size;
+}
+#elif BSD
 void process_mem_usage(double& vm_usage, double& resident_set, pid_t pid) {
 	int mib[4];
 	size_t size;
@@ -120,6 +141,15 @@ void process_mem_usage(double& shared, double& resident_set, pid_t pid) {
 	resident_set = rss * page_size_kb;
 }
 #endif /* else BSD */
+#else
+#define PSAPI_VERSION 1
+#define pid_t void*
+	void process_mem_usage(double& shared, double& resident_set, pid_t pid) {
+		PROCESS_MEMORY_COUNTERS_EX pmc;
+		GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc));
+		shared =  (double)pmc.PrivateUsage;
+		resident_set = (double)pmc.WorkingSetSize;
+	}
 #endif /* WIN32 */
 
 }

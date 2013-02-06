@@ -17,8 +17,10 @@
 #endif
 
 #ifndef __FreeBSD__
+#ifndef __MACH__
 // malloc_trim
 #include "malloc.h"
+#endif
 #endif
 
 // Boost
@@ -189,8 +191,10 @@ class SwiftenPlugin : public NetworkPlugin {
 
 #ifndef WIN32
 #ifndef __FreeBSD__
+#ifndef __MACH__
 			// force returning of memory chunks allocated by libxml2 to kernel
 			malloc_trim(0);
+#endif
 #endif
 #endif
 		}
@@ -217,6 +221,10 @@ class SwiftenPlugin : public NetworkPlugin {
 		void handleSwiftPresenceChanged(const std::string &user, Swift::Presence::ref presence) {
 			boost::shared_ptr<Swift::Client> client = m_users[user];
 			if (client->getMUCRegistry()->isMUC(presence->getFrom().toBare())) {
+				return;
+			}
+
+			if (presence->getPayload<Swift::MUCUserPayload>() != NULL || presence->getPayload<Swift::MUCPayload>() != NULL) {
 				return;
 			}
 
@@ -299,7 +307,6 @@ class SwiftenPlugin : public NetworkPlugin {
 				client->getPresenceOracle()->onPresenceChange.disconnect(boost::bind(&SwiftenPlugin::handleSwiftPresenceChanged, this, user, _1));
 				client->disconnect();
 				m_mucs.erase(user);
-				m_users.erase(user);
 			}
 		}
 
@@ -314,7 +321,7 @@ class SwiftenPlugin : public NetworkPlugin {
 				if (client->getMUCRegistry()->isMUC(legacyName)) {
 					message->setType(Swift::Message::Groupchat);
 					boost::shared_ptr<MUCController> muc = m_mucs[user][legacyName];
-					handleMessage(user, legacyName, msg, muc->getNickname(), xhtml);
+// 					handleMessage(user, legacyName, msg, muc->getNickname(), xhtml);
 				}
 
 				client->sendMessage(message);
