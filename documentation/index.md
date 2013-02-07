@@ -11,6 +11,7 @@ title: Spectrum 2
 
 * [Debian/Ubuntu packages](installation/debian_ubuntu.html)
 * [Fedora/RHEL/CentOS packages](installation/fedora_rhel.html)
+* [Gentoo ebuild](installation/gentoo.html)
 * [Installing from source code](installation/from_source_code.html)
 
 #### Tutorials
