@@ -945,10 +945,7 @@ static void buddyListSaveNode(PurpleBlistNode *node) {
 
 }
 
-static void buddyListNewNode(PurpleBlistNode *node) {
-	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
-		return;
-
+static void buddyListSaveAccount(PurpleAccount *account) {
 }
 
 static void buddyListRemoveNode(PurpleBlistNode *node) {
