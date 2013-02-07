@@ -20,6 +20,7 @@
 
 #include "skypeplugin.h"
 #include "skype.h"
+#include "skypedb.h"
 
 #include "transport/config.h"
 #include "transport/logging.h"
@@ -41,17 +42,6 @@
 #include "malloc.h"
 #endif
 
-#define GET_RESPONSE_DATA(RESP, DATA) ((RESP.find(std::string(DATA) + " ") != std::string::npos) ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
-#define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = sk->send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
-					try {\
-						VAR = GET_RESPONSE_DATA(VAR, PROP);\
-					}\
-					catch (std::out_of_range& oor) {\
-						VAR="";\
-					}
-					
-
-					
 // Prepare the SQL statement
 #define PREP_STMT(sql, str) \
 	if(sqlite3_prepare_v2(db, std::string(str).c_str(), -1, &sql, NULL)) { \
@@ -314,39 +304,8 @@ void SkypePlugin::handleVCardRequest(const std::string &user, const std::string 
 		g_free(username);
 
 		if (photo.empty()) {
-			sqlite3 *db;
 			std::string db_path = std::string("/tmp/skype/") + skype->getUsername() + "/" + skype->getUsername() + "/main.db";
-			LOG4CXX_INFO(logger, "Opening database " << db_path);
-			if (sqlite3_open(db_path.c_str(), &db)) {
-				sqlite3_close(db);
-				LOG4CXX_ERROR(logger, "Can't open database");
-			}
-			else {
-				sqlite3_stmt *stmt;
-				PREP_STMT(stmt, "SELECT avatar_image FROM Contacts WHERE skypename=?");
-				if (stmt) {
-					BEGIN(stmt);
-					BIND_STR(stmt, name);
-					if(sqlite3_step(stmt) == SQLITE_ROW) {
-						int size = sqlite3_column_bytes(stmt, 0);
-						const void *data = sqlite3_column_blob(stmt, 0);
-						photo = std::string((const char *)data + 1, size - 1);
-					}
-					else {
-						LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
-					}
-
-					int ret;
-					while((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
-					}
-					FINALIZE_STMT(stmt);
-				}
-				else {
-					LOG4CXX_ERROR(logger, "Can't created prepared statement");
-					LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
-				}
-				sqlite3_close(db);
-			}
+			SkypeDB::getAvatar(db_path, name, photo);
 		}
 
 		std::string alias;

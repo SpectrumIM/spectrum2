@@ -42,45 +42,6 @@
 #endif
 
 
-#define GET_RESPONSE_DATA(RESP, DATA) ((RESP.find(std::string(DATA) + " ") != std::string::npos) ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
-#define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
-					try {\
-						VAR = GET_RESPONSE_DATA(VAR, PROP);\
-					}\
-					catch (std::out_of_range& oor) {\
-						VAR="";\
-					}
-					
-
-					
-// Prepare the SQL statement
-#define PREP_STMT(sql, str) \
-	if(sqlite3_prepare_v2(db, std::string(str).c_str(), -1, &sql, NULL)) { \
-		LOG4CXX_ERROR(logger, str<< (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db))); \
-		sql = NULL; \
-	}
-
-// Finalize the prepared statement
-#define FINALIZE_STMT(prep) \
-	if(prep != NULL) { \
-		sqlite3_finalize(prep); \
-	}
-	
-#define BEGIN(STATEMENT) 	sqlite3_reset(STATEMENT);\
-							int STATEMENT##_id = 1;\
-							int STATEMENT##_id_get = 0;\
-							(void)STATEMENT##_id_get;
-
-#define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE)
-#define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC)
-#define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
-#define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
-#define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
-#define GET_BLOB(STATEMENT)	(const void *) sqlite3_column_blob(STATEMENT, STATEMENT##_id_get++)
-#define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
-		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));\
-			}
-
 DEFINE_LOGGER(logger, "Skype");
 
 Skype::Skype(SkypePlugin *np, const std::string &user, const std::string &username, const std::string &password) {

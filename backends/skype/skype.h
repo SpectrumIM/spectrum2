@@ -26,6 +26,15 @@
 #include <iostream>
 #include <map>
 
+#define GET_RESPONSE_DATA(RESP, DATA) ((RESP.find(std::string(DATA) + " ") != std::string::npos) ? RESP.substr(RESP.find(DATA) + strlen(DATA) + 1) : "");
+#define GET_PROPERTY(VAR, OBJ, WHICH, PROP) std::string VAR = send_command(std::string("GET ") + OBJ + " " + WHICH + " " + PROP); \
+					try {\
+						VAR = GET_RESPONSE_DATA(VAR, PROP);\
+					}\
+					catch (std::out_of_range& oor) {\
+						VAR="";\
+					}
+
 class SkypePlugin;
 
 class Skype {
