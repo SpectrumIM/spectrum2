@@ -881,6 +881,23 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 // 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 }
 
+static void buddyListSaveNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+
+}
+
+static void buddyListNewNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+
+}
+
+static void buddyListRemoveNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+}
+
 static PurpleBlistUiOps blistUiOps =
 {
 	NULL,
@@ -893,9 +910,9 @@ static PurpleBlistUiOps blistUiOps =
 	NULL, // buddyListAddBuddy,
 	NULL,
 	NULL,
-	NULL, //buddyListSaveNode,
-	NULL, //buddyListRemoveNode,
-	NULL, //buddyListSaveAccount,
+	buddyListSaveNode,
+	buddyListRemoveNode,
+	buddyListSaveAccount,
 	NULL
 };
 
