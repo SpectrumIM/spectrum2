@@ -14,13 +14,15 @@ using namespace Transport;
 class HelpMessageRequest : public Thread
 {
 	std::string user;
+	std::string jid;
 	std::string helpMsg;
 	boost::function<void (std::string &, std::string &)> callBack;
 	
 	public:
-	HelpMessageRequest(const std::string &_user, boost::function<void (std::string &, std::string &)> cb) {
+	HelpMessageRequest(const std::string &_user, const std::string &jid, boost::function<void (std::string &, std::string &)> cb) {
 		user = _user;
 		callBack = cb;
+		this->jid = jid;
 	}
 
 	void run();

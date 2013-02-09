@@ -215,7 +215,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 		if(cmd == "#pin") 
 			tp->runAsThread(new PINExchangeProcess(np, userdb[user].sessions, user, data));
 		else if(cmd == "#help") 
-			tp->runAsThread(new HelpMessageRequest(user, boost::bind(&TwitterPlugin::helpMessageResponse, this, _1, _2)));
+			tp->runAsThread(new HelpMessageRequest(user, CONFIG_STRING(config, "service.jid"), boost::bind(&TwitterPlugin::helpMessageResponse, this, _1, _2)));
 		else if(cmd[0] == '@') {
 			std::string username = cmd.substr(1); 
 			tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, username, data,
