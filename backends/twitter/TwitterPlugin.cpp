@@ -156,10 +156,13 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 // User logging out
 void TwitterPlugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) 
 {
-	if(onlineUsers.count(user)) {
+	if (userdb.count(user)) {
 		delete userdb[user].sessions;
 		userdb[user].sessions = NULL;
 		userdb[user].connectionState = DISCONNECTED;
+	}
+
+	if(onlineUsers.count(user)) {
 		onlineUsers.erase(user);
 	}
 }
