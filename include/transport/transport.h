@@ -30,9 +30,11 @@
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "Swiften/Base/SafeByteArray.h"
+#include "Swiften/Queries/IQHandler.h"
 #include "Swiften/Jingle/JingleSessionManager.h"
 #include "Swiften/Component/ComponentError.h"
 #include "Swiften/Component/Component.h"
+#include "Swiften/Queries/IQHandler.h"
 
 #include <boost/bind.hpp>
 #include "transport/config.h"
@@ -52,7 +54,7 @@ namespace Transport {
 	///
 	/// In server mode it represents Jabber server to which users can connect and use
 	/// it as transport.
-	class Component {
+	class Component : Swift::IQHandler {
 		public:
 			/// Creates new Component instance.
 
@@ -151,6 +153,8 @@ namespace Transport {
 			/// \param info disco#info with response.
 			boost::signal<void (const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info)> onUserDiscoInfoReceived;
 
+			boost::signal<void (boost::shared_ptr<Swift::IQ>)> onRawIQReceived;
+
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
@@ -161,6 +165,9 @@ namespace Transport {
 
 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
+
+			void handleBackendConfigChanged();
+			bool handleIQ(boost::shared_ptr<Swift::IQ>);
 
 			Swift::NetworkFactories *m_factories;
 			Swift::Component *m_component;
@@ -181,6 +188,7 @@ namespace Transport {
 			Swift::JID m_jid;
 			Factory *m_factory;
 			Swift::EventLoop *m_loop;
+			bool m_rawXML;
 
 		friend class User;
 		friend class UserRegistration;

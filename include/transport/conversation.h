@@ -70,6 +70,8 @@ class Conversation {
 		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
 		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
 
+		void handleRawMessage(boost::shared_ptr<Swift::Message> &message);
+
 		/// Handles participant change in MUC.
 
 		/// \param nickname Nickname of participant which changed.

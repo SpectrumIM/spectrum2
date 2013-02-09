@@ -180,6 +180,7 @@ message WrapperMessage {
 		TYPE_QUERY					= 31;
 		TYPE_ROOM_LIST				= 32;
 		TYPE_CONV_MESSAGE_ACK		= 33;
+		TYPE_RAW_XML				= 34;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

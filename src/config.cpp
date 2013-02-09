@@ -315,6 +315,7 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
 		("features.receipts", value<bool>()->default_value(false), "")
 		("features.muc", value<bool>()->default_value(false), "")
+		("features.rawxml", value<bool>()->default_value(false), "")
 	;
 
 	std::stringstream ifs(backendConfig);
