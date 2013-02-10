@@ -1068,6 +1068,10 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
 			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
 		}
+		else {
+			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
+			iq->setTo(highest->getFrom());
+		}
 		m_component->getIQRouter()->sendIQ(iq);
 		return;
 	}
