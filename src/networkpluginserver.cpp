@@ -1003,6 +1003,8 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 		return;
 
 	Swift::JID originalJID = stanza->getFrom();
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(originalJID.toBare());
+
 	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(stanza->getFrom().toBare());
 	if (buddy) {
 		const Swift::JID &jid = buddy->getJID();
@@ -1015,12 +1017,19 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 	}
 	else {
 		std::string name = stanza->getFrom().toBare();
-		if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
-			name = Swift::JID::getEscapedNode(name);
-		}
-		else {
+		if (conv && conv->isMUC()) {
 			if (name.find_last_of("@") != std::string::npos) {
 				name.replace(name.find_last_of("@"), 1, "%");
+			}
+		}
+		else {
+			if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+				name = Swift::JID::getEscapedNode(name);
+			}
+			else {
+				if (name.find_last_of("@") != std::string::npos) {
+					name.replace(name.find_last_of("@"), 1, "%");
+				}
 			}
 		}
 		if (stanza->getFrom().getResource().empty()) {
@@ -1033,7 +1042,6 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 
 	boost::shared_ptr<Swift::Message> message = boost::dynamic_pointer_cast<Swift::Message>(stanza);
 	if (message) {
-		NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(originalJID.toBare());
 		if (conv) {
 			conv->handleRawMessage(message);
 			return;
