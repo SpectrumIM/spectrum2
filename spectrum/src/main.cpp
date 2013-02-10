@@ -17,6 +17,7 @@
 #include "transport/adhocmanager.h"
 #include "transport/settingsadhoccommand.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
+#include "Swiften/Network/BoostNetworkFactories.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #ifndef WIN32
@@ -27,7 +28,9 @@
 #include <sys/resource.h>
 #include "libgen.h"
 #ifndef __FreeBSD__
+#ifndef __MACH__
 #include <malloc.h>
+#endif
 #endif
 #else
 #include <process.h>
@@ -307,8 +310,10 @@ int main(int argc, char **argv)
 	setlocale(LC_ALL, "");
 #ifndef WIN32
 #ifndef __FreeBSD__
+#ifndef __MACH__
 	mallopt(M_CHECK_ACTION, 2);
 	mallopt(M_PERTURB, 0xb);
+#endif
 #endif
 #endif
 

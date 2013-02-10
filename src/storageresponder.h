@@ -21,9 +21,9 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/RosterPayload.h"
+#include "Swiften/Elements/PrivateStorage.h"
 
 namespace Transport {
 

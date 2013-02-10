@@ -26,7 +26,6 @@
 #include "transport/conversationmanager.h"
 #include "transport/presenceoracle.h"
 #include "transport/logging.h"
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
@@ -195,11 +194,6 @@ void User::setCacheMessages(bool cacheMessages) {
 }
 
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
-
-	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
-
-	m_conversationManager->resetResources();
-
 	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
@@ -231,8 +225,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 		}
 	}
 
-	bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
-	if (isMUC) {
+	
+	if (!presence->getTo().getNode().empty()) {
+		bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
 			Conversation *conv = m_conversationManager->getConversation(room);
@@ -242,9 +237,13 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 					return;
 				}
 			}
+			else {
+				return;
+			}
 
 			if (getUserSetting("stay_connected") != "1") {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
+				onRawPresenceReceived(presence);
 				onRoomLeft(room);
 
 				BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
@@ -260,7 +259,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 			}
 		}
-		else {
+		else if (isMUC) {
 			// force connection to legacy network to let backend to handle auto-join on connect.
 			if (!m_readyForConnect) {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
@@ -286,6 +285,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 
 				if (forceJoin) {
+					onRawPresenceReceived(presence);
 					onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 				}
 				return;
@@ -313,13 +313,34 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			conv->setNickname(presence->getTo().getResource());
 			conv->addJID(presence->getFrom());
 
+			onRawPresenceReceived(presence);
 			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 		}
 		return;
 	}
-	
+
+	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
+
+	m_conversationManager->resetResources();
+
+
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		m_conversationManager->removeJID(presence->getFrom());
+
+		std::string presences;
+		std::vector<Swift::Presence::ref> ps = m_presenceOracle->getAllPresence(m_jid);
+		BOOST_FOREACH(Swift::Presence::ref p, ps) {
+			if (p != presence) {
+				presences += p->getFrom().toString() + " ";
+			}
+		};
+
+		if (!presences.empty()) {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": User is still connected from following clients: " << presences);
+		}
+		else {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Last client disconnected");
+		}
 	}
 
 

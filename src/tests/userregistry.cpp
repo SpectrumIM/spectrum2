@@ -6,6 +6,8 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
+#include <Swiften/Network/ConnectionFactory.h>
+#include <Swiften/Network/DummyTimerFactory.h>
 
 using namespace Transport;
 
@@ -34,7 +36,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			userRegistry->onConnectUser.connect(bind(&UserRegistryTest::handleConnectUser, this, _1));
 			userRegistry->onDisconnectUser.connect(bind(&UserRegistryTest::handleDisconnectUser, this, _1));
 
-			server = new Swift::Server(loop, factories, userRegistry, "localhost", 5222);
+			server = new Swift::Server(loop, factories, userRegistry, "localhost", "0.0.0.0", 5222);
 			server->start();
 			connectionServer = server->getConnectionServer();
 

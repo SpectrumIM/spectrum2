@@ -39,6 +39,7 @@ void PINExchangeProcess::finalize()
 		}
 		np->pinExchangeComplete(user, OAuthAccessTokenKey, OAuthAccessTokenSecret);
 		np->handleMessage(user, "twitter.com", "PIN is OK. You are now authorized.");
+		np->handleMessage(user, "twitter.com", "Send '#help' (without the quotes) to see how to use this transport.");
 		LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
 	}
 }

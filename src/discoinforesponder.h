@@ -21,7 +21,8 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
+#include <list>
+#include <boost/signal.hpp>
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
@@ -51,7 +52,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> payload);
-		void updateBuddyFeatures();
+		void updateFeatures();
 
 		Swift::DiscoInfo m_transportInfo;
 		Swift::DiscoInfo *m_buddyInfo;

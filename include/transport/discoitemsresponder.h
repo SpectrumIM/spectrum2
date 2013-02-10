@@ -21,9 +21,9 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoItems.h"
+#include "Swiften/Elements/CapsInfo.h"
 
 namespace Transport {
 

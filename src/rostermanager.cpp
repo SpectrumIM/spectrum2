@@ -30,7 +30,10 @@
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
 #include "Swiften/Elements/RosterItemExchangePayload.h"
+#include "Swiften/Elements/Nickname.h"
+#include "Swiften/Queries/IQRouter.h"
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 
 #include <map>
 #include <iterator>
@@ -151,12 +154,7 @@ void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 	Swift::RosterItemPayload item;
 	item.setJID(buddy->getJID().toBare());
-	if (buddy->getAlias().empty()) {
-		item.setName(buddy->getJID().toBare().toString());
-	}
-	else {
-		item.setName(buddy->getAlias());
-	}
+	item.setName(buddy->getAlias());
 	item.setGroups(buddy->getGroups());
 	item.setSubscription(Swift::RosterItemPayload::Both);
 
@@ -280,6 +278,15 @@ void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPa
 
 	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
 	m_supportRemoteRoster = true;
+
+	//If we receive empty RosterPayload on login (not register) initiate full RosterPush
+	if(!m_buddies.empty() && payload->getItems().empty()){
+			LOG4CXX_INFO(logger, "Received empty Roster upon login. Pushing full Roster.");
+			for(std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
+					c_it != m_buddies.end(); c_it++) {
+				sendBuddyRosterPush(c_it->second);
+			}
+	}
 	return;
 
 	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
@@ -490,6 +497,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 					setBuddy(buddy);
 					onBuddyAdded(buddy);
+					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
 					response->setType(Swift::Presence::Subscribed);
 					break;
 				case Swift::Presence::Unsubscribe:

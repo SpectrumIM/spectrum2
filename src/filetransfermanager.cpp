@@ -24,6 +24,7 @@
 #include "transport/user.h"
 #include "transport/buddy.h"
 #include "transport/logging.h"
+#include "Swiften/Network/ConnectionServerFactory.h"
 
 namespace Transport {
 

@@ -156,10 +156,13 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 // User logging out
 void TwitterPlugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) 
 {
-	if(onlineUsers.count(user)) {
+	if (userdb.count(user)) {
 		delete userdb[user].sessions;
 		userdb[user].sessions = NULL;
 		userdb[user].connectionState = DISCONNECTED;
+	}
+
+	if(onlineUsers.count(user)) {
 		onlineUsers.erase(user);
 	}
 }
@@ -212,7 +215,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 		if(cmd == "#pin") 
 			tp->runAsThread(new PINExchangeProcess(np, userdb[user].sessions, user, data));
 		else if(cmd == "#help") 
-			tp->runAsThread(new HelpMessageRequest(user, boost::bind(&TwitterPlugin::helpMessageResponse, this, _1, _2)));
+			tp->runAsThread(new HelpMessageRequest(user, CONFIG_STRING(config, "service.jid"), boost::bind(&TwitterPlugin::helpMessageResponse, this, _1, _2)));
 		else if(cmd[0] == '@') {
 			std::string username = cmd.substr(1); 
 			tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, username, data,
@@ -274,7 +277,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 	} 
 
 	else {	
-		std::string buddy;
+		std::string buddy = legacyName;
 		if(userdb[user].twitterMode == CHATROOM) buddy = legacyName.substr(legacyName.find("/") + 1);
 		if(legacyName != "twitter") {
 			tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, buddy, message,

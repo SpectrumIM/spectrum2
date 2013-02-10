@@ -51,7 +51,10 @@
 #include "transport/BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
-#include "Swiften/Swiften.h"
+#include "Swiften/Parser/GenericPayloadParserFactory.h"
+#include "Swiften/Queries/IQRouter.h"
+#include "Swiften/Elements/RosterPayload.h"
+#include "Swiften/Elements/InBandRegistrationPayload.h"
 
 using namespace Swift;
 using namespace boost;
@@ -67,9 +70,11 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	m_server = NULL;
 	m_reconnectCount = 0;
 	m_config = config;
+	m_config->onBackendConfigUpdated.connect(boost::bind(&Component::handleBackendConfigChanged, this));
 	m_factory = factory;
 	m_loop = loop;
 	m_userRegistry = userRegistry;
+	m_rawXML = false;
 
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
@@ -80,7 +85,7 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
-		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_INT(m_config, "service.port"));
+		m_server = new Swift::Server(loop, m_factories, m_userRegistry, m_jid, CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 #ifndef _WIN32
 //TODO: fix
@@ -174,6 +179,30 @@ Component::~Component() {
 	if (m_server) {
 		m_server->stop();
 		delete m_server;
+	}
+}
+
+bool Component::handleIQ(boost::shared_ptr<Swift::IQ> iq) {
+	if (!m_rawXML) {
+		return false;
+	}
+
+	if (iq->getPayload<Swift::RosterPayload>() != NULL) { return false; }
+	if (iq->getPayload<Swift::InBandRegistrationPayload>() != NULL) { return false; }
+	if (iq->getPayload<Swift::StatsPayload>() != NULL) { return false; }
+
+	if (iq->getTo().getNode().empty()) {
+		return false;
+	}
+
+	onRawIQReceived(iq);
+	return true;
+}
+
+void Component::handleBackendConfigChanged() {
+	if (!m_rawXML && CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
+		m_rawXML = true;
+		m_iqRouter->addHandler(this);
 	}
 }
 
@@ -275,9 +304,8 @@ void Component::handleDataWritten(const Swift::SafeByteArray &data) {
 }
 
 void Component::handlePresence(Swift::Presence::ref presence) {
-	bool isMUC = presence->getPayload<MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 	// filter out login/logout presence spam
-	if (!presence->getTo().getNode().empty() && isMUC == false)
+	if (!presence->getTo().getNode().empty())
 		return;
 
 	// filter out bad presences

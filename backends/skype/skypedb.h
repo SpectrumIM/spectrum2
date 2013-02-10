@@ -20,36 +20,14 @@
 
 #pragma once
 
-#include <string>
+#include "glib.h"
+#include <dbus-1.0/dbus/dbus-glib-lowlevel.h>
+#include "sqlite3.h"
+#include <iostream>
 #include <map>
 
-#include "Swiften/Elements/Message.h"
-
-namespace Transport {
-
-class Component;
-class StorageBackend;
-class UserManager;
-class NetworkPluginServer;
-class UserRegistration;
-
-class AdminInterface {
-	public:
-		AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server = NULL, StorageBackend *storageBackend = NULL, UserRegistration *userRegistration = NULL);
-
-		~AdminInterface();
-
-		void handleQuery(Swift::Message::ref message);
-
-	private:
-		void handleMessageReceived(Swift::Message::ref message);
-
-		Component *m_component;
-		StorageBackend *m_storageBackend;
-		UserManager *m_userManager;
-		NetworkPluginServer *m_server;
-		UserRegistration *m_userRegistration;
-		time_t m_start;
-};
+namespace SkypeDB {
+	bool getAvatar(const std::string &db, const std::string &name, std::string &avatar);
 
 }
+

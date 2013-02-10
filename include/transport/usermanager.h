@@ -22,8 +22,12 @@
 
 #include <string>
 #include <map>
-#include "Swiften/Swiften.h"
 #include "transport/userregistry.h"
+#include "Swiften/Elements/Message.h"
+#include "Swiften/Elements/Presence.h"
+#include "Swiften/Disco/EntityCapsProvider.h"
+#include "Swiften/Elements/DiscoInfo.h"
+#include "Swiften/Network/Timer.h"
 
 namespace Transport {
 
@@ -133,6 +137,7 @@ class UserManager : public Swift::EntityCapsProvider {
 		void handleProbePresence(Swift::Presence::ref presence);
 		void handleErrorPresence(Swift::Presence::ref presence);
 		void handleSubscription(Swift::Presence::ref presence);
+		void handleMUCPresence(Swift::Presence::ref presence);
 		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
 		void handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info);
 		void addUser(User *user);

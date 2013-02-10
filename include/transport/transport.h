@@ -21,7 +21,6 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/Server.h"
 #include "Swiften/Disco/GetDiscoInfoRequest.h"
 #include "Swiften/Disco/EntityCapsManager.h"
@@ -31,7 +30,11 @@
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Server/UserRegistry.h"
 #include "Swiften/Base/SafeByteArray.h"
+#include "Swiften/Queries/IQHandler.h"
 #include "Swiften/Jingle/JingleSessionManager.h"
+#include "Swiften/Component/ComponentError.h"
+#include "Swiften/Component/Component.h"
+#include "Swiften/Queries/IQHandler.h"
 
 #include <boost/bind.hpp>
 #include "transport/config.h"
@@ -40,12 +43,6 @@
 #include <Swiften/Network/BoostConnectionServer.h>
 
 namespace Transport {
-	// typedef enum { 	CLIENT_FEATURE_ROSTERX = 2,
-	// 				CLIENT_FEATURE_XHTML_IM = 4,
-	// 				CLIENT_FEATURE_FILETRANSFER = 8,
-	// 				CLIENT_FEATURE_CHATSTATES = 16
-	// 				} SpectrumImportantFeatures;
-	// 
 	class StorageBackend;
 	class Factory;
 	class UserRegistry;
@@ -57,7 +54,7 @@ namespace Transport {
 	///
 	/// In server mode it represents Jabber server to which users can connect and use
 	/// it as transport.
-	class Component {
+	class Component : Swift::IQHandler {
 		public:
 			/// Creates new Component instance.
 
@@ -68,7 +65,9 @@ namespace Transport {
 			/// 	- service.server
 			/// 	- service.port
 			/// 	- service.server_mode
+			/// \param factories Swift::NetworkFactories.
 			/// \param factory Transport Abstract factory used to create basic transport structures.
+			/// \param userRegistery UserRegistry class instance. It's needed only when running transport in server-mode.
 			Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
 
 			/// Component destructor.
@@ -96,9 +95,13 @@ namespace Transport {
 			/// \return True if the component is in server mode.
 			bool inServerMode() { return m_server != NULL; }
 
-			/// Connects the Jabber server.
-
+			/// Starts the Component.
+			
+			/// In server-mode, it starts listening on particular port for new client connections.
+			/// In gateway-mode, it connects the XMPP server.
 			void start();
+
+			/// Stops the component.
 			void stop();
 
 			/// Returns Jabber ID of this transport.
@@ -139,13 +142,18 @@ namespace Transport {
 			/// This signal is emitted when presence from XMPP user is received.
 
 			/// It's emitted only for presences addressed to transport itself
-			/// (for example to="j2j.domain.tld").
-			/// \param presence presence data
+			/// (for example to="j2j.domain.tld") and for presences comming to
+			/// MUC (for example to="#chat%irc.freenode.org@irc.domain.tld")
+			/// \param presence Presence.
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
+			/// Component class asks the XMPP clients automatically for their capabilities.
+			/// This signal is emitted when capabilities have been received or changed.
+			/// \param jid JID of the client for which we received capabilities
+			/// \param info disco#info with response.
 			boost::signal<void (const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info)> onUserDiscoInfoReceived;
 
-// 			boost::signal<void (boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid)> onDiscoInfoResponse;
+			boost::signal<void (boost::shared_ptr<Swift::IQ>)> onRawIQReceived;
 
 		private:
 			void handleConnected();
@@ -157,6 +165,9 @@ namespace Transport {
 
 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
+
+			void handleBackendConfigChanged();
+			bool handleIQ(boost::shared_ptr<Swift::IQ>);
 
 			Swift::NetworkFactories *m_factories;
 			Swift::Component *m_component;
@@ -177,6 +188,7 @@ namespace Transport {
 			Swift::JID m_jid;
 			Factory *m_factory;
 			Swift::EventLoop *m_loop;
+			bool m_rawXML;
 
 		friend class User;
 		friend class UserRegistration;

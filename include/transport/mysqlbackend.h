@@ -24,7 +24,6 @@
 
 #include <string>
 #include <map>
-#include "Swiften/Swiften.h"
 #include "transport/storagebackend.h"
 #include "transport/config.h"
 #include "mysql.h"

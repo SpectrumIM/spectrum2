@@ -21,7 +21,6 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Swiften.h"
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/GatewayPayload.h"
 

@@ -21,11 +21,18 @@
 #pragma once
 
 #include <time.h>
-#include "Swiften/Swiften.h"
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Network/Connection.h"
+#include "Swiften/Elements/ChatState.h"
+#include "Swiften/Elements/RosterItemPayload.h"
+#include "Swiften/Elements/VCard.h"
+#include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
+#include "Swiften/Parser/XMPPParser.h"
+#include "Swiften/Parser/XMPPParserClient.h"
+#include "Swiften/Serializer/XMPPSerializer.h"
 #include "storagebackend.h"
 #include "transport/filetransfermanager.h"
 
@@ -45,7 +52,7 @@ class DummyReadBytestream;
 class AdminInterface;
 class DiscoItemsResponder;
 
-class NetworkPluginServer {
+class NetworkPluginServer : Swift::XMPPParserClient {
 	public:
 		struct Backend {
 			int pongReceived;
@@ -114,6 +121,7 @@ class NetworkPluginServer {
 		void handleQueryPayload(Backend *b, const std::string &payload);
 		void handleBackendConfigPayload(const std::string &payload);
 		void handleRoomListPayload(const std::string &payload);
+		void handleRawXML(const std::string &xml);
 
 		void handleUserCreated(User *user);
 		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);
@@ -125,6 +133,8 @@ class NetworkPluginServer {
 		void handleBuddyUpdated(Buddy *buddy, const Swift::RosterItemPayload &item);
 		void handleBuddyRemoved(Buddy *buddy);
 		void handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item);
+		void handleUserBuddyAdded(User *user, Buddy *buddy);
+		void handleUserBuddyRemoved(User *user, Buddy *buddy);
 
 		void handleBlockToggled(Buddy *buddy);
 
@@ -145,6 +155,14 @@ class NetworkPluginServer {
 		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false, bool check = false);
 		void connectWaitingUsers();
 		void loginDelayFinished();
+		void handleRawIQReceived(boost::shared_ptr<Swift::IQ> iq);
+		void handleRawPresenceReceived(boost::shared_ptr<Swift::Presence> presence);
+
+		void handleStreamStart(const Swift::ProtocolHeader&) {}
+
+		void handleElement(boost::shared_ptr<Swift::Element> element);
+
+		void handleStreamEnd() {}
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
@@ -167,6 +185,11 @@ class NetworkPluginServer {
 		bool m_startingBackend;
 		DiscoItemsResponder *m_discoItemsResponder;
 		time_t m_lastLogin;
+		Swift::XMPPParser *m_xmppParser;
+		Swift::FullPayloadParserFactoryCollection m_collection;
+		Swift::XMPPSerializer *m_serializer;
+		Swift::FullPayloadSerializerCollection m_collection2;
+		std::map <std::string, std::string> m_id2resource;
 };
 
 }

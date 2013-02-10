@@ -21,12 +21,13 @@
 #pragma once
 
 #include <time.h>
-#include "Swiften/Swiften.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
 #include "storagebackend.h"
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include "Swiften/Elements/SpectrumErrorPayload.h"
+#include "Swiften/Network/Timer.h"
+#include "Swiften/Network/Connection.h"
 
 namespace Transport {
 
@@ -132,6 +133,7 @@ class User : public Swift::EntityCapsProvider {
 
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
+		boost::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
 		boost::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
 		boost::signal<void (const std::string &room)> onRoomLeft;
 		boost::signal<void ()> onDisconnected;

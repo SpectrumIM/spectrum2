@@ -23,6 +23,7 @@ using namespace Transport;
 class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(RosterManagerTest);
 	CPPUNIT_TEST(setBuddy);
+	CPPUNIT_TEST(setBuddyNoAlias);
 	CPPUNIT_TEST(sendCurrentPresences);
 	CPPUNIT_TEST(sendUnavailablePresences);
 	CPPUNIT_TEST(sendCurrentPresence);
@@ -70,6 +71,25 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Nickname>());
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), getStanza(received[0])->getPayload<Swift::Nickname>()->getNickname());
 		
+	}
+
+	void setBuddyNoAlias() {
+		User *user = userManager->getUser("user@localhost");
+		CPPUNIT_ASSERT(user);
+
+		std::vector<std::string> grp;
+		grp.push_back("group1");
+		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "", grp, BUDDY_JID_ESCAPING);
+		user->getRosterManager()->setBuddy(buddy);
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
+		CPPUNIT_ASSERT(payload1);
+		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
+		Swift::RosterItemPayload item = payload1->getItems()[0];
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
+		CPPUNIT_ASSERT_EQUAL(std::string(""), item.getName());
 	}
 
 	void setBuddy() {

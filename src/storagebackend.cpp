@@ -4,8 +4,8 @@
 #include "transport/sqlite3backend.h"
 #include "transport/mysqlbackend.h"
 #include "transport/pqxxbackend.h"
+#include "Swiften/StringCodecs/Base64.h"
 
-#include "Swiften/Swiften.h"
 
 namespace Transport {
 

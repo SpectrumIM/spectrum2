@@ -24,7 +24,6 @@
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RawXMLPayload.h"
-#include "Swiften/Swiften.h"
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
@@ -53,7 +52,14 @@ bool GatewayResponder::handleGetRequest(const Swift::JID& from, const Swift::JID
 
 bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::GatewayPayload> payload) {
 	std::string prompt = payload->getPrompt();
+
 	std::string escaped = Swift::JID::getEscapedNode(prompt);
+	if (!CONFIG_BOOL_DEFAULTED(m_userManager->getComponent()->getConfig(), "service.jid_escaping", true)) {
+		escaped = prompt;
+		if (escaped.find_last_of("@") != std::string::npos) {
+			escaped.replace(escaped.find_last_of("@"), 1, "%");
+		}
+	}
 	// This code is here to workaround Gajim (and probably other clients bug too) bug
 	// https://trac.gajim.org/ticket/7277
 	if (prompt.find("\\40") != std::string::npos) {

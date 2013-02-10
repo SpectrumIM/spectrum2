@@ -43,6 +43,7 @@ DEFINE_LOGGER(logger, "backend");
 
 int main_socket;
 static int writeInput;
+bool firstPing = true;
 
 using namespace Transport;
 
@@ -89,6 +90,14 @@ struct FTData {
 	unsigned long timer;
 	bool paused;
 };
+
+struct NodeCache {
+	PurpleAccount *account;
+	std::map<PurpleBlistNode *, int> nodes;
+	int timer;
+};
+
+bool caching = true;
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
 
@@ -356,6 +365,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				if (account->ui_data) {
+					NodeCache *cache = (NodeCache *) account->ui_data;
+					purple_timeout_remove_wrapped(cache->timer);
+					delete cache;
+					account->ui_data = NULL;
+				}
 				if (purple_account_get_int_wrapped(account, "version", 0) != 0) {
 					std::string data = stringOf(purple_account_get_int_wrapped(account, "version", 0));
 					g_file_set_contents ("gfire.cfg", data.c_str(), data.size(), NULL);
@@ -549,6 +564,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					}
 					purple_blist_add_buddy_wrapped(buddy, NULL, group ,NULL);
 					purple_account_add_buddy_wrapped(account, buddy);
+					LOG4CXX_INFO(logger, "Adding new buddy " << buddyName.c_str() << " to legacy network roster");
 				}
 			}
 		}
@@ -804,11 +820,55 @@ static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 	return groups;
 }
 
-static void buddyListNewNode(PurpleBlistNode *node) {
+void buddyListNewNode(PurpleBlistNode *node);
+
+static gboolean new_node_cache(void *data) {
+	NodeCache *cache = (NodeCache *) data;
+	caching = false;
+	for (std::map<PurpleBlistNode *, int>::const_iterator it = cache->nodes.begin(); it != cache->nodes.end(); it++) {
+		buddyListNewNode(it->first);
+	}
+	caching = true;
+
+	cache->account->ui_data = NULL;
+	delete cache;
+
+	return FALSE;
+}
+
+static void buddyNodeRemoved(PurpleBuddyList *list, PurpleBlistNode *node) {
 	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
 		return;
 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 	PurpleAccount *account = purple_buddy_get_account_wrapped(buddy);
+
+	if (!account->ui_data) {
+		return;
+	}
+
+	NodeCache *cache = (NodeCache *) account->ui_data;
+	cache->nodes.erase(node);
+}
+
+void buddyListNewNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
+		return;
+	PurpleBuddy *buddy = (PurpleBuddy *) node;
+	PurpleAccount *account = purple_buddy_get_account_wrapped(buddy);
+
+	if (caching) {
+		if (!account->ui_data) {
+			NodeCache *cache = new NodeCache;
+			cache->account = account;
+			cache->timer = purple_timeout_add_wrapped(400, new_node_cache, cache);
+			account->ui_data = (void *) cache;
+		}
+
+		NodeCache *cache = (NodeCache *) account->ui_data;
+		cache->nodes[node] = 1;
+		return;
+	}
+	
 
 	std::vector<std::string> groups = getGroups(buddy);
 	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name_wrapped(buddy) << " " << getAlias(buddy) << " group (" << groups.size() << ")=" << groups[0]);
@@ -879,21 +939,35 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 // 	PurpleBuddy *buddy = (PurpleBuddy *) node;
 }
 
+static void buddyListSaveNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+
+}
+
+static void buddyListSaveAccount(PurpleAccount *account) {
+}
+
+static void buddyListRemoveNode(PurpleBlistNode *node) {
+	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+		return;
+}
+
 static PurpleBlistUiOps blistUiOps =
 {
 	NULL,
 	buddyListNewNode,
 	NULL,
 	buddyListUpdate,
-	NULL, //NodeRemoved,
+	buddyNodeRemoved,
 	NULL,
 	NULL,
 	NULL, // buddyListAddBuddy,
 	NULL,
 	NULL,
-	NULL, //buddyListSaveNode,
-	NULL, //buddyListRemoveNode,
-	NULL, //buddyListSaveAccount,
+	buddyListSaveNode,
+	buddyListRemoveNode,
+	buddyListSaveAccount,
 	NULL
 };
 
@@ -908,10 +982,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 // 	std::string msg = striped;
 // 	g_free(striped);
 
-	std::string w = purple_normalize_wrapped(account, who);
-	size_t pos = w.find("/");
-	if (pos != std::string::npos)
-		w.erase((int) pos, w.length() - (int) pos);
 
 	// Escape HTML characters.
 	char *newline = purple_strdup_withhtml_wrapped(msg);
@@ -948,11 +1018,15 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 // 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
 
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
+		std::string w = purple_normalize_wrapped(account, who);
+		size_t pos = w.find("/");
+		if (pos != std::string::npos)
+			w.erase((int) pos, w.length() - (int) pos);
 		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
 	}
 	else {
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << w);
-		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, w, xhtml_, timestamp);
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
+		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, who, xhtml_, timestamp);
 	}
 }
 
@@ -1099,7 +1173,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			else if (label=="Nickname" || label == "Nick") {
 				nickname = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label=="Full Name") {
+			else if (label=="Full Name" || label == "Display name") {
 				fullName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else {
@@ -1655,6 +1729,14 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			exit(errno);
 		}
 		std::string d = std::string(buffer, n);
+
+		if (firstPing) {
+			firstPing = false;
+			NetworkPlugin::PluginConfig cfg;
+			cfg.setSupportMUC(true);
+			np->sendConfig(cfg);
+		}
+
 		np->handleDataRead(d);
 	}
 	else {

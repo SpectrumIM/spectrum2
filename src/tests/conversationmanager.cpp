@@ -35,6 +35,8 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleParticipantChangedTwoResources);
 	CPPUNIT_TEST(handlePMFromXMPP);
 	CPPUNIT_TEST(handleGroupchatRemoved);
+	CPPUNIT_TEST(handleNicknameConflict);
+	CPPUNIT_TEST(handleNotAuthorized);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -115,7 +117,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 
 		// this user presence - status code 110
-		conv->handleParticipantChanged("nickname", 1, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message");
 		loop->processEvents();
 		
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -343,16 +345,16 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
+
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[2])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
-
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[3])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getBody());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getFrom().toString());
 
 	}
 
@@ -408,16 +410,16 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
+
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[2])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
-
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[3])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getBody());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getFrom().toString());
 
 	}
 
@@ -472,7 +474,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -487,7 +489,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		received.clear();
 
 		// this user presence - status code 110
-		conv->handleParticipantChanged("nickname", 1, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message");
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -503,7 +505,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		received.clear();
 
 		// renamed - status code 303
-		conv->handleParticipantChanged("anotheruser", 1, Swift::StatusShow::Away, "my status message", "hanzz");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message", "hanzz");
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -530,7 +532,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->addJID("user@localhost/resource2");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received2.size());
@@ -551,7 +553,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->setNickname("nickname");
 		conv->setJID("user@localhost/resource");
 
-		conv->handleParticipantChanged("anotheruser", 0, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
 		loop->processEvents();
 
 		received.clear();
@@ -591,6 +593,44 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/nickname"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
 		CPPUNIT_ASSERT_EQUAL(332, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[0].code);
+	}
+
+	void handleNicknameConflict() {
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+
+		// normal presence
+		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_CONFLICT, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Error, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::ErrorPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::ErrorPayload::Conflict, getStanza(received[0])->getPayload<Swift::ErrorPayload>()->getCondition());
+	}
+
+	void handleNotAuthorized() {
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+
+		// normal presence
+		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_NOT_AUTHORIZED, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Error, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::ErrorPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::ErrorPayload::NotAuthorized, getStanza(received[0])->getPayload<Swift::ErrorPayload>()->getCondition());
 	}
 
 };

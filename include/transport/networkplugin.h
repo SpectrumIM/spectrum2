@@ -39,16 +39,20 @@ class NetworkPlugin {
 
 		class PluginConfig {
 			public:
-				PluginConfig() : m_needPassword(true), m_needRegistration(false) {}
+				PluginConfig() : m_needPassword(true), m_needRegistration(false), m_supportMUC(false), m_rawXML(false) {}
 				virtual ~PluginConfig() {}
 
 				void setNeedRegistration(bool needRegistration = false) { m_needRegistration = needRegistration; }
 				void setNeedPassword(bool needPassword = true) { m_needPassword = needPassword; }
+				void setSupportMUC(bool supportMUC = true) { m_supportMUC = supportMUC; }
 				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
+				void setRawXML(bool rawXML = false) { m_rawXML = rawXML; }
 
 			private:
 				bool m_needPassword;
 				bool m_needRegistration;
+				bool m_supportMUC;
+				bool m_rawXML;
 				std::vector<std::string> m_extraFields;
 
 				friend class NetworkPlugin;
@@ -64,6 +68,8 @@ class NetworkPlugin {
 		virtual ~NetworkPlugin();
 
 		void sendConfig(const PluginConfig &cfg);
+
+		void sendRawXML(std::string &xml);
 
 		/// Call this function when legacy network buddy changed.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
@@ -111,7 +117,7 @@ class NetworkPlugin {
 		/// \param message Plain text message.
 		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
 		/// \param xhtml XHTML message.
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false);
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false, bool pm = false);
 
 		void handleMessageAck(const std::string &user, const std::string &legacyName, const std::string &id);
 
@@ -242,6 +248,8 @@ class NetworkPlugin {
 		virtual void handleFTFinishRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
 		virtual void handleFTPauseRequest(unsigned long ftID) {}
 		virtual void handleFTContinueRequest(unsigned long ftID) {}
+
+		virtual void handleRawXML(const std::string &xml) {}
 
 		virtual void handleMemoryUsage(double &res, double &shared) {res = 0; shared = 0;}
 

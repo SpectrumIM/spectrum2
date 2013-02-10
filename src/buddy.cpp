@@ -26,6 +26,8 @@
 #include "transport/usermanager.h"
 #include "transport/discoitemsresponder.h"
 
+#include "Swiften/Elements/VCardUpdate.h"
+
 namespace Transport {
 
 Buddy::Buddy(RosterManager *rosterManager, long id, BuddyFlag flags) : m_id(id), m_flags(flags), m_rosterManager(rosterManager),
@@ -101,15 +103,19 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 	}
 
 	Swift::Presence::ref presence = Swift::Presence::create();
- 	presence->setFrom(m_jid);
 	presence->setTo(m_rosterManager->getUser()->getJID().toBare());
 	presence->setType(Swift::Presence::Available);
 
 	if (!statusMessage.empty())
 		presence->setStatus(statusMessage);
 
-	if (s.getType() == Swift::StatusShow::None)
+	if (s.getType() == Swift::StatusShow::None) {
 		presence->setType(Swift::Presence::Unavailable);
+		presence->setFrom(Swift::JID(m_jid.getNode(), m_jid.getDomain()));
+	}
+	else {
+		presence->setFrom(m_jid);
+	}
 	presence->setShow(s.getType());
 
 	if (presence->getType() != Swift::Presence::Unavailable) {

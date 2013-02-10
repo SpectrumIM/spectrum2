@@ -53,6 +53,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST(handleConvMessageAckPayload);
+	CPPUNIT_TEST(handleRawXML);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST_SUITE_END();
@@ -194,6 +195,17 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 			serv->handleBuddyChangedPayload(message);
 			CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		}
+
+		void handleRawXML() {
+			User *user = userManager->getUser("user@localhost");
+
+			std::string xml = "<presence from='buddy1@domain.tld' to='user@localhost'/>";
+
+			serv->handleRawXML(xml);
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
 		}
 
 		void handleMessageHeadline() {

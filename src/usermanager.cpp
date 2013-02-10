@@ -29,11 +29,14 @@
 #include "transport/discoitemsresponder.h"
 #include "storageresponder.h"
 
-#include "Swiften/Swiften.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
-#ifndef __FreeBSD__
+#include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/ChatState.h"
+#ifndef __FreeBSD__ 
+#ifndef __MACH__
 #include "malloc.h"
+#endif
 #endif
 // #include "valgrind/memcheck.h"
 
@@ -129,7 +132,9 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 	delete user;
 #ifndef WIN32
 #ifndef __FreeBSD__
+#ifndef __MACH__
 	malloc_trim(0);
+#endif
 #endif
 #endif
 // 	VALGRIND_DO_LEAK_CHECK;
@@ -229,7 +234,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				res.password = "";
 				res.uin = presence->getFrom().getNode();
 				res.jid = userkey;
-				if (res.uin.find_last_of("%") != std::string::npos) { // OK
+				while (res.uin.find_last_of("%") != std::string::npos) { // OK
 					res.uin.replace(res.uin.find_last_of("%"), 1, "@"); // OK
 				}
 				if (m_storageBackend) {
@@ -247,8 +252,8 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		// We allow auto_register feature in gateway-mode. This allows IRC user to register
 		// the transport just by joining the room.
 		if (!m_component->inServerMode()) {
-			if (!registered && (CONFIG_BOOL(m_component->getConfig(), "registration.auto_register") ||
-				!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true))) {
+			if (!registered && (CONFIG_BOOL(m_component->getConfig(), "registration.auto_register")
+				/*!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)*/)) {
 				res.password = "";
 				res.jid = userkey;
 
@@ -399,6 +404,7 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 			break;
 		case Swift::Presence::Available:
 		case Swift::Presence::Unavailable:
+			handleMUCPresence(presence);
 			break;
 		case Swift::Presence::Probe:
 			handleProbePresence(presence);
@@ -409,6 +415,24 @@ void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
 		default:
 			break;
 	};
+}
+
+void UserManager::handleMUCPresence(Swift::Presence::ref presence) {
+	// Don't let RosterManager to handle presences for us
+	if (presence->getTo().getNode().empty()) {
+		return;
+	}
+
+	if (presence->getType() == Swift::Presence::Available) {
+		handlePresence(presence);
+	}
+	else if (presence->getType() == Swift::Presence::Unavailable) {
+		std::string userkey = presence->getFrom().toBare().toString();
+		User *user = getUser(userkey);
+		if (user) {
+			user->handlePresence(presence);
+		}
+	}
 }
 
 void UserManager::handleProbePresence(Swift::Presence::ref presence) {
