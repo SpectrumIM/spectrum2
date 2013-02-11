@@ -203,8 +203,22 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	else {
 		std::string nickname = TO_UTF8(m->sender().name());
 		correctNickname(nickname);
-		LOG4CXX_INFO(logger, nickname + suffix);
-		np->handleMessage(user, nickname + suffix, TO_UTF8(msg));
+		if (m_pms.find(nickname) != m_pms.end()) {
+			if (hasIRCBuddy(m_pms[nickname], nickname)) {
+				LOG4CXX_INFO(logger, nickname);
+				np->handleMessage(user, m_pms[nickname] + suffix, TO_UTF8(msg), nickname, "", "", false, true);
+				return;
+			}
+			else {
+				nickname = nickname + suffix;
+			}
+		}
+		else {
+			nickname = nickname + suffix;
+		}
+
+		LOG4CXX_INFO(logger, nickname);
+		np->handleMessage(user, nickname, TO_UTF8(msg));
 	}
 }
 

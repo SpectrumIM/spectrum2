@@ -81,6 +81,10 @@ public:
 		removeIRCBuddies(channel);
 	}
 
+	void addPM(const std::string &name, const std::string &room) {
+		m_pms[name] = room;
+	}
+
 	void setIdentify(const std::string &identify) {
 		m_identify = identify;
 	}
@@ -133,6 +137,7 @@ protected:
 	bool m_connected;
 	std::list<std::string> m_rooms;
 	std::list<std::string> m_names;
+	std::map<std::string, std::string> m_pms;
 	IRCBuddyMap m_buddies;
 	QTimer *m_awayTimer;
 };

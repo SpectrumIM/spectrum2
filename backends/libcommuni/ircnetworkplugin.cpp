@@ -153,6 +153,9 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	}
 
 	std::string target = getTargetName(legacyName);
+	if (legacyName.find("/") != std::string::npos) {
+		m_sessions[session]->addPM(target, legacyName.substr(0, legacyName.find("@")));
+	}
 
 	LOG4CXX_INFO(logger, user << ": Session name: " << session << ", message to " << target);
 
