@@ -53,12 +53,13 @@ void IRCNetworkPlugin::readData() {
 		m_firstPing = false;
 		// Users can join the network without registering if we allow
 		// one user to connect multiple IRC networks.
+		NetworkPlugin::PluginConfig cfg;
 		if (m_servers.empty()) {
-			NetworkPlugin::PluginConfig cfg;
 			cfg.setNeedRegistration(false);
-			cfg.setSupportMUC(true);
-			sendConfig(cfg);
 		}
+		cfg.setSupportMUC(true);
+		cfg.disableJIDEscaping();
+		sendConfig(cfg);
 	}
 
 	std::string d = std::string(m_socket->readAll().data(), availableBytes);

@@ -39,7 +39,8 @@ class NetworkPlugin {
 
 		class PluginConfig {
 			public:
-				PluginConfig() : m_needPassword(true), m_needRegistration(false), m_supportMUC(false), m_rawXML(false) {}
+				PluginConfig() : m_needPassword(true), m_needRegistration(false), m_supportMUC(false), m_rawXML(false),
+				m_disableJIDEscaping(false) {}
 				virtual ~PluginConfig() {}
 
 				void setNeedRegistration(bool needRegistration = false) { m_needRegistration = needRegistration; }
@@ -47,12 +48,14 @@ class NetworkPlugin {
 				void setSupportMUC(bool supportMUC = true) { m_supportMUC = supportMUC; }
 				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
 				void setRawXML(bool rawXML = false) { m_rawXML = rawXML; }
+				void disableJIDEscaping() { m_disableJIDEscaping = true; }
 
 			private:
 				bool m_needPassword;
 				bool m_needRegistration;
 				bool m_supportMUC;
 				bool m_rawXML;
+				bool m_disableJIDEscaping;
 				std::vector<std::string> m_extraFields;
 
 				friend class NetworkPlugin;
