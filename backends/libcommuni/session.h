@@ -69,8 +69,6 @@ public:
 
 	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	virtual ~MyIrcSession();
-	std::string suffix;
-	int rooms;
 
 	void addAutoJoinChannel(const std::string &channel, const std::string &password) {
 		m_autoJoin[channel] = boost::make_shared<AutoJoinChannel>(channel, password, 12 + m_autoJoin.size());
@@ -81,6 +79,10 @@ public:
 		removeIRCBuddies(channel);
 	}
 
+	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
+	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
+	// just to "hanzz". Therefore we have to somewhere store, that message from "hanzz" should
+	// be mapped to #room@irc.freenode.org/hanzz.
 	void addPM(const std::string &name, const std::string &room) {
 		m_pms[name] = room;
 	}
@@ -119,6 +121,9 @@ public:
 	void on_topicChanged(IrcMessage *message);
 	void on_messageReceived(IrcMessage *message);
 	void on_numericMessageReceived(IrcMessage *message);
+
+	std::string suffix;
+	int rooms;
 
 protected Q_SLOTS:
 	void on_connected();

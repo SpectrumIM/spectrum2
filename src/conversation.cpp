@@ -257,7 +257,14 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			delete p;
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth)));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth, statusMessage)));
+			return presence;
+		}
+		else if (flag & PARTICIPANT_FLAG_ROOM_NOT_FOUD) {
+			delete p;
+			presence->setType(Swift::Presence::Error);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::ItemNotFound, Swift::ErrorPayload::Cancel, statusMessage)));
 			return presence;
 		}
 		else {

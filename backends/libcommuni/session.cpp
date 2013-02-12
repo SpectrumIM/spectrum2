@@ -70,7 +70,31 @@ void MyIrcSession::on_connected() {
 }
 
 void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
-	on_disconnected();
+	std::string reason;
+	switch(error) {
+		case QAbstractSocket::ConnectionRefusedError: reason = "The connection was refused by the peer (or timed out)."; break;
+		case QAbstractSocket::RemoteHostClosedError: reason = "The remote host closed the connection."; break;
+		case QAbstractSocket::HostNotFoundError: reason = "The host address was not found."; break;
+		case QAbstractSocket::SocketAccessError: reason = "The socket operation failed because the application lacked the required privileges."; break;
+		case QAbstractSocket::SocketResourceError: reason = "The local system ran out of resources."; break;
+		case QAbstractSocket::SocketTimeoutError: reason = "The socket operation timed out."; break;
+		case QAbstractSocket::DatagramTooLargeError: reason = "The datagram was larger than the operating system's limit."; break;
+		case QAbstractSocket::NetworkError: reason = "An error occurred with the network."; break;
+		case QAbstractSocket::SslHandshakeFailedError: reason = "The SSL/TLS handshake failed, so the connection was closed"; break;
+		case QAbstractSocket::UnknownSocketError: reason = "An unidentified error occurred."; break;
+		default: reason= "Unknown error."; break;
+	};
+
+	if (!suffix.empty()) {
+		for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+			np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_ROOM_NOT_FOUND, pbnetwork::STATUS_NONE, reason);
+		}
+	}
+	else {
+		np->handleDisconnected(user, 0, reason);
+		np->tryNextServer();
+	}
+	m_connected = false;
 }
 
 void MyIrcSession::on_disconnected() {

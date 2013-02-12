@@ -95,7 +95,7 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 
 void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 	if (!m_servers.empty()) {
-		// legacy name is users nickname
+		// legacy name is user's nickname
 		if (m_sessions[user] != NULL) {
 			LOG4CXX_WARN(logger, user << ": Already logged in.");
 			return;
@@ -154,6 +154,10 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	}
 
 	std::string target = getTargetName(legacyName);
+	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
+	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
+	// just to "hanzz". Therefore we have to somewhere store, that message from "hanzz" should
+	// be mapped to #room@irc.freenode.org/hanzz.
 	if (legacyName.find("/") != std::string::npos) {
 		m_sessions[session]->addPM(target, legacyName.substr(0, legacyName.find("@")));
 	}
