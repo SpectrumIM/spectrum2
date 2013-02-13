@@ -120,9 +120,8 @@ bool MyIrcSession::correctNickname(std::string &nickname) {
 
 void MyIrcSession::on_joined(IrcMessage *message) {
 	IrcJoinMessage *m = (IrcJoinMessage *) message;
-	bool op = 0;
 	std::string nickname = TO_UTF8(m->sender().name());
-	op = correctNickname(nickname);
+	bool op = correctNickname(nickname);
 	getIRCBuddy(TO_UTF8(m->channel().toLower()), nickname).setOp(op);
 	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel().toLower()) + suffix, op, pbnetwork::STATUS_ONLINE);
 	LOG4CXX_INFO(logger, user << ": " << nickname << " joined " << TO_UTF8(m->channel().toLower()) + suffix);
@@ -131,9 +130,8 @@ void MyIrcSession::on_joined(IrcMessage *message) {
 
 void MyIrcSession::on_parted(IrcMessage *message) {
 	IrcPartMessage *m = (IrcPartMessage *) message;
-	bool op = 0;
 	std::string nickname = TO_UTF8(m->sender().name());
-	op = correctNickname(nickname);
+	bool op = correctNickname(nickname);
 	removeIRCBuddy(TO_UTF8(m->channel().toLower()), nickname);
 	LOG4CXX_INFO(logger, user << ": " << nickname << " parted " << TO_UTF8(m->channel().toLower()) + suffix);
 	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel().toLower()) + suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
@@ -141,13 +139,13 @@ void MyIrcSession::on_parted(IrcMessage *message) {
 
 void MyIrcSession::on_quit(IrcMessage *message) {
 	IrcQuitMessage *m = (IrcQuitMessage *) message;
+	std::string nickname = TO_UTF8(m->sender().name());
+	bool op = correctNickname(nickname);
+
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		bool op = 0;
-		std::string nickname = TO_UTF8(m->sender().name());
 		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
 			continue;
 		}
-		op = correctNickname(nickname);
 		removeIRCBuddy(it->second->getChannel(), nickname);
 		LOG4CXX_INFO(logger, user << ": " << nickname << " quit " << it->second->getChannel() + suffix);
 		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
@@ -156,9 +154,10 @@ void MyIrcSession::on_quit(IrcMessage *message) {
 
 void MyIrcSession::on_nickChanged(IrcMessage *message) {
 	IrcNickMessage *m = (IrcNickMessage *) message;
+	std::string nickname = TO_UTF8(m->sender().name());
+	correctNickname(nickname);
 
 	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		std::string nickname = TO_UTF8(m->sender().name());
 		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
 			continue;
 		}
@@ -176,20 +175,23 @@ void MyIrcSession::on_modeChanged(IrcMessage *message) {
 	std::string mode = TO_UTF8(m->mode());
 	if (nickname.empty())
 		return;
-	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode);
-	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
-			continue;
-		}
-		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
-		if (mode == "+o") {
-			buddy.setOp(true);
-		}
-		else {
-			buddy.setOp(false);
-		}
-		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "");
+
+	correctNickname(nickname);
+
+	if (!hasIRCBuddy(TO_UTF8(m->target().toLower()), nickname)) {
+		return;
 	}
+	IRCBuddy &buddy = getIRCBuddy(TO_UTF8(m->target().toLower()), nickname);
+	if (mode == "+o") {
+		buddy.setOp(true);
+	}
+	else {
+		buddy.setOp(false);
+	}
+	
+	np->handleParticipantChanged(user, nickname, TO_UTF8(m->target().toLower()) + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "");
+
+	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode << " in " << TO_UTF8(m->target().toLower()));
 }
 
 void MyIrcSession::on_topicChanged(IrcMessage *message) {
@@ -351,8 +353,6 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	if (m->code() >= 400 && m->code() < 500) {
 			LOG4CXX_INFO(logger, user << ": Error message received: " << message->toData().data());
 	}
-
-	//qDebug() << "numeric message received:" << receiver() << origin << code << params;
 }
 
 void MyIrcSession::awayTimeout() {
