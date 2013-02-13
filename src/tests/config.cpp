@@ -26,6 +26,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST_SUITE(ConfigTest);
 	CPPUNIT_TEST(setStringTwice);
 	CPPUNIT_TEST(updateBackendConfig);
+	CPPUNIT_TEST(updateBackendConfigJIDEscaping);
 	CPPUNIT_TEST(unregisteredList);
 	CPPUNIT_TEST(unregisteredString);
 	CPPUNIT_TEST(unregisteredListAsString);
@@ -55,6 +56,16 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		cfg.updateBackendConfig("[registration]\nneedPassword=0\n");
 		CPPUNIT_ASSERT(cfg.hasKey("registration.needPassword"));
 		CPPUNIT_ASSERT_EQUAL(false, CONFIG_BOOL(&cfg, "registration.needPassword"));
+	}
+
+	void updateBackendConfigJIDEscaping() {
+		Config cfg;
+		std::istringstream ifs("service.jids = irc.freenode.org\n");
+		cfg.load(ifs);
+		CPPUNIT_ASSERT_EQUAL(true, CONFIG_BOOL(&cfg, "service.jid_escaping"));
+
+		cfg.updateBackendConfig("[features]\ndisable_jid_escaping=1\n");
+		CPPUNIT_ASSERT_EQUAL(false, CONFIG_BOOL(&cfg, "service.jid_escaping"));
 	}
 
 	void unregisteredList() {

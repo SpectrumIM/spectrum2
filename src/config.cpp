@@ -315,6 +315,8 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
 		("features.receipts", value<bool>()->default_value(false), "")
 		("features.muc", value<bool>()->default_value(false), "")
+		("features.rawxml", value<bool>()->default_value(false), "")
+		("features.disable_jid_escaping", value<bool>()->default_value(false), "")
 	;
 
 	std::stringstream ifs(backendConfig);
@@ -324,6 +326,12 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 	notify(m_backendConfig);
 
 	onBackendConfigUpdated();
+
+	if (CONFIG_BOOL_DEFAULTED(this, "features.disable_jid_escaping", false)) {
+		Variables::iterator it(m_variables.find("service.jid_escaping"));
+		boost::program_options::variable_value& vx(it->second);
+		vx.value() = false;
+	}
 }
 
 Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {

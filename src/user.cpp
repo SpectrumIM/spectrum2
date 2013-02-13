@@ -243,6 +243,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 			if (getUserSetting("stay_connected") != "1") {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
+				onRawPresenceReceived(presence);
 				onRoomLeft(room);
 
 				BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
@@ -284,6 +285,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 
 				if (forceJoin) {
+					onRawPresenceReceived(presence);
 					onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 				}
 				return;
@@ -311,6 +313,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			conv->setNickname(presence->getTo().getResource());
 			conv->addJID(presence->getFrom());
 
+			onRawPresenceReceived(presence);
 			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 		}
 		return;

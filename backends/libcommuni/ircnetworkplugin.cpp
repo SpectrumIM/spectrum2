@@ -1,3 +1,23 @@
+/**
+ * XMPP - libpurple transport
+ *
+ * Copyright (C) 2013, Jan Kaluza <hanzz.k@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
+ */
+
 #include "ircnetworkplugin.h"
 #include <IrcCommand>
 #include <IrcMessage>
@@ -53,12 +73,13 @@ void IRCNetworkPlugin::readData() {
 		m_firstPing = false;
 		// Users can join the network without registering if we allow
 		// one user to connect multiple IRC networks.
+		NetworkPlugin::PluginConfig cfg;
 		if (m_servers.empty()) {
-			NetworkPlugin::PluginConfig cfg;
 			cfg.setNeedRegistration(false);
-			cfg.setSupportMUC(true);
-			sendConfig(cfg);
 		}
+		cfg.setSupportMUC(true);
+		cfg.disableJIDEscaping();
+		sendConfig(cfg);
 	}
 
 	std::string d = std::string(m_socket->readAll().data(), availableBytes);
@@ -94,7 +115,7 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 
 void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 	if (!m_servers.empty()) {
-		// legacy name is users nickname
+		// legacy name is user's nickname
 		if (m_sessions[user] != NULL) {
 			LOG4CXX_WARN(logger, user << ": Already logged in.");
 			return;
@@ -153,6 +174,13 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	}
 
 	std::string target = getTargetName(legacyName);
+	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
+	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
+	// just to "hanzz". Therefore we have to somewhere store, that message from "hanzz" should
+	// be mapped to #room@irc.freenode.org/hanzz.
+	if (legacyName.find("/") != std::string::npos) {
+		m_sessions[session]->addPM(target, legacyName.substr(0, legacyName.find("@")));
+	}
 
 	LOG4CXX_INFO(logger, user << ": Session name: " << session << ", message to " << target);
 

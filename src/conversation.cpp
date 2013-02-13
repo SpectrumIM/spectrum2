@@ -39,6 +39,10 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 	m_muc = isMUC;
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
 	m_sentInitialPresence = false;
+
+	if (CONFIG_BOOL_DEFAULTED(conversationManager->getComponent()->getConfig(), "features.rawxml", false)) {
+		m_sentInitialPresence = true;
+	}
 }
 
 Conversation::~Conversation() {
@@ -80,6 +84,47 @@ void Conversation::destroyRoom() {
 void Conversation::setRoom(const std::string &room) {
 	m_room = room;
 	m_legacyName = m_room + "/" + m_legacyName;
+}
+
+void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) {
+	if (message->getType() != Swift::Message::Groupchat) {
+		if (m_conversationManager->getComponent()->inServerMode() && m_conversationManager->getUser()->shouldCacheMessages()) {
+			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
+			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+			delay->setStamp(timestamp);
+			message->addPayload(delay);
+			m_cachedMessages.push_back(message);
+			if (m_cachedMessages.size() > 100) {
+				m_cachedMessages.pop_front();
+			}
+		}
+		else {
+			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+		}
+	}
+	else {
+		if (m_jids.empty()) {
+			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
+			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+			delay->setStamp(timestamp);
+			message->addPayload(delay);
+			m_cachedMessages.push_back(message);
+			if (m_cachedMessages.size() > 100) {
+				m_cachedMessages.pop_front();
+			}
+		}
+		else {
+			BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+				message->setTo(jid);
+				// Subject has to be sent after our own presence (the one with code 110)
+				if (!message->getSubject().empty() && m_sentInitialPresence == false) {
+					m_subject = message;
+					return;
+				}
+				m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+			}
+		}
+	}
 }
 
 void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {
@@ -137,20 +182,6 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 			}
 		}
-
-		if (m_conversationManager->getComponent()->inServerMode() && m_conversationManager->getUser()->shouldCacheMessages()) {
-			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
-			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
-			delay->setStamp(timestamp);
-			message->addPayload(delay);
-			m_cachedMessages.push_back(message);
-			if (m_cachedMessages.size() > 100) {
-				m_cachedMessages.pop_front();
-			}
-		}
-		else {
-			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
-		}
 	}
 	else {
 		std::string legacyName = m_legacyName;
@@ -164,29 +195,9 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		}
 
 		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
-
-		if (m_jids.empty()) {
-			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
-			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
-			delay->setStamp(timestamp);
-			message->addPayload(delay);
-			m_cachedMessages.push_back(message);
-			if (m_cachedMessages.size() > 100) {
-				m_cachedMessages.pop_front();
-			}
-		}
-		else {
-			BOOST_FOREACH(const Swift::JID &jid, m_jids) {
-				message->setTo(jid);
-				// Subject has to be sent after our own presence (the one with code 110)
-				if (!message->getSubject().empty() && m_sentInitialPresence == false) {
-					m_subject = message;
-					return;
-				}
-				m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
-			}
-		}
 	}
+
+	handleRawMessage(message);
 }
 
 void Conversation::sendParticipants(const Swift::JID &to) {
@@ -246,7 +257,14 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			delete p;
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth)));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth, statusMessage)));
+			return presence;
+		}
+		else if (flag & PARTICIPANT_FLAG_ROOM_NOT_FOUD) {
+			delete p;
+			presence->setType(Swift::Presence::Error);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::ItemNotFound, Swift::ErrorPayload::Cancel, statusMessage)));
 			return presence;
 		}
 		else {

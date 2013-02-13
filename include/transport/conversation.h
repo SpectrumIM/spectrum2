@@ -40,7 +40,8 @@ class Conversation {
 			PARTICIPANT_FLAG_BANNED = 4,
 			PARTICIPANT_FLAG_NOT_AUTHORIZED = 8,
 			PARTICIPANT_FLAG_ME = 16,
-			PARTICIPANT_FLAG_KICKED = 32
+			PARTICIPANT_FLAG_KICKED = 32,
+			PARTICIPANT_FLAG_ROOM_NOT_FOUD = 64
 		} ParticipantFlag;
 
 		typedef struct _Participant {
@@ -69,6 +70,8 @@ class Conversation {
 		/// \param message Message received from legacy network.
 		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
 		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
+
+		void handleRawMessage(boost::shared_ptr<Swift::Message> &message);
 
 		/// Handles participant change in MUC.
 

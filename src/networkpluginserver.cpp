@@ -269,10 +269,15 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_adminInterface = NULL;
 	m_startingBackend = false;
 	m_lastLogin = 0;
+	m_xmppParser = new Swift::XMPPParser(this, &m_collection, component->getNetworkFactories()->getXMLParserFactory());
+	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
+	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType);
 	m_discoItemsResponder = discoItemsResponder;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
+
+	m_component->onRawIQReceived.connect(boost::bind(&NetworkPluginServer::handleRawIQReceived, this, _1));
 
 	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
@@ -987,6 +992,145 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 	}
 }
 
+void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> element) {
+	boost::shared_ptr<Swift::Stanza> stanza = boost::dynamic_pointer_cast<Swift::Stanza>(element);
+	if (!stanza) {
+		return;
+	}
+
+	User *user = m_userManager->getUser(stanza->getTo().toBare());
+	if (!user)
+		return;
+
+	Swift::JID originalJID = stanza->getFrom();
+	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(originalJID.toBare());
+
+	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(stanza->getFrom().toBare());
+	if (buddy) {
+		const Swift::JID &jid = buddy->getJID();
+		if (stanza->getFrom().getResource().empty()) {
+			stanza->setFrom(Swift::JID(jid.getNode(), jid.getDomain()));
+		}
+		else {
+			stanza->setFrom(Swift::JID(jid.getNode(), jid.getDomain(), stanza->getFrom().getResource()));
+		}
+	}
+	else {
+		std::string name = stanza->getFrom().toBare();
+		if (conv && conv->isMUC()) {
+			if (name.find_last_of("@") != std::string::npos) {
+				name.replace(name.find_last_of("@"), 1, "%");
+			}
+		}
+		else {
+			if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+				name = Swift::JID::getEscapedNode(name);
+			}
+			else {
+				if (name.find_last_of("@") != std::string::npos) {
+					name.replace(name.find_last_of("@"), 1, "%");
+				}
+			}
+		}
+		if (stanza->getFrom().getResource().empty()) {
+			stanza->setFrom(Swift::JID(name, m_component->getJID().toString()));
+		}
+		else {
+			stanza->setFrom(Swift::JID(name, m_component->getJID().toString(), stanza->getFrom().getResource()));
+		}
+	}
+
+	boost::shared_ptr<Swift::Message> message = boost::dynamic_pointer_cast<Swift::Message>(stanza);
+	if (message) {
+		if (conv) {
+			conv->handleRawMessage(message);
+			return;
+		}
+
+		m_component->getStanzaChannel()->sendMessage(message);
+		return;
+	}
+
+	boost::shared_ptr<Swift::Presence> presence = boost::dynamic_pointer_cast<Swift::Presence>(stanza);
+	if (presence) {
+		m_component->getStanzaChannel()->sendPresence(presence);
+		if (buddy) {
+			buddy->m_statusMessage = presence->getStatus();
+			buddy->m_status = Swift::StatusShow(presence->getShow());
+		}
+
+		return;
+	}
+
+	boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
+	if (iq) {
+		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
+			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
+			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
+		}
+		else {
+			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
+			iq->setTo(highest->getFrom());
+		}
+		m_component->getIQRouter()->sendIQ(iq);
+		return;
+	}
+}
+
+void NetworkPluginServer::handleRawXML(const std::string &xml) {
+	m_xmppParser->parse(xml);
+}
+
+void NetworkPluginServer::handleRawPresenceReceived(boost::shared_ptr<Swift::Presence> presence) {
+	User *user = m_userManager->getUser(presence->getFrom().toBare());
+	if (!user)
+		return;
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+
+	Swift::JID legacyname = Swift::JID(Buddy::JIDToLegacyName(presence->getTo()));
+	if (!presence->getTo().getResource().empty()) {
+		presence->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), presence->getTo().getResource()));
+	}
+	else {
+		presence->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
+	}
+
+	std::string xml = safeByteArrayToString(m_serializer->serializeElement(presence));
+	WRAP(xml, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML);
+	send(c->connection, xml);
+}
+
+void NetworkPluginServer::handleRawIQReceived(boost::shared_ptr<Swift::IQ> iq) {
+	User *user = m_userManager->getUser(iq->getFrom().toBare());
+	if (!user)
+		return;
+
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+
+	if (iq->getType() == Swift::IQ::Get) {
+		m_id2resource[iq->getFrom().toBare().toString() + iq->getID()] = iq->getFrom().getResource();
+	}
+
+	Swift::JID legacyname = Swift::JID(Buddy::JIDToLegacyName(iq->getTo()));
+	if (!iq->getTo().getResource().empty()) {
+		iq->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), iq->getTo().getResource()));
+	}
+	else {
+		iq->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
+	}
+
+	std::string xml = safeByteArrayToString(m_serializer->serializeElement(iq));
+	WRAP(xml, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML);
+	send(c->connection, xml);
+}
+
 void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
@@ -1097,6 +1241,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, boost::shared_ptr<Swift::Sa
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE_ACK:
 				handleConvMessageAckPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_RAW_XML:
+				handleRawXML(wrapper.payload());
 				break;
 			default:
 				return;
@@ -1267,6 +1414,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	// Don't forget to disconnect these in handleUserDestroyed!!!
 	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
 	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
+	user->onRawPresenceReceived.connect(boost::bind(&NetworkPluginServer::handleRawPresenceReceived, this, _1));
 	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
 
@@ -1374,6 +1522,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 
 	user->onReadyToConnect.disconnect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
 	user->onPresenceChanged.disconnect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
+	user->onRawPresenceReceived.disconnect(boost::bind(&NetworkPluginServer::handleRawPresenceReceived, this, _1));
 	user->onRoomJoined.disconnect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
 	user->onRoomLeft.disconnect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
 
@@ -1406,6 +1555,25 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 
 void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &msg) {
 	conv->getConversationManager()->getUser()->updateLastActivity();
+
+	if (CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
+		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
+		if (!c) {
+			return;
+		}
+		Swift::JID legacyname = Swift::JID(Buddy::JIDToLegacyName(msg->getTo()));
+		if (!msg->getTo().getResource().empty()) {
+			msg->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), msg->getTo().getResource()));
+		}
+		else {
+			msg->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
+		}
+		std::string xml = safeByteArrayToString(m_serializer->serializeElement(msg));
+		WRAP(xml, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML);
+		send(c->connection, xml);
+		return;
+	}
+
 	boost::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
 	if (statePayload) {
 		pbnetwork::WrapperMessage_Type type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED;
