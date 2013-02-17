@@ -147,9 +147,9 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 				dirs.push_back(dir);
 			}
 		}
+#ifndef WIN32
 		mode_t old_cmask;
 		// create directories
-#ifndef WIN32
 		old_cmask = umask(0007);
 #endif
 

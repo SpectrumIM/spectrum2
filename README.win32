@@ -4,10 +4,11 @@ Prerequisites
 1. Microsoft Visual C++ 2010 Express or higher edition (http://www.microsoft.com/visualstudio/en-us/products/2010-editions/visual-cpp-express)
 2. Git for Windows (http://code.google.com/p/msysgit/downloads/list)
 3. CMake 2.8 or newer (http://www.cmake.org/cmake/resources/software.html)
+4. Python 2.x for Swiften build scripts (scons) (http://www.python.org)
 
 Libraries
 =========
-3. Swiften library and Python for run scons (http://swift.im/git/swift)
+3. Swiften library (http://swift.im/git/swift)
 4. Boost 1.48 or newer (http://sourceforge.net/projects/boost/files/boost/1.49.0/)
 5. Google ProtoBuf library (http://code.google.com/p/protobuf/downloads/list)
 
@@ -37,10 +38,6 @@ launch "Visual Studio 2010 command prompt" or
 	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 force_configure=1
 	scons.bat debug=no SWIFTEN_INSTALLDIR=C:\env-msvc-x64 C:\env-msvc-x64
 
-TODO: fix in upstream
-You may need manually copy compiled 3rdParty libs to C:\env-msvc-x64\lib\3rdParty\Expat, 
-C:\env-msvc-x64\lib\3rdParty\LibIDN, C:\env-msvc-x64\lib\3rdParty\Zlib
-
 3. unpack and compile protobuf as described in its documentation. 
 
 Run extract_includes.bat in vsprojects/ directory and move resulting vsprojects/include/google/ directory to our C:\env-msvc-x64\include
@@ -60,7 +57,5 @@ Download http://www.pidgin.im/download/source/ , extract it and copy libpurple d
 Compile it as:
 
 	set CMAKE_INCLUDE_PATH=C:\env-msvc-x64\include
-	cmake . -G "NMake Makefiles" -DBOOST_INCLUDEDIR=../include/boost-1_49 -DBOOST_LIBRARYDIR=../lib -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
+	cmake . -G "NMake Makefiles" -DBOOST_INCLUDEDIR=../include/boost-1_49 -DBOOST_LIBRARYDIR=../lib -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=C:\env-msvc-x64 -DGIT_EXECUTABLE="c:\Program Files (x86)\git\bin\git.exe"
 	nmake
-
-TODO: libpurple_backend compilation
