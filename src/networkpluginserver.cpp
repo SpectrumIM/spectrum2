@@ -52,7 +52,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/signal.hpp"
 
-#include "utf8.h"
+#include "transport/utf8.h"
 
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
@@ -246,8 +246,8 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	// Change groups if it's not empty. The same as above...
 	std::vector<std::string> groups;
 	for (int i = 0; i < payload.group_size(); i++) {
-		std::string group = payload.group(i);
-		utf8::replace_invalid(payload.group(i).begin(), payload.group(i).end(), group.begin(), '_');
+		std::string group;
+		utf8::replace_invalid(payload.group(i).begin(), payload.group(i).end(), std::back_inserter(group), '_');
 		groups.push_back(group);
 	}
 	if (!groups.empty()) {
@@ -490,16 +490,16 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-	std::string field = payload.fullname();
+	std::string field;
 
 	boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
 
-	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), field.begin(), '_');
+	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), std::back_inserter(field), '_');
 	vcard->setFullName(field);
 
-	field = payload.nickname();
+	field.clear();
 
-	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), field.begin(), '_');
+	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), std::back_inserter(field), '_');
 	vcard->setNickname(field);
 
 	vcard->setPhoto(Swift::createByteArray(payload.photo()));

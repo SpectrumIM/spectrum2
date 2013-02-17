@@ -23,6 +23,9 @@
 #include <iostream>
 #include <IrcCommand>
 #include <IrcMessage>
+#include <IrcUtil>
+
+#include "backports.h"
 
 #include "ircnetworkplugin.h"
 
@@ -228,13 +231,23 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	if (m->isAction()) {
 		msg = QString("/me ") + msg;
 	}
+	QString html = "";//msg;
+	CommuniBackport::toPlainText(msg);
+
+	// TODO: Communi produces invalid html now...
+// 	if (html == msg) {
+// 		html = "";
+// 	}
+// 	else {
+// 		html = IrcUtil::messageToHtml(html);
+// 	}
 
 	std::string target = TO_UTF8(m->target().toLower());
 	LOG4CXX_INFO(logger, user << ": Message from " << target);
 	if (target.find("#") == 0) {
 		std::string nickname = TO_UTF8(m->sender().name());
 		correctNickname(nickname);
-		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname);
+		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname, TO_UTF8(html));
 	}
 	else {
 		std::string nickname = TO_UTF8(m->sender().name());
@@ -242,7 +255,7 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		if (m_pms.find(nickname) != m_pms.end()) {
 			if (hasIRCBuddy(m_pms[nickname], nickname)) {
 				LOG4CXX_INFO(logger, nickname);
-				np->handleMessage(user, m_pms[nickname] + suffix, TO_UTF8(msg), nickname, "", "", false, true);
+				np->handleMessage(user, m_pms[nickname] + suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
 			else {
@@ -254,7 +267,7 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 		}
 
 		LOG4CXX_INFO(logger, nickname);
-		np->handleMessage(user, nickname, TO_UTF8(msg));
+		np->handleMessage(user, nickname, TO_UTF8(msg), "", TO_UTF8(html));
 	}
 }
 
