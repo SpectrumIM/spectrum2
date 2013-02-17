@@ -86,17 +86,21 @@ void Conversation::setRoom(const std::string &room) {
 	m_legacyName = m_room + "/" + m_legacyName;
 }
 
+void Conversation::cacheMessage(boost::shared_ptr<Swift::Message> &message) {
+	boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
+	boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+	delay->setStamp(timestamp);
+	message->addPayload(delay);
+	m_cachedMessages.push_back(message);
+	if (m_cachedMessages.size() > 100) {
+		m_cachedMessages.pop_front();
+	}
+}
+
 void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) {
 	if (message->getType() != Swift::Message::Groupchat) {
 		if (m_conversationManager->getComponent()->inServerMode() && m_conversationManager->getUser()->shouldCacheMessages()) {
-			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
-			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
-			delay->setStamp(timestamp);
-			message->addPayload(delay);
-			m_cachedMessages.push_back(message);
-			if (m_cachedMessages.size() > 100) {
-				m_cachedMessages.pop_front();
-			}
+			cacheMessage(message);
 		}
 		else {
 			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
@@ -104,14 +108,7 @@ void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) 
 	}
 	else {
 		if (m_jids.empty()) {
-			boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
-			boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
-			delay->setStamp(timestamp);
-			message->addPayload(delay);
-			m_cachedMessages.push_back(message);
-			if (m_cachedMessages.size() > 100) {
-				m_cachedMessages.pop_front();
-			}
+			cacheMessage(message);
 		}
 		else {
 			BOOST_FOREACH(const Swift::JID &jid, m_jids) {

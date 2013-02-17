@@ -153,6 +153,7 @@ class Conversation {
 
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");
+		void cacheMessage(boost::shared_ptr<Swift::Message> &message);
 
 	private:
 		ConversationManager *m_conversationManager;
