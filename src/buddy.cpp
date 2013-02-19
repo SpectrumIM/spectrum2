@@ -104,18 +104,15 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setTo(m_rosterManager->getUser()->getJID().toBare());
+	presence->setFrom(m_jid);
 	presence->setType(Swift::Presence::Available);
 
 	if (!statusMessage.empty())
 		presence->setStatus(statusMessage);
 
-	if (s.getType() == Swift::StatusShow::None) {
+	if (s.getType() == Swift::StatusShow::None)
 		presence->setType(Swift::Presence::Unavailable);
-		presence->setFrom(Swift::JID(m_jid.getNode(), m_jid.getDomain()));
-	}
-	else {
-		presence->setFrom(m_jid);
-	}
+
 	presence->setShow(s.getType());
 
 	if (presence->getType() != Swift::Presence::Unavailable) {
