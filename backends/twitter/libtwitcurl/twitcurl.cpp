@@ -41,6 +41,7 @@ m_eProtocolType( twitCurlTypes::eTwitCurlProtocolHttp )
         getLastCurlError( dummyStr );
     }
     curl_easy_setopt(m_curlHandle, CURLOPT_VERBOSE, 1);
+    curl_easy_setopt(m_curlHandle, CURLOPT_FOLLOWLOCATION, 1);
 	curl_easy_setopt(m_curlHandle, CURLOPT_DEBUGFUNCTION, myDebugCallback);
 }
 
