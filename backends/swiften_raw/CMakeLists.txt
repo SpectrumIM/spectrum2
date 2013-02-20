@@ -10,5 +10,5 @@ else()
 target_link_libraries(spectrum2_swiften_raw_backend transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 endif()
 
-INSTALL(TARGETS spectrum2_swiften_raw_backend RUNTIME DESTINATION bin)
+#INSTALL(TARGETS spectrum2_swiften_raw_backend RUNTIME DESTINATION bin)
 
