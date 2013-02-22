@@ -26,8 +26,10 @@
 #include <iostream>
 #include <map>
 
+class SkypePlugin;
+
 namespace SkypeDB {
 	bool getAvatar(const std::string &db, const std::string &name, std::string &avatar);
-
+	bool loadBuddies(SkypePlugin *np, const std::string &db);
 }
 

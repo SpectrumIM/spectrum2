@@ -39,10 +39,10 @@ class LocalBuddy : public Buddy {
 		std::string getName() { return m_name; }
 		bool setName(const std::string &name);
 
-		bool getStatus(Swift::StatusShow &status, std::string &statusMessage) {
-			status = m_status;
-			statusMessage = m_statusMessage;
-			return true;
+		bool getStatus(Swift::StatusShow &status, std::string &statusMessage);
+
+		bool isAvailable() {
+			return m_status.getType() != Swift::StatusShow::None;
 		}
 
 		void setStatus(const Swift::StatusShow &status, const std::string &statusMessage);

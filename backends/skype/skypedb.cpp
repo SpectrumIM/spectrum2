@@ -40,6 +40,10 @@
 #include "malloc.h"
 #endif
 
+#include "skypeplugin.h"
+
+#include "skypeplugin.h"
+
 // Prepare the SQL statement
 #define PREP_STMT(sql, str) \
 	if(sqlite3_prepare_v2(db, std::string(str).c_str(), -1, &sql, NULL)) { \
@@ -104,11 +108,49 @@ bool getAvatar(const std::string &db_path, const std::string &name, std::string 
 			FINALIZE_STMT(stmt);
 		}
 		else {
-			LOG4CXX_ERROR(logger, "Can't created prepared statement");
+			LOG4CXX_ERROR(logger, "Can't create prepared statement");
 			LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
 		}
 		sqlite3_close(db);
 	}
+	return ret;
+}
+
+bool loadBuddies(Transport::NetworkPlugin *np, const std::string &db_path) {
+	bool ret = false;
+// 	sqlite3 *db;
+// 	LOG4CXX_INFO(logger, "Opening database " << db_path);
+// 	if (sqlite3_open(db_path.c_str(), &db)) {
+// 		sqlite3_close(db);
+// 		LOG4CXX_ERROR(logger, "Can't open database");
+// 	}
+// 	else {
+// 		sqlite3_stmt *stmt;
+// 		PREP_STMT(stmt, "SELECT avatar_image FROM Contacts WHERE skypename=?");
+// 		if (stmt) {
+// 			BEGIN(stmt);
+// 			BIND_STR(stmt, name);
+// 			if(sqlite3_step(stmt) == SQLITE_ROW) {
+// 				int size = sqlite3_column_bytes(stmt, 0);
+// 				const void *data = sqlite3_column_blob(stmt, 0);
+// 				photo = std::string((const char *)data + 1, size - 1);
+// 				ret = true;
+// 			}
+// 			else {
+// 				LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
+// 			}
+// 
+// 			int ret;
+// 			while((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
+// 			}
+// 			FINALIZE_STMT(stmt);
+// 		}
+// 		else {
+// 			LOG4CXX_ERROR(logger, "Can't create prepared statement");
+// 			LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
+// 		}
+// 		sqlite3_close(db);
+// 	}
 	return ret;
 }
 

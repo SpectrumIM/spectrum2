@@ -1053,10 +1053,17 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 
 	boost::shared_ptr<Swift::Presence> presence = boost::dynamic_pointer_cast<Swift::Presence>(stanza);
 	if (presence) {
-		m_component->getStanzaChannel()->sendPresence(presence);
 		if (buddy) {
-			buddy->m_statusMessage = presence->getStatus();
-			buddy->m_status = Swift::StatusShow(presence->getShow());
+			if (!buddy->isAvailable() && presence->getType() != Swift::Presence::Unavailable) {
+				buddy->m_status.setType(Swift::StatusShow::Online);
+			}
+			buddy->handleRawPresence(presence);
+		}
+		else if (conv) {
+			conv->handleRawPresence(presence);
+		}
+		else {
+			m_component->getStanzaChannel()->sendPresence(presence);
 		}
 
 		return;

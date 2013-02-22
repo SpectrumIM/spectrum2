@@ -22,6 +22,7 @@ using namespace Transport;
 
 class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(LocalBuddyTest);
+	CPPUNIT_TEST(localBuddySize);
 	CPPUNIT_TEST(createWithInvalidName);
 	CPPUNIT_TEST(buddyFlagsFromJID);
 	CPPUNIT_TEST(JIDToLegacyName);
@@ -42,6 +43,10 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			disconnectUser();
 			tearMeDown();
 		}
+
+	void localBuddySize() {
+		std::cout << " = " << sizeof(LocalBuddy) << " B";
+	}
 
 	void createWithInvalidName() {
 		User *user = userManager->getUser("user@localhost");

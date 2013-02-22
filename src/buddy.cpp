@@ -40,8 +40,8 @@ Buddy::~Buddy() {
 }
 
 void Buddy::sendPresence() {
-	Swift::Presence::ref presence = generatePresenceStanza(255);
-	if (presence) {
+	std::vector<Swift::Presence::ref> &presences = generatePresenceStanzas(255);
+	BOOST_FOREACH(Swift::Presence::ref presence, presences) {
 		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
 	}
 }
@@ -89,17 +89,33 @@ Buddy::Subscription Buddy::getSubscription() {
 	return m_subscription;
 }
 
-Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) {
-	std::string alias = getAlias();
-	std::string name = getSafeName();
+void Buddy::handleRawPresence(Swift::Presence::ref presence) {
+	for (std::vector<Swift::Presence::ref>::iterator it = m_presences.begin(); it != m_presences.end(); it++) {
+		if ((*it)->getFrom() == presence->getFrom()) {
+			m_presences.erase(it);
+			break;
+		}
+	}
+
+	m_presences.push_back(presence);
+	m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
+}
+
+std::vector<Swift::Presence::ref> &Buddy::generatePresenceStanzas(int features, bool only_new) {
+	if (m_jid.getNode().empty()) {
+		generateJID();
+	}
 
 	Swift::StatusShow s;
 	std::string statusMessage;
-	if (!getStatus(s, statusMessage))
-		return Swift::Presence::ref();
-
-	if (m_jid.getNode().empty()) {
-		generateJID();
+	if (!getStatus(s, statusMessage)) {
+		for (std::vector<Swift::Presence::ref>::iterator it = m_presences.begin(); it != m_presences.end(); it++) {
+			if ((*it)->getFrom() == m_jid) {
+				m_presences.erase(it);
+				break;
+			}
+		}
+		return m_presences;
 	}
 
 	Swift::Presence::ref presence = Swift::Presence::create();
@@ -128,6 +144,15 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 		}
 	}
 
+	BOOST_FOREACH(Swift::Presence::ref &p, m_presences) {
+		if (p->getFrom() == presence->getFrom()) {
+			p = presence;
+			return m_presences;
+		}
+	}
+
+	m_presences.push_back(presence);
+
 // 	if (only_new) {
 // 		if (m_lastPresence)
 // 			m_lastPresence->setTo(Swift::JID(""));
@@ -137,7 +162,7 @@ Swift::Presence::ref Buddy::generatePresenceStanza(int features, bool only_new) 
 // 		m_lastPresence = presence;
 // 	}
 
-	return presence;
+	return m_presences;
 }
 
 std::string Buddy::getSafeName() {

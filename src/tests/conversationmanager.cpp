@@ -23,6 +23,7 @@ using namespace Transport;
 
 class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
+	CPPUNIT_TEST(conversationSize);
 	CPPUNIT_TEST(handleNormalMessages);
 	CPPUNIT_TEST(handleNormalMessagesHeadline);
 	CPPUNIT_TEST(handleGroupchatMessages);
@@ -59,6 +60,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			factory->onMessageToSend.disconnect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 			tearMeDown();
 		}
+
+	void conversationSize() {
+		std::cout << " = " << sizeof(Conversation) << " B";
+	}
 
 	void handleMessageReceived(TestingConversation *_conv, boost::shared_ptr<Swift::Message> &_msg) {
 		m_conv = _conv;

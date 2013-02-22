@@ -241,6 +241,9 @@ void BasicTest::disconnectUser() {
 	if (user) {
 		user->addUserSetting("stay_connected", "0");
 	}
+	else {
+		return;
+	}
 	received.clear();
 	userManager->disconnectUser("user@localhost");
 	dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(100);

@@ -72,6 +72,7 @@ class Conversation {
 		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
 
 		void handleRawMessage(boost::shared_ptr<Swift::Message> &message);
+		void handleRawPresence(Swift::Presence::ref presence);
 
 		/// Handles participant change in MUC.
 
@@ -163,10 +164,16 @@ class Conversation {
 		bool m_muc;
 		Swift::JID m_jid;
 		std::list<Swift::JID> m_jids;
-		std::map<std::string, Participant> m_participants;
-		boost::shared_ptr<Swift::Message> m_subject;
 		bool m_sentInitialPresence;
+
+		// TODO: Move this to some extra class to cache the most used
+		// rooms across different accounts. Just now if we have 10 users
+		// connected to single room, we store all those things 10 times.
+		// It would be also great to store last 100 messages per room
+		// every time, so we can get history messages for IRC for example.
+		boost::shared_ptr<Swift::Message> m_subject;
 		std::list<boost::shared_ptr<Swift::Message> > m_cachedMessages;
+		std::map<std::string, Swift::Presence::ref> m_participants;
 };
 
 }
