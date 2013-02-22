@@ -940,9 +940,8 @@ static void NodeRemoved(PurpleBlistNode *node, void *data) {
 }
 
 static void buddyListSaveNode(PurpleBlistNode *node) {
-	if (!PURPLE_BLIST_NODE_IS_BUDDY(node))
+	if (!PURPLE_BLIST_NODE_IS_BUDDY_WRAPPED(node))
 		return;
-
 }
 
 static void buddyListSaveAccount(PurpleAccount *account) {
