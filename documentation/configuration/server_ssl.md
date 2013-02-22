@@ -14,8 +14,9 @@ This article describes how to generate self-signed server certificate and use it
 
 ### Make a key and a certificate for the server
 
-* When prompted for "Common Name (eg, your name or your server's hostname) []:", add the hostname/JID of your transport (for example "localhost").
-* When prompted for "A challenge password []:", *do not* set it.
+When prompted for "Common Name (eg, your name or your server's hostname) []:", add the hostname/JID of your transport (for example "localhost").
+
+When prompted for "A challenge password []:", *do not* set it.
 
 	$ openssl genrsa -des3 -out spectrum2-server.key 1024
 	$ openssl req -new -key spectrum2-server.key -out spectrum2-server.csr
