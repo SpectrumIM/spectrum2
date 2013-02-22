@@ -296,6 +296,8 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			client->getPresenceOracle()->onPresenceChange.connect(boost::bind(&SwiftenPlugin::handleSwiftPresenceChanged, this, user, _1));
 			client->onDataRead.connect(boost::bind(&SwiftenPlugin::handleSwiftenDataRead, this, _1));
 			client->onDataWritten.connect(boost::bind(&SwiftenPlugin::handleSwiftenDataWritten, this, _1));
+			client->getSubscriptionManager()->onPresenceSubscriptionRequest.connect(boost::bind(&SwiftenPlugin::handleSubscriptionRequest, this, user, _1, _2, _3));
+			client->getSubscriptionManager()->onPresenceSubscriptionRevoked.connect(boost::bind(&SwiftenPlugin::handleSubscriptionRevoked, this, user, _1, _2));
 			Swift::ClientOptions opt;
 			opt.allowPLAINWithoutTLS = true;
 			client->connect(opt);
@@ -303,6 +305,18 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			boost::shared_ptr<ForwardIQHandler> handler = boost::make_shared<ForwardIQHandler>(this, user);
 			client->getIQRouter()->addHandler(handler);
 			m_handlers[user] = handler;
+		}
+
+		void handleSubscriptionRequest(const std::string &user, const Swift::JID& jid, const std::string& message, Swift::Presence::ref presence) {
+			handleSwiftPresenceChanged(user, presence);
+		}
+
+		void handleSubscriptionRevoked(const std::string &user, const Swift::JID& jid, const std::string& message) {
+			Swift::Presence::ref presence = Swift::Presence::create();
+			presence->setTo(user);
+			presence->setFrom(jid);
+			presence->setType(Swift::Presence::Unsubscribe);
+			handleSwiftPresenceChanged(user, presence);
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
