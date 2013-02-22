@@ -25,6 +25,7 @@
 #include <cppunit/TestListener.h>
 #include <cppunit/Test.h>
 #include <time.h>    // for clock()
+#include <stdint.h>
 
 using namespace Transport;
 
@@ -54,6 +55,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST(handleConvMessageAckPayload);
 	CPPUNIT_TEST(handleRawXML);
+	CPPUNIT_TEST(handleRawXMLSplit);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST(benchmarkSendUnavailablePresence);
@@ -300,6 +302,26 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 			CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+		}
+
+		void handleRawXMLSplit() {
+			cfg->updateBackendConfig("[features]\nrawxml=1\n");
+			User *user = userManager->getUser("user@localhost");
+			std::vector<std::string> grp;
+			grp.push_back("group1");
+			LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1@domain.tld", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+			user->getRosterManager()->setBuddy(buddy);
+			received.clear();
+
+			std::string xml = "<presence from='buddy1@domain.tld/res' ";
+			serv->handleRawXML(xml);
+
+			std::string xml2 = " to='user@localhost'/>";
+			serv->handleRawXML(xml2);
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
 		}
 };
 
