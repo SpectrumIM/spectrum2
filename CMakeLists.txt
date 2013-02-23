@@ -101,7 +101,7 @@ message( STATUS "Found Boost: ${Boost_VERSION}, ${Boost_LIBRARIES}, ${Boost_INCL
 
 if (${Boost_VERSION} GREATER 104999)
 	message( STATUS "Using BOOST_FILESYSTEM_VERSION=3")
-	add_definitions(BOOST_FILESYSTEM_VERSION 3)
+	add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
 endif()
 
 # FIND POPT
