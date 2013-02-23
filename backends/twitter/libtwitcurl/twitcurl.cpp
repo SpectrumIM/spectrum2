@@ -28,7 +28,7 @@ m_curlProxyParamsSet( false ),
 m_curlLoginParamsSet( false ),
 m_curlCallbackParamsSet( false ),
 m_eApiFormatType( twitCurlTypes::eTwitCurlApiFormatXml ),
-m_eProtocolType( twitCurlTypes::eTwitCurlProtocolHttp )
+m_eProtocolType( twitCurlTypes::eTwitCurlProtocolHttps )
 {
     /* Clear callback buffers */
     clearCurlCallbackBuffers();
