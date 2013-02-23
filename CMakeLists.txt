@@ -97,7 +97,12 @@ else(WIN32)
 	endif()
 endif(WIN32)
 
-message( STATUS "Found Boost: ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
+message( STATUS "Found Boost: ${Boost_VERSION}, ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
+
+if (${Boost_VERSION} GREATER 104999)
+	message( STATUS "Using BOOST_FILESYSTEM_VERSION=3")
+	add_definitions(BOOST_FILESYSTEM_VERSION 3)
+endif()
 
 # FIND POPT
 if (NOT WIN32)
