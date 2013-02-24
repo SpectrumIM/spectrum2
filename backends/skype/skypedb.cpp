@@ -132,7 +132,8 @@ bool loadBuddies(SkypePlugin *np, const std::string &db_path, std::string &user,
 			while((ret2 = sqlite3_step(stmt)) == SQLITE_ROW) {
 				std::string buddy = (const char *) sqlite3_column_text(stmt, 0);
 				std::string alias = (const char *) sqlite3_column_text(stmt, 1);
-				std::string mood_text = (const char *) sqlite3_column_text(stmt, 2);
+				const char *d = (const char *) sqlite3_column_text(stmt, 2);
+				std::string mood_text = d ? d : "";
 
 				std::vector<std::string> groups;
 				if (group_map.find(buddy) != group_map.end()) {
