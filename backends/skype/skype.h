@@ -87,5 +87,6 @@ class Skype {
 		int fd_output;
 		std::map<std::string, std::string> m_groups;
 		SkypePlugin *m_np;
+		std::string m_db;
 };
 

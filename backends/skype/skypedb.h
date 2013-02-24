@@ -30,6 +30,6 @@ class SkypePlugin;
 
 namespace SkypeDB {
 	bool getAvatar(const std::string &db, const std::string &name, std::string &avatar);
-	bool loadBuddies(SkypePlugin *np, const std::string &db);
+	bool loadBuddies(SkypePlugin *np, const std::string &db, std::string &user, std::map<std::string, std::string> &group_map);
 }
 
