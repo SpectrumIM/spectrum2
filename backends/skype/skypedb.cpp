@@ -124,16 +124,15 @@ bool loadBuddies(SkypePlugin *np, const std::string &db_path, std::string &user,
 	}
 	else {
 		sqlite3_stmt *stmt;
-		PREP_STMT(stmt, "select skypename, aliases, fullname, displayname, mood_text from Contacts;");
+// 		aliases, fullname, 
+		PREP_STMT(stmt, "select skypename, displayname, mood_text from Contacts;");
 		if (stmt) {
 			BEGIN(stmt);
 			int ret2;
 			while((ret2 = sqlite3_step(stmt)) == SQLITE_ROW) {
 				std::string buddy = (const char *) sqlite3_column_text(stmt, 0);
 				std::string alias = (const char *) sqlite3_column_text(stmt, 1);
-				std::string fullname = (const char *) sqlite3_column_text(stmt, 2);
-				std::string displayname = (const char *) sqlite3_column_text(stmt, 3);
-				std::string mood_text = (const char *) sqlite3_column_text(stmt, 4);
+				std::string mood_text = (const char *) sqlite3_column_text(stmt, 2);
 
 				if (alias.empty()) {
 					alias = displayname;
