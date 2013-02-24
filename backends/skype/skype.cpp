@@ -104,6 +104,7 @@ void Skype::login() {
 		return;
 	}
 
+	m_db += "/" + getUsername() + "/main.db";
 
 	if (m_connection == NULL) {
 		LOG4CXX_INFO(logger, "Creating DBUS connection.");
