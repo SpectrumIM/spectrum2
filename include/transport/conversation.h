@@ -85,9 +85,7 @@ class Conversation {
 		/// Sets XMPP user nickname in MUC rooms.
 
 		/// \param nickname XMPP user nickname in MUC rooms.
-		void setNickname(const std::string &nickname) {
-			m_nickname = nickname;
-		}
+		void setNickname(const std::string &nickname);
 
 		const std::string &getNickname() {
 			return m_nickname;
@@ -166,6 +164,7 @@ class Conversation {
 		std::map<std::string, Participant> m_participants;
 		boost::shared_ptr<Swift::Message> m_subject;
 		bool m_sentInitialPresence;
+		bool m_nicknameChanged;
 		std::list<boost::shared_ptr<Swift::Message> > m_cachedMessages;
 };
 

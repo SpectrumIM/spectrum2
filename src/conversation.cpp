@@ -39,6 +39,7 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 	m_muc = isMUC;
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
 	m_sentInitialPresence = false;
+	m_nicknameChanged = false;
 
 	if (CONFIG_BOOL_DEFAULTED(conversationManager->getComponent()->getConfig(), "features.rawxml", false)) {
 		m_sentInitialPresence = true;
@@ -268,6 +269,11 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			Swift::MUCUserPayload::StatusCode c;
 			c.code = 110;
 			p->addStatusCode(c);
+			if (m_nicknameChanged) {
+				Swift::MUCUserPayload::StatusCode c;
+				c.code = 210;
+				p->addStatusCode(c);
+			}
 			m_sentInitialPresence = true;
 		}
 	}
@@ -294,6 +300,13 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 	p->addItem(item);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 	return presence;
+}
+
+void Conversation::setNickname(const std::string &nickname) {
+	if (!nickname.empty() && m_nickname != nickname) {
+		m_nicknameChanged = true;
+	}
+	m_nickname = nickname;
 }
 
 void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname) {
