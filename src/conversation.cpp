@@ -199,10 +199,9 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 }
 
 void Conversation::sendParticipants(const Swift::JID &to) {
-	for (std::map<std::string, Participant>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
-		Swift::Presence::ref presence = generatePresence(it->first, it->second.flag, it->second.status, it->second.statusMessage, "");
-		presence->setTo(to);
-		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	for (std::map<std::string, Swift::Presence::ref>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
+		(*it).second->setTo(to);
+		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence((*it).second);
 	}
 }
 
@@ -216,6 +215,17 @@ void Conversation::sendCachedMessages(const Swift::JID &to) {
 		}
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(*it);
 	}
+
+	if (m_subject) {
+		if (to.isValid()) {
+			m_subject->setTo(to);
+		}
+		else {
+			m_subject->setTo(m_jid.toBare());
+		}
+		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(m_subject);
+	}
+
 	m_cachedMessages.clear();
 }
 
@@ -302,11 +312,18 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 	return presence;
 }
 
+
 void Conversation::setNickname(const std::string &nickname) {
 	if (!nickname.empty() && m_nickname != nickname) {
 		m_nicknameChanged = true;
 	}
 	m_nickname = nickname;
+}
+
+void Conversation::handleRawPresence(Swift::Presence::ref presence) {
+	// TODO: Detect nickname change.
+	m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	m_participants[presence->getFrom().getResource()] = presence;
 }
 
 void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname) {
@@ -316,11 +333,7 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 		m_participants.erase(nick);
 	}
 	else {
-		Participant p;
-		p.flag = flag;
-		p.status = status;
-		p.statusMessage = statusMessage;
-		m_participants[nick] = p;
+		m_participants[nick] = presence;
 	}
 
 

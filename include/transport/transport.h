@@ -155,6 +155,10 @@ namespace Transport {
 
 			boost::signal<void (boost::shared_ptr<Swift::IQ>)> onRawIQReceived;
 
+			bool isRawXMLEnabled() {
+				return m_rawXML;
+			}
+
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);

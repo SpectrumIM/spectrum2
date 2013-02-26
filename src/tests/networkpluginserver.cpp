@@ -25,6 +25,7 @@
 #include <cppunit/TestListener.h>
 #include <cppunit/Test.h>
 #include <time.h>    // for clock()
+#include <stdint.h>
 
 using namespace Transport;
 
@@ -54,8 +55,10 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST(handleConvMessageAckPayload);
 	CPPUNIT_TEST(handleRawXML);
+	CPPUNIT_TEST(handleRawXMLSplit);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
+	CPPUNIT_TEST(benchmarkSendUnavailablePresence);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -140,6 +143,49 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			std::cerr << " " << clk.elapsedTime() << " s";
 		}
 
+		void benchmarkSendUnavailablePresence() {
+			Clock clk;
+			std::vector<std::string> lst;
+			for (int i = 0; i < 1000; i++) {
+				pbnetwork::Buddy buddy;
+				buddy.set_username("user@localhost");
+				buddy.set_buddyname("buddy" + boost::lexical_cast<std::string>(i)  + "@test");
+				buddy.set_status((pbnetwork::StatusType) 5);
+
+				std::string message;
+				buddy.SerializeToString(&message);
+				lst.push_back(message);
+			}
+
+			std::vector<std::string> lst2;
+			for (int i = 0; i < 1000; i++) {
+				pbnetwork::Buddy buddy;
+				buddy.set_username("user@localhost");
+				buddy.set_buddyname("buddy" + boost::lexical_cast<std::string>(1000+i)  + "@test");
+				buddy.set_status((pbnetwork::StatusType) 2);
+
+				std::string message;
+				buddy.SerializeToString(&message);
+				lst2.push_back(message);
+			}
+
+			
+			for (int i = 0; i < 1000; i++) {
+				serv->handleBuddyChangedPayload(lst[i]);
+				received.clear();
+			}
+			for (int i = 0; i < 1000; i++) {
+				serv->handleBuddyChangedPayload(lst2[i]);
+				received.clear();
+			}
+
+			User *user = userManager->getUser("user@localhost");
+			clk.start();
+			user->getRosterManager()->sendUnavailablePresences("user@localhost");
+			clk.end();
+			std::cerr << " " << clk.elapsedTime() << " s";
+		}
+
 		void handleBuddyChangedPayload() {
 			User *user = userManager->getUser("user@localhost");
 
@@ -198,14 +244,36 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		}
 
 		void handleRawXML() {
+			cfg->updateBackendConfig("[features]\nrawxml=1\n");
 			User *user = userManager->getUser("user@localhost");
+			std::vector<std::string> grp;
+			grp.push_back("group1");
+			LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1@domain.tld", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+			user->getRosterManager()->setBuddy(buddy);
+			received.clear();
 
-			std::string xml = "<presence from='buddy1@domain.tld' to='user@localhost'/>";
-
+			std::string xml = "<presence from='buddy1@domain.tld/res' to='user@localhost'/>";
 			serv->handleRawXML(xml);
-			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+
+			std::string xml2 = "<presence from='buddy1@domain.tld/res2' to='user@localhost'/>";
+			serv->handleRawXML(xml2);
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
-			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res2"), dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getFrom().toString());
+
+			received.clear();
+			user->getRosterManager()->sendUnavailablePresences("user@localhost");
+
+			CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res2"), dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getFrom().toString());
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getType());
 		}
 
 		void handleMessageHeadline() {
@@ -234,6 +302,26 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 			CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
+		}
+
+		void handleRawXMLSplit() {
+			cfg->updateBackendConfig("[features]\nrawxml=1\n");
+			User *user = userManager->getUser("user@localhost");
+			std::vector<std::string> grp;
+			grp.push_back("group1");
+			LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1@domain.tld", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+			user->getRosterManager()->setBuddy(buddy);
+			received.clear();
+
+			std::string xml = "<presence from='buddy1@domain.tld/res' ";
+			serv->handleRawXML(xml);
+
+			std::string xml2 = " to='user@localhost'/>";
+			serv->handleRawXML(xml2);
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
 		}
 };
 

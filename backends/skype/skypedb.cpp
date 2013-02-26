@@ -40,6 +40,8 @@
 #include "malloc.h"
 #endif
 
+#include "skypeplugin.h"
+
 // Prepare the SQL statement
 #define PREP_STMT(sql, str) \
 	if(sqlite3_prepare_v2(db, std::string(str).c_str(), -1, &sql, NULL)) { \
@@ -104,7 +106,51 @@ bool getAvatar(const std::string &db_path, const std::string &name, std::string 
 			FINALIZE_STMT(stmt);
 		}
 		else {
-			LOG4CXX_ERROR(logger, "Can't created prepared statement");
+			LOG4CXX_ERROR(logger, "Can't create prepared statement");
+			LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
+		}
+		sqlite3_close(db);
+	}
+	return ret;
+}
+
+bool loadBuddies(SkypePlugin *np, const std::string &db_path, std::string &user, std::map<std::string, std::string> &group_map) {
+	bool ret = false;
+	sqlite3 *db;
+	LOG4CXX_INFO(logger, "Opening database " << db_path);
+	if (sqlite3_open(db_path.c_str(), &db)) {
+		sqlite3_close(db);
+		LOG4CXX_ERROR(logger, "Can't open database");
+	}
+	else {
+		sqlite3_stmt *stmt;
+// 		aliases, fullname, 
+		PREP_STMT(stmt, "select skypename, displayname, mood_text from Contacts;");
+		if (stmt) {
+			BEGIN(stmt);
+			int ret2;
+			while((ret2 = sqlite3_step(stmt)) == SQLITE_ROW) {
+				std::string buddy = (const char *) sqlite3_column_text(stmt, 0);
+				std::string alias = (const char *) sqlite3_column_text(stmt, 1);
+				const char *d = (const char *) sqlite3_column_text(stmt, 2);
+				std::string mood_text = d ? d : "";
+
+				std::vector<std::string> groups;
+				if (group_map.find(buddy) != group_map.end()) {
+					groups.push_back(group_map[buddy]);
+				}
+				np->handleBuddyChanged(user, buddy, alias, groups, pbnetwork::STATUS_NONE, mood_text);
+			}
+			if (ret2 != SQLITE_DONE) {
+				FINALIZE_STMT(stmt);
+				ret = false;
+			}
+			else {
+				ret = true;
+			}
+		}
+		else {
+			LOG4CXX_ERROR(logger, "Can't create prepared statement");
 			LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
 		}
 		sqlite3_close(db);

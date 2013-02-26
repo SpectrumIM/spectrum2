@@ -20,6 +20,7 @@
 
 #include "skype.h"
 #include "skypeplugin.h"
+#include "skypedb.h"
 
 #include "transport/config.h"
 #include "transport/logging.h"
@@ -95,14 +96,15 @@ void Skype::login() {
 		return;
 	}
 
-	std::string db_path = createSkypeDirectory();
+	m_db = createSkypeDirectory();
 
-	bool spawned = spawnSkype(db_path);
+	bool spawned = spawnSkype(m_db);
 	if (!spawned) {
 		m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_AUTHENTICATION_IMPOSSIBLE, "Error spawning the Skype instance.");
 		return;
 	}
 
+	m_db += "/" + getUsername() + "/main.db";
 
 	if (m_connection == NULL) {
 		LOG4CXX_INFO(logger, "Creating DBUS connection.");
@@ -229,51 +231,55 @@ bool Skype::loadSkypeBuddies() {
 		}
 	}
 
-	std::string friends = send_command("GET AUTH_CONTACTS_PROFILES");
+	// Try to load skype buddies from database, if it fails
+	// fallback to old method.
+	if (!SkypeDB::loadBuddies(m_np, m_db, m_user, group_map)) {
+		std::string friends = send_command("GET AUTH_CONTACTS_PROFILES");
 
-	char **full_friends_list = g_strsplit((strchr(friends.c_str(), ' ')+1), ";", 0);
-	if (full_friends_list && full_friends_list[0])
-	{
-		//in the format of: username;full name;phone;office phone;mobile phone;
-		//                  online status;friendly name;voicemail;mood
-		// (comma-seperated lines, usernames can have comma's)
-
-		for (int i=0; full_friends_list[i] && full_friends_list[i+1] && *full_friends_list[i] != '\0'; i+=8)
+		char **full_friends_list = g_strsplit((strchr(friends.c_str(), ' ')+1), ";", 0);
+		if (full_friends_list && full_friends_list[0])
 		{
-			std::string buddy = full_friends_list[i];
+			//in the format of: username;full name;phone;office phone;mobile phone;
+			//                  online status;friendly name;voicemail;mood
+			// (comma-seperated lines, usernames can have comma's)
 
-			if (buddy[0] == ',') {
-				buddy.erase(buddy.begin());
+			for (int i=0; full_friends_list[i] && full_friends_list[i+1] && *full_friends_list[i] != '\0'; i+=8)
+			{
+				std::string buddy = full_friends_list[i];
+
+				if (buddy[0] == ',') {
+					buddy.erase(buddy.begin());
+				}
+
+				if (buddy.rfind(",") != std::string::npos) {
+					buddy = buddy.substr(buddy.rfind(","));
+				}
+
+				if (buddy[0] == ',') {
+					buddy.erase(buddy.begin());
+				}
+
+				LOG4CXX_INFO(logger, "Got buddy " << buddy);
+				std::string st = full_friends_list[i + 5];
+
+				pbnetwork::StatusType status = getStatus(st);
+
+				std::string alias = full_friends_list[i + 6];
+
+				std::string mood_text = "";
+				if (full_friends_list[i + 8] && *full_friends_list[i + 8] != '\0' && *full_friends_list[i + 8] != ',') {
+					mood_text = full_friends_list[i + 8];
+				}
+
+				std::vector<std::string> groups;
+				if (group_map.find(buddy) != group_map.end()) {
+					groups.push_back(group_map[buddy]);
+				}
+				m_np->handleBuddyChanged(m_user, buddy, alias, groups, status, mood_text);
 			}
-
-			if (buddy.rfind(",") != std::string::npos) {
-				buddy = buddy.substr(buddy.rfind(","));
-			}
-
-			if (buddy[0] == ',') {
-				buddy.erase(buddy.begin());
-			}
-
-			LOG4CXX_INFO(logger, "Got buddy " << buddy);
-			std::string st = full_friends_list[i + 5];
-
-			pbnetwork::StatusType status = getStatus(st);
-
-			std::string alias = full_friends_list[i + 6];
-
-			std::string mood_text = "";
-			if (full_friends_list[i + 8] && *full_friends_list[i + 8] != '\0' && *full_friends_list[i + 8] != ',') {
-				mood_text = full_friends_list[i + 8];
-			}
-
-			std::vector<std::string> groups;
-			if (group_map.find(buddy) != group_map.end()) {
-				groups.push_back(group_map[buddy]);
-			}
-			m_np->handleBuddyChanged(m_user, buddy, alias, groups, status, mood_text);
 		}
+		g_strfreev(full_friends_list);
 	}
-	g_strfreev(full_friends_list);
 
 	send_command("SET AUTOAWAY OFF");
 	send_command("SET USERSTATUS ONLINE");

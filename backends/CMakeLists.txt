@@ -9,7 +9,6 @@ if (PROTOBUF_FOUND)
 
 	if (ENABLE_SWIFTEN)
 		ADD_SUBDIRECTORY(swiften)
-		ADD_SUBDIRECTORY(swiften_raw)
 	endif()
 
 	ADD_SUBDIRECTORY(template)
