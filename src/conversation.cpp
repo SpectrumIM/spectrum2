@@ -214,6 +214,17 @@ void Conversation::sendCachedMessages(const Swift::JID &to) {
 		}
 		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(*it);
 	}
+
+	if (m_subject) {
+		if (to.isValid()) {
+			m_subject->setTo(to);
+		}
+		else {
+			m_subject->setTo(m_jid.toBare());
+		}
+		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(m_subject);
+	}
+
 	m_cachedMessages.clear();
 }
 

@@ -313,6 +313,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
+		boost::shared_ptr<Swift::Message> msg0(new Swift::Message());
+		msg0->setSubject("subject");
+		conv->handleMessage(msg0, "anotheruser");
+
 		CPPUNIT_ASSERT(!user->shouldCacheMessages());
 
 		// disconnectUser
@@ -350,7 +354,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
@@ -361,6 +365,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
 
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[3])));
+		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getSubject());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getFrom().toString());
 	}
 
 	void handleGroupchatMessagesBouncerLeave() {
