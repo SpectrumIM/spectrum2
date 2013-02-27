@@ -131,6 +131,7 @@ public:
 	void on_topicChanged(IrcMessage *message);
 	void on_messageReceived(IrcMessage *message);
 	void on_numericMessageReceived(IrcMessage *message);
+	void on_noticeMessageReceived(IrcMessage *message);
 
 	std::string suffix;
 	int rooms;

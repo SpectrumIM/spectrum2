@@ -78,6 +78,7 @@ void MyIrcSession::on_connected() {
 	if (getIdentify().find(" ") != std::string::npos) {
 		std::string to = getIdentify().substr(0, getIdentify().find(" "));
 		std::string what = getIdentify().substr(getIdentify().find(" ") + 1);
+		LOG4CXX_INFO(logger, user << ": Sending IDENTIFY message to " << to);
 		sendCommand(IrcCommand::createMessage(FROM_UTF8(to), FROM_UTF8(what)));
 	}
 }
@@ -387,6 +388,11 @@ void MyIrcSession::awayTimeout() {
 	}
 }
 
+void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
+	IrcNoticeMessage *m = (IrcNoticeMessage *) message;
+	LOG4CXX_INFO(logger, user << ": NOTICE " << TO_UTF8(m->message()));
+}
+
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
 // 	LOG4CXX_INFO(logger, user << ": " << TO_UTF8(message->toString()));
 	switch (message->type()) {
@@ -413,6 +419,9 @@ void MyIrcSession::onMessageReceived(IrcMessage *message) {
 			break;
 		case IrcMessage::Numeric:
 			on_numericMessageReceived(message);
+			break;
+		case IrcMessage::Notice:
+			on_noticeMessageReceived(message);
 			break;
 		default:break;
 	}
