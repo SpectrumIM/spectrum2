@@ -391,6 +391,39 @@ void MyIrcSession::awayTimeout() {
 void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
 	IrcNoticeMessage *m = (IrcNoticeMessage *) message;
 	LOG4CXX_INFO(logger, user << ": NOTICE " << TO_UTF8(m->message()));
+
+	QString msg = m->message();
+	CommuniBackport::toPlainText(msg);
+
+	std::string target = TO_UTF8(m->target().toLower());
+	if (target.find("#") == 0) {
+		std::string nickname = TO_UTF8(m->sender().name());
+		correctNickname(nickname);
+		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname);
+	}
+	else {
+		std::string nickname = TO_UTF8(m->sender().name());
+		correctNickname(nickname);
+		if (nickname.find(".") != std::string::npos) {
+			return;
+		}
+		if (m_pms.find(nickname) != m_pms.end()) {
+			if (hasIRCBuddy(m_pms[nickname], nickname)) {
+				LOG4CXX_INFO(logger, nickname);
+				np->handleMessage(user, m_pms[nickname] + suffix, TO_UTF8(msg), nickname, "", "", false, true);
+				return;
+			}
+			else {
+				nickname = nickname + suffix;
+			}
+		}
+		else {
+			nickname = nickname + suffix;
+		}
+
+		LOG4CXX_INFO(logger, nickname);
+		np->handleMessage(user, nickname, TO_UTF8(msg), "");
+	}
 }
 
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
