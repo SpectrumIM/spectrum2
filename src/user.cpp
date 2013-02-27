@@ -258,6 +258,8 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 					delete conv;
 				}
 			}
+
+			return;
 		}
 		else if (isMUC) {
 			// force connection to legacy network to let backend to handle auto-join on connect.
@@ -315,8 +317,11 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 			onRawPresenceReceived(presence);
 			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
+
+			return;
 		}
-		return;
+
+		onRawPresenceReceived(presence);
 	}
 
 	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();

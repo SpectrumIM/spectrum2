@@ -1453,6 +1453,8 @@ void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence:
 	if (presence->getShow() == Swift::StatusShow::None)
 		return;
 
+	handleRawPresenceReceived(presence);
+
 	UserInfo userInfo = user->getUserInfo();
 
 	pbnetwork::Status status;
