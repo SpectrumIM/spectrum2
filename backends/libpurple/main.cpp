@@ -298,6 +298,39 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_set_int_wrapped(account, "port", atoi(s.back().c_str()));  
 			}
 
+			if (!CONFIG_STRING_DEFAULTED(config, "proxy.type", "").empty()) {
+				PurpleProxyInfo *info = purple_proxy_info_new();
+				if (CONFIG_STRING_DEFAULTED(config, "proxy.type", "") == "http") {
+					purple_proxy_info_set_type(info, PURPLE_PROXY_HTTP);
+				}
+				else if (CONFIG_STRING_DEFAULTED(config, "proxy.type", "") == "socks4") {
+					purple_proxy_info_set_type(info, PURPLE_PROXY_SOCKS4);
+				}
+				else if (CONFIG_STRING_DEFAULTED(config, "proxy.type", "") == "socks5") {
+					purple_proxy_info_set_type(info, PURPLE_PROXY_SOCKS5);
+				}
+				else {
+					LOG4CXX_ERROR(logger, "Unknown proxy.type " << CONFIG_STRING_DEFAULTED(config, "proxy.type", ""));
+				}
+
+				info->username = NULL;
+				info->password = NULL;
+
+				purple_proxy_info_set_type(info, PURPLE_PROXY_SOCKS5);
+				purple_proxy_info_set_host(info, CONFIG_STRING_DEFAULTED(config, "proxy.host", "").c_str());
+				if (CONFIG_INT_DEFAULTED(config, "proxy.port", 0)) {
+					purple_proxy_info_set_port(info, CONFIG_INT_DEFAULTED(config, "proxy.port", 0));
+				}
+				if (!CONFIG_STRING_DEFAULTED(config, "proxy.username", "").empty()) {
+					purple_proxy_info_set_username(info, CONFIG_STRING_DEFAULTED(config, "proxy.username", "").c_str());
+				}
+
+				if (!CONFIG_STRING_DEFAULTED(config, "proxy.password", "").empty()) {
+					purple_proxy_info_set_password(info, CONFIG_STRING_DEFAULTED(config, "proxy.password", "").c_str());
+				}
+
+				purple_account_set_proxy_info(account, info);
+			}
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
