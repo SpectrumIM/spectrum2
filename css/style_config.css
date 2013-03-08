@@ -211,9 +211,9 @@ blockquote {
   margin-bottom: 20px;
   padding: 0 0 0 20px;
   border-left: 3px solid #bbb;
-  float:left;
-  position: relative; 
-  left:-200px;
+  float:right;
+/*   position: relative;  */
+/*   left:-300px; */
 }
 
 ul, ol, dl {
