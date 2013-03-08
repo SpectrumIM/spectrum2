@@ -4,6 +4,7 @@ title: Spectrum 2
 ---
 
 > [service.server_mode](#serviceserver_mode)
+>
 > [service.jid](#servicejid)
 
 ### Types of configuration fields
