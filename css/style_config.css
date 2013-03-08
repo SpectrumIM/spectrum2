@@ -91,6 +91,7 @@ h2 {
 
 h3 {
   font-size: 24px;
+  background-color: 
 }
 
 h4 {
@@ -432,6 +433,8 @@ Small Device Styles
 
   h2 {
     font-size: 24px;
+    background: #373737;
+    color: #fff;
   }
 
   h3 {
