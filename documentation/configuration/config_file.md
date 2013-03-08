@@ -176,26 +176,115 @@ Configures list of servers from which users can connect and register Spectrum 2 
 registration.enable_public_registration option. If registration.enable_public_registration is set to 0, you can use this option
 as a white-list, to enable users from particular domain to use your Spectrum 2 instance, but disallow it to any other users.
 
+Following part of config file disables public registrations and allows only users from xmpp.org and jabber.org to use this Spectrum 2 instance:
+
 	[service]
-	allowed_servers
+	allowed_servers=xmpp.org
+	allowed_servers=jabber.org
+	
+	[registration]
+	enable_public_registration=0
 
+#### service.user
 
-#### Daemon related settings
+Key | val
+----|----
+Description:|Configures user under which Spectrum 2 instance runs.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
 
-Key | Type | Default | Description
-----|------|---------|------------
-user | string | | Name of user Spectrum switch to if run as daemon.
-group | string | | Name of group Spectrum switch to if run as daemon.
-pidfile | string | /var/run/spectrum2/$jid.pid | Full path to file to which the pid of Spectrum instance is stored if run as daemon.
-working_dir | string | /var/run/spectrum2/$jid | Full path to directory where temporary files and coredumps will be stored if run as daemon.
+This option configures name of user under which Spectrum 2 instance runs. When Spectrum 2 is started, it switches from current user
+(usually root) to this user.
+
+#### service.group
+
+Key | val
+----|----
+Description:|Configures group under which Spectrum 2 instance runs.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures name of group under which Spectrum 2 instance runs. When Spectrum 2 is started, it switches from current group
+to this group.
+
+#### service.pidfile
+
+Key | val
+----|----
+_Description:_|Configures path to file when Spectrum 2 stores its process ID.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|/var/run/spectrum2/$jid.pid
+
+This option configures path to file when Spectrum 2 stores its process ID. This file is later used by `spectrum2_manager` to determine,
+if this particular Spectrum 2 instance runs.
+
+#### service.working_dir
+
+Key | val
+----|----
+_Description:_|Configures path to directory when Spectrum 2 stores its data files.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|/var/lib/spectrum2/$jid
+
+This option configures path to directory when Spectrum 2 stores its data files like for example SQLite3 database.
+
+#### service.backend
+
+Key | val
+----|----
+_Description:_|Configures path to backend executable.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures path to backend executable. When user connects, Spectrum 2 spawns new backend process to handle this user's
+session. Usually single backend is shared by more users. This can be configured using service.users_per_backend.
+
+#### service.backend_host
+
+Key | val
+----|----
+_Description:_|Configures hostname or IP to which backend connects.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|localhost
+
+This option configures hostname or IP to which backend connects. When Spectrum 2 is started, it listens on service.backend_port
+to communicate with backends. When new backend is started, it connects to the hostname configured by this option and starts handling
+new users sessions.
+
+#### service.backend_port
+
+Key | val
+----|----
+_Description:_|Configures port on which Spectrum 2 listens on for backends connections.
+Context:|server-mode and gateway-mode
+Type:|integer
+Default:|0
+
+This option configures port on which Spectrum 2 listens on for backends connections. If the value of this option is 0, then Spectrum 2
+uses randomly generated port number.
+
+#### service.users_per_backend
+
+Key | val
+----|----
+_Description:_|Configures maximum number of users who share single backend process.
+Context:|server-mode and gateway-mode
+Type:|integer
+Default:|100
+
+This option configures maximum number of users who share single backend process. Value of this option depends on number of online
+users you presume to use your Spectrum 2 instance in the same time.
 
 #### Backends related settings
 
 Key | Type | Default | Description
 ----|------|---------|------------
-backend | string | | Full path to backend executable (for example "/usr/bin/spectrum2_libpurple_backend").
-backend_host | string | localhost | Hostname to which backends connets.
-backend_port | integer | 10000 | Port on which Spectrum listens for new backends.
 users_per_backend | integer | 100 | Maximum number of users per one legacy network backend.
 reuse_old_backends | boolean | 1 | True if Spectrum should use old backends which were full in the past.
 idle_reconnect_time | time in seconds | 0 | Time in seconds after which idle users are reconnected to let their backend die.
