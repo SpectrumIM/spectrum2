@@ -225,6 +225,10 @@ ul li {
   padding-left: 20px;
 }
 
+blockquote ul li {
+  padding-left: 0px;
+}
+
 ol li {
   list-style: decimal inside;
   padding-left: 20px;
