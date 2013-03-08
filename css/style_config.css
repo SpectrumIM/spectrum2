@@ -212,6 +212,12 @@ blockquote {
   padding: 0 0 0 5px;
   border-left: 3px solid #bbb;
   float:right;
+  background-color: #fff;
+
+  border-radius: 2px;
+  -moz-border-radius: 2px;
+  -webkit-border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0,0,0,.1);
 /*   position: relative;  */
 /*   left:-300px; */
 }
