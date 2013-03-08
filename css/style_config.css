@@ -209,7 +209,7 @@ pre code {
 blockquote {
   color: #666;
   margin-bottom: 20px;
-  padding: 0 0 0 20px;
+  padding: 0 0 0 5px;
   border-left: 3px solid #bbb;
   float:right;
 /*   position: relative;  */
