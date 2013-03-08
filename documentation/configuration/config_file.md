@@ -3,6 +3,7 @@ layout: config
 title: Spectrum 2
 ---
 
+> *Options:*
 > * [service.server_mode](#serviceserver_mode)
 > * [service.jid](#servicejid)
 
