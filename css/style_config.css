@@ -212,6 +212,7 @@ blockquote {
   padding: 0 0 0 20px;
   border-left: 3px solid #bbb;
   float:left;
+  position: relative; 
   left:-200px;
 }
 
