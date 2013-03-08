@@ -109,7 +109,7 @@ void RosterManager::removeBuddy(const std::string &name) {
 		return;
 	}
 
-	if (m_component->inServerMode() || m_remoteRosterRequest) {
+	if (m_component->inServerMode() || m_supportRemoteRoster) {
 		sendBuddyRosterRemove(buddy);
 	}
 	else {
