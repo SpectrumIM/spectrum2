@@ -7,6 +7,8 @@ title: Spectrum 2
 
 Spectrum 2 config file is not compatible with Spectrum 1, although some important config options are named the same as in Spectrum 1.
 
+### Types of configuration fields
+
 Following types are used:
 
 integer - Examples: key=0
@@ -15,28 +17,168 @@ string - Examples: key=something
 
 boolean - Examples: key=0 or key=1
 
-list - List of strings. You can specify this options more than once:
+list - List of strings (or Jabber IDs). You can specify this options more than once:
 
 	allowed_servers=domain.tld
 	allowed_servers=example.com
 
 ### [service] section
 
-#### General settings
+#### service.server_mode
 
-Key | Type | Default | Description
-----|------|---------|------------
-server_mode | boolean | 0 | True if Spectrum should run as server in [server-mode](http://spectrum.im/documentation/about.html#server_mode).
-jid | string | | Jabber ID of Spectrum2 instance. For example "localhost", "icq.domain.tld".
-server | string | | Hostname or IP address of server to which Spectrum connects in gateway-mode.
-port | integer | 0 | Port on which Spectrum listens to in server-mode or to which connects in gateway-mode.
-password | string | | Password used to connect Jabber server in gateway-mode.
-cert | string | | Full path to PKCS#12 certificate which is used for TLS in server-mode.
-cert_password | string | | PKCS#12 certificate password.
-admin_jid | JID | | Jabber ID of administrator with admin rights.
-admin_password | string | | Administrator password.
-enable_privacy_lists | boolean | 1 | True if privacy lists should be enabled.
-allowed_servers | list | | List of servers from which users can connect or register.
+Key | val
+----|----
+Description:|Configures if Spectrum 2 works in server mode or gateway mode
+Context:|server-mode and gateway-mode
+Type:|boolean
+Default:|0
+
+If this option is true, Spectrum 2 works in server-mode and acts as standalone server.
+
+User then logins legacy networks by logging XMPP account like this one: "my_msn_name%hotmail.com@msn.domain.tld".
+
+*Advantages:*
+* Passwords are not stored on server.
+* Roster synchronization is easy, because Spectrum 2 acts as normal server.
+* If you want to use Spectrum 2 as wrapper between different networks, you don't need database or Jabber server as another layer.
+* Using SRV records you can easily run Spectrum 2 on different machines to scale it.
+
+*Disadvantages:*
+
+* Clients have to support more accounts to connect more legacy networks (Therefore they will need have to use more TCP connections).
+
+If this option is false, Spectrum 2 acts as normal XMPP component (gateway).
+
+You then have to configure an external XMPP server (like Prosody or Ejabberd) to serve the subdomain you want to use for Spectrum 2 (for example "icq.domain.tld"). Spectrum 2 in gateway mode then connects the XMPP server as its component and users are able to find out "icq.domain.tld" in Service Discovery, register it and use it.
+
+*Advantages:*
+* Users can use more legacy networks using single XMPP account (and using single TCP connection).
+* It's easy to extend existing XMPP servers using gateway mode.
+
+*Disadvantages:*
+* Passwords are stored (even in encrypted form) on server.
+* Roster (contact list) synchronization can be problematic, because it depends on the client user uses. This can be improved by usage of Remote Roster protoXEP.
+* You have to setup XMPP server and use database even if you only want to use Spectrum 2 as a tool to connect legacy networks using XMPP protocol.
+
+
+#### service.jid
+
+Key | val
+----|----
+Description:|Configures Jabber ID of Spectrum 2 instance
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures Jabber ID of particular Spectrum 2 instance. Usually it is a hostname on which this Spectrum 2 instance
+runs, so for example `icq.domain.tld`. Note that you have to have DNS records configured for this hostname, so clients will be able
+to find out your Jabber server (in case you are running Spectrum 2 in gateway-mode) or the Spectrum 2 itself (if you are running
+Spectrum 2 in server-mode).
+
+#### service.server
+
+Key | val
+----|----
+Description:|Configures hostname or IP address of server to which Spectrum 2 connects to.
+Context:|gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures hostname or IP address of server to which Spectrum 2 connects to. It is used only in gateway-mode and
+you should configure it to point to hostname or IP of your XMPP server.
+
+#### service.port
+
+Key | val
+----|----
+Description:|Configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode.
+Context:|server-mode and gateway-mode
+Type:|integer
+Default:|0
+
+This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
+the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
+server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
+depends on particular XMPP server and its configuration.
+
+#### service.password
+
+Key | val
+----|----
+Description:|Configures password to be used to connect XMPP server
+Context:|gateway-mode
+Type:|integer
+Default:|0
+
+This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
+the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
+server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
+depends on particular XMPP server and its configuration.
+
+#### service.cert
+
+Key | val
+----|----
+Description:|Configures certificate to be used for SSL encryption in server-mode.
+Context:|server-mode
+Type:|string
+Default:|empty string
+
+This option configures full path to PKCS#12 certificate which is used for SSL in server-mode. To find out, how to create
+such certificate, please read [Using SSL in server mode](http://spectrum.im/documentation/configuration/server_ssl.html).
+
+#### service.cert_password
+
+Key | val
+----|----
+Description:|Configures password for certificate which is used for SSL encryption in server-mode.
+Context:|server-mode
+Type:|string
+Default:|empty string
+
+This option configures password which is used to decrypt PKCS#12 certificate (if it is encrypted). For more information about SSL
+with Spectrum 2, read service.cert option description.
+
+#### service.admin_jid
+
+Key | val
+----|----
+Description:|Configures list of Jabber IDs, which has ability to use Admin Interface.
+Context:|server-mode and gateway-mode
+Type:|list of Jabber IDs
+Default:|empty list
+
+This option configures list of Jabber IDs, which has ability to use Admin Interface. In server-mode, you also have to specify
+service.admin_password to set password for Admin Interface. In gatewa-mode, you just specify the list of Jabber IDs, Spectrum 2 does
+not check any password in gateway-mode.
+
+#### service.admin_password
+
+Key | val
+----|----
+Description:|Configures password which is used by clients defined in service.admin_jid to use Admin Interface.
+Context:|server-mode
+Type:|string
+Default:|empty string
+
+This option configures the password which is used by clients defined in service.admin_jid to use Admin Interface.
+
+#### service.allowed_servers
+
+Key | val
+----|----
+Description:|Configures list of servers from which users can connect and register Spectrum 2 transport.
+Context:|gateway-mode
+Type:|list of JIDs
+Default:|empty list
+
+Configures list of servers from which users can connect and register Spectrum 2 transport. This option is used together with
+registration.enable_public_registration option. If registration.enable_public_registration is set to 0, you can use this option
+as a white-list, to enable users from particular domain to use your Spectrum 2 instance, but disallow it to any other users.
+
+	[service]
+	allowed_servers
+
 
 #### Daemon related settings
 
