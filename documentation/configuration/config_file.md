@@ -3,6 +3,9 @@ layout: config
 title: Spectrum 2
 ---
 
+* [service.server_mode](#serviceserver_mode)
+* [service.jid](#servicejid)
+
 ### Types of configuration fields
 
 Following types are used:
@@ -17,8 +20,6 @@ list - List of strings (or Jabber IDs). You can specify this options more than o
 
 	allowed_servers=domain.tld
 	allowed_servers=example.com
-
-### [service] section
 
 #### service.server_mode
 
