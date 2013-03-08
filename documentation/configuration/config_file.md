@@ -3,10 +3,6 @@ layout: page
 title: Spectrum 2
 ---
 
-### Compatibility with Spectrum 1
-
-Spectrum 2 config file is not compatible with Spectrum 1, although some important config options are named the same as in Spectrum 1.
-
 ### Types of configuration fields
 
 Following types are used:
@@ -35,7 +31,7 @@ Default:|0
 
 If this option is true, Spectrum 2 works in server-mode and acts as standalone server.
 
-User then logins legacy networks by logging XMPP account like this one: "my_msn_name%hotmail.com@msn.domain.tld".
+User then logins legacy networks by logging XMPP account like this one: `my_msn_name%hotmail.com@msn.domain.tld`.
 
 *Advantages:*
 * Passwords are not stored on server.
