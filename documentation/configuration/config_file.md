@@ -213,7 +213,7 @@ to this group.
 
 Key | val
 ----|----
-_Description:_|Configures path to file when Spectrum 2 stores its process ID.
+Description:|Configures path to file when Spectrum 2 stores its process ID.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|/var/run/spectrum2/$jid.pid
@@ -225,7 +225,7 @@ if this particular Spectrum 2 instance runs.
 
 Key | val
 ----|----
-_Description:_|Configures path to directory when Spectrum 2 stores its data files.
+Description:|Configures path to directory when Spectrum 2 stores its data files.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|/var/lib/spectrum2/$jid
@@ -236,7 +236,7 @@ This option configures path to directory when Spectrum 2 stores its data files l
 
 Key | val
 ----|----
-_Description:_|Configures path to backend executable.
+Description:|Configures path to backend executable.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
@@ -248,7 +248,7 @@ session. Usually single backend is shared by more users. This can be configured 
 
 Key | val
 ----|----
-_Description:_|Configures hostname or IP to which backend connects.
+Description:|Configures hostname or IP to which backend connects.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|localhost
@@ -261,7 +261,7 @@ new users sessions.
 
 Key | val
 ----|----
-_Description:_|Configures port on which Spectrum 2 listens on for backends connections.
+Description:|Configures port on which Spectrum 2 listens on for backends connections.
 Context:|server-mode and gateway-mode
 Type:|integer
 Default:|0
@@ -273,41 +273,112 @@ uses randomly generated port number.
 
 Key | val
 ----|----
-_Description:_|Configures maximum number of users who share single backend process.
+Description:|Configures maximum number of users who share single backend process.
 Context:|server-mode and gateway-mode
 Type:|integer
 Default:|100
 
 This option configures maximum number of users who share single backend process. Value of this option depends on number of online
-users you presume to use your Spectrum 2 instance in the same time.
+users on your Spectrum 2 instance in the same time. There is no strict consensus on what is the best value. Every backend is separated
+process and you probably want to keep the number of processes per Spectrum 2 instance less than 30. So if you have 1000 users, it
+could be sane to use `users_per_backend=50`. Another idea is to have the same number of backends as the number of CPU cores of the
+machine where Spectrum 2 is running.
 
-#### Backends related settings
+If you have too big value of users_per_backend, you have just single backend process for all users and Spectrum 2 will not perform so well
+as if you have more backends running for the same user-base. Also, if there is some problem with single backend, it will affects only users
+connected using this particular backend, so it is good idea to have more backends running. However, the more backends you have
+the more processes the machine has and since some point, it will become less useful. There is also some memory overhead, so if you run
+500 users on single backend, it will take little bit less memory than 500 users on 5 backends (but it is not significant unless you decide
+to have hundreds of backends).
 
-Key | Type | Default | Description
-----|------|---------|------------
-users_per_backend | integer | 100 | Maximum number of users per one legacy network backend.
-reuse_old_backends | boolean | 1 | True if Spectrum should use old backends which were full in the past.
-idle_reconnect_time | time in seconds | 0 | Time in seconds after which idle users are reconnected to let their backend die.
-memory_collector_time | time in seconds | 0 | Time in seconds after which backend with most memory is set to die.
-protocol | string | | Used protocol in case of libpurple backend (prpl-icq, prpl-msn, prpl-jabber, ...).
+If you presume to have just few users on your personal server, it can be useful to configure `service.users_per_backend=1`. Ever user will
+get his own separated backend process.
 
-### [identity] section
+For bigger user-base, you have to increase the `service.users_per_backend` value, but there is no optimal value to be suggested yet.
 
-Key | Type | Default | Description
-----|------|---------|------------
-name | string | Spectrum 2 Transport | Name showed in service discovery.
-category | string | gateway | Disco#info identity category. 'gateway' by default.
-type | string | | Type of transport ('icq','msn','gg','irc', ...).
+#### identity.name
 
-### [registration] section
+Key | val
+----|----
+Description:|Configures the name showed in service discovery.
+Context:|gateway-mode
+Type:|string
+Default:|Spectrum 2 Transport
 
-Key | Type | Default | Description
-----|------|---------|------------
-enable_public_registration | boolean | 1 | True if users are able to register.
-language | string | en | Default language for registration form.
-instructions | string | Enter your legacy network username and password. | Instructions showed to user in registration form.
-username_label | string | Legacy network username: | Label for username field.
-username_mask | string | | Example: "$username@gmail.com" - users will register just "my_name" account and transport will connect them to my_name@gmail.com.
+This option configures the name showed in service discovery.
+
+#### identity.category
+
+Key | val
+----|----
+Description:|Configures disco#info identity category.
+Context:|gateway-mode
+Type:|string
+Default:|gateway
+
+This option configures disco#info identity category.
+
+#### identity.type
+
+Key | val
+----|----
+Description:|Configures type of transport as showed in service discovery.
+Context:|gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures type of transport as showed in service discovery. It is usually used by XMPP client to show proper
+icons according to type of network. See [Disco Categories](http://xmpp.org/registrar/disco-categories.html#gateway) for
+allowed values.
+
+#### registration.enable_public_registration
+
+Key | val
+----|----
+Description:|Configures if registration is allowed publicly.
+Context:|gateway-mode
+Type:|boolean
+Default:|1
+
+This option configures if registration is allowed publicly. This option can be used to disable public
+registration or, together with [service.allowed_servers](#serviceallowed_servers) to create white-list of
+domains from which users can register.
+
+#### registration.instructions
+
+Key | val
+----|----
+Description:|Configures instructions string showed in registration form.
+Context:|gateway-mode
+Type:|string
+Default:|Enter your legacy network username and password.
+
+This option configures instructions string showed in registration form.
+
+#### registration.username_label
+
+Key | val
+----|----
+Description:|Configures label for username field in registration form.
+Context:|gateway-mode
+Type:|string
+Default:|Legacy network username:
+
+This option configures label for username field in registration form.
+
+#### registration.username_mask
+
+Key | val
+----|----
+Description:|Configures mask which is used to generate legacy network username from username field in registration form.
+Context:|gateway-mode
+Type:|string
+Default:|emptry string
+
+This option configures mask which is used to generate legacy network username from username field in registration form.
+An example of this option could be `username_mask=$username@chat.facebook.com`. If the user registers account "my_name", Spectrum 2
+will use "my_name@chat.facebook.com" as legacy network username.
+
 auto_register | boolean | 0 | When true, users are registered just by sending presence to transport. Password is set to empty string.
 
 ### [database] section
