@@ -379,23 +379,117 @@ This option configures mask which is used to generate legacy network username fr
 An example of this option could be `username_mask=$username@chat.facebook.com`. If the user registers account "my_name", Spectrum 2
 will use "my_name@chat.facebook.com" as legacy network username.
 
-auto_register | boolean | 0 | When true, users are registered just by sending presence to transport. Password is set to empty string.
+#### registration.auto_register
 
-### [database] section
+Key | val
+----|----
+Description:|Configures automatic user registration.
+Context:|gateway-mode
+Type:|boolean
+Default:|0
 
-Key | Type | Default | Description
-----|------|---------|------------
-type | string | none | Database type - "none", "mysql", "sqlite3".
-database | string | /var/lib/spectrum2/$jid/database.sql | Database used to store data. Path for SQLite3 or name for other types.
-server | string | localhost | Database server.
-user | string | | Database user.
-password | string | | Database Password.
-port | integer | | Database port.
-prefix | string | | Prefix of tables in database.
+If this option is enabled and user sends available presence to Spectrum 2 instance (tries to login it), he is registered
+automatically. If the available presence was join-the-room request, legacy network name used for registration is determined
+according to resource of this presence. This basically means that if user wants to join for example IRC room #test%irc.freenode.org
+as "HanzZ", then Spectrum 2 registers him as "HanzZ" automatically and he does not have to fill registration form manually.
 
-### [logging] section
+#### database.type
 
-Key | Type | Default | Description
-----|------|---------|------------
-config | string | | Full path to log4cxx config file which is used for Spectrum 2 instance
-backend_config | string | | Full path to log4cxx config file which is used for backends (if backend supports logging)
+Key | val
+----|----
+Description:|Configures type of database where Spectrum 2 stores its data.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|none
+
+This option configures type of database where Spectrum 2 stores its data. It can be `none`, `mysql`, `sqlite3` or `pqxx` for PostgreSQL.
+
+#### database.database
+
+Key | val
+----|----
+Description:|Configures full path to database or the name of database.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|/var/lib/spectrum2/$jid/database.sql
+
+This option configures full path to database (in case of SQLite3) or the name of database.
+
+#### database.server
+
+Key | val
+----|----
+Description:|Configures the hostname of database server.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|localhost
+
+For server-client databases, this option configures the hostname of server.
+
+#### database.user
+
+Key | val
+----|----
+Description:|Configures username to connect the database.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+For server-client databases, this option configures username to be used to connect the database.
+
+#### database.password
+
+Key | val
+----|----
+Description:|Configures password to connect the database.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+For server-client databases, this option configures password to be used to connect the database.
+
+#### database.port
+
+Key | val
+----|----
+Description:|Configures port on which database listens for incoming connections.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+For server-client databases, this option configures port on which database listens for incoming connections.
+
+#### database.prefix
+
+Key | val
+----|----
+Description:|Configures the prefix for the Spectrum 2 tables in database.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures the prefix for the Spectrum 2 tables in database. When tables are created, they are prefixed
+with this prefix.
+
+#### logging.config
+
+Key | val
+----|----
+Description:|Configures full path to log4cxx config file which is used for Spectrum 2 instance logs.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures full path to log4cxx config file which is used for Spectrum 2 instance logs.
+
+#### logging.backend_config
+
+Key | val
+----|----
+Description:|Configures full path to log4cxx config file which is used for backends logs.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures full path to log4cxx config file which is used for backends logs.
+
