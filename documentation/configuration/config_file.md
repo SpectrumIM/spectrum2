@@ -3,11 +3,43 @@ layout: config
 title: Spectrum 2
 ---
 
-> * [service.server_mode](#serviceserver_mode)
+> * [database.database](databasedatabase)
+> * [database.password](databasepassword)
+> * [database.port](databaseport)
+> * [database.prefix](databaseprefix)
+> * [database.server](databaseserver)
+> * [database.type](databasetype)
+> * [database.user](databaseuser)
+> * [identity.category](#identitycategory)
+> * [identity.name](#identityname)
+> * [identity.type](#identitytype)
+> * [logging.backend_config](loggingbackend_config)
+> * [logging.config](loggingconfig)
+> * [registration.auto_register](#registrationauto_register)
+> * [registration.enable_public_registration](#registrationenable_public_registration)
+> * [registration.instructions](#registrationinstructions)
+> * [registration.username_label](#registrationusername_label)
+> * [registration.username_mask](#registrationusername_mask)
+> * [service.admin_jid](#serviceadmin_jid)
+> * [service.admin_password](#serviceadmin_password)
+> * [service.allowed_servers](#serviceallowed_servers)
+> * [service.backend](#servicebackend)
+> * [service.backend_host](#servicebackend_host)
+> * [service.backend_port](#servicebackend_port)
+> * [service.cert](#servicecert)
+> * [service.cert_password](#servicecert_password)
+> * [service.group](#servicegroup)
 > * [service.jid](#servicejid)
-> * [service.server](#serviceserver)
-> * [service.port](#serviceport)
 > * [service.password](#servicepassword)
+> * [service.pidfile](#servicepidfile)
+> * [service.port](#serviceport)
+> * [service.server](#serviceserver)
+> * [service.server_mode](#serviceserver_mode)
+> * [service.user](#serviceuser)
+> * [service.users_per_backend](#servicusers_per_backend)
+> * [service.working_dir](#serviceworking_dir)
+
+
 
 ### Types of configuration fields
 
