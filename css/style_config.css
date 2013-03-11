@@ -209,6 +209,7 @@ pre code {
 blockquote {
   color: #666;
   margin-bottom: 20px;
+  margin-left: 10px;
   padding: 5px 5px 5px 5px;
   float:right;
   background-color: #fff;
@@ -217,8 +218,8 @@ blockquote {
   -moz-border-radius: 2px;
   -webkit-border-radius: 2px;
   box-shadow: 0 0 10px rgba(0,0,0,.1);
-  position: absolute;
-  right:-30px;
+/*   position: absolute; */
+/*   right:-30px; */
 }
 
 ul, ol, dl {
