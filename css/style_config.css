@@ -215,7 +215,7 @@ blockquote {
   display:inline;
   margin-bottom: 20px;
   margin-left: 10px;
-  padding: 10px 5px 5px 5px;
+  padding: 5px 5px 5px 10px;
   float:right;
   width:200px;
   font-size: 90%;
@@ -241,7 +241,7 @@ ul li {
 }
 
 blockquote ul li {
-  padding-left: 0px;
+  padding-left: 5px;
 }
 
 blockquote ul {
