@@ -3,7 +3,7 @@ layout: config
 title: Spectrum 2
 ---
 
-> **[database]**
+> **\[database\]**
 > * [database](#databasedatabase)
 > * [password](#databasepassword)
 > * [port](#databaseport)
