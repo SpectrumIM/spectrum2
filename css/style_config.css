@@ -298,12 +298,12 @@ Full-Width Styles
 *******************************************************************************/
 
 .outer {
-  width: 100%;
+  width:800px;
 }
 
 .inner {
   position: relative;
-  max-width: 800px;
+  max-width: 640px;
   padding: 20px 10px;
   margin: 0 auto;
 }
