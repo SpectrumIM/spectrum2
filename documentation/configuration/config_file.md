@@ -11,11 +11,15 @@ title: Spectrum 2
 > * [server](#databaseserver)
 > * [type](#databasetype)
 > * [user](#databaseuser)
+>
 > **\[identity\]**
+>
 > * [category](#identitycategory)
 > * [name](#identityname)
 > * [type](#identitytype)
+>
 > **\[logging\]**
+>
 > * [backend_config](#loggingbackend_config)
 > * [config](#loggingconfig)
 > **\[registration\]**
@@ -24,7 +28,9 @@ title: Spectrum 2
 > * [instructions](#registrationinstructions)
 > * [username_label](#registrationusername_label)
 > * [username_mask](#registrationusername_mask)
+>
 > **\[service\]**
+>
 > * [admin_jid](#serviceadmin_jid)
 > * [admin_password](#serviceadmin_password)
 > * [allowed_servers](#serviceallowed_servers)
