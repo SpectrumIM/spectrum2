@@ -22,7 +22,9 @@ title: Spectrum 2
 >
 > * [backend_config](#loggingbackend_config)
 > * [config](#loggingconfig)
+>
 > **\[registration\]**
+>
 > * [auto_register](#registrationauto_register)
 > * [enable_public_registration](#registrationenable_public_registration)
 > * [instructions](#registrationinstructions)

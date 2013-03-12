@@ -214,6 +214,7 @@ blockquote {
   padding: 5px 5px 5px 5px;
   float:right;
   width:200px;
+  font-size: 80%;
   word-wrap: break-word;
   word-break: break-all;
   background-color: #fff;
@@ -223,7 +224,7 @@ blockquote {
   -webkit-border-radius: 2px;
   box-shadow: 0 0 10px rgba(0,0,0,.1);
   position: absolute;
-  right:-200px;
+  right:-210px;
 }
 
 ul, ol, dl {
@@ -303,9 +304,9 @@ Full-Width Styles
 
 .preinner {
   position: relative;
-  width: 840px;	
+  width: 880px;	
   margin: 0 auto;
-  background-color:yellow;
+/*   background-color:yellow; */
 }
 
 .inner {
