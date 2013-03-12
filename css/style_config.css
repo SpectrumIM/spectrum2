@@ -217,7 +217,7 @@ blockquote {
   margin-left: 10px;
   padding: 5px 5px 5px 10px;
   float:right;
-  width:200px;
+  max-width:200px;
   font-size: 90%;
   word-wrap: break-word;
   word-break: break-all;
