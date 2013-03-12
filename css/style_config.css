@@ -240,6 +240,10 @@ blockquote ul li {
   padding-left: 0px;
 }
 
+blockquote ul {
+  margin-bottom: 3px;
+}
+
 ol li {
   list-style: decimal inside;
   padding-left: 20px;
