@@ -302,7 +302,7 @@ Full-Width Styles
 }
 
 .preinner {
-  width: 800px;	
+  max-width: 800px;	
 }
 
 .inner {
