@@ -214,6 +214,8 @@ blockquote {
   padding: 5px 5px 5px 5px;
   float:right;
   width:200px;
+  word-wrap: break-word;
+  word-break: break-all;
   background-color: #fff;
 
   border-radius: 2px;
