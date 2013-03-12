@@ -213,6 +213,7 @@ blockquote {
   margin-left: 10px;
   padding: 5px 5px 5px 5px;
   float:right;
+  width:200px;
   background-color: #fff;
 
   border-radius: 2px;
