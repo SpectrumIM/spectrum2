@@ -305,6 +305,7 @@ Full-Width Styles
   position: relative;
   width: 800px;	
   margin: 0 auto;
+  background-color:yellow;
 }
 
 .inner {
