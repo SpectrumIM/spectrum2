@@ -3,13 +3,14 @@ layout: config
 title: Spectrum 2
 ---
 
-> * [database.database](#databasedatabase)
-> * [database.password](#databasepassword)
-> * [database.port](#databaseport)
-> * [database.prefix](#databaseprefix)
-> * [database.server](#databaseserver)
-> * [database.type](#databasetype)
-> * [database.user](#databaseuser)
+> **[database]**
+> * [database](#databasedatabase)
+> * [password](#databasepassword)
+> * [port](#databaseport)
+> * [prefix](#databaseprefix)
+> * [server](#databaseserver)
+> * [type](#databasetype)
+> * [user](#databaseuser)
 > * [identity.category](#identitycategory)
 > * [identity.name](#identityname)
 > * [identity.type](#identitytype)
