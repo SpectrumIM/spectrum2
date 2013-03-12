@@ -56,288 +56,83 @@ list - List of strings (or Jabber IDs). You can specify this options more than o
 	allowed_servers=domain.tld
 	allowed_servers=example.com
 
-#### service.server_mode
+#### database.database
 
 Key | val
 ----|----
-Description:|Configures if Spectrum 2 works in server mode or gateway mode
+Description:|Configures full path to database or the name of database.
 Context:|server-mode and gateway-mode
-Type:|boolean
-Default:|0
+Type:|string
+Default:|/var/lib/spectrum2/$jid/database.sql
 
-If this option is true, Spectrum 2 works in server-mode and acts as standalone server.
+This option configures full path to database (in case of SQLite3) or the name of database.
 
-User then logins legacy networks by logging XMPP account like this one: `my_msn_name%hotmail.com@msn.domain.tld`.
-
-*Advantages:*
-* Passwords are not stored on server.
-* Roster synchronization is easy, because Spectrum 2 acts as normal server.
-* If you want to use Spectrum 2 as wrapper between different networks, you don't need database or Jabber server as another layer.
-* Using SRV records you can easily run Spectrum 2 on different machines to scale it.
-
-*Disadvantages:*
-
-* Clients have to support more accounts to connect more legacy networks (Therefore they will need have to use more TCP connections).
-
-If this option is false, Spectrum 2 acts as normal XMPP component (gateway).
-
-You then have to configure an external XMPP server (like Prosody or Ejabberd) to serve the subdomain you want to use for Spectrum 2 (for example "icq.domain.tld"). Spectrum 2 in gateway mode then connects the XMPP server as its component and users are able to find out "icq.domain.tld" in Service Discovery, register it and use it.
-
-*Advantages:*
-* Users can use more legacy networks using single XMPP account (and using single TCP connection).
-* It's easy to extend existing XMPP servers using gateway mode.
-
-*Disadvantages:*
-* Passwords are stored (even in encrypted form) on server.
-* Roster (contact list) synchronization can be problematic, because it depends on the client user uses. This can be improved by usage of Remote Roster protoXEP.
-* You have to setup XMPP server and use database even if you only want to use Spectrum 2 as a tool to connect legacy networks using XMPP protocol.
-
-
-#### service.jid
+#### database.password
 
 Key | val
 ----|----
-Description:|Configures Jabber ID of Spectrum 2 instance
+Description:|Configures password to connect the database.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
 
-This option configures Jabber ID of particular Spectrum 2 instance. Usually it is a hostname on which this Spectrum 2 instance
-runs, so for example `icq.domain.tld`. Note that you have to have DNS records configured for this hostname, so clients will be able
-to find out your Jabber server (in case you are running Spectrum 2 in gateway-mode) or the Spectrum 2 itself (if you are running
-Spectrum 2 in server-mode).
+For server-client databases, this option configures password to be used to connect the database.
 
-#### service.server
+#### database.port
 
 Key | val
 ----|----
-Description:|Configures hostname or IP address of server to which Spectrum 2 connects to.
-Context:|gateway-mode
-Type:|string
-Default:|empty string
-
-This option configures hostname or IP address of server to which Spectrum 2 connects to. It is used only in gateway-mode and
-you should configure it to point to hostname or IP of your XMPP server.
-
-#### service.port
-
-Key | val
-----|----
-Description:|Configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode.
-Context:|server-mode and gateway-mode
-Type:|integer
-Default:|0
-
-This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
-the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
-server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
-depends on particular XMPP server and its configuration.
-
-#### service.password
-
-Key | val
-----|----
-Description:|Configures password to be used to connect XMPP server
-Context:|gateway-mode
-Type:|integer
-Default:|0
-
-This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
-the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
-server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
-depends on particular XMPP server and its configuration.
-
-#### service.cert
-
-Key | val
-----|----
-Description:|Configures certificate to be used for SSL encryption in server-mode.
-Context:|server-mode
-Type:|string
-Default:|empty string
-
-This option configures full path to PKCS#12 certificate which is used for SSL in server-mode. To find out, how to create
-such certificate, please read [Using SSL in server mode](http://spectrum.im/documentation/configuration/server_ssl.html).
-
-#### service.cert_password
-
-Key | val
-----|----
-Description:|Configures password for certificate which is used for SSL encryption in server-mode.
-Context:|server-mode
-Type:|string
-Default:|empty string
-
-This option configures password which is used to decrypt PKCS#12 certificate (if it is encrypted). For more information about SSL
-with Spectrum 2, read service.cert option description.
-
-#### service.admin_jid
-
-Key | val
-----|----
-Description:|Configures list of Jabber IDs, which has ability to use Admin Interface.
-Context:|server-mode and gateway-mode
-Type:|list of Jabber IDs
-Default:|empty list
-
-This option configures list of Jabber IDs, which has ability to use Admin Interface. In server-mode, you also have to specify
-service.admin_password to set password for Admin Interface. In gatewa-mode, you just specify the list of Jabber IDs, Spectrum 2 does
-not check any password in gateway-mode.
-
-#### service.admin_password
-
-Key | val
-----|----
-Description:|Configures password which is used by clients defined in service.admin_jid to use Admin Interface.
-Context:|server-mode
-Type:|string
-Default:|empty string
-
-This option configures the password which is used by clients defined in service.admin_jid to use Admin Interface.
-
-#### service.allowed_servers
-
-Key | val
-----|----
-Description:|Configures list of servers from which users can connect and register Spectrum 2 transport.
-Context:|gateway-mode
-Type:|list of JIDs
-Default:|empty list
-
-Configures list of servers from which users can connect and register Spectrum 2 transport. This option is used together with
-registration.enable_public_registration option. If registration.enable_public_registration is set to 0, you can use this option
-as a white-list, to enable users from particular domain to use your Spectrum 2 instance, but disallow it to any other users.
-
-Following part of config file disables public registrations and allows only users from xmpp.org and jabber.org to use this Spectrum 2 instance:
-
-	[service]
-	allowed_servers=xmpp.org
-	allowed_servers=jabber.org
-	
-	[registration]
-	enable_public_registration=0
-
-#### service.user
-
-Key | val
-----|----
-Description:|Configures user under which Spectrum 2 instance runs.
+Description:|Configures port on which database listens for incoming connections.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
 
-This option configures name of user under which Spectrum 2 instance runs. When Spectrum 2 is started, it switches from current user
-(usually root) to this user.
+For server-client databases, this option configures port on which database listens for incoming connections.
 
-#### service.group
+#### database.prefix
 
 Key | val
 ----|----
-Description:|Configures group under which Spectrum 2 instance runs.
+Description:|Configures the prefix for the Spectrum 2 tables in database.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
 
-This option configures name of group under which Spectrum 2 instance runs. When Spectrum 2 is started, it switches from current group
-to this group.
+This option configures the prefix for the Spectrum 2 tables in database. When tables are created, they are prefixed
+with this prefix.
 
-#### service.pidfile
-
-Key | val
-----|----
-Description:|Configures path to file when Spectrum 2 stores its process ID.
-Context:|server-mode and gateway-mode
-Type:|string
-Default:|/var/run/spectrum2/$jid.pid
-
-This option configures path to file when Spectrum 2 stores its process ID. This file is later used by `spectrum2_manager` to determine,
-if this particular Spectrum 2 instance runs.
-
-#### service.working_dir
+#### database.server
 
 Key | val
 ----|----
-Description:|Configures path to directory when Spectrum 2 stores its data files.
-Context:|server-mode and gateway-mode
-Type:|string
-Default:|/var/lib/spectrum2/$jid
-
-This option configures path to directory when Spectrum 2 stores its data files like for example SQLite3 database.
-
-#### service.backend
-
-Key | val
-----|----
-Description:|Configures path to backend executable.
-Context:|server-mode and gateway-mode
-Type:|string
-Default:|empty string
-
-This option configures path to backend executable. When user connects, Spectrum 2 spawns new backend process to handle this user's
-session. Usually single backend is shared by more users. This can be configured using service.users_per_backend.
-
-#### service.backend_host
-
-Key | val
-----|----
-Description:|Configures hostname or IP to which backend connects.
+Description:|Configures the hostname of database server.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|localhost
 
-This option configures hostname or IP to which backend connects. When Spectrum 2 is started, it listens on service.backend_port
-to communicate with backends. When new backend is started, it connects to the hostname configured by this option and starts handling
-new users sessions.
+For server-client databases, this option configures the hostname of server.
 
-#### service.backend_port
+#### database.type
 
 Key | val
 ----|----
-Description:|Configures port on which Spectrum 2 listens on for backends connections.
+Description:|Configures type of database where Spectrum 2 stores its data.
 Context:|server-mode and gateway-mode
-Type:|integer
-Default:|0
-
-This option configures port on which Spectrum 2 listens on for backends connections. If the value of this option is 0, then Spectrum 2
-uses randomly generated port number.
-
-#### service.users_per_backend
-
-Key | val
-----|----
-Description:|Configures maximum number of users who share single backend process.
-Context:|server-mode and gateway-mode
-Type:|integer
-Default:|100
-
-This option configures maximum number of users who share single backend process. Value of this option depends on number of online
-users on your Spectrum 2 instance in the same time. There is no strict consensus on what is the best value. Every backend is separated
-process and you probably want to keep the number of processes per Spectrum 2 instance less than 30. So if you have 1000 users, it
-could be sane to use `users_per_backend=50`. Another idea is to have the same number of backends as the number of CPU cores of the
-machine where Spectrum 2 is running.
-
-If you have too big value of users_per_backend, you have just single backend process for all users and Spectrum 2 will not perform so well
-as if you have more backends running for the same user-base. Also, if there is some problem with single backend, it will affects only users
-connected using this particular backend, so it is good idea to have more backends running. However, the more backends you have
-the more processes the machine has and since some point, it will become less useful. There is also some memory overhead, so if you run
-500 users on single backend, it will take little bit less memory than 500 users on 5 backends (but it is not significant unless you decide
-to have hundreds of backends).
-
-If you presume to have just few users on your personal server, it can be useful to configure `service.users_per_backend=1`. Ever user will
-get his own separated backend process.
-
-For bigger user-base, you have to increase the `service.users_per_backend` value, but there is no optimal value to be suggested yet.
-
-#### identity.name
-
-Key | val
-----|----
-Description:|Configures the name showed in service discovery.
-Context:|gateway-mode
 Type:|string
-Default:|Spectrum 2 Transport
+Default:|none
 
-This option configures the name showed in service discovery.
+This option configures type of database where Spectrum 2 stores its data. It can be `none`, `mysql`, `sqlite3` or `pqxx` for PostgreSQL.
+
+#### database.user
+
+Key | val
+----|----
+Description:|Configures username to connect the database.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+For server-client databases, this option configures username to be used to connect the database.
 
 #### identity.category
 
@@ -349,6 +144,17 @@ Type:|string
 Default:|gateway
 
 This option configures disco#info identity category.
+
+#### identity.name
+
+Key | val
+----|----
+Description:|Configures the name showed in service discovery.
+Context:|gateway-mode
+Type:|string
+Default:|Spectrum 2 Transport
+
+This option configures the name showed in service discovery.
 
 #### identity.type
 
@@ -362,6 +168,42 @@ Default:|empty string
 This option configures type of transport as showed in service discovery. It is usually used by XMPP client to show proper
 icons according to type of network. See [Disco Categories](http://xmpp.org/registrar/disco-categories.html#gateway) for
 allowed values.
+
+#### logging.config
+
+Key | val
+----|----
+Description:|Configures full path to log4cxx config file which is used for Spectrum 2 instance logs.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures full path to log4cxx config file which is used for Spectrum 2 instance logs.
+
+#### logging.backend_config
+
+Key | val
+----|----
+Description:|Configures full path to log4cxx config file which is used for backends logs.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures full path to log4cxx config file which is used for backends logs.
+
+#### registration.auto_register
+
+Key | val
+----|----
+Description:|Configures automatic user registration.
+Context:|gateway-mode
+Type:|boolean
+Default:|0
+
+If this option is enabled and user sends available presence to Spectrum 2 instance (tries to login it), he is registered
+automatically. If the available presence was join-the-room request, legacy network name used for registration is determined
+according to resource of this presence. This basically means that if user wants to join for example IRC room #test%irc.freenode.org
+as "HanzZ", then Spectrum 2 registers him as "HanzZ" automatically and he does not have to fill registration form manually.
 
 #### registration.enable_public_registration
 
@@ -411,117 +253,281 @@ This option configures mask which is used to generate legacy network username fr
 An example of this option could be `username_mask=$username@chat.facebook.com`. If the user registers account "my_name", Spectrum 2
 will use "my_name@chat.facebook.com" as legacy network username.
 
-#### registration.auto_register
+#### service.admin_jid
 
 Key | val
 ----|----
-Description:|Configures automatic user registration.
+Description:|Configures list of Jabber IDs, which has ability to use Admin Interface.
+Context:|server-mode and gateway-mode
+Type:|list of Jabber IDs
+Default:|empty list
+
+This option configures list of Jabber IDs, which has ability to use Admin Interface. In server-mode, you also have to specify
+service.admin_password to set password for Admin Interface. In gatewa-mode, you just specify the list of Jabber IDs, Spectrum 2 does
+not check any password in gateway-mode.
+
+#### service.admin_password
+
+Key | val
+----|----
+Description:|Configures password which is used by clients defined in service.admin_jid to use Admin Interface.
+Context:|server-mode
+Type:|string
+Default:|empty string
+
+This option configures the password which is used by clients defined in service.admin_jid to use Admin Interface.
+
+#### service.allowed_servers
+
+Key | val
+----|----
+Description:|Configures list of servers from which users can connect and register Spectrum 2 transport.
 Context:|gateway-mode
-Type:|boolean
-Default:|0
+Type:|list of JIDs
+Default:|empty list
 
-If this option is enabled and user sends available presence to Spectrum 2 instance (tries to login it), he is registered
-automatically. If the available presence was join-the-room request, legacy network name used for registration is determined
-according to resource of this presence. This basically means that if user wants to join for example IRC room #test%irc.freenode.org
-as "HanzZ", then Spectrum 2 registers him as "HanzZ" automatically and he does not have to fill registration form manually.
+Configures list of servers from which users can connect and register Spectrum 2 transport. This option is used together with
+registration.enable_public_registration option. If registration.enable_public_registration is set to 0, you can use this option
+as a white-list, to enable users from particular domain to use your Spectrum 2 instance, but disallow it to any other users.
 
-#### database.type
+Following part of config file disables public registrations and allows only users from xmpp.org and jabber.org to use this Spectrum 2 instance:
+
+	[service]
+	allowed_servers=xmpp.org
+	allowed_servers=jabber.org
+	
+	[registration]
+	enable_public_registration=0
+
+
+#### service.backend
 
 Key | val
 ----|----
-Description:|Configures type of database where Spectrum 2 stores its data.
+Description:|Configures path to backend executable.
 Context:|server-mode and gateway-mode
 Type:|string
-Default:|none
+Default:|empty string
 
-This option configures type of database where Spectrum 2 stores its data. It can be `none`, `mysql`, `sqlite3` or `pqxx` for PostgreSQL.
+This option configures path to backend executable. When user connects, Spectrum 2 spawns new backend process to handle this user's
+session. Usually single backend is shared by more users. This can be configured using service.users_per_backend.
 
-#### database.database
-
-Key | val
-----|----
-Description:|Configures full path to database or the name of database.
-Context:|server-mode and gateway-mode
-Type:|string
-Default:|/var/lib/spectrum2/$jid/database.sql
-
-This option configures full path to database (in case of SQLite3) or the name of database.
-
-#### database.server
+#### service.backend_host
 
 Key | val
 ----|----
-Description:|Configures the hostname of database server.
+Description:|Configures hostname or IP to which backend connects.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|localhost
 
-For server-client databases, this option configures the hostname of server.
+This option configures hostname or IP to which backend connects. When Spectrum 2 is started, it listens on service.backend_port
+to communicate with backends. When new backend is started, it connects to the hostname configured by this option and starts handling
+new users sessions.
 
-#### database.user
+#### service.backend_port
 
 Key | val
 ----|----
-Description:|Configures username to connect the database.
+Description:|Configures port on which Spectrum 2 listens on for backends connections.
+Context:|server-mode and gateway-mode
+Type:|integer
+Default:|0
+
+This option configures port on which Spectrum 2 listens on for backends connections. If the value of this option is 0, then Spectrum 2
+uses randomly generated port number.
+
+#### service.cert
+
+Key | val
+----|----
+Description:|Configures certificate to be used for SSL encryption in server-mode.
+Context:|server-mode
+Type:|string
+Default:|empty string
+
+This option configures full path to PKCS#12 certificate which is used for SSL in server-mode. To find out, how to create
+such certificate, please read [Using SSL in server mode](http://spectrum.im/documentation/configuration/server_ssl.html).
+
+#### service.cert_password
+
+Key | val
+----|----
+Description:|Configures password for certificate which is used for SSL encryption in server-mode.
+Context:|server-mode
+Type:|string
+Default:|empty string
+
+This option configures password which is used to decrypt PKCS#12 certificate (if it is encrypted). For more information about SSL
+with Spectrum 2, read service.cert option description.
+
+#### service.group
+
+Key | val
+----|----
+Description:|Configures group under which Spectrum 2 instance runs.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
 
-For server-client databases, this option configures username to be used to connect the database.
+This option configures name of group under which Spectrum 2 instance runs. When Spectrum 2 is started, it switches from current group
+to this group.
 
-#### database.password
+
+#### service.jid
 
 Key | val
 ----|----
-Description:|Configures password to connect the database.
+Description:|Configures Jabber ID of Spectrum 2 instance
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
 
-For server-client databases, this option configures password to be used to connect the database.
+This option configures Jabber ID of particular Spectrum 2 instance. Usually it is a hostname on which this Spectrum 2 instance
+runs, so for example `icq.domain.tld`. Note that you have to have DNS records configured for this hostname, so clients will be able
+to find out your Jabber server (in case you are running Spectrum 2 in gateway-mode) or the Spectrum 2 itself (if you are running
+Spectrum 2 in server-mode).
 
-#### database.port
+#### service.password
 
 Key | val
 ----|----
-Description:|Configures port on which database listens for incoming connections.
+Description:|Configures password to be used to connect XMPP server
+Context:|gateway-mode
+Type:|integer
+Default:|0
+
+This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
+the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
+server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
+depends on particular XMPP server and its configuration.
+
+#### service.pidfile
+
+Key | val
+----|----
+Description:|Configures path to file when Spectrum 2 stores its process ID.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|/var/run/spectrum2/$jid.pid
+
+This option configures path to file when Spectrum 2 stores its process ID. This file is later used by `spectrum2_manager` to determine,
+if this particular Spectrum 2 instance runs.
+
+#### service.port
+
+Key | val
+----|----
+Description:|Configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode.
+Context:|server-mode and gateway-mode
+Type:|integer
+Default:|0
+
+This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
+the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
+server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
+depends on particular XMPP server and its configuration.
+
+#### service.server
+
+Key | val
+----|----
+Description:|Configures hostname or IP address of server to which Spectrum 2 connects to.
+Context:|gateway-mode
+Type:|string
+Default:|empty string
+
+This option configures hostname or IP address of server to which Spectrum 2 connects to. It is used only in gateway-mode and
+you should configure it to point to hostname or IP of your XMPP server.
+
+#### service.server_mode
+
+Key | val
+----|----
+Description:|Configures if Spectrum 2 works in server mode or gateway mode
+Context:|server-mode and gateway-mode
+Type:|boolean
+Default:|0
+
+If this option is true, Spectrum 2 works in server-mode and acts as standalone server.
+
+User then logins legacy networks by logging XMPP account like this one: `my_msn_name%hotmail.com@msn.domain.tld`.
+
+*Advantages:*
+* Passwords are not stored on server.
+* Roster synchronization is easy, because Spectrum 2 acts as normal server.
+* If you want to use Spectrum 2 as wrapper between different networks, you don't need database or Jabber server as another layer.
+* Using SRV records you can easily run Spectrum 2 on different machines to scale it.
+
+*Disadvantages:*
+
+* Clients have to support more accounts to connect more legacy networks (Therefore they will need have to use more TCP connections).
+
+If this option is false, Spectrum 2 acts as normal XMPP component (gateway).
+
+You then have to configure an external XMPP server (like Prosody or Ejabberd) to serve the subdomain you want to use for Spectrum 2 (for example "icq.domain.tld"). Spectrum 2 in gateway mode then connects the XMPP server as its component and users are able to find out "icq.domain.tld" in Service Discovery, register it and use it.
+
+*Advantages:*
+* Users can use more legacy networks using single XMPP account (and using single TCP connection).
+* It's easy to extend existing XMPP servers using gateway mode.
+
+*Disadvantages:*
+* Passwords are stored (even in encrypted form) on server.
+* Roster (contact list) synchronization can be problematic, because it depends on the client user uses. This can be improved by usage of Remote Roster protoXEP.
+* You have to setup XMPP server and use database even if you only want to use Spectrum 2 as a tool to connect legacy networks using XMPP protocol.
+
+
+
+
+#### service.user
+
+Key | val
+----|----
+Description:|Configures user under which Spectrum 2 instance runs.
 Context:|server-mode and gateway-mode
 Type:|string
 Default:|empty string
 
-For server-client databases, this option configures port on which database listens for incoming connections.
+This option configures name of user under which Spectrum 2 instance runs. When Spectrum 2 is started, it switches from current user
+(usually root) to this user.
 
-#### database.prefix
 
-Key | val
-----|----
-Description:|Configures the prefix for the Spectrum 2 tables in database.
-Context:|server-mode and gateway-mode
-Type:|string
-Default:|empty string
-
-This option configures the prefix for the Spectrum 2 tables in database. When tables are created, they are prefixed
-with this prefix.
-
-#### logging.config
+#### service.users_per_backend
 
 Key | val
 ----|----
-Description:|Configures full path to log4cxx config file which is used for Spectrum 2 instance logs.
+Description:|Configures maximum number of users who share single backend process.
 Context:|server-mode and gateway-mode
-Type:|string
-Default:|empty string
+Type:|integer
+Default:|100
 
-This option configures full path to log4cxx config file which is used for Spectrum 2 instance logs.
+This option configures maximum number of users who share single backend process. Value of this option depends on number of online
+users on your Spectrum 2 instance in the same time. There is no strict consensus on what is the best value. Every backend is separated
+process and you probably want to keep the number of processes per Spectrum 2 instance less than 30. So if you have 1000 users, it
+could be sane to use `users_per_backend=50`. Another idea is to have the same number of backends as the number of CPU cores of the
+machine where Spectrum 2 is running.
 
-#### logging.backend_config
+If you have too big value of users_per_backend, you have just single backend process for all users and Spectrum 2 will not perform so well
+as if you have more backends running for the same user-base. Also, if there is some problem with single backend, it will affects only users
+connected using this particular backend, so it is good idea to have more backends running. However, the more backends you have
+the more processes the machine has and since some point, it will become less useful. There is also some memory overhead, so if you run
+500 users on single backend, it will take little bit less memory than 500 users on 5 backends (but it is not significant unless you decide
+to have hundreds of backends).
+
+If you presume to have just few users on your personal server, it can be useful to configure `service.users_per_backend=1`. Ever user will
+get his own separated backend process.
+
+For bigger user-base, you have to increase the `service.users_per_backend` value, but there is no optimal value to be suggested yet.
+
+
+#### service.working_dir
 
 Key | val
 ----|----
-Description:|Configures full path to log4cxx config file which is used for backends logs.
+Description:|Configures path to directory when Spectrum 2 stores its data files.
 Context:|server-mode and gateway-mode
 Type:|string
-Default:|empty string
+Default:|/var/lib/spectrum2/$jid
 
-This option configures full path to log4cxx config file which is used for backends logs.
+This option configures path to directory when Spectrum 2 stores its data files like for example SQLite3 database.
 
