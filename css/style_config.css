@@ -49,7 +49,7 @@ blockquote, q {
 table {
   border-collapse: collapse;
   border-spacing: 0;
-/*   width:100%; */
+  width:100%;
 }
 
 a:focus {
@@ -222,8 +222,8 @@ blockquote {
   -moz-border-radius: 2px;
   -webkit-border-radius: 2px;
   box-shadow: 0 0 10px rgba(0,0,0,.1);
-/*   position: absolute; */
-/*   right:-30px; */
+  position: absolute;
+  right:-200px;
 }
 
 ul, ol, dl {
@@ -303,7 +303,7 @@ Full-Width Styles
 
 .preinner {
   position: relative;
-  width: 800px;	
+  width: 840px;	
   margin: 0 auto;
   background-color:yellow;
 }
