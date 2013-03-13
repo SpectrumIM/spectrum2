@@ -21,7 +21,6 @@ Default config file is located at `/etc/spectrum2/transports/spectrum.cfg.exampl
 
 Category|Option|Change to value|Meaning
 --------|------|---------------|--------
-service|server_mode|0| Spectrum 2 will act as gateway.
 service|jid|Jabber ID of your Spectrum 2 transport|You have configured the Jabber ID in your Jabber server config file in previous step.
 service|password|Password to connect the Jabber server|You have configured the password in your Jabber server config file in previous step.
 service|server|Your Jabber server IP od hostname|Spectrum 2 will connect that IP/hostname.
@@ -37,10 +36,7 @@ The default backend is [Libpurple backend](http://spectrum.im/documentation/back
 
 #### Choose the storage backend
 
-Category| Option| Change to value| Meaning
--|-|-|-
-database|type|sqlite3|Spectrum 2 will use SQLite3 as storage backend
-
+By default, Spectrum 2 uses SQLite3. You don't have to configure it explicitely.
 You can also use [MySQL](http://spectrum.im/documentation/configuration/mysql.html) or [PostgreSQL](http://hanzz.github.com/libtransport/documentation/configuration/postgresql.html) instead of SQLite3 backend.
 
 ### Start Spectrum 2
