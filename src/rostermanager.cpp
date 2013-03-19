@@ -200,7 +200,7 @@ void RosterManager::sendBuddyUnsubscribePresence(Buddy *buddy) {
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	Swift::Presence::ref response = Swift::Presence::create();
 	response->setTo(m_user->getJID());
-	response->setFrom(buddy->getJID());
+	response->setFrom(buddy->getJID().toBare());
 	response->setType(Swift::Presence::Subscribe);
 	if (!buddy->getAlias().empty()) {
 		response->addPayload(boost::make_shared<Swift::Nickname>(buddy->getAlias()));
