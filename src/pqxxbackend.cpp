@@ -355,7 +355,7 @@ bool PQXXBackend::removeUser(long id) {
 		pqxx::nontransaction txn(*m_conn);
 		txn.exec("DELETE FROM " + m_prefix + "users WHERE id=" + pqxx::to_string(id));
 		txn.exec("DELETE FROM " + m_prefix + "buddies WHERE user_id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "user_settings WHERE user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "users_settings WHERE user_id=" + pqxx::to_string(id));
 		txn.exec("DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=" + pqxx::to_string(id));
 
 		return true;
