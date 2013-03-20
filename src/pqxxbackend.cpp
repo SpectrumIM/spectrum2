@@ -141,7 +141,7 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (ver)"
 			");");
 
- 		exec("INSERT INTO db_version (ver) VALUES ('1');");
+ 		exec("INSERT INTO " + m_prefix + "db_version (ver) VALUES ('1');");
 	}
 
 	return true;
@@ -353,10 +353,10 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 bool PQXXBackend::removeUser(long id) {
 	try {
 		pqxx::nontransaction txn(*m_conn);
-		txn.exec("DELETE FROM " + m_prefix + "users SET id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "buddies SET user_id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "user_settings SET user_id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "buddies_settings SET user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "users WHERE id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "buddies WHERE user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "users_settings WHERE user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=" + pqxx::to_string(id));
 
 		return true;
 	}
