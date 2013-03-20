@@ -141,7 +141,7 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (ver)"
 			");");
 
- 		exec("INSERT INTO db_version (ver) VALUES ('1');");
+ 		exec("INSERT INTO " + m_prefix + "db_version (ver) VALUES ('1');");
 	}
 
 	return true;
