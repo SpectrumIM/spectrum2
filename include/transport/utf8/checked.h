@@ -95,6 +95,37 @@ namespace utf8
     }
 
     template <typename octet_iterator, typename output_iterator>
+    output_iterator remove_invalid(octet_iterator start, octet_iterator end, output_iterator out)
+    {
+        while (start != end) {
+            octet_iterator sequence_start = start;
+            internal::utf_error err_code = internal::validate_next(start, end);
+            switch (err_code) {
+                case internal::OK :
+                    for (octet_iterator it = sequence_start; it != start; ++it)
+                        *out++ = *it;
+                    break;
+                case internal::NOT_ENOUGH_ROOM:
+                    throw not_enough_room();
+                case internal::INVALID_LEAD:
+//                     append (replacement, out);
+                    ++start;
+                    break;
+                case internal::INCOMPLETE_SEQUENCE:
+                case internal::OVERLONG_SEQUENCE:
+                case internal::INVALID_CODE_POINT:
+//                     append (replacement, out);
+                    ++start;
+                    // just one replacement mark for the sequence
+                    while (internal::is_trail(*start) && start != end)
+                        ++start;
+                    break;
+            }
+        }
+        return out;
+    }
+
+    template <typename octet_iterator, typename output_iterator>
     output_iterator replace_invalid(octet_iterator start, octet_iterator end, output_iterator out, uint32_t replacement)
     {
         while (start != end) {

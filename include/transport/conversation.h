@@ -40,7 +40,8 @@ class Conversation {
 			PARTICIPANT_FLAG_BANNED = 4,
 			PARTICIPANT_FLAG_NOT_AUTHORIZED = 8,
 			PARTICIPANT_FLAG_ME = 16,
-			PARTICIPANT_FLAG_KICKED = 32
+			PARTICIPANT_FLAG_KICKED = 32,
+			PARTICIPANT_FLAG_ROOM_NOT_FOUD = 64
 		} ParticipantFlag;
 
 		typedef struct _Participant {
@@ -71,6 +72,7 @@ class Conversation {
 		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
 
 		void handleRawMessage(boost::shared_ptr<Swift::Message> &message);
+		void handleRawPresence(Swift::Presence::ref presence);
 
 		/// Handles participant change in MUC.
 
@@ -84,9 +86,7 @@ class Conversation {
 		/// Sets XMPP user nickname in MUC rooms.
 
 		/// \param nickname XMPP user nickname in MUC rooms.
-		void setNickname(const std::string &nickname) {
-			m_nickname = nickname;
-		}
+		void setNickname(const std::string &nickname);
 
 		const std::string &getNickname() {
 			return m_nickname;
@@ -152,6 +152,7 @@ class Conversation {
 
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");
+		void cacheMessage(boost::shared_ptr<Swift::Message> &message);
 
 	private:
 		ConversationManager *m_conversationManager;
@@ -161,10 +162,17 @@ class Conversation {
 		bool m_muc;
 		Swift::JID m_jid;
 		std::list<Swift::JID> m_jids;
-		std::map<std::string, Participant> m_participants;
-		boost::shared_ptr<Swift::Message> m_subject;
 		bool m_sentInitialPresence;
+		bool m_nicknameChanged;
+
+		// TODO: Move this to some extra class to cache the most used
+		// rooms across different accounts. Just now if we have 10 users
+		// connected to single room, we store all those things 10 times.
+		// It would be also great to store last 100 messages per room
+		// every time, so we can get history messages for IRC for example.
+		boost::shared_ptr<Swift::Message> m_subject;
 		std::list<boost::shared_ptr<Swift::Message> > m_cachedMessages;
+		std::map<std::string, Swift::Presence::ref> m_participants;
 };
 
 }

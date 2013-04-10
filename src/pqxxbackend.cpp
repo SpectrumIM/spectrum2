@@ -141,7 +141,7 @@ bool PQXXBackend::createDatabase() {
 				"UNIQUE (ver)"
 			");");
 
- 		exec("INSERT INTO db_version (ver) VALUES ('1');");
+ 		exec("INSERT INTO " + m_prefix + "db_version (ver) VALUES ('1');");
 	}
 
 	return true;
@@ -295,12 +295,12 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			BuddyInfo b;
 			std::string group;
 
-			b.id = r[0][0].as<long>();
-			b.legacyName = r[0][1].as<std::string>();
-			b.subscription = r[0][2].as<std::string>();
-			b.alias = r[0][3].as<std::string>();
-			group = r[0][4].as<std::string>();
-			b.flags = r[0][5].as<long>();
+			b.id = (*it)[0].as<long>();
+			b.legacyName = (*it)[1].as<std::string>();
+			b.subscription = (*it)[2].as<std::string>();
+			b.alias = (*it)[3].as<std::string>();
+			group = (*it)[4].as<std::string>();
+			b.flags = (*it)[5].as<long>();
 
 			if (!group.empty()) {
 				b.groups = StorageBackend::deserializeGroups(group);
@@ -317,10 +317,10 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			std::string key;
 			std::string val;
 
-			buddy_id = r[0][0].as<long>();
-			var.type = r[0][1].as<long>();
-			key = r[0][2].as<std::string>();
-			val = r[0][3].as<std::string>();
+			buddy_id = (*it)[0].as<long>();
+			var.type = (*it)[1].as<long>();
+			key = (*it)[2].as<std::string>();
+			val = (*it)[3].as<std::string>();
 			switch (var.type) {
 				case TYPE_BOOLEAN:
 					var.b = atoi(val.c_str());
@@ -353,10 +353,10 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 bool PQXXBackend::removeUser(long id) {
 	try {
 		pqxx::nontransaction txn(*m_conn);
-		txn.exec("DELETE FROM " + m_prefix + "users SET id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "buddies SET user_id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "user_settings SET user_id=" + pqxx::to_string(id));
-		txn.exec("DELETE FROM " + m_prefix + "buddies_settings SET user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "users WHERE id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "buddies WHERE user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "users_settings WHERE user_id=" + pqxx::to_string(id));
+		txn.exec("DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=" + pqxx::to_string(id));
 
 		return true;
 	}

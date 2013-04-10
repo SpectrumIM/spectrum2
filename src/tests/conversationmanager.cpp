@@ -23,6 +23,7 @@ using namespace Transport;
 
 class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
+	CPPUNIT_TEST(conversationSize);
 	CPPUNIT_TEST(handleNormalMessages);
 	CPPUNIT_TEST(handleNormalMessagesHeadline);
 	CPPUNIT_TEST(handleGroupchatMessages);
@@ -37,6 +38,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleGroupchatRemoved);
 	CPPUNIT_TEST(handleNicknameConflict);
 	CPPUNIT_TEST(handleNotAuthorized);
+	CPPUNIT_TEST(handleSetNickname);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -59,6 +61,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			factory->onMessageToSend.disconnect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 			tearMeDown();
 		}
+
+	void conversationSize() {
+		std::cout << " = " << sizeof(Conversation) << " B";
+	}
 
 	void handleMessageReceived(TestingConversation *_conv, boost::shared_ptr<Swift::Message> &_msg) {
 		m_conv = _conv;
@@ -308,6 +314,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
+		boost::shared_ptr<Swift::Message> msg0(new Swift::Message());
+		msg0->setSubject("subject");
+		conv->handleMessage(msg0, "anotheruser");
+
 		CPPUNIT_ASSERT(!user->shouldCacheMessages());
 
 		// disconnectUser
@@ -345,7 +355,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
@@ -356,6 +366,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
 
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[3])));
+		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getSubject());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getFrom().toString());
 	}
 
 	void handleGroupchatMessagesBouncerLeave() {
@@ -631,6 +645,25 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Error, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::ErrorPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::ErrorPayload::NotAuthorized, getStanza(received[0])->getPayload<Swift::ErrorPayload>()->getCondition());
+	}
+
+	void handleSetNickname() {
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+		loop->processEvents();
+
+		conv->setNickname("nickname2");
+		conv->handleParticipantChanged("nickname2", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(110, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[0].code);
+		CPPUNIT_ASSERT_EQUAL(210, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[1].code);
 	}
 
 };

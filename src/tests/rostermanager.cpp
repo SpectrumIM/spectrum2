@@ -70,6 +70,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Nickname>());
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), getStanza(received[0])->getPayload<Swift::Nickname>()->getNickname());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1@localhost"), getStanza(received[0])->getFrom().toString());
 		
 	}
 

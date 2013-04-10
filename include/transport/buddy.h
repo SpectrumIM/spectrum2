@@ -80,7 +80,7 @@ class Buddy {
 		/// \param only_new if True, this function returns Presence stanza only if it's different
 		/// than the previously generated one.
 		/// \return Presence stanza or NULL.
-		Swift::Presence::ref generatePresenceStanza(int features, bool only_new = false);
+		std::vector<Swift::Presence::ref> &generatePresenceStanzas(int features, bool only_new = false);
 
 		void setBlocked(bool block) {
 			if (block)
@@ -124,6 +124,8 @@ class Buddy {
 
 		void sendPresence();
 
+		void handleRawPresence(Swift::Presence::ref);
+
 		/// Handles VCard from legacy network and forwards it to XMPP user.
 
 		/// \param id ID used in IQ-result.
@@ -157,6 +159,8 @@ class Buddy {
 		/// \return avatar hash or empty string.
 		virtual std::string getIconHash() = 0;
 
+		virtual bool isAvailable() = 0;
+
 		/// Returns legacy name of buddy from JID.
 
 		/// \param jid Jabber ID.
@@ -167,10 +171,10 @@ class Buddy {
 	protected:
 		void generateJID();
 		Swift::JID m_jid;
+		std::vector<Swift::Presence::ref> m_presences;
 
 	private:
 		long m_id;
-// 		Swift::Presence::ref m_lastPresence;
 		BuddyFlag m_flags;
 		RosterManager *m_rosterManager;
 		Subscription m_subscription;

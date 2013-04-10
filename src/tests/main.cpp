@@ -19,7 +19,11 @@ int main (int argc, char* argv[])
 {
 #ifdef WITH_LOG4CXX
 	LoggerPtr root = Logger::getRootLogger();
+#ifndef _MSC_VER
 	root->addAppender(new FileAppender(new PatternLayout("%d %-5p %c: %m%n"), "libtransport_test.log", false));
+#else
+	root->addAppender(new FileAppender(new PatternLayout(L"%d %-5p %c: %m%n"), L"libtransport_test.log", false));
+#endif
 #endif
 
 	std::vector<std::string> testsToRun;

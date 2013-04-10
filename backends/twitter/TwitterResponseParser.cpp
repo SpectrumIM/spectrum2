@@ -137,11 +137,13 @@ std::vector<Status> getTimeline(std::string &xml)
 	
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML")
+        LOG4CXX_ERROR(logger, xml)
 		return statuses;
 	}
 
 	if(rootElement->getName() != "statuses") {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to timeline")
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to timeline:")
+        LOG4CXX_ERROR(logger, xml)
 		return statuses;
 	}
 
@@ -162,11 +164,13 @@ std::vector<DirectMessage> getDirectMessages(std::string &xml)
 	
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML")
+        LOG4CXX_ERROR(logger, xml)
 		return DMs;
 	}
 	
 	if(rootElement->getName() != TwitterReponseTypes::directmessages) {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to direct-messages")
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to direct-messages:")
+        LOG4CXX_ERROR(logger, xml)
 		return DMs;
 	}
 
@@ -187,11 +191,13 @@ std::vector<User> getUsers(std::string &xml)
 	
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML")
+        LOG4CXX_ERROR(logger, xml)
 		return users;
 	}
 
 	if(rootElement->getName() != TwitterReponseTypes::users) {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to user list")
+		LOG4CXX_ERROR(logger, "XML doesn't correspond to user list:")
+        LOG4CXX_ERROR(logger, xml)
 		return users;
 	}
 
@@ -212,11 +218,13 @@ User getUser(std::string &xml)
 	
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML")
+        LOG4CXX_ERROR(logger, xml)
 		return user;
 	}
 
 	if(rootElement->getName() != TwitterReponseTypes::user) {
 		LOG4CXX_ERROR(logger, "XML doesn't correspond to user object")
+        LOG4CXX_ERROR(logger, xml)
 		return user;
 	}
 
@@ -231,11 +239,13 @@ std::vector<std::string> getIDs(std::string &xml)
 
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML")
+        LOG4CXX_ERROR(logger, xml)
 		return IDs;
 	}
 
 	if(rootElement->getName() != TwitterReponseTypes::id_list) {
 		LOG4CXX_ERROR(logger, "XML doesn't correspond to id_list");
+        LOG4CXX_ERROR(logger, xml)
 		return IDs;
 	}
 
@@ -258,6 +268,7 @@ Error getErrorMessage(std::string &xml)
 
 	if(rootElement == NULL) {
 		LOG4CXX_ERROR(logger, "Error while parsing XML");
+        LOG4CXX_ERROR(logger, xml)
 		return resp;
 	}
 

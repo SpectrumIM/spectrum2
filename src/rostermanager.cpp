@@ -109,7 +109,7 @@ void RosterManager::removeBuddy(const std::string &name) {
 		return;
 	}
 
-	if (m_component->inServerMode() || m_remoteRosterRequest) {
+	if (m_component->inServerMode() || m_supportRemoteRoster) {
 		sendBuddyRosterRemove(buddy);
 	}
 	else {
@@ -200,7 +200,7 @@ void RosterManager::sendBuddyUnsubscribePresence(Buddy *buddy) {
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	Swift::Presence::ref response = Swift::Presence::create();
 	response->setTo(m_user->getJID());
-	response->setFrom(buddy->getJID());
+	response->setFrom(buddy->getJID().toBare());
 	response->setType(Swift::Presence::Subscribe);
 	if (!buddy->getAlias().empty()) {
 		response->addPayload(boost::make_shared<Swift::Nickname>(buddy->getAlias()));
@@ -255,9 +255,11 @@ void RosterManager::storeBuddy(Buddy *buddy) {
 void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key) {
 	LOG4CXX_INFO(logger, "handleBuddyRosterPushResponse called for buddy " << key);
 	if (m_buddies[key] != NULL) {
-		Swift::Presence::ref presence = m_buddies[key]->generatePresenceStanza(255);
-		if (presence && presence->getType() == Swift::Presence::Available) {
-			m_component->getStanzaChannel()->sendPresence(presence);
+		if (m_buddies[key]->isAvailable()) {
+			std::vector<Swift::Presence::ref> &presences = m_buddies[key]->generatePresenceStanzas(255);
+			BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
+				m_component->getStanzaChannel()->sendPresence(presence);
+			}
 		}
 	}
 	else {
@@ -440,13 +442,13 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 
 		Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(presence->getTo()));
 		if (buddy) {
+			std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
 			switch (presence->getType()) {
 				// buddy is already there, so nothing to do, just answer
 				case Swift::Presence::Subscribe:
 					onBuddyAdded(buddy);
 					response->setType(Swift::Presence::Subscribed);
-					currentPresence = buddy->generatePresenceStanza(255);
-					if (currentPresence) {
+					BOOST_FOREACH(Swift::Presence::ref &currentPresence, presences) {
 						currentPresence->setTo(presence->getFrom());
 						m_component->getStanzaChannel()->sendPresence(currentPresence);
 					}
@@ -587,8 +589,11 @@ void RosterManager::sendCurrentPresences(const Swift::JID &to) {
 		if (!buddy) {
 			continue;
 		}
-		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
-		if (presence && presence->getType() == Swift::Presence::Available) {
+		if (!buddy->isAvailable()) {
+			continue;
+		}
+		std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
+		BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
 			presence->setTo(to);
 			m_component->getStanzaChannel()->sendPresence(presence);
 		}
@@ -598,8 +603,8 @@ void RosterManager::sendCurrentPresences(const Swift::JID &to) {
 void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID &to) {
 	Buddy *buddy = getBuddy(Buddy::JIDToLegacyName(from));
 	if (buddy) {
-		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
-		if (presence) {
+		std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
+		BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
 			presence->setTo(to);
 			m_component->getStanzaChannel()->sendPresence(presence);
 		}
@@ -619,11 +624,18 @@ void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
 		if (!buddy) {
 			continue;
 		}
-		Swift::Presence::ref presence = buddy->generatePresenceStanza(255);
-		if (presence && presence->getType() == Swift::Presence::Available) {
+
+		if (!buddy->isAvailable()) {
+			continue;
+		}
+
+		std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
+		BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
+			Swift::Presence::Type type = presence->getType();
 			presence->setTo(to);
 			presence->setType(Swift::Presence::Unavailable);
 			m_component->getStanzaChannel()->sendPresence(presence);
+			presence->setType(type);
 		}
 	}
 

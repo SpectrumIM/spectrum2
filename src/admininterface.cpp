@@ -176,7 +176,9 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			unsigned long per_user = 0;
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-				per_user += (backend->res - backend->init_res);
+				if (backend->res >= backend->init_res) {
+					per_user += (backend->res - backend->init_res);
+				}
 			}
 
 			message->setBody(boost::lexical_cast<std::string>(per_user / m_userManager->getUserCount()));
@@ -220,7 +222,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			if (backend->users.size() == 0) {
+			if (backend->users.size() == 0 || backend->res < backend->init_res) {
 				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): 0\n";
 			}
 			else {

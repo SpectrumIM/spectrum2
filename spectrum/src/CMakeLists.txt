@@ -24,8 +24,14 @@ endif()
 INSTALL(TARGETS spectrum2 RUNTIME DESTINATION bin)
 
 INSTALL(FILES
-	sample2.cfg
+	sample2_gateway.cfg
 	RENAME spectrum.cfg.example
+	DESTINATION /etc/spectrum2/transports
+	)
+
+INSTALL(FILES
+	sample2.cfg
+	RENAME spectrum_server_mode.cfg.example
 	DESTINATION /etc/spectrum2/transports
 	)
 

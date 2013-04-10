@@ -1,11 +1,21 @@
-/*
- * Copyright (C) 2008-2009 J-P Nurmi jpnurmi@gmail.com
+/**
+ * XMPP - libpurple transport
  *
- * This example is free, and not covered by LGPL license. There is no
- * restriction applied to their modification, redistribution, using and so on.
- * You can study them, modify them, use them in your own program - either
- * completely or partially. By using it you may give me some credits in your
- * program, but you don't have to.
+ * Copyright (C) 2013, Jan Kaluza <hanzz.k@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
 #ifndef SESSION_H
@@ -69,8 +79,6 @@ public:
 
 	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	virtual ~MyIrcSession();
-	std::string suffix;
-	int rooms;
 
 	void addAutoJoinChannel(const std::string &channel, const std::string &password) {
 		m_autoJoin[channel] = boost::make_shared<AutoJoinChannel>(channel, password, 12 + m_autoJoin.size());
@@ -79,6 +87,14 @@ public:
 	void removeAutoJoinChannel(const std::string &channel) {
 		m_autoJoin.erase(channel);
 		removeIRCBuddies(channel);
+	}
+
+	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
+	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
+	// just to "hanzz". Therefore we have to somewhere store, that message from "hanzz" should
+	// be mapped to #room@irc.freenode.org/hanzz.
+	void addPM(const std::string &name, const std::string &room) {
+		m_pms[name] = room;
 	}
 
 	void setIdentify(const std::string &identify) {
@@ -115,6 +131,10 @@ public:
 	void on_topicChanged(IrcMessage *message);
 	void on_messageReceived(IrcMessage *message);
 	void on_numericMessageReceived(IrcMessage *message);
+	void on_noticeMessageReceived(IrcMessage *message);
+
+	std::string suffix;
+	int rooms;
 
 protected Q_SLOTS:
 	void on_connected();
@@ -133,6 +153,7 @@ protected:
 	bool m_connected;
 	std::list<std::string> m_rooms;
 	std::list<std::string> m_names;
+	std::map<std::string, std::string> m_pms;
 	IRCBuddyMap m_buddies;
 	QTimer *m_awayTimer;
 };

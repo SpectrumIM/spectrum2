@@ -74,6 +74,8 @@ void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
 	data += "[features]\n";
 	data += std::string("muc=") + (cfg.m_supportMUC ? "1" : "0") + "\n";
 	data += std::string("rawxml=") + (cfg.m_rawXML ? "1" : "0") + "\n";
+	data += std::string("disable_jid_escaping=") + (cfg.m_disableJIDEscaping ? "1" : "0") + "\n";
+	
 
 	pbnetwork::BackendConfig m;
 	m.set_config(data);

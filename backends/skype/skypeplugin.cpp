@@ -42,34 +42,6 @@
 #include "malloc.h"
 #endif
 
-// Prepare the SQL statement
-#define PREP_STMT(sql, str) \
-	if(sqlite3_prepare_v2(db, std::string(str).c_str(), -1, &sql, NULL)) { \
-		LOG4CXX_ERROR(logger, str<< (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db))); \
-		sql = NULL; \
-	}
-
-// Finalize the prepared statement
-#define FINALIZE_STMT(prep) \
-	if(prep != NULL) { \
-		sqlite3_finalize(prep); \
-	}
-	
-#define BEGIN(STATEMENT) 	sqlite3_reset(STATEMENT);\
-							int STATEMENT##_id = 1;\
-							int STATEMENT##_id_get = 0;\
-							(void)STATEMENT##_id_get;
-
-#define BIND_INT(STATEMENT, VARIABLE) sqlite3_bind_int(STATEMENT, STATEMENT##_id++, VARIABLE)
-#define BIND_STR(STATEMENT, VARIABLE) sqlite3_bind_text(STATEMENT, STATEMENT##_id++, VARIABLE.c_str(), -1, SQLITE_STATIC)
-#define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
-#define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
-#define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
-#define GET_BLOB(STATEMENT)	(const void *) sqlite3_column_blob(STATEMENT, STATEMENT##_id_get++)
-#define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
-		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));\
-			}
-
 using namespace Transport;
 
 DEFINE_LOGGER(logger, "SkypePlugin");
@@ -84,6 +56,7 @@ static gboolean transportDataReceived(GIOChannel *source, GIOCondition condition
 	if (n <= 0) {
 		LOG4CXX_INFO(logger, "Diconnecting from spectrum2 server");
 		Logging::shutdownLogging();
+		google::protobuf::ShutdownProtobufLibrary();
 		exit(errno);
 	}
 	std::string d = std::string(buffer, n);
@@ -104,6 +77,7 @@ static int create_socket(const char *host, int portno) {
 		// strerror() will not work for gethostbyname() and hstrerror() 
 		// is supposedly obsolete
 		Logging::shutdownLogging();
+		google::protobuf::ShutdownProtobufLibrary();
 		exit(1);
 	}
 	serv_addr.sin_addr.s_addr = *((unsigned long *) hos->h_addr_list[0]);
@@ -121,6 +95,7 @@ static int create_socket(const char *host, int portno) {
 
 static void io_destroy(gpointer data) {
 	Logging::shutdownLogging();
+	google::protobuf::ShutdownProtobufLibrary();
 	exit(1);
 }
 
@@ -176,6 +151,7 @@ void SkypePlugin::handleLogoutRequest(const std::string &user, const std::string
 		LOG4CXX_INFO(logger, "User wants to logout, logging out");
 		skype->logout();
 		Logging::shutdownLogging();
+		google::protobuf::ShutdownProtobufLibrary();
 		exit(1);
 	}
 }

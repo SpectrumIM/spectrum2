@@ -102,4 +102,13 @@ void LocalBuddy::setGroups(const std::vector<std::string> &groups) {
 	}
 }
 
+bool LocalBuddy::getStatus(Swift::StatusShow &status, std::string &statusMessage) {
+	if (getRosterManager()->getUser()->getComponent()->isRawXMLEnabled()) {
+		return false;
+	}
+	status = m_status;
+	statusMessage = m_statusMessage;
+	return true;
+}
+
 }
