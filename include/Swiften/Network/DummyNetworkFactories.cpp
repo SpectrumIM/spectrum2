@@ -15,7 +15,8 @@ namespace Swift {
 DummyNetworkFactories::DummyNetworkFactories(EventLoop* eventLoop) {
 	timerFactory = new DummyTimerFactory();
 	connectionFactory = new DummyConnectionFactory(eventLoop);
-	domainNameResolver = new PlatformDomainNameResolver(eventLoop);
+	idnConverter = boost::shared_ptr<IDNConverter>(PlatformIDNConverter::create());
+	domainNameResolver = new PlatformDomainNameResolver(idnConverter.get(), eventLoop);
 	connectionServerFactory = new DummyConnectionServerFactory(eventLoop);
 	m_platformXMLParserFactory =  new PlatformXMLParserFactory();
 	this->eventLoop = eventLoop;
