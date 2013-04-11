@@ -6,10 +6,15 @@
 
 #pragma once
 
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+
 #include <Swiften/Network/NetworkFactories.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
+#if HAVE_SWIFTEN_3
 #include <Swiften/IDN/IDNConverter.h>
 #include <Swiften/IDN/PlatformIDNConverter.h>
+#endif
 
 namespace Swift {
 	class EventLoop;
@@ -27,9 +32,11 @@ namespace Swift {
 				return connectionFactory;
 			}
 
+#if HAVE_SWIFTEN_3
 			IDNConverter* getIDNConverter() const {
 				return idnConverter.get();
 			}
+#endif
 
 			DomainNameResolver* getDomainNameResolver() const {
 				return domainNameResolver;
@@ -63,7 +70,9 @@ namespace Swift {
 			PlatformXMLParserFactory *m_platformXMLParserFactory;
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
+#if HAVE_SWIFTEN_3
 			boost::shared_ptr<IDNConverter> idnConverter;
+#endif
 			DomainNameResolver* domainNameResolver;
 			ConnectionServerFactory* connectionServerFactory;
 			EventLoop *eventLoop;
