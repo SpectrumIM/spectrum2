@@ -41,9 +41,9 @@ namespace oAuthLibDefaults
 namespace oAuthTwitterApiUrls
 {
     /* Twitter OAuth API URLs */
-    const std::string OAUTHLIB_TWITTER_REQUEST_TOKEN_URL = "twitter.com/oauth/request_token";
-    const std::string OAUTHLIB_TWITTER_AUTHORIZE_URL = "twitter.com/oauth/authorize?oauth_token=";
-    const std::string OAUTHLIB_TWITTER_ACCESS_TOKEN_URL = "twitter.com/oauth/access_token";
+    const std::string OAUTHLIB_TWITTER_REQUEST_TOKEN_URL = "api.twitter.com/oauth/request_token";
+    const std::string OAUTHLIB_TWITTER_AUTHORIZE_URL = "api.twitter.com/oauth/authorize?oauth_token=";
+    const std::string OAUTHLIB_TWITTER_ACCESS_TOKEN_URL = "api.twitter.com/oauth/access_token";
 };
 
 typedef enum _eOAuthHttpRequestType

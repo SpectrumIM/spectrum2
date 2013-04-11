@@ -8,6 +8,8 @@
 
 #include <Swiften/Network/NetworkFactories.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
+#include <Swiften/IDN/IDNConverter.h>
+#include <Swiften/IDN/PlatformIDNConverter.h>
 
 namespace Swift {
 	class EventLoop;
@@ -23,6 +25,10 @@ namespace Swift {
 
 			virtual ConnectionFactory* getConnectionFactory() const {
 				return connectionFactory;
+			}
+
+			IDNConverter* getIDNConverter() const {
+				return idnConverter.get();
 			}
 
 			DomainNameResolver* getDomainNameResolver() const {
@@ -57,6 +63,7 @@ namespace Swift {
 			PlatformXMLParserFactory *m_platformXMLParserFactory;
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
+			boost::shared_ptr<IDNConverter> idnConverter;
 			DomainNameResolver* domainNameResolver;
 			ConnectionServerFactory* connectionServerFactory;
 			EventLoop *eventLoop;
