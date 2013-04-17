@@ -7,7 +7,9 @@
 #pragma once
 
 #include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+//#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+// Swiften 3 was not released yet and these changes are not in 3.0alpha
+#define HAVE_SWIFTEN_3 0
 
 #include <Swiften/Network/NetworkFactories.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
