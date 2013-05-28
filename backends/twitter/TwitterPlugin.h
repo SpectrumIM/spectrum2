@@ -136,6 +136,7 @@ class TwitterPlugin : public NetworkPlugin {
 
 	private:
 		std::string getMostRecentTweetIDUnsafe(const std::string user);
+		std::string getMostRecentDMIDUnsafe(const std::string user);
 
 		enum status {NEW, WAITING_FOR_PIN, CONNECTED, DISCONNECTED};
 		enum mode {SINGLECONTACT, MULTIPLECONTACT, CHATROOM};

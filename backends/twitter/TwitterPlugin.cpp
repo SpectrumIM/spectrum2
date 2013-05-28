@@ -348,7 +348,7 @@ void TwitterPlugin::pollForDirectMessages()
 	std::set<std::string>::iterator it = onlineUsers.begin();
 	while(it != onlineUsers.end()) {
 		std::string user = *it;
-		tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, "", userdb[user].mostRecentDirectMessageID,
+		tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, "", getMostRecentDMIDUnsafe(user),
 											boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3, _4)));
 		it++;
 	}
@@ -569,14 +569,37 @@ void TwitterPlugin::updateLastDMID(const std::string user, const std::string ID)
 {
 	boost::mutex::scoped_lock lock(userlock);	
 	userdb[user].mostRecentDirectMessageID = ID;
+
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+		return;
+	}
+
+	storagebackend->updateUserSetting((long)info.id, "twitter_last_dm", ID);
+}
+
+std::string TwitterPlugin::getMostRecentDMIDUnsafe(const std::string user) {
+	std::string ID = "";
+	if(onlineUsers.count(user)) {
+		ID = userdb[user].mostRecentDirectMessageID;
+		if (ID.empty()) {
+			int type;
+			UserInfo info;
+			if(storagebackend->getUser(user, info) == false) {
+				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+			}
+			else {
+				storagebackend->getUserSetting(info.id, "twitter_last_dm", type, ID);
+			}
+		}
+	}
 }
 
 std::string TwitterPlugin::getMostRecentDMID(const std::string user)
 {
 	boost::mutex::scoped_lock lock(userlock);	
-	std::string ID = "";
-	if(onlineUsers.count(user)) ID = userdb[user].mostRecentDirectMessageID;
-	return ID;
+	return getMostRecentDMIDUnsafe(user);
 }
 
 /************************************** Twitter response functions **********************************/
