@@ -1077,7 +1077,11 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 		}
 		else {
 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
-			iq->setTo(highest->getFrom());
+			if (highest) {
+			    iq->setTo(highest->getFrom());
+			} else {
+			    iq->setTo(user->getJID());
+			}
 		}
 		m_component->getIQRouter()->sendIQ(iq);
 		return;
