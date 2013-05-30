@@ -63,3 +63,13 @@ Now you have to start Spectrum with following GDB command:
 Since now Spectrum is running and you have to reproduce the crash or just wait for crash. Then get a backtrace with this GDB command:
 
 	bt full
+
+If Spectrum crashed in backend, then you need following GDB command *before* starting Spectrum:
+	
+	set follow-fork-mode child
+
+And then:
+
+	run
+	bt full
+	
