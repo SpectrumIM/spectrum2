@@ -4,7 +4,6 @@
 #include <cctype>
 #include "boost/date_time/local_time/local_time.hpp"
 #include "boost/date_time/time_facet.hpp"
-#include "Swiften/Parser/Tree/NullParserElement.h"
 
 DEFINE_LOGGER(logger, "TwitterResponseParser")
 
@@ -39,250 +38,228 @@ static std::string toIsoTime(std::string in) {
 	return ss.str();
 }
 
-EmbeddedStatus getEmbeddedStatus(const Swift::ParserElement::ref &element, const std::string xmlns)
+EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 {
 	EmbeddedStatus status;
-	if(element->getName() != TwitterReponseTypes::status) {
+	if(!element.IsObject()) {
 		LOG4CXX_ERROR(logger, "Not a status element!")
 		return status;
 	}
-
-	status.setCreationTime( toIsoTime(std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
-
-	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	status.setTweet( unescape (std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) ) );
-	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
-	status.setReplyToStatusID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_status_id, xmlns)->getText() ) );
-	status.setReplyToUserID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_user_id, xmlns)->getText() ) );
-	status.setReplyToScreenName( std::string( element->getChild(TwitterReponseTypes::in_reply_to_screen_name, xmlns)->getText() ) );
-	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
-	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
-	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );	
+	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
+	status.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64() ) ); 
+	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
+	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
+	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
+"" : std::string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetString()) );
+	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
+"" : std::string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetString())  );
+	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
+"" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
+	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
+	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].GetBool() );
+	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());	
 	return status;
 }
 
-User getUser(const Swift::ParserElement::ref &element, const std::string xmlns) 
+User getUser(const rapidjson::Value &element) 
 {
 	User user;
-	if(element->getName() != TwitterReponseTypes::user 
-	   && element->getName() != TwitterReponseTypes::sender
-	   && element->getName() != TwitterReponseTypes::recipient) {
+	if(!element.IsObject()) {
 		LOG4CXX_ERROR(logger, "Not a user element!")
 		return user;
 	}
 
-	user.setUserID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	user.setScreenName( tolowercase( std::string( element->getChild(TwitterReponseTypes::screen_name, xmlns)->getText() ) ) );
-	user.setUserName( std::string( element->getChild(TwitterReponseTypes::name, xmlns)->getText() ) );
-	user.setProfileImgURL( std::string( element->getChild(TwitterReponseTypes::profile_image_url, xmlns)->getText() ) );
-	user.setNumberOfTweets( atoi(element->getChild(TwitterReponseTypes::statuses_count, xmlns)->getText().c_str()) );
-	if(element->getChild(TwitterReponseTypes::status, xmlns)) 
-		user.setLastStatus(getEmbeddedStatus(element->getChild(TwitterReponseTypes::status, xmlns),  xmlns));
+	user.setUserID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
+	user.setScreenName( tolowercase( std::string( element[TwitterReponseTypes::screen_name.c_str()].GetString() ) ) );
+	user.setUserName( std::string( element[TwitterReponseTypes::name.c_str()].GetString() ) );
+	user.setProfileImgURL( std::string( element[TwitterReponseTypes::profile_image_url.c_str()].GetString() ) );
+	user.setNumberOfTweets( element[TwitterReponseTypes::statuses_count.c_str()].GetInt64() );
+	if(element[TwitterReponseTypes::status.c_str()].IsObject()) 
+		user.setLastStatus(getEmbeddedStatus(element[TwitterReponseTypes::status.c_str()]));
 	return user;
 }
 
-Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns) 
+Status getStatus(const rapidjson::Value &element) 
 {
 	Status status;
-	if(element->getName() != "status") {
-		LOG4CXX_ERROR(logger, "Not a status element!")
-		return status;
-	}
-
-	status.setCreationTime( toIsoTime ( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
-	status.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	status.setTweet( unescape ( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) ) );
-	status.setTruncated( std::string( element->getChild(TwitterReponseTypes::truncated, xmlns)->getText() )=="true" );
-	status.setReplyToStatusID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_status_id, xmlns)->getText() ) );
-	status.setReplyToUserID( std::string( element->getChild(TwitterReponseTypes::in_reply_to_user_id, xmlns)->getText() ) );
-	status.setReplyToScreenName( std::string( element->getChild(TwitterReponseTypes::in_reply_to_screen_name, xmlns)->getText() ) );
-	status.setUserData( getUser(element->getChild(TwitterReponseTypes::user, xmlns), xmlns) );
-	status.setRetweetCount( atoi( element->getChild(TwitterReponseTypes::retweet_count, xmlns)->getText().c_str() ) );
-	status.setFavorited( std::string( element->getChild(TwitterReponseTypes::favorited, xmlns)->getText() )=="true" );
-	status.setRetweeted( std::string( element->getChild(TwitterReponseTypes::retweeted, xmlns)->getText() )=="true" );
-	Swift::ParserElement::ref rt = element->getChild(TwitterReponseTypes::retweeted_status, xmlns);
-	if (rt != Swift::NullParserElement::element) {
-		status.setTweet(unescape( std::string( rt->getChild(TwitterReponseTypes::text, xmlns)->getText() + " (RT by @" + status.getUserData().getScreenName() + ")") ) );
-		status.setRetweetID( std::string ( rt->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-		status.setCreationTime( toIsoTime ( std::string (rt->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
-		status.setUserData( getUser ( rt->getChild(TwitterReponseTypes::user, xmlns), xmlns ) );
+	
+	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
+	status.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64()  )); 
+	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
+	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
+	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
+"" : std::string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetString()) );
+	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
+"" : std::string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetString())  );
+	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
+"" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
+	status.setUserData( getUser(element[TwitterReponseTypes::user.c_str()]) );
+	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
+	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].GetBool() );
+	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());
+	const rapidjson::Value &rt = element[TwitterReponseTypes::retweeted_status.c_str()];
+	if (rt.IsObject()) {
+		status.setTweet(unescape( std::string( rt[TwitterReponseTypes::text.c_str()].GetString()) + " (RT by @" + status.getUserData().getScreenName() + ")") );
+		status.setRetweetID( std::to_string(rt[TwitterReponseTypes::id.c_str()].GetInt64()) );
+		status.setCreationTime( toIsoTime ( std::string (rt[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
+		status.setUserData( getUser ( rt[TwitterReponseTypes::user.c_str()]) );
 	}
 	return status;
 }
 
-DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const std::string xmlns) 
+DirectMessage getDirectMessage(const rapidjson::Value &element) 
 {
 	DirectMessage DM;
-	if(element->getName() != TwitterReponseTypes::direct_message) {
-		LOG4CXX_ERROR(logger, "Not a direct_message element!")
-		return DM;
-	}
-
-	DM.setCreationTime( toIsoTime ( std::string( element->getChild(TwitterReponseTypes::created_at, xmlns)->getText() ) ) );
-	DM.setID( std::string( element->getChild(TwitterReponseTypes::id, xmlns)->getText() ) );
-	DM.setMessage( unescape ( std::string( element->getChild(TwitterReponseTypes::text, xmlns)->getText() ) ) );
-	DM.setSenderID( std::string( element->getChild(TwitterReponseTypes::sender_id, xmlns)->getText() ) );
-	DM.setRecipientID( std::string( element->getChild(TwitterReponseTypes::recipient_id, xmlns)->getText() ) );
-	DM.setSenderScreenName( std::string( element->getChild(TwitterReponseTypes::sender_screen_name, xmlns)->getText() ) );
-	DM.setRecipientScreenName( std::string( element->getChild(TwitterReponseTypes::recipient_screen_name, xmlns)->getText() ) );
-	DM.setSenderData( getUser(element->getChild(TwitterReponseTypes::sender, xmlns), xmlns) );
-	DM.setRecipientData( getUser(element->getChild(TwitterReponseTypes::recipient, xmlns), xmlns) );
+	
+	DM.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
+	DM.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
+	DM.setMessage( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
+	DM.setSenderID( std::to_string( element[TwitterReponseTypes::sender_id.c_str()].GetInt64())  );
+	DM.setRecipientID( std::to_string( element[TwitterReponseTypes::recipient_id.c_str()].GetInt64() ) );
+	DM.setSenderScreenName( std::string( element[TwitterReponseTypes::sender_screen_name.c_str()].GetString() ) );
+	DM.setRecipientScreenName( std::string( element[TwitterReponseTypes::recipient_screen_name.c_str()].GetString() ) );
+	DM.setSenderData( getUser(element[TwitterReponseTypes::sender.c_str()] ));
+	DM.setRecipientData( getUser(element[TwitterReponseTypes::recipient.c_str()]) );
 	return DM;
 }
 
-std::vector<Status> getTimeline(std::string &xml)
+std::vector<Status> getTimeline(std::string &json)
 {
 	std::vector<Status> statuses;
-	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	rapidjson::Document rootElement;
 	
-	if(rootElement == NULL) {
-		LOG4CXX_ERROR(logger, "Error while parsing XML")
-        LOG4CXX_ERROR(logger, xml)
+	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON")
+        LOG4CXX_ERROR(logger, json)
 		return statuses;
 	}
 
-	if(rootElement->getName() != "statuses") {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to timeline:")
-        LOG4CXX_ERROR(logger, xml)
+	if(!rootElement.IsArray()) {
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to timeline:")
+        LOG4CXX_ERROR(logger, json)
 		return statuses;
 	}
 
-	const std::string xmlns = rootElement->getNamespace();
-	const std::vector<Swift::ParserElement::ref> children = rootElement->getChildren(TwitterReponseTypes::status, xmlns);
-
-	for(int i = 0; i <  children.size() ; i++) {
-		const Swift::ParserElement::ref status = children[i];
-		statuses.push_back(getStatus(status, xmlns));
+	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
+		statuses.push_back(getStatus(rootElement[i]));
 	}
 	return statuses;
 }
 
-std::vector<DirectMessage> getDirectMessages(std::string &xml)
+std::vector<DirectMessage> getDirectMessages(std::string &json)
 {
 	std::vector<DirectMessage> DMs;
-	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	rapidjson::Document rootElement;
 	
-	if(rootElement == NULL) {
-		LOG4CXX_ERROR(logger, "Error while parsing XML")
-        LOG4CXX_ERROR(logger, xml)
-		return DMs;
-	}
 	
-	if(rootElement->getName() != TwitterReponseTypes::directmessages) {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to direct-messages:")
-        LOG4CXX_ERROR(logger, xml)
+	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON")
+        LOG4CXX_ERROR(logger, json)
 		return DMs;
 	}
 
-	const std::string xmlns = rootElement->getNamespace();
-	const std::vector<Swift::ParserElement::ref> children = rootElement->getChildren(TwitterReponseTypes::direct_message, xmlns);
+	if(!rootElement.IsArray()) {
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to direct messages:")
+        LOG4CXX_ERROR(logger, json)
+		return DMs;
+	}
 
-	for(int i = 0; i <  children.size() ; i++) {
-		const Swift::ParserElement::ref dm = children[i];
-		DMs.push_back(getDirectMessage(dm, xmlns));
+	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
+		DMs.push_back(getDirectMessage(rootElement[i]));
 	}
 	return DMs;
 }
 
-std::vector<User> getUsers(std::string &xml)
+std::vector<User> getUsers(std::string &json)
 {
 	std::vector<User> users;
-	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	rapidjson::Document rootElement;
 	
-	if(rootElement == NULL) {
-		LOG4CXX_ERROR(logger, "Error while parsing XML")
-        LOG4CXX_ERROR(logger, xml)
+	
+	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON")
+        LOG4CXX_ERROR(logger, json)
 		return users;
 	}
 
-	if(rootElement->getName() != TwitterReponseTypes::users) {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to user list:")
-        LOG4CXX_ERROR(logger, xml)
+	if(!rootElement.IsArray()) {
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user list:")
+        LOG4CXX_ERROR(logger, json)
 		return users;
 	}
 
-	const std::string xmlns = rootElement->getNamespace();
-	const std::vector<Swift::ParserElement::ref> children = rootElement->getChildren(TwitterReponseTypes::user, xmlns);
-
-	for(int i = 0 ; i < children.size() ; i++) {
-		const Swift::ParserElement::ref user = children[i];
-		users.push_back(getUser(user, xmlns));
+	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
+		users.push_back(getUser(rootElement[i]));
 	}
-	return users;
+	return users;	
 }
 
-User getUser(std::string &xml)
+User getUser(std::string &json)
 {
 	User user;
-	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
+	rapidjson::Document rootElement;
 	
-	if(rootElement == NULL) {
-		LOG4CXX_ERROR(logger, "Error while parsing XML")
-        LOG4CXX_ERROR(logger, xml)
+	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON")
+        LOG4CXX_ERROR(logger, json)
 		return user;
 	}
 
-	if(rootElement->getName() != TwitterReponseTypes::user) {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to user object")
-        LOG4CXX_ERROR(logger, xml)
+	if(!rootElement.IsObject()) {
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user object")
+        LOG4CXX_ERROR(logger, json)
 		return user;
 	}
 
-	const std::string xmlns = rootElement->getNamespace();
-	return user = getUser(rootElement, xmlns);
+	return user = getUser(rootElement);
 }
 
-std::vector<std::string> getIDs(std::string &xml)
+std::vector<std::string> getIDs(std::string &json)
 {
 	std::vector<std::string> IDs;
-	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
-
-	if(rootElement == NULL) {
-		LOG4CXX_ERROR(logger, "Error while parsing XML")
-        LOG4CXX_ERROR(logger, xml)
-		return IDs;
-	}
-
-	if(rootElement->getName() != TwitterReponseTypes::id_list) {
-		LOG4CXX_ERROR(logger, "XML doesn't correspond to id_list");
-        LOG4CXX_ERROR(logger, xml)
-		return IDs;
-	}
-
-	const std::string xmlns = rootElement->getNamespace();
-	const std::vector<Swift::ParserElement::ref> ids = rootElement->getChild(TwitterReponseTypes::ids, xmlns)->getChildren(TwitterReponseTypes::id, xmlns);
+	rapidjson::Document rootElement;
 	
-	for(int i=0 ; i<ids.size() ; i++) {
-		IDs.push_back(std::string( ids[i]->getText() ));
+	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON")
+        LOG4CXX_ERROR(logger, json)
+		return IDs;
+	}
+
+	if(!rootElement.IsObject()) {
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to id_list");
+        LOG4CXX_ERROR(logger, json)
+		return IDs;
+	}
+
+	const rapidjson::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
+	
+	for(int i=0 ; i<ids.Size() ; i++) {
+		IDs.push_back(std::to_string( ids[i].GetInt64()) );
 	}
 	return IDs;
 }
 
-Error getErrorMessage(std::string &xml)
+Error getErrorMessage(std::string &json)
 {
 	std::string error = "";
 	std::string code = "0";
 	Error resp;
-
-	Swift::ParserElement::ref rootElement = Swift::StringTreeParser::parse(xml);
-
-	if(rootElement == NULL) {
-		LOG4CXX_ERROR(logger, "Error while parsing XML");
-        LOG4CXX_ERROR(logger, xml)
+	rapidjson::Document rootElement;
+	
+	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON")
+        LOG4CXX_ERROR(logger, json)
 		return resp;
 	}
-
-	const std::string xmlns = rootElement->getNamespace();
-	const Swift::ParserElement::ref errorElement = rootElement->getChild(TwitterReponseTypes::error, xmlns);
-	Swift::AttributeMap attributes = errorElement->getAttributes();
-	
-	if(errorElement != NULL) {
-		error = errorElement->getText();
-		code = (errorElement->getAttributes()).getAttribute("code");
+	if (rootElement.IsObject()) {
+		if (!rootElement["errors"].IsNull()) {			
+			const rapidjson::Value &errorElement = rootElement["errors"][0u]; // first error
+			error = std::string(errorElement["message"].GetString());
+			code = std::to_string(errorElement["code"].GetInt64());
+			resp.setCode(code);
+			resp.setMessage(error);
+		}
 	}
-
-	resp.setCode(code);
-	resp.setMessage(error);
 
 	return resp;
 }
