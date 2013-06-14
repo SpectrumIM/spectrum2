@@ -244,7 +244,6 @@ Error getErrorMessage(std::string &json)
 	std::string error = "";
 	std::string code = "0";
 	Error resp;
-
 	rapidjson::Document rootElement;
 	
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
@@ -252,16 +251,15 @@ Error getErrorMessage(std::string &json)
         LOG4CXX_ERROR(logger, json)
 		return resp;
 	}
-		
-	const rapidjson::Value &errorElement = rootElement[TwitterReponseTypes::error.c_str()];
-	
-	if(errorElement.IsArray()) {
-		error = std::string(errorElement["message"].GetString());
-		code = std::to_string(errorElement["code"].GetInt64());
+	if (rootElement.IsObject()) {
+		if (!rootElement["errors"].IsNull()) {			
+			const rapidjson::Value &errorElement = rootElement["errors"][0u]; // first error
+			error = std::string(errorElement["message"].GetString());
+			code = std::to_string(errorElement["code"].GetInt64());
+			resp.setCode(code);
+			resp.setMessage(error);
+		}
 	}
-
-	resp.setCode(code);
-	resp.setMessage(error);
 
 	return resp;
 }
