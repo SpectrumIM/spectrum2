@@ -489,6 +489,7 @@ void TwitterPlugin::initUserSession(const std::string user, const std::string le
 	userdb[user].legacyName = username;	
 	userdb[user].sessions->setTwitterUsername(username);
 	userdb[user].sessions->setTwitterPassword(passwd);
+	userdb[user].sessions->setTwitterApiType(twitCurlTypes::eTwitCurlApiFormatType::eTwitCurlApiFormatJson);
 
 	if(!userdb[user].spectrum1User) {
 		userdb[user].sessions->getOAuth().setConsumerKey(consumerKey);
