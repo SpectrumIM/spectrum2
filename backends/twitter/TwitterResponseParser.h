@@ -1,9 +1,10 @@
 #ifndef TWITTERRESPOSNSEPARSER_H
 #define TWITTERRESPOSNSEPARSER_H
 
-#include "Swiften/Parser/StringTreeParser.h"
+#include "rapidjson/document.h"
 #include <iostream>
 #include <vector>
+#include <string>
 
 namespace TwitterReponseTypes
 {
@@ -217,7 +218,7 @@ std::vector<User> getUsers(std::string &xml);
 User getUser(std::string &xml);
 Error getErrorMessage(std::string &xml);
 
-Status getStatus(const Swift::ParserElement::ref &element, const std::string xmlns);
-DirectMessage getDirectMessage(const Swift::ParserElement::ref &element, const std::string xmlns);
-User getUser(const Swift::ParserElement::ref &element, const std::string xmlns);
+Status getStatus(const rapidjson::Value &element);
+DirectMessage getDirectMessage(const rapidjson::Value &element);
+User getUser(const rapidjson::Value &element);
 #endif
