@@ -594,6 +594,7 @@ std::string TwitterPlugin::getMostRecentDMIDUnsafe(const std::string user) {
 			}
 		}
 	}
+	return ID;
 }
 
 std::string TwitterPlugin::getMostRecentDMID(const std::string user)
