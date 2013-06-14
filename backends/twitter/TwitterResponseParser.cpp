@@ -50,9 +50,9 @@ EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-"" : std::string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetString()) );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-"" : std::string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetString())  );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
 "" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
 	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
@@ -88,9 +88,9 @@ Status getStatus(const rapidjson::Value &element)
 	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-"" : std::string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetString()) );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-"" : std::string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetString())  );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
 "" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
 	status.setUserData( getUser(element[TwitterReponseTypes::user.c_str()]) );
