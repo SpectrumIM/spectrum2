@@ -50,11 +50,11 @@ EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-NULL : std::string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetString()) );
+"" : std::string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetString()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-NULL : std::string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetString())  );
+"" : std::string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetString())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
-NULL : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
+"" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
 	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
 	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].GetBool() );
 	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());	
