@@ -118,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				AdditionalIncludeDirectories="./curl"
+				AdditionalIncludeDirectories="./include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;CURL_STATICLIB"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -144,7 +144,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				LinkLibraryDependencies="true"
-				AdditionalDependencies="libcurl.lib ws2_32.lib wldap32.lib"
+				AdditionalDependencies="libcurl.lib"
 				OutputFile=".\Release\twitcurl.lib"
 				AdditionalLibraryDirectories="./lib"
 				SuppressStartupBanner="true"
@@ -330,6 +330,10 @@
 			</File>
 			<File
 				RelativePath="twitcurl.h"
+				>
+			</File>
+			<File
+				RelativePath=".\twitcurlurls.h"
 				>
 			</File>
 			<File
