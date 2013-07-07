@@ -143,7 +143,13 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
 			if (iq) {
 				if (m_handlers[user]->m_id2resource.find(stanza->getID()) != m_handlers[user]->m_id2resource.end()) {
-					iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_handlers[user]->m_id2resource[stanza->getID()]));
+					std::string resource = m_handlers[user]->m_id2resource[stanza->getID()];
+					if (resource.empty()) {
+						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain()));					
+					} else {
+						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), resource));					
+					}
+					
 					m_handlers[user]->m_id2resource.erase(stanza->getID());
 				}
 				client->getIQRouter()->sendIQ(iq);
