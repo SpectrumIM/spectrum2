@@ -6,8 +6,8 @@ DEFINE_LOGGER(logger, "FetchFriends")
 void FetchFriends::run() 
 {	
 	replyMsg = ""; 
-
-	success = twitObj->friendsIdsGet(twitObj->getTwitterUsername());
+	std::string next = "";
+	success = twitObj->friendsIdsGet(next, twitObj->getTwitterUsername(), false);
 	if(!success) return;	
 
 	twitObj->getLastWebResponse( replyMsg );

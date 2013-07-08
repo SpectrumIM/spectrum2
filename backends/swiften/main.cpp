@@ -143,7 +143,13 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
 			if (iq) {
 				if (m_handlers[user]->m_id2resource.find(stanza->getID()) != m_handlers[user]->m_id2resource.end()) {
-					iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_handlers[user]->m_id2resource[stanza->getID()]));
+					std::string resource = m_handlers[user]->m_id2resource[stanza->getID()];
+					if (resource.empty()) {
+						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain()));					
+					} else {
+						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), resource));					
+					}
+					
 					m_handlers[user]->m_id2resource.erase(stanza->getID());
 				}
 				client->getIQRouter()->sendIQ(iq);
@@ -286,7 +292,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			LOG4CXX_INFO(logger, user << ": connecting as " << legacyName);
-			boost::shared_ptr<Swift::Client> client = boost::make_shared<Swift::Client>(Swift::JID(legacyName), password, m_factories);
+			boost::shared_ptr<Swift::Client> client = boost::make_shared<Swift::Client>(Swift::JID(legacyName + "/Spectrum"), password, m_factories);
 			m_users[user] = client;
 			client->setAlwaysTrustCertificates();
 			client->onConnected.connect(boost::bind(&SwiftenPlugin::handleSwiftConnected, this, user));
