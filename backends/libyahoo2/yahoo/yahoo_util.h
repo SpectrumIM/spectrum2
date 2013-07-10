@@ -64,7 +64,7 @@ void *y_memdup(const void *addr, int n);
 char **y_strsplit(char *str, char *sep, int nelem);
 void y_strfreev(char **vector);
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__APPLE__)
 int strncasecmp(const char *s1, const char *s2, size_t n);
 int strcasecmp(const char *s1, const char *s2);
 

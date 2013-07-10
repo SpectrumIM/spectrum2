@@ -51,6 +51,10 @@
 # include <config.h>
 #endif
 
+#if __APPLE__
+#define STDC_HEADERS 1
+#endif
+
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
