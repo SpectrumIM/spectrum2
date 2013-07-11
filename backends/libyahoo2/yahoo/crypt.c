@@ -23,7 +23,11 @@
  * freebsd, crypt works properly on those systems. i hate solaris */
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+# include <config.h>
+#endif
+
+#ifdef __APPLE__
+#define HAVE_STRING_H 1
 #endif
 
 #if HAVE_STRING_H
