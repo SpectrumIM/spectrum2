@@ -60,6 +60,7 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 		boost::shared_ptr<Swift::Form> form(new Swift::Form());
 		form->addField(Swift::FixedFormField::create("This server does not support transport settings. There is no storage backend configured"));
+		response->setForm(form);
 		return response;
 	}
 
@@ -68,6 +69,7 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 		boost::shared_ptr<Swift::Form> form(new Swift::Form());
 		form->addField(Swift::FixedFormField::create("You are not registered."));
+		response->setForm(form);
 		return response;
 	}
 
