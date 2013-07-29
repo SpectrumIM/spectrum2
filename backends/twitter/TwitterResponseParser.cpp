@@ -14,6 +14,12 @@ static std::string tolowercase(std::string inp)
 	return out;
 }
 
+template <class T> std::string stringOf(T object) {
+	std::ostringstream os;
+	os << object;
+	return (os.str());
+}
+
 static std::string unescape(std::string data) {
 	using boost::algorithm::replace_all;
 	replace_all(data, "&amp;",  "&");
@@ -46,13 +52,13 @@ EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 		return status;
 	}
 	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
-	status.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64() ) ); 
+	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
 	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-"" : std::to_string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-"" : std::to_string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
 "" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
 	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
@@ -69,7 +75,7 @@ User getUser(const rapidjson::Value &element)
 		return user;
 	}
 
-	user.setUserID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
+	user.setUserID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
 	user.setScreenName( tolowercase( std::string( element[TwitterReponseTypes::screen_name.c_str()].GetString() ) ) );
 	user.setUserName( std::string( element[TwitterReponseTypes::name.c_str()].GetString() ) );
 	user.setProfileImgURL( std::string( element[TwitterReponseTypes::profile_image_url.c_str()].GetString() ) );
@@ -84,13 +90,13 @@ Status getStatus(const rapidjson::Value &element)
 	Status status;
 	
 	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
-	status.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64()  )); 
+	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64()  ));
 	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-"" : std::to_string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-"" : std::to_string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
 "" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
 	status.setUserData( getUser(element[TwitterReponseTypes::user.c_str()]) );
@@ -100,7 +106,7 @@ Status getStatus(const rapidjson::Value &element)
 	const rapidjson::Value &rt = element[TwitterReponseTypes::retweeted_status.c_str()];
 	if (rt.IsObject()) {
 		status.setTweet(unescape( std::string( rt[TwitterReponseTypes::text.c_str()].GetString()) + " (RT by @" + status.getUserData().getScreenName() + ")") );
-		status.setRetweetID( std::to_string(rt[TwitterReponseTypes::id.c_str()].GetInt64()) );
+		status.setRetweetID( stringOf(rt[TwitterReponseTypes::id.c_str()].GetInt64()) );
 		status.setCreationTime( toIsoTime ( std::string (rt[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 		status.setUserData( getUser ( rt[TwitterReponseTypes::user.c_str()]) );
 	}
@@ -112,10 +118,10 @@ DirectMessage getDirectMessage(const rapidjson::Value &element)
 	DirectMessage DM;
 	
 	DM.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
-	DM.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
+	DM.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
 	DM.setMessage( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
-	DM.setSenderID( std::to_string( element[TwitterReponseTypes::sender_id.c_str()].GetInt64())  );
-	DM.setRecipientID( std::to_string( element[TwitterReponseTypes::recipient_id.c_str()].GetInt64() ) );
+	DM.setSenderID( stringOf( element[TwitterReponseTypes::sender_id.c_str()].GetInt64())  );
+	DM.setRecipientID( stringOf( element[TwitterReponseTypes::recipient_id.c_str()].GetInt64() ) );
 	DM.setSenderScreenName( std::string( element[TwitterReponseTypes::sender_screen_name.c_str()].GetString() ) );
 	DM.setRecipientScreenName( std::string( element[TwitterReponseTypes::recipient_screen_name.c_str()].GetString() ) );
 	DM.setSenderData( getUser(element[TwitterReponseTypes::sender.c_str()] ));
@@ -234,7 +240,7 @@ std::vector<std::string> getIDs(std::string &json)
 	const rapidjson::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
 	
 	for(int i=0 ; i<ids.Size() ; i++) {
-		IDs.push_back(std::to_string( ids[i].GetInt64()) );
+		IDs.push_back(stringOf( ids[i].GetInt64()) );
 	}
 	return IDs;
 }
@@ -255,7 +261,7 @@ Error getErrorMessage(std::string &json)
 		if (!rootElement["errors"].IsNull()) {			
 			const rapidjson::Value &errorElement = rootElement["errors"][0u]; // first error
 			error = std::string(errorElement["message"].GetString());
-			code = std::to_string(errorElement["code"].GetInt64());
+			code = stringOf(errorElement["code"].GetInt64());
 			resp.setCode(code);
 			resp.setMessage(error);
 		}
