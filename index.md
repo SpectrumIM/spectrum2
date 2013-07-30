@@ -22,8 +22,8 @@ you should add these settings to your config file:
 
 	[purple]
 	server=login.icq.com
-	use_clientlogin=0
-	encryption=0
+	use_clientlogin=1
+	encryption=no_encryption
 
 This will disallow encryption from Spectrum to ICQ server, but there is currently no other way how to make it work.
 
