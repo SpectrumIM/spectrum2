@@ -20,13 +20,18 @@ template <class T> std::string stringOf(T object) {
 	return (os.str());
 }
 
-static std::string unescape(std::string data) {
+static std::string unescape(std::string data, std::vector<UrlEntity> urls) {
 	using boost::algorithm::replace_all;
 	replace_all(data, "&amp;",  "&");
 	replace_all(data, "&quot;", "\"");
 	replace_all(data, "&apos;", "\'");
 	replace_all(data, "&lt;",   "<");
 	replace_all(data, "&gt;",   ">");
+
+	for (std::vector<UrlEntity>::size_type i = 0; i < urls.size(); i++) {
+		replace_all(data, urls[i].getUrl(), urls[i].getExpandedUrl());
+	}
+
 	return data;
 }
 
@@ -53,7 +58,7 @@ EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 	}
 	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
-	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
+	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
 "" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
@@ -88,10 +93,10 @@ User getUser(const rapidjson::Value &element)
 Status getStatus(const rapidjson::Value &element) 
 {
 	Status status;
-	
+
 	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64()  ));
-	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
+	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
 "" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
@@ -105,11 +110,13 @@ Status getStatus(const rapidjson::Value &element)
 	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());
 	const rapidjson::Value &rt = element[TwitterReponseTypes::retweeted_status.c_str()];
 	if (rt.IsObject()) {
-		status.setTweet(unescape( std::string( rt[TwitterReponseTypes::text.c_str()].GetString()) + " (RT by @" + status.getUserData().getScreenName() + ")") );
+		status.setTweet(unescape( std::string( rt[TwitterReponseTypes::text.c_str()].GetString()) + " (RT by @" + status.getUserData().getScreenName() + ")"
+			, getUrlEntities(element)) );
 		status.setRetweetID( stringOf(rt[TwitterReponseTypes::id.c_str()].GetInt64()) );
 		status.setCreationTime( toIsoTime ( std::string (rt[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 		status.setUserData( getUser ( rt[TwitterReponseTypes::user.c_str()]) );
 	}
+	
 	return status;
 }
 
@@ -119,7 +126,7 @@ DirectMessage getDirectMessage(const rapidjson::Value &element)
 	
 	DM.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 	DM.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
-	DM.setMessage( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ) ) );
+	DM.setMessage( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
 	DM.setSenderID( stringOf( element[TwitterReponseTypes::sender_id.c_str()].GetInt64())  );
 	DM.setRecipientID( stringOf( element[TwitterReponseTypes::recipient_id.c_str()].GetInt64() ) );
 	DM.setSenderScreenName( std::string( element[TwitterReponseTypes::sender_screen_name.c_str()].GetString() ) );
@@ -268,4 +275,24 @@ Error getErrorMessage(std::string &json)
 	}
 
 	return resp;
+}
+
+std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element) 
+{
+
+	std::vector<UrlEntity> url_entities;
+
+	const rapidjson::Value &entities = element["entities"];
+	
+	if (entities.IsObject()) {
+		const rapidjson::Value &urls = entities["urls"];
+		if (urls.IsArray()) {		
+			for (rapidjson::SizeType i = 0; i < urls.Size(); i++) {
+				UrlEntity entity(urls[i]["url"].GetString(), urls[i]["expanded_url"].GetString());	
+				url_entities.push_back(entity);
+			}
+		}
+	}
+	
+	return url_entities;
 }
