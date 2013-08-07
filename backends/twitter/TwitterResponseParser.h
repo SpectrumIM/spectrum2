@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <utility>
 
 namespace TwitterReponseTypes
 {
@@ -211,6 +212,21 @@ class Error
 	void setMessage(std::string &_message) {message = _message;}
 };
 
+class UrlEntity 
+{
+	std::string url;
+	std::string expanded_url;	
+public:
+	UrlEntity(std::string _url, std::string _expanded) 
+	{ 
+		url = _url;
+		expanded_url = _expanded;
+	}
+	std::string getUrl() {return url;}
+	std::string getExpandedUrl() {return expanded_url;}
+	
+};
+
 std::vector<Status> getTimeline(std::string &xml);
 std::vector<DirectMessage> getDirectMessages(std::string &xml);
 std::vector<std::string> getIDs(std::string &xml);
@@ -218,6 +234,7 @@ std::vector<User> getUsers(std::string &xml);
 User getUser(std::string &xml);
 Error getErrorMessage(std::string &xml);
 
+std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element);
 Status getStatus(const rapidjson::Value &element);
 DirectMessage getDirectMessage(const rapidjson::Value &element);
 User getUser(const rapidjson::Value &element);
