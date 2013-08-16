@@ -23,8 +23,9 @@
 #include <iostream>
 #include <IrcCommand>
 #include <IrcMessage>
+#if COMMUNI_VERSION < 0x020000
 #include <IrcUtil>
-
+#endif
 #include "backports.h"
 
 #include "ircnetworkplugin.h"
