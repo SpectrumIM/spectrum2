@@ -122,13 +122,15 @@ void MyIrcSession::on_disconnected() {
 
 bool MyIrcSession::correctNickname(std::string &nickname) {
 	bool flags = 0;
-	switch(nickname.at(0)) {
-		case '@': nickname = nickname.substr(1); flags = 1; break;
-		case '+': nickname = nickname.substr(1); break;
-		case '~': nickname = nickname.substr(1); break;
-		case '&': nickname = nickname.substr(1); break;
-		case '%': nickname = nickname.substr(1); break;
-		default: break;
+	if (!nickname.empty()) { 
+		switch(nickname.at(0)) {
+			case '@': nickname = nickname.substr(1); flags = 1; break;
+			case '+': nickname = nickname.substr(1); break;
+			case '~': nickname = nickname.substr(1); break;
+			case '&': nickname = nickname.substr(1); break;
+			case '%': nickname = nickname.substr(1); break;
+			default: break;
+		}
 	}
 	return flags;
 }
