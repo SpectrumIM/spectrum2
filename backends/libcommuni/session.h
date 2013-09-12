@@ -21,11 +21,13 @@
 #ifndef SESSION_H
 #define SESSION_H
 
+#ifndef Q_MOC_RUN
 #include <IrcSession>
 #include <transport/networkplugin.h>
 #include "Swiften/Swiften.h"
 #include <boost/smart_ptr/make_shared.hpp>
 #include <QTimer>
+#endif
 
 using namespace Transport;
 

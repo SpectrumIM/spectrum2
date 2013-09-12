@@ -19,15 +19,14 @@
  */
 
 #pragma once
-
+#ifndef Q_MOC_RUN
 #include "transport/config.h"
 #include "transport/networkplugin.h"
 #include "session.h"
 #include <QtCore>
 #include <QtNetwork>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
-#include "ircnetworkplugin.h"
-
+#endif
 
 class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 	Q_OBJECT
