@@ -14,6 +14,7 @@ You have to change your XMPP server configuration and set JID of the Spectrum 2 
 
 * [Adding components with Prosody](http://prosody.im/doc/components)
 * [Adding components with Ejabberd](http://www.ejabberd.im/node/5134)
+* [Configure Spectrum with Openfire + GoJara plugin](http://community.igniterealtime.org/docs/DOC-2601)
 
 ### Configure Spectrum 2
 
