@@ -43,10 +43,6 @@ All done! Add the overlay by issuing
 
 ## Install spectrum2
 
-If you want to use the swift live ebuild, you have to install it from the 'swift-2.x' branch before emerging spectrum2: 
-
-```# swift_LIVE_BRANCH="swift-2.x" emerge =net-im/swift-9999 --autounmask-write -a```
-
 Emerge spectrum2:
 
 	# emerge spectrum:2 --autounmask-write -a
@@ -59,3 +55,12 @@ Emerge spectrum2:
 
 This will tell portage to unmask the needed packages, all dependencies should be pulled in automatically, you can change the needed features by the USE-Flags provided.
 
+
+Alternatively, you might want to use the live ebuild to compile the latest master snapshot:
+
+	# emerge =net-im/spectrum:2.9999 --autounmask-write -a
+	
+	
+If you want to use the swift live ebuild, you have to install it from the 'swift-2.x' branch before emerging spectrum2: 
+
+	# swift_LIVE_BRANCH="swift-2.x" emerge =net-im/swift-9999 --autounmask-write -a
