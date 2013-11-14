@@ -43,7 +43,9 @@ All done! Add the overlay by issuing
 
 ## Install spectrum2
 
-If you want to use the swift live ebuild, you have to install it from the 'swift-2.x' branch before emerging spectrum2: ```# swift_LIVE_BRANCH="swift-2.x" emerge =net-im/swift-9999 --autounmask-write -a```
+If you want to use the swift live ebuild, you have to install it from the 'swift-2.x' branch before emerging spectrum2: 
+
+```# swift_LIVE_BRANCH="swift-2.x" emerge =net-im/swift-9999 --autounmask-write -a```
 
 Emerge spectrum2:
 
