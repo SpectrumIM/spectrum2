@@ -150,9 +150,9 @@ void SkypePlugin::handleLogoutRequest(const std::string &user, const std::string
 	if (skype) {
 		LOG4CXX_INFO(logger, "User wants to logout, logging out");
 		skype->logout();
-		Logging::shutdownLogging();
-		google::protobuf::ShutdownProtobufLibrary();
-		exit(1);
+		//Logging::shutdownLogging();
+		//google::protobuf::ShutdownProtobufLibrary();
+		//exit(1);
 	}
 }
 
