@@ -361,7 +361,7 @@ if (PROTOBUF_FOUND)
 	endif()
 
 	if(IRC_FOUND)
-		ADD_DEFINITIONS(-DCOMMUNI_SHARED)
+		ADD_DEFINITIONS(-DIRC_SHARED)
 		message("IRC plugin        : yes")
 		include_directories(${QT_QTNETWORK_INCLUDE_DIR})
 		include_directories(${IRC_INCLUDE_DIR})
