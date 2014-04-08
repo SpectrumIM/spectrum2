@@ -35,11 +35,11 @@
 
 #include "transport/logging.h"
 
-DEFINE_LOGGER(logger, "IRCSession");
+DEFINE_LOGGER(logger, "IRCConnection");
 
 static bool sentList;
 
-MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcSession(parent)
+MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcConnection(parent)
 {
 	this->np = np;
 	this->user = user;
