@@ -292,7 +292,6 @@ bool Skype::loadSkypeBuddies() {
 
 	send_command("SET AUTOAWAY OFF");
 	send_command("SET USERSTATUS ONLINE");
-
 	return FALSE;
 }
 
