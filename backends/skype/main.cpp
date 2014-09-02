@@ -26,6 +26,7 @@
 #include "skype.h"
 #include "skypeplugin.h"
 
+
 DEFINE_LOGGER(logger, "backend");
 
 using namespace Transport;
