@@ -57,6 +57,14 @@ Skype::Skype(SkypePlugin *np, const std::string &user, const std::string &userna
 	m_np = np;
 }
 
+static gboolean skype_check_missedmessages(gpointer data) {
+	Skype *skype = (Skype *) data;
+
+	skype->send_command("SEARCH MISSEDCHATMESSAGES");
+
+	return TRUE;
+}
+
 static gboolean load_skype_buddies(gpointer data) {
 	Skype *skype = (Skype *) data;
 	return skype->loadSkypeBuddies();
@@ -149,6 +157,7 @@ bool Skype::createDBusProxy() {
 
 			m_counter = 0;
 			m_timer = g_timeout_add_seconds(1, load_skype_buddies, this);
+			g_timeout_add_seconds(10, skype_check_missedmessages, this);
 			return FALSE;
 		}
 		return TRUE;
@@ -283,6 +292,7 @@ bool Skype::loadSkypeBuddies() {
 
 	send_command("SET AUTOAWAY OFF");
 	send_command("SET USERSTATUS ONLINE");
+
 	return FALSE;
 }
 
@@ -433,13 +443,27 @@ void Skype::handleSkypeMessage(std::string &message) {
 			}
 		}
 	}
+	else if ((cmd[0] == "MESSAGES") || (cmd[0] == "CHATMESSAGES")) {
+		std::string msgs = GET_RESPONSE_DATA(message, "CHATMESSAGES");
+		std::vector<std::string> data;
+		boost::split(data, msgs, boost::is_any_of(","));
+		BOOST_FOREACH(std::string str, data) {
+			boost::trim(str);
+			if (!str.empty()) {
+			    std::string re = send_command("GET CHATMESSAGE " + str + " STATUS");
+			    handleSkypeMessage(re);
+			}
+		}
+	}
 	else if (cmd[0] == "CHATMESSAGE") {
 		if (cmd[3] == "RECEIVED") {
 			GET_PROPERTY(body, "CHATMESSAGE", cmd[1], "BODY");
 			GET_PROPERTY(from_handle, "CHATMESSAGE", cmd[1], "FROM_HANDLE");
 
-			if (from_handle == getUsername())
+			if (from_handle == getUsername()) {
+				send_command("SET CHATMESSAGE " + cmd[1] + " SEEN");
 				return;
+			}
 
 			m_np->handleMessage(getUser(), from_handle, body);
 
