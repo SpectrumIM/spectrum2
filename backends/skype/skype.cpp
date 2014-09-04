@@ -358,6 +358,8 @@ void Skype::handleSkypeMessage(std::string &message) {
 				pbnetwork::StatusType status = getStatus(cmd[3]);
 				GET_PROPERTY(mood_text, "USER", cmd[1], "MOOD_TEXT");
 				GET_PROPERTY(alias, "USER", cmd[1], "FULLNAME");
+				GET_PROPERTY(display_alias, "USER", cmd[1], "DISPLAYNAME");
+				if (display_alias != "") alias = display_alias;
 
 				std::vector<std::string> groups;
 				m_np->handleBuddyChanged(getUser(), cmd[1], alias, groups, status, mood_text);
