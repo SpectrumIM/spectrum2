@@ -92,9 +92,13 @@ bool getAvatar(const std::string &db_path, const std::string &name, std::string 
 			BIND_STR(stmt, name);
 			if(sqlite3_step(stmt) == SQLITE_ROW) {
 				int size = sqlite3_column_bytes(stmt, 0);
-				const void *data = sqlite3_column_blob(stmt, 0);
-				photo = std::string((const char *)data + 1, size - 1);
-				ret = true;
+				if (size > 0) {
+				    const void *data = sqlite3_column_blob(stmt, 0);
+				    photo = std::string((const char *)data + 1, size - 1);
+				    ret = true;
+				} else {
+				    ret = false;
+				}
 			}
 			else {
 				LOG4CXX_ERROR(logger, (sqlite3_errmsg(db) == NULL ? "" : sqlite3_errmsg(db)));
