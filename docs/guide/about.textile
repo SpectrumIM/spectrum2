@@ -2,7 +2,7 @@ Spectrum 2 is an XMPP transport/gateway and XMPP server. It allows XMPP users to
 
 h2. Gateway mode and server mode
 
-Spectrum 2 can work in two modes: Gateway mode and Server mode. This chapter describes differences betweeen those two modes. If you want to find out how to configure Spectrum 2 to run in gateway or server mode, read the Configuration part of this documentation.
+Spectrum 2 can work in two modes: Gateway mode and Server mode. This chapter describes differences between those two modes. If you want to find out how to configure Spectrum 2 to run in gateway or server mode, read the Configuration part of this documentation.
 
 h3. Gateway mode
 
