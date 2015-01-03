@@ -40,7 +40,6 @@ DEFINE_LOGGER(logger, "SMSNetworkPlugin");
 
 class SMSNetworkPlugin;
 SMSNetworkPlugin * np = NULL;
-StorageBackend *storageBackend;
 
 class SMSNetworkPlugin : public NetworkPlugin {
 	public:
@@ -49,9 +48,11 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		boost::shared_ptr<Swift::Connection> m_conn;
 		Swift::Timer::ref m_timer;
 		int m_internalUser;
+		StorageBackend *storageBackend;
 
-		SMSNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
+		SMSNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, StorageBackend *storagebackend, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
+			this->storageBackend = storagebackend;
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&SMSNetworkPlugin::_handleDataRead, this, _1));
@@ -283,7 +284,7 @@ int main (int argc, char* argv[]) {
 
 	Swift::SimpleEventLoop eventLoop;
 	loop_ = &eventLoop;
-	np = new SMSNetworkPlugin(cfg, &eventLoop, host, port);
+	np = new SMSNetworkPlugin(cfg, &eventLoop, storageBackend, host, port);
 	loop_->run();
 
 	return 0;
