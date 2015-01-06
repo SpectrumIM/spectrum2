@@ -3,6 +3,10 @@ layout: page
 title: Spectrum 2
 ---
 
+## Looking for developers
+
+As HanzZ (the original main developer of Spectrum) is not able to continue with Spectrum development, we are looking for maintainer and developers for this project. Currently, the development is stalled and only the most urgent problems are fixed.
+
 ## About
 
 Spectrum 2 is an XMPP transport/gateway and also simple server.
