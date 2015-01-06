@@ -1,0 +1,15 @@
+spectrum2 (1:1683-a319e79-1) unstable; urgency=low
+
+  * Move package to git-buildpackage format
+  * remove the -git suffix from package names
+  * Change dependency from libswiften2-dev to libswiften-dev
+  * remove some old cruft (debian/source/options, lintian-overrides, ...)
+  * Add libevent-dev as build-dependency
+
+ -- Mathias Ertl <apt-repository@fsinf.at>  Thu, 28 Jun 2012 21:39:27 +0200
+
+spectrum2-git (2.0.0~beta+47-gdd8627b-1) unstable; urgency=low
+
+  * Upstream development snapshot
+
+ -- Mathias Ertl <apt-repository@fsinf.at>  Tue, 20 Sep 2011 11:06:50 +0200

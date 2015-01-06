@@ -1,0 +1,184 @@
+Source: spectrum2
+Section: net
+Priority: optional
+Maintainer: Mathias Ertl <apt-repository@fsinf.at>
+Build-Depends: debhelper (>= 7.0.50~), libpurple-dev, libswiften-dev (<< 2.0beta1),
+ libprotobuf-dev, libmysqlclient-dev, liblog4cxx10-dev, protobuf-compiler,
+ libpopt-dev, libdbus-glib-1-dev, libpqxx3-dev, cmake, libevent-dev, libboost-all-dev,
+ libqt4-dev, libidn11-dev, libxml2-dev, libavahi-client-dev, libavahi-common-dev,
+ libcurl4-openssl-dev
+Standards-Version: 3.9.2
+VCS-Browser: http://git.fsinf.at/apt/spectrum2
+VCS-Git: https://git.fsinf.at/apt/spectrum2.git
+Homepage: http://www.spectrum.im
+
+Package: libtransport2.0
+Architecture: any
+Section: net
+Priority: optional
+Depends: libswiften2 (<< 2.0beta1), ${shlibs:Depends}, ${misc:Depends}
+Replaces: libtransport2.0-git
+Description: XMPP transport
+ Spectrum 2 XMPP transport - development snapshots
+
+Package: libtransport-plugin2.0
+Architecture: any
+Section: net
+Priority: optional
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: libtransport2.0-plugin-git
+Description: Library for creating spectrum2 backends and plugins
+ Spectrum 2 XMPP transport - development snapshots
+
+Package: libtransport-plugin-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: libtransport2.0-plugin-git-dbg
+Description: Library for creating spectrum2 backends and plugins - debugging symbols
+ Spectrum 2 XMPP transport - development snapshots
+
+Package: libtransport-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: libtransport2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: libtransport-git-dbg
+Description: XMPP transport - debugging symbols
+ Spectrum 2 XMPP transport - development snapshots
+
+Package: libtransport-dev
+Architecture: any
+Section: libdevel
+Priority: optional
+Depends: libtransport2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: libtransport-git-dev
+Description: XMPP transport - development headers
+ Spectrum 2 XMPP transport - development snapshots
+
+Package: spectrum2
+Architecture: any
+Section: net
+Priority: optional
+Depends: libtransport2.0 (>= ${source:Upstream-Version}), ${shlibs:Depends}, ${misc:Depends}, 
+Replaces: spectrum2-git
+Description: XMPP transport
+ Spectrum 2 XMPP transport - development snapshots
+
+Package: spectrum2-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-git-dbg
+Description: XMPP transport
+ Spectrum2 debugging symbols
+
+Package: spectrum2-backend-twitter
+Architecture: any
+Section: net
+Priority: optional
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-libpurple-git
+Description: Spectrum2 libpurple backend
+ Spectrum2 backend using libpurple
+
+Package: spectrum2-backend-twitter-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2-backend-libpurple (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-libpurple-git-dbg
+Description: Spectrum2 libpurple backend - debugging symbols
+ Debugging symbols for the Spectrum2 libpurple backend
+
+Package: spectrum2-backend-libpurple
+Architecture: any
+Section: net
+Priority: optional
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-libpurple-git
+Description: Spectrum2 libpurple backend
+ Spectrum2 backend using libpurple
+
+Package: spectrum2-backend-libpurple-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2-backend-libpurple (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-libpurple-git-dbg
+Description: Spectrum2 libpurple backend - debugging symbols
+ Debugging symbols for the Spectrum2 libpurple backend
+
+Package: spectrum2-backend-frotz
+Architecture: any
+Section: net
+Priority: optional
+Depends: libtransport2.0 (>= ${source:Upstream-Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-frotz-git
+Description: Spectrum2 frotz backend
+ Spectrum2 backend using frotz
+
+Package: spectrum2-backend-swiften
+Architecture: any
+Section: net
+Priority: optional
+Depends: libtransport2.0 (>= ${source:Upstream-Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-swiften-git
+Description: Spectrum2 Swiften backend
+ Spectrum2 backend using Swiften
+
+Package: spectrum2-backend-frotz-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2-backend-frotz (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-frotz-git-dbg
+Description: Spectrum2 frotz backend - debugging symbols
+ Debugging symbols for the Spectrum2 frotz backend
+
+Package: spectrum2-backend-swiften-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2-backend-swiften (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-swiften-git-dbg
+Description: Spectrum2 Swiften backend - debugging symbols
+ Debugging symbols for the Spectrum2 Swiften backend
+
+Package: spectrum2-backend-skype
+Architecture: any
+Section: net
+Priority: optional
+Depends: libtransport2.0 (>= ${source:Upstream-Version}), ${shlibs:Depends}, ${misc:Depends}, dbus-x11, xvfb
+Replaces: spectrum2-backend-skype-git
+Description: Spectrum2 Skype backend
+ Spectrum2 backend for Skype
+
+Package: spectrum2-backend-skype-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2-backend-skype (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-skype-git-dbg
+Description: Spectrum2 Skype backend - debugging symbols
+ Debugging symbols for the Spectrum2 Skype backend
+
+Package: spectrum2-backend-smstools3
+Architecture: any
+Section: net
+Priority: optional
+Depends: libtransport2.0 (>= ${source:Upstream-Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-smstools3-git
+Description: Spectrum2 backend for sending SMS
+ Spectrum2 backend using smstools3
+
+Package: spectrum2-backend-smstools3-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends: spectrum2-backend-frotz (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Replaces: spectrum2-backend-smstools3-git-dbg
+Description: Spectrum2 backend for sending SMS - debugging symbols
+ Debugging symbols for the Spectrum2 backend for sending SMS
