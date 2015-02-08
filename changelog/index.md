@@ -21,7 +21,7 @@ title: Spectrum 2
 
 **libpurple:**
 
-* Added initial support for MUC for prpl-jabber protocol. "website":http://www.agora-yachtcharter.com/yacht-charter-thailand/
+* Added initial support for MUC for prpl-jabber protocol.
 
 **LibCommuni IRC backend:**
 
