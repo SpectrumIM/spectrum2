@@ -1,3 +1,6 @@
 [submodule "msvc-deps/curl"]
 	path = msvc-deps/curl
 	url = https://github.com/bagder/curl.git
+[submodule "backends/twitter/rapidjson"]
+	path = backends/twitter/rapidjson
+	url = https://github.com/miloyip/rapidjson.git

@@ -1,4 +1,5 @@
 include_directories (${libtransport_SOURCE_DIR}/backends/twitter/libtwitcurl) 
+include_directories (${libtransport_SOURCE_DIR}/backends/twitter/rapidjson/include)
 FILE(GLOB SRC *.cpp libtwitcurl/*.cpp Requests/*.cpp)
 add_executable(spectrum2_twitter_backend ${SRC})
 
