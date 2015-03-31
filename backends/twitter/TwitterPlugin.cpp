@@ -649,7 +649,11 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 				std::string lastTweet = friends[i].getLastStatus().getTweet();
 				//LOG4CXX_INFO(logger, user << " - " << SHA(friendAvatars[i]))
 				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getUserName(), std::vector<std::string>(), 
+#if HAVE_SWIFTEN_3
+					pbnetwork::STATUS_ONLINE, lastTweet, Swift::byteArrayToString(cryptoProvider->getSHA1Hash(Swift::createByteArray(friendAvatars[i]))));
+#else
 								   pbnetwork::STATUS_ONLINE, lastTweet, SHA(friendAvatars[i]));
+#endif
 			}
 			else if(userdb[user].twitterMode == CHATROOM)
 				handleParticipantChanged(user, friends[i].getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
@@ -821,7 +825,11 @@ void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::str
 	
 	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL())
 	if(userdb[user].twitterMode == MULTIPLECONTACT) {
+#if HAVE_SWIFTEN_3
+		handleBuddyChanged(user, frnd.getScreenName(), frnd.getUserName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", Swift::byteArrayToString(cryptoProvider->getSHA1Hash(Swift::createByteArray(img))));
+#else
 		handleBuddyChanged(user, frnd.getScreenName(), frnd.getUserName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", SHA(img));
+#endif
 	} else if(userdb[user].twitterMode == CHATROOM) {
 		handleParticipantChanged(user, frnd.getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 	}

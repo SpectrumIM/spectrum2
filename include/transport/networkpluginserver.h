@@ -35,6 +35,8 @@
 #include "Swiften/Serializer/XMPPSerializer.h"
 #include "storagebackend.h"
 #include "transport/filetransfermanager.h"
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
 
 namespace Transport {
 
@@ -159,9 +161,11 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleRawPresenceReceived(boost::shared_ptr<Swift::Presence> presence);
 
 		void handleStreamStart(const Swift::ProtocolHeader&) {}
-
+#if HAVE_SWIFTEN_3
+		void handleElement(boost::shared_ptr<Swift::ToplevelElement> element);
+#else
 		void handleElement(boost::shared_ptr<Swift::Element> element);
-
+#endif
 		void handleStreamEnd() {}
 
 		UserManager *m_userManager;

@@ -26,6 +26,13 @@
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+#if HAVE_SWIFTEN_3
+#include <Swiften/Crypto/CryptoProvider.h>
+#include <Swiften/Crypto/PlatformCryptoProvider.h>
+#endif
+
 
 namespace Transport {
 
@@ -60,6 +67,9 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		Swift::CapsInfo m_capsInfo;
 		std::map<std::string, std::string> m_rooms;
 		std::map<std::string, std::string> m_commands;
+#if HAVE_SWIFTEN_3
+		boost::shared_ptr<Swift::CryptoProvider> crypto;
+#endif
 };
 
 }

@@ -33,6 +33,9 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/regex.hpp> 
+#if HAVE_SWIFTEN_3
+#include <Swiften/Elements/Form.h>
+#endif
 
 using namespace Swift;
 
@@ -245,35 +248,56 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 	Form::ref form(new Form(Form::FormType));
 	form->setTitle((("Registration")));
 	form->setInstructions((instructions));
-
+#if HAVE_SWIFTEN_3
+	FormField::ref type = boost::make_shared<FormField>(FormField::HiddenType, "jabber:iq:register");	
+#else
 	HiddenFormField::ref type = HiddenFormField::create();
-	type->setName("FORM_TYPE");
 	type->setValue("jabber:iq:register");
+#endif
+	type->setName("FORM_TYPE");
 	form->addField(type);
-
+#if HAVE_SWIFTEN_3
+	FormField::ref username = boost::make_shared<FormField>(FormField::TextSingleType, res.uin);
+#else
 	TextSingleFormField::ref username = TextSingleFormField::create();
+	username->setValue(res.uin);
+#endif
 	username->setName("username");
 	username->setLabel((usernameField));
-	username->setValue(res.uin);
 	username->setRequired(true);
 	form->addField(username);
 
 	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
+#if HAVE_SWIFTEN_3
+		FormField::ref password = boost::make_shared<FormField>(FormField::TextPrivateType);
+#else
 		TextPrivateFormField::ref password = TextPrivateFormField::create();
+#endif
 		password->setName("password");
 		password->setLabel((("Password")));
 		password->setRequired(true);
 		form->addField(password);
 	}
-
+#if HAVE_SWIFTEN_3
+	FormField::ref language = boost::make_shared<FormField>(FormField::ListSingleType);
+#else
 	ListSingleFormField::ref language = ListSingleFormField::create();
+#endif
 	language->setName("language");
 	language->setLabel((("Language")));
 	language->addOption(Swift::FormField::Option(CONFIG_STRING(m_config, "registration.language"), CONFIG_STRING(m_config, "registration.language")));
 	if (registered)
+#if HAVE_SWIFTEN_3
+		language->addValue(res.language);
+#else
 		language->setValue(res.language);
+#endif
 	else
+#if HAVE_SWIFTEN_3
+		language->addValue(CONFIG_STRING(m_config, "registration.language"));
+#else
 		language->setValue(CONFIG_STRING(m_config, "registration.language"));
+#endif
 	form->addField(language);
 
 //	TextSingleFormField::ref encoding = TextSingleFormField::create();
@@ -286,20 +310,32 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 //	form->addField(encoding);
 
 	if (registered) {
+#if HAVE_SWIFTEN_3
+		FormField::ref boolean = boost::make_shared<FormField>(FormField::BooleanType, "0");
+#else
 		BooleanFormField::ref boolean = BooleanFormField::create();
-		boolean->setName("unregister");
-		boolean->setLabel((("Remove your registration")));
 		boolean->setValue(0);
+#endif
+		boolean->setName("unregister");
+		boolean->setLabel((("Remove your registration")));		
 		form->addField(boolean);
 	} else {
 		if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
 			std::string localUsernameField = CONFIG_STRING(m_config, "registration.local_username_label");
+#if HAVE_SWIFTEN_3
+			FormField::ref local_username = boost::make_shared<FormField>(FormField::TextSingleType);
+#else
 			TextSingleFormField::ref local_username = TextSingleFormField::create();
+#endif
 			local_username->setName("local_username");
 			local_username->setLabel((localUsernameField));
 			local_username->setRequired(true);
 			form->addField(local_username);
+#if HAVE_SWIFTEN_3
+			FormField::ref local_password = boost::make_shared<FormField>(FormField::TextPrivateType);
+#else
 			TextPrivateFormField::ref local_password = TextPrivateFormField::create();
+#endif
 			local_password->setName("local_password");
 			local_password->setLabel((("Local Password")));
 			local_password->setRequired(true);
@@ -344,57 +380,114 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 	if (form) {
 		const std::vector<FormField::ref> fields = form->getFields();
 		for (std::vector<FormField::ref>::const_iterator it = fields.begin(); it != fields.end(); it++) {
+#if HAVE_SWIFTEN_3
+			FormField::ref textSingle = *it;
+			if (textSingle->getType() == FormField::TextSingleType) {
+#else
 			TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(*it);
 			if (textSingle) {
+#endif
 				if (textSingle->getName() == "username") {
+#if HAVE_SWIFTEN_3
+					payload->setUsername(textSingle->getTextSingleValue());
+#else
 					payload->setUsername(textSingle->getValue());
+#endif
 				}
 				else if (textSingle->getName() == "encoding") {
+#if HAVE_SWIFTEN_3
+					encoding = textSingle->getTextSingleValue();
+#else
 					encoding = textSingle->getValue();
+#endif
 				}
 				// Pidgin sends it as textSingle, not sure why...
 				else if (textSingle->getName() == "password") {
+#if HAVE_SWIFTEN_3
+					payload->setPassword(textSingle->getTextSingleValue());
+#else
 					payload->setPassword(textSingle->getValue());
+#endif
 				}
 				else if (textSingle->getName() == "local_username") {
+#if HAVE_SWIFTEN_3
+					local_username = textSingle->getTextSingleValue();
+#else
 					local_username = textSingle->getValue();
+#endif
 				}
 				// Pidgin sends it as textSingle, not sure why...
 				else if (textSingle->getName() == "local_password") {
+#if HAVE_SWIFTEN_3
+					local_password = textSingle->getTextSingleValue();
+#else
 					local_password = textSingle->getValue();
+#endif
 				}
 				// Pidgin sends it as textSingle, not sure why...
 				else if (textSingle->getName() == "unregister") {
+#if HAVE_SWIFTEN_3
+					if (textSingle->getTextSingleValue() == "1" || textSingle->getTextSingleValue() == "true") {
+#else
 					if (textSingle->getValue() == "1" || textSingle->getValue() == "true") {
+#endif
 						payload->setRemove(true);
 					}
 				}
 				continue;
 			}
-
+#if HAVE_SWIFTEN_3
+			FormField::ref textPrivate = *it;
+			if (textPrivate->getType() == FormField::TextPrivateType) {
+#else
 			TextPrivateFormField::ref textPrivate = boost::dynamic_pointer_cast<TextPrivateFormField>(*it);
 			if (textPrivate) {
+#endif
 				if (textPrivate->getName() == "password") {
+#if HAVE_SWIFTEN_3
+					payload->setPassword(textPrivate->getTextPrivateValue());
+#else
 					payload->setPassword(textPrivate->getValue());
+#endif
 				}
 				else if (textPrivate->getName() == "local_password") {
+#if HAVE_SWIFTEN_3
+					local_password = textPrivate->getTextPrivateValue();
+#else
 					local_password = textPrivate->getValue();
+#endif
 				}
 				continue;
 			}
-
+#if HAVE_SWIFTEN_3
+			FormField::ref listSingle = *it;
+			if (listSingle->getType() == FormField::ListSingleType) {
+#else
 			ListSingleFormField::ref listSingle = boost::dynamic_pointer_cast<ListSingleFormField>(*it);
 			if (listSingle) {
+#endif
 				if (listSingle->getName() == "language") {
+#if HAVE_SWIFTEN_3
+					language = listSingle->getValues()[0];
+#else
 					language = listSingle->getValue();
+#endif
 				}
 				continue;
 			}
-
+#if HAVE_SWIFTEN_3
+			FormField::ref boolean = *it;
+			if (boolean->getType() == FormField::BooleanType) {
+#else
 			BooleanFormField::ref boolean = boost::dynamic_pointer_cast<BooleanFormField>(*it);
 			if (boolean) {
+#endif
 				if (boolean->getName() == "unregister") {
+#if HAVE_SWIFTEN_3
+					if (boolean->getBoolValue()) {
+#else
 					if (boolean->getValue()) {
+#endif
 						payload->setRemove(true);
 					}
 				}

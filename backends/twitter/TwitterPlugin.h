@@ -32,9 +32,14 @@
 #include <queue>
 #include <set>
 #include <cstdio>
-
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+#if HAVE_SWIFTEN_3
+#include <Swiften/Crypto/CryptoProvider.h>
+#include <Swiften/Crypto/PlatformCryptoProvider.h>
+#else
 #include "Swiften/StringCodecs/SHA1.h"
-
+#endif
 using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
@@ -51,6 +56,9 @@ class TwitterPlugin : public NetworkPlugin {
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
+#if HAVE_SWIFTEN_3
+		boost::shared_ptr<Swift::CryptoProvider> cryptoProvider;
+#endif
 		Swift::Timer::ref tweet_timer;
 		Swift::Timer::ref message_timer;
 		StorageBackend *storagebackend;

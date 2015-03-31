@@ -7,6 +7,8 @@
 
 // Swiften
 #include "Swiften/Swiften.h"
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
 
 #ifndef WIN32
 // for signal handler
@@ -87,8 +89,11 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&SwiftenPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
-
+#if HAVE_SWIFTEN_3
+			serializer = new Swift::XMPPSerializer(&collection, Swift::ClientStreamType, false);
+#else
 			serializer = new Swift::XMPPSerializer(&collection, Swift::ClientStreamType);
+#endif
 			m_xmppParser = new Swift::XMPPParser(this, &m_collection2, m_factories->getXMLParserFactory());
 			m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 
@@ -113,8 +118,11 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		void handleStreamStart(const Swift::ProtocolHeader&) {}
-
+#if HAVE_SWIFTEN_3
+		void handleElement(boost::shared_ptr<Swift::ToplevelElement> element) {
+#else
 		void handleElement(boost::shared_ptr<Swift::Element> element) {
+#endif
 			boost::shared_ptr<Swift::Stanza> stanza = boost::dynamic_pointer_cast<Swift::Stanza>(element);
 			if (!stanza) {
 				return;

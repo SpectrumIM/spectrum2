@@ -70,7 +70,11 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 User::~User(){
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Destroying");
 	if (m_component->inServerMode()) {
+#if HAVE_SWIFTEN_3
+		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::ToplevelElement>());
+#else
 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>());
+#endif
 	}
 
 	m_reconnectTimer->stop();
@@ -486,8 +490,12 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 		// Remove user later just to be sure there won't be double-free.
 		// We can't be sure finishSession sends unavailable presence everytime, so check if user gets removed
 		// in finishSession(...) call and if not, remove it here.
-		std::string jid = m_jid.toBare().toString();		
+		std::string jid = m_jid.toBare().toString();
+#if HAVE_SWIFTEN_3
+		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
+#else
 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
+#endif
 		if (m_userManager->getUser(jid) != NULL) {
 			m_userManager->removeUser(this);
 		}

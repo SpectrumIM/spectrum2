@@ -126,7 +126,11 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	}
 	else {
 		LOG4CXX_INFO(logger, "Creating component in gateway mode");
+#if HAVE_SWIFTEN_3
+		m_component = new Swift::Component(m_jid, CONFIG_STRING(m_config, "service.password"), m_factories);
+#else
 		m_component = new Swift::Component(loop, m_factories, m_jid, CONFIG_STRING(m_config, "service.password"));
+#endif
 		m_component->setSoftwareVersion("Spectrum", SPECTRUM_VERSION);
 		m_component->onConnected.connect(bind(&Component::handleConnected, this));
 		m_component->onError.connect(boost::bind(&Component::handleConnectionError, this, _1));
@@ -155,7 +159,11 @@ Component::Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories,
 	}
 
 	m_capsMemoryStorage = new CapsMemoryStorage();
+#if HAVE_SWIFTEN_3
+	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter, m_factories->getCryptoProvider());
+#else
 	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter);
+#endif
 	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_stanzaChannel);
  	m_entityCapsManager->onCapsChanged.connect(boost::bind(&Component::handleCapsChanged, this, _1));
 	

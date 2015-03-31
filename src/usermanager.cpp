@@ -566,7 +566,11 @@ void UserManager::connectUser(const Swift::JID &user) {
 				// Unavailable presence from old session has to be ignored, otherwise it would disconnect the user from legacy network.
 				m_userRegistry->onPasswordValid(user);
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
+#if HAVE_SWIFTEN_3
+				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
+#else				
 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
+#endif
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}
 		}

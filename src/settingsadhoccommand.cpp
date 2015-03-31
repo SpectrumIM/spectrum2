@@ -34,19 +34,29 @@ DEFINE_LOGGER(logger, "SettingsAdHocCommand");
 
 SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) : AdHocCommand(component, userManager, storageBackend, initiator, to) {
 	m_state = Init;
+#if HAVE_SWIFTEN_3
+	Swift::FormField::ref field = boost::make_shared<Swift::FormField>(Swift::FormField::BooleanType, "1");
+#else
 	Swift::BooleanFormField::ref field;
 
 	field = Swift::BooleanFormField::create(true);
+#endif
 	field->setName("enable_transport");
 	field->setLabel("Enable transport");
 	addFormField(field);
-
+#if HAVE_SWIFTEN_3
+	field = boost::make_shared<Swift::FormField>(Swift::FormField::BooleanType, CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.send_headlines", "0"));
+#else
 	field = Swift::BooleanFormField::create(CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.send_headlines", "0") == "1");
+#endif
 	field->setName("send_headlines");
 	field->setLabel("Allow sending messages as headlines");
 	addFormField(field);
-
+#if HAVE_SWIFTEN_3
+	field = boost::make_shared<Swift::FormField>(Swift::FormField::BooleanType, CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.stay_connected", "0"));
+#else
 	field = Swift::BooleanFormField::create(CONFIG_STRING_DEFAULTED(component->getConfig(), "settings.stay_connected", "0") == "1");
+#endif
 	field->setName("stay_connected");
 	field->setLabel("Stay connected to legacy network when offline on XMPP");
 	addFormField(field);
@@ -59,7 +69,11 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 	if (!m_storageBackend) {
 		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 		boost::shared_ptr<Swift::Form> form(new Swift::Form());
+#if HAVE_SWIFTEN_3
+		form->addField(boost::make_shared<Swift::FormField>(Swift::FormField::FixedType, "This server does not support transport settings. There is no storage backend configured"));
+#else
 		form->addField(Swift::FixedFormField::create("This server does not support transport settings. There is no storage backend configured"));
+#endif
 		response->setForm(form);
 		return response;
 	}
@@ -68,7 +82,11 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 	if (m_storageBackend->getUser(m_initiator.toBare().toString(), user) == false) {
 		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 		boost::shared_ptr<Swift::Form> form(new Swift::Form());
+#if HAVE_SWIFTEN_3
+		form->addField(boost::make_shared<Swift::FormField>(Swift::FormField::FixedType, "You are not registered."));
+#else
 		form->addField(Swift::FixedFormField::create("You are not registered."));
+#endif
 		response->setForm(form);
 		return response;
 	}
@@ -78,14 +96,23 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 
 	BOOST_FOREACH(Swift::FormField::ref field, m_fields) {
 		// FIXME: Support for more types than boolean
+#if HAVE_SWIFTEN_3
+		if (field->getType() == Swift::FormField::BooleanType) {
+			std::string value = field->getBoolValue() ? "1" : "0";
+			int type = (int) TYPE_BOOLEAN;
+			m_storageBackend->getUserSetting(user.id, field->getName(), type, value);
+			field->setBoolValue(value == "1");
+		}
+#else
 		if (boost::dynamic_pointer_cast<Swift::BooleanFormField>(field)) {
 			Swift::BooleanFormField::ref f(boost::dynamic_pointer_cast<Swift::BooleanFormField>(field));
 			std::string value = f->getValue() ? "1" : "0";
-			int type = (int) TYPE_BOOLEAN;
+			int type = (int)TYPE_BOOLEAN;
 			m_storageBackend->getUserSetting(user.id, f->getName(), type, value);
 			f->setValue(value == "1");
 		}
-		
+#endif			
+
 		form->addField(field);
 	}
 
@@ -103,7 +130,14 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::sh
 			if (!received) {
 				continue;
 			}
-
+#if HAVE_SWIFTEN_3
+			if (received->getType() == Swift::FormField::BooleanType) {
+				std::string value = received->getBoolValue() ? "1" : "0";
+				m_storageBackend->updateUserSetting(user.id, received->getName(), value);
+			} else if (received->getType() == Swift::FormField::TextSingleType) {
+				m_storageBackend->updateUserSetting(user.id, received->getName(), received->getTextSingleValue());
+			}
+#else
 			// FIXME: Support for more types than boolean
 			if (boost::dynamic_pointer_cast<Swift::BooleanFormField>(received)) {
 				Swift::BooleanFormField::ref f(boost::dynamic_pointer_cast<Swift::BooleanFormField>(received));
@@ -114,6 +148,7 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::sh
 				Swift::TextSingleFormField::ref f(boost::dynamic_pointer_cast<Swift::TextSingleFormField>(received));
 				m_storageBackend->updateUserSetting(user.id, f->getName(), f->getValue());
 			}
+#endif
 		}
 	}
 

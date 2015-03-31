@@ -44,6 +44,9 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) 
 	m_transportInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"),
 													CONFIG_STRING(m_config, "identity.category"),
 													CONFIG_STRING(m_config, "identity.type")));
+#if HAVE_SWIFTEN_3
+	crypto = boost::shared_ptr<CryptoProvider>(PlatformCryptoProvider::create());
+#endif
 
 	updateFeatures();
 }
@@ -93,8 +96,11 @@ void DiscoInfoResponder::setBuddyFeatures(std::list<std::string> &f) {
 			m_buddyInfo->addFeature(*it);
 		}
 	}
-
+#if HAVE_SWIFTEN_3
+	CapsInfoGenerator caps("spectrum", crypto.get());
+#else
 	CapsInfoGenerator caps("spectrum");
+#endif
 	m_capsInfo = caps.generateCapsInfo(*m_buddyInfo);
 	onBuddyCapsInfoChanged(m_capsInfo);
 }

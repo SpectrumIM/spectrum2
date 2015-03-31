@@ -271,7 +271,11 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_lastLogin = 0;
 	m_xmppParser = new Swift::XMPPParser(this, &m_collection, component->getNetworkFactories()->getXMLParserFactory());
 	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
+#if HAVE_SWIFTEN_3
+	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType, false);
+#else
 	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType);
+#endif
 	m_discoItemsResponder = discoItemsResponder;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
@@ -834,8 +838,10 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	}
 
 	m_filetransfers[++bytestream_id] = transfer;
+#if !HAVE_SWIFTEN_3
 	transfer.ft->onStateChange.connect(boost::bind(&NetworkPluginServer::handleFTStateChanged, this, _1, payload.username(), payload.buddyname(), payload.filename(), payload.size(), bytestream_id));
 	transfer.ft->start();
+#endif
 }
 
 void NetworkPluginServer::handleFTFinishPayload(const std::string &data) {
@@ -991,8 +997,11 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 		m_discoItemsResponder->addRoom(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
 	}
 }
-
+#if HAVE_SWIFTEN_3
+void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::ToplevelElement> element) {
+#else
 void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> element) {
+#endif
 	boost::shared_ptr<Swift::Stanza> stanza = boost::dynamic_pointer_cast<Swift::Stanza>(element);
 	if (!stanza) {
 		return;
@@ -1877,12 +1886,14 @@ void NetworkPluginServer::handleFTStateChanged(Swift::FileTransfer::State state,
 		// TODO: FIXME We have to remove filetransfer when use disconnects
 		return;
 	}
+#if !HAVE_SWIFTEN_3
 	if (state.state == Swift::FileTransfer::State::Transferring) {
 		handleFTAccepted(user, buddyName, fileName, size, id);
 	}
 	else if (state.state == Swift::FileTransfer::State::Canceled) {
 		handleFTRejected(user, buddyName, fileName, size);
 	}
+#endif
 }
 
 void NetworkPluginServer::sendPing(Backend *c) {

@@ -77,7 +77,6 @@ if(NOT SWIFTEN_FOUND)
 endif()
 
 # FIND BOOST
-set(Boost_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 if (WIN32)
 	set(Boost_USE_STATIC_LIBS      ON)
 	set(Boost_USE_MULTITHREADED      ON)
@@ -115,6 +114,7 @@ endif()
 # FIND SQLITE3
 if (ENABLE_SQLITE3)
 	if (MSVC)
+		set(SQLITE3_FOUND 1)
 		ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/msvc-deps)
 	else()
 		if (WIN32)

@@ -35,38 +35,51 @@ FileTransferManager::FileTransferManager(Component *component, UserManager *user
 	m_userManager = userManager;
 
 	m_jingleSessionManager = new Swift::JingleSessionManager(m_component->getIQRouter());
+#if !HAVE_SWIFTEN_3
 	m_connectivityManager = new Swift::ConnectivityManager(m_component->getNetworkFactories()->getNATTraverser());
+#endif
 	m_bytestreamRegistry = new Swift::SOCKS5BytestreamRegistry();
+#if !HAVE_SWIFTEN_3
 	m_bytestreamProxy = new Swift::SOCKS5BytestreamProxy(m_component->getNetworkFactories()->getConnectionFactory(), m_component->getNetworkFactories()->getTimerFactory());
-
 	m_localCandidateGeneratorFactory = new Swift::DefaultLocalJingleTransportCandidateGeneratorFactory(m_connectivityManager, m_bytestreamRegistry, m_bytestreamProxy, "thishouldnotbeused");
 	m_remoteCandidateSelectorFactory = new Swift::DefaultRemoteJingleTransportCandidateSelectorFactory(m_component->getNetworkFactories()->getConnectionFactory(), m_component->getNetworkFactories()->getTimerFactory());
-
+#else
+	m_proxyManager = new Swift::SOCKS5BytestreamProxiesManager(m_component->getNetworkFactories()->getConnectionFactory(), m_component->getNetworkFactories()->getTimerFactory(), m_component->getNetworkFactories()->getDomainNameResolver(), m_component->getIQRouter(), "bar.com");
+#endif
 	boost::shared_ptr<Swift::ConnectionServer> server = m_component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(19645);
 	server->start();
+#if HAVE_SWIFTEN_3
+	m_proxyServerManager = new Swift::SOCKS5BytestreamServerManager(m_bytestreamRegistry, m_component->getNetworkFactories()->getConnectionServerFactory(), m_component->getNetworkFactories()->getNetworkEnvironment(), m_component->getNetworkFactories()->getNATTraverser());
+#else
 	m_bytestreamServer = new Swift::SOCKS5BytestreamServer(server, m_bytestreamRegistry);
 	m_bytestreamServer->start();
-
 	m_outgoingFTManager = new Swift::CombinedOutgoingFileTransferManager(m_jingleSessionManager, m_component->getIQRouter(),
-																	m_userManager, m_remoteCandidateSelectorFactory, 
-																	m_localCandidateGeneratorFactory, m_bytestreamRegistry, 
-																	m_bytestreamProxy, m_component->getPresenceOracle(),
-																	m_bytestreamServer);
+		m_userManager, m_remoteCandidateSelectorFactory,
+		m_localCandidateGeneratorFactory, m_bytestreamRegistry,
+		m_bytestreamProxy, m_component->getPresenceOracle(),
+		m_bytestreamServer);
+#endif
+
+	
 
 // WARNING: Swiften crashes when this is uncommented... But we probably need it for working Jingle FT
 // 	m_connectivityManager->addListeningPort(19645);
 }
 
 FileTransferManager::~FileTransferManager() {
+#if !HAVE_SWIFTEN_3
 	m_bytestreamServer->stop();
-	delete m_outgoingFTManager;
 	delete m_remoteCandidateSelectorFactory;
 	delete m_localCandidateGeneratorFactory;
+#endif
+	delete m_outgoingFTManager;
 	delete m_jingleSessionManager;
 	delete m_bytestreamRegistry;
+#if !HAVE_SWIFTEN_3
 	delete m_bytestreamServer;
 	delete m_bytestreamProxy;
 	delete m_connectivityManager;
+#endif
 }
 
 FileTransferManager::Transfer FileTransferManager::sendFile(User *user, Buddy *buddy, boost::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info) {

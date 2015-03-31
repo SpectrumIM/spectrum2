@@ -24,6 +24,8 @@
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include <boost/signal.hpp>
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
 
 namespace Transport {
 

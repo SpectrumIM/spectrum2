@@ -76,7 +76,7 @@ void ServerFromClientSession::handlePasswordInvalid(const std::string &error) {
 	}
 }
 
-void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) {
+void ServerFromClientSession::handleElement(boost::shared_ptr<ToplevelElement> element) {
 	if (isInitialized()) {
 		onElementReceived(element);
 	}

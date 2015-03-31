@@ -19,16 +19,26 @@
  */
 
 #pragma once
-
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
+#if !HAVE_SWIFTEN_3
 #include <Swiften/FileTransfer/ConnectivityManager.h>
+#endif
 #include <Swiften/FileTransfer/CombinedOutgoingFileTransferManager.h>
 #include <Swiften/FileTransfer/IncomingFileTransferManager.h>
+#if !HAVE_SWIFTEN_3
 #include <Swiften/FileTransfer/DefaultLocalJingleTransportCandidateGeneratorFactory.h>
 #include <Swiften/FileTransfer/DefaultRemoteJingleTransportCandidateSelectorFactory.h>
+#else
+#include <Swiften/FileTransfer/SOCKS5BytestreamProxiesManager.h>
+#include <Swiften/FileTransfer/SOCKS5BytestreamServerManager.h>
+#endif
 #include <Swiften/FileTransfer/SOCKS5BytestreamRegistry.h>
 #include <Swiften/FileTransfer/SOCKS5BytestreamServer.h>
+#if !HAVE_SWIFTEN_3
 #include <Swiften/FileTransfer/SOCKS5BytestreamProxy.h>
+#endif
 
 namespace Transport {
 
@@ -59,10 +69,15 @@ class FileTransferManager {
 		Swift::LocalJingleTransportCandidateGeneratorFactory* m_localCandidateGeneratorFactory;
 		Swift::JingleSessionManager *m_jingleSessionManager;
 		Swift::SOCKS5BytestreamRegistry* m_bytestreamRegistry;
+#if HAVE_SWIFTEN_3
+		Swift::SOCKS5BytestreamServerManager* m_proxyServerManager;
+		Swift::SOCKS5BytestreamProxiesManager *m_proxyManager;
+#else
 		Swift::SOCKS5BytestreamServer* m_bytestreamServer;
 		Swift::SOCKS5BytestreamProxy* m_bytestreamProxy;
 		Swift::SOCKS5BytestreamServer *bytestreamServer;
 		Swift::ConnectivityManager* m_connectivityManager;
+#endif
 };
 
 }
