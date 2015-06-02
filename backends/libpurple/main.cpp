@@ -635,6 +635,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_NOT_TYPING);
+				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, buddyName.c_str(), account);
+				if (conv) {
+					purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
+					purple_conversation_update_wrapped(conv, PURPLE_CONV_UPDATE_UNSEEN);
+				}
 			}
 		}
 
