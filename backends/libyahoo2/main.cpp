@@ -107,7 +107,11 @@ class YahooPlugin : public NetworkPlugin {
 			this->config = config;
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_sslFactory = new Swift::OpenSSLContextFactory();
+#if HAVE_SWIFTEN3
 			m_tlsFactory = new Swift::TLSConnectionFactory(m_sslFactory, m_factories->getConnectionFactory(), Swift::TLSOptions());
+#else
+			m_tlsFactory = new Swift::TLSConnectionFactory(m_sslFactory, m_factories->getConnectionFactory());
+#endif
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&YahooPlugin::_handleDataRead, this, _1));
 			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
