@@ -2,7 +2,7 @@ include_directories (${libtransport_SOURCE_DIR}/backends/twitter/libtwitcurl)
 FILE(GLOB SRC *.cpp libtwitcurl/*.cpp Requests/*.cpp)
 add_executable(spectrum2_twitter_backend ${SRC})
 
-find_package(curl)
+find_package(CURL)
 
 if(CURL_FOUND)
 message(STATUS "Using curl ${CURL_VERSION_STRING}: ${CURL_INCLUDE_DIRS} ${CURL_LIBRARIES}")
