@@ -319,7 +319,7 @@ class NetworkPlugin:
 				return
 
 			wrapper = protocol_pb2.WrapperMessage()
-			if (wrapper.ParseFromString(self.m_data[4:]) == False):
+			if (wrapper.ParseFromString(self.m_data[4:expected_size+4]) == False):
 				self.m_data = self.m_data[expected_size+4:]
 				return
 
