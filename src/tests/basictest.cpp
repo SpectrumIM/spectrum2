@@ -150,8 +150,11 @@ void BasicTest::dumpReceived() {
 	std::cout << "Stream2:\n";
 	std::cout << receivedData2 << "\n";
 }
-
+#if HAVE_SWIFTEN_3
+void BasicTest::handleElement(boost::shared_ptr<Swift::ToplevelElement> element) {
+#else
 void BasicTest::handleElement(boost::shared_ptr<Swift::Element> element) {
+#endif
 	if (stream1_active) {
 		received.push_back(element);
 	}

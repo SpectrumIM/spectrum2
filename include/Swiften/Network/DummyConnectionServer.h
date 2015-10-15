@@ -30,7 +30,11 @@ namespace Swift {
 				return ref(new DummyConnectionServer(eventLoop));
 			}
 
-			void acceptConnection(boost::shared_ptr<Connection> connection);
+			void acceptConnection(boost::shared_ptr<Swift::Connection> connection);
+
+			virtual boost::optional<Swift::ConnectionServer::Error> tryStart() {
+				return boost::optional<Swift::ConnectionServer::Error>();
+			}
 
 			virtual void start();
 			virtual void stop();

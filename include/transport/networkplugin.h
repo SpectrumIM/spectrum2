@@ -21,6 +21,7 @@
 #pragma once
 
 #include <time.h>
+#undef TYPE_BOOL
 #include "transport/protocol.pb.h"
 // #include "conversation.h"
 #include <iostream>

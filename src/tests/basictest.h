@@ -45,6 +45,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
 
 using namespace Transport;
 
@@ -217,9 +218,11 @@ class BasicTest : public Swift::XMPPParserClient {
 	void handleDataReceived2(const Swift::SafeByteArray &data);
 
 	void handleStreamStart(const Swift::ProtocolHeader&);
-
+#if HAVE_SWIFTEN_3
+	void handleElement(boost::shared_ptr<Swift::ToplevelElement> element);
+#else
 	void handleElement(boost::shared_ptr<Swift::Element> element);
-
+#endif
 	void handleStreamEnd();
 
 	void injectPresence(boost::shared_ptr<Swift::Presence> &response);

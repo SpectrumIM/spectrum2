@@ -36,6 +36,13 @@ namespace Swift {
 			IDNConverter* getIDNConverter() const {
 				return idnConverter.get();
 			}
+			Swift::CryptoProvider* getCryptoProvider() const {
+		        	return cryptoProvider;
+			}
+			Swift::NetworkEnvironment* getNetworkEnvironment() const {
+				return networkEnvironment;
+			}
+
 #endif
 
 			DomainNameResolver* getDomainNameResolver() const {
@@ -65,13 +72,14 @@ namespace Swift {
             Swift::ProxyProvider* getProxyProvider() const {
                 return 0;
             }
-
 		private:
 			PlatformXMLParserFactory *m_platformXMLParserFactory;
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
 #if HAVE_SWIFTEN_3
 			boost::shared_ptr<IDNConverter> idnConverter;
+			CryptoProvider* cryptoProvider;
+			NetworkEnvironment* networkEnvironment;
 #endif
 			DomainNameResolver* domainNameResolver;
 			ConnectionServerFactory* connectionServerFactory;
