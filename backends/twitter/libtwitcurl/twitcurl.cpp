@@ -1,5 +1,4 @@
 #define NOMINMAX
-#include <algorithm>
 #include <memory.h>
 #include "twitcurlurls.h"
 #include "twitcurl.h"
