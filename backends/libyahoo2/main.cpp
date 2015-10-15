@@ -2,6 +2,7 @@
 #include "transport/config.h"
 #include "transport/networkplugin.h"
 #include "transport/logging.h"
+#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
 
 // Yahoo2
 #include <yahoo2.h>
@@ -107,7 +108,7 @@ class YahooPlugin : public NetworkPlugin {
 			this->config = config;
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_sslFactory = new Swift::OpenSSLContextFactory();
-#if HAVE_SWIFTEN3
+#if HAVE_SWIFTEN_3
 			m_tlsFactory = new Swift::TLSConnectionFactory(m_sslFactory, m_factories->getConnectionFactory(), Swift::TLSOptions());
 #else
 			m_tlsFactory = new Swift::TLSConnectionFactory(m_sslFactory, m_factories->getConnectionFactory());
