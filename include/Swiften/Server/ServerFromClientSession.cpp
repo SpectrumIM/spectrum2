@@ -29,6 +29,11 @@
 #include <iostream>
 #include <Swiften/TLS/CertificateWithKey.h>
 
+#include <Swiften/Version.h>
+#if (SWIFTEN_VERSION >= 0x030000)
+#include <Swiften/Elements/ToplevelElement.h>
+#endif
+
 namespace Swift {
 
 ServerFromClientSession::ServerFromClientSession(
@@ -76,7 +81,11 @@ void ServerFromClientSession::handlePasswordInvalid(const std::string &error) {
 	}
 }
 
+#if (SWIFTEN_VERSION >= 0x030000)
 void ServerFromClientSession::handleElement(boost::shared_ptr<ToplevelElement> element) {
+#else
+void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) {	
+#endif
 	if (isInitialized()) {
 		onElementReceived(element);
 	}

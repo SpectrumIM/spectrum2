@@ -7,7 +7,7 @@
 #pragma once
 
 #include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #include <Swiften/Network/NetworkFactories.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>

@@ -45,7 +45,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
-#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 using namespace Transport;
 

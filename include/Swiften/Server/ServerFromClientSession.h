@@ -17,7 +17,7 @@
 #include <Swiften/Base/ByteArray.h>
 #include <Swiften/TLS/CertificateWithKey.h>
 #include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Swift {
 	class ProtocolHeader;

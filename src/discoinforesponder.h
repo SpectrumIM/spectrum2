@@ -27,7 +27,7 @@
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
 #include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 #if HAVE_SWIFTEN_3
 #include <Swiften/Crypto/CryptoProvider.h>
 #include <Swiften/Crypto/PlatformCryptoProvider.h>
