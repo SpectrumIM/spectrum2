@@ -26,7 +26,6 @@ option(ENABLE_SMSTOOLS3 "Build SMSTools3 plugin" ON)
 option(ENABLE_SKYPE "Build Skype plugin" ON)
 option(ENABLE_SWIFTEN "Build Swiften plugin" ON)
 option(ENABLE_TWITTER "Build Twitter plugin" ON)
-option(ENABLE_YAHOO2 "Build Libyahoo2 plugin" ON)
 
 option(ENABLE_DOCS "Build Docs" ON)
 # option(ENABLE_LOG "Build with logging using Log4cxx" ON)
@@ -219,10 +218,6 @@ set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(dbus)
 endif()
 
-# if(ENABLE_YAHOO2)
-# 	set(yahoo2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-# 	find_package(yahoo2)
-# endif()
 
 ####### Miscallanous ######
 
@@ -394,18 +389,6 @@ if (PROTOBUF_FOUND)
 		message("SMSTools3 plugin  : no (does not run on Win32)")
 		message("Skype plugin      : no (does not run on Win32)")
 	endif()
-
-#  	if(YAHOO2_FOUND)
-# 		message("Libyahoo2 plugin  : yes")
-#  		include_directories(${YAHOO2_INCLUDE_DIR})
-# 	else()
-		if(ENABLE_YAHOO2)
-			set(YAHOO2_FOUND 1)
-			message("Libyahoo2 plugin  : yes")
-		else(ENABLE_YAHOO2)
-			message("Libyahoo2 plugin  : no (user disabled)")
-		endif()
-#  	endif()
 
 	if(ENABLE_SWIFTEN)
 		message("Swiften plugin    : yes")
