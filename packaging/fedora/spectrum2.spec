@@ -25,7 +25,7 @@ BuildRequires: libidn-devel
 BuildRequires: expat-devel
 BuildRequires: avahi-devel
 BuildRequires: log4cxx-devel
-#BuildRequires: swiften-devel
+BuildRequires: swiften-devel
 BuildRequires: libcommuni-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
 
@@ -58,7 +58,7 @@ exit 0
 
 %files
 %defattr(-, root, root,-)
-%doc README
+%doc README.md
 %{_bindir}/spectrum2
 %{_bindir}/spectrum2_manager
 /etc/spectrum2/*
@@ -134,19 +134,6 @@ Spectrum2 Swiften backend
 %files swiften-backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_swiften_backend
-
-%package libyahoo2-backend
-Summary:    Libtransport
-Group:      Development/Libraries
-Requires:   boost
-Requires:   libtransport%{?_isa} = %{version}-%{release}
-
-%description libyahoo2-backend
-Spectrum2 libyahoo2 backend
-
-%files libyahoo2-backend
-%defattr(-, root, root,-)
-/usr/bin/spectrum2_libyahoo2_backend
 
 %package twitter-backend
 Summary:    Libtransport
