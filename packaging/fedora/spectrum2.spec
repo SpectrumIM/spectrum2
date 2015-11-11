@@ -84,17 +84,17 @@ Spectrum2 libpurple backend
 /usr/bin/spectrum2_frotz_backend
 /usr/bin/dfrotz
 
-%package libcommuni-backend
-Summary:    Libtransport
-Group:      Development/Libraries
-Requires:   libtransport%{?_isa} = %{version}-%{release}
-
-%description libcommuni-backend
-Spectrum2 libpurple backend
-
-%files libcommuni-backend
-%defattr(-, root, root,-)
-/usr/bin/spectrum2_libcommuni_backend
+# %package libcommuni-backend
+# Summary:    Libtransport
+# Group:      Development/Libraries
+# Requires:   libtransport%{?_isa} = %{version}-%{release}
+# 
+# %description libcommuni-backend
+# Spectrum2 libpurple backend
+# 
+# %files libcommuni-backend
+# %defattr(-, root, root,-)
+# /usr/bin/spectrum2_libcommuni_backend
 
 %package smstools3-backend
 Summary:    Libtransport
