@@ -71,7 +71,6 @@ exit 0
 Summary:    Libtransport
 Group:      Development/Libraries
 Requires:   boost
-Requires:   libpurple-hanzz
 Requires:   libtransport%{?_isa} = %{version}-%{release}
 
 %description libpurple-backend
