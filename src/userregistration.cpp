@@ -25,6 +25,7 @@
 #include "transport/rostermanager.h"
 #include "transport/user.h"
 #include "transport/logging.h"
+#include "transport/formutils.h"
 #include "Swiften/Elements/ErrorPayload.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
@@ -43,7 +44,9 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "UserRegistration");
 
-UserRegistration::UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::InBandRegistrationPayload>(component->m_iqRouter) {
+UserRegistration::UserRegistration(Component *component, UserManager *userManager,
+								   StorageBackend *storageBackend)
+: Swift::Responder<Swift::InBandRegistrationPayload>(component->m_iqRouter) {
 	m_component = component;
 	m_config = m_component->m_config;
 	m_storageBackend = storageBackend;
@@ -54,16 +57,18 @@ UserRegistration::~UserRegistration(){
 }
 
 bool UserRegistration::registerUser(const UserInfo &row) {
-	UserInfo user;
-	bool registered = m_storageBackend->getUser(row.jid, user);
-	// This user is already registered
-	if (registered)
+	UserInfo dummy;
+	bool registered = m_storageBackend->getUser(row.jid, dummy);
+
+	// This user is already registered, nothing to do
+	if (registered) {
 		return false;
+	}
 
 	m_storageBackend->setUser(row);
 
-	//same as in unregisterUser but here we have to pass UserInfo to handleRegisterRRResponse
-	AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(),row.jid));
+	// Check if the server supports remoteroster XEP by sending request for the registered user's roster.
+	AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), row.jid));
 	request->onResponse.connect(boost::bind(&UserRegistration::handleRegisterRemoteRosterResponse, this, _1, _2, row));
 	request->send();
 
@@ -73,13 +78,15 @@ bool UserRegistration::registerUser(const UserInfo &row) {
 bool UserRegistration::unregisterUser(const std::string &barejid) {
 	UserInfo userInfo;
 	bool registered = m_storageBackend->getUser(barejid, userInfo);
-	// This user is not registered
-	if (!registered)
+
+	// This user is not registered, nothing to do
+	if (!registered) {
 		return false;
+	}
 
 	onUserUnregistered(userInfo);
 
-	// We have to check if server supports remoteroster XEP and use it if it's supported or fallback to unsubscribe otherwise
+	// Check if the server supports remoteroster XEP by sending request for the registered user's roster.
 	AddressedRosterRequest::ref request = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), barejid));
 	request->onResponse.connect(boost::bind(&UserRegistration::handleUnregisterRemoteRosterResponse, this, _1, _2, barejid));
 	request->send();
@@ -87,15 +94,17 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 	return true;
 }
 
-void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported /*error*/, const UserInfo &row){
+void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &row){
 	if (remoteRosterNotSupported || !payload) {
+		// Remote roster is not support, so send normal Subscribe presence to add transport.
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setFrom(m_component->getJID());
 		response->setTo(Swift::JID(row.jid));
 		response->setType(Swift::Presence::Subscribe);
 		m_component->getStanzaChannel()->sendPresence(response);
 	}
-	else{
+	else {
+		// Remote roster is support, so use remoteroster XEP to add transport.
 		Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 		Swift::RosterItemPayload item;
 		item.setJID(m_component->getJID());
@@ -104,8 +113,10 @@ void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swif
 		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, row.jid, m_component->getIQRouter());
 		request->send();
 	}
+
 	onUserRegistered(row);
 
+	// If the JID for registration notification is configured, send the notification message.
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
 	BOOST_FOREACH(const std::string &notify_jid, x) {
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
@@ -116,15 +127,17 @@ void UserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swif
 	}
 }
 
-void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported /*error*/, const std::string &barejid) {
+void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const std::string &barejid) {
 	UserInfo userInfo;
 	bool registered = m_storageBackend->getUser(barejid, userInfo);
-	// This user is not registered
+	// This user is not registered, nothing do to
 	if (!registered)
 		return;
 
 	if (remoteRosterNotSupported || !payload) {
-		std::list <BuddyInfo> roster;
+		// Remote roster is ont support, so get the buddies from database
+		// and send Unsubsribe and Unsubscribed presence to them.
+		std::list<BuddyInfo> roster;
 		m_storageBackend->getBuddies(userInfo.id, roster);
 		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
 			std::string name = (*u).legacyName;
@@ -152,6 +165,8 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		}
 	}
 	else {
+		// Remote roster is support, so iterate over all buddies we received
+		// from the XMPP server and remove them using remote roster.
 		BOOST_FOREACH(Swift::RosterItemPayload it, payload->getItems()) {
 			Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
 			Swift::RosterItemPayload item;
@@ -174,6 +189,7 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		m_userManager->removeUser(user);
 	}
 
+	// Remove the transport contact itself the same way as the buddies.
 	if (remoteRosterNotSupported || !payload) {
 		Swift::Presence::ref response;
 		response = Swift::Presence::create();
@@ -199,6 +215,7 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 		request->send();
 	}
 
+	// If the JID for registration notification is configured, send the notification message.
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
 	BOOST_FOREACH(const std::string &notify_jid, x) {
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
@@ -209,6 +226,58 @@ void UserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Sw
 	}
 }
 
+Form::ref UserRegistration::generateRegistrationForm(const UserInfo &res, bool registered) {
+	Form::ref form(new Form(Form::FormType));
+	form->setTitle("Registration");
+	form->setInstructions(CONFIG_STRING(m_config, "registration.instructions"));
+
+	FormUtils::addHiddenField(form, "FORM_TYPE", "jabber:iq:register");
+	FormUtils::addTextSingleField(form, "username", res.uin,
+								  CONFIG_STRING(m_config, "registration.username_label"),
+								  true);
+
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
+		FormUtils::addTextPrivateField(form, "password", "Password", true);
+	}
+
+	std::string defLanguage = CONFIG_STRING(m_config, "registration.language");
+	Swift::FormField::Option languages(defLanguage, defLanguage);
+	FormUtils::addListSingleField(form, "language", languages, "Language",
+								  registered ? res.language : defLanguage);
+
+
+	if (registered) {
+		FormUtils::addBooleanField(form, "unregister", "0", "Remove your registration");
+	}
+	else if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
+		std::string localUsernameField = CONFIG_STRING(m_config, "registration.local_username_label");
+		FormUtils::addTextSingleField(form, "local_username", "", localUsernameField, true);
+		FormUtils::addTextSingleField(form, "local_password", "", "Local password", true);
+	}
+
+	return form;
+}
+
+boost::shared_ptr<InBandRegistrationPayload> UserRegistration::generateInBandRegistrationPayload(const Swift::JID& from) {
+	boost::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
+
+	UserInfo res;
+	bool registered = m_storageBackend->getUser(from.toBare().toString(), res);
+
+	reg->setInstructions(CONFIG_STRING(m_config, "registration.instructions"));
+	reg->setRegistered(registered);
+	reg->setUsername(res.uin);
+
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
+		reg->setPassword("");
+	}
+
+	Form::ref form = generateRegistrationForm(res, registered);
+	reg->setForm(form);
+
+	return reg;
+}
+
 bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
@@ -216,135 +285,16 @@ bool UserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID
 		return true;
 	}
 
-	std::string barejid = from.toBare().toString();
-
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
+			LOG4CXX_INFO(logger, from.toBare().toString() << ": This user has no permissions to register an account")
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
 	}
 
-	boost::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
-
-	UserInfo res;
-	bool registered = m_storageBackend->getUser(barejid, res);
-
-	std::string instructions = CONFIG_STRING(m_config, "registration.instructions");
-	std::string usernameField = CONFIG_STRING(m_config, "registration.username_label");
-
-	// normal jabber:iq:register
-	reg->setInstructions(instructions);
-	reg->setRegistered(registered);
-	reg->setUsername(res.uin);
-	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
-		reg->setPassword("");
-	}
-
-
-	// form
-	Form::ref form(new Form(Form::FormType));
-	form->setTitle((("Registration")));
-	form->setInstructions((instructions));
-#if HAVE_SWIFTEN_3
-	FormField::ref type = boost::make_shared<FormField>(FormField::HiddenType, "jabber:iq:register");	
-#else
-	HiddenFormField::ref type = HiddenFormField::create();
-	type->setValue("jabber:iq:register");
-#endif
-	type->setName("FORM_TYPE");
-	form->addField(type);
-#if HAVE_SWIFTEN_3
-	FormField::ref username = boost::make_shared<FormField>(FormField::TextSingleType, res.uin);
-#else
-	TextSingleFormField::ref username = TextSingleFormField::create();
-	username->setValue(res.uin);
-#endif
-	username->setName("username");
-	username->setLabel((usernameField));
-	username->setRequired(true);
-	form->addField(username);
-
-	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true)) {
-#if HAVE_SWIFTEN_3
-		FormField::ref password = boost::make_shared<FormField>(FormField::TextPrivateType);
-#else
-		TextPrivateFormField::ref password = TextPrivateFormField::create();
-#endif
-		password->setName("password");
-		password->setLabel((("Password")));
-		password->setRequired(true);
-		form->addField(password);
-	}
-#if HAVE_SWIFTEN_3
-	FormField::ref language = boost::make_shared<FormField>(FormField::ListSingleType);
-#else
-	ListSingleFormField::ref language = ListSingleFormField::create();
-#endif
-	language->setName("language");
-	language->setLabel((("Language")));
-	language->addOption(Swift::FormField::Option(CONFIG_STRING(m_config, "registration.language"), CONFIG_STRING(m_config, "registration.language")));
-	if (registered)
-#if HAVE_SWIFTEN_3
-		language->addValue(res.language);
-#else
-		language->setValue(res.language);
-#endif
-	else
-#if HAVE_SWIFTEN_3
-		language->addValue(CONFIG_STRING(m_config, "registration.language"));
-#else
-		language->setValue(CONFIG_STRING(m_config, "registration.language"));
-#endif
-	form->addField(language);
-
-//	TextSingleFormField::ref encoding = TextSingleFormField::create();
-//	encoding->setName("encoding");
-//	encoding->setLabel((("Encoding")));
-//	if (registered)
-//		encoding->setValue(res.encoding);
-//	else
-//		encoding->setValue(CONFIG_STRING(m_config, "registration.encoding"));
-//	form->addField(encoding);
-
-	if (registered) {
-#if HAVE_SWIFTEN_3
-		FormField::ref boolean = boost::make_shared<FormField>(FormField::BooleanType, "0");
-#else
-		BooleanFormField::ref boolean = BooleanFormField::create();
-		boolean->setValue(0);
-#endif
-		boolean->setName("unregister");
-		boolean->setLabel((("Remove your registration")));		
-		form->addField(boolean);
-	} else {
-		if (CONFIG_BOOL(m_config,"registration.require_local_account")) {
-			std::string localUsernameField = CONFIG_STRING(m_config, "registration.local_username_label");
-#if HAVE_SWIFTEN_3
-			FormField::ref local_username = boost::make_shared<FormField>(FormField::TextSingleType);
-#else
-			TextSingleFormField::ref local_username = TextSingleFormField::create();
-#endif
-			local_username->setName("local_username");
-			local_username->setLabel((localUsernameField));
-			local_username->setRequired(true);
-			form->addField(local_username);
-#if HAVE_SWIFTEN_3
-			FormField::ref local_password = boost::make_shared<FormField>(FormField::TextPrivateType);
-#else
-			TextPrivateFormField::ref local_password = TextPrivateFormField::create();
-#endif
-			local_password->setName("local_password");
-			local_password->setLabel((("Local Password")));
-			local_password->setRequired(true);
-			form->addField(local_password);
-		}
-	}
-
-	reg->setForm(form);
-
+	boost::shared_ptr<InBandRegistrationPayload> reg = generateInBandRegistrationPayload(from);
 	sendResponse(from, id, reg);
 
 	return true;
@@ -373,127 +323,32 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	std::string encoding;
 	std::string language;
-	std::string local_username("");
-	std::string local_password("");
+	std::string local_username;
+	std::string local_password;
 
 	Form::ref form = payload->getForm();
 	if (form) {
-		const std::vector<FormField::ref> fields = form->getFields();
-		for (std::vector<FormField::ref>::const_iterator it = fields.begin(); it != fields.end(); it++) {
-#if HAVE_SWIFTEN_3
-			FormField::ref textSingle = *it;
-			if (textSingle->getType() == FormField::TextSingleType || textSingle->getType() == FormField::UnknownType) {
-#else
-			TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(*it);
-			if (textSingle) {
-#endif
-				if (textSingle->getName() == "username") {
-#if HAVE_SWIFTEN_3
-					payload->setUsername(textSingle->getTextSingleValue());
-#else
-					payload->setUsername(textSingle->getValue());
-#endif
-				}
-				else if (textSingle->getName() == "encoding") {
-#if HAVE_SWIFTEN_3
-					encoding = textSingle->getTextSingleValue();
-#else
-					encoding = textSingle->getValue();
-#endif
-				}
-				// Pidgin sends it as textSingle, not sure why...
-				else if (textSingle->getName() == "password") {
-#if HAVE_SWIFTEN_3
-					payload->setPassword(textSingle->getTextSingleValue());
-#else
-					payload->setPassword(textSingle->getValue());
-#endif
-				}
-				else if (textSingle->getName() == "local_username") {
-#if HAVE_SWIFTEN_3
-					local_username = textSingle->getTextSingleValue();
-#else
-					local_username = textSingle->getValue();
-#endif
-				}
-				// Pidgin sends it as textSingle, not sure why...
-				else if (textSingle->getName() == "local_password") {
-#if HAVE_SWIFTEN_3
-					local_password = textSingle->getTextSingleValue();
-#else
-					local_password = textSingle->getValue();
-#endif
-				}
-				// Pidgin sends it as textSingle, not sure why...
-				else if (textSingle->getName() == "unregister") {
-#if HAVE_SWIFTEN_3
-					if (textSingle->getTextSingleValue() == "1" || textSingle->getTextSingleValue() == "true") {
-#else
-					if (textSingle->getValue() == "1" || textSingle->getValue() == "true") {
-#endif
-						payload->setRemove(true);
-					}
-				}
-				continue;
-			}
-#if HAVE_SWIFTEN_3
-			FormField::ref textPrivate = *it;
-			if (textPrivate->getType() == FormField::TextPrivateType) {
-#else
-			TextPrivateFormField::ref textPrivate = boost::dynamic_pointer_cast<TextPrivateFormField>(*it);
-			if (textPrivate) {
-#endif
-				if (textPrivate->getName() == "password") {
-#if HAVE_SWIFTEN_3
-					payload->setPassword(textPrivate->getTextPrivateValue());
-#else
-					payload->setPassword(textPrivate->getValue());
-#endif
-				}
-				else if (textPrivate->getName() == "local_password") {
-#if HAVE_SWIFTEN_3
-					local_password = textPrivate->getTextPrivateValue();
-#else
-					local_password = textPrivate->getValue();
-#endif
-				}
-				continue;
-			}
-#if HAVE_SWIFTEN_3
-			FormField::ref listSingle = *it;
-			if (listSingle->getType() == FormField::ListSingleType) {
-#else
-			ListSingleFormField::ref listSingle = boost::dynamic_pointer_cast<ListSingleFormField>(*it);
-			if (listSingle) {
-#endif
-				if (listSingle->getName() == "language") {
-#if HAVE_SWIFTEN_3
-					language = listSingle->getValues()[0];
-#else
-					language = listSingle->getValue();
-#endif
-				}
-				continue;
-			}
-#if HAVE_SWIFTEN_3
-			FormField::ref boolean = *it;
-			if (boolean->getType() == FormField::BooleanType) {
-#else
-			BooleanFormField::ref boolean = boost::dynamic_pointer_cast<BooleanFormField>(*it);
-			if (boolean) {
-#endif
-				if (boolean->getName() == "unregister") {
-#if HAVE_SWIFTEN_3
-					if (boolean->getBoolValue()) {
-#else
-					if (boolean->getValue()) {
-#endif
-						payload->setRemove(true);
-					}
-				}
-				continue;
-			}
+		std::string value;
+
+		value = FormUtils::fieldValue(form, "username", "");
+		if (!value.empty()) {
+			payload->setUsername(value);
 		}
+
+		value = FormUtils::fieldValue(form, "password", "");
+		if (!value.empty()) {
+			payload->setPassword(value);
+		}
+
+		value = FormUtils::fieldValue(form, "unregister", "");
+		if (value == "1" || value == "true") {
+			payload->setRemove(true);
+		}
+
+		encoding = FormUtils::fieldValue(form, "encoding", "");
+		local_username = FormUtils::fieldValue(form, "local_username", "");
+		local_password = FormUtils::fieldValue(form, "local_password", "");
+		language = FormUtils::fieldValue(form, "language", "");
 	}
 
 	if (payload->isRemove()) {

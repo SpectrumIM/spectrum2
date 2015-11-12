@@ -76,6 +76,8 @@ class UserRegistration : public Swift::Responder<Swift::InBandRegistrationPayloa
 
 		void handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
 		void handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const std::string &barejid);
+		boost::shared_ptr<Swift::InBandRegistrationPayload> generateInBandRegistrationPayload(const Swift::JID& from);
+		Swift::Form::ref generateRegistrationForm(const UserInfo &res, bool registered);
 		
 		Component *m_component;
 		StorageBackend *m_storageBackend;
