@@ -382,7 +382,7 @@ bool UserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID
 		for (std::vector<FormField::ref>::const_iterator it = fields.begin(); it != fields.end(); it++) {
 #if HAVE_SWIFTEN_3
 			FormField::ref textSingle = *it;
-			if (textSingle->getType() == FormField::TextSingleType) {
+			if (textSingle->getType() == FormField::TextSingleType || textSingle->getType() == FormField::UnknownType) {
 #else
 			TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(*it);
 			if (textSingle) {

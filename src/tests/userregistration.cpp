@@ -34,6 +34,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 	CPPUNIT_TEST(changePassword);
 	CPPUNIT_TEST(registerUserEmpty);
 	CPPUNIT_TEST(registerUserNoNeedPassword);
+	CPPUNIT_TEST(registerUserFormUnknownType);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -360,6 +361,50 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			CPPUNIT_ASSERT_EQUAL(std::string("legacyname"), user.uin);
 			CPPUNIT_ASSERT_EQUAL(std::string(""), user.password);
+		}
+
+		void registerUserFormUnknownType() {
+#if HAVE_SWIFTEN_3
+			Swift::Form::ref form(new Swift::Form(Swift::Form::FormType));
+
+			Swift::FormField::ref type = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "jabber:iq:register");	
+			type->setName("FORM_TYPE");
+			form->addField(type);
+
+			Swift::FormField::ref username = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "legacyname");
+			username->setName("username");
+			form->addField(username);
+
+			Swift::FormField::ref password = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "password");
+			password->setName("password");
+			form->addField(password);
+
+			Swift::FormField::ref language = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "language");
+			language->setName("en");
+			form->addField(language);
+
+			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
+			reg->setForm(form);
+
+			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			iq->setFrom("user@localhost");
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+
+			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
+
+			iq = Swift::IQ::createError(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID());
+			received.clear();
+			injectIQ(iq);
+			loop->processEvents();
+
+			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribe, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+#endif
 		}
 
 };
