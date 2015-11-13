@@ -58,6 +58,9 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 		return response;
 	}
 
+	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Executing));
+	boost::shared_ptr<Swift::Form> form(new Swift::Form());
+
 	std::string value;
 	int type = (int) TYPE_BOOLEAN;
 
