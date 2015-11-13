@@ -118,7 +118,7 @@ createBooleanField(const std::string &name, const std::string &value, const std:
 	FormField::ref field = boost::make_shared<FormField>(FormField::BooleanType, value);
 #else
 	BooleanFormField::ref field = BooleanFormField::create();
-	field->setValue(value == "0");
+	field->setValue(value == "1");
 #endif
 	field->setName(name);
 	field->setLabel(label);
