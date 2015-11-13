@@ -19,6 +19,7 @@
  */
 
 #include "transport/formutils.h"
+#include "transport/adhoccommand.h"
 
 #if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>
@@ -29,7 +30,13 @@ using namespace Swift;
 namespace Transport {
 namespace FormUtils {
 
-void addHiddenField(Form::ref form, const std::string &name, const std::string &value) {
+static 
+#if HAVE_SWIFTEN_3
+FormField::ref
+#else
+HiddenFormField::ref
+#endif
+createHiddenField(const std::string &name, const std::string &value) {
 #if HAVE_SWIFTEN_3
 	FormField::ref field = boost::make_shared<FormField>(FormField::HiddenType, value);	
 #else
@@ -37,10 +44,16 @@ void addHiddenField(Form::ref form, const std::string &name, const std::string &
 	field->setValue(value);
 #endif
 	field->setName(name);
-	form->addField(field);
+	return field;
 }
 
-void addTextSingleField(Swift::Form::ref form, const std::string &name, const std::string &value, const std::string &label, bool required) {
+static 
+#if HAVE_SWIFTEN_3
+FormField::ref
+#else
+TextSingleFormField::ref
+#endif
+createTextSingleField(const std::string &name, const std::string &value, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
 	FormField::ref field = boost::make_shared<FormField>(FormField::TextSingleType, value);
 #else
@@ -50,10 +63,16 @@ void addTextSingleField(Swift::Form::ref form, const std::string &name, const st
 	field->setName(name);
 	field->setLabel(label);
 	field->setRequired(required);
-	form->addField(field);
+	return field;
 }
 
-void addTextPrivateField(Swift::Form::ref form, const std::string &name, const std::string &label, bool required) {
+static 
+#if HAVE_SWIFTEN_3
+FormField::ref
+#else
+TextPrivateFormField::ref
+#endif
+createTextPrivateField(const std::string &name, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
 	FormField::ref field = boost::make_shared<FormField>(FormField::TextPrivateType);
 #else
@@ -62,10 +81,16 @@ void addTextPrivateField(Swift::Form::ref form, const std::string &name, const s
 	field->setName(name);
 	field->setLabel(label);
 	field->setRequired(required);
-	form->addField(field);
+	return field;
 }
 
-void addListSingleField(Swift::Form::ref form, const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
+static 
+#if HAVE_SWIFTEN_3
+FormField::ref
+#else
+ListSingleFormField::ref
+#endif
+createListSingleField(const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
 #if HAVE_SWIFTEN_3
 	FormField::ref field = boost::make_shared<FormField>(FormField::ListSingleType);
 #else
@@ -79,11 +104,16 @@ void addListSingleField(Swift::Form::ref form, const std::string &name, Swift::F
 #else
 	field->setValue(def);
 #endif
-	form->addField(field);
+	return field;
 }
 
-
-void addBooleanField(Swift::Form::ref form, const std::string &name, const std::string &value, const std::string &label, bool required) {
+static 
+#if HAVE_SWIFTEN_3
+FormField::ref
+#else
+BooleanFormField::ref
+#endif
+createBooleanField(const std::string &name, const std::string &value, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
 	FormField::ref field = boost::make_shared<FormField>(FormField::BooleanType, value);
 #else
@@ -93,7 +123,75 @@ void addBooleanField(Swift::Form::ref form, const std::string &name, const std::
 	field->setName(name);
 	field->setLabel(label);
 	field->setRequired(required);
-	form->addField(field);
+	return field;
+}
+
+static 
+#if HAVE_SWIFTEN_3
+FormField::ref
+#else
+FixedFormField::ref
+#endif
+createTextFixedField(const std::string &value) {
+#if HAVE_SWIFTEN_3
+	FormField::ref field = boost::make_shared<FormField>(FormField::FixedType, value);
+#else
+	FixedFormField::ref field = FixedFormField::create(value)
+#endif
+	return field;
+}
+
+void addHiddenField(Form::ref form, const std::string &name, const std::string &value) {
+	form->addField(createHiddenField(name, value));
+}
+
+void addTextSingleField(Swift::Form::ref form, const std::string &name, const std::string &value, const std::string &label, bool required) {
+	form->addField(createTextSingleField(name, value, label, required));
+}
+
+void addTextPrivateField(Swift::Form::ref form, const std::string &name, const std::string &label, bool required) {
+	form->addField(createTextPrivateField(name, label, required));
+}
+
+void addListSingleField(Swift::Form::ref form, const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
+	form->addField(createListSingleField(name, value, label, def, required));
+}
+
+void addBooleanField(Swift::Form::ref form, const std::string &name, const std::string &value, const std::string &label, bool required) {
+	form->addField(createBooleanField(name, value, label, required));
+}
+
+void addTextFixedField(Swift::Form::ref form, const std::string &value) {
+	form->addField(createTextFixedField(value));
+}
+
+
+std::string fieldValue(Swift::FormField::ref field) {
+#if HAVE_SWIFTEN_3
+	return field->getValues()[0];
+#else
+	TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(*it);
+	if (textSingle) {
+		return textSingle->getValue();
+	}
+
+	TextPrivateFormField::ref textPrivate = boost::dynamic_pointer_cast<TextPrivateFormField>(*it);
+	if (textPrivate) {
+		return textPrivate->getValue();
+	}
+
+	ListSingleFormField::ref listSingle = boost::dynamic_pointer_cast<ListSingleFormField>(*it);
+	if (listSingle) {
+		return listSingle->getValue();
+	}
+
+	BooleanFormField::ref boolean = boost::dynamic_pointer_cast<BooleanFormField>(*it);
+	if (boolean) {
+		return boolen->getValue() ? "1" : "0";
+	}
+	
+	return "";
+#endif
 }
 
 std::string fieldValue(Swift::Form::ref form, const std::string &key, const std::string &def) {

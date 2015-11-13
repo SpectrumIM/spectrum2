@@ -28,6 +28,9 @@
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Transport {
+
+	class AdHocCommand;
+
 namespace FormUtils {
 
 	void addHiddenField(Swift::Form::ref form, const std::string &name, const std::string &value);
@@ -39,6 +42,9 @@ namespace FormUtils {
 							const std::string &label, const std::string &def, bool required = false);
 	void addBooleanField(Swift::Form::ref form, const std::string &name, const std::string &value,
 							const std::string &label, bool required = false);
+	void addTextFixedField(Swift::Form::ref form, const std::string &value);
+
+	std::string fieldValue(Swift::FormField::ref);
 
 	std::string fieldValue(Swift::Form::ref, const std::string &key, const std::string &def);
 }

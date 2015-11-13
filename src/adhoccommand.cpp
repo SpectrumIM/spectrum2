@@ -48,8 +48,4 @@ AdHocCommand::AdHocCommand(Component *component, UserManager *userManager, Stora
 AdHocCommand::~AdHocCommand() {
 }
 
-void AdHocCommand::addFormField(Swift::FormField::ref field) {
-	m_fields.push_back(field);
-}
-
 }

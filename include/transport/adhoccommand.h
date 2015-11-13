@@ -46,8 +46,6 @@ class AdHocCommand {
 
 		virtual boost::shared_ptr<Swift::Command> handleRequest(boost::shared_ptr<Swift::Command> payload) = 0;
 
-		void addFormField(Swift::FormField::ref field);
-
 		const std::string &getId() {
 			return m_id;
 		}
@@ -66,7 +64,6 @@ class AdHocCommand {
 		StorageBackend *m_storageBackend;
 		Swift::JID m_initiator;
 		Swift::JID m_to;
-		std::vector<Swift::FormField::ref> m_fields;
 		std::string m_id;
 
 	private:
