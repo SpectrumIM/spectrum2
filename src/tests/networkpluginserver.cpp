@@ -7,8 +7,6 @@
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/localbuddy.h"
-#include "transport/settingsadhoccommand.h"
-#include "transport/adhocmanager.h"
 #include "transport/protocol.pb.h"
 #include "transport/networkpluginserver.h"
 #include <cppunit/TestFixture.h>
@@ -54,8 +52,8 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST(handleConvMessageAckPayload);
-	CPPUNIT_TEST(handleRawXML);
-	CPPUNIT_TEST(handleRawXMLSplit);
+// 	CPPUNIT_TEST(handleRawXML);
+// 	CPPUNIT_TEST(handleRawXMLSplit);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST(benchmarkSendUnavailablePresence);
@@ -67,7 +65,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		void setUp (void) {
 			setMeUp();
 
-			serv = new NetworkPluginServer(component, cfg, userManager, NULL, NULL);
+			serv = new NetworkPluginServer(component, cfg, userManager, NULL);
 			connectUser();
 			received.clear();
 		}

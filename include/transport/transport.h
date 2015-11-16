@@ -21,40 +21,25 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Server/Server.h"
-#include "Swiften/Disco/GetDiscoInfoRequest.h"
-#include "Swiften/Disco/EntityCapsManager.h"
-#include "Swiften/Disco/CapsManager.h"
-#include "Swiften/Disco/CapsMemoryStorage.h"
+#include <boost/bind.hpp>
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
-#include "Swiften/Server/UserRegistry.h"
-#include "Swiften/Base/SafeByteArray.h"
-#include "Swiften/Queries/IQHandler.h"
-#include "Swiften/Jingle/JingleSessionManager.h"
-#include "Swiften/Component/ComponentError.h"
-#include "Swiften/Component/Component.h"
-#include "Swiften/Queries/IQHandler.h"
-
-#include <boost/bind.hpp>
-#include "transport/config.h"
-#include "transport/factory.h"
-#include "transport/presenceoracle.h"
-#include <Swiften/Network/BoostConnectionServer.h>
+#include "Swiften/Network/NetworkFactories.h"
+#include "Swiften/Elements/DiscoInfo.h"
+#include "Swiften/Elements/Presence.h"
+#include "Swiften/Elements/IQ.h"
 
 namespace Transport {
 	class StorageBackend;
 	class Factory;
 	class UserRegistry;
+	class Frontend;
+	class PresenceOracle;
+	class Factory;
+	class Config;
+	class UserManager;
 
-	/// Represents one transport instance.
-
-	/// It's used to connect the Jabber server and provides transaction layer
-	/// between Jabber server and other classes.
-	///
-	/// In server mode it represents Jabber server to which users can connect and use
-	/// it as transport.
-	class Component : Swift::IQHandler {
+	class Component {
 		public:
 			/// Creates new Component instance.
 
@@ -68,32 +53,17 @@ namespace Transport {
 			/// \param factories Swift::NetworkFactories.
 			/// \param factory Transport Abstract factory used to create basic transport structures.
 			/// \param userRegistery UserRegistry class instance. It's needed only when running transport in server-mode.
-			Component(Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
+			Component(Frontend *frontend, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry = NULL);
 
 			/// Component destructor.
 			~Component();
 
 			/// Returns Swift::StanzaChannel associated with this Transport::Component.
 
-			/// It can be used to send presences and other stanzas.
-			/// \return Swift::StanzaChannel associated with this Transport::Component.
-			Swift::StanzaChannel *getStanzaChannel();
-
-			/// Returns Swift::IQRouter associated with this Component.
-
-			/// \return Swift::IQRouter associated with this Component.
-			Swift::IQRouter *getIQRouter() { return m_iqRouter; }
-
-			/// Returns Swift::PresenceOracle associated with this Transport::Component.
-
-			/// You can use it to check current resource connected for particular user.
-			/// \return Swift::PresenceOracle associated with this Transport::Component.
-			PresenceOracle *getPresenceOracle();
-
 			/// Returns True if the component is in server mode.
 
 			/// \return True if the component is in server mode.
-			bool inServerMode() { return m_server != NULL; }
+			bool inServerMode();
 
 			/// Starts the Component.
 			
@@ -122,24 +92,18 @@ namespace Transport {
 			/// This signal is emitted when server disconnects the transport because of some error.
 
 			/// \param error disconnection error
-			boost::signal<void (const Swift::ComponentError &error)> onConnectionError;
+			boost::signal<void (const std::string &error)> onConnectionError;
 
 			/// This signal is emitted when transport successfully connects the server.
 			boost::signal<void ()> onConnected;
 
 			/// This signal is emitted when XML stanza is sent to server.
 
-			/// \param xml xml stanza
-			boost::signal<void (const std::string &xml)> onXMLOut;
-
-			/// This signal is emitted when XML stanza is received from server.
-
-			/// \param xml xml stanza
-			boost::signal<void (const std::string &xml)> onXMLIn;
-
 			Config *getConfig() { return m_config; }
 
-			/// This signal is emitted when presence from XMPP user is received.
+			bool isRawXMLEnabled() {
+				return m_rawXML;
+			}
 
 			/// It's emitted only for presences addressed to transport itself
 			/// (for example to="j2j.domain.tld") and for presences comming to
@@ -147,52 +111,39 @@ namespace Transport {
 			/// \param presence Presence.
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
-			/// Component class asks the XMPP clients automatically for their capabilities.
-			/// This signal is emitted when capabilities have been received or changed.
-			/// \param jid JID of the client for which we received capabilities
-			/// \param info disco#info with response.
-			boost::signal<void (const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info)> onUserDiscoInfoReceived;
-
 			boost::signal<void (boost::shared_ptr<Swift::IQ>)> onRawIQReceived;
+			
+			void handlePresence(Swift::Presence::ref presence);
+			void handleConnected();
+			void handleConnectionError(const std::string &error);
+			void handleDataRead(const std::string &data);
+			void handleDataWritten(const std::string &data);
 
-			bool isRawXMLEnabled() {
-				return m_rawXML;
+			Frontend *getFrontend() {
+				return m_frontend;
 			}
 
-		private:
-			void handleConnected();
-			void handleConnectionError(const Swift::ComponentError &error);
-			void handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e);
-			void handlePresence(Swift::Presence::ref presence);
-			void handleDataRead(const Swift::SafeByteArray &data);
-			void handleDataWritten(const Swift::SafeByteArray &data);
+			PresenceOracle *getPresenceOracle();
 
+		private:
 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
 			void handleBackendConfigChanged();
-			bool handleIQ(boost::shared_ptr<Swift::IQ>);
 
 			Swift::NetworkFactories *m_factories;
-			Swift::Component *m_component;
-			Swift::Server *m_server;
 			Swift::Timer::ref m_reconnectTimer;
-			Swift::EntityCapsManager *m_entityCapsManager;
-			Swift::CapsManager *m_capsManager;
-			Swift::CapsMemoryStorage *m_capsMemoryStorage;
 			PresenceOracle *m_presenceOracle;
-			Swift::StanzaChannel *m_stanzaChannel;
-			Swift::IQRouter *m_iqRouter;
 			
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
 			int m_reconnectCount;
 			Config* m_config;
-			std::string m_protocol;
 			Swift::JID m_jid;
 			Factory *m_factory;
 			Swift::EventLoop *m_loop;
 			bool m_rawXML;
+			Frontend *m_frontend;
 
 		friend class User;
 		friend class UserRegistration;

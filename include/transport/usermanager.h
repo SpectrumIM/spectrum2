@@ -27,6 +27,7 @@
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
 #include "Swiften/Elements/DiscoInfo.h"
+#include "Swiften/Elements/VCard.h"
 #include "Swiften/Network/Timer.h"
 
 namespace Transport {
@@ -36,7 +37,7 @@ class Component;
 class StorageBackend;
 class StorageResponder;
 class RosterResponder;
-class DiscoItemsResponder;
+class UserRegistration;
 
 /// Manages online XMPP Users.
 
@@ -55,15 +56,19 @@ class DiscoItemsResponder;
 	UserManager->User [label="handlePresence(...)", URL="\ref User::handlePresence()"];
 	\endmsc
 */
-class UserManager : public Swift::EntityCapsProvider {
+class UserManager /*: public Swift::EntityCapsProvider*/ {
 	public:
 		/// Creates new UserManager.
 		/// \param component Component which's presence will be handled
 		/// \param storageBackend Storage backend used to fetch UserInfos
-		UserManager(Component *component, UserRegistry *userRegistry, DiscoItemsResponder *discoItemsResponder, StorageBackend *storageBackend = NULL);
+		UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
 
 		/// Destroys UserManager.
-		~UserManager();
+		virtual ~UserManager();
+
+		virtual void sendVCard(unsigned int id, Swift::VCard::ref vcard) = 0;
+
+		virtual UserRegistration *getUserRegistration() = 0;
 
 		/// Returns user according to his bare JID.
 		/// \param barejid bare JID of user
@@ -87,9 +92,7 @@ class UserManager : public Swift::EntityCapsProvider {
 
 		void removeAllUsers(bool onUserBehalf = true);
 
-		Swift::DiscoInfo::ref getCaps(const Swift::JID&) const;
-
-		DiscoItemsResponder *getDiscoResponder() { return m_discoItemsResponder; }
+// 		Swift::DiscoInfo::ref getCaps(const Swift::JID&) const;
 
 		/// Called when new User class is created.
 		/// \param user newly created User class
@@ -152,7 +155,6 @@ class UserManager : public Swift::EntityCapsProvider {
 		Swift::Timer::ref m_removeTimer;
 		unsigned long m_sentToXMPP;
 		unsigned long m_sentToBackend;
-		DiscoItemsResponder *m_discoItemsResponder;
 		friend class RosterResponder;
 };
 

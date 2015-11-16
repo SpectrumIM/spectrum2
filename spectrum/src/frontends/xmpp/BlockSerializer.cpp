@@ -4,7 +4,7 @@
  * See Documentation/Licenses/BSD-simplified.txt for more information.
  */
 
-#include <transport/BlockSerializer.h>
+#include <BlockSerializer.h>
 
 #include <boost/shared_ptr.hpp>
 

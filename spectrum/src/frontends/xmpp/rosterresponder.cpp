@@ -28,6 +28,9 @@
 #include "transport/rostermanager.h"
 #include "transport/buddy.h"
 #include "transport/logging.h"
+#include "transport/factory.h"
+#include "XMPPFrontend.h"
+#include "transport/frontend.h"
 
 using namespace Swift;
 using namespace boost;
@@ -38,6 +41,7 @@ DEFINE_LOGGER(logger, "RosterResponder");
 
 RosterResponder::RosterResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<RosterPayload>(router) {
 	m_userManager = userManager;
+	m_router = router;
 }
 
 RosterResponder::~RosterResponder() {
@@ -81,15 +85,15 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 	if (buddy) {
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
 			LOG4CXX_INFO(logger, from.toBare().toString() << ": Removing buddy " << buddy->getName());
-			onBuddyRemoved(buddy);
+			user->getComponent()->getFrontend()->onBuddyRemoved(buddy);
 
 			// send roster push here
-			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, user->getJID().toBare(), user->getComponent()->getIQRouter());
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, user->getJID().toBare(), m_router);
 			request->send();
 		}
 		else {
 			LOG4CXX_INFO(logger, from.toBare().toString() << ": Updating buddy " << buddy->getName());
-			onBuddyUpdated(buddy, item);
+			user->getComponent()->getFrontend()->onBuddyUpdated(buddy, item);
 		}
 	}
 	else if (item.getSubscription() != Swift::RosterItemPayload::Remove) {
@@ -104,7 +108,7 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 
 		buddy = user->getComponent()->getFactory()->createBuddy(user->getRosterManager(), buddyInfo);
 		user->getRosterManager()->setBuddy(buddy);
-		onBuddyAdded(buddy, item);
+		user->getComponent()->getFrontend()->onBuddyAdded(buddy, item);
 	}
 
 	return true;

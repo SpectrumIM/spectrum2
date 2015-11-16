@@ -7,8 +7,8 @@
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/localbuddy.h"
-#include "transport/settingsadhoccommand.h"
-#include "transport/adhocmanager.h"
+#include "settingsadhoccommand.h"
+#include "adhocmanager.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -39,24 +39,13 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
-		AdHocManager *adhoc;
-		SettingsAdHocCommandFactory *settings;
-
 		void setUp (void) {
 			setMeUp();
-
-			adhoc = new AdHocManager(component, itemsResponder, userManager, storage);
-			adhoc->start();
-			settings = new SettingsAdHocCommandFactory();
-			adhoc->addAdHocCommand(settings);
-
 			received.clear();
 		}
 
 		void tearDown (void) {
 			received.clear();
-			delete adhoc;
-			delete settings;
 			tearMeDown();
 		}
 

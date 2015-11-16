@@ -24,7 +24,7 @@
 #include <algorithm>
 #include "transport/transport.h"
 #include "Swiften/Elements/VCard.h"
-
+#include "Swiften/Elements/Presence.h"
 
 namespace Transport {
 

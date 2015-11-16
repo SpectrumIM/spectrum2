@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/settingsadhoccommand.h"
+#include "settingsadhoccommand.h"
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/buddy.h"
@@ -26,7 +26,7 @@
 #include "transport/user.h"
 #include "transport/logging.h"
 #include "transport/storagebackend.h"
-#include "transport/formutils.h"
+#include "formutils.h"
 
 
 namespace Transport {

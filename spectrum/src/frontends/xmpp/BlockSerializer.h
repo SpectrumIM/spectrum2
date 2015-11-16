@@ -7,7 +7,7 @@
 #pragma once
 
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
-#include <transport/BlockPayload.h>
+#include <BlockPayload.h>
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.

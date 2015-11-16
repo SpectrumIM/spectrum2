@@ -18,12 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/statsresponder.h"
+#include "statsresponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "transport/BlockPayload.h"
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/buddy.h"
@@ -34,6 +33,8 @@
 #include "transport/usermanager.h"
 #include "transport/networkpluginserver.h"
 #include "transport/logging.h"
+#include "transport/frontend.h"
+#include "XMPPFrontend.h"
 
 using namespace Swift;
 using namespace boost;
@@ -42,7 +43,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "StatsResponder");
 
-StatsResponder::StatsResponder(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend) : Swift::Responder<StatsPayload>(component->getIQRouter()) {
+StatsResponder::StatsResponder(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend) : Swift::Responder<StatsPayload>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()) {
 	m_component = component;
 	m_userManager = userManager;
 	m_server = server;

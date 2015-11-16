@@ -39,7 +39,7 @@ class PresenceOracle;
 struct UserInfo;
 
 /// Represents online XMPP user.
-class User : public Swift::EntityCapsProvider {
+class User {
 	public:
 		/// Creates new User class.
 		/// \param jid XMPP JID associated with this user
@@ -60,7 +60,7 @@ class User : public Swift::EntityCapsProvider {
 		/// \return full JID which supports particular feature or invalid JID.
 		std::vector<Swift::JID> getJIDWithFeature(const std::string &feature);
 
-		Swift::DiscoInfo::ref getCaps(const Swift::JID &jid) const;
+// 		Swift::DiscoInfo::ref getCaps(const Swift::JID &jid) const;
 
 		/// Returns UserInfo struct with informations needed to connect the legacy network.
 		/// \return UserInfo struct
@@ -73,6 +73,8 @@ class User : public Swift::EntityCapsProvider {
 		Component *getComponent() { return m_component; }
 
 		UserManager *getUserManager() { return m_userManager; }
+		
+		virtual void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) = 0;
 
 		void setData(void *data) { m_data = data; }
 		void *getData() { return m_data; }
@@ -146,7 +148,6 @@ class User : public Swift::EntityCapsProvider {
 		RosterManager *m_rosterManager;
 		UserManager *m_userManager;
 		ConversationManager *m_conversationManager;
-		Swift::EntityCapsManager *m_entityCapsManager;
 		PresenceOracle *m_presenceOracle;
 		UserInfo m_userInfo;
 		void *m_data;

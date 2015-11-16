@@ -26,7 +26,8 @@
 #include "transport/rostermanager.h"
 #include "transport/userregistry.h"
 #include "transport/logging.h"
-#include "transport/discoitemsresponder.h"
+#include "transport/frontend.h"
+#include "transport/presenceoracle.h"
 #include "storageresponder.h"
 
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -44,7 +45,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "UserManager");
 
-UserManager::UserManager(Component *component, UserRegistry *userRegistry, DiscoItemsResponder *discoItemsResponder, StorageBackend *storageBackend) {
+UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
 	m_onlineBuddies = 0;
 	m_sentToXMPP = 0;
@@ -53,17 +54,11 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Disco
 	m_storageBackend = storageBackend;
 	m_storageResponder = NULL;
 	m_userRegistry = userRegistry;
-	m_discoItemsResponder = discoItemsResponder;
-
-	if (m_storageBackend) {
-		m_storageResponder = new StorageResponder(component->getIQRouter(), m_storageBackend, this);
-		m_storageResponder->start();
-	}
 
 	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
-	component->onUserDiscoInfoReceived.connect(bind(&UserManager::handleDiscoInfo, this, _1, _2));
-	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
-	m_component->getStanzaChannel()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
+	component->getFrontend()->onCapabilitiesReceived.connect(bind(&UserManager::handleDiscoInfo, this, _1, _2));
+	m_component->getFrontend()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
+	m_component->getFrontend()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
 
 	m_userRegistry->onConnectUser.connect(bind(&UserManager::connectUser, this, _1));
 	m_userRegistry->onDisconnectUser.connect(bind(&UserManager::disconnectUser, this, _1));
@@ -72,10 +67,7 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Disco
 }
 
 UserManager::~UserManager(){
-	if (m_storageResponder) {
-		m_storageResponder->stop();
-		delete m_storageResponder;
-	}
+
 }
 
 void UserManager::addUser(User *user) {
@@ -99,15 +91,15 @@ User *UserManager::getUser(const std::string &barejid){
 	return NULL;
 }
 
-Swift::DiscoInfo::ref UserManager::getCaps(const Swift::JID &jid) const {
-	std::map<std::string, User *>::const_iterator it = m_users.find(jid.toBare().toString());
-	if (it == m_users.end()) {
-		return Swift::DiscoInfo::ref();
-	}
-
-	User *user = it->second;
-	return user->getCaps(jid);
-}
+// Swift::DiscoInfo::ref UserManager::getCaps(const Swift::JID &jid) const {
+// 	std::map<std::string, User *>::const_iterator it = m_users.find(jid.toBare().toString());
+// 	if (it == m_users.end()) {
+// 		return Swift::DiscoInfo::ref();
+// 	}
+// 
+// 	User *user = it->second;
+// 	return user->getCaps(jid);
+// }
 
 void UserManager::removeUser(User *user, bool onUserBehalf) {
 	m_users.erase(user->getJID().toBare().toString());
@@ -178,13 +170,12 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				item.setSubscription(Swift::RosterItemPayload::Both);
 				payload->addItem(item);
 
-				Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
-				request->send();
+				m_component->getFrontend()->sendRosterRequest(payload, presence->getFrom());
 
 				Swift::Presence::ref response = Swift::Presence::create();
 				response->setTo(presence->getFrom());
 				response->setFrom(m_component->getJID());
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 				return;
 		    }
 		}
@@ -198,7 +189,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 			response->setTo(presence->getFrom());
 			response->setFrom(presence->getTo());
 			response->setType(Swift::Presence::Unavailable);
-			m_component->getStanzaChannel()->sendPresence(response);
+			m_component->getFrontend()->sendPresence(response);
 
 			// bother him with probe presence, just to be
 			// sure he is subscribed to us.
@@ -207,7 +198,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				response->setTo(presence->getFrom());
 				response->setFrom(presence->getTo());
 				response->setType(Swift::Presence::Probe);
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 			}
 
 			// Set user offline in database
@@ -289,7 +280,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				msg->setBody(CONFIG_STRING(m_component->getConfig(), "service.vip_message"));
 				msg->setTo(presence->getFrom());
 				msg->setFrom(m_component->getJID());
-				m_component->getStanzaChannel()->sendMessage(msg);
+				m_component->getFrontend()->sendMessage(msg);
 			}
 
 			LOG4CXX_WARN(logger, "Non VIP user " << userkey << " tried to login");
@@ -313,7 +304,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		}
 
 		// Create new user class and set storagebackend
-		user = new User(presence->getFrom(), res, m_component, this);
+		user = m_component->getFrontend()->createUser(presence->getFrom(), res, m_component, this);
 		user->getRosterManager()->setStorageBackend(m_storageBackend);
 		addUser(user);
 	}
@@ -395,6 +386,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
+	LOG4CXX_INFO(logger, "PRESENCE2 " << presence->getTo().toString());
 	switch(presence->getType()) {
 		case Swift::Presence::Subscribe:
 		case Swift::Presence::Subscribed:
@@ -451,7 +443,7 @@ void UserManager::handleProbePresence(Swift::Presence::ref presence) {
 		response->setFrom(presence->getTo());
 		response->setTo(presence->getFrom());
 		response->setType(Swift::Presence::Unavailable);
-		m_component->getStanzaChannel()->sendPresence(response);
+		m_component->getFrontend()->sendPresence(response);
 	}
 }
 
@@ -477,7 +469,7 @@ void UserManager::handleErrorPresence(Swift::Presence::ref presence) {
 		response->setFrom(presence->getTo().toBare());
 		response->setTo(presence->getFrom().toBare());
 		response->setType(Swift::Presence::Subscribe);
-		m_component->getStanzaChannel()->sendPresence(response);
+		m_component->getFrontend()->sendPresence(response);
 	}
 }
 
@@ -489,13 +481,13 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 		response->setFrom(presence->getTo().toBare());
 		response->setTo(presence->getFrom().toBare());
 		response->setType(Swift::Presence::Subscribed);
-		m_component->getStanzaChannel()->sendPresence(response);
+		m_component->getFrontend()->sendPresence(response);
 
 // 		response = Swift::Presence::create();
 // 		response->setFrom(presence->getTo());
 // 		response->setTo(presence->getFrom());
 // 		response->setType(Swift::Presence::Subscribe);
-// 		m_component->getStanzaChannel()->sendPresence(response);
+// 		m_component->getFrontend()->sendPresence(response);
 		return;
 	}
 	else if (presence->getType() == Swift::Presence::Unsubscribed && presence->getTo().getNode().empty()) {
@@ -507,7 +499,7 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 			response->setFrom(presence->getTo().toBare());
 			response->setTo(presence->getFrom().toBare());
 			response->setType(Swift::Presence::Subscribe);
-			m_component->getStanzaChannel()->sendPresence(response);
+			m_component->getFrontend()->sendPresence(response);
 		}
 		return;
 	}
@@ -527,7 +519,7 @@ void UserManager::handleSubscription(Swift::Presence::ref presence) {
 		response->setFrom(presence->getTo());
 		response->setTo(presence->getFrom());
 		response->setType(Swift::Presence::Unsubscribed);
-		m_component->getStanzaChannel()->sendPresence(response);
+		m_component->getFrontend()->sendPresence(response);
 	}
 // 	else {
 // // 		Log(presence->getFrom().toString().getUTF8String(), "Subscribe presence received, but this user is not logged in");
@@ -560,17 +552,17 @@ void UserManager::connectUser(const Swift::JID &user) {
 				msg->setBody("You have signed on from another location.");
 				msg->setTo(user);
 				msg->setFrom(m_component->getJID());
-				m_component->getStanzaChannel()->sendMessage(msg);
+				m_component->getFrontend()->sendMessage(msg);
 
 				// Switch the session = accept new one, disconnect old one.
 				// Unavailable presence from old session has to be ignored, otherwise it would disconnect the user from legacy network.
 				m_userRegistry->onPasswordValid(user);
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
-#if HAVE_SWIFTEN_3
-				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
-#else				
-				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
-#endif
+// #if HAVE_SWIFTEN_3
+// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, boost::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
+// #else				
+// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
+// #endif
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}
 		}
@@ -590,7 +582,7 @@ void UserManager::connectUser(const Swift::JID &user) {
 		response->setTo(m_component->getJID());
 		response->setFrom(user);
 		response->setType(Swift::Presence::Available);
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->onPresenceReceived(response);
+		m_component->getFrontend()->onPresenceReceived(response);
 	}
 }
 
@@ -600,7 +592,7 @@ void UserManager::disconnectUser(const Swift::JID &user) {
 	response->setTo(m_component->getJID());
 	response->setFrom(user);
 	response->setType(Swift::Presence::Unavailable);
-	dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->onPresenceReceived(response);
+	m_component->getFrontend()->onPresenceReceived(response);
 }
 
 }

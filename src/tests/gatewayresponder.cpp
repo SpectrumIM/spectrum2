@@ -7,7 +7,7 @@
 #include "transport/rosterresponder.h"
 #include "transport/usermanager.h"
 #include "transport/localbuddy.h"
-#include "transport/gatewayresponder.h"
+#include "gatewayresponder.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -35,7 +35,7 @@ class GatewayResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			setMeUp();
 			connectUser();
 
-			m_gatewayResponder = new GatewayResponder(component->getIQRouter(), userManager);
+			m_gatewayResponder = new GatewayResponder(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter(), userManager);
 			m_gatewayResponder->start();
 
 			received.clear();

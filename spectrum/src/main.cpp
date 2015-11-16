@@ -8,14 +8,10 @@
 #include "transport/userregistration.h"
 #include "transport/networkpluginserver.h"
 #include "transport/admininterface.h"
-#include "transport/statsresponder.h"
 #include "transport/usersreconnecter.h"
 #include "transport/util.h"
-#include "transport/gatewayresponder.h"
 #include "transport/logging.h"
-#include "transport/discoitemsresponder.h"
-#include "transport/adhocmanager.h"
-#include "transport/settingsadhoccommand.h"
+#include "frontends/xmpp/XMPPFrontend.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
 #include <boost/filesystem.hpp>
@@ -46,11 +42,11 @@ DEFINE_LOGGER(logger, "Spectrum");
 
 Swift::SimpleEventLoop *eventLoop_ = NULL;
 Component *component_ = NULL;
-UserManager *userManager_ = NULL;
+UserManager *userManager = NULL;
 Config *config_ = NULL;
 
 static void stop_spectrum() {
-	userManager_->removeAllUsers(false);
+	userManager->removeAllUsers(false);
 	component_->stop();
 	eventLoop_->stop();
 }
@@ -212,9 +208,10 @@ int mainloop() {
 	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
 	UserRegistry userRegistry(config_, factories);
 
-	Component transport(&eventLoop, factories, config_, NULL, &userRegistry);
+	XMPPFrontend frontend;
+
+	Component transport(&frontend, &eventLoop, factories, config_, NULL, &userRegistry);
 	component_ = &transport;
-// 	Logger logger(&transport);
 
 	std::string error;
 	StorageBackend *storageBackend = StorageBackend::createBackend(config_, error);
@@ -231,43 +228,24 @@ int mainloop() {
 
 	Logging::redirect_stderr();
 
-	DiscoItemsResponder discoItemsResponder(&transport);
-	discoItemsResponder.start();
+	userManager = frontend.createUserManager(&transport, &userRegistry, storageBackend);;
+	UserRegistration *userRegistration = userManager->getUserRegistration();
 
-	UserManager userManager(&transport, &userRegistry, &discoItemsResponder, storageBackend);
-	userManager_ = &userManager;
-
-	UserRegistration *userRegistration = NULL;
 	UsersReconnecter *usersReconnecter = NULL;
 	if (storageBackend) {
-		userRegistration = new UserRegistration(&transport, &userManager, storageBackend);
-		userRegistration->start();
-
 		usersReconnecter = new UsersReconnecter(&transport, storageBackend);
 	}
 	else if (!CONFIG_BOOL(config_, "service.server_mode")) {
 		LOG4CXX_WARN(logger, "Registrations won't work, you have specified [database] type=none in config file.");
 	}
 
-	FileTransferManager ftManager(&transport, &userManager);
+	FileTransferManager ftManager(&transport, userManager);
 
-	NetworkPluginServer plugin(&transport, config_, &userManager, &ftManager, &discoItemsResponder);
+	NetworkPluginServer plugin(&transport, config_, userManager, &ftManager);
 	plugin.start();
 
-	AdminInterface adminInterface(&transport, &userManager, &plugin, storageBackend, userRegistration);
+	AdminInterface adminInterface(&transport, userManager, &plugin, storageBackend, userRegistration);
 	plugin.setAdminInterface(&adminInterface);
-
-	StatsResponder statsResponder(&transport, &userManager, &plugin, storageBackend);
-	statsResponder.start();
-
-	GatewayResponder gatewayResponder(transport.getIQRouter(), &userManager);
-	gatewayResponder.start();
-
-	AdHocManager adhocmanager(&transport, &discoItemsResponder, &userManager, storageBackend);
-	adhocmanager.start();
-
-	SettingsAdHocCommandFactory settings;
-	adhocmanager.addAdHocCommand(&settings);
 
 	eventLoop_ = &eventLoop;
 
@@ -277,10 +255,7 @@ int mainloop() {
 	umask(old_cmask);
 #endif
 
-	if (userRegistration) {
-		userRegistration->stop();
-		delete userRegistration;
-	}
+	delete userManager;
 
 	if (usersReconnecter) {
 		delete usersReconnecter;

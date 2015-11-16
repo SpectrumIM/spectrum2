@@ -30,9 +30,11 @@
 
 namespace Transport {
 
+class Frontend;
+
 class PresenceOracle {
 	public:
-		PresenceOracle(Swift::StanzaChannel* stanzaChannel);
+		PresenceOracle(Frontend* frontend);
 		~PresenceOracle();
 
 		Swift::Presence::ref getLastPresence(const Swift::JID&) const;
@@ -52,7 +54,7 @@ class PresenceOracle {
 		typedef std::map<Swift::JID, Swift::Presence::ref> PresenceMap;
 		typedef std::map<Swift::JID, PresenceMap> PresencesMap;
 		PresencesMap entries_;
-		Swift::StanzaChannel* stanzaChannel_;
+		Frontend* frontend_;
 };
 
 }

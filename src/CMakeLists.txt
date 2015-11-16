@@ -13,9 +13,12 @@ FILE(GLOB HEADERS ../include/transport/*.h)
 
 if (CPPUNIT_FOUND)
 	FILE(GLOB SRC_TEST tests/*.cpp)
+	FILE(GLOB SRC_TEST_FRONTEND ../spectrum/src/frontends/xmpp/*.cpp)
+	include_directories(../spectrum/src/frontends/xmpp/)
 
-	ADD_EXECUTABLE(libtransport_test ${SRC_TEST})
+	ADD_EXECUTABLE(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND})
 	set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
+	
 
 	target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARY} ${Boost_LIBRARIES})
 endif()

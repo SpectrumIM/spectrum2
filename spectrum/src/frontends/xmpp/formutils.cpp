@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/formutils.h"
-#include "transport/adhoccommand.h"
+#include "formutils.h"
+#include "adhoccommand.h"
 
 #if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>

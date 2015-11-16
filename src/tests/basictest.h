@@ -33,9 +33,12 @@
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/userregistration.h"
-#include "transport/discoitemsresponder.h"
+#include "discoitemsresponder.h"
 #include "transport/localbuddy.h"
 #include "transport/storagebackend.h"
+#include "transport/factory.h"
+#include "XMPPFrontend.h"
+#include "XMPPUserRegistration.h"
 
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
@@ -269,8 +272,9 @@ class BasicTest : public Swift::XMPPParserClient {
 		std::string receivedData;
 		std::string receivedData2;
 		StorageBackend *storage;
-		UserRegistration *userRegistration;
+		XMPPUserRegistration *userRegistration;
 		DiscoItemsResponder *itemsResponder;
 		bool stream1_active;
+		Transport::XMPPFrontend *frontend;
 };
 

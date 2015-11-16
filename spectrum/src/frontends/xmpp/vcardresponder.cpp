@@ -18,16 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/vcardresponder.h"
+#include "vcardresponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
-#include "Swiften/Queries/IQRouter.h"
 #include "transport/user.h"
+#include "transport/buddy.h"
 #include "transport/usermanager.h"
 #include "transport/rostermanager.h"
 #include "transport/transport.h"
 #include "transport/logging.h"
+#include "Swiften/Queries/IQRouter.h"
 
 using namespace Swift;
 using namespace boost;

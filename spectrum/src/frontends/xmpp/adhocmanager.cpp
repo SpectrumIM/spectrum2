@@ -18,9 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/adhocmanager.h"
-#include "transport/adhoccommandfactory.h"
-#include "transport/discoitemsresponder.h"
+#include "XMPPFrontend.h"
+
+#include "adhocmanager.h"
+#include "adhoccommandfactory.h"
+#include "discoitemsresponder.h"
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/buddy.h"
@@ -33,7 +35,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "AdHocManager");
 
-AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::Command>(component->getIQRouter()){
+AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::Command>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()){
 	m_component = component;
 	m_discoItemsResponder = discoItemsResponder;
 	m_userManager = userManager;

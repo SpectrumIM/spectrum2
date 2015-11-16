@@ -19,6 +19,7 @@
  */
 
 #include "transport/user.h"
+#include "transport/frontend.h"
 #include "transport/transport.h"
 #include "transport/storagebackend.h"
 #include "transport/rostermanager.h"
@@ -26,10 +27,12 @@
 #include "transport/conversationmanager.h"
 #include "transport/presenceoracle.h"
 #include "transport/logging.h"
+#include "transport/factory.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
+#include "Swiften/Elements/CapsInfo.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +52,6 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_cacheMessages = false;
 	m_component = component;
 	m_presenceOracle = component->m_presenceOracle;
-	m_entityCapsManager = component->m_entityCapsManager;
 	m_userManager = userManager;
 	m_userInfo = userInfo;
 	m_connected = false;
@@ -61,7 +63,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
 
-	m_rosterManager = new RosterManager(this, m_component);
+	m_rosterManager = component->getFrontend()->createRosterManager(this, m_component);
 	m_conversationManager = new ConversationManager(this, m_component);
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Created");
 	updateLastActivity();
@@ -69,13 +71,14 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 
 User::~User(){
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Destroying");
-	if (m_component->inServerMode()) {
-#if HAVE_SWIFTEN_3
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::ToplevelElement>());
-#else
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>());
-#endif
-	}
+// 	if (m_component->inServerMode()) {
+// #if HAVE_SWIFTEN_3
+// 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, boost::shared_ptr<Swift::ToplevelElement>());
+// #else
+// 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, boost::shared_ptr<Swift::Element>());
+// #endif
+// 	}
+
 
 	m_reconnectTimer->stop();
 	delete m_rosterManager;
@@ -84,57 +87,6 @@ User::~User(){
 
 const Swift::JID &User::getJID() {
 	return m_jid;
-}
-
-std::vector<Swift::JID> User::getJIDWithFeature(const std::string &feature) {
-	std::vector<Swift::JID> jid;
-	std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
-
-	foreach(Swift::Presence::ref presence, presences) {
-		if (presence->getType() == Swift::Presence::Unavailable)
-			continue;
-
-		Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(presence->getFrom());
-		if (!discoInfo) {
-#ifdef SUPPORT_LEGACY_CAPS
-			if (m_legacyCaps.find(presence->getFrom()) != m_legacyCaps.end()) {
-				discoInfo = m_legacyCaps[presence->getFrom()];
-			}
-			else {
-				continue;
-			}
-
-			if (!discoInfo) {
-				continue;
-			}
-#else
-			continue;
-#endif
-		}
-
-		if (discoInfo->hasFeature(feature)) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
-			jid.push_back(presence->getFrom());
-		}
-	}
-
-	if (jid.empty()) {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
-	}
-	return jid;
-}
-
-Swift::DiscoInfo::ref User::getCaps(const Swift::JID &jid) const {
-	Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(jid);
-#ifdef SUPPORT_LEGACY_CAPS
-	if (!discoInfo) {
-		std::map<Swift::JID, Swift::DiscoInfo::ref>::const_iterator it = m_legacyCaps.find(jid);
-		if (it != m_legacyCaps.end()) {
-			discoInfo = it->second;
-		}
-	}
-#endif
-	return discoInfo;
 }
 
 void User::sendCurrentPresence() {
@@ -154,14 +106,14 @@ void User::sendCurrentPresence() {
 				Swift::Presence::ref response = Swift::Presence::create(highest);
 				response->setTo(presence->getFrom());
 				response->setFrom(m_component->getJID());
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 			}
 			else {
 				Swift::Presence::ref response = Swift::Presence::create();
 				response->setTo(presence->getFrom());
 				response->setFrom(m_component->getJID());
 				response->setType(Swift::Presence::Unavailable);
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 			}
 		}
 		else {
@@ -170,7 +122,7 @@ void User::sendCurrentPresence() {
 			response->setFrom(m_component->getJID());
 			response->setType(Swift::Presence::Unavailable);
 			response->setStatus("Connecting");
-			m_component->getStanzaChannel()->sendPresence(response);
+			m_component->getFrontend()->sendPresence(response);
 		}
 	}
 }
@@ -202,14 +154,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {
-			
-			// Forward status message to legacy network, but only if it's sent from active resource
-// 					if (m_activeResource == presence->getFrom().getResource().getUTF8String()) {
-// 						forwardStatus(presenceShow, stanzaStatus);
-// 					}
 			boost::shared_ptr<Swift::CapsInfo> capsInfo = presence->getPayload<Swift::CapsInfo>();
 			if (capsInfo && capsInfo->getHash() == "sha-1") {
-				if (m_entityCapsManager->getCaps(presence->getFrom()) != Swift::DiscoInfo::ref()) {
+				if (m_component->getFrontend()->sendCapabilitiesRequest(presence->getFrom()) != Swift::DiscoInfo::ref()) {
 					LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
 					m_readyForConnect = true;
 					onReadyToConnect();
@@ -229,7 +176,6 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 		}
 	}
 
-	
 	if (!presence->getTo().getNode().empty()) {
 		bool isMUC = presence->getPayload<Swift::MUCPayload>() != NULL || *presence->getTo().getNode().c_str() == '#';
 		if (presence->getType() == Swift::Presence::Unavailable) {
@@ -364,7 +310,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				response->setTo(presence->getFrom());
 				response->setFrom(m_component->getJID());
 				response->setType(Swift::Presence::Unavailable);
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 		}
 		else {
 			sendCurrentPresence();
@@ -418,13 +364,7 @@ void User::handleSubscription(Swift::Presence::ref presence) {
 void User::handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
 	LOG4CXX_INFO(logger, jid.toString() << ": got disco#info");
 #ifdef SUPPORT_LEGACY_CAPS
-	Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(jid);
-	// This is old legacy cap which is not stored in entityCapsManager,
-	// we have to store it in our user class.
-	if (!discoInfo) {
-		LOG4CXX_INFO(logger, jid.toString() << ": LEGACY");
-		m_legacyCaps[jid] = info;
-	}
+	m_legacyCaps[jid] = info;
 #endif
 
 	onConnectingTimeout();
@@ -481,28 +421,65 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	msg->setTo(m_jid.toBare());
 	msg->setFrom(m_component->getJID());
 	msg->addPayload(boost::make_shared<Swift::SpectrumErrorPayload>(e));
-	m_component->getStanzaChannel()->sendMessage(msg);
+	m_component->getFrontend()->sendMessage(msg);
 
-	// In server mode, server finishes the session and pass unavailable session to userManager if we're connected to legacy network,
-	// so we can't removeUser() in server mode, because it would be removed twice.
-	// Once in finishSession and once in m_userManager->removeUser.
-	if (m_component->inServerMode()) {
-		// Remove user later just to be sure there won't be double-free.
-		// We can't be sure finishSession sends unavailable presence everytime, so check if user gets removed
-		// in finishSession(...) call and if not, remove it here.
-		std::string jid = m_jid.toBare().toString();
-#if HAVE_SWIFTEN_3
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
-#else
-		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
-#endif
-		if (m_userManager->getUser(jid) != NULL) {
-			m_userManager->removeUser(this);
-		}
-	}
-	else {
+	disconnectUser(error, e);
+
+	std::string jid = m_jid.toBare().toString();
+	if (m_userManager->getUser(jid) != NULL) {
 		m_userManager->removeUser(this);
 	}
 }
+
+std::vector<Swift::JID> User::getJIDWithFeature(const std::string &feature) {
+       std::vector<Swift::JID> jid;
+       std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
+
+       foreach(Swift::Presence::ref presence, presences) {
+               if (presence->getType() == Swift::Presence::Unavailable)
+                       continue;
+
+               Swift::DiscoInfo::ref discoInfo = m_component->getFrontend()->sendCapabilitiesRequest(presence->getFrom());
+               if (!discoInfo) {
+#ifdef SUPPORT_LEGACY_CAPS
+                       if (m_legacyCaps.find(presence->getFrom()) != m_legacyCaps.end()) {
+                               discoInfo = m_legacyCaps[presence->getFrom()];
+                       }
+                       else {
+                               continue;
+                       }
+
+                       if (!discoInfo) {
+                               continue;
+                       }
+#else
+                       continue;
+#endif
+               }
+
+               if (discoInfo->hasFeature(feature)) {
+                       LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
+                       jid.push_back(presence->getFrom());
+               }
+       }
+
+       if (jid.empty()) {
+               LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
+       }
+       return jid;
+}
+
+// Swift::DiscoInfo::ref User::getCaps(const Swift::JID &jid) const {
+//        Swift::DiscoInfo::ref discoInfo = m_entityCapsManager->getCaps(jid);
+// #ifdef SUPPORT_LEGACY_CAPS
+//        if (!discoInfo) {
+//                std::map<Swift::JID, Swift::DiscoInfo::ref>::const_iterator it = m_legacyCaps.find(jid);
+//                if (it != m_legacyCaps.end()) {
+//                        discoInfo = it->second;
+//                }
+//        }
+// #endif
+//        return discoInfo;
+// }
 
 }

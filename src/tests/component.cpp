@@ -28,11 +28,11 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	public:
 		void setUp (void) {
 			onUserPresenceReceived = false;
-			onUserDiscoInfoReceived = false;
+			onCapabilitiesReceived = false;
 
 			setMeUp();
 			component->onUserPresenceReceived.connect(boost::bind(&ComponentTest::handleUserPresenceReceived, this, _1));
-			component->onUserDiscoInfoReceived.connect(boost::bind(&ComponentTest::handleUserDiscoInfoReceived, this, _1, _2));
+			component->getFrontend()->onCapabilitiesReceived.connect(boost::bind(&ComponentTest::handleUserDiscoInfoReceived, this, _1, _2));
 		}
 
 		void tearDown (void) {
@@ -40,7 +40,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		}
 
 	void handleUserDiscoInfoReceived(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
-		onUserDiscoInfoReceived = true;
+		onCapabilitiesReceived = true;
 	}
 
 	void handleUserPresenceReceived(Swift::Presence::ref presence) {
@@ -51,7 +51,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("somebody@localhost");
 		response->setFrom("user@localhost/resource");
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
@@ -63,7 +63,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost/resource");
 		response->setType(Swift::Presence::Error);
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
@@ -73,16 +73,17 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("localhost");
 		response->setFrom("user@localhost/resource");
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		
 		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 		CPPUNIT_ASSERT(onUserPresenceReceived);
 	}
 
 	private:
 		bool onUserPresenceReceived;
-		bool onUserDiscoInfoReceived;
+		bool onCapabilitiesReceived;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION (ComponentTest);

@@ -29,6 +29,7 @@
 #include "transport/config.h"
 #include "transport/logging.h"
 #include "Swiften/Disco/CapsInfoGenerator.h"
+#include "XMPPFrontend.h"
 
 using namespace Swift;
 using namespace boost;

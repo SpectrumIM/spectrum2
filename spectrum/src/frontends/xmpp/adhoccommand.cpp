@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/adhoccommand.h"
-#include "transport/adhoccommandfactory.h"
+#include "adhoccommand.h"
+#include "adhoccommandfactory.h"
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/storagebackend.h"

@@ -26,6 +26,7 @@
 #include "transport/storagebackend.h"
 #include "transport/transport.h"
 #include "transport/logging.h"
+#include "transport/frontend.h"
 
 #include "Swiften/Network/NetworkFactories.h"
 
@@ -62,17 +63,7 @@ void UsersReconnecter::reconnectNextUser() {
 	std::string user = m_users.back();
 	m_users.pop_back();
 
-	LOG4CXX_INFO(logger, "Sending probe presence to " << user);
-	Swift::Presence::ref response = Swift::Presence::create();
-	try {
-		response->setTo(user);
-	}
-	catch (...) { return; }
-	
-	response->setFrom(m_component->getJID());
-	response->setType(Swift::Presence::Probe);
-
-	m_component->getStanzaChannel()->sendPresence(response);
+	m_component->getFrontend()->reconnectUser(user);
 	m_nextUserTimer->start();
 }
 

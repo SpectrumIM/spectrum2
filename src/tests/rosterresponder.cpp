@@ -35,7 +35,7 @@ class RosterResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			setMeUp();
 			connectUser();
 
-			m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
+			m_rosterResponder = new RosterResponder(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter(), userManager);
 			m_rosterResponder->onBuddyAdded.connect(boost::bind(&RosterResponderTest::handleBuddyAdded, this, _1, _2));
 			m_rosterResponder->onBuddyRemoved.connect(boost::bind(&RosterResponderTest::handleBuddyRemoved, this, _1));
 			m_rosterResponder->onBuddyUpdated.connect(boost::bind(&RosterResponderTest::handleBuddyUpdated, this, _1, _2));
@@ -69,7 +69,7 @@ class RosterResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		item.setSubscription(Swift::RosterItemPayload::Both);
 
 		p->addItem(item);
-		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, "user@localhost", component->getIQRouter());
+		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, "user@localhost", static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter());
 
 		boost::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
 		iq->setTo("icq.localhost");

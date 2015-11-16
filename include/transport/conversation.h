@@ -25,6 +25,7 @@
 #include "transport/transport.h"
 
 #include "Swiften/Elements/Message.h"
+#include "Swiften/Elements/Presence.h"
 
 namespace Transport {
 

@@ -25,6 +25,8 @@
 #include "transport/transport.h"
 #include "transport/buddy.h"
 #include "transport/rostermanager.h"
+#include "transport/frontend.h"
+#include "transport/config.h"
 
 #include "Swiften/Elements/MUCItem.h"
 #include "Swiften/Elements/MUCOccupant.h"
@@ -77,7 +79,7 @@ void Conversation::destroyRoom() {
 		presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
 		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 			presence->setTo(jid);
-			m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+			m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 		}
 	}
 }
@@ -104,7 +106,7 @@ void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) 
 			cacheMessage(message);
 		}
 		else {
-			m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+			m_conversationManager->getComponent()->getFrontend()->sendMessage(message);
 		}
 	}
 	else {
@@ -119,7 +121,7 @@ void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) 
 					m_subject = message;
 					return;
 				}
-				m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(message);
+				m_conversationManager->getComponent()->getFrontend()->sendMessage(message);
 			}
 		}
 	}
@@ -201,7 +203,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 void Conversation::sendParticipants(const Swift::JID &to) {
 	for (std::map<std::string, Swift::Presence::ref>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
 		(*it).second->setTo(to);
-		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence((*it).second);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence((*it).second);
 	}
 }
 
@@ -213,7 +215,7 @@ void Conversation::sendCachedMessages(const Swift::JID &to) {
 		else {
 			(*it)->setTo(m_jid.toBare());
 		}
-		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(*it);
+		m_conversationManager->getComponent()->getFrontend()->sendMessage(*it);
 	}
 
 	if (m_subject) {
@@ -223,7 +225,7 @@ void Conversation::sendCachedMessages(const Swift::JID &to) {
 		else {
 			m_subject->setTo(m_jid.toBare());
 		}
-		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(m_subject);
+		m_conversationManager->getComponent()->getFrontend()->sendMessage(m_subject);
 	}
 
 	m_cachedMessages.clear();
@@ -322,7 +324,7 @@ void Conversation::setNickname(const std::string &nickname) {
 
 void Conversation::handleRawPresence(Swift::Presence::ref presence) {
 	// TODO: Detect nickname change.
-	m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+	m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 	m_participants[presence->getFrom().getResource()] = presence;
 }
 
@@ -339,14 +341,14 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 
 	BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 		presence->setTo(jid);
-		m_conversationManager->getComponent()->getStanzaChannel()->sendPresence(presence);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 	}
 	if (!newname.empty()) {
 		handleParticipantChanged(newname, flag, status, statusMessage);
 	}
 
 	if (m_sentInitialPresence && m_subject) {
-		m_conversationManager->getComponent()->getStanzaChannel()->sendMessage(m_subject);
+		m_conversationManager->getComponent()->getFrontend()->sendMessage(m_subject);
 		m_subject.reset();
 	}
 }

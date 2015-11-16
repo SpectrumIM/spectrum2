@@ -4,7 +4,7 @@
  * See Documentation/Licenses/BSD-simplified.txt for more information.
  */
 
-#include <transport/BlockPayload.h>
+#include <BlockPayload.h>
 
 namespace Transport {
 

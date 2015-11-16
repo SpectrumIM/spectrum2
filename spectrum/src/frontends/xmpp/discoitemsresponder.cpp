@@ -18,14 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/discoitemsresponder.h"
+#include "discoitemsresponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
 #include "transport/transport.h"
 #include "transport/logging.h"
+#include "transport/config.h"
 #include "discoinforesponder.h"
+#include "XMPPFrontend.h"
+#include "transport/frontend.h"
 
 using namespace Swift;
 using namespace boost;
@@ -34,13 +37,13 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "DiscoItemsResponder");
 
-DiscoItemsResponder::DiscoItemsResponder(Component *component) : Swift::GetResponder<DiscoItems>(component->getIQRouter()) {
+DiscoItemsResponder::DiscoItemsResponder(Component *component) : Swift::GetResponder<DiscoItems>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()) {
 	m_component = component;
 	m_commands = boost::shared_ptr<DiscoItems>(new DiscoItems());
 	m_commands->setNode("http://jabber.org/protocol/commands");
 
 	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
-	m_discoInfoResponder = new DiscoInfoResponder(component->getIQRouter(), component->getConfig());
+	m_discoInfoResponder = new DiscoInfoResponder(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter(), component->getConfig());
 	m_discoInfoResponder->start();
 }
 

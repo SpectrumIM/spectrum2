@@ -19,6 +19,7 @@
  */
 
 #include "transport/presenceoracle.h"
+#include "transport/frontend.h"
 #include "Swiften/Elements/MUCPayload.h"
 
 #include <boost/bind.hpp>
@@ -27,15 +28,15 @@ using namespace Swift;
 
 namespace Transport {
 
-PresenceOracle::PresenceOracle(StanzaChannel* stanzaChannel) {
-	stanzaChannel_ = stanzaChannel;
-	stanzaChannel_->onPresenceReceived.connect(boost::bind(&PresenceOracle::handleIncomingPresence, this, _1));
-	stanzaChannel_->onAvailableChanged.connect(boost::bind(&PresenceOracle::handleStanzaChannelAvailableChanged, this, _1));
+PresenceOracle::PresenceOracle(Frontend* frontend) {
+	frontend_ = frontend;
+	frontend_->onPresenceReceived.connect(boost::bind(&PresenceOracle::handleIncomingPresence, this, _1));
+	frontend_->onAvailableChanged.connect(boost::bind(&PresenceOracle::handleStanzaChannelAvailableChanged, this, _1));
 }
 
 PresenceOracle::~PresenceOracle() {
-	stanzaChannel_->onPresenceReceived.disconnect(boost::bind(&PresenceOracle::handleIncomingPresence, this, _1));
-	stanzaChannel_->onAvailableChanged.disconnect(boost::bind(&PresenceOracle::handleStanzaChannelAvailableChanged, this, _1));
+	frontend_->onPresenceReceived.disconnect(boost::bind(&PresenceOracle::handleIncomingPresence, this, _1));
+	frontend_->onAvailableChanged.disconnect(boost::bind(&PresenceOracle::handleStanzaChannelAvailableChanged, this, _1));
 }
 
 void PresenceOracle::handleStanzaChannelAvailableChanged(bool available) {

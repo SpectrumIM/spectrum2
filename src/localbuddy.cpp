@@ -75,9 +75,7 @@ void LocalBuddy::setAlias(const std::string &alias) {
 	m_alias = alias;
 
 	if (changed) {
-		if (getRosterManager()->getUser()->getComponent()->inServerMode() || getRosterManager()->isRemoteRosterSupported()) {
-			getRosterManager()->sendBuddyRosterPush(this);
-		}
+		getRosterManager()->doUpdateBuddy(this);
 		getRosterManager()->storeBuddy(this);
 	}
 }
@@ -95,9 +93,7 @@ void LocalBuddy::setGroups(const std::vector<std::string> &groups) {
 
 	m_groups = groups;
 	if (changed) {
-		if (getRosterManager()->getUser()->getComponent()->inServerMode() || getRosterManager()->isRemoteRosterSupported()) {
-			getRosterManager()->sendBuddyRosterPush(this);
-		}
+		getRosterManager()->doUpdateBuddy(this);
 		getRosterManager()->storeBuddy(this);
 	}
 }

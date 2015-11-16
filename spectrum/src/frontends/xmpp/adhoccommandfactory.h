@@ -23,7 +23,7 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include "transport/adhoccommand.h"
+#include "adhoccommand.h"
 
 namespace Transport {
 

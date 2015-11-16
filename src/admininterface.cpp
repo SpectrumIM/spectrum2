@@ -28,6 +28,7 @@
 #include "transport/networkpluginserver.h"
 #include "transport/logging.h"
 #include "transport/userregistration.h"
+#include "transport/frontend.h"
 #include "storageresponder.h"
 #include "transport/memoryusage.h"
 #include <boost/foreach.hpp>
@@ -52,7 +53,7 @@ AdminInterface::AdminInterface(Component *component, UserManager *userManager, N
 	m_userRegistration = userRegistration;
 	m_start = time(NULL);
 
-	m_component->getStanzaChannel()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
+	m_component->getFrontend()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
 }
 
 AdminInterface::~AdminInterface() {
@@ -353,7 +354,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 
 	handleQuery(message);
 
-	m_component->getStanzaChannel()->sendMessage(message);
+	m_component->getFrontend()->sendMessage(message);
 }
 
 }

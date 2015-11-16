@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <transport/BlockPayload.h>
+#include <BlockPayload.h>
 #include <Swiften/Parser/GenericPayloadParser.h>
 
 // This payload is NOT part of ANY XEP and it is only

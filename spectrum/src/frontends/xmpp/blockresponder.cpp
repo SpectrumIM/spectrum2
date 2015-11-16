@@ -23,7 +23,7 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "transport/BlockPayload.h"
+#include "BlockPayload.h"
 #include "transport/usermanager.h"
 #include "transport/user.h"
 #include "transport/buddy.h"

@@ -22,9 +22,8 @@
 #include "transport/rostermanager.h"
 #include "transport/user.h"
 #include "transport/transport.h"
-#include "transport/BlockPayload.h"
 #include "transport/usermanager.h"
-#include "transport/discoitemsresponder.h"
+#include "transport/frontend.h"
 
 #include "Swiften/Elements/VCardUpdate.h"
 
@@ -32,17 +31,15 @@ namespace Transport {
 
 Buddy::Buddy(RosterManager *rosterManager, long id, BuddyFlag flags) : m_id(id), m_flags(flags), m_rosterManager(rosterManager),
 	m_subscription(Ask) {
-// 	m_rosterManager->setBuddy(this);
 }
 
 Buddy::~Buddy() {
-// 	m_rosterManager->unsetBuddy(this);
 }
 
 void Buddy::sendPresence() {
 	std::vector<Swift::Presence::ref> &presences = generatePresenceStanzas(255);
 	BOOST_FOREACH(Swift::Presence::ref presence, presences) {
-		m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
+		m_rosterManager->getUser()->getComponent()->getFrontend()->sendPresence(presence);
 	}
 }
 
@@ -98,7 +95,7 @@ void Buddy::handleRawPresence(Swift::Presence::ref presence) {
 	}
 
 	m_presences.push_back(presence);
-	m_rosterManager->getUser()->getComponent()->getStanzaChannel()->sendPresence(presence);
+	m_rosterManager->getUser()->getComponent()->getFrontend()->sendPresence(presence);
 }
 
 std::vector<Swift::Presence::ref> &Buddy::generatePresenceStanzas(int features, bool only_new) {
@@ -133,15 +130,14 @@ std::vector<Swift::Presence::ref> &Buddy::generatePresenceStanzas(int features, 
 
 	if (presence->getType() != Swift::Presence::Unavailable) {
 		// caps
-		
-		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo(m_rosterManager->getUser()->getUserManager()->getDiscoResponder()->getBuddyCapsInfo())));
+	
 
 // 		if (features & 0/*TRANSPORT_FEATURE_AVATARS*/) {
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));
 // 		}
-		if (isBlocked()) {
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Transport::BlockPayload ()));
-		}
+// 		if (isBlocked()) {
+// 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Transport::BlockPayload ()));
+// 		}
 	}
 
 	BOOST_FOREACH(Swift::Presence::ref &p, m_presences) {
@@ -186,8 +182,7 @@ std::string Buddy::getSafeName() {
 }
 
 void Buddy::handleVCardReceived(const std::string &id, Swift::VCard::ref vcard) {
-	boost::shared_ptr<Swift::GenericRequest<Swift::VCard> > request(new Swift::GenericRequest<Swift::VCard>(Swift::IQ::Result, m_rosterManager->getUser()->getJID(), vcard, m_rosterManager->getUser()->getComponent()->getIQRouter()));
-	request->send();
+	m_rosterManager->getUser()->getComponent()->getFrontend()->sendVCard(vcard, m_rosterManager->getUser()->getJID());
 }
 
 std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {

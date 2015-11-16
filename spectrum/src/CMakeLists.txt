@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
-FILE(GLOB SRC *.cpp)
+FILE(GLOB_RECURSE SRC frontends/*.cpp main.cpp)
+include_directories(frontends/xmpp)
 
 if (WIN32)
 FILE(GLOB WIN_SRC win32/*.cpp)

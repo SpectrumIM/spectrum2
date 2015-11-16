@@ -22,7 +22,7 @@
 
 #include <vector>
 #include "Swiften/Queries/SetResponder.h"
-#include "transport/BlockPayload.h"
+#include "BlockPayload.h"
 #include <boost/signal.hpp>
 
 namespace Transport {

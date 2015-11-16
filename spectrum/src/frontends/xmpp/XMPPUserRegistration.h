@@ -25,6 +25,7 @@
 #include "Swiften/Elements/RosterPayload.h"
 #include <boost/signal.hpp>
 #include <Swiften/Version.h>
+#include "transport/userregistration.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Transport {
@@ -36,52 +37,37 @@ class UserManager;
 class Config;
 
 /// Allows users to register the transport using service discovery.
-class UserRegistration {
+class XMPPUserRegistration : public UserRegistration, public Swift::Responder<Swift::InBandRegistrationPayload> {
 	public:
-		/// Creates new UserRegistration handler.
+		/// Creates new XMPPUserRegistration handler.
 		/// \param component Component associated with this class
 		/// \param userManager UserManager associated with this class
 		/// \param storageBackend StorageBackend where the registered users will be stored
-		UserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend);
+		XMPPUserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend);
 
-		/// Destroys UserRegistration.
-		virtual ~UserRegistration();
+		/// Destroys XMPPUserRegistration.
+		~XMPPUserRegistration();
 
 		/// Registers new user. This function stores user into database and subscribe user to transport.
 		/// \param userInfo UserInfo struct with informations about registered user
 		/// \return false if user is already registered
-		bool registerUser(const UserInfo &userInfo);
+		virtual bool doUserRegistration(const UserInfo &userInfo);
 
 		/// Unregisters user. This function removes all data about user from databa, unsubscribe all buddies
 		/// managed by this transport and disconnects user if he's connected.
 		/// \param barejid bare JID of user to unregister
 		/// \return false if there is no such user registered
-		bool unregisterUser(const std::string &barejid);
-
-		/// Registers new user. This function stores user into database and subscribe user to transport.
-		/// \param userInfo UserInfo struct with informations about registered user
-		/// \return false if user is already registered
-		virtual bool doUserRegistration(const UserInfo &userInfo) = 0;
-
-		/// Unregisters user. This function removes all data about user from databa, unsubscribe all buddies
-		/// managed by this transport and disconnects user if he's connected.
-		/// \param barejid bare JID of user to unregister
-		/// \return false if there is no such user registered
-		virtual bool doUserUnregistration(const UserInfo &userInfo) = 0;
-
-		/// Called when new user has been registered.
-		/// \param userInfo UserInfo struct with informations about user
-		boost::signal<void (const UserInfo &userInfo)> onUserRegistered;
-
-		/// Called when user has been unregistered.
-		/// \param userInfo UserInfo struct with informations about user
-		boost::signal<void (const UserInfo &userInfo)> onUserUnregistered;
-
-		/// Called when user's registration has been updated.
-		/// \param userInfo UserInfo struct with informations about user
-		boost::signal<void (const UserInfo &userInfo)> onUserUpdated;
+		virtual bool doUserUnregistration(const UserInfo &userInfo);
 
 	private:
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+
+		void handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
+		void handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
+		boost::shared_ptr<Swift::InBandRegistrationPayload> generateInBandRegistrationPayload(const Swift::JID& from);
+		Swift::Form::ref generateRegistrationForm(const UserInfo &res, bool registered);
+		
 		Component *m_component;
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;

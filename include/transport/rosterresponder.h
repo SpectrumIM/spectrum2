@@ -46,6 +46,7 @@ class RosterResponder : public Swift::Responder<Swift::RosterPayload> {
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload);
 		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::RosterPayload> payload);
 		UserManager *m_userManager;
+		Swift::IQRouter *m_router;
 };
 
 }

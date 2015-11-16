@@ -28,11 +28,12 @@
 #include "transport/localbuddy.h"
 #include "transport/config.h"
 #include "transport/conversation.h"
-#include "transport/vcardresponder.h"
 #include "transport/rosterresponder.h"
 #include "transport/memoryreadbytestream.h"
 #include "transport/logging.h"
 #include "transport/admininterface.h"
+#include "transport/frontend.h"
+#include "transport/factory.h"
 #include "blockresponder.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -47,7 +48,6 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "transport/protocol.pb.h"
 #include "transport/util.h"
-#include "transport/discoitemsresponder.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include "boost/signal.hpp"
@@ -259,7 +259,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	buddy->setBlocked(payload.blocked());
 }
 
-NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder) {
+NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager) {
 	_server = this;
 	m_ftManager = ftManager;
 	m_userManager = userManager;
@@ -276,7 +276,6 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 #else
 	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType);
 #endif
-	m_discoItemsResponder = discoItemsResponder;
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -297,20 +296,16 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 		m_collectTimer->start();
 	}
 
-	m_vcardResponder = new VCardResponder(component->getIQRouter(), component->getNetworkFactories(), userManager);
-	m_vcardResponder->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
-	m_vcardResponder->onVCardUpdated.connect(boost::bind(&NetworkPluginServer::handleVCardUpdated, this, _1, _2));
-	m_vcardResponder->start();
+	m_component->getFrontend()->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
+	m_component->getFrontend()->onVCardUpdated.connect(boost::bind(&NetworkPluginServer::handleVCardUpdated, this, _1, _2));
 
-	m_rosterResponder = new RosterResponder(component->getIQRouter(), userManager);
-	m_rosterResponder->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleBuddyAdded, this, _1, _2));
-	m_rosterResponder->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleBuddyRemoved, this, _1));
-	m_rosterResponder->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
-	m_rosterResponder->start();
+	m_component->getFrontend()->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleBuddyAdded, this, _1, _2));
+	m_component->getFrontend()->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleBuddyRemoved, this, _1));
+	m_component->getFrontend()->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
 
-	m_blockResponder = new BlockResponder(component->getIQRouter(), userManager);
-	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
-	m_blockResponder->start();
+// // 	m_blockResponder = new BlockResponder(component->getIQRouter(), userManager);
+// // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
+// // 	m_blockResponder->start();
 
 	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
@@ -332,9 +327,9 @@ NetworkPluginServer::~NetworkPluginServer() {
 	m_server->stop();
 	m_server.reset();
 	delete m_component->m_factory;
-	delete m_vcardResponder;
-	delete m_rosterResponder;
-	delete m_blockResponder;
+// 	delete m_vcardResponder;
+// 	delete m_rosterResponder;
+// 	delete m_blockResponder;
 }
 
 void NetworkPluginServer::start() {
@@ -508,7 +503,7 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 
 	vcard->setPhoto(Swift::createByteArray(payload.photo()));
 
-	m_vcardResponder->sendVCard(payload.id(), vcard);
+	m_userManager->sendVCard(payload.id(), vcard);
 }
 
 void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
@@ -538,7 +533,7 @@ void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
 
 	response->setFrom(Swift::JID(name, m_component->getJID().toString()));
 	response->setType(Swift::Presence::Subscribe);
-	m_component->getStanzaChannel()->sendPresence(response);
+	m_component->getFrontend()->sendPresence(response);
 }
 
 void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift::ChatState::ChatStateType type) {
@@ -992,9 +987,9 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 		return;
 	}
 
-	m_discoItemsResponder->clearRooms();
+	m_component->getFrontend()->clearRoomList();
 	for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
-		m_discoItemsResponder->addRoom(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+		m_component->getFrontend()->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
 	}
 }
 #if HAVE_SWIFTEN_3
@@ -1056,7 +1051,7 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 			return;
 		}
 
-		m_component->getStanzaChannel()->sendMessage(message);
+		m_component->getFrontend()->sendMessage(message);
 		return;
 	}
 
@@ -1072,29 +1067,30 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 			conv->handleRawPresence(presence);
 		}
 		else {
-			m_component->getStanzaChannel()->sendPresence(presence);
+			m_component->getFrontend()->sendPresence(presence);
 		}
 
 		return;
 	}
 
-	boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
-	if (iq) {
-		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
-			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
-			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
-		}
-		else {
-			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
-			if (highest) {
-			    iq->setTo(highest->getFrom());
-			} else {
-			    iq->setTo(user->getJID());
-			}
-		}
-		m_component->getIQRouter()->sendIQ(iq);
-		return;
-	}
+	// TODO: FIX TO MAKE RAW XML BACKENDS WORKING AGAIN.
+// 	boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
+// 	if (iq) {
+// 		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
+// 			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
+// 			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
+// 		}
+// 		else {
+// 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
+// 			if (highest) {
+// 			    iq->setTo(highest->getFrom());
+// 			} else {
+// 			    iq->setTo(user->getJID());
+// 			}
+// 		}
+// 		m_component->getFrontend()->sendIQ(iq);
+// 		return;
+// 	}
 }
 
 void NetworkPluginServer::handleRawXML(const std::string &xml) {

@@ -7,8 +7,6 @@
 #include "transport/conversation.h"
 #include "transport/usermanager.h"
 #include "transport/localbuddy.h"
-#include "transport/settingsadhoccommand.h"
-#include "transport/adhocmanager.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>

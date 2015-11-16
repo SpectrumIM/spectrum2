@@ -26,6 +26,8 @@
 #include "transport/buddy.h"
 #include "transport/user.h"
 #include "transport/logging.h"
+#include "transport/frontend.h"
+#include "transport/factory.h"
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/RosterItemPayload.h"
@@ -46,32 +48,14 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
 	m_user = user;
 	m_component = component;
-	m_setBuddyTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
-	m_RIETimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
-	m_RIETimer->onTick.connect(boost::bind(&RosterManager::sendRIE, this));
-
-	m_supportRemoteRoster = false;
-
-	if (!m_component->inServerMode()) {
-		m_remoteRosterRequest = AddressedRosterRequest::ref(new AddressedRosterRequest(m_component->getIQRouter(), m_user->getJID().toBare()));
-		m_remoteRosterRequest->onResponse.connect(boost::bind(&RosterManager::handleRemoteRosterResponse, this, _1, _2));
-		m_remoteRosterRequest->send();
-	}
 }
 
 RosterManager::~RosterManager() {
-	m_setBuddyTimer->stop();
-	m_RIETimer->stop();
 	if (m_rosterStorage) {
 		m_rosterStorage->storeBuddies();
 	}
 
 	sendUnavailablePresences(m_user->getJID().toBare());
-
-	if (m_remoteRosterRequest) {
-		m_remoteRosterRequest->onResponse.disconnect_all_slots();
-		m_component->getIQRouter()->removeHandler(m_remoteRosterRequest);
-	}
 
 	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
@@ -81,25 +65,10 @@ RosterManager::~RosterManager() {
 		delete buddy;
 	}
 
-	if (m_requests.size() != 0) {
-		LOG4CXX_INFO(logger, m_user->getJID().toString() <<  ": Removing " << m_requests.size() << " unresponded IQs");
-		BOOST_FOREACH(Swift::SetRosterRequest::ref request, m_requests) {
-			request->onResponse.disconnect_all_slots();
-			m_component->getIQRouter()->removeHandler(request);
-		}
-		m_requests.clear();
-	}
-
 	boost::singleton_pool<boost::pool_allocator_tag, sizeof(unsigned int)>::release_memory();
 
 	if (m_rosterStorage)
 		delete m_rosterStorage;
-}
-
-void RosterManager::setBuddy(Buddy *buddy) {
-// 	m_setBuddyTimer->onTick.connect(boost::bind(&RosterManager::setBuddyCallback, this, buddy));
-// 	m_setBuddyTimer->start();
-	setBuddyCallback(buddy);
 }
 
 void RosterManager::removeBuddy(const std::string &name) {
@@ -109,12 +78,7 @@ void RosterManager::removeBuddy(const std::string &name) {
 		return;
 	}
 
-	if (m_component->inServerMode() || m_supportRemoteRoster) {
-		sendBuddyRosterRemove(buddy);
-	}
-	else {
-		sendBuddyUnsubscribePresence(buddy);
-	}
+	doRemoveBuddy(buddy);
 
 	if (m_rosterStorage)
 		m_rosterStorage->removeBuddy(buddy);
@@ -123,78 +87,19 @@ void RosterManager::removeBuddy(const std::string &name) {
 	delete buddy;
 }
 
-void RosterManager::sendBuddyRosterRemove(Buddy *buddy) {
-	Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
-	Swift::RosterItemPayload item;
-	item.setJID(buddy->getJID().toBare());
-	item.setSubscription(Swift::RosterItemPayload::Remove);
-
-	p->addItem(item);
-
-	// In server mode we have to send pushes to all resources, but in gateway-mode we send it only to bare JID
-	if (m_component->inServerMode()) {
-		std::vector<Swift::Presence::ref> presences = m_component->getPresenceOracle()->getAllPresence(m_user->getJID().toBare());
-		BOOST_FOREACH(Swift::Presence::ref presence, presences) {
-			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, presence->getFrom(), m_component->getIQRouter());
-			request->send();
-		}
-	}
-	else {
-		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, m_user->getJID().toBare(), m_component->getIQRouter());
-		request->send();
-	}
-}
-
-void RosterManager::sendBuddyRosterPush(Buddy *buddy) {
-	// user can't receive anything in server mode if he's not logged in.
-	// He will ask for roster later (handled in rosterreponsder.cpp)
-	if (m_component->inServerMode() && (!m_user->isConnected() || m_user->shouldCacheMessages()))
-		return;
-
-	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
-	Swift::RosterItemPayload item;
-	item.setJID(buddy->getJID().toBare());
-	item.setName(buddy->getAlias());
-	item.setGroups(buddy->getGroups());
-	item.setSubscription(Swift::RosterItemPayload::Both);
-
-	payload->addItem(item);
-
-	// In server mode we have to send pushes to all resources, but in gateway-mode we send it only to bare JID
-	if (m_component->inServerMode()) {
-		std::vector<Swift::Presence::ref> presences = m_component->getPresenceOracle()->getAllPresence(m_user->getJID().toBare());
-		BOOST_FOREACH(Swift::Presence::ref presence, presences) {
-			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, presence->getFrom(), m_component->getIQRouter());
-			request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, request, buddy->getName()));
-			request->send();
-			m_requests.push_back(request);
-		}
-	}
-	else {
-		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, m_user->getJID().toBare(), m_component->getIQRouter());
-		request->onResponse.connect(boost::bind(&RosterManager::handleBuddyRosterPushResponse, this, _1, request, buddy->getName()));
-		request->send();
-		m_requests.push_back(request);
-	}
-
-	if (buddy->getSubscription() != Buddy::Both) {
-		buddy->setSubscription(Buddy::Both);
-		storeBuddy(buddy);
-	}
-}
 
 void RosterManager::sendBuddyUnsubscribePresence(Buddy *buddy) {
 	Swift::Presence::ref response = Swift::Presence::create();
 	response->setTo(m_user->getJID());
 	response->setFrom(buddy->getJID());
 	response->setType(Swift::Presence::Unsubscribe);
-	m_component->getStanzaChannel()->sendPresence(response);
+	m_component->getFrontend()->sendPresence(response);
 
 	response = Swift::Presence::create();
 	response->setTo(m_user->getJID());
 	response->setFrom(buddy->getJID());
 	response->setType(Swift::Presence::Unsubscribed);
-	m_component->getStanzaChannel()->sendPresence(response);
+	m_component->getFrontend()->sendPresence(response);
 }
 
 void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
@@ -205,35 +110,18 @@ void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	if (!buddy->getAlias().empty()) {
 		response->addPayload(boost::make_shared<Swift::Nickname>(buddy->getAlias()));
 	}
-	m_component->getStanzaChannel()->sendPresence(response);
+	m_component->getFrontend()->sendPresence(response);
 }
 
 void RosterManager::handleBuddyChanged(Buddy *buddy) {
 }
 
-void RosterManager::setBuddyCallback(Buddy *buddy) {
+void RosterManager::setBuddy(Buddy *buddy) {
 	LOG4CXX_INFO(logger, "Associating buddy " << buddy->getName() << " with " << m_user->getJID().toString());
 	m_buddies[buddy->getName()] = buddy;
 	onBuddySet(buddy);
 
-	// In server mode the only way is to send jabber:iq:roster push.
-	// In component mode we send RIE or Subscribe presences, based on features.
-	if (m_component->inServerMode()) {
-		sendBuddyRosterPush(buddy);
-	}
-	else {
-		if (buddy->getSubscription() == Buddy::Both) {
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Not forwarding this buddy, because subscription=both");
-			return;
-		}
-
-		if (m_supportRemoteRoster) {
-			sendBuddyRosterPush(buddy);
-		}
-		else {
-			m_RIETimer->start();
-		}
-	}
+	doAddBuddy(buddy);
 
 	if (m_rosterStorage)
 		m_rosterStorage->storeBuddy(buddy);
@@ -252,113 +140,10 @@ void RosterManager::storeBuddy(Buddy *buddy) {
 	}
 }
 
-void RosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key) {
-	LOG4CXX_INFO(logger, "handleBuddyRosterPushResponse called for buddy " << key);
-	if (m_buddies[key] != NULL) {
-		if (m_buddies[key]->isAvailable()) {
-			std::vector<Swift::Presence::ref> &presences = m_buddies[key]->generatePresenceStanzas(255);
-			BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
-				m_component->getStanzaChannel()->sendPresence(presence);
-			}
-		}
-	}
-	else {
-		LOG4CXX_WARN(logger, "handleBuddyRosterPushResponse called for unknown buddy " << key);
-	}
-
-	m_requests.remove(request);
-	request->onResponse.disconnect_all_slots();
-}
-
-void RosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
-	m_remoteRosterRequest.reset();
-	if (error) {
-		m_supportRemoteRoster = false;
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server does not support remote roster protoXEP");
-		return;
-	}
-
-	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
-	m_supportRemoteRoster = true;
-
-	//If we receive empty RosterPayload on login (not register) initiate full RosterPush
-	if(!m_buddies.empty() && payload->getItems().empty()){
-			LOG4CXX_INFO(logger, "Received empty Roster upon login. Pushing full Roster.");
-			for(std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
-					c_it != m_buddies.end(); c_it++) {
-				sendBuddyRosterPush(c_it->second);
-			}
-	}
-	return;
-
-	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
-		std::string legacyName = Buddy::JIDToLegacyName(item.getJID());
-		if (m_buddies.find(legacyName) != m_buddies.end()) {
-			continue;
-		}
-
-		if (legacyName.empty()) {
-			continue;
-		}
-
-		BuddyInfo buddyInfo;
-		buddyInfo.id = -1;
-		buddyInfo.alias = item.getName();
-		buddyInfo.legacyName = legacyName;
-		buddyInfo.subscription = "both";
-		buddyInfo.flags = Buddy::buddyFlagsFromJID(item.getJID());
-		buddyInfo.groups = item.getGroups();
-
-		Buddy *buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-		if (buddy) {
-			setBuddy(buddy);
-		}
-	}
-}
-
 Buddy *RosterManager::getBuddy(const std::string &name) {
 	return m_buddies[name];
 }
 
-void RosterManager::sendRIE() {
-	m_RIETimer->stop();
-
-	// Check the feature, because proper resource could logout during RIETimer.
-	std::vector<Swift::JID> jidWithRIE = m_user->getJIDWithFeature("http://jabber.org/protocol/rosterx");
-
-	// fallback to normal subscribe
-	if (jidWithRIE.empty()) {
-		for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
-			Buddy *buddy = (*it).second;
-			if (!buddy) {
-				continue;
-			}
-			sendBuddySubscribePresence(buddy);
-		}
-		return;
-	}
-
-	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
-		Buddy *buddy = (*it).second;
-		if (!buddy) {
-			continue;
-		}
-		Swift::RosterItemExchangePayload::Item item;
-		item.setJID(buddy->getJID().toBare());
-		item.setName(buddy->getAlias());
-		item.setAction(Swift::RosterItemExchangePayload::Item::Add);
-		item.setGroups(buddy->getGroups());
-
-		payload->addItem(item);
-	}
-
-	BOOST_FOREACH(Swift::JID &jid, jidWithRIE) {
-		LOG4CXX_INFO(logger, "Sending RIE stanza to " << jid.toString());
-		boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, m_component->getIQRouter()));
-		request->send();
-	}
-}
 
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	std::string legacyName = Buddy::JIDToLegacyName(presence->getTo());
@@ -392,7 +177,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				default:
 					return;
 			}
-			m_component->getStanzaChannel()->sendPresence(response);
+			m_component->getFrontend()->sendPresence(response);
 			
 		}
 		else {
@@ -431,7 +216,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				default:
 					return;
 			}
-			m_component->getStanzaChannel()->sendPresence(response);
+			m_component->getFrontend()->sendPresence(response);
 		}
 	}
 	else {
@@ -450,7 +235,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					response->setType(Swift::Presence::Subscribed);
 					BOOST_FOREACH(Swift::Presence::ref &currentPresence, presences) {
 						currentPresence->setTo(presence->getFrom());
-						m_component->getStanzaChannel()->sendPresence(currentPresence);
+						m_component->getFrontend()->sendPresence(currentPresence);
 					}
 					if (buddy->getSubscription() != Buddy::Both) {
 						buddy->setSubscription(Buddy::Both);
@@ -526,17 +311,17 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 			}
 		}
 
-		m_component->getStanzaChannel()->sendPresence(response);
+		m_component->getFrontend()->sendPresence(response);
 
 		// We have to act as buddy and send its subscribe/unsubscribe just to be sure...
 		switch (response->getType()) {
 			case Swift::Presence::Unsubscribed:
 				response->setType(Swift::Presence::Unsubscribe);
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 				break;
 			case Swift::Presence::Subscribed:
 				response->setType(Swift::Presence::Subscribe);
-				m_component->getStanzaChannel()->sendPresence(response);
+				m_component->getFrontend()->sendPresence(response);
 				break;
 			default:
 				break;
@@ -595,7 +380,7 @@ void RosterManager::sendCurrentPresences(const Swift::JID &to) {
 		std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
 		BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
 			presence->setTo(to);
-			m_component->getStanzaChannel()->sendPresence(presence);
+			m_component->getFrontend()->sendPresence(presence);
 		}
 	}
 }
@@ -606,7 +391,7 @@ void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID
 		std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
 		BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
 			presence->setTo(to);
-			m_component->getStanzaChannel()->sendPresence(presence);
+			m_component->getFrontend()->sendPresence(presence);
 		}
 	}
 	else {
@@ -614,7 +399,7 @@ void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID
 		response->setTo(to);
 		response->setFrom(from);
 		response->setType(Swift::Presence::Unavailable);
-		m_component->getStanzaChannel()->sendPresence(response);
+		m_component->getFrontend()->sendPresence(response);
 	}
 }
 
@@ -634,7 +419,7 @@ void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
 			Swift::Presence::Type type = presence->getType();
 			presence->setTo(to);
 			presence->setType(Swift::Presence::Unavailable);
-			m_component->getStanzaChannel()->sendPresence(presence);
+			m_component->getFrontend()->sendPresence(presence);
 			presence->setType(type);
 		}
 	}
@@ -645,7 +430,7 @@ void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
 	response->setTo(to);
 	response->setFrom(m_component->getJID());
 	response->setType(Swift::Presence::Unavailable);
-	m_component->getStanzaChannel()->sendPresence(response);
+	m_component->getFrontend()->sendPresence(response);
 }
 
 }

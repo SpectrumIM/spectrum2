@@ -52,7 +52,6 @@ class RosterResponder;
 class BlockResponder;
 class DummyReadBytestream;
 class AdminInterface;
-class DiscoItemsResponder;
 
 class NetworkPluginServer : Swift::XMPPParserClient {
 	public:
@@ -70,7 +69,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 			std::string id;
 		};
 
-		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager, DiscoItemsResponder *discoItemsResponder);
+		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
 
 		virtual ~NetworkPluginServer();
 
@@ -187,7 +186,6 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		std::vector<std::string> m_crashedBackends;
 		AdminInterface *m_adminInterface;
 		bool m_startingBackend;
-		DiscoItemsResponder *m_discoItemsResponder;
 		time_t m_lastLogin;
 		Swift::XMPPParser *m_xmppParser;
 		Swift::FullPayloadParserFactoryCollection m_collection;
