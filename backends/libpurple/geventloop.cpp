@@ -30,7 +30,7 @@
 
 #include "purple_defs.h"
 
-#include "transport/logging.h"
+#include "transport/Logging.h"
 
 DEFINE_LOGGER(logger, "EventLoop");
 

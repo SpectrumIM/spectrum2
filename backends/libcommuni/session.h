@@ -23,7 +23,7 @@
 
 #ifndef Q_MOC_RUN
 #include <IrcConnection>
-#include <transport/networkplugin.h>
+#include <transport/NetworkPlugin.h>
 #include "Swiften/Swiften.h"
 #include <boost/smart_ptr/make_shared.hpp>
 #include <QTimer>

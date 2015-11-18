@@ -2,8 +2,8 @@
 
 #include "Swiften/Swiften.h"
 
-#include "transport/config.h"
-#include "transport/networkplugin.h"
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
 
 class Plugin : public Transport::NetworkPlugin {
 	public:

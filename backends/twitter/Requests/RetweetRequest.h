@@ -1,11 +1,10 @@
 #ifndef RETWEET_H
 #define RETWEET_H
 
-#include "transport/threadpool.h"
+#include "transport/ThreadPool.h"
 #include "../TwitterResponseParser.h"
 #include "../libtwitcurl/twitcurl.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 #include <boost/function.hpp>
 #include <string>
 #include <iostream>

@@ -25,11 +25,10 @@
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RawXMLPayload.h"
 #include "Swiften/Elements/Storage.h"
-#include "Swiften/Elements/Storage.h"
 #include "Swiften/Serializer/PayloadSerializers/StorageSerializer.h"
-#include "transport/usermanager.h"
-#include "transport/user.h"
-#include "transport/logging.h"
+#include "transport/UserManager.h"
+#include "transport/User.h"
+#include "transport/Logging.h"
 
 using namespace Swift;
 using namespace boost;

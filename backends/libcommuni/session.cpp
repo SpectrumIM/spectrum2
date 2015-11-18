@@ -30,7 +30,7 @@
 #define FROM_UTF8(WHAT) QString::fromUtf8((WHAT).c_str(), (WHAT).size())
 #define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
 
-#include "transport/logging.h"
+#include "transport/Logging.h"
 
 DEFINE_LOGGER(logger, "IRCConnection");
 

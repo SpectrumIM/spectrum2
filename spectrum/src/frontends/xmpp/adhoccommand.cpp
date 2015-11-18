@@ -20,13 +20,9 @@
 
 #include "adhoccommand.h"
 #include "adhoccommandfactory.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/storagebackend.h"
-#include "transport/buddy.h"
-#include "transport/factory.h"
-#include "transport/user.h"
-#include "transport/logging.h"
+#include "transport/UserManager.h"
+#include "transport/StorageBackend.h"
+#include "transport/Logging.h"
 
 namespace Transport {
 

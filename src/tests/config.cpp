@@ -1,11 +1,3 @@
-#include "transport/userregistry.h"
-#include "transport/config.h"
-#include "transport/storagebackend.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/localbuddy.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -18,7 +10,6 @@
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "basictest.h"
 
-#include "transport/util.h"
 
 using namespace Transport;
 

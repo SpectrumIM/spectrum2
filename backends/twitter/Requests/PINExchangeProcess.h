@@ -1,11 +1,10 @@
 #ifndef PIN_EXCHANGE
 #define PIN_EXCHANGE
 
-#include "transport/threadpool.h"
+#include "transport/ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterPlugin.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 
 #include <string>
 #include <iostream>

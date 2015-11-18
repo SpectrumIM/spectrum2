@@ -2,7 +2,7 @@
 #define HTTPREQ_H
 
 #include "curl/curl.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 #include <iostream>
 #include <sstream>
 #include <string.h>

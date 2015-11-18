@@ -20,17 +20,17 @@
 
 #pragma once
 
+#include "transport/RosterManager.h"
+
 #include <string>
 #include <algorithm>
 #include <map>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
-// #include "rosterstorage.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Queries/GenericRequest.h"
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/Presence.h"
-#include "transport/rostermanager.h"
 #include "Swiften/Network/Timer.h"
 
 namespace Transport {

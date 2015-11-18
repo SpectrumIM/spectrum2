@@ -1,14 +1,14 @@
 #ifndef TWITTER_PLUGIN
 #define TWITTER_PLUGIN
 
-#include "transport/config.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
-#include "transport/sqlite3backend.h"
-#include "transport/mysqlbackend.h"
-#include "transport/pqxxbackend.h"
-#include "transport/storagebackend.h"
-#include "transport/threadpool.h"
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Logging.h"
+#include "transport/SQLite3Backend.h"
+#include "transport/MySQLBackend.h"
+#include "transport/PQXXBackend.h"
+#include "transport/StorageBackend.h"
+#include "transport/ThreadPool.h"
 
 #include "Swiften/Swiften.h"
 #ifndef _WIN32

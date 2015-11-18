@@ -23,12 +23,12 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "transport/transport.h"
-#include "transport/logging.h"
-#include "transport/config.h"
+#include "transport/Transport.h"
+#include "transport/Logging.h"
+#include "transport/Config.h"
 #include "discoinforesponder.h"
 #include "XMPPFrontend.h"
-#include "transport/frontend.h"
+#include "transport/Frontend.h"
 
 using namespace Swift;
 using namespace boost;

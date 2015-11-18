@@ -1,10 +1,10 @@
 #ifndef PROFILEIMAGE_H
 #define PROFILEIMAGE_H
 
-#include "transport/threadpool.h"
 #include "../TwitterResponseParser.h"
-#include "transport/logging.h"
-#include "transport/config.h"
+#include "transport/ThreadPool.h"
+#include "transport/Logging.h"
+#include "transport/Config.h"
 #include <string>
 #include <boost/signals.hpp>
 #include <boost/function.hpp>

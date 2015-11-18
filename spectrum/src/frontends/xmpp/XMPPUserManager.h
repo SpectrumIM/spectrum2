@@ -22,7 +22,7 @@
 
 #include <string>
 #include <map>
-#include "transport/usermanager.h"
+#include "transport/UserManager.h"
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Disco/EntityCapsProvider.h"

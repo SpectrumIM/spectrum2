@@ -25,8 +25,8 @@
 #include "sqlite3.h"
 #include <iostream>
 #include <map>
-#include "transport/networkplugin.h"
-#include "transport/config.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Config.h"
 
 class Skype;
 

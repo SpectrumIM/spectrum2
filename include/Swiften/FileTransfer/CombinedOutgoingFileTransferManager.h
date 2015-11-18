@@ -11,7 +11,7 @@
 
 #include <Swiften/JID/JID.h>
 
-#include "transport/presenceoracle.h"
+#include "transport/PresenceOracle.h"
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include <Swiften/Version.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)

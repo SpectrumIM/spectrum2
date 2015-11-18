@@ -18,18 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "XMPPFrontend.h"
-
 #include "adhocmanager.h"
 #include "adhoccommandfactory.h"
 #include "discoitemsresponder.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/buddy.h"
-#include "transport/factory.h"
-#include "transport/user.h"
-#include "transport/logging.h"
-#include "transport/storagebackend.h"
+#include "transport/UserManager.h"
+#include "transport/User.h"
+#include "transport/Logging.h"
+#include "transport/StorageBackend.h"
+#include "transport/Transport.h"
+#include "transport/Config.h"
+
+#include "XMPPFrontend.h"
 
 namespace Transport {
 

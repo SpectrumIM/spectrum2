@@ -1,11 +1,10 @@
 #ifndef STATUS_UPDATE
 #define STATUS_UPDATE
 
-#include "transport/threadpool.h"
+#include "transport/ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterResponseParser.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 #include <boost/function.hpp>
 #include <string>
 #include <iostream>

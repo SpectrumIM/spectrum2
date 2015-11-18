@@ -26,8 +26,8 @@
 #include "Swiften/Disco/DiscoInfoResponder.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/DiscoInfo.h"
-#include "transport/config.h"
-#include "transport/logging.h"
+#include "transport/Config.h"
+#include "transport/Logging.h"
 #include "Swiften/Disco/CapsInfoGenerator.h"
 #include "XMPPFrontend.h"
 

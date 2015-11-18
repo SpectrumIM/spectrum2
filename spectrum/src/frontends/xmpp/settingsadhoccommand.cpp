@@ -19,13 +19,12 @@
  */
 
 #include "settingsadhoccommand.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/buddy.h"
-#include "transport/factory.h"
-#include "transport/user.h"
-#include "transport/logging.h"
-#include "transport/storagebackend.h"
+#include "transport/UserManager.h"
+#include "transport/User.h"
+#include "transport/Logging.h"
+#include "transport/StorageBackend.h"
+#include "transport/Transport.h"
+#include "transport/Config.h"
 #include "formutils.h"
 
 

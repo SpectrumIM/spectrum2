@@ -22,13 +22,13 @@
 
 #include <iostream>
 #include <boost/bind.hpp>
-#include "transport/user.h"
-#include "transport/buddy.h"
-#include "transport/usermanager.h"
-#include "transport/rostermanager.h"
-#include "transport/transport.h"
-#include "transport/logging.h"
+#include "transport/User.h"
+#include "transport/Buddy.h"
+#include "transport/UserManager.h"
+#include "transport/Transport.h"
+#include "transport/Logging.h"
 #include "Swiften/Queries/IQRouter.h"
+#include <boost/foreach.hpp>
 
 using namespace Swift;
 using namespace boost;

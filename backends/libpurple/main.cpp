@@ -10,10 +10,9 @@
 #include <algorithm>
 #include <iostream>
 
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
-#include "transport/config.h"
-#include "transport/logging.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Logging.h"
+#include "transport/Config.h"
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"

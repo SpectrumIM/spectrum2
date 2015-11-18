@@ -24,11 +24,11 @@
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
 #include "BlockPayload.h"
-#include "transport/usermanager.h"
-#include "transport/user.h"
-#include "transport/buddy.h"
-#include "transport/rostermanager.h"
-#include "transport/logging.h"
+#include "transport/UserManager.h"
+#include "transport/User.h"
+#include "transport/Buddy.h"
+#include "transport/RosterManager.h"
+#include "transport/Logging.h"
 
 using namespace Swift;
 using namespace boost;

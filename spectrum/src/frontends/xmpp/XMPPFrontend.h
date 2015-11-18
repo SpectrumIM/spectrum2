@@ -20,8 +20,9 @@
 
 #pragma once
 
+#include "transport/Frontend.h"
+
 #include <vector>
-#include "transport/frontend.h"
 #include "Swiften/Server/Server.h"
 #include "Swiften/Disco/GetDiscoInfoRequest.h"
 #include "Swiften/Disco/EntityCapsManager.h"

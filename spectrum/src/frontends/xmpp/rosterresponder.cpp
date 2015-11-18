@@ -18,19 +18,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/rosterresponder.h"
+#include "RosterResponder.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "transport/user.h"
-#include "transport/usermanager.h"
-#include "transport/rostermanager.h"
-#include "transport/buddy.h"
-#include "transport/logging.h"
-#include "transport/factory.h"
+#include "transport/User.h"
+#include "transport/UserManager.h"
+#include "transport/RosterManager.h"
+#include "transport/Buddy.h"
+#include "transport/Logging.h"
+#include "transport/Factory.h"
+#include "transport/Transport.h"
 #include "XMPPFrontend.h"
-#include "transport/frontend.h"
+#include "transport/Frontend.h"
 
 using namespace Swift;
 using namespace boost;

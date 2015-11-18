@@ -14,7 +14,7 @@
 #include <openssl/err.h>
 #include <openssl/pkcs12.h>
 
-#include "transport/logging.h"
+#include "transport/Logging.h"
 DEFINE_LOGGER(logger, "OpenSSLServerContext");
 
 

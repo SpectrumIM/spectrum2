@@ -23,18 +23,18 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include "Swiften/Queries/IQRouter.h"
-#include "transport/usermanager.h"
-#include "transport/user.h"
-#include "transport/buddy.h"
-#include "transport/rostermanager.h"
-#include "transport/memoryusage.h"
-#include "transport/conversationmanager.h"
-#include "transport/rostermanager.h"
-#include "transport/usermanager.h"
-#include "transport/networkpluginserver.h"
-#include "transport/logging.h"
-#include "transport/frontend.h"
+#include "transport/UserManager.h"
+#include "transport/User.h"
+#include "transport/RosterManager.h"
+#include "transport/MemoryUsage.h"
+#include "transport/NetworkPluginServer.h"
+#include "transport/Logging.h"
+#include "transport/Frontend.h"
+#include "transport/Transport.h"
+#include "transport/Buddy.h"
 #include "XMPPFrontend.h"
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace Swift;
 using namespace boost;

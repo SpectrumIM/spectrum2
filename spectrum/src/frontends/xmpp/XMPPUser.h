@@ -20,7 +20,8 @@
 
 #pragma once
 
-#include "transport/user.h"
+#include "transport/User.h"
+
 #include <time.h>
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
