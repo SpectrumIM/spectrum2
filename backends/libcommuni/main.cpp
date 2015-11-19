@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/config.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Logging.h"
 #include "session.h"
 #include <QtCore>
 #include <QtNetwork>

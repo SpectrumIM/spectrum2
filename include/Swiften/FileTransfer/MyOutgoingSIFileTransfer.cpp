@@ -40,12 +40,14 @@ void MyOutgoingSIFileTransfer::cancel() {
 	if (ibbSession) {
 		ibbSession->stop();
 	}
+#if !HAVE_SWIFTEN_3
 	SOCKS5BytestreamServerSession *serverSession = registry->getConnectedSession(SOCKS5BytestreamRegistry::getHostname(id, from, to));
 	if (serverSession) {
 		serverSession->stop();
 	}
 
 	onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
+#endif
 }
 
 void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamInitiation::ref response, ErrorPayload::ref error) {
@@ -54,8 +56,10 @@ void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamIniti
 	}
 	else {
 		if (response->getRequestedMethod() == "http://jabber.org/protocol/bytestreams") {
+#if !HAVE_SWIFTEN_3
 			registry->addReadBytestream(SOCKS5BytestreamRegistry::getHostname(id, from, to), bytestream);
 			socksServer->addReadBytestream(id, from, to, bytestream);
+#endif
 			Bytestreams::ref bytestreams(new Bytestreams());
 			bytestreams->setStreamID(id);
 			HostAddressPort addressPort = socksServer->getAddressPort();
@@ -68,8 +72,9 @@ void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamIniti
 			ibbSession = boost::shared_ptr<IBBSendSession>(new IBBSendSession(id, from, to, bytestream, iqRouter));
 			ibbSession->onFinished.connect(boost::bind(&MyOutgoingSIFileTransfer::handleIBBSessionFinished, this, _1));
 			ibbSession->start();
-
+#if !HAVE_SWIFTEN_3
 			onStateChange(FileTransfer::State(FileTransfer::State::Transferring));
+#endif
 		}
 	}
 }
@@ -79,13 +84,13 @@ void MyOutgoingSIFileTransfer::handleBytestreamsRequestResponse(Bytestreams::ref
 		finish(FileTransferError());
 		return;
 	}
-
+#if !HAVE_SWIFTEN_3
 	SOCKS5BytestreamServerSession *serverSession = registry->getConnectedSession(SOCKS5BytestreamRegistry::getHostname(id, from, to));
 // 	serverSession->onBytesSent.connect(boost::bind(boost::ref(onProcessedBytes), _1));
 // 	serverSession->onFinished.connect(boost::bind(&OutgoingJingleFileTransfer::handleTransferFinished, this, _1));
 	serverSession->startTransfer();
 	onStateChange(FileTransfer::State(FileTransfer::State::Transferring));
-	
+#endif	
 	//socksServer->onTransferFinished.connect();
 }
 
@@ -94,6 +99,7 @@ void MyOutgoingSIFileTransfer::finish(boost::optional<FileTransferError> error) 
 		ibbSession->onFinished.disconnect(boost::bind(&MyOutgoingSIFileTransfer::handleIBBSessionFinished, this, _1));
 		ibbSession.reset();
 	}
+#if !HAVE_SWIFTEN_3
 	socksServer->removeReadBytestream(id, from, to);
 	if(error) {
 		onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
@@ -101,6 +107,7 @@ void MyOutgoingSIFileTransfer::finish(boost::optional<FileTransferError> error) 
 	else {
 		onStateChange(FileTransfer::State(FileTransfer::State::Finished));
 	}
+#endif
 	onFinished(error);
 }
 

@@ -25,7 +25,7 @@ void DummyConnectionServer::stop() {
 	
 }
 
-void DummyConnectionServer::acceptConnection(boost::shared_ptr<Connection> connection) {
+void DummyConnectionServer::acceptConnection(boost::shared_ptr<Swift::Connection> connection) {
 		eventLoop->postEvent(
 				boost::bind(boost::ref(onNewConnection), connection), 
 				shared_from_this());

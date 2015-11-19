@@ -29,7 +29,7 @@
 #include <boost/signal.hpp>
 
 #include "managerconfig.h"
-#include "transport/config.h"
+#include "transport/Config.h"
 #include "transport/protocol.pb.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"

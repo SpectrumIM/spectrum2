@@ -15,6 +15,7 @@
 #include <Swiften/Network/DummyConnection.h>
 #include <Swiften/Network/ConnectionServer.h>
 #include <Swiften/EventLoop/EventOwner.h>
+#include <Swiften/Version.h>
 
 namespace Swift {
 	class DummyConnectionServer : public ConnectionServer, public EventOwner, public boost::enable_shared_from_this<DummyConnectionServer> {
@@ -30,7 +31,13 @@ namespace Swift {
 				return ref(new DummyConnectionServer(eventLoop));
 			}
 
-			void acceptConnection(boost::shared_ptr<Connection> connection);
+			void acceptConnection(boost::shared_ptr<Swift::Connection> connection);
+
+#if (SWIFTEN_VERSION >= 0x030000)
+			virtual boost::optional<ConnectionServer::Error> tryStart() {
+				return boost::optional<ConnectionServer::Error>();
+			}
+#endif
 
 			virtual void start();
 			virtual void stop();

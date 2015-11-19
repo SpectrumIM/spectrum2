@@ -1,8 +1,8 @@
 #include "plugin.h"
 // Transport includes
-#include "transport/config.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Logging.h"
 
 // Swiften
 #include "Swiften/Swiften.h"

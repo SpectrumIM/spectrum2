@@ -63,8 +63,11 @@ void ServerStanzaChannel::handleDataRead(const SafeByteArray &data, const boost:
 		onPresenceReceived(presence);
 	}
 }
-
+#if HAVE_SWIFTEN_3
+void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<ToplevelElement> element, bool last) {
+#else
 void ServerStanzaChannel::finishSession(const JID& to, boost::shared_ptr<Element> element, bool last) {
+#endif
 	std::vector<boost::shared_ptr<ServerFromClientSession> > candidateSessions;
 	for (std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
 		candidateSessions.push_back(*i);

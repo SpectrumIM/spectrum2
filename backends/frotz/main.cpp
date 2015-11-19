@@ -8,8 +8,8 @@
  * program, but you don't have to.
  */
 
-#include "transport/config.h"
-#include "transport/networkplugin.h"
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
 #include "Swiften/Swiften.h"
 #include <boost/filesystem.hpp>
 #include "unistd.h"

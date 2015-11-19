@@ -1,11 +1,3 @@
-#include "transport/userregistry.h"
-#include "transport/config.h"
-#include "transport/storagebackend.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/localbuddy.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -105,7 +97,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost/resource");
 		response->setType(Swift::Presence::Probe);
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
@@ -124,7 +116,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost");
 		response->setType(Swift::Presence::Unsubscribed);
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -137,7 +129,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost");
 		response->setType(Swift::Presence::Error);
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
@@ -147,7 +139,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setFrom("user@localhost");
 		response->setType(Swift::Presence::Error);
 		response->addPayload(boost::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -161,7 +153,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost");
 		response->setType(Swift::Presence::Unsubscribed);
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());

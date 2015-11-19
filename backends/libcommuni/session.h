@@ -22,8 +22,8 @@
 #define SESSION_H
 
 #ifndef Q_MOC_RUN
-#include <IrcSession>
-#include <transport/networkplugin.h>
+#include <IrcConnection>
+#include <transport/NetworkPlugin.h>
 #include "Swiften/Swiften.h"
 #include <boost/smart_ptr/make_shared.hpp>
 #include <QTimer>
@@ -33,7 +33,7 @@ using namespace Transport;
 
 class IRCNetworkPlugin;
 
-class MyIrcSession : public IrcSession
+class MyIrcSession : public IrcConnection
 {
     Q_OBJECT
 

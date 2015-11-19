@@ -9,6 +9,12 @@
 #include <Swiften/Network/DummyConnectionFactory.h>
 #include <Swiften/Network/PlatformDomainNameResolver.h>
 #include <Swiften/Network/DummyConnectionServerFactory.h>
+#if HAVE_SWIFTEN_3
+#include <Swiften/Crypto/CryptoProvider.h>
+#include <Swiften/Crypto/PlatformCryptoProvider.h>
+#include <Swiften/Network/NetworkEnvironment.h>
+#include <Swiften/Network/PlatformNetworkEnvironment.h>
+#endif
 
 namespace Swift {
 
@@ -18,6 +24,8 @@ DummyNetworkFactories::DummyNetworkFactories(EventLoop* eventLoop) {
 #if HAVE_SWIFTEN_3
 	idnConverter = boost::shared_ptr<IDNConverter>(PlatformIDNConverter::create());
 	domainNameResolver = new PlatformDomainNameResolver(idnConverter.get(), eventLoop);
+	cryptoProvider = PlatformCryptoProvider::create();
+	networkEnvironment = new PlatformNetworkEnvironment();
 #else
 	domainNameResolver = new PlatformDomainNameResolver(eventLoop);
 #endif

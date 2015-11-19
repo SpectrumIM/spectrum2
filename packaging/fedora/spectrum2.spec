@@ -25,7 +25,7 @@ BuildRequires: libidn-devel
 BuildRequires: expat-devel
 BuildRequires: avahi-devel
 BuildRequires: log4cxx-devel
-#BuildRequires: swiften-devel
+BuildRequires: swiften-devel
 BuildRequires: libcommuni-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
 
@@ -58,7 +58,7 @@ exit 0
 
 %files
 %defattr(-, root, root,-)
-%doc README
+%doc README.md
 %{_bindir}/spectrum2
 %{_bindir}/spectrum2_manager
 /etc/spectrum2/*
@@ -71,7 +71,6 @@ exit 0
 Summary:    Libtransport
 Group:      Development/Libraries
 Requires:   boost
-Requires:   libpurple-hanzz
 Requires:   libtransport%{?_isa} = %{version}-%{release}
 
 %description libpurple-backend
@@ -84,17 +83,17 @@ Spectrum2 libpurple backend
 /usr/bin/spectrum2_frotz_backend
 /usr/bin/dfrotz
 
-%package libcommuni-backend
-Summary:    Libtransport
-Group:      Development/Libraries
-Requires:   libtransport%{?_isa} = %{version}-%{release}
-
-%description libcommuni-backend
-Spectrum2 libpurple backend
-
-%files libcommuni-backend
-%defattr(-, root, root,-)
-/usr/bin/spectrum2_libcommuni_backend
+# %package libcommuni-backend
+# Summary:    Libtransport
+# Group:      Development/Libraries
+# Requires:   libtransport%{?_isa} = %{version}-%{release}
+# 
+# %description libcommuni-backend
+# Spectrum2 libpurple backend
+# 
+# %files libcommuni-backend
+# %defattr(-, root, root,-)
+# /usr/bin/spectrum2_libcommuni_backend
 
 %package smstools3-backend
 Summary:    Libtransport
@@ -134,19 +133,6 @@ Spectrum2 Swiften backend
 %files swiften-backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_swiften_backend
-
-%package libyahoo2-backend
-Summary:    Libtransport
-Group:      Development/Libraries
-Requires:   boost
-Requires:   libtransport%{?_isa} = %{version}-%{release}
-
-%description libyahoo2-backend
-Spectrum2 libyahoo2 backend
-
-%files libyahoo2-backend
-%defattr(-, root, root,-)
-/usr/bin/spectrum2_libyahoo2_backend
 
 %package twitter-backend
 Summary:    Libtransport

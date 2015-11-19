@@ -23,19 +23,24 @@
 #include <vector>
 #include "Swiften/Swiften.h"
 #include "Swiften/Queries/SetResponder.h"
-#include "transport/conversation.h"
-#include "transport/conversationmanager.h"
-#include "transport/userregistry.h"
-#include "transport/config.h"
-#include "transport/storagebackend.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/userregistration.h"
-#include "transport/discoitemsresponder.h"
-#include "transport/localbuddy.h"
-#include "transport/storagebackend.h"
+#include "transport/Conversation.h"
+#include "transport/ConversationManager.h"
+#include "transport/UserRegistry.h"
+#include "transport/Config.h"
+#include "transport/StorageBackend.h"
+#include "transport/User.h"
+#include "transport/Transport.h"
+#include "transport/UserManager.h"
+#include "transport/UserRegistration.h"
+#include "transport/RosterManager.h"
+#include "transport/NetworkPluginServer.h"
+#include "RosterResponder.h"
+#include "discoitemsresponder.h"
+#include "transport/LocalBuddy.h"
+#include "transport/StorageBackend.h"
+#include "transport/Factory.h"
+#include "XMPPFrontend.h"
+#include "XMPPUserRegistration.h"
 
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
@@ -45,6 +50,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 using namespace Transport;
 
@@ -217,9 +223,11 @@ class BasicTest : public Swift::XMPPParserClient {
 	void handleDataReceived2(const Swift::SafeByteArray &data);
 
 	void handleStreamStart(const Swift::ProtocolHeader&);
-
+#if HAVE_SWIFTEN_3
+	void handleElement(boost::shared_ptr<Swift::ToplevelElement> element);
+#else
 	void handleElement(boost::shared_ptr<Swift::Element> element);
-
+#endif
 	void handleStreamEnd();
 
 	void injectPresence(boost::shared_ptr<Swift::Presence> &response);
@@ -266,8 +274,9 @@ class BasicTest : public Swift::XMPPParserClient {
 		std::string receivedData;
 		std::string receivedData2;
 		StorageBackend *storage;
-		UserRegistration *userRegistration;
+		XMPPUserRegistration *userRegistration;
 		DiscoItemsResponder *itemsResponder;
 		bool stream1_active;
+		Transport::XMPPFrontend *frontend;
 };
 

@@ -1,10 +1,9 @@
 #ifndef HELPMESSAGE_H
 #define HELPMESSAGE_H
 
-#include "transport/threadpool.h"
+#include "transport/ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 #include <string>
 #include <boost/function.hpp>
 #include <iostream>

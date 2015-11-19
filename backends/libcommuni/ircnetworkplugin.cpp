@@ -21,7 +21,7 @@
 #include "ircnetworkplugin.h"
 #include <IrcCommand>
 #include <IrcMessage>
-#include "transport/logging.h"
+#include "transport/Logging.h"
 
 DEFINE_LOGGER(logger, "IRCNetworkPlugin");
 

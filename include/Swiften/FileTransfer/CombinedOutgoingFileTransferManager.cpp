@@ -43,8 +43,10 @@ boost::shared_ptr<OutgoingFileTransfer> CombinedOutgoingFileTransferManager::cre
 		//jsManager->getSession(receipient, idGenerator->generateID());
 		assert(jingleSession);
 		jsManager->registerOutgoingSession(from, jingleSession);
+#if !HAVE_SWIFTEN_3
 		boost::shared_ptr<OutgoingJingleFileTransfer> jingleFT =  boost::shared_ptr<OutgoingJingleFileTransfer>(new OutgoingJingleFileTransfer(jingleSession, remoteFactory, localFactory, iqRouter, idGenerator, from, receipient, readBytestream, fileInfo, bytestreamRegistry, bytestreamProxy));
 		return jingleFT;
+#endif
 	}
 
 	if (!fullJID.is_initialized()) {

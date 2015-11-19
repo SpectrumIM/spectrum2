@@ -10,10 +10,9 @@
 #include <algorithm>
 #include <iostream>
 
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
-#include "transport/config.h"
-#include "transport/logging.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Logging.h"
+#include "transport/Config.h"
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"
@@ -518,7 +517,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 				m_vcards[user + name] = id;
 
-				if (CONFIG_BOOL(config, "backend.no_vcard_fetch") && name != purple_account_get_username_wrapped(account)) {
+				PurplePlugin *prpl = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(account));
+				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
+				bool support_get_info = prpl_info && prpl_info->get_info;
+
+				if (!support_get_info || (CONFIG_BOOL(config, "backend.no_vcard_fetch") && name != purple_account_get_username_wrapped(account))) {
 					PurpleNotifyUserInfo *user_info = purple_notify_user_info_new_wrapped();
 					notify_user_info(purple_account_get_connection_wrapped(account), name.c_str(), user_info);
 					purple_notify_user_info_destroy_wrapped(user_info);
@@ -526,7 +529,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				else {
 					serv_get_info_wrapped(purple_account_get_connection_wrapped(account), name.c_str());
 				}
-				
 			}
 		}
 
@@ -635,6 +637,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_NOT_TYPING);
+				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, buddyName.c_str(), account);
+				if (conv) {
+					purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
+					purple_conversation_update_wrapped(conv, PURPLE_CONV_UPDATE_UNSEEN);
+				}
 			}
 		}
 

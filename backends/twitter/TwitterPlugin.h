@@ -1,14 +1,14 @@
 #ifndef TWITTER_PLUGIN
 #define TWITTER_PLUGIN
 
-#include "transport/config.h"
-#include "transport/networkplugin.h"
-#include "transport/logging.h"
-#include "transport/sqlite3backend.h"
-#include "transport/mysqlbackend.h"
-#include "transport/pqxxbackend.h"
-#include "transport/storagebackend.h"
-#include "transport/threadpool.h"
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/Logging.h"
+#include "transport/SQLite3Backend.h"
+#include "transport/MySQLBackend.h"
+#include "transport/PQXXBackend.h"
+#include "transport/StorageBackend.h"
+#include "transport/ThreadPool.h"
 
 #include "Swiften/Swiften.h"
 #ifndef _WIN32
@@ -32,9 +32,14 @@
 #include <queue>
 #include <set>
 #include <cstdio>
-
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
+#if HAVE_SWIFTEN_3
+#include <Swiften/Crypto/CryptoProvider.h>
+#include <Swiften/Crypto/PlatformCryptoProvider.h>
+#else
 #include "Swiften/StringCodecs/SHA1.h"
-
+#endif
 using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
@@ -51,6 +56,9 @@ class TwitterPlugin : public NetworkPlugin {
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		boost::shared_ptr<Swift::Connection> m_conn;
+#if HAVE_SWIFTEN_3
+		boost::shared_ptr<Swift::CryptoProvider> cryptoProvider;
+#endif
 		Swift::Timer::ref tweet_timer;
 		Swift::Timer::ref message_timer;
 		StorageBackend *storagebackend;

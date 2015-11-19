@@ -1,14 +1,5 @@
-#include "transport/userregistry.h"
-#include "transport/userregistration.h"
-#include "transport/config.h"
-#include "transport/storagebackend.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/localbuddy.h"
-#include "transport/settingsadhoccommand.h"
-#include "transport/adhocmanager.h"
+#include "settingsadhoccommand.h"
+#include "adhocmanager.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -19,6 +10,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#include "Swiften/Version.h"
 #include "basictest.h"
 
 using namespace Transport;
@@ -38,24 +30,13 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
-		AdHocManager *adhoc;
-		SettingsAdHocCommandFactory *settings;
-
 		void setUp (void) {
 			setMeUp();
-
-			adhoc = new AdHocManager(component, itemsResponder, userManager, storage);
-			adhoc->start();
-			settings = new SettingsAdHocCommandFactory();
-			adhoc->addAdHocCommand(settings);
-
 			received.clear();
 		}
 
 		void tearDown (void) {
 			received.clear();
-			delete adhoc;
-			delete settings;
 			tearMeDown();
 		}
 
@@ -147,7 +128,11 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			// set enabled_transport = 0
 			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("enable_transport");
+#if (SWIFTEN_VERSION >= 0x030000)
+			f->setBoolValue(false);
+#else
 			boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(false);
+#endif
 
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
 
@@ -207,7 +192,11 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			// set enabled_transport = 0
 			f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("enable_transport");
+#if (SWIFTEN_VERSION >= 0x030000)
+			CPPUNIT_ASSERT_EQUAL(false, f->getBoolValue());
+#else
 			CPPUNIT_ASSERT_EQUAL(false, boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
+#endif
 		}
 
 		void executeTwoCommands() {
@@ -355,7 +344,11 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			// set enabled_transport = 0
 			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("send_headlines");
+#if (SWIFTEN_VERSION >= 0x030000)
+			f->setBoolValue(true);
+#else
 			boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(true);
+#endif
 
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
 
@@ -397,7 +390,11 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm()->getField("send_headlines"));
 			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("send_headlines");
+#if (SWIFTEN_VERSION >= 0x030000)
+			CPPUNIT_ASSERT_EQUAL(true, f->getBoolValue());
+#else
 			CPPUNIT_ASSERT_EQUAL(true, boost::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
+#endif
 		}
 
 };

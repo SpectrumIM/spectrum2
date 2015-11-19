@@ -1,7 +1,7 @@
 #include "managerconfig.h"
 #include "methods.h"
 #include "server.h"
-#include "transport/config.h"
+#include "transport/Config.h"
 #include "transport/protocol.pb.h"
 #include "Swiften/Swiften.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"

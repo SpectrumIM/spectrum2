@@ -15,6 +15,8 @@
 #include "Swiften/Elements/IQ.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/TLS/Certificate.h"
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Swift {
 	class Error;
@@ -26,9 +28,11 @@ namespace Swift {
 			void sendIQ(boost::shared_ptr<IQ> iq);
 			void sendMessage(boost::shared_ptr<Message> message);
 			void sendPresence(boost::shared_ptr<Presence> presence);
-
+#if HAVE_SWIFTEN_3
+			void finishSession(const JID& to, boost::shared_ptr<ToplevelElement> element, bool last = false);
+#else
 			void finishSession(const JID& to, boost::shared_ptr<Element> element, bool last = false);
-
+#endif
 			bool getStreamManagementEnabled() const {
 				return false;
 			}

@@ -1,5 +1,5 @@
 #include "TwitterResponseParser.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 #include "boost/algorithm/string.hpp"
 #include <cctype>
 #include "boost/date_time/local_time/local_time.hpp"

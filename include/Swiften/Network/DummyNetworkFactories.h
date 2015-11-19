@@ -7,9 +7,7 @@
 #pragma once
 
 #include <Swiften/Version.h>
-//#define HAVE_SWIFTEN_3  SWIFTEN_VERSION >= 0x030000
-// Swiften 3 was not released yet and these changes are not in 3.0alpha
-#define HAVE_SWIFTEN_3 0
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #include <Swiften/Network/NetworkFactories.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
@@ -38,6 +36,13 @@ namespace Swift {
 			IDNConverter* getIDNConverter() const {
 				return idnConverter.get();
 			}
+			Swift::CryptoProvider* getCryptoProvider() const {
+		        	return cryptoProvider;
+			}
+			Swift::NetworkEnvironment* getNetworkEnvironment() const {
+				return networkEnvironment;
+			}
+
 #endif
 
 			DomainNameResolver* getDomainNameResolver() const {
@@ -67,13 +72,14 @@ namespace Swift {
             Swift::ProxyProvider* getProxyProvider() const {
                 return 0;
             }
-
 		private:
 			PlatformXMLParserFactory *m_platformXMLParserFactory;
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
 #if HAVE_SWIFTEN_3
 			boost::shared_ptr<IDNConverter> idnConverter;
+			CryptoProvider* cryptoProvider;
+			NetworkEnvironment* networkEnvironment;
 #endif
 			DomainNameResolver* domainNameResolver;
 			ConnectionServerFactory* connectionServerFactory;

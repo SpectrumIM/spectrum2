@@ -1,5 +1,3 @@
-#include "transport/userregistry.h"
-#include "transport/config.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
@@ -8,6 +6,7 @@
 #include <Swiften/Network/DummyConnectionServer.h>
 #include <Swiften/Network/ConnectionFactory.h>
 #include <Swiften/Network/DummyTimerFactory.h>
+#include "basictest.h"
 
 using namespace Transport;
 

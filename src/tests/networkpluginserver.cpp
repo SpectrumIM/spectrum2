@@ -1,16 +1,3 @@
-#include "transport/userregistry.h"
-#include "transport/userregistration.h"
-#include "transport/config.h"
-#include "transport/storagebackend.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/localbuddy.h"
-#include "transport/settingsadhoccommand.h"
-#include "transport/adhocmanager.h"
-#include "transport/protocol.pb.h"
-#include "transport/networkpluginserver.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -26,6 +13,7 @@
 #include <cppunit/Test.h>
 #include <time.h>    // for clock()
 #include <stdint.h>
+#include "transport/protocol.pb.h"
 
 using namespace Transport;
 
@@ -54,8 +42,8 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST(handleConvMessageAckPayload);
-	CPPUNIT_TEST(handleRawXML);
-	CPPUNIT_TEST(handleRawXMLSplit);
+// 	CPPUNIT_TEST(handleRawXML);
+// 	CPPUNIT_TEST(handleRawXMLSplit);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST(benchmarkSendUnavailablePresence);
@@ -67,7 +55,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		void setUp (void) {
 			setMeUp();
 
-			serv = new NetworkPluginServer(component, cfg, userManager, NULL, NULL);
+			serv = new NetworkPluginServer(component, cfg, userManager, NULL);
 			connectUser();
 			received.clear();
 		}

@@ -1,13 +1,7 @@
 #include "basictest.h"
-#include "transport/userregistry.h"
-#include "transport/config.h"
-#include "transport/storagebackend.h"
-#include "transport/userregistration.h"
-#include "transport/user.h"
-#include "transport/transport.h"
-#include "transport/conversation.h"
-#include "transport/usermanager.h"
-#include "transport/localbuddy.h"
+#include "XMPPFrontend.h"
+#include "XMPPUserRegistration.h"
+#include "XMPPUserManager.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -21,7 +15,7 @@
 
 #include "Swiften/Serializer/GenericPayloadSerializer.h"
 
-#include "../storageparser.h"
+#include "storageparser.h"
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
 #include "Swiften/Serializer/PayloadSerializers/AttentionSerializer.h"
 #include "Swiften/Parser/PayloadParsers/XHTMLIMParser.h"
@@ -32,8 +26,8 @@
 #include "Swiften/Serializer/PayloadSerializers/GatewayPayloadSerializer.h"
 #include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
 #include "Swiften/Parser/PayloadParsers/MUCPayloadParser.h"
-#include "transport/BlockParser.h"
-#include "transport/BlockSerializer.h"
+#include "BlockParser.h"
+#include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 
@@ -54,16 +48,14 @@ void BasicTest::setMeUp (void) {
 
 	userRegistry = new UserRegistry(cfg, factories);
 
-	component = new Component(loop, factories, cfg, factory, userRegistry);
+	frontend = new Transport::XMPPFrontend();
+
+	component = new Component(frontend, loop, factories, cfg, factory, userRegistry);
 	component->start();
 
-	itemsResponder = new DiscoItemsResponder(component);
-	itemsResponder->start();
+	userManager = frontend->createUserManager(component, userRegistry, storage);
 
-	userManager = new UserManager(component, userRegistry, itemsResponder, storage);
-
-	userRegistration = new UserRegistration(component, userManager, storage);
-	userRegistration->start();
+	itemsResponder = frontend->getDiscoItemsResponder();
 
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
@@ -94,7 +86,7 @@ void BasicTest::setMeUp (void) {
 
 	serverFromClientSession->onDataWritten.connect(boost::bind(&BasicTest::handleDataReceived, this, _1));
 
-	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->addSession(serverFromClientSession);
+	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->addSession(serverFromClientSession);
 	parser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 	parser2->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 	received.clear();
@@ -104,12 +96,13 @@ void BasicTest::setMeUp (void) {
 }
 
 void BasicTest::tearMeDown (void) {
-	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->removeSession(serverFromClientSession);
+	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->removeSession(serverFromClientSession);
 	if (serverFromClientSession2) {
-		dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->removeSession(serverFromClientSession2);
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->removeSession(serverFromClientSession2);
 		serverFromClientSession2.reset();
 	}
 	delete component;
+	delete frontend;
 	delete userRegistry;
 	delete factories;
 	delete factory;
@@ -118,8 +111,7 @@ void BasicTest::tearMeDown (void) {
 	delete parser;
 	delete parser2;
 	delete storage;
-	delete userRegistration;
-	delete itemsResponder;
+// 	delete userRegistration;
 	received.clear();
 	received2.clear();
 	receivedData.clear();
@@ -150,8 +142,11 @@ void BasicTest::dumpReceived() {
 	std::cout << "Stream2:\n";
 	std::cout << receivedData2 << "\n";
 }
-
+#if HAVE_SWIFTEN_3
+void BasicTest::handleElement(boost::shared_ptr<Swift::ToplevelElement> element) {
+#else
 void BasicTest::handleElement(boost::shared_ptr<Swift::Element> element) {
+#endif
 	if (stream1_active) {
 		received.push_back(element);
 	}
@@ -165,15 +160,15 @@ void BasicTest::handleStreamEnd() {
 }
 
 void BasicTest::injectPresence(boost::shared_ptr<Swift::Presence> &response) {
-	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onPresenceReceived(response);
+	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 }
 
 void BasicTest::injectIQ(boost::shared_ptr<Swift::IQ> iq) {
-	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onIQReceived(iq);
+	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onIQReceived(iq);
 }
 
 void BasicTest::injectMessage(boost::shared_ptr<Swift::Message> msg) {
-	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->onMessageReceived(msg);
+	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onMessageReceived(msg);
 }
 
 Swift::Stanza *BasicTest::getStanza(boost::shared_ptr<Swift::Element> element) {
@@ -214,7 +209,7 @@ void BasicTest::connectSecondResource() {
 
 	serverFromClientSession2->onDataWritten.connect(boost::bind(&BasicTest::handleDataReceived2, this, _1));
 
-	dynamic_cast<Swift::ServerStanzaChannel *>(component->getStanzaChannel())->addSession(serverFromClientSession2);
+	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->addSession(serverFromClientSession2);
 
 	userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource2"), serverFromClientSession2.get(), Swift::createSafeByteArray("password"));
 	userRegistry->onPasswordValid(Swift::JID("user@localhost/resource2"));

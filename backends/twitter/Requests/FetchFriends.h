@@ -1,10 +1,10 @@
 #ifndef FRIENDS_H
 #define FRIENDS_H
 
-#include "transport/threadpool.h"
+#include "transport/ThreadPool.h"
 #include "../libtwitcurl/twitcurl.h"
 #include "../TwitterResponseParser.h"
-#include "transport/logging.h"
+#include "transport/Logging.h"
 #include <string>
 #include <boost/signals.hpp>
 #include <boost/function.hpp>
