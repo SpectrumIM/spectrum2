@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hanzz/libtransport.png?branch=master)](https://travis-ci.org/hanzz/libtransport)
+[![Build Status](https://travis-ci.org/hanzz/spectrum2.png?branch=master)](https://travis-ci.org/hanzz/spectrum2)
 
 Spectrum is an XMPP transport/gateway. It allows XMPP users to communicate with
 their friends who are using one of the supported networks. It supports a wide
