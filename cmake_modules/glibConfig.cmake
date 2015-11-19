@@ -52,6 +52,10 @@ endif(GLIB2_INTERNAL_INCLUDE_DIR)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GLIB2  DEFAULT_MSG  GLIB2_LIBRARIES GLIB2_MAIN_INCLUDE_DIR)
 
+if (WIN32)
 set(GLIB2_INCLUDE_DIR ${GLIB2_INCLUDE_DIR} "../lib/glib-2.0/include")
+else()
+set(GLIB2_INCLUDE_DIR ${GLIB2_INCLUDE_DIR})
+endif()
 
 mark_as_advanced(GLIB2_INCLUDE_DIR GLIB2_LIBRARIES)
