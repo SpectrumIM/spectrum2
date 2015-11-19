@@ -14,6 +14,7 @@
 #include "transport/Util.h"
 #include "transport/Logging.h"
 #include "frontends/xmpp/XMPPFrontend.h"
+#include "frontends/slack/SlackFrontend.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
 #include <boost/filesystem.hpp>
@@ -210,9 +211,18 @@ int mainloop() {
 	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
 	UserRegistry userRegistry(config_, factories);
 
-	XMPPFrontend frontend;
+    
+	Frontend *frontend = NULL;
+	
+	std::string frontend_name = CONFIG_STRING_DEFAULTED(config_, "service.frontend", "xmpp");
+	if (frontend_name == "xmpp") {
+		frontend = new XMPPFrontend();
+	}
+	else if (frontend_name == "slack") {
+		frontend = new SlackFrontend();
+	}
 
-	Component transport(&frontend, &eventLoop, factories, config_, NULL, &userRegistry);
+	Component transport(frontend, &eventLoop, factories, config_, NULL, &userRegistry);
 	component_ = &transport;
 
 	std::string error;
@@ -230,7 +240,7 @@ int mainloop() {
 
 	Logging::redirect_stderr();
 
-	userManager = frontend.createUserManager(&transport, &userRegistry, storageBackend);;
+	userManager = frontend->createUserManager(&transport, &userRegistry, storageBackend);;
 	UserRegistration *userRegistration = userManager->getUserRegistration();
 
 	UsersReconnecter *usersReconnecter = NULL;

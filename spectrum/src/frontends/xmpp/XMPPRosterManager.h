@@ -73,10 +73,6 @@ class XMPPRosterManager : public RosterManager {
 			return m_supportRemoteRoster;
 		}
 
-		boost::signal<void (Buddy *buddy)> onBuddyAdded;
-		
-		boost::signal<void (Buddy *buddy)> onBuddyRemoved;
-
 		void handleBuddyChanged(Buddy *buddy);
 
 		void sendBuddyRosterPush(Buddy *buddy);
