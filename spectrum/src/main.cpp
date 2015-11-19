@@ -5,6 +5,7 @@
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
 #include "transport/PQXXBackend.h"
+#include "transport/StorageBackend.h"
 #include "transport/UserRegistration.h"
 #include "transport/UserRegistry.h"
 #include "transport/NetworkPluginServer.h"

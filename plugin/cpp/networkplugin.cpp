@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/networkplugin.h"
-#include "transport/memoryusage.h"
-#include "transport/logging.h"
+#include "transport/NetworkPlugin.h"
+#include "transport/MemoryUsage.h"
+#include "transport/Logging.h"
 
 #include <sstream>
 
