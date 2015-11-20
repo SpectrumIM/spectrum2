@@ -13,8 +13,9 @@
 #include "transport/UsersReconnecter.h"
 #include "transport/Util.h"
 #include "transport/Logging.h"
-#include "frontends/xmpp/XMPPFrontend.h"
-#include "frontends/slack/SlackFrontend.h"
+#include "transport/Frontend.h"
+#include "frontends/xmpp/XMPPFrontendPlugin.h"
+#include "frontends/slack/SlackFrontendPlugin.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
 #include <boost/filesystem.hpp>
@@ -38,6 +39,10 @@
 #endif
 #include <sys/stat.h>
 
+#include <boost/dll/shared_library.hpp>         // for shared_library
+#include <boost/dll/runtime_symbol_info.hpp>    // for program_location()
+
+namespace dll = boost::dll;
 using namespace Transport;
 using namespace Transport::Util;
 
@@ -215,12 +220,23 @@ int mainloop() {
 	Frontend *frontend = NULL;
 	
 	std::string frontend_name = CONFIG_STRING_DEFAULTED(config_, "service.frontend", "xmpp");
-	if (frontend_name == "xmpp") {
-		frontend = new XMPPFrontend();
+	std::string plugin_fc = "create_" + frontend_name + "_frontend_plugin";
+
+	dll::shared_library self(dll::program_location());
+	boost::function<boost::shared_ptr<FrontendPlugin>()> creator;
+
+	try {
+		creator = self.get_alias<boost::shared_ptr<FrontendPlugin>()>(plugin_fc);
 	}
-	else if (frontend_name == "slack") {
-		frontend = new SlackFrontend();
+	catch (...) {
 	}
+	
+	if (!creator) {
+		LOG4CXX_ERROR(logger, "Unknown Frontend name " << frontend_name);
+		return -3;
+	}
+
+	frontend = creator()->createFrontend();
 
 	Component transport(frontend, &eventLoop, factories, config_, NULL, &userRegistry);
 	component_ = &transport;

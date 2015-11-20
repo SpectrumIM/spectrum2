@@ -43,8 +43,18 @@ class Buddy;
 class RosterManager;
 class UserManager;
 class StorageBackend;
+class Frontend;
 
 struct UserInfo;
+
+class FrontendPlugin {
+	public:
+		virtual std::string name() const = 0;
+		virtual Frontend *createFrontend() = 0;
+
+		virtual ~FrontendPlugin() {};
+};
+
 
 class Frontend {
 	public:

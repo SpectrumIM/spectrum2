@@ -1,4 +1,4 @@
-/**
+ /**
  * Spectrum 2 Slack Frontend
  *
  * Copyright (C) 2015, Jan Kaluza <hanzz.k@gmail.com>
@@ -34,10 +34,15 @@
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-using namespace boost;
+#if defined(_WIN32) && !defined(__cplusplus_winrt)
+// Extra includes for Windows desktop.
+#include <windows.h>
+#include <Shellapi.h>
+#endif
 
 namespace Transport {
-	
+
+
 DEFINE_LOGGER(logger, "SlackFrontend");
 
 SlackFrontend::SlackFrontend() {
@@ -47,8 +52,6 @@ void SlackFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Ne
 	m_transport = transport;
 	m_config = transport->getConfig();
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
-
-
 }
 
 SlackFrontend::~SlackFrontend() {
@@ -102,6 +105,7 @@ UserManager *SlackFrontend::createUserManager(Component *component, UserRegistry
 
 
 void SlackFrontend::connectToServer() {
+	LOG4CXX_INFO(logger, "Connecting to Slack API server");
 }
 
 void SlackFrontend::disconnectFromServer() {

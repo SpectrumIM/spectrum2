@@ -26,3 +26,8 @@ spectrum2_swiften_backend
 spectrum2_template_backend
 spectrum2_twitter_backend
 install_manifest.txt
+slack.cfg
+*.sqlite
+localhost.port
+*.a
+

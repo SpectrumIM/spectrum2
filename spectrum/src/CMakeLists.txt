@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.6)
-FILE(GLOB_RECURSE SRC frontends/*.cpp main.cpp)
-include_directories(frontends/xmpp)
+FILE(GLOB SRC *.cpp)
+# include_directories(frontends/xmpp)
+
+
+ADD_SUBDIRECTORY(frontends)
 
 if (WIN32)
 FILE(GLOB WIN_SRC win32/*.cpp)
@@ -17,9 +20,9 @@ ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
 ADD_DEPENDENCIES(spectrum2 spectrum2_libircclient-qt_backend)
 
 if (WIN32)
-target_link_libraries(spectrum2 transport sqlite3 ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+target_link_libraries(spectrum2 transport sqlite3 spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
 else ()
-target_link_libraries(spectrum2 transport ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
 endif()
 
 INSTALL(TARGETS spectrum2 RUNTIME DESTINATION bin)
