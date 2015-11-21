@@ -4,8 +4,6 @@ FILE(GLOB HEADERS ${CMAKE_SOURCE_DIR}/include/transport/*.h)
 
 include_directories(${CMAKE_SOURCE_DIR}/spectrum/src/frontends/slack)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-strict-aliasing")
-
 if (NOT WIN32)
 	ADD_LIBRARY(spectrum2-slack-frontend STATIC ${HEADERS} ${SRC} ${EXTRA_SOURCES})
 else()
