@@ -1,7 +1,7 @@
 /**
  * libtransport -- C++ library for easy XMPP Transports development
  *
- * Copyright (C) 2011, Jan Kaluza <hanzz.k@gmail.com>
+ * Copyright (C) 2015, Jan Kaluza <hanzz.k@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,33 +20,31 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <vector>
 #include <string>
-#include "Swiften/StringCodecs/Base64.h"
-
-#include <boost/filesystem.hpp>
 
 namespace Transport {
 
-class Config;
+class OAuth2 {
+	public:
 
-namespace Util {
+		OAuth2(const std::string &clientId, const std::string &clientSecret,
+			   const std::string &authURL, const std::string &tokenURL,
+			   const std::string &redirectURL = "", const std::string &scope = "");
 
-void createDirectories(Transport::Config *config, const boost::filesystem::path& ph);
+		virtual ~OAuth2();
 
-void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t);
+		std::string generateAuthURL();
 
-int getRandomPort(const std::string &s);
+		std::string handleOAuth2Code(const std::string &code, const std::string &state);
 
-std::string char2hex( char dec );
-std::string urlencode( const std::string &c );
-
-#ifdef _WIN32
-	std::wstring utf8ToUtf16(const std::string& str);
-#endif
-
-}
+	private:
+		std::string m_clientId;
+		std::string m_clientSecret;
+		std::string m_authURL;
+		std::string m_tokenURL;
+		std::string m_redirectURL;
+		std::string m_scope;
+		std::string m_state;
+};
 
 }

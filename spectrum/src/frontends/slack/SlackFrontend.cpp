@@ -29,6 +29,7 @@
 #include "transport/Logging.h"
 #include "transport/Config.h"
 #include "transport/Transport.h"
+#include "transport/OAuth2.h"
 
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
@@ -52,10 +53,18 @@ void SlackFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Ne
 	m_transport = transport;
 	m_config = transport->getConfig();
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
+
+	std::string redirect_url = "http://spectrum.im/slackoauth2/" + CONFIG_STRING(m_config, "service.jid");
+	m_oauth2 = new OAuth2(CONFIG_STRING_DEFAULTED(m_config, "service.client_id",""),
+						  CONFIG_STRING_DEFAULTED(m_config, "service.client_secret",""),
+						  "https://slack.com/oauth/authorize",
+						  "https://slack.com/api/oauth.access",
+						  redirect_url,
+						  "channels:read channels:write team:read");
 }
 
 SlackFrontend::~SlackFrontend() {
-
+	delete m_oauth2;
 }
 
 void SlackFrontend::clearRoomList() {
@@ -106,6 +115,14 @@ UserManager *SlackFrontend::createUserManager(Component *component, UserRegistry
 
 void SlackFrontend::connectToServer() {
 	LOG4CXX_INFO(logger, "Connecting to Slack API server");
+
+	std::string url = m_oauth2->generateAuthURL();
+	LOG4CXX_INFO(logger, url);
+}
+
+std::string SlackFrontend::setOAuth2Code(const std::string &code, const std::string &state) {
+	LOG4CXX_INFO(logger, "Using OAuth2 code " << code << " to get the authorization token");
+	return m_oauth2->handleOAuth2Code(code, state);
 }
 
 void SlackFrontend::disconnectFromServer() {

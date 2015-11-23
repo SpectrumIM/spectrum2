@@ -30,4 +30,5 @@ slack.cfg
 *.sqlite
 localhost.port
 *.a
+core.*
 

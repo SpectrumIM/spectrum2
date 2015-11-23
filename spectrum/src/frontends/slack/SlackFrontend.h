@@ -31,6 +31,7 @@ namespace Transport {
 	class Config;
 	class DiscoItemsResponder;
 	class VCardResponder;
+	class OAuth2;
 
 	class SlackFrontend : public Frontend {
 		public:
@@ -62,6 +63,7 @@ namespace Transport {
 			virtual boost::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to);
 			virtual void clearRoomList();
 			virtual void addRoomToRoomList(const std::string &handle, const std::string &name);
+			virtual std::string setOAuth2Code(const std::string &code, const std::string &state);
 		
 			void handleMessage(boost::shared_ptr<Swift::Message> message);
 
@@ -69,5 +71,6 @@ namespace Transport {
 			Config* m_config;
 			Swift::JID m_jid;
 			Component *m_transport;
+			OAuth2 *m_oauth2;
 	};
 }

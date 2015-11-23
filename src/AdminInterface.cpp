@@ -296,6 +296,23 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Bad argument count. See 'help'.");
 		}
 	}
+	else if (message->getBody().find("set_oauth2_code ") == 0) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 3) {
+			std::string error = m_component->getFrontend()->setOAuth2Code(args[1], args[2]);
+			if (error.empty()) {
+				message->setBody("OAuth2 code and state set.");
+			}
+			else {
+				message->setBody(error);
+			}
+		}
+		else {
+			message->setBody("Bad argument count. See 'help'.");
+		}
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";
@@ -314,6 +331,8 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		help += "Messages:\n";
 		help += "    messages_from_xmpp - get number of messages received from XMPP users\n";
 		help += "    messages_to_xmpp - get number of messages sent to XMPP users\n";
+		help += "Frontend:\n";
+		help += "    set_oauth2_code <code> <state> - sets the OAuth2 code and state for this instance\n";
 		help += "Backends:\n";
 		help += "    backends_count - number of active backends\n";
 		help += "    crashed_backends - returns IDs of crashed backends\n";

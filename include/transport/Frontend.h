@@ -91,6 +91,8 @@ class Frontend {
 		virtual void clearRoomList() = 0;
 		virtual void addRoomToRoomList(const std::string &handle, const std::string &name) = 0;
 
+		virtual std::string setOAuth2Code(const std::string &code, const std::string &state) { return "OAuth2 code is not needed for this frontend."; }
+
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
 		boost::signal<void (User *, boost::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyUpdated;
