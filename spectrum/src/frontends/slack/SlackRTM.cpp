@@ -39,9 +39,16 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, UserInf
 	m_component = component;
 	m_storageBackend = storageBackend;
 
+
+#if HAVE_SWIFTEN_3
 	Swift::TLSOptions o;
+#endif
 	Swift::PlatformTLSFactories *m_tlsFactory = new Swift::PlatformTLSFactories();
+#if HAVE_SWIFTEN_3
 	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory(), o);
+#else
+	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory());
+#endif
 
 
 	std::string url = "https://slack.com/api/rtm.start?";

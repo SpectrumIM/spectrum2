@@ -26,12 +26,18 @@
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
 #include <Swiften/TLS/PlatformTLSFactories.h>
-#include <Swiften/TLS/TLSOptions.h>
 #include <Swiften/Network/DomainNameResolveError.h>
 #include <Swiften/Network/DomainNameAddressQuery.h>
 #include <Swiften/Network/DomainNameResolver.h>
 #include <Swiften/Network/HostAddress.h>
 #include <Swiften/Base/SafeByteArray.h>
+#include "Swiften/Version.h"
+
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
+
+#if HAVE_SWIFTEN_3
+#include <Swiften/TLS/TLSOptions.h>
+#endif
 
 #include <string>
 #include <algorithm>
