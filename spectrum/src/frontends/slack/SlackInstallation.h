@@ -35,7 +35,6 @@ class Component;
 class StorageBackend;
 class HTTPRequest;
 class SlackRTM;
-class SlackAPI;
 
 class SlackInstallation {
 	public:
@@ -46,7 +45,8 @@ class SlackInstallation {
 		boost::signal<void (const std::string &user)> onInstallationDone;
 
 	private:
-		void handleUsersList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleRTMStarted();
+		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message);
 		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 	private:
@@ -55,7 +55,7 @@ class SlackInstallation {
 		UserInfo m_uinfo;
 		std::string m_ownerName;
 		SlackRTM *m_rtm;
-		SlackAPI *m_api;
+		std::string m_ownerChannel;
 };
 
 }

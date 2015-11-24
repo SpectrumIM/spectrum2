@@ -36,8 +36,9 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackAPI");
 
-SlackAPI::SlackAPI(Component *component, UserInfo uinfo) : m_uinfo(uinfo) {
+SlackAPI::SlackAPI(Component *component, const std::string &token) {
 	m_component = component;
+	m_token = token;
 }
 
 SlackAPI::~SlackAPI() {
@@ -52,7 +53,7 @@ void SlackAPI::sendMessage(const std::string &from, const std::string &to, const
 	url += "&username=" + Util::urlencode(from);
 	url += "&channel=" + Util::urlencode(to);
 	url += "&text=" + Util::urlencode(text);
-	url += "&token=" + Util::urlencode(m_uinfo.encoding);
+	url += "&token=" + Util::urlencode(m_token);
 
 	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url,
 			boost::bind(&SlackAPI::handleSendMessage, this, _1, _2, _3, _4));
@@ -84,7 +85,7 @@ std::string SlackAPI::getChannelId(HTTPRequest *req, bool ok, rapidjson::Documen
 }
 
 void SlackAPI::imOpen(const std::string &uid, HTTPRequest::Callback callback) {
-	std::string url = "https://slack.com/api/im.open?user=" + Util::urlencode(uid) + "&token=" + Util::urlencode(m_uinfo.encoding);
+	std::string url = "https://slack.com/api/im.open?user=" + Util::urlencode(uid) + "&token=" + Util::urlencode(m_token);
 	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, callback);
 	queueRequest(req);
 }
@@ -125,9 +126,128 @@ std::string SlackAPI::getOwnerId(HTTPRequest *req, bool ok, rapidjson::Document 
 }
 
 void SlackAPI::usersList(HTTPRequest::Callback callback) {
-	std::string url = "https://slack.com/api/users.list?presence=0&token=" + Util::urlencode(m_uinfo.encoding);
+	std::string url = "https://slack.com/api/users.list?presence=0&token=" + Util::urlencode(m_token);
 	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, callback);
 	queueRequest(req);
 }
+
+#define GET_ARRAY(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
+	if (!NAME.IsArray()) { \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		return; \
+	}
+	
+#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.IsString()) {  \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(logger, data); \
+		return; \
+	} \
+	std::string NAME = NAME##_tmp.GetString();
+
+#define STORE_BOOL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.IsBool()) {  \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(logger, data); \
+		return; \
+	} \
+	bool NAME = NAME##_tmp.GetBool();
+
+void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &ret) {
+	if (!ok) {
+		LOG4CXX_ERROR(logger, req->getError());
+		return;
+	}
+
+	GET_ARRAY(resp, channels);
+
+	for (int i = 0; i < channels.Size(); i++) {
+		if (!channels[i].IsObject()) {
+			continue;
+		}
+
+		SlackChannelInfo info;
+
+		STORE_STRING(channels[i], id);
+		info.id = id;
+
+		STORE_STRING(channels[i], name);
+		info.name = name;
+
+		rapidjson::Value &members = channels[i]["members"];
+		for (int y = 0; members.IsArray() && y < members.Size(); y++) {
+			if (!members[i].IsString()) {
+				continue;
+			}
+
+			info.members.push_back(members[i].GetString());
+		}
+
+		ret[info.id] = info;
+	}
+
+	return;
+}
+
+void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackImInfo> &ret) {
+	if (!ok) {
+		LOG4CXX_ERROR(logger, req->getError());
+		return;
+	}
+
+	GET_ARRAY(resp, ims);
+
+	for (int i = 0; i < ims.Size(); i++) {
+		if (!ims[i].IsObject()) {
+			continue;
+		}
+
+		SlackImInfo info;
+
+		STORE_STRING(ims[i], id);
+		info.id = id;
+
+		STORE_STRING(ims[i], user);
+		info.user = user;
+
+		ret[info.id] = info;
+		LOG4CXX_INFO(logger, info.id << " " << info.user);
+	}
+
+	return;
+}
+
+void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackUserInfo> &ret) {
+	if (!ok) {
+		LOG4CXX_ERROR(logger, req->getError());
+		return;
+	}
+
+	GET_ARRAY(resp, users);
+
+	for (int i = 0; i < users.Size(); i++) {
+		if (!users[i].IsObject()) {
+			continue;
+		}
+
+		SlackUserInfo info;
+
+		STORE_STRING(users[i], id);
+		info.id = id;
+
+		STORE_STRING(users[i], name);
+		info.name = name;
+
+		STORE_BOOL(users[i], is_primary_owner);
+		info.isPrimaryOwner = is_primary_owner;
+
+		ret[info.id] = info;
+		LOG4CXX_INFO(logger, info.id << " " << info.name);
+	}
+
+	return;
+}
+
+
 
 }

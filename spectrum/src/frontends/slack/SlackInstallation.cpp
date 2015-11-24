@@ -22,7 +22,6 @@
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackRTM.h"
-#include "SlackAPI.h"
 
 #include "transport/Transport.h"
 #include "transport/HTTPRequest.h"
@@ -40,40 +39,46 @@ DEFINE_LOGGER(logger, "SlackInstallation");
 SlackInstallation::SlackInstallation(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo) {
 	m_component = component;
 	m_storageBackend = storageBackend;
-	m_api = new SlackAPI(component, uinfo);
 
-
-	m_api->usersList(boost::bind(&SlackInstallation::handleUsersList, this, _1, _2, _3, _4));
-// 	m_rtm = new SlackRTM(component, storageBackend, uinfo);
+	m_rtm = new SlackRTM(component, storageBackend, uinfo);
+	m_rtm->onRTMStarted.connect(boost::bind(&SlackInstallation::handleRTMStarted, this));
+	m_rtm->onMessageReceived.connect(boost::bind(&SlackInstallation::handleMessageReceived, this, _1, _2, _3));
 }
 
 SlackInstallation::~SlackInstallation() {
-// 	delete m_rtm;
-	delete m_api;
+	delete m_rtm;
+}
+
+void SlackInstallation::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message) {
+	if (m_ownerChannel == channel) {
+		LOG4CXX_INFO(logger, "Owner message received " << channel << " " << user << " " << message);
+	}
 }
 
 void SlackInstallation::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
-	std::string channel = m_api->getChannelId(req, ok, resp, data);
-	LOG4CXX_INFO(logger, "Opened channel with team owner: " << channel);
+	m_ownerChannel = m_rtm->getAPI()->getChannelId(req, ok, resp, data);
+	LOG4CXX_INFO(logger, "Opened channel with team owner: " << m_ownerChannel);
 
 	std::string msg;
-	msg = "Hi, It seems you have authorized Spectrum 2 transport for your team. "
-		"As a team owner, you should now configure it. You should provide username and "
-		"password you want to use to connect your team to legacy network of your choice.";
-	m_api->sendMessage("Spectrum 2", channel, msg);
+	msg = "Hi, it seems you have enabled Spectrum 2 transport for your Team. As a Team owner, you should now configure it.";
+	m_rtm->sendMessage(m_ownerChannel, msg);
 
-	msg = "You can do it by typing \".spectrum2 register <username> <password>\". Password may be optional.";
-	m_api->sendMessage("Spectrum 2", channel, msg);
-
-	msg = "For example to connect the Freenode IRC network, just type \".spectrum2 register irc.freenode.net\".";
-	m_api->sendMessage("Spectrum 2", channel, msg);
+	msg = "To configure IRC network you want to connect to, type: \".spectrum2 register <bot_name>@<ircnetwork>\". For example for Freenode, the command looks like \".spectrum2 register MySlackBot@irc.freenode.net\".";
+	m_rtm->sendMessage(m_ownerChannel, msg);
 }
 
-void SlackInstallation::handleUsersList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
-	std::string ownerId = m_api->getOwnerId(req, ok, resp, data);
-	LOG4CXX_INFO(logger, "Team owner ID is " << ownerId);
+void SlackInstallation::handleRTMStarted() {
+	std::string ownerId;
+	std::map<std::string, SlackUserInfo> &users = m_rtm->getUsers();
+	for (std::map<std::string, SlackUserInfo>::iterator it = users.begin(); it != users.end(); it++) {
+		SlackUserInfo &info = it->second;
+		if (info.isPrimaryOwner) {
+			ownerId = it->first;
+			break;
+		}
+	}
 
-	m_api->imOpen(ownerId, boost::bind(&SlackInstallation::handleImOpen, this, _1, _2, _3, _4));
+	m_rtm->getAPI()->imOpen(ownerId, boost::bind(&SlackInstallation::handleImOpen, this, _1, _2, _3, _4));
 }
 
 

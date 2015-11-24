@@ -20,11 +20,6 @@
 
 #pragma once
 
-#include "SlackAPI.h"
-
-#include "transport/StorageBackend.h"
-#include "rapidjson/document.h"
-
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
 #include <Swiften/TLS/PlatformTLSFactories.h>
@@ -32,8 +27,8 @@
 #include <Swiften/Network/DomainNameAddressQuery.h>
 #include <Swiften/Network/DomainNameResolver.h>
 #include <Swiften/Network/HostAddress.h>
+#include <Swiften/Network/Connection.h>
 #include <Swiften/Base/SafeByteArray.h>
-#include "Swiften/Network/Timer.h"
 #include "Swiften/Version.h"
 
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
@@ -51,51 +46,34 @@
 namespace Transport {
 
 class Component;
-class StorageBackend;
-class HTTPRequest;
-class WebSocketClient;
-class SlackAPI;
 
-class SlackRTM {
+class WebSocketClient {
 	public:
-		SlackRTM(Component *component, StorageBackend *storageBackend, UserInfo uinfo);
+		WebSocketClient(Component *component);
 
-		virtual ~SlackRTM();
+		virtual ~WebSocketClient();
 
-		void sendPing();
+		void connectServer(const std::string &u);
 
-		void sendMessage(const std::string &channel, const std::string &message);
+		void write(const std::string &data);
 
-		boost::signal<void ()> onRTMStarted;
-
-		std::map<std::string, SlackUserInfo> &getUsers() {
-			return m_users;
-		}
-
-		SlackAPI *getAPI() {
-			return m_api;
-		}
-
-		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text)> onMessageReceived;
+		boost::signal<void (const std::string &payload)> onPayloadReceived;
 
 	private:
-		void handlePayloadReceived(const std::string &payload);
-		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
-
-	private:
-		std::map<std::string, SlackChannelInfo> m_channels;
-		std::map<std::string, SlackImInfo> m_ims;
-		std::map<std::string, SlackUserInfo> m_users;
+		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);
+		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
+		void handleConnected(bool error);
 
 	private:
 		Component *m_component;
-		StorageBackend *m_storageBackend;
-		UserInfo m_uinfo;
-		WebSocketClient *m_client;
-		std::string m_token;
-		unsigned long m_counter;
-		Swift::Timer::ref m_pingTimer;
-		SlackAPI *m_api;
+		boost::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
+		boost::shared_ptr<Swift::Connection> m_conn;
+		Swift::TLSConnectionFactory *m_tlsConnectionFactory;
+		Swift::PlatformTLSFactories *m_tlsFactory;
+		std::string m_host;
+		std::string m_path;
+		std::string m_buffer;
+		bool m_upgraded;
 };
 
 }

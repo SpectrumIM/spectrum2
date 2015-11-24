@@ -25,9 +25,11 @@
 #include "transport/Transport.h"
 #include "transport/HTTPRequest.h"
 #include "transport/Util.h"
+#include "transport/WebSocketClient.h"
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 #include <map>
 #include <iterator>
 
@@ -38,29 +40,67 @@ DEFINE_LOGGER(logger, "SlackRTM");
 SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo) {
 	m_component = component;
 	m_storageBackend = storageBackend;
+	m_counter = 0;
+	m_client = new WebSocketClient(component);
+	m_client->onPayloadReceived.connect(boost::bind(&SlackRTM::handlePayloadReceived, this, _1));
+	m_pingTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
+	m_pingTimer->onTick.connect(boost::bind(&SlackRTM::sendPing, this));
 
+	int type = (int) TYPE_STRING;
+	m_storageBackend->getUserSetting(m_uinfo.id, "bot_token", type, m_token);
 
-#if HAVE_SWIFTEN_3
-	Swift::TLSOptions o;
-#endif
-	Swift::PlatformTLSFactories *m_tlsFactory = new Swift::PlatformTLSFactories();
-#if HAVE_SWIFTEN_3
-	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory(), o);
-#else
-	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory());
-#endif
-
+	m_api = new SlackAPI(component, m_token);
 
 	std::string url = "https://slack.com/api/rtm.start?";
-	url += "token=" + Util::urlencode(m_uinfo.encoding);
+	url += "token=" + Util::urlencode(m_token);
 
-// 	HTTPRequest *req = new HTTPRequest();
-// 	req->GET(THREAD_POOL(m_component), url,
-// 			boost::bind(&SlackRTM::handleRTMStart, this, _1, _2, _3, _4));
+	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, boost::bind(&SlackRTM::handleRTMStart, this, _1, _2, _3, _4));
+	req->execute();
 }
 
 SlackRTM::~SlackRTM() {
+	delete m_client;
+	delete m_api;
+	m_pingTimer->stop();
+}
 
+#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.IsString()) {  \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(logger, payload); \
+		return; \
+	} \
+	std::string NAME = NAME##_tmp.GetString();
+
+void SlackRTM::handlePayloadReceived(const std::string &payload) {
+	rapidjson::Document d;
+	if (d.Parse<0>(payload.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, payload);
+		return;
+	}
+
+	STORE_STRING(d, type);
+
+	if (type == "message") {
+		STORE_STRING(d, channel);
+		STORE_STRING(d, user);
+		STORE_STRING(d, text);
+		onMessageReceived(channel, user, text);
+	}
+}
+
+void SlackRTM::sendMessage(const std::string &channel, const std::string &message) {
+	m_counter++;
+	std::string msg = "{\"id\": " + boost::lexical_cast<std::string>(m_counter) + ", \"type\": \"message\", \"channel\":\"" + channel + "\", \"text\":\"" + message + "\"}";
+	m_client->write(msg);
+}
+
+void SlackRTM::sendPing() {
+	m_counter++;
+	std::string msg = "{\"id\": " + boost::lexical_cast<std::string>(m_counter) + ", \"type\": \"ping\"}";
+	m_client->write(msg);
+	m_pingTimer->start();
 }
 
 void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
@@ -77,51 +117,19 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 		return;
 	}
 
+	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_channels);
+	SlackAPI::getSlackImInfo(req, ok, resp, data, m_ims);
+	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_users);
+
 	std::string u = url.GetString();
 	LOG4CXX_INFO(logger, "Started RTM, WebSocket URL is " << u);
+	LOG4CXX_INFO(logger, data);
 
-	u = u.substr(6);
-	m_host = u.substr(0, u.find("/"));
-	m_path = u.substr(u.find("/"));
+	m_client->connectServer(u);
+	m_pingTimer->start();
 
-	LOG4CXX_INFO(logger, "Starting DNS query for " << m_host << " " << m_path);
-	m_dnsQuery = m_component->getNetworkFactories()->getDomainNameResolver()->createAddressQuery(m_host);
-	m_dnsQuery->onResult.connect(boost::bind(&SlackRTM::handleDNSResult, this, _1, _2));
-	m_dnsQuery->run();
+	onRTMStarted();
 }
 
-void SlackRTM::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
-	LOG4CXX_INFO(logger, "data read");
-	std::string d = Swift::safeByteArrayToString(*data);
-	LOG4CXX_INFO(logger, d);
-}
-
-void SlackRTM::handleConnected(bool error) {
-	if (error) {
-		LOG4CXX_ERROR(logger, "Connection to " << m_host << " failed");
-		return;
-	}
-
-	LOG4CXX_INFO(logger, "Connected to " << m_host);
-
-	std::string req = "";
-	req += "GET " + m_path + " HTTP/1.1\r\n";
-	req += "Host: " + m_host + ":443\r\n";
-	req += "Upgrade: websocket\r\n";
-	req += "Connection: Upgrade\r\n";
-	req += "Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==\r\n";
-	req += "Sec-WebSocket-Version: 13\r\n";
-	req += "\r\n";
-
-	m_conn->write(Swift::createSafeByteArray(req));
-
-}
-
-void SlackRTM::handleDNSResult(const std::vector<Swift::HostAddress> &addrs, boost::optional<Swift::DomainNameResolveError>) {
-	m_conn = m_tlsConnectionFactory->createConnection();
-	m_conn->onDataRead.connect(boost::bind(&SlackRTM::handleDataRead, this, _1));
-	m_conn->onConnectFinished.connect(boost::bind(&SlackRTM::handleConnected, this, _1));
-	m_conn->connect(Swift::HostAddressPort(addrs[0], 443));
-}
 
 }

@@ -22,7 +22,6 @@
 
 #include "transport/HTTPRequestQueue.h"
 #include "transport/HTTPRequest.h"
-#include "transport/StorageBackend.h"
 #include "rapidjson/document.h"
 
 #include <string>
@@ -36,11 +35,40 @@ namespace Transport {
 class Component;
 class StorageBackend;
 class HTTPRequest;
-class SlackRTM;
+
+class SlackChannelInfo {
+	public:
+		SlackChannelInfo() {}
+		virtual ~SlackChannelInfo() {}
+
+		std::string id;
+		std::string name;
+		std::vector<std::string> members;
+};
+
+class SlackImInfo {
+	public:
+		SlackImInfo() {}
+		virtual ~SlackImInfo() {}
+
+		std::string id;
+		std::string user;
+};
+
+class SlackUserInfo {
+	public:
+		SlackUserInfo() : isPrimaryOwner(false) {}
+		virtual ~SlackUserInfo() {}
+
+		std::string id;
+		std::string name;
+		bool isPrimaryOwner;
+};
+
 
 class SlackAPI : public HTTPRequestQueue {
 	public:
-		SlackAPI(Component *component, UserInfo uinfo);
+		SlackAPI(Component *component, const std::string &token);
 
 		virtual ~SlackAPI();
 
@@ -52,12 +80,16 @@ class SlackAPI : public HTTPRequestQueue {
 
 		void sendMessage(const std::string &from, const std::string &to, const std::string &text);
 
+		static void getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &channels);
+		static void getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackImInfo> &ims);
+		static void getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackUserInfo> &users);
+
 	private:
 		void handleSendMessage(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 	private:
 		Component *m_component;
-		UserInfo m_uinfo;
+		std::string m_token;
 };
 
 }
