@@ -71,12 +71,7 @@ std::string OAuth2::generateAuthURL() {
 	return url;
 }
 
-std::string OAuth2::handleOAuth2Code(const std::string &code, const std::string &state) {
-	if (m_state != state) {
-		std::string error = "Received state code '" + state + "' does not sent state code '" + m_state + "'";
-		return error;
-	}
-
+std::string OAuth2::requestToken(const std::string &code, std::string &token) {
 	std::string url = m_tokenURL + "?";
 	url += "client_id=" + Util::urlencode(m_clientId);
 	url += "&client_secret=" + Util::urlencode(m_clientSecret);
@@ -86,12 +81,18 @@ std::string OAuth2::handleOAuth2Code(const std::string &code, const std::string 
 		url += "&redirect_uri=" + Util::urlencode(m_redirectURL);
 	}
 
-	std::string data;
-	HTTPRequest req;
-	req.GET(url, data);
+	rapidjson::Document resp;
+	HTTPRequest req(HTTPRequest::Get, url);
+	if (!req.execute(resp)) {
+		return req.getError();
+	}
 
-	LOG4CXX_INFO(logger, "handleOAuth2Code received token: " << data);
+	rapidjson::Value& access_token = resp["access_token"];
+	if (!access_token.IsString()) {
+		return "No 'access_token' object in the reply.";
+	}
 
+	token = access_token.GetString();
 	return "";
 }
 

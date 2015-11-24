@@ -1,5 +1,4 @@
-#ifndef THREAD_POOL
-#define THREAD_POOL
+#pragma once 
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -8,6 +7,7 @@
 #include <iostream>
 #include "Swiften/EventLoop/EventLoop.h"
 
+namespace Transport {
 
 /*
  * Thread serves as a base class for any code that has to be excuted as a thread
@@ -70,4 +70,4 @@ class ThreadPool
 	void releaseThread(int i);
 };
 
-#endif
+}

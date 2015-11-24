@@ -1,7 +1,7 @@
 /**
- * libtransport -- C++ library for easy XMPP Transports development
+ * Spectrum 2 Slack Frontend
  *
- * Copyright (C) 2011, Jan Kaluza <hanzz.k@gmail.com>
+ * Copyright (C) 2015, Jan Kaluza <hanzz.k@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,43 +20,42 @@
 
 #pragma once
 
-#include "transport/UserRegistration.h"
+#include "transport/StorageBackend.h"
+#include "rapidjson/document.h"
+
+#include <string>
+#include <algorithm>
+#include <map>
 
 #include <boost/signal.hpp>
 
 namespace Transport {
 
-struct UserInfo;
 class Component;
 class StorageBackend;
-class UserManager;
-class Config;
-class OAuth2;
+class HTTPRequest;
+class SlackRTM;
+class SlackAPI;
 
-class SlackUserRegistration : public UserRegistration {
+class SlackInstallation {
 	public:
-		SlackUserRegistration(Component *component, UserManager *userManager, StorageBackend *storageBackend);
+		SlackInstallation(Component *component, StorageBackend *storageBackend, UserInfo uinfo);
 
-		~SlackUserRegistration();
+		virtual ~SlackInstallation();
 
-		std::string createOAuth2URL(const std::vector<std::string> &args);
+		boost::signal<void (const std::string &user)> onInstallationDone;
 
-		std::string getTeamDomain(const std::string &token);
-
-		std::string handleOAuth2Code(const std::string &code, const std::string &state);
-
-		virtual bool doUserRegistration(const UserInfo &userInfo);
-
-		virtual bool doUserUnregistration(const UserInfo &userInfo);
+	private:
+		void handleUsersList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 	private:
 		Component *m_component;
 		StorageBackend *m_storageBackend;
-		UserManager *m_userManager;
-		Config *m_config;
-		std::map<std::string, OAuth2 *> m_auths;
-		std::map<std::string, std::vector<std::string> > m_authsData;
-
+		UserInfo m_uinfo;
+		std::string m_ownerName;
+		SlackRTM *m_rtm;
+		SlackAPI *m_api;
 };
 
 }

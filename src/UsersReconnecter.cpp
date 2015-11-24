@@ -23,6 +23,7 @@
 #include "transport/Transport.h"
 #include "transport/Logging.h"
 #include "transport/Frontend.h"
+#include "transport/Config.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
@@ -72,7 +73,12 @@ void UsersReconnecter::handleConnected() {
 	LOG4CXX_INFO(logger, "Starting UserReconnecter.");
 	m_started = true;
 
-	m_storageBackend->getOnlineUsers(m_users);
+	if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "service.reconnect_all_users", false)) {
+		m_storageBackend->getUsers(m_users);
+	}
+	else {
+		m_storageBackend->getOnlineUsers(m_users);
+	}
 
 	reconnectNextUser();
 }

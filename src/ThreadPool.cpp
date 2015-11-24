@@ -1,6 +1,8 @@
 #include "transport/ThreadPool.h"
 #include "transport/Logging.h"
 
+namespace Transport {
+
 DEFINE_LOGGER(logger, "ThreadPool")
 boost::signals2::signal< void (Thread*, int) > onWorkCompleted;
 
@@ -122,4 +124,6 @@ void ThreadPool::runAsThread(Thread *t)
 		LOG4CXX_INFO(logger, "No workers available! adding to queue.")
 		requestQueue.push(t);
 	}
+}
+
 }

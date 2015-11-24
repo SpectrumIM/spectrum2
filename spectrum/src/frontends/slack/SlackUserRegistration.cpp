@@ -30,6 +30,11 @@
 #include "transport/Logging.h"
 #include "transport/Buddy.h"
 #include "transport/Config.h"
+#include "transport/OAuth2.h"
+#include "transport/Util.h"
+#include "transport/HTTPRequest.h"
+
+#include "rapidjson/document.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
@@ -49,9 +54,97 @@ SlackUserRegistration::SlackUserRegistration(Component *component, UserManager *
 	m_config = m_component->getConfig();
 	m_storageBackend = storageBackend;
 	m_userManager = userManager;
+
 }
 
 SlackUserRegistration::~SlackUserRegistration(){
+	
+}
+
+std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string> &args) {
+	std::string redirect_url = "http://slack.spectrum.im/auth/" + CONFIG_STRING(m_config, "service.jid");
+	OAuth2 *oauth2 = new OAuth2(CONFIG_STRING_DEFAULTED(m_config, "service.client_id",""),
+						  CONFIG_STRING_DEFAULTED(m_config, "service.client_secret",""),
+						  "https://slack.com/oauth/authorize",
+						  "https://slack.com/api/oauth.access",
+						  redirect_url,
+						  "channels:read channels:write team:read im:read im:write chat:write:bot");
+	std::string url = oauth2->generateAuthURL();
+
+	m_auths[oauth2->getState()] = oauth2;
+	m_authsData[oauth2->getState()] = args;
+
+	return url;
+}
+
+std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
+	std::string url = "https://slack.com/api/team.info?token=" + Util::urlencode(token);
+
+	rapidjson::Document resp;
+	HTTPRequest req(HTTPRequest::Get, url);
+	if (!req.execute(resp)) {
+		LOG4CXX_ERROR(logger, req.getError());
+		return "";
+	}
+
+	rapidjson::Value &team = resp["team"];
+	if (!team.IsObject()) {
+		LOG4CXX_ERROR(logger, "No 'team' object in the reply.");
+		return "";
+	}
+
+	rapidjson::Value &domain = team["domain"];
+	if (!domain.IsString()) {
+		LOG4CXX_ERROR(logger, "No 'domain' string in the reply.");
+		return "";
+	}
+
+	return domain.GetString();
+}
+
+std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, const std::string &state) {
+	OAuth2 *oauth2 = NULL;
+	std::vector<std::string> data;
+	if (m_auths.find(state) != m_auths.end()) {
+		oauth2 = m_auths[state];
+		data = m_authsData[state];
+	}
+	else {
+		return "Received state code '" + state + "' not found in state codes list.";
+	}
+
+	std::string token;
+	std::string error = oauth2->requestToken(code, token);
+	if (!error.empty())  {
+		return error;
+	}
+
+	UserInfo user;
+	user.jid = getTeamDomain(token);
+	user.uin = "";
+	user.password = "";
+	user.language = "en";
+	user.encoding = token; // Use encoding as a token handler... it's BAD, but easy...
+	user.vip = 0;
+	user.id = 0;
+	registerUser(user);
+
+	m_storageBackend->getUser(user.jid, user);
+
+	std::string value = data[2];
+	int type = (int) TYPE_STRING;
+	m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
+
+	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid);
+
+	m_auths.erase(state);
+	delete oauth2;
+
+	m_authsData.erase(state);
+
+	m_component->getFrontend()->reconnectUser(user.jid);
+
+	return "";
 }
 
 bool SlackUserRegistration::doUserRegistration(const UserInfo &row) {

@@ -313,6 +313,18 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Bad argument count. See 'help'.");
 		}
 	}
+	else if (message->getBody().find("get_oauth2_url ") == 0) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 3) {
+			std::string url = m_component->getFrontend()->getOAuth2URL(args);
+			message->setBody(url);
+		}
+		else {
+			message->setBody("Bad argument count. See 'help'.");
+		}
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";

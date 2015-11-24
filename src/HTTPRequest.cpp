@@ -4,7 +4,20 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "HTTPRequest")
 
-HTTPRequest::HTTPRequest() : curlhandle(NULL) {
+HTTPRequest::HTTPRequest(ThreadPool *tp, Type type, const std::string &url, Callback callback) {
+	m_type = type;
+	m_url = url;
+	m_tp = tp;
+	m_callback = callback;
+
+	init();
+}
+
+HTTPRequest::HTTPRequest(Type type, const std::string &url) {
+	m_type = type;
+	m_url = url;
+	m_tp = NULL;
+
 	init();
 }
 
@@ -60,7 +73,7 @@ bool HTTPRequest::GET(std::string url, 	std::string &data) {
 			
 		/* Set http request and url */
 		curl_easy_setopt(curlhandle, CURLOPT_HTTPGET, 1);
-		curl_easy_setopt(curlhandle, CURLOPT_VERBOSE, 1);
+		curl_easy_setopt(curlhandle, CURLOPT_VERBOSE, 0);
 		curl_easy_setopt(curlhandle, CURLOPT_URL, url.c_str());
 		
 		/* Send http request and return status*/
@@ -76,18 +89,50 @@ bool HTTPRequest::GET(std::string url, 	std::string &data) {
 }
 
 bool HTTPRequest::GET(std::string url, rapidjson::Document &json) {
-	std::string data;
-	if (!GET(url, data)) {
+	if (!GET(url, m_data)) {
 		return false;
 	}
 
-	if(json.Parse<0>(data.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, data)
+	if(json.Parse<0>(m_data.c_str()).HasParseError()) {
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+        LOG4CXX_ERROR(logger, m_data);
+		strcpy(curl_errorbuffer, "Error while parsing JSON");
 		return false;
 	}
 
 	return true;
+}
+
+void HTTPRequest::run() {
+	switch (m_type) {
+		case Get:
+			m_ok = GET(m_url, m_json);
+			break;
+	}
+}
+
+void HTTPRequest::finalize() {
+	m_callback(this, m_ok, m_json, m_data);
+	onRequestFinished();
+}
+
+bool HTTPRequest::execute() {
+	if (!m_tp) {
+		return false;
+	}
+
+	m_tp->runAsThread(this);
+	return true;
+}
+
+bool HTTPRequest::execute(rapidjson::Document &json) {
+	switch (m_type) {
+		case Get:
+			m_ok = GET(m_url, json);
+			break;
+	}
+
+	return m_ok;
 }
 
 }

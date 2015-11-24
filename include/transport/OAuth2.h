@@ -35,7 +35,11 @@ class OAuth2 {
 
 		std::string generateAuthURL();
 
-		std::string handleOAuth2Code(const std::string &code, const std::string &state);
+		const std::string &getState() {
+			return m_state;
+		}
+
+		std::string requestToken(const std::string &code, std::string &error);
 
 	private:
 		std::string m_clientId;

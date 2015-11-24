@@ -25,13 +25,15 @@
 #include <vector>
 #include <boost/bind.hpp>
 
+#define THREAD_POOL(X) static_cast<SlackFrontend *>(X->getFrontend())->getThreadPool()
+
 namespace Transport {
 	class UserRegistry;
 	class Frontend;
 	class Config;
 	class DiscoItemsResponder;
 	class VCardResponder;
-	class OAuth2;
+	class ThreadPool;
 
 	class SlackFrontend : public Frontend {
 		public:
@@ -64,13 +66,19 @@ namespace Transport {
 			virtual void clearRoomList();
 			virtual void addRoomToRoomList(const std::string &handle, const std::string &name);
 			virtual std::string setOAuth2Code(const std::string &code, const std::string &state);
+			virtual std::string getOAuth2URL(const std::vector<std::string> &args);
 		
 			void handleMessage(boost::shared_ptr<Swift::Message> message);
+
+			ThreadPool *getThreadPool() {
+				return m_tp;
+			}
 
 		private:
 			Config* m_config;
 			Swift::JID m_jid;
 			Component *m_transport;
-			OAuth2 *m_oauth2;
+			UserManager *m_userManager;
+			ThreadPool *m_tp;
 	};
 }

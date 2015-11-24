@@ -83,6 +83,8 @@ class PQXXBackend : public StorageBackend
 
 		bool getOnlineUsers(std::vector<std::string> &users);
 
+		bool getUsers(std::vector<std::string> &users);
+
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);

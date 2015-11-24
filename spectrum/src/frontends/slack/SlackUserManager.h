@@ -39,6 +39,7 @@ class XMPPUserRegistration;
 class GatewayResponder;
 class AdHocManager;
 class SettingsAdHocCommandFactory;
+class SlackInstallation;
 
 class SlackUserManager : public UserManager {
 	public:
@@ -46,13 +47,21 @@ class SlackUserManager : public UserManager {
 
 		virtual ~SlackUserManager();
 
+		void reconnectUser(const std::string &user);
+
 		virtual void sendVCard(unsigned int id, Swift::VCard::ref vcard);
 
 		UserRegistration *getUserRegistration();
 
+		std::string handleOAuth2Code(const std::string &code, const std::string &state);
+
+		std::string getOAuth2URL(const std::vector<std::string> &args);
+
 	private:
 		Component *m_component;
 		UserRegistration *m_userRegistration;
+		StorageBackend *m_storageBackend;
+		std::map<std::string, SlackInstallation *> m_installations;
 };
 
 }

@@ -29,7 +29,7 @@
 #include "transport/Logging.h"
 #include "transport/Config.h"
 #include "transport/Transport.h"
-#include "transport/OAuth2.h"
+#include "transport/ThreadPool.h"
 
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
@@ -53,18 +53,10 @@ void SlackFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Ne
 	m_transport = transport;
 	m_config = transport->getConfig();
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
-
-	std::string redirect_url = "http://spectrum.im/slackoauth2/" + CONFIG_STRING(m_config, "service.jid");
-	m_oauth2 = new OAuth2(CONFIG_STRING_DEFAULTED(m_config, "service.client_id",""),
-						  CONFIG_STRING_DEFAULTED(m_config, "service.client_secret",""),
-						  "https://slack.com/oauth/authorize",
-						  "https://slack.com/api/oauth.access",
-						  redirect_url,
-						  "channels:read channels:write team:read");
+	m_tp = new ThreadPool(loop, 10);
 }
 
 SlackFrontend::~SlackFrontend() {
-	delete m_oauth2;
 }
 
 void SlackFrontend::clearRoomList() {
@@ -97,7 +89,7 @@ boost::shared_ptr<Swift::DiscoInfo> SlackFrontend::sendCapabilitiesRequest(Swift
 }
 
 void SlackFrontend::reconnectUser(const std::string &user) {
-
+	return static_cast<SlackUserManager *>(m_userManager)->reconnectUser(user);
 }
 
 RosterManager *SlackFrontend::createRosterManager(User *user, Component *component) {
@@ -109,20 +101,22 @@ User *SlackFrontend::createUser(const Swift::JID &jid, UserInfo &userInfo, Compo
 }
 
 UserManager *SlackFrontend::createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
-	return new SlackUserManager(component, userRegistry, storageBackend);
+	m_userManager = new SlackUserManager(component, userRegistry, storageBackend);
+	return m_userManager;
 }
 
 
 void SlackFrontend::connectToServer() {
-	LOG4CXX_INFO(logger, "Connecting to Slack API server");
-
-	std::string url = m_oauth2->generateAuthURL();
-	LOG4CXX_INFO(logger, url);
+	LOG4CXX_INFO(logger, "Started.");
+	m_transport->handleConnected();
 }
 
 std::string SlackFrontend::setOAuth2Code(const std::string &code, const std::string &state) {
-	LOG4CXX_INFO(logger, "Using OAuth2 code " << code << " to get the authorization token");
-	return m_oauth2->handleOAuth2Code(code, state);
+	return static_cast<SlackUserManager *>(m_userManager)->handleOAuth2Code(code, state);
+}
+
+std::string SlackFrontend::getOAuth2URL(const std::vector<std::string> &args) {
+	return static_cast<SlackUserManager *>(m_userManager)->getOAuth2URL(args);
 }
 
 void SlackFrontend::disconnectFromServer() {
