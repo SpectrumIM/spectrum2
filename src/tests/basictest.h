@@ -173,6 +173,10 @@ class TestingStorageBackend : public StorageBackend {
 			return true;
 		}
 
+		virtual bool getUsers(std::vector<std::string> &users) {
+			return true;
+		}
+
 		virtual long addBuddy(long userId, const BuddyInfo &buddyInfo) {
 			return buddyid++;
 		}
