@@ -60,6 +60,8 @@ class WebSocketClient {
 
 		boost::signal<void (const std::string &payload)> onPayloadReceived;
 
+		boost::signal<void ()> onWebSocketConnected;
+
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);
 		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);

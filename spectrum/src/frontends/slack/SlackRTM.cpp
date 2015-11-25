@@ -43,6 +43,8 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, UserInf
 	m_counter = 0;
 	m_client = new WebSocketClient(component);
 	m_client->onPayloadReceived.connect(boost::bind(&SlackRTM::handlePayloadReceived, this, _1));
+	m_client->onWebSocketConnected.connect(boost::bind(&SlackRTM::handleWebSocketConnected, this));
+
 	m_pingTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&SlackRTM::sendPing, this));
 
@@ -127,7 +129,9 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 
 	m_client->connectServer(u);
 	m_pingTimer->start();
+}
 
+void SlackRTM::handleWebSocketConnected() {
 	onRTMStarted();
 }
 

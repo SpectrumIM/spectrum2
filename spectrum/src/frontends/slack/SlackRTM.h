@@ -85,6 +85,7 @@ class SlackRTM {
 	private:
 		void handlePayloadReceived(const std::string &payload);
 		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleWebSocketConnected();
 
 	private:
 		std::map<std::string, SlackChannelInfo> m_channels;

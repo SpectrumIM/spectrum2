@@ -122,6 +122,7 @@ void WebSocketClient::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> dat
 		if (m_buffer.find("\r\n\r\n") != std::string::npos) {
 			m_buffer.erase(0, m_buffer.find("\r\n\r\n") + 4);
 			m_upgraded = true;
+			onWebSocketConnected();
 		}
 		else {
 			return;
