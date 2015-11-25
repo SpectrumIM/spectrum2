@@ -72,6 +72,10 @@ class SlackRTM {
 			return m_users;
 		}
 
+		std::map<std::string, SlackChannelInfo> &getChannels() {
+			return m_channels;
+		}
+
 		SlackAPI *getAPI() {
 			return m_api;
 		}

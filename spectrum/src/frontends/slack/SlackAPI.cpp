@@ -84,6 +84,12 @@ std::string SlackAPI::getChannelId(HTTPRequest *req, bool ok, rapidjson::Documen
 	return id.GetString();
 }
 
+void SlackAPI::channelsCreate(const std::string &name, HTTPRequest::Callback callback) {
+	std::string url = "https://slack.com/api/channels.create?name=" + Util::urlencode(name) + "&token=" + Util::urlencode(m_token);
+	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, callback);
+	queueRequest(req);
+}
+
 void SlackAPI::imOpen(const std::string &uid, HTTPRequest::Callback callback) {
 	std::string url = "https://slack.com/api/im.open?user=" + Util::urlencode(uid) + "&token=" + Util::urlencode(m_token);
 	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, callback);
@@ -183,7 +189,7 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 			info.members.push_back(members[i].GetString());
 		}
 
-		ret[info.id] = info;
+		ret[info.name] = info;
 	}
 
 	return;

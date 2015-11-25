@@ -104,19 +104,26 @@ std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
 
 std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, const std::string &state) {
 	OAuth2 *oauth2 = NULL;
+	std::string token;
 	std::vector<std::string> data;
-	if (m_auths.find(state) != m_auths.end()) {
-		oauth2 = m_auths[state];
-		data = m_authsData[state];
+
+	if (state == "use_bot_token") {
+		token = code;
 	}
 	else {
-		return "Received state code '" + state + "' not found in state codes list.";
-	}
+		if (m_auths.find(state) != m_auths.end()) {
+			oauth2 = m_auths[state];
+			data = m_authsData[state];
+		}
+		else {
+			return "Received state code '" + state + "' not found in state codes list.";
+		}
 
-	std::string token;
-	std::string error = oauth2->requestToken(code, token);
-	if (!error.empty())  {
-		return error;
+		std::string token;
+		std::string error = oauth2->requestToken(code, token);
+		if (!error.empty())  {
+			return error;
+		}
 	}
 
 	UserInfo user;
@@ -131,16 +138,25 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 
 	m_storageBackend->getUser(user.jid, user);
 
-	std::string value = data[2];
-	int type = (int) TYPE_STRING;
-	m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
+	if (oauth2) {
+		std::string value = data[2];
+		int type = (int) TYPE_STRING;
+		m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
+	}
+	else {
+		std::string value = token;
+		int type = (int) TYPE_STRING;
+		m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
+	}
 
 	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid);
 
-	m_auths.erase(state);
-	delete oauth2;
+	if (oauth2) {
+		m_auths.erase(state);
+		delete oauth2;
 
-	m_authsData.erase(state);
+		m_authsData.erase(state);
+	}
 
 	m_component->getFrontend()->reconnectUser(user.jid);
 

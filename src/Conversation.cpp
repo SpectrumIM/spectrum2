@@ -27,6 +27,7 @@
 #include "transport/RosterManager.h"
 #include "transport/Frontend.h"
 #include "transport/Config.h"
+#include "transport/Logging.h"
 
 #include "Swiften/Elements/MUCItem.h"
 #include "Swiften/Elements/MUCOccupant.h"
@@ -35,6 +36,8 @@
 #include "Swiften/Elements/MUCPayload.h"
 
 namespace Transport {
+	
+DEFINE_LOGGER(logger, "Conversation");
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
@@ -195,6 +198,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		}
 
 		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
+		LOG4CXX_INFO(logger, "MSG FROM " << message->getFrom().toString());
 	}
 
 	handleRawMessage(message);

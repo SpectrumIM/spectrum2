@@ -78,6 +78,7 @@ void SlackFrontend::sendRosterRequest(Swift::RosterPayload::ref payload, Swift::
 }
 
 void SlackFrontend::sendMessage(boost::shared_ptr<Swift::Message> message) {
+	return static_cast<SlackUserManager *>(m_userManager)->sendMessage(message);
 }
 
 void SlackFrontend::sendIQ(boost::shared_ptr<Swift::IQ> iq) {

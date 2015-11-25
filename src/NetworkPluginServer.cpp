@@ -661,8 +661,10 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	User *user = m_userManager->getUser(payload.username());
-	if (!user)
+	if (!user) {
+		LOG4CXX_ERROR(logger, "handleConvMessagePayload: unknown username " << payload.username());
 		return;
+	}
 
 	// Message from legacy network triggers network acticity
 	user->updateLastActivity();
@@ -697,6 +699,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	// We can't create Conversation for payload with nickname, because this means the message is from room,
 	// but this user is not in any room, so it's OK to just reject this message
 	if (!conv && !payload.nickname().empty()) {
+		LOG4CXX_WARN(logger, "handleConvMessagePayload: No conversation with name " << payload.buddyname());
 		return;
 	}
 

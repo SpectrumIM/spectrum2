@@ -49,25 +49,30 @@ void SlackUserManager::reconnectUser(const std::string &user) {
 		return;
 	}
 
-	if (!uinfo.uin.empty()) {
-		LOG4CXX_INFO(logger, "Reconnecting user " << user);
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(m_component->getJID());
-		response->setFrom(user + "@" + m_component->getJID().toString());
-		response->setType(Swift::Presence::Available);
-	}
-	else {
+// 	if (!uinfo.uin.empty()) {
+// 		LOG4CXX_INFO(logger, "Reconnecting user " << user);
+// 		Swift::Presence::ref response = Swift::Presence::create();
+// 		response->setTo(m_component->getJID());
+// 		response->setFrom(user + "@" + m_component->getJID().toString());
+// 		response->setType(Swift::Presence::Available);
+// 	}
+// 	else {
 		LOG4CXX_INFO(logger, "Cannot reconnect user " << user << ","
 			"because he does not have legacy network configured. "
 			"Continuing in Installation mode for this user until "
 			"he configures the legacy network.");
 		m_installations[user] = new SlackInstallation(m_component, m_storageBackend, uinfo);
 		m_installations[user]->onInstallationDone.connect(boost::bind(&SlackUserManager::reconnectUser, this, _1));
-	}
+// 	}
 }
 
 void SlackUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {
 
+}
+
+void SlackUserManager::sendMessage(boost::shared_ptr<Swift::Message> message) {
+	LOG4CXX_INFO(logger, message->getTo().toBare().toString());
+	m_installations[message->getTo().toBare().toString()]->sendMessage(message);
 }
 
 

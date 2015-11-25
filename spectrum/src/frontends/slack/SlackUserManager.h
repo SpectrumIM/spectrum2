@@ -57,6 +57,8 @@ class SlackUserManager : public UserManager {
 
 		std::string getOAuth2URL(const std::vector<std::string> &args);
 
+		void sendMessage(boost::shared_ptr<Swift::Message> message);
+
 	private:
 		Component *m_component;
 		UserRegistration *m_userRegistration;
