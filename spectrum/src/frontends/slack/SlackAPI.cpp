@@ -254,6 +254,21 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 	return;
 }
 
+std::string &SlackAPI::SlackObjectToPlainText(std::string &object, bool isChannel) {
+	if (isChannel) {
+		if (object[0] == '<') {
+			object = object.substr(2, object.size() - 3);
+		}
+	} else {
+		if (object[0] == '<') {
+			object = object.substr(1, object.size() - 2);
+			object = object.substr(object.find("|") + 1);
+		}
+	}
+
+	return object;
+}
+
 
 
 }

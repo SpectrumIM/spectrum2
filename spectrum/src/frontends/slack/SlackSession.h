@@ -61,7 +61,6 @@ class SlackSession {
 		std::string m_ownerName;
 		SlackRTM *m_rtm;
 		std::string m_ownerChannel;
-		SlackAPI *m_api;
 		std::map<std::string, std::string> m_jid2channel;
 		std::map<std::string, std::string> m_channel2jid;
 };

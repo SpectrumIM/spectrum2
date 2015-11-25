@@ -84,6 +84,7 @@ class SlackAPI : public HTTPRequestQueue {
 		static void getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &channels);
 		static void getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackImInfo> &ims);
 		static void getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackUserInfo> &users);
+		static std::string &SlackObjectToPlainText(std::string &object, bool isChannel = false);
 
 	private:
 		void handleSendMessage(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);

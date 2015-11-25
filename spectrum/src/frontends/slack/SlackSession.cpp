@@ -50,20 +50,24 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
 	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3));
 
-// 	m_api = new SlackAPI(component, m_uinfo.encoding);
 }
 
 SlackSession::~SlackSession() {
 	delete m_rtm;
-// 	delete m_api;
 }
 
 void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
-	LOG4CXX_INFO(logger, "SEND MESSAGE");
-	if (message->getFrom().getResource() == "myfavouritebot") {
+	if (message->getFrom().getResource() == m_uinfo.uin) {
 		return;
 	}
-	m_rtm->getAPI()->sendMessage(message->getFrom().getResource(), m_jid2channel[message->getFrom().toBare().toString()], message->getBody());
+
+	std::string channel = m_jid2channel[message->getFrom().toBare().toString()];
+	if (channel.empty()) {
+		LOG4CXX_ERROR(logger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());
+		return;
+	}
+
+	m_rtm->getAPI()->sendMessage(message->getFrom().getResource(), channel, message->getBody());
 }
 
 void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message) {
@@ -73,7 +77,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 			msg->setType(Swift::Message::Groupchat);
 			msg->setTo(to);
-			msg->setFrom(Swift::JID("", "spectrum2", "default"));
+			msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
 			msg->setBody("<" + user + "> " + message);
 			m_component->getFrontend()->onMessageReceived(msg);
 		}
@@ -88,46 +92,50 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		return;
 	}
 
-	if (args[1] == "join") {
-		// .spectrum2 join BotName #room irc.freenode.net channel
-		LOG4CXX_INFO(logger, "Received JOIN request" << args.size());
+	if (args[1] == "join.room") {
+		// .spectrum2 join.room BotName #room irc.freenode.net channel
 		if (args.size() == 6) {
-			LOG4CXX_INFO(logger, "Received JOIN request");
-			if (args[4][0] == '<') {
-				args[4] = args[4].substr(1, args[4].size() - 2);
-				args[4] = args[4].substr(args[4].find("|") + 1);
-				LOG4CXX_INFO(logger, args[4]);
-			}
+			std::string &name = args[2];
+			std::string &legacyRoom = SlackAPI::SlackObjectToPlainText(args[3], true);
+			std::string &legacyServer = SlackAPI::SlackObjectToPlainText(args[4]);
+			std::string &slackChannel = SlackAPI::SlackObjectToPlainText(args[5], true);
 
-			if (args[5][0] == '<') {
-				args[5] = args[5].substr(2, args[5].size() - 3);
-			}
-
-
-			m_uinfo.uin = args[2];
+			m_uinfo.uin = name;
 			m_storageBackend->setUser(m_uinfo);
 
+			std::string to = legacyRoom + "%" + legacyServer + "@" + m_component->getJID().toString();
+			m_jid2channel[to] = slackChannel;
+			m_channel2jid[slackChannel] = to;
 
-			std::string to = args[3] + "%" + args[4] + "@localhost";
-			m_jid2channel[to] = args[5];
-			m_channel2jid[args[5]] = to;
-			LOG4CXX_INFO(logger, "Setting transport between " << to << " and " << args[5]);
-		// 	int type = (int) TYPE_STRING;
-		// 	m_storageBackend->getUserSetting(user.id, "room", type, to);
+			LOG4CXX_INFO(logger, "Setting transport between " << to << " and " << slackChannel);
+
+			std::string rooms = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
+			rooms += message + "\n";
+			m_storageBackend->updateUserSetting(m_uinfo.id, "rooms", rooms);
 
 			Swift::Presence::ref presence = Swift::Presence::create();
-			presence->setFrom(Swift::JID("", "spectrum2", "default"));
-			presence->setTo(Swift::JID(to + "/" + args[2]));
+			presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+			presence->setTo(Swift::JID(to + "/" + name));
 			presence->setType(Swift::Presence::Available);
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			m_component->getFrontend()->onPresenceReceived(presence);
+
+			std::string msg;
+			msg += "Spectrum 2 is now joining the room. To leave the room later to disable transporting, you can use `.spectrum2 leave.room #SlackChannel`.";
+			m_rtm->sendMessage(m_ownerChannel, msg);
 		}
 	}
 	else if (args[1] == "help") {
-		
+		std::string msg;
+		msg =  "Following commands are supported:\\n";
+		msg += "```.spectrum2 help``` Shows this help message.\\n";
+		msg += "```.spectrum2 join.room <3rdPartyBotName> <#3rdPartyRoom> <3rdPartyServer> <#SlackChannel>``` Starts transport between 3rd-party room and Slack channel.";
+		m_rtm->sendMessage(m_ownerChannel, msg);
 	}
 	else {
-		m_rtm->sendMessage(m_ownerChannel, "Unknown command. Use \".spectrum2 help\" for help.");
+		m_rtm->sendMessage(m_ownerChannel, "Unknown command. Use `.spectrum2 help` for help.");
 	}
 }
 
@@ -135,12 +143,31 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 	m_ownerChannel = m_rtm->getAPI()->getChannelId(req, ok, resp, data);
 	LOG4CXX_INFO(logger, "Opened channel with team owner: " << m_ownerChannel);
 
-	std::string msg;
-	msg = "Hi, it seems you have enabled Spectrum 2 transport for your Team. As a Team owner, you should now configure it.";
-	m_rtm->sendMessage(m_ownerChannel, msg);
+	std::string rooms = "";
+	int type = (int) TYPE_STRING;
+	m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
 
-	msg = "To configure IRC network you want to connect to, type: \".spectrum2 register <bot_name>@<ircnetwork>\". For example for Freenode, the command looks like \".spectrum2 register MySlackBot@irc.freenode.net\".";
-	m_rtm->sendMessage(m_ownerChannel, msg);
+	if (rooms.empty()) {
+		std::string msg;
+		msg =  "Hi, it seems you have enabled Spectrum 2 transport for your Team. As a Team owner, you should now configure it:\\n";
+		msg += "1. At first, create new channel in which you want this Spectrum 2 transport to send the messages, or choose the existing one.\\n";
+		msg += "2. Invite this Spectrum 2 bot into this channel.\\n";
+		msg += "3. Configure the transportation between 3rd-party network and this channel by executing following command in this chat:\\n";
+		msg += "```.spectrum2 join.room NameOfYourBotIn3rdPartyNetwork #3rdPartyRoom hostname_of_3rd_party_server #SlackChannel```\\n";
+		msg += "For example to join #test123 channel on Freenode IRC server as MyBot and transport it into #slack_channel, the command would look like this:\\n";
+		msg += "```.spectrum2 join.room MyBot #test123 adams.freenode.net #slack_channel```\\n";
+		msg += "To get full list of available commands, executa `.spectrum2 help`\\n";
+		m_rtm->sendMessage(m_ownerChannel, msg);
+	}
+	else {
+		std::vector<std::string> commands;
+		boost::split(commands, rooms, boost::is_any_of("\n"));
+
+		BOOST_FOREACH(const std::string &command, commands) {
+			LOG4CXX_INFO(logger, m_uinfo.jid << ": Sending command from storage: " << command);
+			handleMessageReceived(m_ownerChannel, "owner", command);
+		}
+	}
 }
 
 void SlackSession::handleRTMStarted() {

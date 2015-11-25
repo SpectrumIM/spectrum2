@@ -30,6 +30,7 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 #include <map>
 #include <iterator>
 
@@ -94,7 +95,10 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 
 void SlackRTM::sendMessage(const std::string &channel, const std::string &message) {
 	m_counter++;
-	std::string msg = "{\"id\": " + boost::lexical_cast<std::string>(m_counter) + ", \"type\": \"message\", \"channel\":\"" + channel + "\", \"text\":\"" + message + "\"}";
+
+	std::string m = message;
+	boost::replace_all(m, "\"", "\\\"");
+	std::string msg = "{\"id\": " + boost::lexical_cast<std::string>(m_counter) + ", \"type\": \"message\", \"channel\":\"" + channel + "\", \"text\":\"" + m + "\"}";
 	m_client->write(msg);
 }
 
