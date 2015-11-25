@@ -32,6 +32,7 @@ class ConversationManager;
 class UserManager;
 class PresenceOracle;
 struct UserInfo;
+class SlackSession;
 
 class SlackUser : public User {
 	public:
@@ -41,11 +42,16 @@ class SlackUser : public User {
 
 		void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e);
 
+		SlackSession *getSession() {
+			return m_session;
+		}
+
 	private:
 		Swift::JID m_jid;
 		Component *m_component;
 		UserManager *m_userManager;
 		UserInfo m_userInfo;
+		SlackSession *m_session;
 };
 
 }

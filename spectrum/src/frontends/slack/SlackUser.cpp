@@ -20,6 +20,8 @@
 
 #include "SlackUser.h"
 #include "SlackFrontend.h"
+#include "SlackSession.h"
+#include "SlackUserManager.h"
 
 #include "transport/Transport.h"
 #include "transport/UserManager.h"
@@ -41,9 +43,14 @@ SlackUser::SlackUser(const Swift::JID &jid, UserInfo &userInfo, Component *compo
 	m_component = component;
 	m_userManager = userManager;
 	m_userInfo = userInfo;
+
+	m_session = static_cast<SlackUserManager *>(userManager)->moveTempSession(m_jid.toString());
 }
 
 SlackUser::~SlackUser(){
+	if (m_session) {
+		delete m_session;
+	}
 }
 
 void SlackUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) {

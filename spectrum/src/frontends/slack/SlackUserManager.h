@@ -39,7 +39,7 @@ class XMPPUserRegistration;
 class GatewayResponder;
 class AdHocManager;
 class SettingsAdHocCommandFactory;
-class SlackInstallation;
+class SlackSession;
 
 class SlackUserManager : public UserManager {
 	public:
@@ -59,11 +59,13 @@ class SlackUserManager : public UserManager {
 
 		void sendMessage(boost::shared_ptr<Swift::Message> message);
 
+		SlackSession *moveTempSession(const std::string &user);
+
 	private:
 		Component *m_component;
 		UserRegistration *m_userRegistration;
 		StorageBackend *m_storageBackend;
-		std::map<std::string, SlackInstallation *> m_installations;
+		std::map<std::string, SlackSession *> m_tempSessions;
 };
 
 }

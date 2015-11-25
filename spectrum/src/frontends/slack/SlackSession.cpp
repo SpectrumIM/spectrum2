@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "SlackInstallation.h"
+#include "SlackSession.h"
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackRTM.h"
@@ -40,25 +40,25 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackInstallation");
+DEFINE_LOGGER(logger, "SlackSession");
 
-SlackInstallation::SlackInstallation(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo) {
+SlackSession::SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo) {
 	m_component = component;
 	m_storageBackend = storageBackend;
 
 	m_rtm = new SlackRTM(component, storageBackend, uinfo);
-	m_rtm->onRTMStarted.connect(boost::bind(&SlackInstallation::handleRTMStarted, this));
-	m_rtm->onMessageReceived.connect(boost::bind(&SlackInstallation::handleMessageReceived, this, _1, _2, _3));
+	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
+	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3));
 
 // 	m_api = new SlackAPI(component, m_uinfo.encoding);
 }
 
-SlackInstallation::~SlackInstallation() {
+SlackSession::~SlackSession() {
 	delete m_rtm;
 // 	delete m_api;
 }
 
-void SlackInstallation::sendMessage(boost::shared_ptr<Swift::Message> message) {
+void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 	LOG4CXX_INFO(logger, "SEND MESSAGE");
 	if (message->getFrom().getResource() == "myfavouritebot") {
 		return;
@@ -66,7 +66,7 @@ void SlackInstallation::sendMessage(boost::shared_ptr<Swift::Message> message) {
 	m_rtm->getAPI()->sendMessage(message->getFrom().getResource(), m_jid2channel[message->getFrom().toBare().toString()], message->getBody());
 }
 
-void SlackInstallation::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message) {
+void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message) {
 	if (m_ownerChannel != channel) {
 		std::string to = m_channel2jid[channel];
 		if (!to.empty()) {
@@ -131,7 +131,7 @@ void SlackInstallation::handleMessageReceived(const std::string &channel, const 
 	}
 }
 
-void SlackInstallation::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
 	m_ownerChannel = m_rtm->getAPI()->getChannelId(req, ok, resp, data);
 	LOG4CXX_INFO(logger, "Opened channel with team owner: " << m_ownerChannel);
 
@@ -143,7 +143,7 @@ void SlackInstallation::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Docum
 	m_rtm->sendMessage(m_ownerChannel, msg);
 }
 
-void SlackInstallation::handleRTMStarted() {
+void SlackSession::handleRTMStarted() {
 	std::string ownerId;
 	std::map<std::string, SlackUserInfo> &users = m_rtm->getUsers();
 	for (std::map<std::string, SlackUserInfo>::iterator it = users.begin(); it != users.end(); it++) {
@@ -154,7 +154,7 @@ void SlackInstallation::handleRTMStarted() {
 		}
 	}
 
-	m_rtm->getAPI()->imOpen(ownerId, boost::bind(&SlackInstallation::handleImOpen, this, _1, _2, _3, _4));
+	m_rtm->getAPI()->imOpen(ownerId, boost::bind(&SlackSession::handleImOpen, this, _1, _2, _3, _4));
 }
 
 

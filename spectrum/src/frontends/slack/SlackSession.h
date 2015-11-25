@@ -39,11 +39,11 @@ class HTTPRequest;
 class SlackRTM;
 class SlackAPI;
 
-class SlackInstallation {
+class SlackSession {
 	public:
-		SlackInstallation(Component *component, StorageBackend *storageBackend, UserInfo uinfo);
+		SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo);
 
-		virtual ~SlackInstallation();
+		virtual ~SlackSession();
 
 		boost::signal<void (const std::string &user)> onInstallationDone;
 
