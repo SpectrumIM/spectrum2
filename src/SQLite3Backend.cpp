@@ -223,7 +223,12 @@ bool SQLite3Backend::exec(const std::string &query) {
 
 void SQLite3Backend::setUser(const UserInfo &user) {
 	sqlite3_reset(m_setUser);
-	sqlite3_bind_int(m_setUser, 1, user.id);
+	if (user.id == 0) {
+		sqlite3_bind_null(m_setUser, 1);
+	}
+	else {
+		sqlite3_bind_int(m_setUser, 1, user.id);
+	}
 	sqlite3_bind_text(m_setUser, 2, user.jid.c_str(), -1, SQLITE_STATIC);
 	sqlite3_bind_text(m_setUser, 3, user.uin.c_str(), -1, SQLITE_STATIC);
 	sqlite3_bind_text(m_setUser, 4, user.password.c_str(), -1, SQLITE_STATIC);
