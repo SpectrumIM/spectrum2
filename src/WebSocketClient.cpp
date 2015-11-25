@@ -45,6 +45,9 @@ WebSocketClient::WebSocketClient(Component *component) {
 #else
 	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory());
 #endif
+
+	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
+	m_reconnectTimer->onTick.connect(boost::bind(&WebSocketClient::connectServer, this));
 }
 
 WebSocketClient::~WebSocketClient() {
@@ -57,15 +60,18 @@ WebSocketClient::~WebSocketClient() {
 	delete m_tlsConnectionFactory;
 }
 
-void WebSocketClient::connectServer(const std::string &url) {
-	std::string u = url.substr(6);
-	m_host = u.substr(0, u.find("/"));
-	m_path = u.substr(u.find("/"));
-
+void WebSocketClient::connectServer() {
 	LOG4CXX_INFO(logger, "Starting DNS query for " << m_host << " " << m_path);
 	m_dnsQuery = m_component->getNetworkFactories()->getDomainNameResolver()->createAddressQuery(m_host);
 	m_dnsQuery->onResult.connect(boost::bind(&WebSocketClient::handleDNSResult, this, _1, _2));
 	m_dnsQuery->run();
+	m_reconnectTimer->stop();
+}
+
+void WebSocketClient::connectServer(const std::string &url) {
+	std::string u = url.substr(6);
+	m_host = u.substr(0, u.find("/"));
+	m_path = u.substr(u.find("/"));
 }
 
 void WebSocketClient::write(const std::string &data) {
@@ -165,7 +171,8 @@ void WebSocketClient::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> dat
 
 void WebSocketClient::handleConnected(bool error) {
 	if (error) {
-		LOG4CXX_ERROR(logger, "Connection to " << m_host << " failed");
+		LOG4CXX_ERROR(logger, "Connection to " << m_host << " failed. Will reconnect in 1 second.");
+		m_reconnectTimer->start();
 		return;
 	}
 

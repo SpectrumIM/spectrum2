@@ -30,6 +30,7 @@
 #include <Swiften/Network/Connection.h>
 #include <Swiften/Base/SafeByteArray.h>
 #include "Swiften/Version.h"
+#include "Swiften/Network/Timer.h"
 
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
@@ -64,6 +65,8 @@ class WebSocketClient {
 		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
 		void handleConnected(bool error);
 
+		void connectServer();
+
 	private:
 		Component *m_component;
 		boost::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
@@ -74,6 +77,7 @@ class WebSocketClient {
 		std::string m_path;
 		std::string m_buffer;
 		bool m_upgraded;
+		Swift::Timer::ref m_reconnectTimer;
 };
 
 }
