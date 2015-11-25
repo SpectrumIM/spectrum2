@@ -126,8 +126,17 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 		}
 	}
 
+	std::string domain = getTeamDomain(token);
+	if (domain.empty()) {
+		return "The token you have provided is invalid";
+	}
+
 	UserInfo user;
-	user.jid = getTeamDomain(token);
+	if (m_storageBackend->getUser(domain, user)) {
+		return "You have already registered this Spectrum 2 transport for this Slack Team";
+	}
+
+	user.jid = domain;
 	user.uin = "";
 	user.password = "";
 	user.language = "en";
