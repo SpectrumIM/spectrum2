@@ -120,7 +120,7 @@ bool SQLite3Backend::connect() {
 	if (createDatabase() == false)
 		return false;
 
-	PREP_STMT(m_setUser, "INSERT OR REPLACE INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES (?, ?, ?, ?, ?, DATETIME('NOW'), ?)");
+	PREP_STMT(m_setUser, "INSERT OR REPLACE INTO " + m_prefix + "users (id, jid, uin, password, language, encoding, last_login, vip) VALUES ((SELECT id FROM " + m_prefix + "users WHERE jid = ?), ?, ?, ?, ?, ?, DATETIME('NOW'), ?)");
 	PREP_STMT(m_getUser, "SELECT id, jid, uin, password, encoding, language, vip FROM " + m_prefix + "users WHERE jid=?");
 
 	PREP_STMT(m_removeUser, "DELETE FROM " + m_prefix + "users WHERE id=?");
@@ -224,11 +224,12 @@ bool SQLite3Backend::exec(const std::string &query) {
 void SQLite3Backend::setUser(const UserInfo &user) {
 	sqlite3_reset(m_setUser);
 	sqlite3_bind_text(m_setUser, 1, user.jid.c_str(), -1, SQLITE_STATIC);
-	sqlite3_bind_text(m_setUser, 2, user.uin.c_str(), -1, SQLITE_STATIC);
-	sqlite3_bind_text(m_setUser, 3, user.password.c_str(), -1, SQLITE_STATIC);
-	sqlite3_bind_text(m_setUser, 4, user.language.c_str(), -1, SQLITE_STATIC);
-	sqlite3_bind_text(m_setUser, 5, user.encoding.c_str(), -1, SQLITE_STATIC);
-	sqlite3_bind_int (m_setUser, 6, user.vip);
+	sqlite3_bind_text(m_setUser, 2, user.jid.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 3, user.uin.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 4, user.password.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 5, user.language.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_text(m_setUser, 6, user.encoding.c_str(), -1, SQLITE_STATIC);
+	sqlite3_bind_int (m_setUser, 7, user.vip);
 
 	if(sqlite3_step(m_setUser) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "setUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));

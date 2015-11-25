@@ -48,7 +48,7 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 
 	m_rtm = new SlackRTM(component, storageBackend, uinfo);
 	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
-	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3));
+	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3, false));
 
 }
 
@@ -70,7 +70,7 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 	m_rtm->getAPI()->sendMessage(message->getFrom().getResource(), channel, message->getBody());
 }
 
-void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message) {
+void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, bool quiet) {
 	if (m_ownerChannel != channel) {
 		std::string to = m_channel2jid[channel];
 		if (!to.empty()) {
@@ -96,9 +96,9 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		// .spectrum2 join.room BotName #room irc.freenode.net channel
 		if (args.size() == 6) {
 			std::string &name = args[2];
-			std::string &legacyRoom = SlackAPI::SlackObjectToPlainText(args[3], true);
-			std::string &legacyServer = SlackAPI::SlackObjectToPlainText(args[4]);
-			std::string &slackChannel = SlackAPI::SlackObjectToPlainText(args[5], true);
+			std::string legacyRoom = SlackAPI::SlackObjectToPlainText(args[3], true);
+			std::string legacyServer = SlackAPI::SlackObjectToPlainText(args[4]);
+			std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[5], true);
 
 			m_uinfo.uin = name;
 			m_storageBackend->setUser(m_uinfo);
@@ -122,8 +122,62 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			m_component->getFrontend()->onPresenceReceived(presence);
 
-			std::string msg;
-			msg += "Spectrum 2 is now joining the room. To leave the room later to disable transporting, you can use `.spectrum2 leave.room #SlackChannel`.";
+			if (!quiet) {
+				std::string msg;
+				msg += "Spectrum 2 is now joining the room. To leave the room later to disable transporting, you can use `.spectrum2 leave.room #" + SlackAPI::SlackObjectToPlainText(args[5], true, true) + "`.";
+				m_rtm->sendMessage(m_ownerChannel, msg);
+			}
+		}
+	}
+	else if (args[1] == "leave.room") {
+		// .spectrum2 leave.room channel
+		if (args.size() == 3) {
+			std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[2], true);
+			std::string to = m_channel2jid[slackChannel];
+			if (to.empty()) {
+				m_rtm->sendMessage(m_ownerChannel, "Spectrum 2 is not configured to transport this Slack channel.");
+				return;
+			}
+
+			std::string rooms = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
+
+			std::vector<std::string> commands;
+			boost::split(commands, rooms, boost::is_any_of("\n"));
+			rooms = "";
+
+			BOOST_FOREACH(const std::string &command, commands) {
+				if (command.size() > 5) {
+					std::vector<std::string> args2;
+					boost::split(args2, command, boost::is_any_of(" "));
+					if (args2.size() == 6) {
+						if (slackChannel != SlackAPI::SlackObjectToPlainText(args2[5], true)) {
+							rooms += command + "\n";
+						}
+					}
+				}
+			}
+
+			m_storageBackend->updateUserSetting(m_uinfo.id, "rooms", rooms);
+
+			Swift::Presence::ref presence = Swift::Presence::create();
+			presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+			presence->setTo(Swift::JID(to + "/" + m_uinfo.uin));
+			presence->setType(Swift::Presence::Unavailable);
+			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			m_component->getFrontend()->onPresenceReceived(presence);
+		}
+	}
+	else if (args[1] == "list.rooms") {
+		// .spectrum2 list.rooms
+		if (args.size() == 2) {
+			std::string rooms = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
+
+			std::string msg = "Spectrum 2 is configured for following channels:\\n";
+			msg += "```" + rooms  + "```";
 			m_rtm->sendMessage(m_ownerChannel, msg);
 		}
 	}
@@ -132,6 +186,8 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		msg =  "Following commands are supported:\\n";
 		msg += "```.spectrum2 help``` Shows this help message.\\n";
 		msg += "```.spectrum2 join.room <3rdPartyBotName> <#3rdPartyRoom> <3rdPartyServer> <#SlackChannel>``` Starts transport between 3rd-party room and Slack channel.";
+		msg += "```.spectrum2 leave.room <#SlackChannel>``` Leaves the 3rd-party room connected with the given Slack channel.";
+		msg += "```.spectrum2 list.rooms``` List all the transported rooms.";
 		m_rtm->sendMessage(m_ownerChannel, msg);
 	}
 	else {
@@ -164,8 +220,10 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 		boost::split(commands, rooms, boost::is_any_of("\n"));
 
 		BOOST_FOREACH(const std::string &command, commands) {
-			LOG4CXX_INFO(logger, m_uinfo.jid << ": Sending command from storage: " << command);
-			handleMessageReceived(m_ownerChannel, "owner", command);
+			if (command.size() > 5) {
+				LOG4CXX_INFO(logger, m_uinfo.jid << ": Sending command from storage: " << command);
+				handleMessageReceived(m_ownerChannel, "owner", command, true);
+			}
 		}
 	}
 }

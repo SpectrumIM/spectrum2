@@ -51,7 +51,7 @@ class SlackSession {
 
 	private:
 		void handleRTMStarted();
-		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message);
+		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, bool quiet);
 		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 	private:
