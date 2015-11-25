@@ -639,7 +639,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_NOT_TYPING);
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, buddyName.c_str(), account);
 				if (!conv) {
-					conv = purple_find_conversation_with_account_wraper(PURPLE_CONV_TYPE_IM, buddyName.c_str(), account);
+					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, buddyName.c_str(), account);
 				}
 				if (conv) {
 					purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
