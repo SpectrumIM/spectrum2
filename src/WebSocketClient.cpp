@@ -72,6 +72,7 @@ void WebSocketClient::connectServer(const std::string &url) {
 	std::string u = url.substr(6);
 	m_host = u.substr(0, u.find("/"));
 	m_path = u.substr(u.find("/"));
+	connectServer();
 }
 
 void WebSocketClient::write(const std::string &data) {
