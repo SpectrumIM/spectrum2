@@ -10,7 +10,7 @@ title: Spectrum 2
 
 
 
-<div style="width: 250px; float:left;  color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;">
+<div style="width: 250px; float:left;  color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 3px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);">
 <h3>What is Spectrum 2?</h3>
 Spectrum 2 is an Generic transport/gateway.
 It supports multiple frontends like XMPP or Slack and can transport messages using these
