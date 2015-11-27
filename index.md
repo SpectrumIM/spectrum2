@@ -21,8 +21,7 @@ Spectrum 2 allows users to chat even when they are using different IM networks. 
 <hr/>
 You can connect Spectrum2 using following networks:
 
-- XMPP
-- Slack
+<ul><li>IRC</li><li>Slack</li></ul>
 
 </div>
 
