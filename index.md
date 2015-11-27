@@ -37,5 +37,7 @@ You can install it on your own server or use existing public servers.<br/>
 
 </div>
 
+<div style="clear: both;"></div> 
+
 ## Technical details
 
