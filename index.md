@@ -3,8 +3,6 @@ layout: page
 title: Spectrum 2
 ---
 
-#### An open source instant messaging transport
-
 ![Spectrum 2 animation](animation.gif)
 
 <div style="width: 220px; height:394px; float:left;  color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);">
