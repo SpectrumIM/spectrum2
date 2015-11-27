@@ -5,6 +5,8 @@ title: Spectrum 2
 
 ## About
 
+![Spectrum 2 animation](animation.gif)
+
 Spectrum 2 is an Generic transport/gateway.
 It supports multiple frontends like XMPP or Slack and can transport messages using these
 frontends to wide range of different networks such as such as ICQ, XMPP (Jabber, GTalk),
