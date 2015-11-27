@@ -24,8 +24,9 @@ You can connect Spectrum2 using following networks:
 
 Friends you want to chat with can use following networks:
 
-<img src="http://seeklogo.com/images/X/XMPP-logo-20D8A52C42-seeklogo.com.gif" style="height:32px;"/>
-<img src="https://raw.githubusercontent.com/factor-io/connector-irc/master/logo.png" style="height:32px;"/>
+<img alt="XMPP" src="https://gci.copyleftgames.org/img/icons/xmpp.png" style="float:left"/>
+<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left"/>
+<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left"/>
 
 <br/>
 <div style="text-align:right"><a href="#">Read More</a></div>
