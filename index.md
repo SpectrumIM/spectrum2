@@ -20,16 +20,16 @@ Spectrum 2 allows users to chat even when they are using different IM networks. 
 <hr/>
 
 <img alt="XMPP" src="https://gci.copyleftgames.org/img/icons/xmpp.png" style="float:left"/>
-<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left"/>
-<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left"/>
+<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left;  margin-left:10px"/>
+<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left; margin-left:10px"/>
 <div style="clear: both;"></div> 
 <img alt="XMPP" src="https://gci.copyleftgames.org/img/icons/xmpp.png" style="float:left"/>
-<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left"/>
-<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left"/>
+<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left;  margin-left:10px"/>
+<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left; margin-left:10px"/>
 <div style="clear: both;"></div> 
 <img alt="XMPP" src="https://gci.copyleftgames.org/img/icons/xmpp.png" style="float:left"/>
-<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left"/>
-<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left"/>
+<img alt="IRC" src="https://gci.copyleftgames.org/img/icons/irc.png" style="float:left;  margin-left:10px"/>
+<img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left; margin-left:10px"/>
 <div style="clear: both;"></div> 
 <br/>
 <div style="text-align:right"><a href="#">Read More</a></div>
