@@ -164,6 +164,10 @@ img {
   -ms-box-shadow: 0 0 5px #ebebeb;
 }
 
+header img {
+    border: 0;
+}
+
 pre, code {
   width: 100%;
   color: #222;
