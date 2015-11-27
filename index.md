@@ -5,12 +5,13 @@ title: Spectrum 2
 
 ![Spectrum 2 animation](animation.gif)
 
-<div style="width: 220px; height:394px; float:left;  color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);">
+<div style="position: relative; width: 220px; height:394px; float:left;  color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);">
 <h3>What is Spectrum 2?</h3>
 <hr/>
-Spectrum 2 allows users to chat even when they are using different IM networks. It acts as a transport layer between the users as showed in the animation above.
+Spectrum 2 is an open source instant messaging transport. It allows users to chat together even when they are using different IM networks.
+It acts as a transport layer between the users as showed in the animation above.
 <br/>
-<div style="text-align:right"><a href="#">Read More</a></div>
+<a style="   position: absolute;bottom: 0;right: 0;" href="#">Read More</a>
 </div>
 
 <div style="width: 250px; height:394px; float:left; margin-left: 40px; color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);margin-left: 25px;">
