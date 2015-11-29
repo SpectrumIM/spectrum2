@@ -37,6 +37,9 @@
 #include <Swiften/TLS/CAPICertificate.h>
 #include "Swiften/TLS/Schannel/SchannelServerContext.h"
 #include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"
+#elif defined(__APPLE__) && HAVE_SWIFTEN_3
+#include <Swiften/TLS/SecureTransport/SecureTransportCertificate.h>
+#include <Swiften/TLS/SecureTransport/SecureTransportServerContext.h>
 #else
 #include "Swiften/TLS/PKCS12Certificate.h"
 #include "Swiften/TLS/CertificateWithKey.h"
@@ -87,12 +90,14 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_server = new Swift::Server(loop, factories, userRegistry, m_jid, CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 #ifndef _WIN32
+#ifndef __APPLE__
 //TODO: fix
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
 			CertificateWithKey::ref certificate = boost::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password")));
 			m_server->addTLSEncryption(f, certificate);
+#endif
 #endif
 			
 		}
