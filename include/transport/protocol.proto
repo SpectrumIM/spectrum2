@@ -63,6 +63,10 @@ message Buddy {
 	optional bool blocked = 8;
 }
 
+message Buddies {
+	repeated Buddy buddy = 1;
+}
+
 message ConversationMessage {
 	required string userName = 1;
 	required string buddyName = 2;
@@ -182,6 +186,7 @@ message WrapperMessage {
 		TYPE_ROOM_LIST				= 32;
 		TYPE_CONV_MESSAGE_ACK		= 33;
 		TYPE_RAW_XML				= 34;
+		TYPE_BUDDIES				= 35;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

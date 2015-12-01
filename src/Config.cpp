@@ -319,6 +319,7 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 		("features.muc", value<bool>()->default_value(false), "")
 		("features.rawxml", value<bool>()->default_value(false), "")
 		("features.disable_jid_escaping", value<bool>()->default_value(false), "")
+		("features.send_buddies_on_login", value<bool>()->default_value(false), "")
 	;
 
 	std::stringstream ifs(backendConfig);

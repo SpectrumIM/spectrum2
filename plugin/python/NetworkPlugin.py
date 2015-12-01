@@ -294,6 +294,14 @@ class NetworkPlugin:
 		groups = [g for g in payload.group]
 		self.handleBuddyRemovedRequest(payload.userName, payload.buddyName, groups);
 
+	def handleBuddiesPayload(self, data):
+		payload = protocol_pb2.Buddies()
+		if (payload.ParseFromString(data) == False):
+			#TODO: ERROR
+			return
+
+		self.handleBuddies(payload);
+
 	def handleChatStatePayload(self, data, msgType):
 		payload = protocol_pb2.Buddy()
 		if (payload.ParseFromString(data) == False):
@@ -363,6 +371,8 @@ class NetworkPlugin:
 					self.handleFTContinuePayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_EXIT:
 					self.handleExitRequest()
+			elif wrapper.type == Protocol_pb2.WrapperMessage.TYPE_BUDDIES:
+					self.handleBuddiesPayload()
 
 
 	def send(self, data):
@@ -423,6 +433,9 @@ class NetworkPlugin:
 		#\endmsc
 
 		raise NotImplementedError, "Implement me"
+
+	def handleBuddies(self, buddies):
+		pass
 
 	def handleLogoutRequest(self, user, legacyName):
 		"""
@@ -512,6 +525,7 @@ class NetworkPlugin:
 
 	def handleFTContinueRequest(self, ftID):
 		pass
+	
 
 	def handleMemoryUsage(self):
 		return (0,0)

@@ -1457,6 +1457,34 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 		return;
 	}
 	send(c->connection, message);
+
+	// Send buddies
+	if (CONFIG_BOOL_DEFAULTED(m_config, "features.send_buddies_on_login", false)) {
+		pbnetwork::Buddies buddies;
+
+		const RosterManager::BuddiesMap &roster = user->getRosterManager()->getBuddies();
+		for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+			Buddy *b = (*bt).second;
+			if (!b) {
+				continue;
+			}
+
+			pbnetwork::Buddy *buddy = buddies.add_buddy();
+			buddy->set_username(user->getJID().toBare());
+			buddy->set_buddyname(b->getName());
+			buddy->set_alias(b->getAlias());
+			BOOST_FOREACH(const std::string &g, b->getGroups()) {
+				buddy->add_group(g);
+			}
+			buddy->set_status(pbnetwork::STATUS_NONE);
+		}
+
+		std::string msg;
+		buddies.SerializeToString(&msg);
+
+		WRAP(msg, pbnetwork::WrapperMessage_Type_TYPE_BUDDIES);
+		send(c->connection, msg);
+	}
 }
 
 void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence::ref presence) {
