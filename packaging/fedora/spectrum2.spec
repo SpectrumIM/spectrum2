@@ -67,6 +67,8 @@ exit 0
 %attr(700, %{username}, %{groupname}) %{_localstatedir}/run/spectrum2/
 %attr(700, %{username}, %{groupname}) %{_localstatedir}/log/spectrum2/
 
+# LIBPURPLE
+
 %package libpurple-backend
 Summary:    Libtransport
 Group:      Development/Libraries
@@ -83,17 +85,37 @@ Spectrum2 libpurple backend
 /usr/bin/spectrum2_frotz_backend
 /usr/bin/dfrotz
 
-# %package libcommuni-backend
-# Summary:    Libtransport
-# Group:      Development/Libraries
-# Requires:   libtransport%{?_isa} = %{version}-%{release}
-# 
-# %description libcommuni-backend
-# Spectrum2 libpurple backend
-# 
-# %files libcommuni-backend
-# %defattr(-, root, root,-)
-# /usr/bin/spectrum2_libcommuni_backend
+# FROTZ
+
+%package frotz-backend
+Summary:    Libtransport
+Group:      Development/Libraries
+Requires:   boost
+Requires:   libtransport%{?_isa} = %{version}-%{release}
+
+%description frotz-backend
+Spectrum2 frotz backend
+
+%files frotz-backend
+%defattr(-, root, root,-)
+/usr/bin/spectrum2_frotz_backend
+/usr/bin/dfrotz
+
+# COMMUNI
+
+%package libcommuni-backend
+Summary:    Libtransport
+Group:      Development/Libraries
+Requires:   libtransport%{?_isa} = %{version}-%{release}
+
+%description libcommuni-backend
+Spectrum2 libpurple backend
+
+%files libcommuni-backend
+%defattr(-, root, root,-)
+/usr/bin/spectrum2_libcommuni_backend
+
+# SMSTOOLS3
 
 %package smstools3-backend
 Summary:    Libtransport
@@ -108,6 +130,8 @@ Spectrum2 SMSTools3 backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_smstools3_backend
 
+# SKYPE
+
 %package skype-backend
 Summary:    Libtransport
 Group:      Development/Libraries
@@ -120,6 +144,8 @@ Spectrum2 Skype backend
 %files skype-backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_skype_backend
+
+# SWIFTEN
 
 %package swiften-backend
 Summary:    Libtransport
@@ -134,6 +160,8 @@ Spectrum2 Swiften backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_swiften_backend
 
+# TWITTER
+
 %package twitter-backend
 Summary:    Libtransport
 Group:      Development/Libraries
@@ -147,18 +175,7 @@ Spectrum2 libyahoo2 backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_twitter_backend
 
-# %package libircclient-qt-backend
-# Summary:    Libtransport
-# Group:      Development/Libraries
-# Requires:   boost
-# Requires:   libpurple
-# 
-# %description libircclient-qt-backend
-# Spectrum2 libircclient-qt backend
-# 
-# %files libircclient-qt-backend
-# %defattr(-, root, root,-)
-# /usr/bin/spectrum_libircclient-qt_backend
+# LIBTRANSPORT
 
 %package -n libtransport
 Summary:    Libtransport
