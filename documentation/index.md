@@ -9,9 +9,7 @@ title: Spectrum 2
 
 #### Installation
 
-* [Debian/Ubuntu packages](installation/debian_ubuntu.html)
-* [Fedora/RHEL/CentOS packages](installation/fedora_rhel.html)
-* [Gentoo ebuild](installation/gentoo.html)
+* [Installing using Docker](installation/docker.html)
 * [Installing from source code](installation/from_source_code.html)
 
 #### Tutorials
@@ -23,9 +21,15 @@ title: Spectrum 2
 * [Configuration file description](configuration/config_file.html)
 * [MySQL Support](configuration/mysql.html)
 * [PostgreSQL Support](configuration/postgresql.html)
-* [Using SSL in server mode](configuration/server_ssl.html)
 * [Logging](configuration/logging.html)
-* [Spectrum as bouncer](configuration/bouncer.html)
+
+#### Frontends
+
+* [Frontends overview](frontends/frontends.html)
+* [XMPP Frontend](frontends/xmpp.html)
+   * [Using SSL in server mode](configuration/server_ssl.html)
+   * [Spectrum 2 as bouncer](configuration/bouncer.html)
+* [Slack Frontend](frontends/slack.html)
 
 #### Backends
 

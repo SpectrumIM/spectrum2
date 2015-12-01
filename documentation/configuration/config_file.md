@@ -4,6 +4,7 @@ title: Spectrum 2
 ---
 
 > **\[database\]**
+>
 > * [database](#databasedatabase)
 > * [password](#databasepassword)
 > * [port](#databaseport)
@@ -12,12 +13,6 @@ title: Spectrum 2
 > * [type](#databasetype)
 > * [user](#databaseuser)
 >
-> **\[identity\]**
->
-> * [category](#identitycategory)
-> * [name](#identityname)
-> * [type](#identitytype)
->
 > **\[logging\]**
 >
 > * [backend_config](#loggingbackend_config)
@@ -25,32 +20,26 @@ title: Spectrum 2
 >
 > **\[registration\]**
 >
-> * [auto_register](#registrationauto_register)
-> * [enable_public_registration](#registrationenable_public_registration)
+> * [auto_register](#registrationautoregister)
+> * [enable_public_registration](#registrationenablepublicregistration)
 > * [instructions](#registrationinstructions)
-> * [username_label](#registrationusername_label)
-> * [username_mask](#registrationusername_mask)
+> * [username_label](#registrationusernamelabel)
+> * [username_mask](#registrationusernamemask)
 >
 > **\[service\]**
 >
-> * [admin_jid](#serviceadmin_jid)
-> * [admin_password](#serviceadmin_password)
-> * [allowed_servers](#serviceallowed_servers)
+> * [admin_jid](#serviceadminjid)
+> * [admin_password](#serviceadminpassword)
 > * [backend](#servicebackend)
-> * [backend_host](#servicebackend_host)
-> * [backend_port](#servicebackend_port)
-> * [cert](#servicecert)
-> * [cert_password](#servicecert_password)
+> * [backend_host](#servicebackendhost)
+> * [backend_port](#servicebackendport)
 > * [group](#servicegroup)
 > * [jid](#servicejid)
 > * [password](#servicepassword)
 > * [pidfile](#servicepidfile)
-> * [port](#serviceport)
-> * [server](#serviceserver)
-> * [server_mode](#serviceserver_mode)
 > * [user](#serviceuser)
-> * [users_per_backend](#servicusers_per_backend)
-> * [working_dir](#serviceworking_dir)
+> * [users_per_backend](#servicusersperbackend)
+> * [working_dir](#serviceworkingdir)
 
 
 
@@ -146,41 +135,6 @@ Type:|string
 Default:|empty string
 
 For server-client databases, this option configures username to be used to connect the database.
-
-#### identity.category
-
-Key | val
-----|----
-Description:|Configures disco#info identity category.
-Context:|gateway-mode
-Type:|string
-Default:|gateway
-
-This option configures disco#info identity category.
-
-#### identity.name
-
-Key | val
-----|----
-Description:|Configures the name showed in service discovery.
-Context:|gateway-mode
-Type:|string
-Default:|Spectrum 2 Transport
-
-This option configures the name showed in service discovery.
-
-#### identity.type
-
-Key | val
-----|----
-Description:|Configures type of transport as showed in service discovery.
-Context:|gateway-mode
-Type:|string
-Default:|empty string
-
-This option configures type of transport as showed in service discovery. It is usually used by XMPP client to show proper
-icons according to type of network. See [Disco Categories](http://xmpp.org/registrar/disco-categories.html#gateway) for
-allowed values.
 
 #### logging.config
 
@@ -290,29 +244,6 @@ Default:|empty string
 
 This option configures the password which is used by clients defined in service.admin_jid to use Admin Interface.
 
-#### service.allowed_servers
-
-Key | val
-----|----
-Description:|Configures list of servers from which users can connect and register Spectrum 2 transport.
-Context:|gateway-mode
-Type:|list of JIDs
-Default:|empty list
-
-Configures list of servers from which users can connect and register Spectrum 2 transport. This option is used together with
-registration.enable_public_registration option. If registration.enable_public_registration is set to 0, you can use this option
-as a white-list, to enable users from particular domain to use your Spectrum 2 instance, but disallow it to any other users.
-
-Following part of config file disables public registrations and allows only users from xmpp.org and jabber.org to use this Spectrum 2 instance:
-
-	[service]
-	allowed_servers=xmpp.org
-	allowed_servers=jabber.org
-	
-	[registration]
-	enable_public_registration=0
-
-
 #### service.backend
 
 Key | val
@@ -350,29 +281,6 @@ Default:|0
 This option configures port on which Spectrum 2 listens on for backends connections. If the value of this option is 0, then Spectrum 2
 uses randomly generated port number.
 
-#### service.cert
-
-Key | val
-----|----
-Description:|Configures certificate to be used for SSL encryption in server-mode.
-Context:|server-mode
-Type:|string
-Default:|empty string
-
-This option configures full path to PKCS#12 certificate which is used for SSL in server-mode. To find out, how to create
-such certificate, please read [Using SSL in server mode](http://spectrum.im/documentation/configuration/server_ssl.html).
-
-#### service.cert_password
-
-Key | val
-----|----
-Description:|Configures password for certificate which is used for SSL encryption in server-mode.
-Context:|server-mode
-Type:|string
-Default:|empty string
-
-This option configures password which is used to decrypt PKCS#12 certificate (if it is encrypted). For more information about SSL
-with Spectrum 2, read service.cert option description.
 
 #### service.group
 
@@ -426,71 +334,6 @@ Default:|/var/run/spectrum2/$jid.pid
 
 This option configures path to file when Spectrum 2 stores its process ID. This file is later used by `spectrum2_manager` to determine,
 if this particular Spectrum 2 instance runs.
-
-#### service.port
-
-Key | val
-----|----
-Description:|Configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode.
-Context:|server-mode and gateway-mode
-Type:|integer
-Default:|0
-
-This option configures port on which Spectrum listens to in server-mode or to which connects in gateway-mode. In server-mode
-the default port for XMPP servers is 5222, so you should use this port. In gateway-mode, you have to at first configure your
-server to allow Spectrum 2 to connect it as its component. On many servers, the default component port is 5347, but this option
-depends on particular XMPP server and its configuration.
-
-#### service.server
-
-Key | val
-----|----
-Description:|Configures hostname or IP address of server to which Spectrum 2 connects to.
-Context:|gateway-mode
-Type:|string
-Default:|empty string
-
-This option configures hostname or IP address of server to which Spectrum 2 connects to. It is used only in gateway-mode and
-you should configure it to point to hostname or IP of your XMPP server.
-
-#### service.server_mode
-
-Key | val
-----|----
-Description:|Configures if Spectrum 2 works in server mode or gateway mode
-Context:|server-mode and gateway-mode
-Type:|boolean
-Default:|0
-
-If this option is true, Spectrum 2 works in server-mode and acts as standalone server.
-
-User then logins legacy networks by logging XMPP account like this one: `my_msn_name%hotmail.com@msn.domain.tld`.
-
-*Advantages:*
-* Passwords are not stored on server.
-* Roster synchronization is easy, because Spectrum 2 acts as normal server.
-* If you want to use Spectrum 2 as wrapper between different networks, you don't need database or Jabber server as another layer.
-* Using SRV records you can easily run Spectrum 2 on different machines to scale it.
-
-*Disadvantages:*
-
-* Clients have to support more accounts to connect more legacy networks (Therefore they will need have to use more TCP connections).
-
-If this option is false, Spectrum 2 acts as normal XMPP component (gateway).
-
-You then have to configure an external XMPP server (like Prosody or Ejabberd) to serve the subdomain you want to use for Spectrum 2 (for example "icq.domain.tld"). Spectrum 2 in gateway mode then connects the XMPP server as its component and users are able to find out "icq.domain.tld" in Service Discovery, register it and use it.
-
-*Advantages:*
-* Users can use more legacy networks using single XMPP account (and using single TCP connection).
-* It's easy to extend existing XMPP servers using gateway mode.
-
-*Disadvantages:*
-* Passwords are stored (even in encrypted form) on server.
-* Roster (contact list) synchronization can be problematic, because it depends on the client user uses. This can be improved by usage of Remote Roster protoXEP.
-* You have to setup XMPP server and use database even if you only want to use Spectrum 2 as a tool to connect legacy networks using XMPP protocol.
-
-
-
 
 #### service.user
 
