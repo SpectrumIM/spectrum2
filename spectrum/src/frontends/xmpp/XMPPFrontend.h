@@ -23,6 +23,8 @@
 #include "transport/Frontend.h"
 
 #include <vector>
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 #include "Swiften/Server/Server.h"
 #include "Swiften/Disco/GetDiscoInfoRequest.h"
 #include "Swiften/Disco/EntityCapsManager.h"
