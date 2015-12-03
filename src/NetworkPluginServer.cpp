@@ -1936,6 +1936,22 @@ void NetworkPluginServer::sendPing(Backend *c) {
 // 	LOG4CXX_INFO(logger, "PING to " << c);
 }
 
+void NetworkPluginServer::sendAPIVersion(Backend *c) {
+
+	pbnetwork::APIVersion apiver;
+	apiver.set_version(NETWORK_PLUGIN_API_VERSION);
+
+	std::string message;
+	apiver.SerializeToString(&message);
+
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_API_VERSION);
+
+	if (c->connection) {
+		LOG4CXX_INFO(logger, "API Version to " << c << " (ID=" << c->id << ")");
+		send(c->connection, message);
+	}
+}
+
 void NetworkPluginServer::handlePIDTerminated(unsigned long pid) {
 	std::vector<unsigned long>::iterator log_id_it;
 	log_id_it = std::find(m_pids.begin(), m_pids.end(), pid);

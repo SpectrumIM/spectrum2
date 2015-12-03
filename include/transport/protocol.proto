@@ -151,6 +151,10 @@ message BackendConfig {
 	required string config = 1;
 }
 
+message APIVersion {
+	required int32 version = 1;
+}
+
 message WrapperMessage {
 	enum Type { 
 		TYPE_CONNECTED 				= 1;
@@ -187,6 +191,7 @@ message WrapperMessage {
 		TYPE_CONV_MESSAGE_ACK		= 33;
 		TYPE_RAW_XML				= 34;
 		TYPE_BUDDIES				= 35;
+		TYPE_API_VERSION			= 36;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;

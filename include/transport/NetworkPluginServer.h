@@ -43,6 +43,8 @@
 #include <Swiften/FileTransfer/FileTransfer.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
+#define NETWORK_PLUGIN_API_VERSION (1)
+
 namespace Transport {
 
 class UserManager;
@@ -160,6 +162,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 
 		void pingTimeout();
 		void sendPing(Backend *c);
+		void sendAPIVersion(Backend *c);
 		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false, bool check = false);
 		void connectWaitingUsers();
 		void loginDelayFinished();
