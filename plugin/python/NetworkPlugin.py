@@ -19,16 +19,28 @@ class NetworkPlugin:
 		self.m_data = ""
 		self.m_init_res = 0
 
-	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = ""):
+	def handleMessage(self, user, legacyName, msg, nickname = "", xhtml = "", timestamp = ""):
 		m = protocol_pb2.ConversationMessage()
 		m.userName = user
 		m.buddyName = legacyName
 		m.message = msg
 		m.nickname = nickname
 		m.xhtml = xhtml
+		m.timestamp = str(timestamp)
 
 		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE)
 		self.send(message)
+
+	def handleMessageAck(self, user, legacyName, ID):
+		m = protocol_pb2.ConversationMessage()
+		m.userName = user
+		m.buddyName = legacyName
+		m.message = ""
+		m.id = ID
+
+		message = WRAP(m.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK)
+		self.send(message)
+
 
 	def handleAttention(self, user, buddyName, msg):
 		m = protocol_pb2.ConversationMessage()
@@ -78,6 +90,13 @@ class NetworkPlugin:
 		message = WRAP(buddy.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BUDDY_CHANGED)
 		self.send(message)
 
+	def handleBuddyRemoved(self, user, buddyName):
+		buddy = protocol_pb2.Buddy()
+		buddy.userName = user
+		buddy.buddyName = buddyName
+
+		message = WRAP(buddy.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BUDDY_REMOVED)
+		self.send(message);
 
 	def handleBuddyTyping(self, user, buddyName):
 		buddy = protocol_pb2.Buddy()
@@ -154,6 +173,16 @@ class NetworkPlugin:
 		message = WRAP(room.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_ROOM_NICKNAME_CHANGED)
 		self.send(message);
 
+	def handleRoomList(self, rooms):
+		roomList = protocol_pb2.RoomList()
+
+		for room in rooms:
+			roomList.room.append(room[0])
+			roomList.name.append(room[1])
+
+		message = WRAP(roomList.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_ROOM_LIST)
+		self.send(message);
+
 
 	def handleFTStart(self, user, buddyName, fileName, size):
 		room = protocol_pb2.File()
@@ -188,21 +217,28 @@ class NetworkPlugin:
 		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
 		self.send(message)
 
+	def handleBackendConfig(self, section, key, value):
+		c = protocol_pb2.BackendConfig()
+		c.config = "[%s]\n%s = %s\n" % (section, key, value)
+
+		message = WRAP(c.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_BACKEND_CONFIG);
+		self.send(message)
+
 	def handleLoginPayload(self, data):
 		payload = protocol_pb2.Login()
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return
-		self.handleLoginRequest(payload.user, payload.legacyName, payload.password)
+		self.handleLoginRequest(payload.user, payload.legacyName, payload.password, payload.extraFields)
 
 	def handleLogoutPayload(self, data):
 		payload = protocol_pb2.Logout()
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return
-		self.handleLogoutRequest(self, payload.user, payload.legacyName)
+		self.handleLogoutRequest(payload.user, payload.legacyName)
 	
-	def handleStatusChangedPayload(data):
+	def handleStatusChangedPayload(self, data):
 		payload = protocol_pb2.Status()
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
@@ -214,7 +250,16 @@ class NetworkPlugin:
 		if (payload.ParseFromString(data) == False):
 			#TODO: ERROR
 			return
-		self.handleMessageSendRequest(payload.userName, payload.buddyName, payload.message, payload.xhtml)
+		self.handleMessageSendRequest(payload.userName, payload.buddyName, payload.message, payload.xhtml, payload.id)
+	
+	def handleConvMessageAckPayload(self, data):
+                payload = protocol_pb2.ConversationMessage()
+                if (payload.ParseFromString(data) == False):
+                        #TODO: ERROR
+                        return
+                self.handleMessageAckRequest(payload.userName, payload.buddyName, payload.id)
+
+
 
 	def handleAttentionPayload(self, data):
 		payload = protocol_pb2.ConversationMessage()
@@ -370,9 +415,13 @@ class NetworkPlugin:
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_FT_CONTINUE:
 					self.handleFTContinuePayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_EXIT:
-					self.handleExitRequest()
-			elif wrapper.type == Protocol_pb2.WrapperMessage.TYPE_BUDDIES:
-					self.handleBuddiesPayload()
+				self.handleExitRequest()
+			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK:
+                                self.handleConvMessageAckPayload(wrapper.payload)
+			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_RAW_XML:
+				self.handleRawXmlRequest(wrapper.payload)
+			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_BUDDIES:
+					self.handleBuddiesPayload(wrapper.payload)
 
 
 	def send(self, data):
@@ -411,7 +460,7 @@ class NetworkPlugin:
 		self.send(message)
 
 
-	def handleLoginRequest(self, user, legacyName, password):
+	def handleLoginRequest(self, user, legacyName, password, extra):
 		""" 
 		Called when XMPP user wants to connect legacy network.
 		You should connect him to legacy network and call handleConnected or handleDisconnected function later.
@@ -447,16 +496,29 @@ class NetworkPlugin:
 
 		raise NotImplementedError, "Implement me"
 
-	def handleMessageSendRequest(self, user, legacyName, message, xhtml = ""):
+	def handleMessageSendRequest(self, user, legacyName, message, xhtml = "", ID = 0):
 		"""
 		Called when XMPP user sends message to legacy network.
 		@param user: XMPP JID of user for which this event occurs.
 		@param legacyName: Legacy network name of buddy or room.
 		@param message: Plain text message.
 		@param xhtml: XHTML message.
+		@param ID: message ID
 		"""
 
 		raise NotImplementedError, "Implement me"
+
+	def handleMessageAckRequest(self, user, legacyName, ID = 0):
+                """
+                Called when XMPP user sends message to legacy network.
+                @param user: XMPP JID of user for which this event occurs.
+                @param legacyName: Legacy network name of buddy or room.
+                @param ID: message ID
+                """
+
+                # raise NotImplementedError, "Implement me"
+		pass
+
 
 	def handleVCardRequest(self, user, legacyName, ID):
 		""" Called when XMPP user requests VCard of buddy.
@@ -532,6 +594,9 @@ class NetworkPlugin:
 
 	def handleExitRequest(self):
 		sys.exit(1)
+
+	def handleRawXmlRequest(self, xml):
+		pass
 
 	def sendData(self, data):
 		pass
