@@ -39,10 +39,14 @@ It acts as a transport layer between the users as showed in the animation above.
 </div>
 
 <div style="position: relative;width: 220px; height:394px; float:left; color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);margin-left: 25px;">
+<h3>Try it</h3>
+<hr/>
+You can try Spectrum 2 for free with Slack to connect your team with IRC network.<br/><br/>
+<div style="text-align:right;"><a style="" href="http://slack.spectrum.im">Read More</a></div>
 <h3>Get it</h3>
 <hr/>
-You can install it on your own server or use existing public servers.<br/>
-<a style="   position: absolute;bottom: 10px; right: 10px;" href="#">Read More</a>
+You can also download Spectrum 2 and setup it on your own server.<br/><br/>
+<a style="   position: absolute;bottom: 10px; right: 10px;" href="/download">Read More</a>
 
 </div>
 
