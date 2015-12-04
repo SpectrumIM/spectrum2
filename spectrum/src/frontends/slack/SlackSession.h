@@ -38,6 +38,7 @@ class StorageBackend;
 class HTTPRequest;
 class SlackRTM;
 class SlackAPI;
+class User;
 
 class SlackSession {
 	public:
@@ -49,9 +50,15 @@ class SlackSession {
 
 		void sendMessage(boost::shared_ptr<Swift::Message> message);
 
+		void setPurpose(const std::string &purpose);
+
+		void setUser(User *user) {
+			m_user = user;
+		}
+
 	private:
 		void handleRTMStarted();
-		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, bool quiet);
+		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet);
 		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 		void handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
@@ -68,6 +75,7 @@ class SlackSession {
 		std::map<std::string, std::string> m_jid2channel;
 		std::map<std::string, std::string> m_channel2jid;
 		std::string m_slackChannel;
+		User *m_user;
 };
 
 }

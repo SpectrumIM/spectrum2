@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <map>
 
+#include "Swiften/Network/Timer.h"
+
 namespace Transport {
 
 class Buddy;
@@ -44,11 +46,14 @@ class SlackRosterManager : public RosterManager {
 		virtual void doAddBuddy(Buddy *buddy);
 		virtual void doUpdateBuddy(Buddy *buddy);
 
+		void sendOnlineBuddies();
 
 	private:
 		RosterStorage *m_rosterStorage;
 		User *m_user;
-		Component *m_transport;
+		Component *m_component;
+		Swift::Timer::ref m_onlineBuddiesTimer;
+		std::string m_onlineBuddies;
 };
 
 }

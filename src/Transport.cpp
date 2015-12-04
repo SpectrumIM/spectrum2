@@ -66,7 +66,7 @@ Transport::PresenceOracle *Component::getPresenceOracle() {
 }
 
 bool Component::inServerMode() {
-	 return CONFIG_BOOL_DEFAULTED(m_config, "service.server_mode", true);
+	 return CONFIG_BOOL_DEFAULTED(m_config, "service.server_mode", false);
 }
 
 void Component::start() {

@@ -45,6 +45,7 @@ SlackUser::SlackUser(const Swift::JID &jid, UserInfo &userInfo, Component *compo
 	m_userInfo = userInfo;
 
 	m_session = static_cast<SlackUserManager *>(userManager)->moveTempSession(m_jid.toString());
+	m_session->setUser(this);
 }
 
 SlackUser::~SlackUser(){

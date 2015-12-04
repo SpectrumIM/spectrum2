@@ -36,7 +36,29 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackAPI");
 
-SlackAPI::SlackAPI(Component *component, const std::string &token) {
+#define GET_ARRAY(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
+	if (!NAME.IsArray()) { \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		return; \
+	}
+	
+#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.IsString()) {  \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(logger, data); \
+		return; \
+	} \
+	std::string NAME = NAME##_tmp.GetString();
+
+#define STORE_BOOL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.IsBool()) {  \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(logger, data); \
+		return; \
+	} \
+	bool NAME = NAME##_tmp.GetBool();
+
+SlackAPI::SlackAPI(Component *component, const std::string &token) : HTTPRequestQueue(component) {
 	m_component = component;
 	m_token = token;
 }
@@ -53,6 +75,29 @@ void SlackAPI::sendMessage(const std::string &from, const std::string &to, const
 	url += "&username=" + Util::urlencode(from);
 	url += "&channel=" + Util::urlencode(to);
 	url += "&text=" + Util::urlencode(text);
+	url += "&token=" + Util::urlencode(m_token);
+
+	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url,
+			boost::bind(&SlackAPI::handleSendMessage, this, _1, _2, _3, _4));
+	queueRequest(req);
+}
+
+void SlackAPI::deleteMessage(const std::string &channel, const std::string &ts) {
+	LOG4CXX_INFO(logger, "Deleting message " << channel << " " << ts);
+	std::string url = "https://slack.com/api/chat.delete?";
+	url += "&channel=" + Util::urlencode(channel);
+	url += "&ts=" + Util::urlencode(ts);
+	url += "&token=" + Util::urlencode(m_token);
+
+	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url,
+			boost::bind(&SlackAPI::handleSendMessage, this, _1, _2, _3, _4));
+	queueRequest(req);
+}
+
+void SlackAPI::setPurpose(const std::string &channel, const std::string &purpose) {
+	std::string url = "https://slack.com/api/channels.setPurpose?";
+	url += "&channel=" + Util::urlencode(channel);
+	url += "&purpose=" + Util::urlencode(purpose);
 	url += "&token=" + Util::urlencode(m_token);
 
 	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url,
@@ -137,28 +182,6 @@ void SlackAPI::usersList(HTTPRequest::Callback callback) {
 	queueRequest(req);
 }
 
-#define GET_ARRAY(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
-	if (!NAME.IsArray()) { \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
-		return; \
-	}
-	
-#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsString()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(logger, data); \
-		return; \
-	} \
-	std::string NAME = NAME##_tmp.GetString();
-
-#define STORE_BOOL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsBool()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(logger, data); \
-		return; \
-	} \
-	bool NAME = NAME##_tmp.GetBool();
-
 void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &ret) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
@@ -182,11 +205,11 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 
 		rapidjson::Value &members = channels[i]["members"];
 		for (int y = 0; members.IsArray() && y < members.Size(); y++) {
-			if (!members[i].IsString()) {
+			if (!members[y].IsString()) {
 				continue;
 			}
 
-			info.members.push_back(members[i].GetString());
+			info.members.push_back(members[y].GetString());
 		}
 
 		ret[info.name] = info;

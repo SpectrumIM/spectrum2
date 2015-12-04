@@ -40,7 +40,7 @@ class NetworkPlugin {
 
 		class PluginConfig {
 			public:
-				PluginConfig() : m_needPassword(true), m_needRegistration(false), m_supportMUC(false), m_rawXML(false),
+				PluginConfig() : m_needPassword(true), m_needRegistration(true), m_supportMUC(false), m_rawXML(false),
 				m_disableJIDEscaping(false) {}
 				virtual ~PluginConfig() {}
 

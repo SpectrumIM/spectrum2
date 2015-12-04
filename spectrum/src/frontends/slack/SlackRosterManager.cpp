@@ -21,6 +21,7 @@
 #include "SlackRosterManager.h"
 #include "SlackFrontend.h"
 #include "SlackUser.h"
+#include "SlackSession.h"
 
 #include "transport/Buddy.h"
 #include "transport/User.h"
@@ -40,11 +41,49 @@ DEFINE_LOGGER(logger, "SlackRosterManager");
 
 SlackRosterManager::SlackRosterManager(User *user, Component *component) : RosterManager(user, component){
 	m_user = user;
-	m_transport = component;
+	m_component = component;
+
+	m_onlineBuddiesTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
+	m_onlineBuddiesTimer->onTick.connect(boost::bind(&SlackRosterManager::sendOnlineBuddies, this));
+	m_onlineBuddiesTimer->start();
 }
 
 SlackRosterManager::~SlackRosterManager() {
+	m_onlineBuddiesTimer->stop();
+}
 
+void SlackRosterManager::sendOnlineBuddies() {
+	std::string onlineBuddies = "Online users: ";
+	Swift::StatusShow s;
+	std::string statusMessage;
+
+	const RosterManager::BuddiesMap &roster = getBuddies();
+	for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+		Buddy *b = (*bt).second;
+		if (!b) {
+			continue;
+		}
+
+		if (!(b->getStatus(s, statusMessage))) {
+			continue;
+		}
+
+		if (s.getType() == Swift::StatusShow::None) {
+			continue;
+		}
+
+		onlineBuddies += b->getAlias() + ", ";
+	}
+
+	if (m_onlineBuddies != onlineBuddies) {
+		m_onlineBuddies = onlineBuddies;
+		SlackSession *session = static_cast<SlackUser *>(m_user)->getSession();
+		if (session) {
+			session->setPurpose(m_onlineBuddies);
+		}
+	}
+
+	m_onlineBuddiesTimer->start();
 }
 
 void SlackRosterManager::doRemoveBuddy(Buddy *buddy) {

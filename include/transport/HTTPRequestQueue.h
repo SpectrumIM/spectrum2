@@ -9,13 +9,16 @@
 #include <string.h>
 #include "rapidjson/document.h"
 
+#include "Swiften/Network/Timer.h"
+
 namespace Transport {
 
 class HTTPRequest;
+class Component;
 
 class HTTPRequestQueue {
 	public:
-		HTTPRequestQueue(int delayBetweenRequests = 1);
+		HTTPRequestQueue(Component *component, int delayBetweenRequests = 1);
 
 		virtual ~HTTPRequestQueue();
 
@@ -24,9 +27,13 @@ class HTTPRequestQueue {
 		void sendNextRequest();
 
 	private:
+		void handleRequestFinished();
+
+	private:
 		int m_delay;
 		std::queue<HTTPRequest *> m_queue;
 		bool m_processing;
+		Swift::Timer::ref m_queueTimer;
 };
 
 }

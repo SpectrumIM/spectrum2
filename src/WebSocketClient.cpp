@@ -23,6 +23,8 @@
 #include "transport/Util.h"
 #include "transport/Logging.h"
 
+#include "Swiften/StringCodecs/Hexify.h"
+
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <map>
@@ -131,10 +133,16 @@ void WebSocketClient::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> dat
 
 	while (m_buffer.size() > 0) {
 		if (m_buffer.size() >= 2) {
+			LOG4CXX_INFO(logger, "BUFFER: '" << m_buffer << "'");
+			LOG4CXX_INFO(logger, "BUFFER: '" << Swift::Hexify::hexify(Swift::createByteArray(m_buffer)) << "'");
 			uint8_t opcode = *((uint8_t *) &m_buffer[0]) & 0xf;
-			uint8_t size7 = *((uint8_t *) &m_buffer[1]);
+			uint8_t size7 = *((uint8_t *) &m_buffer[1]) & 127;
+			bool mask = *((uint8_t *) &m_buffer[1]) & 128;
 			uint16_t size16 = 0;
 			int header_size = 2;
+			LOG4CXX_INFO(logger, "OPCODE: " << (int) opcode);
+			LOG4CXX_INFO(logger, "SIZE7: " << (int) size7);
+			LOG4CXX_INFO(logger, "MASK: " << (int) mask);
 			if (size7 == 126) {
 				if (m_buffer.size() >= 4) {
 					size16 = *((uint16_t *) &m_buffer[2]);

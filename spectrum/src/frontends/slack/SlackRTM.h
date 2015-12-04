@@ -80,7 +80,7 @@ class SlackRTM {
 			return m_api;
 		}
 
-		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text)> onMessageReceived;
+		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
 
 	private:
 		void handlePayloadReceived(const std::string &payload);

@@ -313,7 +313,7 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 	options_description opts("Backend options");
 	opts.add_options()
 		("registration.needPassword", value<bool>()->default_value(true), "")
-		("registration.needRegistration", value<bool>()->default_value(false), "")
+		("registration.needRegistration", value<bool>()->default_value(true), "")
 		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
 		("features.receipts", value<bool>()->default_value(false), "")
 		("features.muc", value<bool>()->default_value(false), "")

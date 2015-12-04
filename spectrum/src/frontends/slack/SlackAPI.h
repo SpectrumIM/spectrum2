@@ -79,7 +79,9 @@ class SlackAPI : public HTTPRequestQueue {
 		void imOpen(const std::string &uid, HTTPRequest::Callback callback);
 		std::string getChannelId(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
+		void deleteMessage(const std::string &channel, const std::string &ts);
 		void sendMessage(const std::string &from, const std::string &to, const std::string &text);
+		void setPurpose(const std::string &channel, const std::string &purpose);
 
 		static void getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &channels);
 		static void getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackImInfo> &ims);

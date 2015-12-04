@@ -89,7 +89,8 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_STRING(d, channel);
 		STORE_STRING(d, user);
 		STORE_STRING(d, text);
-		onMessageReceived(channel, user, text);
+		STORE_STRING(d, ts);
+		onMessageReceived(channel, user, text, ts);
 	}
 }
 

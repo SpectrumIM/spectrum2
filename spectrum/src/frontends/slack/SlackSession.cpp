@@ -22,6 +22,7 @@
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackRTM.h"
+#include "SlackRosterManager.h"
 
 #include "transport/Transport.h"
 #include "transport/HTTPRequest.h"
@@ -43,13 +44,13 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackSession");
 
-SlackSession::SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo) {
+SlackSession::SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo), m_user(NULL) {
 	m_component = component;
 	m_storageBackend = storageBackend;
 
 	m_rtm = new SlackRTM(component, storageBackend, uinfo);
 	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
-	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3, false));
+	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3, _4, false));
 
 }
 
@@ -62,16 +63,34 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 		return;
 	}
 
-	std::string &channel = m_jid2channel[message->getFrom().toBare().toString()];
+	std::string from = message->getFrom().getResource();
+	std::string channel = m_jid2channel[message->getFrom().toBare().toString()];
+	LOG4CXX_INFO(logger, "JID is " << message->getFrom().toBare().toString());
 	if (channel.empty()) {
 		if (m_slackChannel.empty()) {
 			LOG4CXX_ERROR(logger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());
 			return;
 		}
 		channel = m_slackChannel;
+		from = Buddy::JIDToLegacyName(message->getFrom());
+
+		Buddy *b;
+		if (m_user && (b = m_user->getRosterManager()->getBuddy(from)) != NULL) {
+			from = b->getAlias() + " (" + from + ")";
+		}
 	}
 
-	m_rtm->getAPI()->sendMessage(message->getFrom().getResource(), channel, message->getBody());
+	LOG4CXX_INFO(logger, "FROM " << from);
+	m_rtm->getAPI()->sendMessage(from, channel, message->getBody());
+}
+
+void SlackSession::setPurpose(const std::string &purpose) {
+	if (m_slackChannel.empty()) {
+		return;
+	}
+
+	LOG4CXX_INFO(logger, "Setting channel purppose: " << m_slackChannel << " " << purpose);
+	m_rtm->getAPI()->setPurpose(m_slackChannel, purpose);
 }
 
 void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
@@ -81,10 +100,15 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	std::string legacyServer = SlackAPI::SlackObjectToPlainText(args[4]);
 	std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[5], true);
 
-	m_uinfo.uin = name;
-	m_storageBackend->setUser(m_uinfo);
-
 	std::string to = legacyRoom + "%" + legacyServer + "@" + m_component->getJID().toString();
+	if (!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)) {
+		m_uinfo.uin = name;
+		m_storageBackend->setUser(m_uinfo);
+	}
+// 	else {
+// 		to =  legacyRoom + "\\40" + legacyServer + "@" + m_component->getJID().toString();
+// 	}
+
 	m_jid2channel[to] = slackChannel;
 	m_channel2jid[slackChannel] = to;
 
@@ -173,7 +197,7 @@ void SlackSession::handleRegisterMessage(const std::string &message, std::vector
 	}
 }
 
-void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, bool quiet) {
+void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet) {
 	if (m_ownerChannel != channel) {
 		std::string to = m_channel2jid[channel];
 		if (!to.empty()) {
@@ -185,7 +209,41 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 			m_component->getFrontend()->onMessageReceived(msg);
 		}
 		else {
+			// When changing the purpose, we do not want to spam to room with the info,
+			// so remove the purpose message.
+// 			if (message.find("set the channel purpose") != std::string::npos) {
+// 				m_rtm->getAPI()->deleteMessage(channel, ts);
+// 			}
 			// TODO: MAP `user` to JID somehow and send the message to proper JID.
+			// So far send to all online contacts
+
+			if (!m_user || !m_user->getRosterManager()) {
+				return;
+			}
+
+			Swift::StatusShow s;
+			std::string statusMessage;
+			const RosterManager::BuddiesMap &roster = m_user->getRosterManager()->getBuddies();
+			for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+				Buddy *b = (*bt).second;
+				if (!b) {
+					continue;
+				}
+
+				if (!(b->getStatus(s, statusMessage))) {
+					continue;
+				}
+
+				if (s.getType() == Swift::StatusShow::None) {
+					continue;
+				}
+
+				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+				msg->setTo(b->getJID());
+				msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+				msg->setBody("<" + user + "> " + message);
+				m_component->getFrontend()->onMessageReceived(msg);
+			}
 		}
 		return;
 	}
@@ -240,16 +298,16 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 	int type = (int) TYPE_STRING;
 	m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
 
-	if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", false)) {
+	if (!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)) {
 		if (rooms.empty()) {
 			std::string msg;
 			msg =  "Hi, it seems you have enabled Spectrum 2 transport for your Team. As a Team owner, you should now configure it:\\n";
 			msg += "1. At first, create new channel in which you want this Spectrum 2 transport to send the messages, or choose the existing one.\\n";
 			msg += "2. Invite this Spectrum 2 bot into this channel.\\n";
 			msg += "3. Configure the transportation between 3rd-party network and this channel by executing following command in this chat:\\n";
-			msg += "```.spectrum2 register 3rdPartyAccount 3rdPartyPassword #SlackChannel```\\n";
-			msg += "For example to join XMPP account test@xmpp.tld and  transport it into #slack_channel, the command would look like this:\\n";
-			msg += "```.spectrum2 register test@xmpp.tld mypassword #slack_channel```\\n";
+			msg += "```.spectrum2 join.room NameOfYourBotIn3rdPartyNetwork #3rdPartyRoom hostname_of_3rd_party_server #SlackChannel```\\n";
+			msg += "For example to join #test123 channel on Freenode IRC server as MyBot and transport it into #slack_channel, the command would look like this:\\n";
+			msg += "```.spectrum2 join.room MyBot #test123 adams.freenode.net #slack_channel```\\n";
 			msg += "To get full list of available commands, executa `.spectrum2 help`\\n";
 			m_rtm->sendMessage(m_ownerChannel, msg);
 		}
@@ -261,9 +319,9 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 			msg += "1. At first, create new channel in which you want this Spectrum 2 transport to send the messages, or choose the existing one.\\n";
 			msg += "2. Invite this Spectrum 2 bot into this channel.\\n";
 			msg += "3. Configure the transportation between 3rd-party network and this channel by executing following command in this chat:\\n";
-			msg += "```.spectrum2 join.room NameOfYourBotIn3rdPartyNetwork #3rdPartyRoom hostname_of_3rd_party_server #SlackChannel```\\n";
-			msg += "For example to join #test123 channel on Freenode IRC server as MyBot and transport it into #slack_channel, the command would look like this:\\n";
-			msg += "```.spectrum2 join.room MyBot #test123 adams.freenode.net #slack_channel```\\n";
+			msg += "```.spectrum2 register 3rdPartyAccount 3rdPartyPassword #SlackChannel```\\n";
+			msg += "For example to join XMPP account test@xmpp.tld and  transport it into #slack_channel, the command would look like this:\\n";
+			msg += "```.spectrum2 register test@xmpp.tld mypassword #slack_channel```\\n";
 			msg += "To get full list of available commands, executa `.spectrum2 help`\\n";
 			m_rtm->sendMessage(m_ownerChannel, msg);
 		}
@@ -288,7 +346,7 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 		BOOST_FOREACH(const std::string &command, commands) {
 			if (command.size() > 5) {
 				LOG4CXX_INFO(logger, m_uinfo.jid << ": Sending command from storage: " << command);
-				handleMessageReceived(m_ownerChannel, "owner", command, true);
+				handleMessageReceived(m_ownerChannel, "owner", command, "", true);
 			}
 		}
 	}
