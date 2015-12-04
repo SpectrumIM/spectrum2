@@ -154,6 +154,14 @@ void WebSocketClient::handleDataRead(boost::shared_ptr<Swift::SafeByteArray> dat
 				}
 			}
 
+			// This seems to be Slack bug... sometimes we receive 0x89 followed by 0x81
+			// For now, in that case we will just ignore the 0x89 and skip it...
+			if (opcode == 9 && mask && size7 == 1) {
+				LOG4CXX_WARN(logger, "Applying Slack workaround because of partial data received from server");
+				m_buffer.erase(0, 1);
+				continue;
+			}
+
 // 			if (opcode == 9) {
 // 				write("");
 // 			}
