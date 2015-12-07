@@ -110,6 +110,14 @@ void SlackRTM::sendPing() {
 	m_pingTimer->start();
 }
 
+const std::string &SlackRTM::getUserName(const std::string &id) {
+	if (m_users.find(id) == m_users.end()) {
+		return id;
+	}
+
+	return m_users[id].name;
+}
+
 void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
@@ -123,6 +131,22 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 		LOG4CXX_ERROR(logger, data);
 		return;
 	}
+
+	rapidjson::Value &self = resp["self"];
+	if (!self.IsObject()) {
+		LOG4CXX_ERROR(logger, "No 'self' object in the reply.");
+		LOG4CXX_ERROR(logger, data);
+		return;
+	}
+
+	rapidjson::Value &selfName = self["name"];
+	if (!selfName.IsString()) {
+		LOG4CXX_ERROR(logger, "No 'name' string in the reply.");
+		LOG4CXX_ERROR(logger, data);
+		return;
+	}
+
+	m_selfName = selfName.GetString();
 
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_channels);
 	SlackAPI::getSlackImInfo(req, ok, resp, data, m_ims);

@@ -146,6 +146,7 @@ class Conversation {
 
 		void destroyRoom();
 
+		std::string getParticipants();
 		void sendParticipants(const Swift::JID &to);
 
 		void sendCachedMessages(const Swift::JID &to = Swift::JID());

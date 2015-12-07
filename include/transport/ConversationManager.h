@@ -78,6 +78,10 @@ class ConversationManager {
 		void removeJID(const Swift::JID &jid);
 		void clearJIDs();
 
+		std::map<std::string, Conversation *> &getConversations() {
+			return m_convs;
+		}
+
 	private:
 		void handleMessageReceived(Swift::Message::ref message);
 

@@ -204,6 +204,14 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 	handleRawMessage(message);
 }
 
+std::string Conversation::getParticipants() {
+	std::string ret;
+	for (std::map<std::string, Swift::Presence::ref>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
+		ret += (*it).second->getFrom().getResource() + ", ";
+	}
+	return ret;
+}
+
 void Conversation::sendParticipants(const Swift::JID &to) {
 	for (std::map<std::string, Swift::Presence::ref>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
 		(*it).second->setTo(to);

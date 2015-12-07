@@ -82,6 +82,12 @@ class SlackRTM {
 
 		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
 
+		const std::string &getUserName(const std::string &id);
+
+		const std::string &getSelfName() {
+			return m_selfName;
+		}
+
 	private:
 		void handlePayloadReceived(const std::string &payload);
 		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
@@ -91,6 +97,7 @@ class SlackRTM {
 		std::map<std::string, SlackChannelInfo> m_channels;
 		std::map<std::string, SlackImInfo> m_ims;
 		std::map<std::string, SlackUserInfo> m_users;
+		std::string m_selfName;
 
 	private:
 		Component *m_component;

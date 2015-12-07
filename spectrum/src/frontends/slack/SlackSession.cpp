@@ -29,6 +29,8 @@
 #include "transport/Util.h"
 #include "transport/Buddy.h"
 #include "transport/Config.h"
+#include "transport/ConversationManager.h"
+#include "transport/Conversation.h"
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
@@ -52,15 +54,56 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
 	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3, _4, false));
 
+	m_onlineBuddiesTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
+	m_onlineBuddiesTimer->onTick.connect(boost::bind(&SlackSession::sendOnlineBuddies, this));
 }
 
 SlackSession::~SlackSession() {
 	delete m_rtm;
+	m_onlineBuddiesTimer->stop();
+}
+
+void SlackSession::sendOnlineBuddies() {
+	if (!m_user) {
+		return;
+	}
+	std::map<std::string, Conversation *> convs = m_user->getConversationManager()->getConversations();
+	for (std::map<std::string, Conversation *> ::const_iterator it = convs.begin(); it != convs.end(); it++) {
+		Conversation *conv = it->second;
+		if (!conv) {
+			continue;
+		}
+
+		std::string onlineBuddies = "Online users: " + conv->getParticipants();
+
+		if (m_onlineBuddies[it->first] != onlineBuddies) {
+			m_onlineBuddies[it->first] = onlineBuddies;
+			std::string legacyName = it->first;
+			if (legacyName.find_last_of("@") != std::string::npos) {
+				legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
+			}
+
+
+			std::string to = legacyName + "@" + m_component->getJID().toBare().toString();
+			setPurpose(onlineBuddies, m_jid2channel[to]);
+		}
+	}
+	m_onlineBuddiesTimer->start();
 }
 
 void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
-	if (message->getFrom().getResource() == m_uinfo.uin) {
-		return;
+	if (m_user) {
+		std::map<std::string, Conversation *> convs = m_user->getConversationManager()->getConversations();
+		for (std::map<std::string, Conversation *> ::const_iterator it = convs.begin(); it != convs.end(); it++) {
+			Conversation *conv = it->second;
+			if (!conv) {
+				continue;
+			}
+
+			if (conv->getNickname() == message->getFrom().getResource()) {
+				return;
+			}
+		}
 	}
 
 	std::string from = message->getFrom().getResource();
@@ -84,13 +127,17 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 	m_rtm->getAPI()->sendMessage(from, channel, message->getBody());
 }
 
-void SlackSession::setPurpose(const std::string &purpose) {
-	if (m_slackChannel.empty()) {
+void SlackSession::setPurpose(const std::string &purpose, const std::string &channel) {
+	std::string ch = channel;
+	if (ch.empty()) {
+		ch = m_slackChannel;
+	}
+	if (ch.empty()) {
 		return;
 	}
 
-	LOG4CXX_INFO(logger, "Setting channel purppose: " << m_slackChannel << " " << purpose);
-	m_rtm->getAPI()->setPurpose(m_slackChannel, purpose);
+	LOG4CXX_INFO(logger, "Setting channel purppose: " << ch << " " << purpose);
+	m_rtm->getAPI()->setPurpose(ch, purpose);
 }
 
 void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
@@ -114,11 +161,13 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 
 	LOG4CXX_INFO(logger, "Setting transport between " << to << " and " << slackChannel);
 
-	std::string rooms = "";
-	int type = (int) TYPE_STRING;
-	m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
-	rooms += message + "\n";
-	m_storageBackend->updateUserSetting(m_uinfo.id, "rooms", rooms);
+	if (!quiet) {
+		std::string rooms = "";
+		int type = (int) TYPE_STRING;
+		m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
+		rooms += message + "\n";
+		m_storageBackend->updateUserSetting(m_uinfo.id, "rooms", rooms);
+	}
 
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
@@ -126,6 +175,8 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	presence->setType(Swift::Presence::Available);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 	m_component->getFrontend()->onPresenceReceived(presence);
+
+	m_onlineBuddiesTimer->start();
 
 	if (!quiet) {
 		std::string msg;
@@ -200,12 +251,16 @@ void SlackSession::handleRegisterMessage(const std::string &message, std::vector
 void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet) {
 	if (m_ownerChannel != channel) {
 		std::string to = m_channel2jid[channel];
+		if (m_rtm->getUserName(user) == m_rtm->getSelfName()) {
+			return;
+		}
+
 		if (!to.empty()) {
 			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 			msg->setType(Swift::Message::Groupchat);
 			msg->setTo(to);
 			msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
-			msg->setBody("<" + user + "> " + message);
+			msg->setBody("<" + m_rtm->getUserName(user) + "> " + message);
 			m_component->getFrontend()->onMessageReceived(msg);
 		}
 		else {
@@ -241,7 +296,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setTo(b->getJID());
 				msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
-				msg->setBody("<" + user + "> " + message);
+				msg->setBody("<" + m_rtm->getUserName(user) + "> " + message);
 				m_component->getFrontend()->onMessageReceived(msg);
 			}
 		}

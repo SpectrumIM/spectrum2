@@ -28,6 +28,7 @@
 #include <map>
 
 #include "Swiften/Elements/Message.h"
+#include "Swiften/Network/Timer.h"
 
 #include <boost/signal.hpp>
 
@@ -50,7 +51,7 @@ class SlackSession {
 
 		void sendMessage(boost::shared_ptr<Swift::Message> message);
 
-		void setPurpose(const std::string &purpose);
+		void setPurpose(const std::string &purpose, const std::string &channel = "");
 
 		void setUser(User *user) {
 			m_user = user;
@@ -65,6 +66,8 @@ class SlackSession {
 		void handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
 		void handleRegisterMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
 
+		void sendOnlineBuddies();
+
 	private:
 		Component *m_component;
 		StorageBackend *m_storageBackend;
@@ -76,6 +79,8 @@ class SlackSession {
 		std::map<std::string, std::string> m_channel2jid;
 		std::string m_slackChannel;
 		User *m_user;
+		Swift::Timer::ref m_onlineBuddiesTimer;
+		std::map<std::string, std::string> m_onlineBuddies;
 };
 
 }

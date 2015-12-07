@@ -670,7 +670,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				comps = purple_chat_get_components_wrapped(chat);
 			}
 			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
-				comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
+				if (CONFIG_STRING(config, "service.protocol") == "prpl-jabber") {
+					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (room + "/" + nickname).c_str());
+				} else {
+					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
+				}
 			}
 
 			LOG4CXX_INFO(logger, user << ": Joining the room " << room);
