@@ -42,7 +42,7 @@ You also have to create persistent directory to store various Spectrum 2 data li
 
 To start Spectrum 2 on background using Docker, all you have to do is running following Docker command:
 
-	$ docker run --name="spectrum2" -d -v /opt/spectrum2/configuration:/etc/spectrum2/transport -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum2
+	$ docker run --name="spectrum2" -d -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum2
 
 It will start Spectrum 2 and load the configuration files from `/opt/spectrum`. It also gives the spawned container name `spectrum2`.
 
