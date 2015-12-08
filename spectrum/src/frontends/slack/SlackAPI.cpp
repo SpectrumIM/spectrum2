@@ -302,10 +302,10 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 
 		SlackUserInfo info;
 
-		STORE_STRING(users[i], id);
+		STORE_STRING(bots[i], id);
 		info.id = id;
 
-		STORE_STRING(users[i], name);
+		STORE_STRING(bots[i], name);
 		info.name = name;
 
 		info.isPrimaryOwner = 0;
