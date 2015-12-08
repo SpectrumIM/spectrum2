@@ -293,6 +293,27 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 		}
 	}
 
+	GET_ARRAY(resp, bots);
+
+	for (int i = 0; i < bots.Size(); i++) {
+		if (!bots[i].IsObject()) {
+			continue;
+		}
+
+		SlackUserInfo info;
+
+		STORE_STRING(users[i], id);
+		info.id = id;
+
+		STORE_STRING(users[i], name);
+		info.name = name;
+
+		info.isPrimaryOwner = 0;
+
+		ret[info.id] = info;
+		LOG4CXX_INFO(logger, info.id << " " << info.name);
+	}
+
 	return;
 }
 

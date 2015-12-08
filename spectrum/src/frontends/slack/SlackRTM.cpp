@@ -81,6 +81,12 @@ SlackRTM::~SlackRTM() {
 		 NAME = NAME##_tmp.GetString(); \
 	}
 
+#define GET_OBJECT(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
+	if (!NAME.IsObject()) { \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		return; \
+	}
+
 void SlackRTM::handlePayloadReceived(const std::string &payload) {
 	rapidjson::Document d;
 	if (d.Parse<0>(payload.c_str()).HasParseError()) {
@@ -96,6 +102,16 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_STRING(d, text);
 		STORE_STRING(d, ts);
 		STORE_STRING_OPTIONAL(d, subtype);
+
+		rapidjson::Value &attachments = d["attachments"];
+		if (attachments.IsArray()) {
+			for (int i = 0; i < attachments.Size(); i++) {
+				STORE_STRING_OPTIONAL(attachments[i], fallback);
+				if (!fallback.empty()) {
+					text += fallback;
+				}
+			}
+		}
 
 		if (subtype == "bot_message") {
 			STORE_STRING(d, bot_id);
