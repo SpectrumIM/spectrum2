@@ -75,6 +75,12 @@ SlackRTM::~SlackRTM() {
 	} \
 	std::string NAME = NAME##_tmp.GetString();
 
+#define STORE_STRING_OPTIONAL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	std::string NAME; \
+	if (NAME##_tmp.IsString()) {  \
+		 NAME = NAME##_tmp.GetString(); \
+	}
+
 void SlackRTM::handlePayloadReceived(const std::string &payload) {
 	rapidjson::Document d;
 	if (d.Parse<0>(payload.c_str()).HasParseError()) {
@@ -87,10 +93,23 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 
 	if (type == "message") {
 		STORE_STRING(d, channel);
-		STORE_STRING(d, user);
 		STORE_STRING(d, text);
 		STORE_STRING(d, ts);
-		onMessageReceived(channel, user, text, ts);
+		STORE_STRING_OPTIONAL(d, subtype);
+
+		if (subtype == "bot_message") {
+			STORE_STRING(d, bot_id);
+			onMessageReceived(channel, bot_id, text, ts);
+		}
+		else if (subtype == "me_message") {
+			text = "/me " + text;
+			STORE_STRING(d, user);
+			onMessageReceived(channel, user, text, ts);
+		}
+		else {
+			STORE_STRING(d, user);
+			onMessageReceived(channel, user, text, ts);
+		}
 	}
 }
 

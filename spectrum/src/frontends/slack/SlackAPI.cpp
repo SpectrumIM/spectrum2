@@ -58,6 +58,18 @@ DEFINE_LOGGER(logger, "SlackAPI");
 	} \
 	bool NAME = NAME##_tmp.GetBool();
 
+#define GET_OBJECT(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
+	if (!NAME.IsObject()) { \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		return; \
+	}
+
+#define STORE_STRING_OPTIONAL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	std::string NAME; \
+	if (NAME##_tmp.IsString()) {  \
+		 NAME = NAME##_tmp.GetString(); \
+	}
+
 SlackAPI::SlackAPI(Component *component, const std::string &token) : HTTPRequestQueue(component) {
 	m_component = component;
 	m_token = token;
@@ -272,6 +284,13 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 
 		ret[info.id] = info;
 		LOG4CXX_INFO(logger, info.id << " " << info.name);
+
+		GET_OBJECT(users[i], profile);
+		STORE_STRING_OPTIONAL(profile, bot_id);
+		if (!bot_id.empty()) {
+			ret[bot_id] = info;
+			LOG4CXX_INFO(logger, bot_id << " " << info.name);
+		}
 	}
 
 	return;
