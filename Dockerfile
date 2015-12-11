@@ -22,6 +22,13 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 	make install && \
 	cd .. && \
 	rm -rf purple-facebook* && \
+	echo "---> Installing skype4pidgin" && \
+	git clone git://github.com/EionRobb/skype4pidgin.git && \
+	cd skype4pidgin/skypeweb && \
+	make && \
+	make install && \
+	cd ../.. && \
+	rm -rf skype4pidgin && \
 	echo "---> cleanup" && \
 	rm -rf /usr/share/locale/* && \
 	rm -rf /usr/share/doc/* && \
