@@ -4,7 +4,7 @@ EXPOSE 5222
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 # Spectrum 2
-RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurple-devel protobuf-devel swiften-devel rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel log4cxx-devel json-glib-devel python-pip zlib-devel libjpeg-devel python-devel  mysql-devel popt-devel git libevent-devel qt-devel dbus-glib-devel libcurl-devel wget -y && \
+RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurple-devel protobuf-devel swiften-devel rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel log4cxx-devel gettext libgcrypt-devel libwebp-devel libpurple-devel zlib-devel json-glib-devel python-pip zlib-devel libjpeg-devel python-devel  mysql-devel popt-devel git libevent-devel qt-devel dbus-glib-devel libcurl-devel wget -y && \
 	echo "---> Installing Spectrum 2" && \
 		git clone git://github.com/hanzz/spectrum2.git && \
 		cd spectrum2 && \
@@ -43,6 +43,13 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		rm -r yowsup &&\
 		rm -rf /opt/transwhat/.git &&\
 		rm -rf /opt/transwhat/.gitignore &&\
+	echo "---> Installing Telegram" && \
+		git clone --recursive https://github.com/majn/telegram-purple && \
+		cd telegram-purple && \
+		./configure && \
+		make && \
+		make install && \
+		rm -rf telegram-purple && \
 	echo "---> cleanup" && \
 		rm -rf /usr/share/locale/* && \
 		rm -rf /usr/share/doc/* && \
@@ -58,7 +65,7 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		rm -rf /usr/lib64/libQtHelp* && \
 		rm -rf /usr/lib64/libQtDesigner* && \
 		rm -rf /usr/lib64/libQt3* && \
-		dnf remove protobuf-devel swiften-devel gcc gcc-c++ libpqxx-devel libevent-devel qt-devel dbus-glib-devel libpurple-devel make rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel json-glib-devel zlib-devel libjpeg-devel python-devel  log4cxx-devel mysql-devel popt-devel libcurl-devel spectrum2-debuginfo yum perl wget -y && \
+		dnf remove protobuf-devel swiften-devel gcc gcc-c++ libpqxx-devel libevent-devel qt-devel dbus-glib-devel libpurple-devel make rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel libgcrypt-devel libwebp-devel libpurple-devel zlib-devel json-glib-devel zlib-devel libjpeg-devel python-devel  log4cxx-devel mysql-devel popt-devel libcurl-devel spectrum2-debuginfo yum perl wget -y && \
 		dnf clean all -y && \
 		rm -rf /var/lib/rpm/*
 
