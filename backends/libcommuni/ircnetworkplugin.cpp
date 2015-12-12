@@ -74,9 +74,9 @@ void IRCNetworkPlugin::readData() {
 		// Users can join the network without registering if we allow
 		// one user to connect multiple IRC networks.
 		NetworkPlugin::PluginConfig cfg;
-		if (m_servers.empty()) {
+// 		if (m_servers.empty()) {
 			cfg.setNeedRegistration(false);
-		}
+// 		}
 		cfg.setSupportMUC(true);
 		cfg.disableJIDEscaping();
 		sendConfig(cfg);
