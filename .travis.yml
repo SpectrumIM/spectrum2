@@ -1,6 +1,8 @@
 language: cpp
 sudo: required
 dist: trusty
+virtualenv:
+  system_site_packages: true
 before_script:
           - curl -k https://swift.im/keys/packages.key | sudo apt-key add -
           - echo "deb http://swift.im/packages/ubuntu/trusty development main" | sudo tee -a /etc/apt/sources.list
