@@ -339,7 +339,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			std::string protocol;
 			getProtocolAndName(legacyName, name, protocol);
 
-			if (password.empty()) {
+			if (password.empty() && CONFIG_STRING(config, "service.protocol") != "prpl-telegram") {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
 				np->handleDisconnected(user, 0, "Empty password.");
 				return;
@@ -375,6 +375,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_password_wrapped(account, password.c_str());
 			purple_account_set_bool_wrapped(account, "custom_smileys", FALSE);
 			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
+			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
 
 			setDefaultAccountOptions(account);
 
@@ -1017,6 +1018,64 @@ static PurpleBlistUiOps blistUiOps =
 	NULL
 };
 
+static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
+	LOG4CXX_INFO(logger, "MSG");
+	if (flags & PURPLE_MESSAGE_SYSTEM && CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
+		PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
+
+	// 	char *striped = purple_markup_strip_html_wrapped(message);
+	// 	std::string msg = striped;
+	// 	g_free(striped);
+
+
+		// Escape HTML characters.
+		char *newline = purple_strdup_withhtml_wrapped(msg);
+		char *strip, *xhtml;
+		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
+	// 	xhtml_linkified = spectrum_markup_linkify(xhtml);
+		std::string message_(strip);
+
+		std::string xhtml_(xhtml);
+		g_free(newline);
+		g_free(xhtml);
+	// 	g_free(xhtml_linkified);
+		g_free(strip);
+
+		// AIM and XMPP adds <body>...</body> here...
+		if (xhtml_.find("<body>") == 0) {
+			xhtml_ = xhtml_.substr(6);
+			if (xhtml_.find("</body>") != std::string::npos) {
+				xhtml_ = xhtml_.substr(0, xhtml_.find("</body>"));
+			}
+		}
+
+		if (xhtml_ == message_) {
+			xhtml_ = "";
+		}
+
+		std::string timestamp;
+		if (mtime && (unsigned long) time(NULL)-10 > (unsigned long) mtime/* && (unsigned long) time(NULL) - 31536000 < (unsigned long) mtime*/) {
+			char buf[80];
+			strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", gmtime(&mtime));
+			timestamp = buf;
+		}
+
+	// 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
+
+		if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
+			std::string w = purple_normalize_wrapped(account, who);
+			size_t pos = w.find("/");
+			if (pos != std::string::npos)
+				w.erase((int) pos, w.length() - (int) pos);
+			np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
+		}
+		else {
+			LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
+			np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, who, xhtml_, timestamp);
+		}
+	}
+}
+
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
@@ -1124,7 +1183,7 @@ static PurpleConversationUiOps conversation_ui_ops =
 	NULL,
 	conv_write_im,//conv_write_chat,                              /* write_chat           */
 	conv_write_im,             /* write_im             */
-	NULL,//conv_write_conv,           /* write_conv           */
+	conv_write,//conv_write_conv,           /* write_conv           */
 	conv_chat_add_users,       /* chat_add_users       */
 	NULL,//conv_chat_rename_user,     /* chat_rename_user     */
 	conv_chat_remove_users,    /* chat_remove_users    */
@@ -1780,6 +1839,9 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			firstPing = false;
 			NetworkPlugin::PluginConfig cfg;
 			cfg.setSupportMUC(true);
+			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
+				cfg.setNeedPassword(false);
+			}
 			np->sendConfig(cfg);
 		}
 

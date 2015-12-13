@@ -217,7 +217,8 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		if (m_component->inServerMode()) {
 			if (!registered) {
 				// If we need registration, stop login process because user is not registered
-				if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", false)) {
+				if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", false)
+					&& CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needPassword", true)) {
 					m_userRegistry->onPasswordInvalid(presence->getFrom());
 					return;
 				}
