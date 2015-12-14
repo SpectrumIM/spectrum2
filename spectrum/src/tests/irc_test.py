@@ -43,6 +43,8 @@ class Client(sleekxmpp.ClientXMPP):
 				self.echo_received = True
 
 	def start(self, event):
+		self.getRoster()
+		self.sendPresence()
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
 		self.send_message(mto=self.room, mbody="abc", mtype='groupchat')
 		#time.sleep(10)

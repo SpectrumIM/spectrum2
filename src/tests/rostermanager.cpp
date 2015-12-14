@@ -95,6 +95,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::RosterItemPayload item = payload1->getItems()[0];
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), item.getName());
+		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), getStanza(received[0])->getFrom().toString());
 
 		Swift::RosterPayload::ref payload2 = getStanza(received[2])->getPayload<Swift::RosterPayload>();
 		CPPUNIT_ASSERT(payload2);

@@ -39,6 +39,7 @@ class XMPPUserRegistration;
 class GatewayResponder;
 class AdHocManager;
 class SettingsAdHocCommandFactory;
+class RosterResponder;
 
 class XMPPUserManager : public UserManager {
 	public:
@@ -61,6 +62,7 @@ class XMPPUserManager : public UserManager {
 		GatewayResponder *m_gatewayResponder;
 		AdHocManager *m_adHocManager;
 		SettingsAdHocCommandFactory *m_settings;
+		RosterResponder *m_rosterResponder;
 };
 
 }

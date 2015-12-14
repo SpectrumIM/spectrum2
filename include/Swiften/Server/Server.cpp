@@ -48,7 +48,7 @@ Server::Server(
 			selfJID(jid),
 			stanzaChannel_(),
 			address_(address){
-	stanzaChannel_ = new ServerStanzaChannel();
+	stanzaChannel_ = new ServerStanzaChannel(selfJID);
 	iqRouter_ = new IQRouter(stanzaChannel_);
 	tlsFactory = NULL;
 	parserFactory_ = new PlatformXMLParserFactory();

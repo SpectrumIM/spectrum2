@@ -31,6 +31,7 @@
 #include "gatewayresponder.h"
 #include "adhocmanager.h"
 #include "settingsadhoccommand.h"
+#include "RosterResponder.h"
 
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -75,6 +76,9 @@ XMPPUserManager::XMPPUserManager(Component *component, UserRegistry *userRegistr
 	m_gatewayResponder = new GatewayResponder(frontend->getIQRouter(), this);
 	m_gatewayResponder->start();
 
+	m_rosterResponder = new RosterResponder(frontend->getIQRouter(), this);
+	m_rosterResponder->start();
+
 	m_adHocManager = new AdHocManager(component, frontend->getDiscoItemsResponder(), this, storageBackend);
 	m_adHocManager->start();
 
@@ -97,6 +101,7 @@ XMPPUserManager::~XMPPUserManager() {
 	delete m_adHocManager;
 	delete m_settings;
 	delete m_vcardResponder;
+	delete m_rosterResponder;
 }
 
 void XMPPUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {

@@ -102,6 +102,10 @@ void ServerStanzaChannel::send(boost::shared_ptr<Stanza> stanza) {
 	JID to = stanza->getTo();
 	assert(to.isValid());
 
+	if (!stanza->getFrom().isValid()) {
+		stanza->setFrom(m_jid);
+	}
+
 	// For a full JID, first try to route to a session with the full JID
 	if (!to.isBare()) {
 		std::list<boost::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions[stanza->getTo().toBare().toString()].begin(), sessions[stanza->getTo().toBare().toString()].end(), HasJID(to));

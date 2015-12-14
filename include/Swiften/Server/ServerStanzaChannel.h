@@ -22,6 +22,9 @@ namespace Swift {
 	class Error;
 	class ServerStanzaChannel : public StanzaChannel {
 		public:
+			ServerStanzaChannel(const JID &selfJID) : StanzaChannel() {
+				m_jid = selfJID;
+			}
 			void addSession(boost::shared_ptr<ServerFromClientSession> session);
 			void removeSession(boost::shared_ptr<ServerFromClientSession> session);
 
@@ -54,6 +57,7 @@ namespace Swift {
 			void handleSessionInitialized();
 
 		private:
+			JID m_jid;
 			IDGenerator idGenerator;
 			// [JID][resources][ServerFromClientSession]
 			std::map<std::string, std::list<boost::shared_ptr<ServerFromClientSession> > > sessions;
