@@ -168,7 +168,8 @@ void addTextFixedField(Swift::Form::ref form, const std::string &value) {
 
 std::string fieldValue(Swift::FormField::ref field) {
 #if HAVE_SWIFTEN_3
-	return field->getValues()[0];
+	const std::vector<std::string> values = field->getValues();
+	return values.empty() ? "" : values[0];
 #else
 	TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(field);
 	if (textSingle) {
@@ -199,8 +200,9 @@ std::string fieldValue(Swift::Form::ref form, const std::string &key, const std:
 	for (std::vector<FormField::ref>::const_iterator it = fields.begin(); it != fields.end(); it++) {
 #if HAVE_SWIFTEN_3
 		FormField::ref field = *it;
+		const std::vector<std::string> values = field->getValues();
 		if (field->getName() == key) {
-			return field->getValues()[0];
+			return values.empty() ? "" : values[0];
 		}
 #else
 		TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(*it);
