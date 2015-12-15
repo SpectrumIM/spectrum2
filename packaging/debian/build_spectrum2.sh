@@ -2,6 +2,11 @@
 
 set -x
 
+#Check functions required
+hash debuild 2>/dev/null || ( echo >&2 "apt-get install  devscripts"; exit 1; )
+
+
+
 vercount=$(git rev-list --all | wc -l)
 gitrev=$(git rev-parse --short HEAD | sed 's/\(^[0-9\.]*\)-/\1~/')
 version=$vercount-$gitrev
