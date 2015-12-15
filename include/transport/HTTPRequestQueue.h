@@ -32,7 +32,7 @@ class HTTPRequestQueue {
 	private:
 		int m_delay;
 		std::queue<HTTPRequest *> m_queue;
-		bool m_processing;
+		HTTPRequest *m_req;
 		Swift::Timer::ref m_queueTimer;
 };
 
