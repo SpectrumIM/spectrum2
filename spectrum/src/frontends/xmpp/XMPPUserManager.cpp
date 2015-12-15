@@ -56,6 +56,9 @@ XMPPUserManager::XMPPUserManager(Component *component, UserRegistry *userRegistr
 		m_storageResponder = new StorageResponder(frontend->getIQRouter(), storageBackend, this);
 		m_storageResponder->start();
 	}
+	else {
+		m_storageResponder = NULL;
+	}
 
 	m_vcardResponder = new VCardResponder(frontend->getIQRouter(), component->getNetworkFactories(), this);
 	m_vcardResponder->onVCardRequired.connect(boost::bind(&XMPPUserManager::handleVCardRequired, this, _1, _2, _3));
@@ -97,10 +100,16 @@ XMPPUserManager::~XMPPUserManager() {
 		delete m_userRegistration;
 	}
 
+	m_gatewayResponder->stop();
 	delete m_gatewayResponder;
+
+	m_adHocManager->stop();
 	delete m_adHocManager;
-	delete m_settings;
+
+	m_vcardResponder->stop();
 	delete m_vcardResponder;
+
+	m_rosterResponder->stop();
 	delete m_rosterResponder;
 }
 

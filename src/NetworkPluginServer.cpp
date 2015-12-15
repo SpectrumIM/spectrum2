@@ -310,6 +310,10 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 }
 
 NetworkPluginServer::~NetworkPluginServer() {
+#ifndef _WIN32
+	signal(SIGCHLD, SIG_IGN);
+#endif
+
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 		LOG4CXX_INFO(logger, "Stopping backend " << *it);
 		std::string message;

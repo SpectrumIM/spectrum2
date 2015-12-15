@@ -65,7 +65,7 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	m_removeTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1);
 }
 
-UserManager::~UserManager(){
+UserManager::~UserManager() {
 
 }
 
