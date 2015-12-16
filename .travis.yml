@@ -13,6 +13,6 @@ before_script:
           - sudo apt-get install -y --force-yes ngircd python-sleekxmpp libswiften-dev libprotobuf-dev protobuf-compiler pidgin-dev liblog4cxx10-dev libpopt-dev libboost-dev libboost-signals-dev libboost-system-dev libboost-thread-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-date-time-dev libcppunit-dev libcommuni-dev
 install: "pip install --user sleekxmpp"
 script:
-          - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON . && make && ./src/libtransport_test && make spectrum2 && cd ./spectrum/src/tests && python -V && python start.py
+          - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON . && make libtranspot_test && ./src/libtransport_test && make spectrum2 && make spectrum2_libcommuni_backend && cd ./spectrum/src/tests && python -V && python start.py
 notifications:
   slack: spectrum2:CIlYHtxGMAaxs3qVHfwBzCuy
