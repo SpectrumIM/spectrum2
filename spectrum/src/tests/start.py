@@ -38,7 +38,7 @@ def single_test(Client, Responder):
 		sys.exit(1)
 
 	max_time = 60
-	while not client.finished and max_time > 0:
+	while not client.finished and not responder.finished and max_time > 0:
 		time.sleep(1)
 		max_time -= 1
 	client.disconnect()
@@ -49,7 +49,10 @@ def single_test(Client, Responder):
 	os.system("killall spectrum2_libcommuni_backend 2>/dev/null")
 
 	ret = True
-	for v in client.tests.values():
+	tests = []
+	tests += client.tests.values()
+	tests += responder.tests.values()
+	for v in tests:
 		if v[1]:
 			print v[0] + ": PASSED"
 		else:

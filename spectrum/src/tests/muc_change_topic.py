@@ -19,10 +19,8 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.tests = {}
 
 	def muc_message(self, msg):
-		if msg['mucnick'] != self.nick:
-			self.send_message(mto=msg['from'].bare,
-							mbody="echo %s" % msg['body'],
-							mtype='groupchat')
+		if msg['body'] == "ready":
+			self.send_message(mto=self.room, mbody=None, msubject='The new subject', mtype='groupchat')
 
 	def start(self, event):
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
@@ -33,20 +31,19 @@ class Client(sleekxmpp.ClientXMPP):
 		self.room = room
 		self.nick = nick
 		self.add_event_handler("session_start", self.start)
-		self.add_event_handler("groupchat_message", self.muc_message)
+		self.add_event_handler("groupchat_subject", self.muc_subject)
 		self.finished = False
 
 		self.tests = {}
-		self.tests["echo_received"] = ["libcommuni: Send and receive messages", False]
+		self.tests["subject_changed"] = ["libcommuni: Change topic", False]
 
-	def muc_message(self, msg):
-		if msg['mucnick'] != self.nick:
-			if msg['body'] == "echo abc":
-				self.tests["echo_received"][1] = True
-				self.finished = True
+	def muc_subject(self, msg):
+		if msg['subject'] == "The new subject":
+			self.tests["subject_changed"][1] = True
+			self.finished = True
 
 	def start(self, event):
 		self.getRoster()
 		self.sendPresence()
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
-		self.send_message(mto=self.room, mbody="abc", mtype='groupchat')
+		self.send_message(mto=self.room, mbody="ready", mtype='groupchat')

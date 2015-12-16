@@ -14,15 +14,21 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.nick = nick
 		self.finished = False
 		self.add_event_handler("session_start", self.start)
-		self.add_event_handler("groupchat_message", self.muc_message)
+		self.add_event_handler("muc::" + room + "::got_online", self.muc_got_online)
+		self.add_event_handler("muc::" + room + "::got_offline", self.muc_got_offline)
 
 		self.tests = {}
+		self.tests["online_received"] = ["libcommuni: Received available presence", False]
+		self.tests["offline_received"] = ["libcommuni: Received unavailable presence", False]
 
-	def muc_message(self, msg):
-		if msg['mucnick'] != self.nick:
-			self.send_message(mto=msg['from'].bare,
-							mbody="echo %s" % msg['body'],
-							mtype='groupchat')
+	def muc_got_online(self, presence):
+		if presence['muc']['nick'] == "client":
+			self.tests["online_received"][1] = True
+
+	def muc_got_offline(self, presence):
+		if presence['muc']['nick'] == "client":
+			self.tests["offline_received"][1] = True
+			self.finished = True
 
 	def start(self, event):
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
@@ -33,20 +39,12 @@ class Client(sleekxmpp.ClientXMPP):
 		self.room = room
 		self.nick = nick
 		self.add_event_handler("session_start", self.start)
-		self.add_event_handler("groupchat_message", self.muc_message)
 		self.finished = False
 
 		self.tests = {}
-		self.tests["echo_received"] = ["libcommuni: Send and receive messages", False]
-
-	def muc_message(self, msg):
-		if msg['mucnick'] != self.nick:
-			if msg['body'] == "echo abc":
-				self.tests["echo_received"][1] = True
-				self.finished = True
 
 	def start(self, event):
 		self.getRoster()
 		self.sendPresence()
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
-		self.send_message(mto=self.room, mbody="abc", mtype='groupchat')
+		self.plugin['xep_0045'].leaveMUC(self.room, self.nick)

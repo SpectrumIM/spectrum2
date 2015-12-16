@@ -31,4 +31,5 @@ slack.cfg
 localhost.port
 *.a
 core.*
+*.pyc
 
