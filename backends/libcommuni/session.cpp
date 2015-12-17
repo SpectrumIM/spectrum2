@@ -376,6 +376,14 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			LOG4CXX_INFO(logger, m_user << "Asking /who for channel " << TO_UTF8(channel));
 			sendCommand(IrcCommand::createWho(channel));
 			break;
+		case 401:
+		case 402:
+			nick = TO_UTF8(parameters[1]);
+			if (m_whois.find(nick) != m_whois.end()) {
+				sendMessageToFrontend(m_whois[nick], "whois", nick + ": No such client");
+				m_whois.erase(nick);
+			}
+			break;
 		case 432:
 			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
 			break;

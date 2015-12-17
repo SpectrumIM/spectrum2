@@ -29,12 +29,15 @@ class Client(sleekxmpp.ClientXMPP):
 		self.finished = False
 
 		self.tests = {}
-		self.tests["whois_received"] = ["libcommuni: Receive /whois command response", False]
+		self.tests["whois1_received"] = ["libcommuni: Receive /whois command response", False]
+		self.tests["whois2_received"] = ["libcommuni: Receive /whois command response for invalid nickname", False]
 
 	def muc_message(self, msg):
 		if msg['mucnick'] != self.nick:
 			if msg["body"] == "responder is connected to irc.example.net (responder)\nresponder is a user on channels: @#channel":
-				self.tests["whois_received"][1] = True
+				self.tests["whois1_received"][1] = True
+			elif msg["body"] == "nonexisting: No such client":
+				self.tests["whois2_received"][1] = True
 				self.finished = True
 
 	def start(self, event):
@@ -42,3 +45,4 @@ class Client(sleekxmpp.ClientXMPP):
 		self.sendPresence()
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
 		self.send_message(mto=self.room, mbody="/whois responder", mtype='groupchat')
+		self.send_message(mto=self.room, mbody="/whois nonexisting", mtype='groupchat')

@@ -103,6 +103,9 @@ for conf in configurations:
 		if not f.endswith(".py") or f == "start.py":
 			continue
 
+		if len(sys.argv) == 2 and sys.argv[1] != f:
+			continue
+
 		print conf.__class__.__name__ + ": Starting " + f + " test ..."
 		test = imp.load_source('test', './' + f)
 		try:
