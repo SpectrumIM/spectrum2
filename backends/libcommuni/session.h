@@ -123,6 +123,9 @@ public:
 
 	bool correctNickname(std::string &nickname);
 
+	void sendWhoisCommand(const std::string &channel, const std::string &to);
+	void sendMessageToFrontend(const std::string &channel, const std::string &nickname, const std::string &msg);
+
 	void on_joined(IrcMessage *message);
 	void on_parted(IrcMessage *message);
 	void on_quit(IrcMessage *message);
@@ -132,6 +135,7 @@ public:
 	void on_messageReceived(IrcMessage *message);
 	void on_numericMessageReceived(IrcMessage *message);
 	void on_noticeMessageReceived(IrcMessage *message);
+	void on_whoisMessageReceived(IrcMessage *message);
 
 	int rooms;
 
@@ -142,6 +146,7 @@ protected Q_SLOTS:
 
 	void onMessageReceived(IrcMessage* message);
 	void awayTimeout();
+
 
 protected:
 	IRCNetworkPlugin *m_np;
@@ -156,6 +161,7 @@ protected:
 	IRCBuddyMap m_buddies;
 	QTimer *m_awayTimer;
 	std::string m_suffix;
+	std::map<std::string, std::string> m_whois;
 };
 
 #endif // SESSION_H

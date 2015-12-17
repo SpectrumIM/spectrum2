@@ -224,22 +224,30 @@ void MyIrcSession::on_topicChanged(IrcMessage *message) {
 	m_np->handleSubject(m_user, TO_UTF8(m->channel().toLower()) + m_suffix, TO_UTF8(m->topic()), nickname);
 }
 
-void MyIrcSession::on_messageReceived(IrcMessage *message) {
-	IrcPrivateMessage *m = (IrcPrivateMessage *) message;
-	if (m->isRequest()) {
-		QString request = m->content().split(" ", QString::SkipEmptyParts).value(0).toUpper();
-		if (request == "PING" || request == "TIME" || request == "VERSION") {
-			LOG4CXX_INFO(logger, m_user << ": " << TO_UTF8(request) << " received and has been answered");
-			return;
-		}
+void MyIrcSession::sendWhoisCommand(const std::string &channel, const std::string &to) {
+	m_whois[to] = channel;
+	sendCommand(IrcCommand::createWhois(FROM_UTF8(to)));
+}
+
+void MyIrcSession::on_whoisMessageReceived(IrcMessage *message) {
+	IrcWhoisMessage *m = (IrcWhoisMessage *) message;
+	std::string nickname = TO_UTF8(m->nick());
+	if (m_whois.find(nickname) == m_whois.end()) {
+		LOG4CXX_INFO(logger, "Whois response received with unexpected nickname " << nickname);
+		return;
 	}
 
-	QString msg = m->content();
-	if (m->isAction()) {
-		msg = QString("/me ") + msg;
-	}
+	std::string msg = "";
+	msg += nickname + " is connected to " + TO_UTF8(m->server()) + " (" + TO_UTF8(m->realName()) + ")\n";
+	msg += nickname + " is a user on channels: " + TO_UTF8(m->channels().join(", "));
+
+	sendMessageToFrontend(m_whois[nickname], "whois", msg);
+	m_whois.erase(nickname);
+}
+
+void MyIrcSession::sendMessageToFrontend(const std::string &channel, const std::string &nick, const std::string &msg) {
 	QString html = "";//msg;
-	CommuniBackport::toPlainText(msg);
+// 	CommuniBackport::toPlainText(msg);
 
 	// TODO: Communi produces invalid html now...
 // 	if (html == msg) {
@@ -249,20 +257,18 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 // 		html = IrcUtil::messageToHtml(html);
 // 	}
 
-	std::string target = TO_UTF8(m->target().toLower());
-	if (target.find("#") == 0) {
-		std::string nickname = TO_UTF8(m->nick());
+	std::string nickname = nick;
+	if (channel.find("#") == 0) {
 		correctNickname(nickname);
-		m_np->handleMessage(m_user, target + m_suffix, TO_UTF8(msg), nickname, TO_UTF8(html));
+		m_np->handleMessage(m_user, channel + m_suffix, msg, nickname, TO_UTF8(html));
 	}
 	else {
-		std::string nickname = TO_UTF8(m->nick());
 		correctNickname(nickname);
 		if (m_pms.find(nickname) != m_pms.end()) {
 			std::string room = m_pms[nickname].substr(0, m_pms[nickname].find("/"));
 			room = room.substr(0, room.find("@"));
 			if (hasIRCBuddy(room, nickname)) {
-				m_np->handleMessage(m_user, room + m_suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
+				m_np->handleMessage(m_user, room + m_suffix, msg, nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
 			else {
@@ -275,15 +281,35 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 					continue;
 				}
 				addPM(nickname, it->second->getChannel());
-				m_np->handleMessage(m_user, it->second->getChannel() + m_suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
+				m_np->handleMessage(m_user, it->second->getChannel() + m_suffix, msg, nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
 
 			nickname = nickname + m_suffix;
 		}
 
-		m_np->handleMessage(m_user, nickname, TO_UTF8(msg), "", TO_UTF8(html));
+		m_np->handleMessage(m_user, nickname, msg, "", TO_UTF8(html));
 	}
+}
+
+void MyIrcSession::on_messageReceived(IrcMessage *message) {
+	IrcPrivateMessage *m = (IrcPrivateMessage *) message;
+	if (m->isRequest()) {
+		QString request = m->content().split(" ", QString::SkipEmptyParts).value(0).toUpper();
+		if (request == "PING" || request == "TIME" || request == "VERSION") {
+			LOG4CXX_INFO(logger, m_user << ": " << TO_UTF8(request) << " received and has been answered");
+			return;
+		}
+	}
+
+	std::string msg = TO_UTF8(m->content());
+	if (m->isAction()) {
+		msg = "/me " + msg;
+	}
+
+	std::string target = TO_UTF8(m->target().toLower());
+	std::string nickname = TO_UTF8(m->nick());
+	sendMessageToFrontend(target, nickname, msg);
 }
 
 void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
@@ -469,6 +495,9 @@ void MyIrcSession::onMessageReceived(IrcMessage *message) {
 			break;
 		case IrcMessage::Notice:
 			on_noticeMessageReceived(message);
+			break;
+		case IrcMessage::Whois:
+			on_whoisMessageReceived(message);
 			break;
 		default:break;
 	}

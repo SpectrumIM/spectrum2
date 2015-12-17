@@ -181,6 +181,9 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 	if (message.find("/me") == 0) {
 		m_sessions[session]->sendCommand(IrcCommand::createCtcpAction(FROM_UTF8(target), FROM_UTF8(message.substr(4))));
 	}
+	else if (message.find("/whois") == 0 || message.find(".whois") == 0) {
+		m_sessions[session]->sendWhoisCommand(target, message.substr(7));
+	}
 	else {
 		m_sessions[session]->sendCommand(IrcCommand::createMessage(FROM_UTF8(target), FROM_UTF8(message)));
 	}
