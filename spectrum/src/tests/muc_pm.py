@@ -19,9 +19,16 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.tests = {}
 
 	def message(self, msg):
+		if msg['body'] == "abc" and msg['from'] == self.room + "/client":
 			self.send_message(mto=self.room + "/client",
 							mbody="echo %s" % msg['body'],
 							mtype='chat')
+		elif msg['body'] == "def" and msg['from'] == self.room + "/client":
+			self.send_message(mto=self.room + "/client",
+							mbody="echo %s" % msg['body'],
+							mtype='chat')
+		else:
+			self.finished = True
 
 	def start(self, event):
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
@@ -36,11 +43,15 @@ class Client(sleekxmpp.ClientXMPP):
 		self.finished = False
 
 		self.tests = {}
-		self.tests["echo_received"] = ["libcommuni: Send and receive private messages", False]
+		self.tests["echo1_received"] = ["libcommuni: Send and receive private messages - 1st msg", False]
+		self.tests["echo2_received"] = ["libcommuni: Send and receive private messages - 2nd msg", False]
 
 	def message(self, msg):
 		if msg['body'] == "echo abc" and msg['from'] == self.room + "/responder":
-			self.tests["echo_received"][1] = True
+			self.tests["echo1_received"][1] = True
+			self.send_message(mto=self.room + "/responder", mbody="def", mtype='chat')
+		elif msg['body'] == "echo def" and msg['from'] == self.room + "/responder":
+			self.tests["echo2_received"][1] = True
 			self.finished = True
 
 	def start(self, event):

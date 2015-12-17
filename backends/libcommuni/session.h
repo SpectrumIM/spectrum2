@@ -133,7 +133,6 @@ public:
 	void on_numericMessageReceived(IrcMessage *message);
 	void on_noticeMessageReceived(IrcMessage *message);
 
-	std::string suffix;
 	int rooms;
 
 protected Q_SLOTS:
@@ -145,8 +144,8 @@ protected Q_SLOTS:
 	void awayTimeout();
 
 protected:
-	IRCNetworkPlugin *np;
-	std::string user;
+	IRCNetworkPlugin *m_np;
+	std::string m_user;
 	std::string m_identify;
 	AutoJoinMap m_autoJoin;
 	std::string m_topicData;
@@ -156,6 +155,7 @@ protected:
 	std::map<std::string, std::string> m_pms;
 	IRCBuddyMap m_buddies;
 	QTimer *m_awayTimer;
+	std::string m_suffix;
 };
 
 #endif // SESSION_H

@@ -21,7 +21,6 @@
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
-#include "session.h"
 #include <QtCore>
 #include <QtNetwork>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"

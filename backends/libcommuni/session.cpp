@@ -34,15 +34,16 @@
 
 DEFINE_LOGGER(logger, "IRCConnection");
 
-static bool sentList;
+// static bool sentList;
 
 MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcConnection(parent)
 {
-	this->np = np;
-	this->user = user;
-	this->suffix = suffix;
+	m_np = np;
+	m_user = user;
+	m_suffix = suffix;
 	m_connected = false;
 	rooms = 0;
+
 	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
 	connect(this, SIGNAL(socketError(QAbstractSocket::SocketError)), SLOT(on_socketError(QAbstractSocket::SocketError)));
 	connect(this, SIGNAL(connected()), SLOT(on_connected()));
@@ -59,8 +60,8 @@ MyIrcSession::~MyIrcSession() {
 
 void MyIrcSession::on_connected() {
 	m_connected = true;
-	if (suffix.empty()) {
-		np->handleConnected(user);
+	if (m_suffix.empty()) {
+		m_np->handleConnected(m_user);
 // 		if (!sentList) {
 // 			sendCommand(IrcCommand::createList("", ""));
 // 			sentList = true;
@@ -76,13 +77,13 @@ void MyIrcSession::on_connected() {
 	if (getIdentify().find(" ") != std::string::npos) {
 		std::string to = getIdentify().substr(0, getIdentify().find(" "));
 		std::string what = getIdentify().substr(getIdentify().find(" ") + 1);
-		LOG4CXX_INFO(logger, user << ": Sending IDENTIFY message to " << to);
+		LOG4CXX_INFO(logger, m_user << ": Sending IDENTIFY message to " << to);
 		sendCommand(IrcCommand::createMessage(FROM_UTF8(to), FROM_UTF8(what)));
 	}
 }
 
 void MyIrcSession::addPM(const std::string &name, const std::string &room) {
-	LOG4CXX_INFO(logger, user << ": Adding PM " << name << " " << room);
+	LOG4CXX_INFO(logger, m_user << ": Adding PM conversation " << name << " " << room);
 	m_pms[name] = room;
 }
 
@@ -102,22 +103,22 @@ void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
 		default: reason= "Unknown error."; break;
 	};
 
-	if (!suffix.empty()) {
+	if (!m_suffix.empty()) {
 		for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-			np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_ROOM_NOT_FOUND, pbnetwork::STATUS_NONE, reason);
+			m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_ROOM_NOT_FOUND, pbnetwork::STATUS_NONE, reason);
 		}
 	}
 	else {
-		np->handleDisconnected(user, 0, reason);
-		np->tryNextServer();
+		m_np->handleDisconnected(m_user, 0, reason);
+		m_np->tryNextServer();
 	}
 	m_connected = false;
 }
 
 void MyIrcSession::on_disconnected() {
-	if (suffix.empty()) {
-		np->handleDisconnected(user, 0, "");
-		np->tryNextServer();
+	if (m_suffix.empty()) {
+		m_np->handleDisconnected(m_user, 0, "");
+		m_np->tryNextServer();
 	}
 	m_connected = false;
 }
@@ -142,8 +143,8 @@ void MyIrcSession::on_joined(IrcMessage *message) {
 	std::string nickname = TO_UTF8(m->nick());
 	bool op = correctNickname(nickname);
 	getIRCBuddy(TO_UTF8(m->channel().toLower()), nickname).setOp(op);
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel().toLower()) + suffix, op, pbnetwork::STATUS_ONLINE);
-	LOG4CXX_INFO(logger, user << ": " << nickname << " joined " << TO_UTF8(m->channel().toLower()) + suffix);
+	m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(m->channel().toLower()) + m_suffix, op, pbnetwork::STATUS_ONLINE);
+	LOG4CXX_INFO(logger, m_user << ": " << nickname << " joined " << TO_UTF8(m->channel().toLower()) + m_suffix);
 }
 
 
@@ -152,8 +153,8 @@ void MyIrcSession::on_parted(IrcMessage *message) {
 	std::string nickname = TO_UTF8(m->nick());
 	bool op = correctNickname(nickname);
 	removeIRCBuddy(TO_UTF8(m->channel().toLower()), nickname);
-	LOG4CXX_INFO(logger, user << ": " << nickname << " parted " << TO_UTF8(m->channel().toLower()) + suffix);
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->channel().toLower()) + suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
+	LOG4CXX_INFO(logger, m_user << ": " << nickname << " parted " << TO_UTF8(m->channel().toLower()) + m_suffix);
+	m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(m->channel().toLower()) + m_suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
 }
 
 void MyIrcSession::on_quit(IrcMessage *message) {
@@ -166,8 +167,8 @@ void MyIrcSession::on_quit(IrcMessage *message) {
 			continue;
 		}
 		removeIRCBuddy(it->second->getChannel(), nickname);
-		LOG4CXX_INFO(logger, user << ": " << nickname << " quit " << it->second->getChannel() + suffix);
-		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
+		LOG4CXX_INFO(logger, m_user << ": " << nickname << " quit " << it->second->getChannel() + m_suffix);
+		m_np->handleParticipantChanged(m_user, nickname, it->second->getChannel() + m_suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
 	}
 }
 
@@ -181,8 +182,8 @@ void MyIrcSession::on_nickChanged(IrcMessage *message) {
 			continue;
 		}
 		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
-		LOG4CXX_INFO(logger, user << ": " << nickname << " changed nickname to " << TO_UTF8(m->nick()));
-		np->handleParticipantChanged(user, nickname, it->second->getChannel() + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->nick()));
+		LOG4CXX_INFO(logger, m_user << ": " << nickname << " changed nickname to " << TO_UTF8(m->nick()));
+		m_np->handleParticipantChanged(m_user, nickname, it->second->getChannel() + m_suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->nick()));
 	}
 }
 
@@ -208,9 +209,9 @@ void MyIrcSession::on_modeChanged(IrcMessage *message) {
 		buddy.setOp(false);
 	}
 	
-	np->handleParticipantChanged(user, nickname, TO_UTF8(m->target().toLower()) + suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "");
+	m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(m->target().toLower()) + m_suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "");
 
-	LOG4CXX_INFO(logger, user << ": " << nickname << " changed mode to " << mode << " in " << TO_UTF8(m->target().toLower()));
+	LOG4CXX_INFO(logger, m_user << ": " << nickname << " changed mode to " << mode << " in " << TO_UTF8(m->target().toLower()));
 }
 
 void MyIrcSession::on_topicChanged(IrcMessage *message) {
@@ -219,8 +220,8 @@ void MyIrcSession::on_topicChanged(IrcMessage *message) {
 	std::string nickname = TO_UTF8(m->nick());
 	correctNickname(nickname);
 
-	LOG4CXX_INFO(logger, user << ": " << nickname << " topic changed to " << TO_UTF8(m->topic()));
-	np->handleSubject(user, TO_UTF8(m->channel().toLower()) + suffix, TO_UTF8(m->topic()), nickname);
+	LOG4CXX_INFO(logger, m_user << ": " << nickname << " topic changed to " << TO_UTF8(m->topic()));
+	m_np->handleSubject(m_user, TO_UTF8(m->channel().toLower()) + m_suffix, TO_UTF8(m->topic()), nickname);
 }
 
 void MyIrcSession::on_messageReceived(IrcMessage *message) {
@@ -228,7 +229,7 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	if (m->isRequest()) {
 		QString request = m->content().split(" ", QString::SkipEmptyParts).value(0).toUpper();
 		if (request == "PING" || request == "TIME" || request == "VERSION") {
-			LOG4CXX_INFO(logger, user << ": " << TO_UTF8(request) << " received and has been answered");
+			LOG4CXX_INFO(logger, m_user << ": " << TO_UTF8(request) << " received and has been answered");
 			return;
 		}
 	}
@@ -249,36 +250,39 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 // 	}
 
 	std::string target = TO_UTF8(m->target().toLower());
-	LOG4CXX_INFO(logger, user << ": Message from " << target);
 	if (target.find("#") == 0) {
 		std::string nickname = TO_UTF8(m->nick());
 		correctNickname(nickname);
-		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname, TO_UTF8(html));
+		m_np->handleMessage(m_user, target + m_suffix, TO_UTF8(msg), nickname, TO_UTF8(html));
 	}
 	else {
 		std::string nickname = TO_UTF8(m->nick());
 		correctNickname(nickname);
-		LOG4CXX_INFO(logger, user << ": Corrected nickname " << nickname);
 		if (m_pms.find(nickname) != m_pms.end()) {
 			std::string room = m_pms[nickname].substr(0, m_pms[nickname].find("/"));
 			room = room.substr(0, room.find("@"));
 			if (hasIRCBuddy(room, nickname)) {
-				LOG4CXX_INFO(logger, nickname);
-				LOG4CXX_INFO(logger, room << " " << suffix);
-				np->handleMessage(user, room + suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
+				m_np->handleMessage(m_user, room + m_suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
 			else {
-				LOG4CXX_INFO(logger, user << ": nickname not found " << nickname);
-				nickname = nickname + suffix;
+				nickname = nickname + m_suffix;
 			}
 		}
 		else {
-			nickname = nickname + suffix;
+			for (AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+				if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
+					continue;
+				}
+				addPM(nickname, it->second->getChannel());
+				m_np->handleMessage(m_user, it->second->getChannel() + m_suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
+				return;
+			}
+
+			nickname = nickname + m_suffix;
 		}
 
-		LOG4CXX_INFO(logger, nickname);
-		np->handleMessage(user, nickname, TO_UTF8(msg), "", TO_UTF8(html));
+		m_np->handleMessage(m_user, nickname, TO_UTF8(msg), "", TO_UTF8(html));
 	}
 }
 
@@ -306,7 +310,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			if (nick.find("/") != std::string::npos) {
 				nick = nick.substr(0, nick.find("/"));
 			}
-			np->handleSubject(user, TO_UTF8(parameters[1].toLower()) + suffix, m_topicData, nick);
+			m_np->handleSubject(m_user, TO_UTF8(parameters[1].toLower()) + m_suffix, m_topicData, nick);
 			break;
 		case 352: {
 			channel = parameters[1].toLower();
@@ -316,12 +320,12 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			if (parameters[6].toUpper().startsWith("G")) {
 				if (!buddy.isAway()) {
 					buddy.setAway(true);
-					np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
+					m_np->handleParticipantChanged(m_user, nick, TO_UTF8(channel) + m_suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
 				}
 			}
 			else if (buddy.isAway()) {
 				buddy.setAway(false);
-				np->handleParticipantChanged(user, nick, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
+				m_np->handleParticipantChanged(m_user, nick, TO_UTF8(channel) + m_suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
 			}
 			break;
 		}
@@ -329,45 +333,45 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			channel = parameters[2].toLower();
 			members = parameters[3].split(" ");
 
-			LOG4CXX_INFO(logger, user << ": Received members for " << TO_UTF8(channel) << suffix);
+			LOG4CXX_INFO(logger, m_user << ": Received members for " << TO_UTF8(channel) << m_suffix);
 			for (int i = 0; i < members.size(); i++) {
 				bool op = 0;
 				std::string nickname = TO_UTF8(members.at(i));
 				op = correctNickname(nickname);
 				IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nickname);
 				buddy.setOp(op);
-				np->handleParticipantChanged(user, nickname, TO_UTF8(channel) + suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
+				m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(channel) + m_suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
 			}
 
 			break;
 		case 366:
 			// ask /who to get away states
 			channel = parameters[1].toLower();
-			LOG4CXX_INFO(logger, user << "Asking /who for channel " << TO_UTF8(channel));
+			LOG4CXX_INFO(logger, m_user << "Asking /who for channel " << TO_UTF8(channel));
 			sendCommand(IrcCommand::createWho(channel));
 			break;
 		case 432:
-			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
+			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
 			break;
 		case 433:
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
 			}
-			if (suffix.empty()) {
-				np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
+			if (m_suffix.empty()) {
+				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
 			}
 			break;
 		case 436:
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
 			}
-			np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname collision KILL");
+			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname collision KILL");
 		case 464:
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				np->handleParticipantChanged(user, TO_UTF8(nickName()), it->second->getChannel() + suffix, pbnetwork::PARTICIPANT_FLAG_NOT_AUTHORIZED);
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_NOT_AUTHORIZED);
 			}
-			if (suffix.empty()) {
-				np->handleDisconnected(user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Password incorrect");
+			if (m_suffix.empty()) {
+				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Password incorrect");
 			}
 		case 321:
 			m_rooms.clear();
@@ -378,14 +382,14 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			m_names.push_back(TO_UTF8(parameters[1]));
 			break;
 		case 323:
-			np->handleRoomList("", m_rooms, m_names);
+			m_np->handleRoomList("", m_rooms, m_names);
 			break;
 		default:
 			break;
 	}
 
 	if (m->code() >= 400 && m->code() < 500) {
-			LOG4CXX_INFO(logger, user << ": Error message received: " << message->toData().data());
+		LOG4CXX_INFO(logger, m_user << ": Error message received: " << message->toData().data());
 	}
 }
 
@@ -400,7 +404,7 @@ void MyIrcSession::awayTimeout() {
 
 void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
 	IrcNoticeMessage *m = (IrcNoticeMessage *) message;
-	LOG4CXX_INFO(logger, user << ": NOTICE " << TO_UTF8(m->content()));
+	LOG4CXX_INFO(logger, m_user << ": NOTICE " << TO_UTF8(m->content()));
 
 	QString msg = m->content();
 	CommuniBackport::toPlainText(msg);
@@ -409,7 +413,7 @@ void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
 	if (target.find("#") == 0) {
 		std::string nickname = TO_UTF8(m->nick());
 		correctNickname(nickname);
-		np->handleMessage(user, target + suffix, TO_UTF8(msg), nickname);
+		m_np->handleMessage(m_user, target + m_suffix, TO_UTF8(msg), nickname);
 	}
 	else {
 		std::string nickname = TO_UTF8(m->nick());
@@ -418,26 +422,26 @@ void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
 			return;
 		}
 		if (m_pms.find(nickname) != m_pms.end()) {
-			if (hasIRCBuddy(m_pms[nickname], nickname)) {
-				LOG4CXX_INFO(logger, nickname);
-				np->handleMessage(user, m_pms[nickname] + suffix, TO_UTF8(msg), nickname, "", "", false, true);
+			std::string room = m_pms[nickname].substr(0, m_pms[nickname].find("/"));
+			room = room.substr(0, room.find("@"));
+			if (hasIRCBuddy(room, nickname)) {
+				m_np->handleMessage(m_user, room + m_suffix, TO_UTF8(msg), nickname, "", "", false, true);
 				return;
 			}
 			else {
-				nickname = nickname + suffix;
+				nickname = nickname + m_suffix;
 			}
 		}
 		else {
-			nickname = nickname + suffix;
+			nickname = nickname + m_suffix;
 		}
 
 		LOG4CXX_INFO(logger, nickname);
-		np->handleMessage(user, nickname, TO_UTF8(msg), "");
+		m_np->handleMessage(m_user, nickname, TO_UTF8(msg), "");
 	}
 }
 
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
-// 	LOG4CXX_INFO(logger, user << ": " << TO_UTF8(message->toString()));
 	switch (message->type()) {
 		case IrcMessage::Join:
 			on_joined(message);

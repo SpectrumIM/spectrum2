@@ -29,27 +29,26 @@ DEFINE_LOGGER(logger, "IRCNetworkPlugin");
 #define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
 
 IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
-	this->config = config;
+	m_config = config;
 	m_currentServer = 0;
 	m_firstPing = true;
+
 	m_socket = new QTcpSocket();
 	m_socket->connectToHost(FROM_UTF8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
-	std::string server = CONFIG_STRING_DEFAULTED(config, "service.irc_server", "");
+	std::string server = CONFIG_STRING_DEFAULTED(m_config, "service.irc_server", "");
 	if (!server.empty()) {
 		m_servers.push_back(server);
 	}
 	else {
-		
 		std::list<std::string> list;
-		list = CONFIG_LIST_DEFAULTED(config, "service.irc_server", list);
-		
+		list = CONFIG_LIST_DEFAULTED(m_config, "service.irc_server", list);
 		m_servers.insert(m_servers.begin(), list.begin(), list.end());
 	}
 
-	if (CONFIG_HAS_KEY(config, "service.irc_identify")) {
-		m_identify = CONFIG_STRING(config, "service.irc_identify");
+	if (CONFIG_HAS_KEY(m_config, "service.irc_identify")) {
+		m_identify = CONFIG_STRING(m_config, "service.irc_identify");
 	}
 	else {
 		m_identify = "NickServ identify $name $password";
@@ -71,12 +70,9 @@ void IRCNetworkPlugin::readData() {
 
 	if (m_firstPing) {
 		m_firstPing = false;
-		// Users can join the network without registering if we allow
-		// one user to connect multiple IRC networks.
+
 		NetworkPlugin::PluginConfig cfg;
-// 		if (m_servers.empty()) {
-			cfg.setNeedRegistration(false);
-// 		}
+		cfg.setNeedRegistration(false);
 		cfg.setSupportMUC(true);
 		cfg.disableJIDEscaping();
 		sendConfig(cfg);
@@ -125,7 +121,7 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 	}
 	else {
 		// We are waiting for first room join to connect user to IRC network, because we don't know which
-		// network he choose...
+		// network he chooses...
 		LOG4CXX_INFO(logger, user << ": Ready for connections");
 		handleConnected(user);
 	}
@@ -144,7 +140,7 @@ void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::s
 
 std::string IRCNetworkPlugin::getSessionName(const std::string &user, const std::string &legacyName) {
 	std::string u = user;
-	if (!CONFIG_BOOL(config, "service.server_mode") && m_servers.empty()) {
+	if (!CONFIG_BOOL(m_config, "service.server_mode") && m_servers.empty()) {
 		u = user + legacyName.substr(legacyName.find("@") + 1);
 		if (u.find("/") != std::string::npos) {
 			u = u.substr(0, u.find("/"));
@@ -155,14 +151,12 @@ std::string IRCNetworkPlugin::getSessionName(const std::string &user, const std:
 
 std::string IRCNetworkPlugin::getTargetName(const std::string &legacyName) {
 	std::string r = legacyName;
-// 	if (!CONFIG_BOOL(config, "service.server_mode")) {
-		if (legacyName.find("/") == std::string::npos) {
-			r = legacyName.substr(0, r.find("@"));
-		}
-		else {
-			r = legacyName.substr(legacyName.find("/") + 1);
-		}
-// 	}
+	if (legacyName.find("/") == std::string::npos) {
+		r = legacyName.substr(0, r.find("@"));
+	}
+	else {
+		r = legacyName.substr(legacyName.find("/") + 1);
+	}
 	return r;
 }
 
@@ -173,7 +167,6 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 		return;
 	}
 
-	LOG4CXX_INFO(logger, user << ": XXX name: " << session << ", message to " << legacyName);
 	std::string target = getTargetName(legacyName);
 	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
 	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
@@ -234,6 +227,7 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 	m_sessions[session]->addAutoJoinChannel(target, password);
 	m_sessions[session]->sendCommand(IrcCommand::createJoin(FROM_UTF8(target), FROM_UTF8(password)));
 	m_sessions[session]->rooms += 1;
+
 	// update nickname, because we have nickname per session, no nickname per room.
 	handleRoomNicknameChanged(user, target, TO_UTF8(m_sessions[session]->nickName()));
 }

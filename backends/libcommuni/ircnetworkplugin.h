@@ -19,6 +19,7 @@
  */
 
 #pragma once
+
 #ifndef Q_MOC_RUN
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
@@ -58,7 +59,7 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 		std::string getTargetName(const std::string &legacyName);
 
 	private:
-		Config *config;
+		Config *m_config;
 		QTcpSocket *m_socket;
 		std::map<std::string, MyIrcSession *> m_sessions;
 		std::vector<std::string> m_servers;
