@@ -95,9 +95,7 @@ public:
 	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
 	// just to "hanzz". Therefore we have to somewhere store, that message from "hanzz" should
 	// be mapped to #room@irc.freenode.org/hanzz.
-	void addPM(const std::string &name, const std::string &room) {
-		m_pms[name] = room;
-	}
+	void addPM(const std::string &name, const std::string &room);
 
 	void setIdentify(const std::string &identify) {
 		m_identify = identify;

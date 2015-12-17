@@ -81,6 +81,11 @@ void MyIrcSession::on_connected() {
 	}
 }
 
+void MyIrcSession::addPM(const std::string &name, const std::string &room) {
+	LOG4CXX_INFO(logger, user << ": Adding PM " << name << " " << room);
+	m_pms[name] = room;
+}
+
 void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
 	std::string reason;
 	switch(error) {
@@ -253,13 +258,18 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	else {
 		std::string nickname = TO_UTF8(m->nick());
 		correctNickname(nickname);
+		LOG4CXX_INFO(logger, user << ": Corrected nickname " << nickname);
 		if (m_pms.find(nickname) != m_pms.end()) {
-			if (hasIRCBuddy(m_pms[nickname], nickname)) {
+			std::string room = m_pms[nickname].substr(0, m_pms[nickname].find("/"));
+			room = room.substr(0, room.find("@"));
+			if (hasIRCBuddy(room, nickname)) {
 				LOG4CXX_INFO(logger, nickname);
-				np->handleMessage(user, m_pms[nickname] + suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
+				LOG4CXX_INFO(logger, room << " " << suffix);
+				np->handleMessage(user, room + suffix, TO_UTF8(msg), nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
 			else {
+				LOG4CXX_INFO(logger, user << ": nickname not found " << nickname);
 				nickname = nickname + suffix;
 			}
 		}

@@ -173,6 +173,7 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 		return;
 	}
 
+	LOG4CXX_INFO(logger, user << ": XXX name: " << session << ", message to " << legacyName);
 	std::string target = getTargetName(legacyName);
 	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
 	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
