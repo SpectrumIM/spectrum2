@@ -3,6 +3,10 @@ layout: page
 title: Spectrum 2
 ---
 
+## Deprecation
+
+This backend is deprecated. You should use [libpurple](libpurple.html) backend with `prpl-skypeweb` instead.
+
 ### Description
 
 Skype is supported by Spectrum 2, but in quite specific way. It's not possible to connect the Skype network without official Skype client running. Therefore you have to have official Skype client installed. Official Skype client is then run for every connected user and Spectrum 2 communicate with it using the DBus interface. One Skype client instance needs approximately 50MB of RAM, therefore Skype transport needs lot of memory (50MB per user).

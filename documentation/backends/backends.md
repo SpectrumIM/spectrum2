@@ -19,10 +19,9 @@ service|backend|Full path to the backend binary
 
 Name| Supported networks| Default path to backend
 ----|-------------------|-------------------------
-Libpurple backend|AIM, Jabber, Facebook, GTalk, ICQ, MSN, Yahoo|`/usr/bin/spectrum2_libpurple_backend`
-Swiften backend|Jabber, Facebook, GTalk|`/usr/bin/spectrum2_swiften_backend`
-SLibCommuni backend|IRC|`/usr/bin/spectrum2_libcommuni_backend`
+Libpurple backend|AIM, Jabber, ICQ, MSN, Yahoo, Skype, Telegram, Facebook|`/usr/bin/spectrum2_libpurple_backend`
+LibCommuni backend|IRC|`/usr/bin/spectrum2_libcommuni_backend`
 Frotz backend|Allows playing interactive-fiction games|`/usr/bin/spectrum2_frotz_backend`
-Skype backend|Skype using the official client|`/usr/bin/spectrum2_skype_backend`
 SMSTools3 backend|SMS using connected mobile phone|`/usr/bin/spectrum2_smstools3_backend`
 Twitter backend|Twitter|`/usr/bin/spectrum2_twitter_backend`
+Transwhat backend|Whatsapp|`/opt/transwhat/transwhat.py`

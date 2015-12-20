@@ -5,7 +5,7 @@ title: Spectrum 2
 
 ### Description
 
-Libpurple backend is backend based on Librpurple library supporting all the networks supported by libpurple
+Libpurple backend is backend based on Librpurple library supporting all the networks supported by libpurple.
 
 ### Configuration
 
@@ -18,7 +18,7 @@ There is also special configuration variable in "service" called @protocol@ whic
 
 Protocol variable| Description
 -----------------|------------
-prpl-jabber| Jabber/Facebook/GTalk
+prpl-jabber| Jabber
 prpl-aim|AIM
 prpl-icq|ICQ
 prpl-msn|MSN
@@ -28,12 +28,12 @@ prpl-novell|Groupwise
 
 ### Third-party plugins
 
-Spectrum 2 should work with any third-party libpurple plugin which is properly installed. For example, popular pidgin-sipe plugin:
+Spectrum 2 should work with any third-party libpurple plugin which is properly installed. For example, popular plugins:
 
-Protocol variable| Description
+Protocol variable| website | Description
 -----------------|------------
-prpl-sipe| Microsoft OCS/LCS Messaging
+prpl-facebook| [https://github.com/jgeboski/purple-facebook](website) | Facebook
+prpl-telegram| [https://github.com/majn/telegram-purple](website) | Telegram
+prpl-skypeweb| [https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb](website) | Skype
 
-Microsoft LCS account may require username, which is SIP URI, and server login, so use , in username field like this:
-
-	username%domain.com,login%loginserver.tld
+These plugins are included by default in our Docker image.

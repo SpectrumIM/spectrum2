@@ -3,6 +3,10 @@ layout: page
 title: Spectrum 2
 ---
 
+## Deprecation
+
+This backend is deprecated. You should use [libpurple](libpurple.html) backend with `prpl-jabber` instead.
+
 ### Description
 
 Swiften backend is backend based on Swiften XMPP library. This backend can be used to connect XMPP based networks like Jabber, Facebook or GTalk. In comparison with Libpurple backend, it doesn't need so much memory and CPU time and therefore scales better for XMPP networks.
