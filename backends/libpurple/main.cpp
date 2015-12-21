@@ -1124,10 +1124,14 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
 		std::string w = purple_normalize_wrapped(account, who);
+		std::string n;
 		size_t pos = w.find("/");
-		if (pos != std::string::npos)
+		if (pos != std::string::npos) {
+			n = w.substr((int) pos + 1, w.length() - (int) pos);
 			w.erase((int) pos, w.length() - (int) pos);
-		np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
+		}
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << w);
+		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp);
 	}
 	else {
 		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);

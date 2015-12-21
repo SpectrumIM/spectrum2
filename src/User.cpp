@@ -60,6 +60,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_ignoreDisconnect = false;
 	m_resources = 0;
 	m_reconnectCounter = 0;
+	m_reconnectLimit = 3;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
