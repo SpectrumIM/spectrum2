@@ -125,13 +125,13 @@ class JabberServerModeConf(BaseTest):
 		return False
 
 	def pre_test(self):
-		os.system("prosody --config prosody.cfg.lua >prosody.log &")
+		os.system("prosody --config prosody.cfg.lua &")
 		time.sleep(3)
 		os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp register client%localhost@localhostxmpp client@localhost password 2>/dev/null >/dev/null")
 		os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp register responder%localhost@localhostxmpp responder@localhost password 2>/dev/null >/dev/null")
 
 	def post_test(self):
-		os.system("cat prosody.log")
+		os.system("ps aux")
 		os.system("killall lua-5.1 2>/dev/null")
 		os.system("killall spectrum2_libpurple_backend 2>/dev/null")
 
