@@ -17,6 +17,7 @@ This is User documentation for Spectrum 2 transport. If you are administrator tr
 #### Using as Slack user
 
 * [How does Spectrum 2 interact with my team?](user_slack/workflow.html)
-* [Adding Spectrum 2 transport to the team](user_slack/register.html)
-* [Connecting Slack channels with 3rd-party rooms](user_slack/connecting_channels.html)
+* [Adding Spectrum 2 transport to the team](http://slack.spectrum.im/)
+* [Registering with 3rd-party network account](user_slack/register.html)
+* [Interonnecting Slack channels with 3rd-party rooms](user_slack/interconnecting_channels.html)
 * [List of Spectrum 2 Slack commands](user_slack/slack_commands.html)
