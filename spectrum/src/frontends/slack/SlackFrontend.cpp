@@ -98,7 +98,9 @@ RosterManager *SlackFrontend::createRosterManager(User *user, Component *compone
 }
 
 User *SlackFrontend::createUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
-	return new SlackUser(jid, userInfo, component, userManager);
+	SlackUser *user = new SlackUser(jid, userInfo, component, userManager);
+	user->setReconnectLimit(-1);
+	return user;
 }
 
 UserManager *SlackFrontend::createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {

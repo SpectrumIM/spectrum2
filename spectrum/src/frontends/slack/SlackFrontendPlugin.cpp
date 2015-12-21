@@ -34,7 +34,7 @@ SlackFrontendPlugin::~SlackFrontendPlugin() {
 }
 
 std::string SlackFrontendPlugin::name() const {
-	return "xmpp";
+	return "slack";
 }
 
 Frontend *SlackFrontendPlugin::createFrontend() {

@@ -77,6 +77,10 @@ SlackSession *SlackUserManager::moveTempSession(const std::string &user) {
 	return NULL;
 }
 
+void SlackUserManager::moveTempSession(const std::string &user, SlackSession *session) {
+	m_tempSessions[user] = session;
+}
+
 
 UserRegistration *SlackUserManager::getUserRegistration() {
 	return m_userRegistration;

@@ -51,6 +51,8 @@ class SlackSession {
 
 		void sendMessage(boost::shared_ptr<Swift::Message> message);
 
+		void sendMessageToAll(const std::string &msg);
+
 		void setPurpose(const std::string &purpose, const std::string &channel = "");
 
 		void setUser(User *user) {

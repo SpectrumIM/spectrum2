@@ -60,6 +60,7 @@ class SlackUserManager : public UserManager {
 		void sendMessage(boost::shared_ptr<Swift::Message> message);
 
 		SlackSession *moveTempSession(const std::string &user);
+		void moveTempSession(const std::string &user, SlackSession *session);
 
 	private:
 		Component *m_component;

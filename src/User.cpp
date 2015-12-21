@@ -397,7 +397,7 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	}
 
 	if (e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR || e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR) {
-		if (m_reconnectCounter < 3) {
+		if (m_reconnectLimit < 0 || m_reconnectCounter < m_reconnectLimit) {
 			m_reconnectCounter++;
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network " << error << ", trying to reconnect automatically.");
 			// Simulate destruction/resurrection :)

@@ -134,6 +134,10 @@ class User {
 			return m_cacheMessages;
 		}
 
+		void setReconnectLimit(int limit) {
+			m_reconnectLimit = limit;
+		}
+
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
 		boost::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
@@ -165,6 +169,7 @@ class User {
 		std::list<Swift::Presence::ref> m_joinedRooms;
 		std::map<std::string, std::string> m_settings;
 		bool m_cacheMessages;
+		int m_reconnectLimit;
 };
 
 }

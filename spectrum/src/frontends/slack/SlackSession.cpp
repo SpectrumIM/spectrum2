@@ -91,6 +91,16 @@ void SlackSession::sendOnlineBuddies() {
 	m_onlineBuddiesTimer->start();
 }
 
+void SlackSession::sendMessageToAll(const std::string &msg) {
+	std::vector<std::string> channels;
+	for (std::map<std::string, std::string>::const_iterator it = m_jid2channel.begin(); it != m_jid2channel.end(); it++) {
+		if (std::find(channels.begin(), channels.end(), it->second) == channels.end()) {
+			channels.push_back(it->second);
+			m_rtm->getAPI()->sendMessage("Soectrum 2", it->second, msg);
+		}
+	}
+}
+
 void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 	if (m_user) {
 		std::map<std::string, Conversation *> convs = m_user->getConversationManager()->getConversations();
