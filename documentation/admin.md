@@ -3,6 +3,8 @@ layout: page
 title: Spectrum 2
 ---
 
+This is Admin documentation for Spectrum 2 transport. If you are user trying to use Spectrum 2, you should switch to [User documentation](user.html).
+
 #### About
 
 * [What is Spectrum 2?](about.html)
