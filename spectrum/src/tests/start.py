@@ -26,6 +26,13 @@ class BaseTest:
 		self.room = room
 		self.responder_jid = "responder@localhost"
 		self.client_jid = "client@localhost"
+		self.responder_password = "password"
+		self.client_password = "password"
+		self.client_room = room
+		self.responder_room = room
+		self.client_nick = "client"
+		self.responder_nick = "responder"
+		self.responder_roompassword = ""
 
 	def skip_test(self, test):
 		return False
@@ -35,13 +42,16 @@ class BaseTest:
 		self.pre_test()
 		time.sleep(1)
 
-		responder = Responder(self.responder_jid, "password", self.room, "responder")
+		responder = Responder(self.responder_jid, self.responder_password, self.responder_room, self.responder_roompassword, self.responder_nick)
 		responder.register_plugin('xep_0030')  # Service Discovery
 		responder.register_plugin('xep_0045')  # Multi-User Chat
 		responder.register_plugin('xep_0199')  # XMPP Ping
 		responder['feature_mechanisms'].unencrypted_plain = True
 
-		if responder.connect(("127.0.0.1", 5223)):
+		to = ("127.0.0.1", 5223)
+		if self.responder_password != "password":
+			to = ()
+		if responder.connect(to):
 			responder.process(block=False)
 		else:
 			print "connect() failed"
@@ -49,7 +59,7 @@ class BaseTest:
 			self.post_test()
 			sys.exit(1)
 
-		client = Client(self.client_jid, "password", self.room, "client")
+		client = Client(self.client_jid, self.client_password, self.client_room, self.client_nick)
 		client.register_plugin('xep_0030')  # Service Discovery
 		client.register_plugin('xep_0045')  # Multi-User Chat
 		client.register_plugin('xep_0199')  # XMPP Ping
@@ -57,7 +67,10 @@ class BaseTest:
 
 		time.sleep(2)
 
-		if client.connect(("127.0.0.1", 5223)):
+		to = ("127.0.0.1", 5223)
+		if self.responder_password != "password":
+			to = ("127.0.0.1", 5222)
+		if client.connect(to):
 			client.process(block=False)
 		else:
 			print "connect() failed"
@@ -134,10 +147,37 @@ class JabberServerModeConf(BaseTest):
 		os.system("killall lua-5.1 2>/dev/null")
 		os.system("killall spectrum2_libpurple_backend 2>/dev/null")
 
+class JabberSlackServerModeConf(BaseTest):
+	def __init__(self):
+		BaseTest.__init__(self, "jabber_slack_test.cfg", True, "room%conference.localhost@localhostxmpp")
+		self.client_jid = "client@localhost"
+		self.client_room = "room@conference.localhost"
+		self.responder_jid = "owner@spectrum2tests.xmpp.slack.com"
+		self.responder_password = "spectrum2tests.rkWHkOrjYucxsmBVkA9K"
+		self.responder_room = "spectrum2_room@conference.spectrum2tests.xmpp.slack.com"
+		self.responder_nick = "owner"
+		self.responder_roompassword = "spectrum2tests.rkWHkOrjYucxsmBVkA9K"
+
+	def skip_test(self, test):
+		os.system("cp slack.sql users.sqlite")
+		if test in ["muc_whois.py", "muc_change_topic.py", "muc_join_leave.py", "muc_pm.py"]:
+			return True
+		return False
+
+	def pre_test(self):
+		os.system("prosody --config prosody.cfg.lua > prosody.log &")
+		#time.sleep(3)
+		#os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp set_oauth2_code xoxb-17213576196-VV2K8kEwwrJhJFfs5YWv6La6 use_bot_token 2>/dev/null >/dev/null")
+
+	def post_test(self):
+		os.system("killall lua-5.1 2>/dev/null")
+		os.system("killall spectrum2_libpurple_backend 2>/dev/null")
+
 configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())
 configurations.append(JabberServerModeConf())
+configurations.append(JabberSlackServerModeConf())
 
 exitcode = 0
 

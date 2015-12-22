@@ -8,11 +8,12 @@ import sleekxmpp
 
 
 class Responder(sleekxmpp.ClientXMPP):
-	def __init__(self, jid, password, room, nick):
+	def __init__(self, jid, password, room, room_password, nick):
 		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.finished = False
+		self.room_password = room_password
 		self.add_event_handler("session_start", self.start)
 		self.add_event_handler("groupchat_message", self.muc_message)
 
@@ -23,7 +24,7 @@ class Responder(sleekxmpp.ClientXMPP):
 			self.send_message(mto=self.room, mbody=None, msubject='The new subject', mtype='groupchat')
 
 	def start(self, event):
-		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
+		self.plugin['xep_0045'].joinMUC(self.room, self.nick, password=self.room_password, wait=True)
 
 class Client(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):

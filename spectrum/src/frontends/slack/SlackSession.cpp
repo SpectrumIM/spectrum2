@@ -118,7 +118,7 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 
 	std::string from = message->getFrom().getResource();
 	std::string channel = m_jid2channel[message->getFrom().toBare().toString()];
-	LOG4CXX_INFO(logger, "JID is " << message->getFrom().toBare().toString());
+	LOG4CXX_INFO(logger, "JID is " << message->getFrom().toBare().toString() << " channel is " << channel);
 	if (channel.empty()) {
 		if (m_slackChannel.empty()) {
 			LOG4CXX_ERROR(logger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());

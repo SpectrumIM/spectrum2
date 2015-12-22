@@ -8,10 +8,11 @@ import sleekxmpp
 
 
 class Responder(sleekxmpp.ClientXMPP):
-	def __init__(self, jid, password, room, nick):
+	def __init__(self, jid, password, room, room_password, nick):
 		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
+		self.room_password = room_password
 		self.finished = False
 		self.add_event_handler("session_start", self.start)
 		self.add_event_handler("groupchat_message", self.muc_message)
@@ -25,7 +26,7 @@ class Responder(sleekxmpp.ClientXMPP):
 							mtype='groupchat')
 
 	def start(self, event):
-		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
+		self.plugin['xep_0045'].joinMUC(self.room, self.nick, password=self.room_password, wait=True)
 
 class Client(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
@@ -41,7 +42,7 @@ class Client(sleekxmpp.ClientXMPP):
 
 	def muc_message(self, msg):
 		if msg['mucnick'] != self.nick:
-			if msg['body'] == "echo abc":
+			if msg['body'] == "echo abc" or msg['body'] == "<owner> echo abc":
 				self.tests["echo_received"][1] = True
 				self.finished = True
 
