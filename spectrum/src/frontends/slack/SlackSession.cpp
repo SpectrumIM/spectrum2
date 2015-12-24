@@ -46,7 +46,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackSession");
 
-SlackSession::SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo), m_user(NULL) {
+SlackSession::SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo), m_user(NULL), m_disconnected(false) {
 	m_component = component;
 	m_storageBackend = storageBackend;
 
@@ -355,6 +355,22 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 	}
 }
 
+void SlackSession::handleDisconnected() {
+	m_disconnected = true;
+}
+
+void SlackSession::setUser(User *user) {
+	m_user = user;
+}
+
+
+void SlackSession::handleConnected() {
+	if (m_disconnected) {
+		m_rtm->getAPI()->imOpen(m_ownerId, boost::bind(&SlackSession::handleImOpen, this, _1, _2, _3, _4));
+		m_disconnected = false;
+	}
+}
+
 void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
 	m_ownerChannel = m_rtm->getAPI()->getChannelId(req, ok, resp, data);
 	LOG4CXX_INFO(logger, "Opened channel with team owner: " << m_ownerChannel);
@@ -418,17 +434,16 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 }
 
 void SlackSession::handleRTMStarted() {
-	std::string ownerId;
 	std::map<std::string, SlackUserInfo> &users = m_rtm->getUsers();
 	for (std::map<std::string, SlackUserInfo>::iterator it = users.begin(); it != users.end(); it++) {
 		SlackUserInfo &info = it->second;
 		if (info.isPrimaryOwner) {
-			ownerId = it->first;
+			m_ownerId = it->first;
 			break;
 		}
 	}
 
-	m_rtm->getAPI()->imOpen(ownerId, boost::bind(&SlackSession::handleImOpen, this, _1, _2, _3, _4));
+	m_rtm->getAPI()->imOpen(m_ownerId, boost::bind(&SlackSession::handleImOpen, this, _1, _2, _3, _4));
 }
 
 

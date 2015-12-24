@@ -37,6 +37,8 @@ SlackUserManager::SlackUserManager(Component *component, UserRegistry *userRegis
 	m_component = component;
 	m_storageBackend = storageBackend;
     m_userRegistration = new SlackUserRegistration(component, this, storageBackend);
+
+	onUserCreated.connect(boost::bind(&SlackUserManager::handleUserCreated, this, _1));
 }
 
 SlackUserManager::~SlackUserManager() {
@@ -79,6 +81,7 @@ SlackSession *SlackUserManager::moveTempSession(const std::string &user) {
 
 void SlackUserManager::moveTempSession(const std::string &user, SlackSession *session) {
 	m_tempSessions[user] = session;
+	session->setUser(NULL);
 }
 
 
@@ -92,6 +95,11 @@ std::string SlackUserManager::handleOAuth2Code(const std::string &code, const st
 
 std::string SlackUserManager::getOAuth2URL(const std::vector<std::string> &args) {
 	return static_cast<SlackUserRegistration *>(m_userRegistration)->createOAuth2URL(args);
+}
+
+void SlackUserManager::handleUserCreated(User *user) {
+	LOG4CXX_INFO(logger, "handleUserCreated");
+	static_cast<SlackUser *>(user)->getSession()->handleConnected();
 }
 
 

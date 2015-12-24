@@ -164,8 +164,10 @@ class JabberSlackServerModeConf(BaseTest):
 
 	def skip_test(self, test):
 		os.system("cp ../slack_jabber/slack.sql .")
-		if test in ["muc_whois.py", "muc_change_topic.py", "muc_join_leave.py", "muc_pm.py"]:
-			return True
+		if test.find("bad_password") != -1:
+			print "Changing password to 'badpassword'"
+			os.system("sqlite3 slack.sql \"UPDATE users SET password='badpassword' WHERE id=1\"")
+			#os.system("sqlite3 slack.sql \"SELECT * FROM users\"")
 		return False
 
 	def pre_test(self):

@@ -55,9 +55,10 @@ class SlackSession {
 
 		void setPurpose(const std::string &purpose, const std::string &channel = "");
 
-		void setUser(User *user) {
-			m_user = user;
-		}
+		void setUser(User *user);
+
+		void handleDisconnected();
+		void handleConnected();
 
 	private:
 		void handleRTMStarted();
@@ -83,6 +84,8 @@ class SlackSession {
 		User *m_user;
 		Swift::Timer::ref m_onlineBuddiesTimer;
 		std::map<std::string, std::string> m_onlineBuddies;
+		bool m_disconnected;
+		std::string m_ownerId;
 };
 
 }

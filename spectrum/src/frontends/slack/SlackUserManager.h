@@ -63,6 +63,9 @@ class SlackUserManager : public UserManager {
 		void moveTempSession(const std::string &user, SlackSession *session);
 
 	private:
+		void handleUserCreated(User *user);
+
+	private:
 		Component *m_component;
 		UserRegistration *m_userRegistration;
 		StorageBackend *m_storageBackend;

@@ -65,6 +65,8 @@ void SlackUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPay
 	else {
 		m_session->sendMessageToAll("Disconnected from 3rd-party network for unknown reason.");
 	}
+
+	m_session->handleDisconnected();
 	m_session->sendMessageToAll("Try using ```.spectrum2 reconnect``` to reconnect.");
 	static_cast<SlackUserManager *>(m_userManager)->moveTempSession(m_jid.toString(), m_session);
 	m_session = NULL;
