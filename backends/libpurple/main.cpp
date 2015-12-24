@@ -163,6 +163,13 @@ static void *requestAction(const char *title, const char *primary, const char *s
 		va_arg(actions, char *);
 		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
 	}
+	else if (t == "Plaintext Authentication") {
+		LOG4CXX_INFO(logger,  "Rejecting plaintext authentification");
+		va_arg(actions, char *);
+		va_arg(actions, GCallback);
+		va_arg(actions, char *);
+		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
+	}
 	else {
 		if (title) {
 			std::string headerString(title);
