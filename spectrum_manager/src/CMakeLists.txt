@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
 FILE(GLOB SRC *.cpp *.c)
 
-ADD_EXECUTABLE(spectrum2_manager ${SRC} ../../src/Config.cpp ../../src/Util.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc)
+ADD_EXECUTABLE(spectrum2_manager ${SRC} ../../libtransport/Config.cpp ../../libtransport/Util.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc)
 
 ADD_DEPENDENCIES(spectrum2_manager pb)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)

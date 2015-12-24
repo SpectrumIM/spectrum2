@@ -38,7 +38,7 @@ class BaseTest:
 		return False
 
 	def start(self, Client, Responder):
-		os.system("../spectrum2 -n ./" + self.config + " > spectrum2.log &")
+		os.system("../../spectrum/src/spectrum2 -n ./" + self.config + " > spectrum2.log &")
 		self.pre_test()
 		time.sleep(1)
 
@@ -106,10 +106,11 @@ class BaseTest:
 
 class LibcommuniServerModeSingleServerConf(BaseTest):
 	def __init__(self):
-		BaseTest.__init__(self, "irc_test.cfg", True, "#channel@localhost")
+		BaseTest.__init__(self, "../libcommuni/irc_test.cfg", True, "#channel@localhost")
+		self.directory = "../libcommuni/"
 
 	def pre_test(self):
-		os.system("ngircd -f ngircd.conf &")
+		os.system("ngircd -f ../libcommuni/ngircd.conf &")
 
 	def post_test(self):
 		os.system("killall ngircd 2>/dev/null")
@@ -117,10 +118,11 @@ class LibcommuniServerModeSingleServerConf(BaseTest):
 
 class LibcommuniServerModeConf(BaseTest):
 	def __init__(self):
-		BaseTest.__init__(self, "irc_test2.cfg", True, "#channel%localhost@localhost")
+		BaseTest.__init__(self, "../libcommuni/irc_test2.cfg", True, "#channel%localhost@localhost")
+		self.directory = "../libcommuni/"
 
 	def pre_test(self):
-		os.system("ngircd -f ngircd.conf &")
+		os.system("ngircd -f ../libcommuni/ngircd.conf &")
 
 	def post_test(self):
 		os.system("killall ngircd 2>/dev/null")
@@ -128,7 +130,8 @@ class LibcommuniServerModeConf(BaseTest):
 
 class JabberServerModeConf(BaseTest):
 	def __init__(self):
-		BaseTest.__init__(self, "jabber_test.cfg", True, "room%conference.localhost@localhostxmpp")
+		BaseTest.__init__(self, "../libpurple_jabber/jabber_test.cfg", True, "room%conference.localhost@localhostxmpp")
+		self.directory = "../libpurple_jabber/"
 		self.client_jid = "client%localhost@localhostxmpp"
 		self.responder_jid = "responder%localhost@localhostxmpp"
 
@@ -138,10 +141,10 @@ class JabberServerModeConf(BaseTest):
 		return False
 
 	def pre_test(self):
-		os.system("prosody --config prosody.cfg.lua >prosody.log &")
+		os.system("prosody --config ../libpurple_jabber/prosody.cfg.lua >prosody.log &")
 		time.sleep(3)
-		os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp register client%localhost@localhostxmpp client@localhost password 2>/dev/null >/dev/null")
-		os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp register responder%localhost@localhostxmpp responder@localhost password 2>/dev/null >/dev/null")
+		os.system("../../spectrum_manager/src/spectrum2_manager -c ../libpurple_jabber/manager.conf localhostxmpp register client%localhost@localhostxmpp client@localhost password 2>/dev/null >/dev/null")
+		os.system("../../spectrum_manager/src/spectrum2_manager -c ../libpurple_jabber/manager.conf localhostxmpp register responder%localhost@localhostxmpp responder@localhost password 2>/dev/null >/dev/null")
 
 	def post_test(self):
 		os.system("killall lua-5.1 2>/dev/null")
@@ -149,7 +152,8 @@ class JabberServerModeConf(BaseTest):
 
 class JabberSlackServerModeConf(BaseTest):
 	def __init__(self):
-		BaseTest.__init__(self, "jabber_slack_test.cfg", True, "room%conference.localhost@localhostxmpp")
+		BaseTest.__init__(self, "../slack_jabber/jabber_slack_test.cfg", True, "room%conference.localhost@localhostxmpp")
+		self.directory = "../slack_jabber/"
 		self.client_jid = "client@localhost"
 		self.client_room = "room@conference.localhost"
 		self.responder_jid = "owner@spectrum2tests.xmpp.slack.com"
@@ -159,13 +163,13 @@ class JabberSlackServerModeConf(BaseTest):
 		self.responder_roompassword = "spectrum2tests.rkWHkOrjYucxsmBVkA9K"
 
 	def skip_test(self, test):
-		os.system("cp slack.sql users.sqlite")
+		os.system("cp ../slack_jabber/slack.sql users.sqlite")
 		if test in ["muc_whois.py", "muc_change_topic.py", "muc_join_leave.py", "muc_pm.py"]:
 			return True
 		return False
 
 	def pre_test(self):
-		os.system("prosody --config prosody.cfg.lua > prosody.log &")
+		os.system("prosody --config ../slack_jabber/prosody.cfg.lua > prosody.log &")
 		#time.sleep(3)
 		#os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp set_oauth2_code xoxb-17213576196-VV2K8kEwwrJhJFfs5YWv6La6 use_bot_token 2>/dev/null >/dev/null")
 
@@ -182,7 +186,7 @@ configurations.append(JabberSlackServerModeConf())
 exitcode = 0
 
 for conf in configurations:
-	for f in os.listdir("."):
+	for f in os.listdir(conf.directory):
 		if not f.endswith(".py") or f == "start.py":
 			continue
 
@@ -190,7 +194,7 @@ for conf in configurations:
 			continue
 
 		print conf.__class__.__name__ + ": Starting " + f + " test ..."
-		test = imp.load_source('test', './' + f)
+		test = imp.load_source('test', conf.directory + f)
 		if conf.skip_test(f):
 			print "Skipped."
 			continue
