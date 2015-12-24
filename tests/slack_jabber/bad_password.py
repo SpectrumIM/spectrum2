@@ -24,7 +24,7 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.tests["abc_received"] = ["Test message received", False]
 
 	def message(self, msg):
-		if msg['body'] == "Not Authorized":
+		if msg['body'] == "Not Authorized" or msg['body'] == "Server may require plaintext authentication over an unencrypted stream":
 			self.tests["not_authorized"][1] = True
 		elif msg['body'].find("Try using") != -1:
 			self.send_message(mto="spectrum2@spectrum2tests.xmpp.slack.com", mbody=".spectrum2 register client@localhost password #spectrum2_contactlist")
