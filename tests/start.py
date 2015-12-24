@@ -163,7 +163,7 @@ class JabberSlackServerModeConf(BaseTest):
 		self.responder_roompassword = "spectrum2tests.rkWHkOrjYucxsmBVkA9K"
 
 	def skip_test(self, test):
-		os.system("cp ../slack_jabber/slack.sql users.sqlite")
+		os.system("cp ../slack_jabber/slack.sql .")
 		if test in ["muc_whois.py", "muc_change_topic.py", "muc_join_leave.py", "muc_pm.py"]:
 			return True
 		return False
