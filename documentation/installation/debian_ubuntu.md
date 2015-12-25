@@ -5,7 +5,7 @@ title: Spectrum 2
 
 We have APT repositories for Debian and Ubuntu that make it very easy to install Spectrum 2.
 
-To use the repositories, just add the following lines to @/etc/apt/sources.list@:
+To use the repositories, just add the following lines to `/etc/apt/sources.list`:
 
 	deb http://repo.spectrum.im $dist main
 
