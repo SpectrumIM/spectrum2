@@ -251,6 +251,10 @@ boost::shared_ptr<Swift::DiscoInfo> XMPPFrontend::sendCapabilitiesRequest(Swift:
 }
 
 void XMPPFrontend::reconnectUser(const std::string &user) {
+	if (inServerMode()) {
+		return;
+	}
+
 	LOG4CXX_INFO(logger, "Sending probe presence to " << user);
 	Swift::Presence::ref response = Swift::Presence::create();
 	try {
