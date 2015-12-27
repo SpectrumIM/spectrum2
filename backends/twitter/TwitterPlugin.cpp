@@ -75,9 +75,10 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
 
 	tp = new ThreadPool(loop_, 10);
-		
-	tweet_timer = m_factories->getTimerFactory()->createTimer(90000);
-	message_timer = m_factories->getTimerFactory()->createTimer(90000);
+
+	LOG4CXX_INFO(logger, "Fetch timeout is set to " << CONFIG_INT_DEFAULTED(config, "twitter.fetch_timeout", 90000));
+	tweet_timer = m_factories->getTimerFactory()->createTimer(CONFIG_INT_DEFAULTED(config, "twitter.fetch_timeout", 90000));
+	message_timer = m_factories->getTimerFactory()->createTimer(CONFIG_INT_DEFAULTED(config, "twitter.fetch_timeout", 90000));
 
 	tweet_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForTweets, this));
 	message_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForDirectMessages, this));

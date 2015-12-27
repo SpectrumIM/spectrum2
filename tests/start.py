@@ -167,23 +167,36 @@ class JabberSlackServerModeConf(BaseTest):
 		if test.find("bad_password") != -1:
 			print "Changing password to 'badpassword'"
 			os.system("sqlite3 slack.sql \"UPDATE users SET password='badpassword' WHERE id=1\"")
-			#os.system("sqlite3 slack.sql \"SELECT * FROM users\"")
 		return False
 
 	def pre_test(self):
 		os.system("prosody --config ../slack_jabber/prosody.cfg.lua > prosody.log &")
-		#time.sleep(3)
-		#os.system("../../../spectrum_manager/src/spectrum2_manager -c manager.conf localhostxmpp set_oauth2_code xoxb-17213576196-VV2K8kEwwrJhJFfs5YWv6La6 use_bot_token 2>/dev/null >/dev/null")
 
 	def post_test(self):
 		os.system("killall lua-5.1 2>/dev/null")
 		os.system("killall spectrum2_libpurple_backend 2>/dev/null")
+
+class TwitterServerModeConf(BaseTest):
+	def __init__(self):
+		BaseTest.__init__(self, "../twitter/twitter_test.cfg", True, "")
+		self.directory = "../twitter/"
+		self.client_password = "testpass123"
+
+	def skip_test(self, test):
+		os.system("cp ../twitter/twitter.sql .")
+
+	def pre_test(self):
+		pass
+
+	def post_test(self):
+		os.system("killall spectrum2_twitter_backend 2>/dev/null")
 
 configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())
 configurations.append(JabberServerModeConf())
 configurations.append(JabberSlackServerModeConf())
+configurations.append(TwitterServerModeConf())
 
 exitcode = 0
 
