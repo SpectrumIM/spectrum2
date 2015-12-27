@@ -305,6 +305,11 @@ void TwitterPlugin::handleBuddyRemovedRequest(const std::string &user, const std
 		LOG4CXX_ERROR(logger, user << " is not connected to twitter!")
 		return;
 	}
+
+	if (getTwitterMode(user) == MULTIPLECONTACT) {
+		LOG4CXX_ERROR(logger, user << " not removing Twitter contact " << buddyName << ", because the mode is not MULTIPLECONTACT")
+		return;
+	}
 	
 	LOG4CXX_INFO(logger, user << " - Removing Twitter contact " << buddyName)
 	tp->runAsThread(new DestroyFriendRequest(userdb[user].sessions, user, buddyName, 
