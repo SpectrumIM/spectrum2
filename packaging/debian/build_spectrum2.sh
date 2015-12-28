@@ -22,7 +22,7 @@ tar -czf spectrum2_$version.orig.tar.gz spectrum2-$version
 cp -r debian spectrum2-$version/debian
 
 cd spectrum2-$version
-debuild -i -us -uc
+DEB_BUILD_OPTIONS=nocheck debuild -i -us -uc
 
 cd ..
 
