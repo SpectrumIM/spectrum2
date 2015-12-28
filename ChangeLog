@@ -1,53 +1,38 @@
-Version 2.0.0-beta3 (2012-XX-XX):
+Version 2.0.0 (2015-XX-XX):
 	General:
+	* Fix compilation with new versions of Spectrum 2 dependencies.
+	* Added support for multiple frontends - Slack frontend is the first one.
 	* Log errors related to backend spawning (Show proper log message for
 	  example when path to backend binary is not found).
-	* Update buddies in database only when it's needed and do not execute
-	  useless database statements.
-	* Send roster changes also when buddy's group change.
-	* Fixed bug when transport contact we in all groups.
-	* Answer to disco#info IQ with proper node (#206).
 	* Set SQLite3 as default database backend.
 	* Fixed disconnecting from server caused by sending VCard response
 	  with bad "from" attribute.
 	* Added Munin plugin (Thanks to Askovpen).
 	* Added support for more admin_jid JIDs (Thanks to Askovpen).
 	* Fixed allowed_servers option.
-	* Show error in server-mode when server port is already used.
-	* Fixed bug when backend could freeze on exit.
 	* Options from config file can now be set also using command line like
 	  --service.jid=domain.tld .
 	* Do not send password in IQ-get registration response.
 	* Added support for AdHoc commands.
 	* Do not store buddies with empty name in database.
 	* Improved MySQL storage backend performance.
-	* Do not handle error messages as normal ones.
-	* Added Munin script for Spectrum 2.
-	* Use utf-8 encoding as default for MySQL.
-	* Added a way to disable xhtml-im.
 	* Fix crash caused by two XMPP users using single PurpleAccount instance.
 	* Support for [registration] allowed_usernames.
-	* Fixed compilation with boost-1.50.
 
 	Spectrum2_manager:
 	* Rewritten to provide more features. Check the documentation.
 
 	Libpurple:
 	* prpl-gg: Fetch the contact list properly (#252).
-	* Added support for prpl-novell as it was in spectrum1.
+	* Added support for prpl-novell as it was in Spectrum 1.
 
 	Twitter:
 	* Added Twitter support using Twitter backend. Thanks to Sarang and
 	  Google Summer of Code.
 
 	Skype:
-	* Log more errors.
-
-	Libyahoo2:
-	* Added new Yahoo backend based on libyahoo2.
-
-	Swiften:
-	* Added new XMPP backend based on Swiften library.
+	* Skype backend is now deprecated, use libpurple purple-skypeweb plugin
+	  as a replacement.
 
 	Backend API:
 	* Added Python NetworkPlugin class, so it is now easier to write backends
