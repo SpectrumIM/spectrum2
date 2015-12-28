@@ -24,7 +24,7 @@ It acts as a transport layer between the users as showed in the animation above.
 <img alt="Twitter" src="https://addons.cdn.mozilla.net/user-media/addon_icons/480/480584-64.png" style="float:left; margin-left:10px"/>
 <div style="clear: both;"></div> 
 <img alt="Skype" src="http://i.i.cbsi.com/cnwk.1d/i/tim/2011/12/12/Skype.png" style="float:left"/>
-<img alt="Whatsapp" src="http://www.iconsdb.com/icons/preview/moth-green/whatsapp-xl.png" style="float:left;  margin-left:10px"/>
+<img alt="Whatsapp" src="https://cdn3.iconfinder.com/data/icons/ultimate-social/150/24_whatsapp-64.png" style="float:left;  margin-left:10px"/>
 <img alt="Telegram" src="https://addons.cdn.mozilla.net/user-media/addon_icons/595/595228-64.png" style="float:left; margin-left:10px"/>
 <div style="clear: both;"></div> 
 <img alt="Facebook" src="http://findicons.com/files/icons/818/aquaticus_social/64/facebook.png" style="float:left"/>
