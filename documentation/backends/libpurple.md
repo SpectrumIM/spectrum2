@@ -14,7 +14,7 @@ You have to choose this backend in Spectrum 2 configuration file to use it:
 	[service]
 	backend=/usr/bin/spectrum2_libpurple_backend
 
-There is also special configuration variable in "service" called @protocol@ which decides which Libpurple's protocol will be used:
+There is also special configuration variable in `[service]` section called `protocol` which decides which Libpurple's protocol will be used:
 
 Protocol variable| Description
 -----------------|------------
