@@ -26,10 +26,9 @@ This is Admin documentation for Spectrum 2 transport. If you are user trying to 
 
 * [Backends overview](backends/backends.html)
 * [Libpurple backend](backends/libpurple.html)
-* [Swiften backend](backends/swiften.html)
 * [Libcommuni backend](backends/libcommuni.html)
-* [Skype backend](backends/skype.html)
 * [Twitter backend](backends/twitter.html)
+* [Transwhat backend](backends/transwhat.html)
 
 #### Tutorials
 
