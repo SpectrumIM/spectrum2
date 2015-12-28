@@ -340,6 +340,14 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		msg += "```" + rooms  + "```";
 		m_rtm->sendMessage(m_ownerChannel, msg);
 	}
+	else if (args[1] == "reconnect") {
+		Swift::Presence::ref presence = Swift::Presence::create();
+		presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+		presence->setTo(m_component->getJID());
+		presence->setType(Swift::Presence::Available);
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+		m_component->getFrontend()->onPresenceReceived(presence);
+	}
 	else if (args[1] == "help") {
 		std::string msg;
 		msg =  "Following commands are supported:\\n";
@@ -347,7 +355,8 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		msg += "```.spectrum2 join.room <3rdPartyBotName> <#3rdPartyRoom> <3rdPartyServer> <#SlackChannel>``` Starts transport between 3rd-party room and Slack channel.";
 		msg += "```.spectrum2 leave.room <#SlackChannel>``` Leaves the 3rd-party room connected with the given Slack channel.";
 		msg += "```.spectrum2 list.rooms``` List all the transported rooms.";
-		msg += "```.spectrum2 register <3rdPartyNetworkAccount> <3rdPartyPassword> <#SlackChannel> Registers 3rd-party account for transportation.";
+		msg += "```.spectrum2 reconnect``` Reconnects to 3rd-party network manually in case of fatal error.";
+		msg += "```.spectrum2 register <3rdPartyNetworkAccount> <3rdPartyPassword> <#SlackChannel>``` Registers 3rd-party account for transportation.";
 		m_rtm->sendMessage(m_ownerChannel, msg);
 	}
 	else {
