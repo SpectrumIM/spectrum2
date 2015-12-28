@@ -37,3 +37,11 @@ prpl-telegram| [https://github.com/majn/telegram-purple](website) | Telegram
 prpl-skypeweb| [https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb](website) | Skype
 
 These plugins are included by default in our Docker image.
+
+### Setting libpurple plugins configurations
+
+Some libpurple protocol plugins allow setting configuration variables. Spectrum 2 passes every variable set in `purple` section to libpurple library. If you need to set such options, you can do it for example like this in your configuration file:
+
+	[purple]
+	clientlogin=1
+	ssl=0
