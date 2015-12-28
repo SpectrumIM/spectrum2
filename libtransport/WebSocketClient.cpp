@@ -208,10 +208,20 @@ void WebSocketClient::handleConnected(bool error) {
 	m_conn->write(Swift::createSafeByteArray(req));
 }
 
+void WebSocketClient::handleDisconnected(const boost::optional<Swift::Connection::Error> &error) {
+	if (!error) {
+		return;
+	}
+
+	LOG4CXX_ERROR(logger, "Disconected from " << m_host << ". Will reconnect in 1 second.");
+	m_reconnectTimer->start();
+}
+
 void WebSocketClient::handleDNSResult(const std::vector<Swift::HostAddress> &addrs, boost::optional<Swift::DomainNameResolveError>) {
 	m_conn = m_tlsConnectionFactory->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&WebSocketClient::handleDataRead, this, _1));
 	m_conn->onConnectFinished.connect(boost::bind(&WebSocketClient::handleConnected, this, _1));
+	m_conn->onDisconnected.connect(boost::bind(&WebSocketClient::handleDisconnected, this, _1));
 	m_conn->connect(Swift::HostAddressPort(addrs[0], 443));
 }
 

@@ -66,6 +66,7 @@ class WebSocketClient {
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);
 		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
 		void handleConnected(bool error);
+		void handleDisconnected(const boost::optional<Swift::Connection::Error> &error);
 
 		void connectServer();
 
