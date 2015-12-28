@@ -13,8 +13,9 @@ You have to choose this backend in Spectrum 2 configuration file to use it:
 
 	[service]
 	backend=/usr/bin/spectrum2_libpurple_backend
+	protocol=prpl-jabber
 
-There is also special configuration variable in `[service]` section called `protocol` which decides which Libpurple's protocol will be used:
+As showed above, there is also special configuration variable in `[service]` section called `protocol` which decides which Libpurple's protocol will be used:
 
 Protocol variable| Description
 -----------------|------------
