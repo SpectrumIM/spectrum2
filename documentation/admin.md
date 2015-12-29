@@ -13,7 +13,7 @@ This is Admin documentation for Spectrum 2 transport. If you are user trying to 
 
 * [Installing using Docker](installation/docker.html)
 * [Installing from source code](installation/from_source_code.html)
-* [Installing from source code on Debian/Ubuntu](installation/from_source_code_debian_ubuntu.md)
+* [Installing from source code on Debian/Ubuntu](installation/from_source_code_debian_ubuntu.html)
 
 #### Frontends
 
