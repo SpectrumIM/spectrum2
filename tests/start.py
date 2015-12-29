@@ -157,10 +157,10 @@ class JabberSlackServerModeConf(BaseTest):
 		self.client_jid = "client@localhost"
 		self.client_room = "room@conference.localhost"
 		self.responder_jid = "owner@spectrum2tests.xmpp.slack.com"
-		self.responder_password = "spectrum2tests.rkWHkOrjYucxsmBVkA9K"
+		self.responder_password = "spectrum2tests.e2zJwtKjLhLmt14VsMKq"
 		self.responder_room = "spectrum2_room@conference.spectrum2tests.xmpp.slack.com"
 		self.responder_nick = "owner"
-		self.responder_roompassword = "spectrum2tests.rkWHkOrjYucxsmBVkA9K"
+		self.responder_roompassword = "spectrum2tests.e2zJwtKjLhLmt14VsMKq"
 
 	def skip_test(self, test):
 		os.system("cp ../slack_jabber/slack.sql .")
