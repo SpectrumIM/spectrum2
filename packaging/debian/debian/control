@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 7.0.50~), libpurple-dev, libswiften-dev,
  libpopt-dev, libdbus-glib-1-dev, libpqxx3-dev, cmake, libevent-dev, libboost-all-dev,
  libqt4-dev, libidn11-dev, libxml2-dev, libavahi-client-dev, libavahi-common-dev,
  libcurl4-openssl-dev, libcommuni-dev, libsqlite3-dev
-Standards-Version: 3.9.2
+Standards-Version: 3.9.6
 VCS-Browser: http://git.fsinf.at/apt/spectrum2
 VCS-Git: https://git.fsinf.at/apt/spectrum2.git
 Homepage: http://www.spectrum.im
@@ -182,22 +182,6 @@ Depends: spectrum2-backend-frotz (= ${binary:Version}), ${shlibs:Depends}, ${mis
 Replaces: spectrum2-backend-smstools3-git-dbg
 Description: Spectrum2 backend for sending SMS - debugging symbols
  Debugging symbols for the Spectrum2 backend for sending SMS
-
-Package: spectrum2-backend-libyahoo2
-Architecture: any
-Section: net
-Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Description: Spectrum2 backend to connect Yahoo using libyahoo
- Spectrum2 backend using libyahoo
-
-Package: spectrum2-backend-libyahoo2-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends: spectrum2-backend-libyahoo2 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Description: Spectrum2 backend to connect Yahoo using libyahoo - debugging symbols
- Debugging symbols for the Spectrum2 backend to connect Yahoo
 
 Package: spectrum2-backend-libcommuni
 Architecture: any

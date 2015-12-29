@@ -22,7 +22,6 @@ override_dh_strip:
 	dh_strip -pspectrum2-backend-frotz --dbg-package=spectrum2-backend-frotz-dbg
 	dh_strip -pspectrum2-backend-swiften --dbg-package=spectrum2-backend-swiften-dbg
 	dh_strip -pspectrum2-backend-twitter --dbg-package=spectrum2-backend-twitter-dbg
-	dh_strip -pspectrum2-backend-libyahoo2 --dbg-package=spectrum2-backend-libyahoo2-dbg
 	dh_strip -pspectrum2-backend-libcommuni --dbg-package=spectrum2-backend-libcommuni-dbg
 	dh_strip -pspectrum2-backend-smstools3 --dbg-package=spectrum2-backend-smstools3-dbg
 	dh_strip -plibtransport2.0 --dbg-package=libtransport-dbg
