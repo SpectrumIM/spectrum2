@@ -60,8 +60,8 @@ class Server {
 		void print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html);
 
 	private:
-		bool check_password(const char *user, const char *password);
-		session *new_session(const char *user);
+		bool check_password(const std::string &user, const std::string &password);
+		session *new_session(const std::string &user);
 		session *get_session(struct http_message *hm);
 
 		void authorize(struct mg_connection *conn, struct http_message *hm);

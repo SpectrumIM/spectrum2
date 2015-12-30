@@ -17,9 +17,21 @@
 static struct mg_serve_http_opts s_http_server_opts;
 
 
-static void get_qsvar(const struct http_message *hm,
-                      const char *name, char *dst, size_t dst_len) {
-	mg_get_http_var(&hm->body, name, dst, dst_len);
+static std::string get_http_var(const struct http_message *hm, const char *name) {
+	char data[4096];
+	data[0] = '\0';
+
+	mg_get_http_var(&hm->body, name, data, sizeof(data));
+	if (data[0] != '\0') {
+		return data;
+	}
+
+	mg_get_http_var(&hm->query_string, name, data, sizeof(data));
+	if (data[0] != '\0') {
+		return data;
+	}
+
+	return "";
 }
 
 static void my_strlcpy(char *dst, const char *src, size_t len) {
@@ -82,15 +94,15 @@ bool Server::start() {
 	return true;
 }
 
-bool Server::check_password(const char *user, const char *password) {
+bool Server::check_password(const std::string &user, const std::string &password) {
 	return (m_user == user && m_password == password);
 }
 
 // Allocate new session object
-Server::session *Server::new_session(const char *user) {
+Server::session *Server::new_session(const std::string &user) {
 	Server::session *session = new Server::session;
 
-	my_strlcpy(session->user, user, sizeof(session->user));
+	my_strlcpy(session->user, user.c_str(), sizeof(session->user));
 	snprintf(session->random, sizeof(session->random), "%d", rand());
 	generate_session_id(session->session_id, session->random, session->user);
 	session->expire = time(0) + SESSION_TTL;
@@ -120,26 +132,12 @@ Server::session *Server::get_session(struct http_message *hm) {
 }
 
 void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
-	char user[255], password[255];
 	Server::session *session;
-
-	// Fetch user name and password.
-	get_qsvar(hm, "user", user, sizeof(user));
-	get_qsvar(hm, "password", password, sizeof(password));
+	std::string user = get_http_var(hm, "user");
+	std::string password = get_http_var(hm, "password");
 
 	if (check_password(user, password) && (session = new_session(user)) != NULL) {
 		std::cout << "User authorized\n";
-		// Authentication success:
-		//   1. create new session
-		//   2. set session ID token in the cookie
-		//   3. remove original_url from the cookie - not needed anymore
-		//   4. redirect client back to the original URL
-		//
-		// The most secure way is to stay HTTPS all the time. However, just to
-		// show the technique, we redirect to HTTP after the successful
-		// authentication. The danger of doing this is that session cookie can
-		// be stolen and an attacker may impersonate the user.
-		// Secure application must use HTTPS all the time.
 		mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 			"Set-Cookie: session=%s; max-age=3600; http-only\r\n"  // Session ID
 			"Set-Cookie: user=%s\r\n"  // Set user, needed by Javascript code
@@ -196,8 +194,7 @@ void Server::print_html(struct mg_connection *conn, struct http_message *hm, con
 
 void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {
 	std::string html;
-	char jid[255];
-	get_qsvar(hm, "jid", jid, sizeof(jid));
+	std::string jid = get_http_var(hm, "jid");
 
 	html += std::string("<h2>") + jid + " online users</h2><table><tr><th>JID<th>Command</th></tr>";
 
@@ -225,10 +222,8 @@ void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *
 
 void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 	std::string html;
-	char jid[255];
-	get_qsvar(hm, "jid", jid, sizeof(jid));
-	char cmd[4096];
-	get_qsvar(hm, "cmd", cmd, sizeof(cmd));
+	std::string jid = get_http_var(hm, "jid");
+	std::string cmd = get_http_var(hm, "cmd");
 
 	html += std::string("<h2>") + jid + " command result</h2>";
 
@@ -252,8 +247,7 @@ void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 
 void Server::serve_start(struct mg_connection *conn, struct http_message *hm) {
 	std::string html;
-	char jid[255];
-	get_qsvar(hm, "jid", jid, sizeof(jid));
+	std::string jid = get_http_var(hm, "jid");
 
 	start_instances(m_config, jid);
 	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
@@ -263,8 +257,7 @@ void Server::serve_start(struct mg_connection *conn, struct http_message *hm) {
 
 void Server::serve_stop(struct mg_connection *conn, struct http_message *hm) {
 	std::string html;
-	char jid[255];
-	get_qsvar(hm, "jid", jid, sizeof(jid));
+	std::string jid = get_http_var(hm, "jid");
 
 	stop_instances(m_config, jid);
 	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
