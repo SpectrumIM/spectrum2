@@ -48,30 +48,32 @@ class Server {
 
 		bool start();
 
-		void *event_handler(enum mg_event event, struct mg_connection *conn);
+		void event_handler(struct mg_connection *nc, int ev, void *p);
 
 	private:
-		void serve_login(struct mg_connection *conn, const struct mg_request_info *request_info);
-		void serve_root(struct mg_connection *conn, const struct mg_request_info *request_info);
-		void serve_start(struct mg_connection *conn, const struct mg_request_info *request_info);
-		void serve_stop(struct mg_connection *conn, const struct mg_request_info *request_info);
-		void serve_onlineusers(struct mg_connection *conn, const struct mg_request_info *request_info);
-		void serve_cmd(struct mg_connection *conn, const struct mg_request_info *request_info);
-		void print_html(struct mg_connection *conn, const struct mg_request_info *request_info, const std::string &html);
+		void serve_login(struct mg_connection *conn, struct http_message *hm);
+		void serve_root(struct mg_connection *conn, struct http_message *hm);
+		void serve_start(struct mg_connection *conn, struct http_message *hm);
+		void serve_stop(struct mg_connection *conn, struct http_message *hm);
+		void serve_onlineusers(struct mg_connection *conn, struct http_message *hm);
+		void serve_cmd(struct mg_connection *conn, struct http_message *hm);
+		void print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html);
 
 	private:
 		bool check_password(const char *user, const char *password);
 		session *new_session(const char *user);
-		session *get_session(const struct mg_connection *conn);
+		session *get_session(struct http_message *hm);
 
-		void authorize(struct mg_connection *conn, const struct mg_request_info *request_info);
+		void authorize(struct mg_connection *conn, struct http_message *hm);
 
-		bool is_authorized(const struct mg_connection *conn, const struct mg_request_info *request_info);
+		bool is_authorized(const struct mg_connection *conn, struct http_message *hm);
 
-		void redirect_to(struct mg_connection *conn, const struct mg_request_info *request_info, const char *where);
+		void redirect_to(struct mg_connection *conn, struct http_message *hm, const char *where);
 
 	private:
-		struct mg_context *ctx;
+		struct mg_mgr m_mgr;
+		struct mg_connection *m_nc;
+
 		std::map<std::string, session *> sessions;
 		std::string m_user;
 		std::string m_password;

@@ -122,10 +122,9 @@ padding-left: 15px;\
 }
 
 
-static void get_qsvar(const struct mg_request_info *request_info,
+static void get_qsvar(const struct http_message *hm,
                       const char *name, char *dst, size_t dst_len) {
-  const char *qs = request_info->query_string;
-  mg_get_var(qs, strlen(qs == NULL ? "" : qs), name, dst, dst_len);
+	mg_get_http_var(&hm->query_string, name, dst, dst_len);
 }
 
 static void my_strlcpy(char *dst, const char *src, size_t len) {
@@ -138,7 +137,11 @@ static void my_strlcpy(char *dst, const char *src, size_t len) {
 // This is why all communication must be SSL-ed.
 static void generate_session_id(char *buf, const char *random,
                                 const char *user) {
-  mg_md5(buf, random, user, NULL);
+  cs_md5(buf, random, strlen(random), user, strlen(user), NULL);
+}
+
+static void _event_handler(struct mg_connection *nc, int ev, void *p) {
+	static_cast<Server *>(nc->mgr->user_data)->event_handler(nc, ev, p);
 }
 
 Server::Server(ManagerConfig *config) {
@@ -146,30 +149,19 @@ Server::Server(ManagerConfig *config) {
 	m_config = config;
 	m_user = CONFIG_STRING(m_config, "service.admin_username");
 	m_password = CONFIG_STRING(m_config, "service.admin_password");
+
+	mg_mgr_init(&m_mgr, this);
+	m_nc = mg_bind(&m_mgr, std::string(":" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port"))).c_str(), &_event_handler);
+	mg_set_protocol_http_websocket(m_nc);
 }
 
 Server::~Server() {
-	if (ctx) {
-		mg_stop(ctx);
-	}
-}
-
-
-static void *_event_handler(enum mg_event event, struct mg_connection *conn) {
-	const struct mg_request_info *request_info = mg_get_request_info(conn);
-	return static_cast<Server *>(request_info->user_data)->event_handler(event, conn);
+	mg_mgr_free(&m_mgr);
 }
 
 bool Server::start() {
-	const char *options[] = {
-		"listening_ports", boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port")).c_str(),
-		"num_threads", "1",
-		NULL
-	};
-
-	// Setup and start Mongoose
-	if ((ctx = mg_start(&_event_handler, this, options)) == NULL) {
-		return false;
+	for (;;) {
+		mg_mgr_poll(&m_mgr, 1000);
 	}
 
 	return true;
@@ -193,10 +185,12 @@ Server::session *Server::new_session(const char *user) {
 }
 
 // Get session object for the connection. Caller must hold the lock.
-Server::session *Server::get_session(const struct mg_connection *conn) {
+Server::session *Server::get_session(struct http_message *hm) {
 	time_t now = time(NULL);
-	char session_id[33];
-	mg_get_cookie(conn, "session", session_id, sizeof(session_id));
+	char session_id[255];
+	struct mg_str *hdr = mg_get_http_header(hm, "Cookie");
+	int len = mg_http_parse_header(hdr, "session", session_id, sizeof(session_id));
+	session_id[len] = 0;
 
 	if (sessions.find(session_id) == sessions.end()) {
 		return NULL;
@@ -209,13 +203,13 @@ Server::session *Server::get_session(const struct mg_connection *conn) {
 	return NULL;
 }
 
-void Server::authorize(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 	char user[255], password[255];
 	Server::session *session;
 
 	// Fetch user name and password.
-	get_qsvar(request_info, "user", user, sizeof(user));
-	get_qsvar(request_info, "password", password, sizeof(password));
+	get_qsvar(hm, "user", user, sizeof(user));
+	get_qsvar(hm, "password", password, sizeof(password));
 
 	if (check_password(user, password) && (session = new_session(user)) != NULL) {
 		std::cout << "User authorized\n";
@@ -238,27 +232,27 @@ void Server::authorize(struct mg_connection *conn, const struct mg_request_info 
 			session->session_id, session->user);
 	} else {
 		// Authentication failure, redirect to login.
-		redirect_to(conn, request_info, "/login");
+		redirect_to(conn, hm, "/login");
 	}
 }
 
-bool Server::is_authorized(const struct mg_connection *conn, const struct mg_request_info *request_info) {
+bool Server::is_authorized(const struct mg_connection *conn, struct http_message *hm) {
 	Server::session *session;
 	char valid_id[33];
 	bool authorized = false;
 
 	// Always authorize accesses to login page and to authorize URI
-	if (!strcmp(request_info->uri, "/login") ||
-		!strcmp(request_info->uri, "/authorize")) {
+	if (!mg_vcmp(&hm->uri, "/login") ||
+		!mg_vcmp(&hm->uri, "/authorize")) {
 		return true;
 	}
 
 // 	pthread_rwlock_rdlock(&rwlock);
-	if ((session = get_session(conn)) != NULL) {
+	if ((session = get_session(hm)) != NULL) {
 		generate_session_id(valid_id, session->random, session->user);
 		if (strcmp(valid_id, session->session_id) == 0) {
-		session->expire = time(0) + SESSION_TTL;
-		authorized = true;
+			session->expire = time(0) + SESSION_TTL;
+			authorized = true;
 		}
 	}
 // 	pthread_rwlock_unlock(&rwlock);
@@ -266,14 +260,13 @@ bool Server::is_authorized(const struct mg_connection *conn, const struct mg_req
 	return authorized;
 }
 
-void Server::redirect_to(struct mg_connection *conn, const struct mg_request_info *request_info, const char *where) {
+void Server::redirect_to(struct mg_connection *conn, struct http_message *hm, const char *where) {
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
-		"Set-Cookie: original_url=%s\r\n"
-		"Location: %s\r\n\r\n",
-		request_info->uri, where);
+		"Set-Cookie: original_url=/\r\n"
+		"Location: %s\r\n\r\n", where);
 }
 
-void Server::print_html(struct mg_connection *conn, const struct mg_request_info *request_info, const std::string &html) {
+void Server::print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html) {
 	mg_printf(conn,
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/html\r\n"
@@ -283,7 +276,7 @@ void Server::print_html(struct mg_connection *conn, const struct mg_request_info
 			(int) html.size(), html.c_str());
 }
 
-void Server::serve_login(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::serve_login(struct mg_connection *conn, struct http_message *hm) {
 	std::string html= "\
 <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\
   \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \
@@ -305,13 +298,13 @@ void Server::serve_login(struct mg_connection *conn, const struct mg_request_inf
   </body>\
 </html>";
 
-	print_html(conn, request_info, html);
+	print_html(conn, hm, html);
 }
 
-void Server::serve_onlineusers(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {
 	std::string html = get_header();
 	char jid[255];
-	get_qsvar(request_info, "jid", jid, sizeof(jid));
+	get_qsvar(hm, "jid", jid, sizeof(jid));
 
 	html += std::string("<h2>") + jid + " online users</h2><table><tr><th>JID<th>Command</th></tr>";
 
@@ -334,15 +327,15 @@ void Server::serve_onlineusers(struct mg_connection *conn, const struct mg_reque
 
 	html += "</table><a href=\"/\">Back to main page</a>";
 	html += "</body></html>";
-	print_html(conn, request_info, html);
+	print_html(conn, hm, html);
 }
 
-void Server::serve_cmd(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 	std::string html = get_header();
 	char jid[255];
-	get_qsvar(request_info, "jid", jid, sizeof(jid));
+	get_qsvar(hm, "jid", jid, sizeof(jid));
 	char cmd[4096];
-	get_qsvar(request_info, "cmd", cmd, sizeof(cmd));
+	get_qsvar(hm, "cmd", cmd, sizeof(cmd));
 
 	html += std::string("<h2>") + jid + " command result</h2>";
 
@@ -360,33 +353,33 @@ void Server::serve_cmd(struct mg_connection *conn, const struct mg_request_info 
 
 	html += "<a href=\"/\">Back to main page</a>";
 	html += "</body></html>";
-	print_html(conn, request_info, html);
+	print_html(conn, hm, html);
 }
 
 
-void Server::serve_start(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::serve_start(struct mg_connection *conn, struct http_message *hm) {
 	std::string html= get_header() ;
 	char jid[255];
-	get_qsvar(request_info, "jid", jid, sizeof(jid));
+	get_qsvar(hm, "jid", jid, sizeof(jid));
 
 	start_instances(m_config, jid);
 	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
 	html += "</body></html>";
-	print_html(conn, request_info, html);
+	print_html(conn, hm, html);
 }
 
-void Server::serve_stop(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::serve_stop(struct mg_connection *conn, struct http_message *hm) {
 	std::string html= get_header();
 	char jid[255];
-	get_qsvar(request_info, "jid", jid, sizeof(jid));
+	get_qsvar(hm, "jid", jid, sizeof(jid));
 
 	stop_instances(m_config, jid);
 	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
 	html += "</body></html>";
-	print_html(conn, request_info, html);
+	print_html(conn, hm, html);
 }
 
-void Server::serve_root(struct mg_connection *conn, const struct mg_request_info *request_info) {
+void Server::serve_root(struct mg_connection *conn, struct http_message *hm) {
 	std::vector<std::string> list = show_list(m_config, false);
 	std::string html= get_header() + "<h2>List of instances</h2><table><tr><th>JID<th>Status</th><th>Command</th><th>Run command</th></tr>";
 
@@ -419,45 +412,34 @@ void Server::serve_root(struct mg_connection *conn, const struct mg_request_info
 	}
 
 	html += "</table></body></html>";
-	print_html(conn, request_info, html);
+	print_html(conn, hm, html);
 }
 
-void *Server::event_handler(enum mg_event event, struct mg_connection *conn) {
-	const struct mg_request_info *request_info = mg_get_request_info(conn);
-	void *processed = (void *) 0x1;
+void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
+	struct http_message *hm = (struct http_message *) p;
 
-	if (event == MG_NEW_REQUEST) {
-		if (!is_authorized(conn, request_info)) {
-			redirect_to(conn, request_info, "/login");
-		} else if (strcmp(request_info->uri, "/authorize") == 0) {
-			authorize(conn, request_info);
-		} else if (strcmp(request_info->uri, "/login") == 0) {
-			serve_login(conn, request_info);
-		} else if (strcmp(request_info->uri, "/") == 0) {
-			serve_root(conn, request_info);
-		} else if (strcmp(request_info->uri, "/onlineusers") == 0) {
-			serve_onlineusers(conn, request_info);
-		} else if (strcmp(request_info->uri, "/cmd") == 0) {
-			serve_cmd(conn, request_info);
-		} else if (strcmp(request_info->uri, "/start") == 0) {
-			serve_start(conn, request_info);
-		} else if (strcmp(request_info->uri, "/stop") == 0) {
-			serve_stop(conn, request_info);
-		} else {
-			// No suitable handler found, mark as not processed. Mongoose will
-			// try to serve the request.
-			processed = NULL;
-		}
+	if (ev != MG_EV_HTTP_REQUEST) {
+		return;
 	}
-	else if (event == MG_EVENT_LOG) {
-		// Called by Mongoose's cry()
-		std::cerr << "Mongoose error: " << request_info->log_message << "\n";
-	}
-	else {
-		processed = NULL;
+	if (!is_authorized(conn, hm)) {
+		redirect_to(conn, hm, "/login");
+	} else if (mg_vcmp(&hm->uri, "/authorize") == 0) {
+		authorize(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/login") == 0) {
+		serve_login(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/") == 0) {
+		serve_root(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/onlineusers") == 0) {
+		serve_onlineusers(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/cmd") == 0) {
+		serve_cmd(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/start") == 0) {
+		serve_start(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/stop") == 0) {
+		serve_stop(conn, hm);
 	}
 
-	return processed;
+	conn->flags |= MG_F_SEND_AND_CLOSE;
 }
 
 

@@ -147,7 +147,6 @@ int main(int argc, char **argv)
 			std::cerr << "Can't set up server handler.\n";
 			return 1;
 		}
-		while (1) { sleep(10); }
 	}
 	else {
 		if (command.size() < 2) {
