@@ -64,6 +64,10 @@ WebSocketClient::~WebSocketClient() {
 
 void WebSocketClient::connectServer() {
 	LOG4CXX_INFO(logger, "Starting DNS query for " << m_host << " " << m_path);
+
+	m_upgraded = false;
+	m_buffer.clear();
+
 	m_dnsQuery = m_component->getNetworkFactories()->getDomainNameResolver()->createAddressQuery(m_host);
 	m_dnsQuery->onResult.connect(boost::bind(&WebSocketClient::handleDNSResult, this, _1, _2));
 	m_dnsQuery->run();
