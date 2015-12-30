@@ -17,3 +17,8 @@ INSTALL(FILES
 	spectrum_manager.cfg
 	DESTINATION /etc/spectrum2
 	)
+
+INSTALL(DIRECTORY
+	html
+	DESTINATION /var/lib/spectrum2_manager
+	)

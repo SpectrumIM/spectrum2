@@ -38,6 +38,7 @@ class Server {
 			char random[20];          // Random data used for extra user validation
 			char user[255];  // Authenticated user
 			time_t expire;            // Expiration timestamp, UTC
+			bool admin;
 		};
 
 		/// Constructor.
@@ -51,7 +52,6 @@ class Server {
 		void event_handler(struct mg_connection *nc, int ev, void *p);
 
 	private:
-		void serve_login(struct mg_connection *conn, struct http_message *hm);
 		void serve_root(struct mg_connection *conn, struct http_message *hm);
 		void serve_start(struct mg_connection *conn, struct http_message *hm);
 		void serve_stop(struct mg_connection *conn, struct http_message *hm);
@@ -78,4 +78,6 @@ class Server {
 		std::string m_user;
 		std::string m_password;
 		ManagerConfig *m_config;
+		std::string m_header;
+		std::string m_footer;
 };

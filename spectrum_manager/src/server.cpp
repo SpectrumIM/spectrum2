@@ -8,123 +8,18 @@
 #include <time.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <fstream>
+#include <string>
+#include <cerrno>
 
 #define SESSION_TTL 120
 
-static std::string get_header() {
-return "\
-<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\
-  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \
-<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" dir=\"ltr\"> \
-  <head>\
-    <title>Spectrum 2 web interface</title>\
-    <meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>\
-  <style type=\"text/css\">\
-body{ background-color: #F9F9F9; color: #444444; font: normal normal 14px \"Helvetica\", \"Arial\", Sans-Serif; }\
-\
-pre, kbd, var, samp, tt{ font-family: \"Courier\", Monospace; }\
-\
-pre { font-size: 12px; }\
-\
-h1, h2, h3, h4, h5, h6, pre{ color: #094776; }\
-\
-h1{ font-size: 28px; }\
-\
-h2{ font-size: 24px; font-weight: normal; }\
-\
-h1, h2, h3, h4, h5, h6{ margin-bottom: 20px; }\
-\
-h2, h3{ border-bottom: 2px solid #EEEEEE; padding: 0 0 3px; }	\
-\
-h3{ border-color: #E5E5E5; border-width: 1px; }\
-\
-h4{ font-size: 18px; }\
-\
-	h1 a, h2 a{ font-weight: normal; }\
-\
-	h1 a, h2 a, h3 a{ text-decoration: none; }\
-\
-h3, h5, h6{ font-size: 18px; }\
-\
-	h4, h5, h6{ font-size: 14px; }\
-\
-p, dl, ul, ol{ margin: 20px 0; }\
-\
-	p, dl, ul, ol, h3, h4, h5, h6{ margin-left: 20px; }\
-\
-	li > ul,\
-	li > ol{ margin: 0; margin-left: 40px; }\
-\
-	dl > dd{ margin-left: 20px; }\
-	\
-	li > p { margin: 0; }\
-\
-p, li, dd, dt, pre{ line-height: 1.5; }\
-\
-table {\
-	border-collapse: collapse;\
-    margin-bottom: 20px;\
-	margin-left:20px;\
-	}\
-\
-th {\
-	padding: 0 0.5em;\
-	text-align: center;\
-	}\
-\
-th {\
-	border: 1px solid #FB7A31;\
-	background: #FFC;\
-	}\
-\
-td {\
-	border-bottom: 1px solid #CCC;\
-	border-right: 1px solid #CCC;\
-	border-left: 1px solid #CCC;\
-	padding: 0 0.5em;\
-	}\
-\
-\
-a:link,\
-a:visited{ color: #1A5B8D; }\
-\
-a:hover,\
-a:active{ color: #742CAC; }\
-\
-a.headerlink{ visibility: hidden; }\
-\
-	:hover > a.headerlink { visibility: visible; }\
-\
-a img{ \
-	border: 0;\
-	outline: 0;\
-}\
-\
-img{ display: block; max-width: 100%; }\
-\
-code {\
-	border: 1px solid #FB7A31;\
-	background: #FFC;\
-}\
-\
-pre {\
- white-space: pre-wrap;\
- white-space: -moz-pre-wrap;\
- white-space: -o-pre-wrap;\
-border: 1px solid #FB7A31;\
-background: #FFC;\
-padding:5px;\
-padding-left: 15px;\
-}\
-\
-  </style>\
-  </head><body><h1>Spectrum 2 web interface</h1>";
-}
+static struct mg_serve_http_opts s_http_server_opts;
 
 
 static void get_qsvar(const struct http_message *hm,
                       const char *name, char *dst, size_t dst_len) {
-	mg_get_http_var(&hm->query_string, name, dst, dst_len);
+	mg_get_http_var(&hm->body, name, dst, dst_len);
 }
 
 static void my_strlcpy(char *dst, const char *src, size_t len) {
@@ -153,6 +48,26 @@ Server::Server(ManagerConfig *config) {
 	mg_mgr_init(&m_mgr, this);
 	m_nc = mg_bind(&m_mgr, std::string(":" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port"))).c_str(), &_event_handler);
 	mg_set_protocol_http_websocket(m_nc);
+
+	s_http_server_opts.document_root = CONFIG_STRING(m_config, "service.data_dir").c_str();
+
+	std::ifstream header(std::string(CONFIG_STRING(m_config, "service.data_dir") + "/header.html").c_str(), std::ios::in);
+	if (header) {
+		header.seekg(0, std::ios::end);
+		m_header.resize(header.tellg());
+		header.seekg(0, std::ios::beg);
+		header.read(&m_header[0], m_header.size());
+		header.close();
+	}
+
+	std::ifstream footer(std::string(CONFIG_STRING(m_config, "service.data_dir") + "/footer.html").c_str(), std::ios::in);
+	if (footer) {
+		footer.seekg(0, std::ios::end);
+		m_footer.resize(footer.tellg());
+		footer.seekg(0, std::ios::beg);
+		footer.read(&m_footer[0], m_footer.size());
+		footer.close();
+	}
 }
 
 Server::~Server() {
@@ -179,6 +94,7 @@ Server::session *Server::new_session(const char *user) {
 	snprintf(session->random, sizeof(session->random), "%d", rand());
 	generate_session_id(session->session_id, session->random, session->user);
 	session->expire = time(0) + SESSION_TTL;
+	session->admin = std::string(user) == m_user;
 
 	sessions[session->session_id] = session;
 	return session;
@@ -243,11 +159,14 @@ bool Server::is_authorized(const struct mg_connection *conn, struct http_message
 
 	// Always authorize accesses to login page and to authorize URI
 	if (!mg_vcmp(&hm->uri, "/login") ||
+		!mg_vcmp(&hm->uri, "/login/") ||
+		!mg_vcmp(&hm->uri, "/form.css") ||
+		!mg_vcmp(&hm->uri, "/style.css") ||
+		!mg_vcmp(&hm->uri, "/logo.png") ||
 		!mg_vcmp(&hm->uri, "/authorize")) {
 		return true;
 	}
 
-// 	pthread_rwlock_rdlock(&rwlock);
 	if ((session = get_session(hm)) != NULL) {
 		generate_session_id(valid_id, session->random, session->user);
 		if (strcmp(valid_id, session->session_id) == 0) {
@@ -255,7 +174,6 @@ bool Server::is_authorized(const struct mg_connection *conn, struct http_message
 			authorized = true;
 		}
 	}
-// 	pthread_rwlock_unlock(&rwlock);
 
 	return authorized;
 }
@@ -272,37 +190,12 @@ void Server::print_html(struct mg_connection *conn, struct http_message *hm, con
 			"Content-Type: text/html\r\n"
 			"Content-Length: %d\r\n"        // Always set Content-Length
 			"\r\n"
-			"%s",
-			(int) html.size(), html.c_str());
-}
-
-void Server::serve_login(struct mg_connection *conn, struct http_message *hm) {
-	std::string html= "\
-<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\
-  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\"> \
-<html xmlns=\"http://www.w3.org/1999/xhtml\" lang=\"en\" dir=\"ltr\"> \
-  <head>\
-    <title>Spectrum 2 web interface</title>\
-    <meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>\
-  </head>\
-  <body>\
-    <center>\
-      <h2>Spectrum 2 web interface login</h2>\
-      <br/>\
-      <form action=\"/authorize\">\
-        Username: <input type=\"text\" name=\"user\"></input><br/>\
-        Password: <input type=\"password\" name=\"password\"></input><br/>\
-        <input type=\"submit\" value=\"Login\"></input>\
-      </form>\
-    </center>\
-  </body>\
-</html>";
-
-	print_html(conn, hm, html);
+			"%s%s%s",
+			(int) html.size() + m_header.size() + m_footer.size(), m_header.c_str(), html.c_str(), m_footer.c_str());
 }
 
 void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {
-	std::string html = get_header();
+	std::string html;
 	char jid[255];
 	get_qsvar(hm, "jid", jid, sizeof(jid));
 
@@ -331,7 +224,7 @@ void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *
 }
 
 void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
-	std::string html = get_header();
+	std::string html;
 	char jid[255];
 	get_qsvar(hm, "jid", jid, sizeof(jid));
 	char cmd[4096];
@@ -358,7 +251,7 @@ void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 
 
 void Server::serve_start(struct mg_connection *conn, struct http_message *hm) {
-	std::string html= get_header() ;
+	std::string html;
 	char jid[255];
 	get_qsvar(hm, "jid", jid, sizeof(jid));
 
@@ -369,7 +262,7 @@ void Server::serve_start(struct mg_connection *conn, struct http_message *hm) {
 }
 
 void Server::serve_stop(struct mg_connection *conn, struct http_message *hm) {
-	std::string html= get_header();
+	std::string html;
 	char jid[255];
 	get_qsvar(hm, "jid", jid, sizeof(jid));
 
@@ -378,40 +271,45 @@ void Server::serve_stop(struct mg_connection *conn, struct http_message *hm) {
 	html += "</body></html>";
 	print_html(conn, hm, html);
 }
-
 void Server::serve_root(struct mg_connection *conn, struct http_message *hm) {
 	std::vector<std::string> list = show_list(m_config, false);
-	std::string html= get_header() + "<h2>List of instances</h2><table><tr><th>JID<th>Status</th><th>Command</th><th>Run command</th></tr>";
+	std::string html = "<h2>List of instances</h2>";
 
-	BOOST_FOREACH(std::string &instance, list) {
-		html += "<tr>";
-		html += "<td><a href=\"/onlineusers?jid=" + instance + "\">" + instance + "</a></td>";
-		Swift::SimpleEventLoop eventLoop;
-		Swift::BoostNetworkFactories networkFactories(&eventLoop);
-
-		ask_local_server(m_config, networkFactories, instance, "status");
-		eventLoop.runUntilEvents();
-		while(get_response().empty()) {
-			eventLoop.runUntilEvents();
-		}
-		html += "<td>" + get_response() + "</td>";
-		if (get_response().find("Running") == 0) {
-			html += "<td><a href=\"/stop?jid=" + instance + "\">Stop</a></td>";
-			html += "<td><form action=\"/cmd\">";
-			html += "<input type=\"hidden\" name=\"jid\" value=\"" + instance + "\"></input>";
-			html += "<input type=\"text\" name=\"cmd\"></input>";
-			html += "<input type=\"submit\" value=\"Run\"></input>";
-			html += "</form></td>";
-		}
-		else {
-			html += "<td><a href=\"/start?jid=" + instance + "\">Start</a></td>";
-			html += "<td></td>";
-		}
-
-		html += "</tr>";
+	if (list.empty()) {
+		html += "<p>There are no Spectrum 2 instances yet. You can create new instance by adding configuration files into <pre>/etc/spectrum2/transports</pre> directory. You can then maintain the Spectrum 2 instance here.</p>";
 	}
+	else {
+		html += "<table><tr><th>JID<th>Status</th><th>Command</th><th>Run command</th></tr>";
+		BOOST_FOREACH(std::string &instance, list) {
+			html += "<tr>";
+			html += "<td><a href=\"/onlineusers?jid=" + instance + "\">" + instance + "</a></td>";
+			Swift::SimpleEventLoop eventLoop;
+			Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
-	html += "</table></body></html>";
+			ask_local_server(m_config, networkFactories, instance, "status");
+			eventLoop.runUntilEvents();
+			while(get_response().empty()) {
+				eventLoop.runUntilEvents();
+			}
+			html += "<td>" + get_response() + "</td>";
+			if (get_response().find("Running") == 0) {
+				html += "<td><a href=\"/stop?jid=" + instance + "\">Stop</a></td>";
+				html += "<td><form action=\"/cmd\">";
+				html += "<input type=\"hidden\" name=\"jid\" value=\"" + instance + "\"></input>";
+				html += "<input type=\"text\" name=\"cmd\"></input>";
+				html += "<input type=\"submit\" value=\"Run\"></input>";
+				html += "</form></td>";
+			}
+			else {
+				html += "<td><a href=\"/start?jid=" + instance + "\">Start</a></td>";
+				html += "<td></td>";
+			}
+
+			html += "</tr>";
+		}
+
+		html += "</table>";
+	}
 	print_html(conn, hm, html);
 }
 
@@ -421,12 +319,11 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 	if (ev != MG_EV_HTTP_REQUEST) {
 		return;
 	}
+
 	if (!is_authorized(conn, hm)) {
 		redirect_to(conn, hm, "/login");
 	} else if (mg_vcmp(&hm->uri, "/authorize") == 0) {
 		authorize(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/login") == 0) {
-		serve_login(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/") == 0) {
 		serve_root(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/onlineusers") == 0) {
@@ -437,6 +334,8 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		serve_start(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/stop") == 0) {
 		serve_stop(conn, hm);
+	} else {
+		mg_serve_http(conn, hm, s_http_server_opts);
 	}
 
 	conn->flags |= MG_F_SEND_AND_CLOSE;
