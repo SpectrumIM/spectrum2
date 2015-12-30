@@ -153,6 +153,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 	else if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
 		boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
 		res->addIdentity(DiscoInfo::Identity(m_rooms[to.toBare().toString()], "conference", "text"));
+		res->addFeature("http://jabber.org/protocol/muc");
 		res->setNode(info->getNode());
 		sendResponse(from, to, id, res);
 	}
