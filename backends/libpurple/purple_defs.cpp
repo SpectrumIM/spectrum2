@@ -100,6 +100,8 @@ purple_xfer_unref_wrapped_fnc purple_xfer_unref_wrapped = NULL;
 purple_xfer_ref_wrapped_fnc purple_xfer_ref_wrapped = NULL;
 purple_xfers_set_ui_ops_wrapped_fnc purple_xfers_set_ui_ops_wrapped = NULL;
 purple_xfers_get_handle_wrapped_fnc purple_xfers_get_handle_wrapped = NULL;
+purple_roomlist_set_ui_ops_wrapped_fnc purple_roomlist_set_ui_ops_wrapped = NULL;
+purple_roomlist_get_list_wrapped_fnc purple_roomlist_get_list_wrapped = NULL;
 purple_imgstore_get_data_wrapped_fnc purple_imgstore_get_data_wrapped = NULL;
 purple_imgstore_get_size_wrapped_fnc purple_imgstore_get_size_wrapped = NULL;
 purple_imgstore_unref_wrapped_fnc purple_imgstore_unref_wrapped = NULL;
@@ -540,6 +542,14 @@ bool resolvePurpleFunctions() {
 
 	purple_xfers_get_handle_wrapped = (purple_xfers_get_handle_wrapped_fnc)GetProcAddress(f_hPurple, "purple_xfers_get_handle");
 	if (!purple_xfers_get_handle_wrapped)
+		return false;
+
+	purple_roomlist_set_ui_ops_wrapped = (purple_roomlist_set_ui_ops_wrapped_fnc)GetProcAddress(f_hPurple, "purple_roomlist_set_ui_ops");
+        if (!purple_roomlist_set_ui_ops_wrapped)
+                return false;
+	
+	purple_roomlist_get_list_wrapped = (purple_roomlist_get_list_wrapped_fnc)GetProcAddress(f_hPurple, "purple_roomlist_get_list");
+	if (!purple_roomlist_get_list_wrapped)
 		return false;
 
 	purple_imgstore_get_data_wrapped = (purple_imgstore_get_data_wrapped_fnc)GetProcAddress(f_hPurple, "purple_imgstore_get_data");
