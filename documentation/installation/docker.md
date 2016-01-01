@@ -35,8 +35,8 @@ Now you have to decide where to store the configuration files for Spectrum 2. We
 
 You can use following default configuration files as a starting place:
 
-* [XMPP Frontend - gateway mode](https://github.com/hanzz/spectrum2/blob/spectrum/src/sample2_gateway.cfg)
-* [XMPP Frontend - server mode](https://github.com/hanzz/spectrum2/blob/spectrum/src/sample.cfg)
+* [XMPP Frontend - gateway mode](https://github.com/hanzz/spectrum2/blob/master/spectrum/src/sample2_gateway.cfg)
+* [XMPP Frontend - server mode](https://github.com/hanzz/spectrum2/blob/master/spectrum/src/sample.cfg)
 
 Download the configuration file you chose into `/opt/spectrum2/configuration` directory you have created earlier and edit it as you want. Check the documentation and tutorials for configuration examples.
 
