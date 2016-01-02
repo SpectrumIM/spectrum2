@@ -56,7 +56,7 @@ bool HTTPRequest::GET(std::string url, 	std::string &data)
 			
 		/* Set http request and url */
 		curl_easy_setopt(curlhandle, CURLOPT_HTTPGET, 1);
-		curl_easy_setopt(curlhandle, CURLOPT_VERBOSE, 1);
+// 		curl_easy_setopt(curlhandle, CURLOPT_VERBOSE, 1);
 		curl_easy_setopt(curlhandle, CURLOPT_URL, url.c_str());
 		
 		/* Send http request and return status*/
