@@ -247,7 +247,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 
 			if((mode)m == userdb[user].twitterMode) return; //If same as current mode return
 			if(m < 0 || m > 2) { // Invalid modes
-				handleMessage(user, adminLegacyName, std::string("Error! Unknown mode ") + data + ". Allowed values 0,1,2." );
+				handleMessage(user, adminLegacyName, std::string("Error! Unknown mode ") + data + ". Allowed values 0 or 1." );
 				return;
 			}
 
@@ -372,7 +372,7 @@ bool TwitterPlugin::getUserOAuthKeyAndSecret(const std::string user, std::string
 		return false;
 	}
 
-	key="", secret=""; int type;
+	key="", secret=""; int type = TYPE_STRING;;
 	storagebackend->getUserSetting((long)info.id, OAUTH_KEY, type, key);
 	storagebackend->getUserSetting((long)info.id, OAUTH_SECRET, type, secret);
 	return true;
@@ -389,7 +389,7 @@ bool TwitterPlugin::checkSpectrum1User(const std::string user)
 	}
 
 	std::string first_synchronization_done = "";
-	int type;
+	int type = TYPE_STRING;
 	storagebackend->getUserSetting((long)info.id, "first_synchronization_done", type, first_synchronization_done);
 
 	LOG4CXX_INFO(logger, "first_synchronization_done: " << first_synchronization_done)
@@ -408,7 +408,7 @@ int TwitterPlugin::getTwitterMode(const std::string user)
 		return -1;
 	}
 
-	int type; int m;
+	int type = TYPE_STRING; int m;
 	std::string s_m;
 	storagebackend->getUserSetting((long)info.id, MODE, type, s_m);
 	if(s_m == "") {
@@ -552,7 +552,7 @@ std::string TwitterPlugin::getMostRecentTweetIDUnsafe(const std::string user)
 	if(onlineUsers.count(user)) {
 		ID = userdb[user].mostRecentTweetID;
 		if (ID.empty()) {
-			int type;
+			int type = TYPE_STRING;
 			UserInfo info;
 			if(storagebackend->getUser(user, info) == false) {
 				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
@@ -590,7 +590,7 @@ std::string TwitterPlugin::getMostRecentDMIDUnsafe(const std::string user) {
 	if(onlineUsers.count(user)) {
 		ID = userdb[user].mostRecentDirectMessageID;
 		if (ID.empty()) {
-			int type;
+			int type = TYPE_STRING;
 			UserInfo info;
 			if(storagebackend->getUser(user, info) == false) {
 				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
