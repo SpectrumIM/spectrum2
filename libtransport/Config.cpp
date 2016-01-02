@@ -141,7 +141,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("proxy.user", value<std::string>()->default_value(""), "Proxy user.")
 		("proxy.password", value<std::string>()->default_value(""), "Proxy Password.")
 		("proxy.port", value<int>()->default_value(0), "Proxy port.")
-		("twitter.fetch_timeout", value<int>()->default_value(0), "Proxy port.")
+		("twitter.fetch_timeout", value<int>()->default_value(90000), "Proxy port.")
 
 	;
 
