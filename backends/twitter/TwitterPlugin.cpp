@@ -246,7 +246,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 			mode prevm = userdb[user].twitterMode;
 
 			if((mode)m == userdb[user].twitterMode) return; //If same as current mode return
-			if(m < 0 || m > 2) { // Invalid modes
+			if(m < 0 || m > 1) { // Invalid modes
 				handleMessage(user, adminLegacyName, std::string("Error! Unknown mode ") + data + ". Allowed values 0 or 1." );
 				return;
 			}
