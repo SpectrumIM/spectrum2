@@ -661,7 +661,7 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 				//LOG4CXX_INFO(logger, user << " - " << SHA(friendAvatars[i]))
 				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getUserName(), std::vector<std::string>(), 
 #if HAVE_SWIFTEN_3
-					pbnetwork::STATUS_ONLINE, lastTweet, Swift::byteArrayToString(cryptoProvider->getSHA1Hash(Swift::createByteArray(friendAvatars[i]))));
+					pbnetwork::STATUS_ONLINE, lastTweet, Swift::Hexify::hexify(cryptoProvider->getSHA1Hash(Swift::createByteArray(friendAvatars[i]))));
 #else
 								   pbnetwork::STATUS_ONLINE, lastTweet, SHA(friendAvatars[i]));
 #endif
