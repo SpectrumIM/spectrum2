@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 		return restart_instances(&config);
 	}
 	else if (command[0] == "server") {
-		Server server(&config);
+		Server server(&config, config_file);
 		if (server.start() == false) {
 			std::cerr << "Can't set up server handler.\n";
 			return 1;

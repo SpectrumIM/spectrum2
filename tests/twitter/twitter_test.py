@@ -36,6 +36,7 @@ class Client(sleekxmpp.ClientXMPP):
 		self.tests["friends"] = ["#friends command", False]
 		self.tests["unfollow"] = ["#unfollow command", False]
 		self.tests["friends2"] = ["#friends after unfollow command", False]
+		self.tests["mode1"] = ["#mode 1", False]
 
 		self.status = "timeline"
 		self.timestamp = int(time.time())
@@ -60,16 +61,16 @@ class Client(sleekxmpp.ClientXMPP):
 			self.tests["follow"][1] = True
 			self.send_message(mto=msg['from'], mbody="#friends")
 		elif self.status == "friends" and msg['body'].find("USER LIST") != -1 and msg['body'].find("colinpwheeler") != -1:
-			self.status = "unfollow"
-			self.tests["friends"][1] = True
-			self.send_message(mto=msg['from'], mbody="#unfollow colinpwheeler")
-		elif self.status == "unfollow" and msg['body'] == "You are not following colinpwheeler anymore":
-			self.status = "friends2"
-			self.tests["unfollow"][1] = True
-			self.send_message(mto=msg['from'], mbody="#friends")
-		elif self.status == "friends2" and msg['body'].find("USER LIST") != -1 and msg['body'].find("colinpwheeler") == -1:
-			self.tests["friends2"][1] = True
-			self.finished = True
+			#self.status = "unfollow"
+			#self.tests["friends"][1] = True
+			#self.send_message(mto=msg['from'], mbody="#unfollow colinpwheeler")
+		#elif self.status == "unfollow" and msg['body'] == "You are not following colinpwheeler anymore":
+			#self.status = "friends2"
+			#self.tests["unfollow"][1] = True
+			#self.send_message(mto=msg['from'], mbody="#friends")
+		#elif self.status == "friends2" and msg['body'].find("USER LIST") != -1 and msg['body'].find("colinpwheeler") == -1:
+			#self.tests["friends2"][1] = True
+			self.send_message(mto=msg['from'], mbody="#mode 1")
 
 	def start(self, event):
 		self.getRoster()

@@ -85,6 +85,11 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 
 	tweet_timer->start();
 	message_timer->start();
+
+#if HAVE_SWIFTEN_3
+		cryptoProvider = boost::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
+#endif
+	
 	
 	LOG4CXX_INFO(logger, "Starting the plugin.");
 }
@@ -438,7 +443,7 @@ bool TwitterPlugin::setTwitterMode(const std::string user, int m)
 
 	//int type;
 	std::string s_m = std::string(1,m+'0');
-	LOG4CXX_ERROR(logger, "Storing mode " << m <<" for user " << user)
+	LOG4CXX_INFO(logger, "Storing mode " << m <<" for user " << user)
 	storagebackend->updateUserSetting((long)info.id, MODE, s_m);
 	return true;
 }

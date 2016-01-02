@@ -33,8 +33,15 @@ bool ManagerConfig::load(const std::string &configfile, boost::program_options::
 		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
 		("service.port", value<int>()->default_value(8081), "Web interface port.")
 		("service.config_directory", value<std::string>()->default_value("/etc/spectrum2/transports/"), "Directory with spectrum2 configuration files. One .cfg file per one instance")
-		("service.data_dir", value<std::string>()->default_value("/var/lib/spectrum2_manager"), "Directory to store Spectrum 2 manager data")
+		("service.data_dir", value<std::string>()->default_value("/var/lib/spectrum2_manager/html"), "Directory to store Spectrum 2 manager data")
 		("servers.server", value<std::vector<std::string> >()->multitoken(), "Server.")
+		("database.type", value<std::string>()->default_value("none"), "Database type.")
+		("database.database", value<std::string>()->default_value("/var/lib/spectrum2/$jid/database.sql"), "Database used to store data")
+		("database.server", value<std::string>()->default_value("localhost"), "Database server.")
+		("database.user", value<std::string>()->default_value(""), "Database user.")
+		("database.password", value<std::string>()->default_value(""), "Database Password.")
+		("database.port", value<int>()->default_value(0), "Database port.")
+		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
 	;
 
 	store(parse_config_file(ifs, opts), m_variables);

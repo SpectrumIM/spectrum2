@@ -31,6 +31,14 @@
 #include "mongoose.h"
 #include "managerconfig.h"
 
+#include "transport/Config.h"
+#include "transport/SQLite3Backend.h"
+#include "transport/MySQLBackend.h"
+#include "transport/PQXXBackend.h"
+#include "transport/StorageBackend.h"
+
+using namespace Transport;
+
 class Server {
 	public:
 		struct session {
@@ -42,7 +50,7 @@ class Server {
 		};
 
 		/// Constructor.
-		Server(ManagerConfig *config);
+		Server(ManagerConfig *config, const std::string &config_file);
 
 		/// Destructor
 		virtual ~Server();
@@ -52,12 +60,18 @@ class Server {
 		void event_handler(struct mg_connection *nc, int ev, void *p);
 
 	private:
-		void serve_root(struct mg_connection *conn, struct http_message *hm);
-		void serve_start(struct mg_connection *conn, struct http_message *hm);
-		void serve_stop(struct mg_connection *conn, struct http_message *hm);
+		void serve_instance(struct mg_connection *conn, struct http_message *hm, const std::string &jid);
+		void serve_instances(struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_start(struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_stop(struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_register(struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_unregister(struct mg_connection *conn, struct http_message *hm);
+		void serve_users(struct mg_connection *conn, struct http_message *hm);
+		void serve_users_add(struct mg_connection *conn, struct http_message *hm);
 		void serve_onlineusers(struct mg_connection *conn, struct http_message *hm);
 		void serve_cmd(struct mg_connection *conn, struct http_message *hm);
 		void print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html);
+		std::string send_command(const std::string &jid, const std::string &cmd);
 
 	private:
 		bool check_password(const std::string &user, const std::string &password);
@@ -80,4 +94,6 @@ class Server {
 		ManagerConfig *m_config;
 		std::string m_header;
 		std::string m_footer;
+		Config *m_storageCfg;
+		StorageBackend *m_storage;
 };
