@@ -731,8 +731,10 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 			//Set as status user's last tweet
 			for(it=lastTweet.begin() ; it!=lastTweet.end() ; it++) {
 				int t =  it->second;
-				handleBuddyChanged(user, tweets[t].getUserData().getScreenName(), tweets[t].getUserData().getUserName(), 
-								   std::vector<std::string>(), pbnetwork::STATUS_ONLINE, tweets[t].getTweet());
+				if (userdb[user].buddies.count(tweets[t].getUserData().getScreenName()) != 0) {
+					handleBuddyChanged(user, tweets[t].getUserData().getScreenName(), tweets[t].getUserData().getUserName(), 
+									std::vector<std::string>(), pbnetwork::STATUS_ONLINE, tweets[t].getTweet());
+				}
 			}
 		}
 
