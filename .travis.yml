@@ -15,6 +15,6 @@ before_script:
           - sudo killall lua5.1
 install: "pip install --user sleekxmpp"
 script:
-          - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON . && make && make test
+          - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON . && make && make extended_test
 notifications:
   slack: spectrum2:CIlYHtxGMAaxs3qVHfwBzCuy
