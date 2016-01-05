@@ -1103,6 +1103,10 @@ void NetworkPluginServer::handleRawXML(const std::string &xml) {
 }
 
 void NetworkPluginServer::handleRawPresenceReceived(boost::shared_ptr<Swift::Presence> presence) {
+	if (!CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
+		return;
+	}
+
 	User *user = m_userManager->getUser(presence->getFrom().toBare());
 	if (!user)
 		return;

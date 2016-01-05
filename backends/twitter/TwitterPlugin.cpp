@@ -177,9 +177,10 @@ void TwitterPlugin::handleLogoutRequest(const std::string &user, const std::stri
 void TwitterPlugin::handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &password)
 {
 	if(room == adminChatRoom) {	
-		LOG4CXX_INFO(logger, "Received Join Twitter room request for " << user)
+		LOG4CXX_INFO(logger, "Received Join Twitter room request for " << user << " '" << nickname << "'")
 
 		setTwitterMode(user, 2);
+		handleParticipantChanged(user, nickname, room, 0, pbnetwork::STATUS_ONLINE);
 		handleParticipantChanged(user, adminNickName, room, 0, pbnetwork::STATUS_ONLINE);
 		userdb[user].nickName = nickname;
 		handleMessage(user, adminChatRoom, "Connected to Twitter room! Populating your followers list", adminNickName);

@@ -41,6 +41,7 @@ class Client(sleekxmpp.ClientXMPP):
 		self.tests["friends2"] = ["#friends after unfollow command", False]
 		self.tests["mode1"] = ["#mode 1 response", False]
 		self.tests["mode1buddy"] = ["#mode 1 buddy added", False]
+		self.tests["mode2"] = ["#mode 2 join room", False]
 
 		self.status = "timeline"
 		self.timestamp = int(time.time())
@@ -83,6 +84,9 @@ class Client(sleekxmpp.ClientXMPP):
 		roster = iq['roster']['items']
 
 		if self.status == "mode1" and roster.has_key("colinpwheeler@localhost"):
+			self.plugin['xep_0045'].joinMUC("#twitter@localhost", "client", wait=True)
+			self.tests["mode2"][1] = True
+			self.plugin['xep_0045'].leaveMUC("#twitter@localhost", "client")
 			self.status = "unfollow"
 			self.tests["mode1buddy"][1] = True
 			self.send_message(mto="twitter.com@localhost", mbody="#unfollow colinpwheeler")
