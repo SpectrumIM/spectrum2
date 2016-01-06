@@ -202,6 +202,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		Swift::XMPPSerializer *m_serializer;
 		Swift::FullPayloadSerializerCollection m_collection2;
 		std::map <std::string, std::string> m_id2resource;
+		bool m_firstPong;
 };
 
 }
