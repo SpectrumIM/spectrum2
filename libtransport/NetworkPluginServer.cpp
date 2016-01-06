@@ -267,6 +267,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_adminInterface = NULL;
 	m_startingBackend = false;
 	m_lastLogin = 0;
+	m_firstPong = true;
 	m_xmppParser = new Swift::XMPPParser(this, &m_collection, component->getNetworkFactories()->getXMLParserFactory());
 	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 #if HAVE_SWIFTEN_3
@@ -938,9 +939,10 @@ void NetworkPluginServer::handlePongReceived(Backend *c) {
 		// Backend is fully ready to handle requests
 		c->willDie = false;
 
-		if (m_clients.size() == 1) {
+		if (m_firstPong) {
 			// first backend connected, start the server, we're ready.
 			m_component->start();
+			m_firstPong = false;
 		}
 
 		connectWaitingUsers();
