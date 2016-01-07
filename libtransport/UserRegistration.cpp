@@ -51,7 +51,7 @@ bool UserRegistration::registerUser(const UserInfo &row, bool allowPasswordChang
 	UserInfo dummy;
 	bool registered = m_storageBackend->getUser(row.jid, dummy);
 
-	if (registered && !allowPasswordChange) {
+	if (!registered || (registered && allowPasswordChange)) {
 		m_storageBackend->setUser(row);
 		doUserRegistration(row);
 		onUserRegistered(row);

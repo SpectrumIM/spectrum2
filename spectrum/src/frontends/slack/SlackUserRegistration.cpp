@@ -132,31 +132,23 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	}
 
 	UserInfo user;
-	if (m_storageBackend->getUser(domain, user)) {
-		return "You have already registered this Spectrum 2 transport for this Slack Team";
-	}
-
-	user.jid = domain;
 	user.uin = "";
 	user.password = "";
-	user.language = "en";
-	user.encoding = token; // Use encoding as a token handler... it's BAD, but easy...
-	user.vip = 0;
 	user.id = 0;
-	registerUser(user);
+	m_storageBackend->getUser(domain, user);
+
+	user.jid = domain;
+	user.language = "en";
+	user.encoding = "";
+	user.vip = 0;
+
+	registerUser(user, true);
 
 	m_storageBackend->getUser(user.jid, user);
 
-	if (oauth2) {
-		std::string value = data[2];
-		int type = (int) TYPE_STRING;
-		m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
-	}
-	else {
-		std::string value = token;
-		int type = (int) TYPE_STRING;
-		m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
-	}
+	std::string value = token;
+	int type = (int) TYPE_STRING;
+	m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
 
 	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid);
 
