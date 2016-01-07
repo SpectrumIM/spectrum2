@@ -50,7 +50,7 @@ class UserRegistration {
 		/// Registers new user. This function stores user into database and subscribe user to transport.
 		/// \param userInfo UserInfo struct with informations about registered user
 		/// \return false if user is already registered
-		bool registerUser(const UserInfo &userInfo);
+		bool registerUser(const UserInfo &userInfo, bool allowPasswordChange = false);
 
 		/// Unregisters user. This function removes all data about user from databa, unsubscribe all buddies
 		/// managed by this transport and disconnects user if he's connected.

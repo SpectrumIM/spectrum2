@@ -47,13 +47,15 @@ UserRegistration::UserRegistration(Component *component, UserManager *userManage
 UserRegistration::~UserRegistration(){
 }
 
-bool UserRegistration::registerUser(const UserInfo &row) {
+bool UserRegistration::registerUser(const UserInfo &row, bool allowPasswordChange) {
 	UserInfo dummy;
 	bool registered = m_storageBackend->getUser(row.jid, dummy);
 
-	m_storageBackend->setUser(row);
-	doUserRegistration(row);
-	onUserRegistered(row);
+	if (registered && !allowPasswordChange) {
+		m_storageBackend->setUser(row);
+		doUserRegistration(row);
+		onUserRegistered(row);
+	}
 
 	return !registered;
 }

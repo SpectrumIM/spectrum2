@@ -189,6 +189,8 @@ bool Server::is_authorized(const struct mg_connection *conn, struct http_message
 		!mg_vcmp(&hm->uri, "/form.css") ||
 		!mg_vcmp(&hm->uri, "/style.css") ||
 		!mg_vcmp(&hm->uri, "/logo.png") ||
+		!mg_vcmp(&hm->uri, "/users") ||
+		!mg_vcmp(&hm->uri, "/users/add") ||
 		!mg_vcmp(&hm->uri, "/authorize")) {
 		return true;
 	}
@@ -315,24 +317,26 @@ void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
 }
 
 void Server::serve_users_add(struct mg_connection *conn, struct http_message *hm) {
-	Server:session *session = get_session(hm);
-	if (!session->admin) {
-		redirect_to(conn, hm, "/");
-		return;
-	}
-
 	std::string user = get_http_var(hm, "user");
 	std::string password = get_http_var(hm, "password");
 
 	if (!user.empty() && !password.empty()) {
-		UserInfo info;
-		info.jid = user;
-		info.password = password;
 		if (m_storage) {
-			m_storage->setUser(info);
+			UserInfo dummy;
+			bool registered = m_storage->getUser(user, dummy);
+			if (!registered) {
+				UserInfo info;
+				info.jid = user;
+				info.password = password;
+				m_storage->setUser(info);
+			}
+			else {
+				redirect_to(conn, hm, "/users?error=This+username+is+already+registered");
+				return;
+			}
 		}
 	}
-	redirect_to(conn, hm, "/users");
+	redirect_to(conn, hm, "/users?ok=1");
 }
 
 void Server::serve_users_remove(struct mg_connection *conn, struct http_message *hm) {
@@ -354,19 +358,35 @@ void Server::serve_users_remove(struct mg_connection *conn, struct http_message 
 }
 
 void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
-	std::string html = "<h2>Spectrum 2 manager users</h2>";
-
+	std::string html;
 	Server:session *session = get_session(hm);
-	if (!session->admin) {
-		html += "<p>Only Spectrum 2 manager administrator can access this page.</p>";
-		print_html(conn, hm, html);
-		return;
+	if (!session) {
+		std::string ok = get_http_var(hm, "ok");
+		if (!ok.empty()) {
+			redirect_to(conn, hm, "/");
+			return;
+		}
+		html += "<h2>Register new Spectrum 2 master account</h2>";
+	}
+	else {
+		html += "<h2>Spectrum 2 manager users</h2>";
+
+		if (!session->admin) {
+			html += "<p>Only Spectrum 2 manager administrator can access this page.</p>";
+			print_html(conn, hm, html);
+			return;
+		}
+
+		html += "<p>Here, you can add new users who will have access to this web interface. "
+				"These users will be able to register new accounts on all Spectrum 2 instances "
+				"running on these server. They won't be able to change any Spectrum 2 instance "
+				"configuration influencing other users.</p>";
 	}
 
-	html += "<p>Here, you can add new users who will have access to this web interface. "
-			"These users will be able to register new accounts on all Spectrum 2 instances "
-			"running on these server. They won't be able to change any Spectrum 2 instance "
-			"configuration influencing other users.</p>";
+	std::string error = get_http_var(hm, "error");
+	if (!error.empty()) {
+		html += "<p><b>Error: " + error +  "</b></p>";
+	}
 
 	if (!m_storage) {
 		print_html(conn, hm, html);
@@ -374,8 +394,8 @@ void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
 	}
 
 	html += "<form action=\"/users/add\" class=\"basic-grey\" method=\"POST\"> \
-	<h1>Add user \
-		<span>Add new user to Spectrum 2 manager web interface.</span> \
+	<h1>Register user \
+		<span>Register new user to Spectrum 2 manager web interface.</span> \
 	</h1> \
 	<label> \
 		<span>Username:</span> \
@@ -392,14 +412,16 @@ void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
 	std::vector<std::string> users;
 	m_storage->getUsers(users);
 
-	html += "<table><tr><th>User<th>Action</th></tr>";
-	BOOST_FOREACH(std::string &user, users) {
-		html += "<tr>";
-		html += "<td><a href=\"/users?jid=" + user + "\">" + user + "</a></td>";
-		html += "<td><a href=\"/users/remove?user=" + user + "\">Remove</a></td>";
-		html += "</tr>";
+	if (session) {
+		html += "<table><tr><th>User<th>Action</th></tr>";
+		BOOST_FOREACH(std::string &user, users) {
+			html += "<tr>";
+			html += "<td><a href=\"/users?jid=" + user + "\">" + user + "</a></td>";
+			html += "<td><a href=\"/users/remove?user=" + user + "\">Remove</a></td>";
+			html += "</tr>";
+		}
+		html += "</table>";
 	}
-	html += "</table>";
 
 	print_html(conn, hm, html);
 }
@@ -487,21 +509,32 @@ void Server::serve_instances_register(struct mg_connection *conn, struct http_me
 	m_storage->getUser(session->user, info);
 
 	if (jid.empty() || uin.empty() || password.empty()) {
+		std::string response = send_command(instance, "registration_fields");
+		std::vector<std::string> fields;
+		boost::split(fields, response, boost::is_any_of("\n"));
+
+		if (fields.size() < 3) {
+			fields.clear();
+			fields.push_back("Jabber ID");
+			fields.push_back("3rd-party network username");
+			fields.push_back("3rd-party network password");
+		}
+
 		std::string html = "<h2>Register Spectrum 2 instance</h2>";
 		html += "<form action=\"/instances/register\" class=\"basic-grey\" method=\"POST\"> \
 			<h1>Register Spectrum 2 instance \
-				<span>Write the Slack team name, 3rd-party network username and password.</span> \
+				<span>Write the " + fields[0] + ", " + fields[1] + " and " + fields[2] + ".</span> \
 			</h1> \
 			<label> \
-				<span>Slack team name:</span> \
-				<input type=\"text\" id=\"jid\" name=\"jid\" placeholder=\"Slack team name\"></textarea> \
+				<span>" + fields[0] + ":</span> \
+				<input type=\"text\" id=\"jid\" name=\"jid\" placeholder=\""+ fields[0] +"\"></textarea> \
 			</label> \
 			<label> \
-				<span>3rd-party network username:</span> \
-				<input type=\"text\" id=\"uin\" name=\"uin\" placeholder=\"3rd-party network username\"></textarea> \
+				<span>" + fields[1] + ":</span> \
+				<input type=\"text\" id=\"uin\" name=\"uin\" placeholder=\"" + fields[1] + "\"></textarea> \
 			</label> \
-			<label><span>Password:</span> \
-				<input type=\"password\" id=\"password\" name=\"password\" placeholder=\"3rd-party network password\"></textarea> \
+			<label><span>" + fields[2] + ":</span> \
+				<input type=\"password\" id=\"password\" name=\"password\" placeholder=\"" + fields[2] + "\"></textarea> \
 			</label> \
 			<label> \
 				<span>&nbsp;</span> \

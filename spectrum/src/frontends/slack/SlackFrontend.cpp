@@ -122,6 +122,10 @@ std::string SlackFrontend::getOAuth2URL(const std::vector<std::string> &args) {
 	return static_cast<SlackUserManager *>(m_userManager)->getOAuth2URL(args);
 }
 
+std::string SlackFrontend::getRegistrationFields() {
+	return "Slack team name\n3rd-party network username\n3rd-party network password";
+}
+
 void SlackFrontend::disconnectFromServer() {
 
 }

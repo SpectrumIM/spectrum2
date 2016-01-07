@@ -325,6 +325,10 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Bad argument count. See 'help'.");
 		}
 	}
+	else if (message->getBody() == "registration_fields") {
+		std::string fields = m_component->getFrontend()->getRegistrationFields();
+		message->setBody(fields);
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";
@@ -363,7 +367,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		message->setBody(help);
 	}
 	else {
-		message->setBody("Unknown command. Try \"help\"");
+		message->setBody("Unknown command \"" + message->getBody() + "\". Try \"help\"");
 	}
 }
 

@@ -67,6 +67,7 @@ namespace Transport {
 			virtual void addRoomToRoomList(const std::string &handle, const std::string &name);
 			virtual std::string setOAuth2Code(const std::string &code, const std::string &state);
 			virtual std::string getOAuth2URL(const std::vector<std::string> &args);
+			virtual std::string getRegistrationFields();
 		
 			void handleMessage(boost::shared_ptr<Swift::Message> message);
 
