@@ -240,6 +240,12 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd)
 }
 
 void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		redirect_to(conn, hm, "/");
+		return;
+	}
+
 	std::string html;
 	std::string jid = get_http_var(hm, "jid");
 
@@ -268,6 +274,12 @@ void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *
 }
 
 void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		redirect_to(conn, hm, "/");
+		return;
+	}
+
 	std::string html;
 	std::string jid = get_http_var(hm, "jid");
 	std::string cmd = get_http_var(hm, "cmd");
@@ -344,6 +356,13 @@ void Server::serve_users_remove(struct mg_connection *conn, struct http_message 
 void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
 	std::string html = "<h2>Spectrum 2 manager users</h2>";
 
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		html += "<p>Only Spectrum 2 manager administrator can access this page.</p>";
+		print_html(conn, hm, html);
+		return;
+	}
+
 	html += "<p>Here, you can add new users who will have access to this web interface. "
 			"These users will be able to register new accounts on all Spectrum 2 instances "
 			"running on these server. They won't be able to change any Spectrum 2 instance "
@@ -386,6 +405,12 @@ void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
 }
 
 void Server::serve_instances_start(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		redirect_to(conn, hm, "/");
+		return;
+	}
+
 	std::string html;
 	std::string jid = get_http_var(hm, "jid");
 	if (jid.empty()) {
@@ -400,6 +425,12 @@ void Server::serve_instances_start(struct mg_connection *conn, struct http_messa
 }
 
 void Server::serve_instances_stop(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		redirect_to(conn, hm, "/");
+		return;
+	}
+
 	std::string html;
 	std::string jid = get_http_var(hm, "jid");
 
