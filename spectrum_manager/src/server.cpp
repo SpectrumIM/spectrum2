@@ -699,7 +699,7 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		serve_users_add(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/users/remove") == 0) {
 		serve_users_remove(conn, hm);
-	} else if (has_prefix(&hm->uri, "/oauth2") == 0) {
+	} else if (has_prefix(&hm->uri, "/oauth2")) {
 		serve_oauth2(conn, hm);
 	} else {
 		mg_serve_http(conn, hm, s_http_server_opts);
