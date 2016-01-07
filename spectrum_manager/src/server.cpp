@@ -225,7 +225,6 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd)
 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
 	ask_local_server(m_config, networkFactories, jid, cmd);
-	eventLoop.runUntilEvents();
 	struct timeval td_start,td_end;
 	float elapsed = 0; 
 	gettimeofday(&td_start, NULL);
@@ -417,7 +416,29 @@ void Server::serve_instance(struct mg_connection *conn, struct http_message *hm,
 }
 
 void Server::serve_instances_unregister(struct mg_connection *conn, struct http_message *hm) {
-	
+	std::string instance = get_http_var(hm, "instance");
+	if (instance.empty()) {
+		serve_instances(conn, hm);
+		return;
+	}
+
+	Server:session *session = get_session(hm);
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+
+	std::string value = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, value);
+
+	if (!value.empty()) {
+		std::string response = send_command(instance, "unregister " + value);
+		if (!response.empty()) {
+			value = "";
+			m_storage->updateUserSetting(info.id, instance, value);
+		}
+	}
+
+	redirect_to(conn, hm, "/instances");
 }
 
 void Server::serve_instances_register(struct mg_connection *conn, struct http_message *hm) {
@@ -434,7 +455,7 @@ void Server::serve_instances_register(struct mg_connection *conn, struct http_me
 	UserInfo info;
 	m_storage->getUser(session->user, info);
 
-	if (uin.empty() || password.empty()) {
+	if (jid.empty() || uin.empty() || password.empty()) {
 		std::string html = "<h2>Register Spectrum 2 instance</h2>";
 		html += "<form action=\"/instances/register\" class=\"basic-grey\" method=\"POST\"> \
 			<h1>Register Spectrum 2 instance \
@@ -442,11 +463,11 @@ void Server::serve_instances_register(struct mg_connection *conn, struct http_me
 			</h1> \
 			<label> \
 				<span>Slack team name:</span> \
-				<input type=\"text\" id=\"jid\" name=\"jid\"placeholder=\"Slack team name\"></textarea> \
+				<input type=\"text\" id=\"jid\" name=\"jid\" placeholder=\"Slack team name\"></textarea> \
 			</label> \
 			<label> \
 				<span>3rd-party network username:</span> \
-				<input type=\"text\" id=\"uin\" name=\"uin\"placeholder=\"3rd-party network username\"></textarea> \
+				<input type=\"text\" id=\"uin\" name=\"uin\" placeholder=\"3rd-party network username\"></textarea> \
 			</label> \
 			<label><span>Password:</span> \
 				<input type=\"password\" id=\"password\" name=\"password\" placeholder=\"3rd-party network password\"></textarea> \
@@ -455,15 +476,16 @@ void Server::serve_instances_register(struct mg_connection *conn, struct http_me
 				<span>&nbsp;</span> \
 				<input type=\"submit\" class=\"button\" value=\"Register\" />\
 			</label> \
+			<input type=\"hidden\" name=\"instance\" value=\"" + instance + "\"></input> \
 			</form><br/>";
 		print_html(conn, hm, html);
 	}
 	else {
-		std::string response = send_command(jid, "register " + jid + " " + uin + " " + password);
+		std::string response = send_command(instance, "register " + jid + " " + uin + " " + password);
 		if (!response.empty()) {
 			std::string value = jid;
 			int type = (int) TYPE_STRING;
-			m_storage->updateUserSetting(info.id, jid, value);
+			m_storage->updateUserSetting(info.id, instance, value);
 		}
 		redirect_to(conn, hm, "/instances");
 	}
@@ -535,20 +557,22 @@ void Server::serve_instances(struct mg_connection *conn, struct http_message *hm
 					response = "Cannot get the server status";
 				}
 
-				html += "<td>" + response + "</td>";
 				if (response.find("Running") == 0) {
 					std::string value = "";
 					int type = (int) TYPE_STRING;
 					m_storage->getUserSetting(info.id, instance, type, value);
 
 					if (!value.empty()) {
+						html += "<td>Running. Registered as " + value + "</td>";
 						html += "<td><a href=\"/instances/unregister?instance=" + instance + "\">Unregister</a></td>";
 					}
 					else {
+						html += "<td>Running. No account registered yet.</td>";
 						html += "<td><a href=\"/instances/register?instance=" + instance + "\">Register</a></td>";
 					}
 				}
 				else {
+					html += "<td>" + response + "</td>";
 					html += "<td>No available action</td>";
 				}
 
