@@ -16,6 +16,10 @@
 
 static struct mg_serve_http_opts s_http_server_opts;
 
+static int has_prefix(const struct mg_str *uri, const char *prefix) {
+	size_t prefix_len = strlen(prefix);
+	return uri->len >= prefix_len && memcmp(uri->p, prefix, prefix_len) == 0;
+}
 
 static std::string get_http_var(const struct http_message *hm, const char *name) {
 	char data[4096];
@@ -551,6 +555,13 @@ void Server::serve_instances_register(struct mg_connection *conn, struct http_me
 			int type = (int) TYPE_STRING;
 			m_storage->updateUserSetting(info.id, instance, value);
 		}
+
+		response = send_command(instance, "get_oauth2_url " + jid);
+		if (!response.empty()) {
+			redirect_to(conn, hm, response.c_str());
+			return;
+		}
+
 		redirect_to(conn, hm, "/instances");
 	}
 
@@ -649,6 +660,10 @@ void Server::serve_instances(struct mg_connection *conn, struct http_message *hm
 	print_html(conn, hm, html);
 }
 
+void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
+	std::cout << "OAUTH2 handler\n";
+}
+
 void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 	struct http_message *hm = (struct http_message *) p;
 
@@ -684,6 +699,8 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		serve_users_add(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/users/remove") == 0) {
 		serve_users_remove(conn, hm);
+	} else if (has_prefix(&hm->uri, "/oauth2") == 0) {
+		serve_oauth2(conn, hm);
 	} else {
 		mg_serve_http(conn, hm, s_http_server_opts);
 	}
