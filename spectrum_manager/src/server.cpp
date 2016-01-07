@@ -229,6 +229,7 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd)
 	struct timeval td_start,td_end;
 	float elapsed = 0; 
 	gettimeofday(&td_start, NULL);
+	gettimeofday(&td_end, NULL);
 
 	time_t started = time(NULL);
 	while(get_response().empty() && td_end.tv_sec - td_start.tv_sec < 1) {
@@ -291,7 +292,24 @@ void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 	print_html(conn, hm, html);
 }
 
+void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
+		"Set-Cookie: session=%s; max-age=0\r\n"  // Session ID
+		"Location: /\r\n\r\n",
+		session->session_id);
+
+	sessions.erase(session->session_id);
+	delete session;
+}
+
 void Server::serve_users_add(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		redirect_to(conn, hm, "/");
+		return;
+	}
+
 	std::string user = get_http_var(hm, "user");
 	std::string password = get_http_var(hm, "password");
 
@@ -303,6 +321,24 @@ void Server::serve_users_add(struct mg_connection *conn, struct http_message *hm
 			m_storage->setUser(info);
 		}
 	}
+	redirect_to(conn, hm, "/users");
+}
+
+void Server::serve_users_remove(struct mg_connection *conn, struct http_message *hm) {
+	Server:session *session = get_session(hm);
+	if (!session->admin) {
+		redirect_to(conn, hm, "/");
+		return;
+	}
+
+	if (!m_storage) {
+		return;
+	}
+
+	std::string user = get_http_var(hm, "user");
+	UserInfo info;
+	m_storage->getUser(user, info);
+	m_storage->removeUser(info.id);
 	redirect_to(conn, hm, "/users");
 }
 
@@ -339,10 +375,10 @@ void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
 	m_storage->getUsers(users);
 
 	html += "<table><tr><th>User<th>Action</th></tr>";
-	BOOST_FOREACH(std::string &jid, users) {
+	BOOST_FOREACH(std::string &user, users) {
 		html += "<tr>";
-		html += "<td><a href=\"/users?jid=" + jid + "\">" + jid + "</a></td>";
-		html += "<td> </td>";
+		html += "<td><a href=\"/users?jid=" + user + "\">" + user + "</a></td>";
+		html += "<td><a href=\"/users/remove?user=" + user + "\">Remove</a></td>";
 		html += "</tr>";
 	}
 	html += "</table>";
@@ -386,8 +422,8 @@ void Server::serve_instances_unregister(struct mg_connection *conn, struct http_
 
 void Server::serve_instances_register(struct mg_connection *conn, struct http_message *hm) {
 	std::string instance = get_http_var(hm, "instance");
-	if (!instance.empty()) {
-		serve_instance(conn, hm, instance);
+	if (instance.empty()) {
+		serve_instances(conn, hm);
 		return;
 	}
 
@@ -538,6 +574,8 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		authorize(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/") == 0) {
 		serve_instances(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/logout") == 0) {
+		serve_logout(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/instances") == 0) {
 		serve_instances(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/onlineusers") == 0) {
@@ -556,6 +594,8 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		serve_users(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/users/add") == 0) {
 		serve_users_add(conn, hm);
+	} else if (mg_vcmp(&hm->uri, "/users/remove") == 0) {
+		serve_users_remove(conn, hm);
 	} else {
 		mg_serve_http(conn, hm, s_http_server_opts);
 	}

@@ -68,6 +68,8 @@ class Server {
 		void serve_instances_unregister(struct mg_connection *conn, struct http_message *hm);
 		void serve_users(struct mg_connection *conn, struct http_message *hm);
 		void serve_users_add(struct mg_connection *conn, struct http_message *hm);
+		void serve_users_remove(struct mg_connection *conn, struct http_message *hm);
+		void serve_logout(struct mg_connection *conn, struct http_message *hm);
 		void serve_onlineusers(struct mg_connection *conn, struct http_message *hm);
 		void serve_cmd(struct mg_connection *conn, struct http_message *hm);
 		void print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html);
