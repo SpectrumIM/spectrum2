@@ -221,7 +221,19 @@ void WebSocketClient::handleDisconnected(const boost::optional<Swift::Connection
 	m_reconnectTimer->start();
 }
 
-void WebSocketClient::handleDNSResult(const std::vector<Swift::HostAddress> &addrs, boost::optional<Swift::DomainNameResolveError>) {
+void WebSocketClient::handleDNSResult(const std::vector<Swift::HostAddress> &addrs, boost::optional<Swift::DomainNameResolveError> error) {
+	if (error) {
+		LOG4CXX_ERROR(logger, "DNS resolving error. Will try again in 1 second.");
+		m_reconnectTimer->start();
+		return;
+	}
+
+	if (addrs.empty()) {
+		LOG4CXX_ERROR(logger, "DNS name cannot be resolved. Will try again in 1 second.");
+		m_reconnectTimer->start();
+		return;
+	}
+
 	m_conn = m_tlsConnectionFactory->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&WebSocketClient::handleDataRead, this, _1));
 	m_conn->onConnectFinished.connect(boost::bind(&WebSocketClient::handleConnected, this, _1));
