@@ -66,6 +66,7 @@ exit 0
 %attr(700, %{username}, %{groupname}) %{_localstatedir}/lib/spectrum2/
 %attr(700, %{username}, %{groupname}) %{_localstatedir}/run/spectrum2/
 %attr(700, %{username}, %{groupname}) %{_localstatedir}/log/spectrum2/
+%attr(700, %{username}, %{groupname}) %{_localstatedir}/lib/spectrum2_manager/
 
 # LIBPURPLE
 
