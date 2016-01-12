@@ -32,6 +32,7 @@
 #include "managerconfig.h"
 
 #include "transport/Config.h"
+#include "transport/Logging.h"
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
 #include "transport/PQXXBackend.h"
