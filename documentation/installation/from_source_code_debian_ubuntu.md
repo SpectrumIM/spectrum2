@@ -18,7 +18,7 @@ At the moment only AMD64 packages are available:
 
 You need to rebuild source libcommuni and spectrum packages from our source package repository:
 
-        # apt-get install devscripts fakeroot libssl-del libqt4-dev
+        # apt-get install devscripts fakeroot libssl-dev libqt4-dev
         # dget -x http://packages.spectrum.im/spectrum2/pool/main/c/communi/communi_3.4.0-1.dsc
         # cd communi_3.4.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
         # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
