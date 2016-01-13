@@ -3,23 +3,26 @@ layout: page
 title: Spectrum 2
 ---
 
-## Installing from source-code on Debian/Ubuntu
+## Installing on Debian Jessie from our packages repository
 
-If you need IRC support, build and install Communi, a required dependency of Spectrum 2:
+At the moment only AMD64 packages are available:
 
-	# apt-get install git-buildpackage libssl-dev libqt4-dev
-	$ git clone git://github.com/vitalyster/libcommuni-gbp.git /tmp/libcommuni-gbp
-	$ cd /tmp/libcommuni-gbp
-	$ gbp buildpackage -b -uc -us
-	$ cd /tmp
+        # apt-key adv --keyserver keys.gnupg.net --recv-keys 1AFDEA51
+        # echo "deb http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list
+        # echo "deb-src http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list
+        # apt-get update 
+        # apt-get install spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-twitter
 
-When the compilation process has ended the .deb packages for libcommuni and libcommuni-dev will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
 
-Next, build and install Spectrum 2:
+## Installing on other Debian/Ubuntu-based distributions
 
-	# apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
-	$ git clone git://github.com/hanzz/spectrum2.git /tmp/spectrum2
-	$ cd /tmp/spectrum2/packaging/debian
-	$ sh build_spectrum2.sh
+You need to rebuild source libcommuni and spectrum packages from our source package repository:
 
-When the compilation process has ended the .deb packages will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
+        # apt-get install devscripts fakeroot libssl-del libqt4-dev
+        # dget -x http://packages.spectrum.im/spectrum2/pool/main/c/communi/communi_3.4.0-1.dsc
+        # cd communi_3.4.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
+        # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
+        # dget -x http://packages.spectrum.im/spectrum2/pool/main/s/spectrum2/spectrum2_2.0.0-1.dsc
+        # cd spectrum2_2.0.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
+
+When the compilation process has ended the .deb packages for libcommuni and spectrum will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
