@@ -8,8 +8,8 @@ title: Spectrum 2
 At the moment only AMD64 packages are available:
 
         # apt-key adv --keyserver keys.gnupg.net --recv-keys 1AFDEA51
-        # echo "deb http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list
-        # echo "deb-src http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list
+        # echo "deb http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list.d/spectrum.list
+        # echo "deb-src http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list.d/spectrum.list
         # apt-get update 
         # apt-get install spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-twitter
 
