@@ -39,6 +39,8 @@
 
 using namespace Transport;
 
+class APIServer;
+
 class Server {
 	public:
 		struct session {
@@ -59,6 +61,10 @@ class Server {
 
 		void event_handler(struct mg_connection *nc, int ev, void *p);
 
+		void redirect_to(struct mg_connection *conn, struct http_message *hm, const char *where);
+
+		std::string send_command(const std::string &jid, const std::string &cmd);
+
 	private:
 		void serve_instance(struct mg_connection *conn, struct http_message *hm, const std::string &jid);
 		void serve_instances(struct mg_connection *conn, struct http_message *hm);
@@ -74,7 +80,6 @@ class Server {
 		void serve_cmd(struct mg_connection *conn, struct http_message *hm);
 		void serve_oauth2(struct mg_connection *conn, struct http_message *hm);
 		void print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html);
-		std::string send_command(const std::string &jid, const std::string &cmd);
 
 	private:
 		bool check_password(const std::string &user, const std::string &password);
@@ -84,8 +89,6 @@ class Server {
 		void authorize(struct mg_connection *conn, struct http_message *hm);
 
 		bool is_authorized(const struct mg_connection *conn, struct http_message *hm);
-
-		void redirect_to(struct mg_connection *conn, struct http_message *hm, const char *where);
 
 	private:
 		struct mg_mgr m_mgr;
@@ -99,4 +102,5 @@ class Server {
 		std::string m_footer;
 		Config *m_storageCfg;
 		StorageBackend *m_storage;
+		APIServer *m_apiServer;
 };

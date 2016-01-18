@@ -1,3 +1,4 @@
+#include "APIServer.h"
 #include "server.h"
 #include "methods.h"
 
@@ -99,9 +100,13 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 		m_storage = NULL;
 		std::cerr << "Can't connect to database!\n";
 	}
+
+	m_apiServer = new APIServer(config, m_storage);
 }
 
 Server::~Server() {
+	delete m_apiServer;
+
 	mg_mgr_free(&m_mgr);
 	if (m_storage) {
 		delete m_storage;
@@ -173,9 +178,10 @@ void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 		mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 			"Set-Cookie: session=%s; max-age=3600; http-only\r\n"  // Session ID
 			"Set-Cookie: user=%s\r\n"  // Set user, needed by Javascript code
+			"Set-Cookie: admin=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: original_url=/; max-age=0\r\n"  // Delete original_url
 			"Location: /\r\n\r\n",
-			session->session_id, session->user);
+			session->session_id, session->user, session->admin ? "1" : "0");
 	} else {
 		// Authentication failure, redirect to login.
 		redirect_to(conn, hm, "/login");
@@ -312,9 +318,10 @@ void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
 	Server:session *session = get_session(hm);
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
-		"Set-Cookie: session=%s; max-age=0\r\n"  // Session ID
+		"Set-Cookie: session=%s; max-age=0\r\n"
+		"Set-Cookie: admin=%s; max-age=0\r\n"
 		"Location: /\r\n\r\n",
-		session->session_id);
+		session->session_id, session->admin ? "1" : "0");
 
 	sessions.erase(session->session_id);
 	delete session;
@@ -675,32 +682,34 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		redirect_to(conn, hm, "/login");
 	} else if (mg_vcmp(&hm->uri, "/authorize") == 0) {
 		authorize(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/") == 0) {
-		serve_instances(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/") == 0) {
+// 		serve_instances(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/logout") == 0) {
 		serve_logout(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/instances") == 0) {
-		serve_instances(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/onlineusers") == 0) {
-		serve_onlineusers(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/cmd") == 0) {
-		serve_cmd(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/instances/start") == 0) {
-		serve_instances_start(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/instances/stop") == 0) {
-		serve_instances_stop(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/instances/register") == 0) {
-		serve_instances_register(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/instances/unregister") == 0) {
-		serve_instances_unregister(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/users") == 0) {
-		serve_users(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/users/add") == 0) {
-		serve_users_add(conn, hm);
-	} else if (mg_vcmp(&hm->uri, "/users/remove") == 0) {
-		serve_users_remove(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/instances") == 0) {
+// 		serve_instances(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/onlineusers") == 0) {
+// 		serve_onlineusers(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/cmd") == 0) {
+// 		serve_cmd(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/instances/start") == 0) {
+// 		serve_instances_start(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/instances/stop") == 0) {
+// 		serve_instances_stop(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/instances/register") == 0) {
+// 		serve_instances_register(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/instances/unregister") == 0) {
+// 		serve_instances_unregister(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/users") == 0) {
+// 		serve_users(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/users/add") == 0) {
+// 		serve_users_add(conn, hm);
+// 	} else if (mg_vcmp(&hm->uri, "/users/remove") == 0) {
+// 		serve_users_remove(conn, hm);
 	} else if (has_prefix(&hm->uri, "/oauth2")) {
 		serve_oauth2(conn, hm);
+	} else if (has_prefix(&hm->uri, "/api/v1/")) {
+		m_apiServer->handleRequest(this, get_session(hm), conn, hm);
 	} else {
 		mg_serve_http(conn, hm, s_http_server_opts);
 	}
