@@ -32,6 +32,7 @@
 #include <Swiften/Network/DomainNameAddressQuery.h>
 #include <Swiften/Network/DomainNameResolver.h>
 #include <Swiften/Network/HostAddress.h>
+#include <Swiften/Network/Connection.h>
 #include <Swiften/Base/SafeByteArray.h>
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Version.h"
@@ -92,6 +93,7 @@ class SlackRTM {
 		void handlePayloadReceived(const std::string &payload);
 		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 		void handleWebSocketConnected();
+		void handleWebSocketDisconnected(const boost::optional<Swift::Connection::Error> &error);
 
 	private:
 		std::map<std::string, SlackChannelInfo> m_channels;
@@ -108,6 +110,7 @@ class SlackRTM {
 		unsigned long m_counter;
 		Swift::Timer::ref m_pingTimer;
 		SlackAPI *m_api;
+		bool m_started;
 };
 
 }

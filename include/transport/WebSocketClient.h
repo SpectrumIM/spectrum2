@@ -61,6 +61,7 @@ class WebSocketClient {
 		boost::signal<void (const std::string &payload)> onPayloadReceived;
 
 		boost::signal<void ()> onWebSocketConnected;
+		boost::signal<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
 
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);

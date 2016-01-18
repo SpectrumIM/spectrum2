@@ -42,6 +42,7 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, UserInf
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_counter = 0;
+	m_started = false;
 	m_client = new WebSocketClient(component);
 	m_client->onPayloadReceived.connect(boost::bind(&SlackRTM::handlePayloadReceived, this, _1));
 	m_client->onWebSocketConnected.connect(boost::bind(&SlackRTM::handleWebSocketConnected, this));
@@ -192,11 +193,19 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 	LOG4CXX_INFO(logger, data);
 
 	m_client->connectServer(u);
-	m_pingTimer->start();
 }
 
 void SlackRTM::handleWebSocketConnected() {
-	onRTMStarted();
+	if (!m_started) {
+		onRTMStarted();
+		m_started = true;
+	}
+
+	m_pingTimer->start();
+}
+
+void SlackRTM::handleWebSocketDisconnected(const boost::optional<Swift::Connection::Error> &error) {
+	m_pingTimer->stop();
 }
 
 

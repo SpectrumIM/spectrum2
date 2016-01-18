@@ -218,6 +218,7 @@ void WebSocketClient::handleDisconnected(const boost::optional<Swift::Connection
 	}
 
 	LOG4CXX_ERROR(logger, "Disconected from " << m_host << ". Will reconnect in 1 second.");
+	onWebSocketDisconnected(error);
 	m_reconnectTimer->start();
 }
 
