@@ -180,7 +180,7 @@ void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 			"Set-Cookie: user=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: admin=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: original_url=/; max-age=0\r\n"  // Delete original_url
-			"Location: /\r\n\r\n",
+			"Location: /instances\r\n\r\n",
 			session->session_id, session->user, session->admin ? "1" : "0");
 	} else {
 		// Authentication failure, redirect to login.

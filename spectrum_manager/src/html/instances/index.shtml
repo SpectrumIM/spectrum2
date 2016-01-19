@@ -1,0 +1,9 @@
+<!--#include virtual="/header.html" -->
+
+<script type="text/javascript">
+$(function() {
+	show_instances();
+});
+</script>
+
+<!--#include virtual="/footer.html" -->
