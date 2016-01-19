@@ -28,6 +28,8 @@
 #include <boost/bind.hpp>
 #include <boost/signal.hpp>
 
+#include "rapidjson/document.h"
+
 #include "mongoose.h"
 #include "managerconfig.h"
 #include "server.h"
@@ -39,6 +41,7 @@
 #include "transport/StorageBackend.h"
 
 using namespace Transport;
+using namespace rapidjson;
 
 class APIServer {
 	public:
@@ -52,8 +55,8 @@ class APIServer {
 		void serve_instances(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_instances_start(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_instances_stop(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
-		std::string &safe_arg(std::string &);
-		void send_json(struct mg_connection *conn, const std::string &json);
+		void send_json(struct mg_connection *conn, const Document &d);
+		void send_ack(struct mg_connection *conn, bool error, const std::string &message);
 
 	private:
 		ManagerConfig *m_config;

@@ -12,9 +12,12 @@
 #include <string>
 #include <cerrno>
 
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
+
 #define ALLOW_ONLY_ADMIN() 	if (!session->admin) { \
-		std::string _json = "{\"error\":1, \"message\": \"Only administrators can do this API call.\"}"; \
-		send_json(conn, _json); \
+		send_ack(conn, true, "Only administrators can do this API call."); \
 		return; \
 	}
 
@@ -48,13 +51,12 @@ APIServer::APIServer(ManagerConfig *config, StorageBackend *storage) {
 APIServer::~APIServer() {
 }
 
-std::string &APIServer::safe_arg(std::string &arg) {
-	boost::replace_all(arg, "\n", "");
-	boost::replace_all(arg, "\"", "'");
-	return arg;
-}
+void APIServer::send_json(struct mg_connection *conn, const Document &d) {
+	StringBuffer buffer;
+	Writer<StringBuffer> writer(buffer);
+	d.Accept(writer);
+	std::string json(buffer.GetString());
 
-void APIServer::send_json(struct mg_connection *conn, const std::string &json) {
 	std::cout << "Sending JSON:\n";
 	std::cout << json << "\n";
 	mg_printf(conn,
@@ -66,6 +68,15 @@ void APIServer::send_json(struct mg_connection *conn, const std::string &json) {
 			(int) json.size(), json.c_str());
 }
 
+void APIServer::send_ack(struct mg_connection *conn, bool error, const std::string &message) {
+	Document json;
+	json.SetObject();
+	json.AddMember("error", error, json.GetAllocator());
+	json.AddMember("message", message.c_str(), json.GetAllocator());
+
+	send_json(conn, json);
+}
+
 void APIServer::serve_instances(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 // 	std::string jid = get_http_var(hm, "jid");
 // 	if (!jid.empty()) {
@@ -75,32 +86,36 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 
 	std::vector<std::string> list = show_list(m_config, false);
 
-	std::string json = "{\"error\":0, \"instances\": [";
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
 
-	BOOST_FOREACH(std::string &instance, list) {
-		json += "{";
-		json += "\"id\":\"" + instance + "\",";
-		json += "\"name\":\"" + instance + "\",";
+	Value instances(kArrayType);
+	BOOST_FOREACH(std::string &id, list) {
+		Value instance;
+		instance.SetObject();
+		instance.AddMember("id", id.c_str(), json.GetAllocator());
+		instance.AddMember("name", id.c_str(), json.GetAllocator());
 
-		std::string status = server->send_command(instance, "status");
+		std::string status = server->send_command(id, "status");
 		if (status.empty()) {
 			status = "Cannot get the instance status.";
 		}
 		else if (*(status.end() - 1) == '\n') {
 			status.erase(status.end() - 1);
 		}
-		json += "\"status\":\"" + safe_arg(status) + "\",";
+		instance.AddMember("status", status.c_str(), json.GetAllocator());
 
 		bool running = true;
 		if (status.find("Running") == std::string::npos) {
 			running = false;
 		}
-		json += "\"running\":" + (running ? std::string("1") : std::string("0"));
-		json += "},";
-	}
-	json.erase(json.end() - 1);
+		instance.AddMember("running", running, json.GetAllocator());
 
-	json += "]}";
+		instances.PushBack(instance, json.GetAllocator());
+	}
+
+	json.AddMember("instances", instances, json.GetAllocator());
 	send_json(conn, json);
 }
 
@@ -111,13 +126,11 @@ void APIServer::serve_instances_start(Server *server, Server::session *session, 
 	std::string instance = uri.substr(uri.rfind("/") + 1);
 	start_instances(m_config, instance);
 	std::string response = get_response();
-	std::string error = response.find("OK") == std::string::npos ? "1" : "0";
-	std::string json = "{\"error\":" + error + ", \"message\": \"" + safe_arg(response) + "\"}";
 
 	// TODO: So far it needs some time to reload Spectrum 2, so just sleep here.
 	sleep(1);
 
-	send_json(conn, json);
+	send_ack(conn, response.find("OK") == std::string::npos, response);
 }
 
 void APIServer::serve_instances_stop(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
@@ -127,9 +140,7 @@ void APIServer::serve_instances_stop(Server *server, Server::session *session, s
 	std::string instance = uri.substr(uri.rfind("/") + 1);
 	stop_instances(m_config, instance);
 	std::string response = get_response();
-	std::string error = response.find("OK") == std::string::npos ? "1" : "0";
-	std::string json = "{\"error\":" + error + ", \"message\": \"" + safe_arg(response) + "\"}"; \
-	send_json(conn, json);
+	send_ack(conn, response.find("OK") == std::string::npos, response);
 }
 
 void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm) {
