@@ -18,21 +18,56 @@ function show_instances() {
 			else if (admin) {
 				var command = "start";
 			}
-			var row = '<tr><td>'+ instance.name + '</td>' +
-			'<td>' + instance.status + '</td>' +
-			'<td><a class="button_command" href="/api/v1/instances/' + command + '/' + instance.id + '">' + command + '</a>' + '</td></tr>';
+			var row = '<tr>'
+			row += '<td>' + instance.name + '</td>'
+			row += '<td>' + instance.status + '</td>'
 
-			$("#main_result  > tbody:last-child").append(row);
+			if (command == 'register') {
+				row += '<td><a class="button_command" href="/instances/register.shtml?id=' + instance.id + '">' + command + '</a>' + '</td></tr>';
+				$("#main_result  > tbody:last-child").append(row);
+			}
+			else {
+				row += '<td><a class="button_command" href="/api/v1/instances/' + command + '/' + instance.id + '">' + command + '</a>' + '</td></tr>';
+				$(".button_command").click(function(e) {
+					e.preventDefault();
+					$(this).parent().empty().progressbar( {value: false} ).css('height', '1em');
 
-			$(".button_command").click(function(e) {
-				e.preventDefault();
-				$(this).parent().empty().progressbar( {value: false} ).css('height', '1em');
-
-				var url = $(this).attr('href');
-				$.get(url, function(data) {
-					show_instances();
-				});
-			})
+					var url = $(this).attr('href');
+					$.get(url, function(data) {
+						show_instances();
+					});
+				})
+			}
 		});
 	});
 }
+
+function getQueryParams(qs) {
+	qs = qs.split('+').join(' ');
+
+	var params = {},
+		tokens,
+		re = /[?&]?([^=]+)=([^&]*)/g;
+
+	while (tokens = re.exec(qs)) {
+		params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+	}
+
+	return params;
+}
+
+function fill_instances_register_form() {
+	var query = getQueryParams(document.location.search);
+	$("#instance").attr("value", query.id);
+	
+	$.get("/api/v1/instances/register_form/" + query.id, function(data) {
+		$("#jid_desc").html(data.username_label + ":");
+		$("#uin_desc").html(data.legacy_username_label + ":");
+		$("#password_desc").html(data.password_label + ":");
+
+		$("#jid").attr("placeholder", data.username_label);
+		$("#uin").attr("placeholder", data.legacy_username_label);
+		$("#password").attr("placeholder", data.password_label);
+	});
+}
+

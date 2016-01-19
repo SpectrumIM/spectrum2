@@ -152,12 +152,69 @@ void APIServer::serve_instances_stop(Server *server, Server::session *session, s
 	send_ack(conn, response.find("OK") == std::string::npos, response);
 }
 
+void APIServer::serve_instances_unregister(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+
+	std::string username = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, username);
+
+	if (!username.empty()) {
+		std::string response = server->send_command(instance, "unregister " + username);
+		if (!response.empty()) {
+			username = "";
+			m_storage->updateUserSetting(info.id, instance, username);
+			send_ack(conn, false, response);
+		}
+		else {
+			send_ack(conn, true, "Unknown error.");
+		}
+	}
+	else {
+		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
+	}
+}
+
+void APIServer::serve_instances_register_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
+	std::string response = server->send_command(instance, "registration_fields");
+	std::vector<std::string> fields;
+	boost::split(fields, response, boost::is_any_of("\n"));
+
+	if (fields.size() < 3) {
+		fields.clear();
+		fields.push_back("Jabber ID");
+		fields.push_back("3rd-party network username");
+		fields.push_back("3rd-party network password");
+	}
+
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+	json.AddMember("username_label", fields[0].c_str(), json.GetAllocator());
+	json.AddMember("legacy_username_label", fields[1].c_str(), json.GetAllocator());
+	json.AddMember("password_label", fields[2].c_str(), json.GetAllocator());
+	send_json(conn, json);
+}
+
 void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm) {
 	if (has_prefix(&hm->uri, "/api/v1/instances/start/")) {
 		serve_instances_start(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/stop/")) {
 		serve_instances_stop(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/unregister/")) {
+		serve_instances_stop(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/register_form/")) {
+		serve_instances_register_form(server, sess, conn, hm);
 	}
 	else if (mg_vcmp(&hm->uri, "/api/v1/instances") == 0) {
 		serve_instances(server, sess, conn, hm);
