@@ -112,6 +112,15 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		}
 		instance.AddMember("running", running, json.GetAllocator());
 
+		UserInfo info;
+		m_storage->getUser(session->user, info);
+		std::string username = "";
+		int type = (int) TYPE_STRING;
+		m_storage->getUserSetting(info.id, id, type, username);
+
+		instance.AddMember("registered", !username.empty(), json.GetAllocator());
+		instance.AddMember("username", username.c_str(), json.GetAllocator());
+
 		instances.PushBack(instance, json.GetAllocator());
 	}
 
