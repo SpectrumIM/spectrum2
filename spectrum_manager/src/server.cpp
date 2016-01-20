@@ -190,6 +190,18 @@ void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 	std::string user = get_http_var(hm, "user");
 	std::string password = get_http_var(hm, "password");
 
+	std::string host;
+	mg_str *host_hdr = mg_get_http_header(hm, "Host");
+	if (host_hdr) {
+		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+			host += "https://";
+		}
+		else {
+			host += "http://";
+		}
+		host += std::string(host_hdr->p, host_hdr->len);
+	}
+
 	if (check_password(user, password) && (session = new_session(user)) != NULL) {
 		std::cout << "User authorized\n";
 		mg_printf(conn, "HTTP/1.1 302 Found\r\n"
@@ -197,8 +209,8 @@ void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 			"Set-Cookie: user=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: admin=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: original_url=/; max-age=0\r\n"  // Delete original_url
-			"Location: /instances\r\n\r\n",
-			session->session_id, session->user, session->admin ? "1" : "0");
+			"Location: %s/instances\r\n\r\n",
+			session->session_id, session->user, session->admin ? "1" : "0", host.c_str());
 	} else {
 		// Authentication failure, redirect to login.
 		redirect_to(conn, hm, "/login");
@@ -234,9 +246,21 @@ bool Server::is_authorized(const struct mg_connection *conn, struct http_message
 }
 
 void Server::redirect_to(struct mg_connection *conn, struct http_message *hm, const char *where) {
+	std::string host;
+	mg_str *host_hdr = mg_get_http_header(hm, "Host");
+	if (host_hdr) {
+		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+			host += "https://";
+		}
+		else {
+			host += "http://";
+		}
+		host += std::string(host_hdr->p, host_hdr->len);
+	}
+
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 		"Set-Cookie: original_url=/\r\n"
-		"Location: %s\r\n\r\n", where);
+		"Location: %s%s\r\n\r\n", host.c_str(), where);
 }
 
 void Server::print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html) {
@@ -333,12 +357,24 @@ void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
 }
 
 void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
+	std::string host;
+	mg_str *host_hdr = mg_get_http_header(hm, "Host");
+	if (host_hdr) {
+		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+			host += "https://";
+		}
+		else {
+			host += "http://";
+		}
+		host += std::string(host_hdr->p, host_hdr->len);
+	}
+
 	Server:session *session = get_session(hm);
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 		"Set-Cookie: session=%s; max-age=0\r\n"
 		"Set-Cookie: admin=%s; max-age=0\r\n"
-		"Location: /\r\n\r\n",
-		session->session_id, session->admin ? "1" : "0");
+		"Location: %s/\r\n\r\n",
+		session->session_id, session->admin ? "1" : "0", host.c_str());
 
 	sessions.erase(session->session_id);
 	delete session;
