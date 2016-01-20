@@ -1,4 +1,4 @@
-<!--#include virtual="/header.html" -->
+<!--#include virtual="/header.shtml" -->
 
 <h2>Register Spectrum 2 instance</h2>
 <form action="/api/v1/instances/register" class="basic-grey" method="POST"> 
@@ -29,4 +29,4 @@ $(function() {
 });
 </script>
 
-<!--#include virtual="/footer.html" -->
+<!--#include virtual="/footer.shtml" -->

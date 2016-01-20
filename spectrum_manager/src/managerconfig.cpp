@@ -35,6 +35,7 @@ bool ManagerConfig::load(const std::string &configfile, boost::program_options::
 		("service.cert", value<std::string>()->default_value(""), "Web interface certificate in PEM format when TLS should be used.")
 		("service.config_directory", value<std::string>()->default_value("/etc/spectrum2/transports/"), "Directory with spectrum2 configuration files. One .cfg file per one instance")
 		("service.data_dir", value<std::string>()->default_value("/var/lib/spectrum2_manager/html"), "Directory to store Spectrum 2 manager data")
+		("service.base_location", value<std::string>()->default_value("/"), "Base location of the web interface")
 		("servers.server", value<std::vector<std::string> >()->multitoken(), "Server.")
 		("database.type", value<std::string>()->default_value("none"), "Database type.")
 		("database.database", value<std::string>()->default_value("/var/lib/spectrum2/$jid/database.sql"), "Database used to store data")

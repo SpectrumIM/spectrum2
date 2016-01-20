@@ -1,4 +1,4 @@
-<!--#include virtual="/header.html" -->
+<!--#include virtual="/header.shtml" -->
 
 <script type="text/javascript">
 $(function() {
@@ -6,4 +6,4 @@ $(function() {
 });
 </script>
 
-<!--#include virtual="/footer.html" -->
+<!--#include virtual="/footer.shtml" -->

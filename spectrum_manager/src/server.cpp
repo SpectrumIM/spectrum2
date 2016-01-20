@@ -208,9 +208,10 @@ void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 			"Set-Cookie: session=%s; max-age=3600; http-only\r\n"  // Session ID
 			"Set-Cookie: user=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: admin=%s\r\n"  // Set user, needed by Javascript code
+			"Set-Cookie: base_location=%s\r\n"  // Set user, needed by Javascript code
 			"Set-Cookie: original_url=/; max-age=0\r\n"  // Delete original_url
-			"Location: %s/instances\r\n\r\n",
-			session->session_id, session->user, session->admin ? "1" : "0", host.c_str());
+			"Location: %s%sinstances\r\n\r\n",
+			session->session_id, session->user, session->admin ? "1" : "0", CONFIG_STRING(m_config, "service.base_location").c_str(), host.c_str(), CONFIG_STRING(m_config, "service.base_location").c_str());
 	} else {
 		// Authentication failure, redirect to login.
 		redirect_to(conn, hm, "/login");
@@ -258,9 +259,11 @@ void Server::redirect_to(struct mg_connection *conn, struct http_message *hm, co
 		host += std::string(host_hdr->p, host_hdr->len);
 	}
 
+	where = where + 1;
+
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 		"Set-Cookie: original_url=/\r\n"
-		"Location: %s%s\r\n\r\n", host.c_str(), where);
+		"Location: %s%s%s\r\n\r\n", host.c_str(), CONFIG_STRING(m_config, "service.base_location").c_str(), where);
 }
 
 void Server::print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html) {
@@ -373,8 +376,8 @@ void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 		"Set-Cookie: session=%s; max-age=0\r\n"
 		"Set-Cookie: admin=%s; max-age=0\r\n"
-		"Location: %s/\r\n\r\n",
-		session->session_id, session->admin ? "1" : "0", host.c_str());
+		"Location: %s%s\r\n\r\n",
+		session->session_id, session->admin ? "1" : "0", host.c_str(), CONFIG_STRING(m_config, "service.base_location").c_str());
 
 	sessions.erase(session->session_id);
 	delete session;
@@ -727,9 +730,23 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 	struct http_message *hm = (struct http_message *) p;
 
+	if (ev == MG_EV_SSI_CALL) {
+		mbuf_resize(&conn->send_mbuf, conn->send_mbuf.size * 2);
+		std::string resp(conn->send_mbuf.buf, conn->send_mbuf.len);
+		boost::replace_all(resp, "href=\"/", std::string("href=\"") + CONFIG_STRING(m_config, "service.base_location"));
+		boost::replace_all(resp, "src=\"/", std::string("src=\"") + CONFIG_STRING(m_config, "service.base_location"));
+		boost::replace_all(resp, "action=\"/", std::string("action=\"") + CONFIG_STRING(m_config, "service.base_location"));
+		strcpy(conn->send_mbuf.buf, resp.c_str());
+		mbuf_trim(&conn->send_mbuf);
+		return;
+	}
+
 	if (ev != MG_EV_HTTP_REQUEST) {
 		return;
 	}
+
+	hm->uri.p += CONFIG_STRING(m_config, "service.base_location").size() - 1;
+	hm->uri.len -= CONFIG_STRING(m_config, "service.base_location").size() - 1;
 
 	if (!is_authorized(conn, hm)) {
 		redirect_to(conn, hm, "/login");
@@ -764,6 +781,15 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 	} else if (has_prefix(&hm->uri, "/api/v1/")) {
 		m_apiServer->handleRequest(this, get_session(hm), conn, hm);
 	} else {
+		if (hm->uri.p[hm->uri.len - 1] != '/') {
+			std::string url(hm->uri.p, hm->uri.len);
+			if (url.find(".") == std::string::npos) {
+				url += "/";
+				redirect_to(conn, hm, url.c_str());
+				conn->flags |= MG_F_SEND_AND_CLOSE;
+				return;
+			}
+		}
 		mg_serve_http(conn, hm, s_http_server_opts);
 	}
 
