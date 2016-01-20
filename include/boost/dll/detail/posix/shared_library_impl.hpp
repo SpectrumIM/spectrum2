@@ -13,7 +13,7 @@
 #include <boost/dll/detail/posix/path_from_handle.hpp>
 #include <boost/dll/detail/posix/program_location_impl.hpp>
 
-#include <boost/move/utility.hpp>
+//#include <boost/move/utility.hpp>
 #include <boost/swap.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>

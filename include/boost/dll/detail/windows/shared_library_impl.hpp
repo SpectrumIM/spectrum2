@@ -14,7 +14,7 @@
 #include <boost/dll/detail/system_error.hpp>
 #include <boost/dll/detail/windows/path_from_handle.hpp>
 
-#include <boost/move/utility.hpp>
+//#include <boost/move/utility.hpp>
 #include <boost/swap.hpp>
 #include <boost/filesystem/path.hpp>
 
