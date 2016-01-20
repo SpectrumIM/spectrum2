@@ -292,7 +292,12 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd)
 		eventLoop.runOnce();
 	}
 
-	return get_response();
+	std::string response = get_response();
+	if (response == "Empty response") {
+		return "";
+	}
+
+	return response;
 }
 
 void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {

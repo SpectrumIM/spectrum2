@@ -179,6 +179,49 @@ void APIServer::serve_instances_unregister(Server *server, Server::session *sess
 	}
 }
 
+void APIServer::serve_instances_register(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+
+	std::string username = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, username);
+
+	std::string jid = get_http_var(hm, "jid");
+	std::string uin = get_http_var(hm, "uin");
+	std::string password = get_http_var(hm, "password");
+
+	if (jid.empty() || uin.empty() || password.empty()) {
+		send_ack(conn, true, "Insufficient data.");
+	}
+	else {
+		std::string response = server->send_command(instance, "register " + jid + " " + uin + " " + password);
+		if (!response.empty()) {
+			std::string value = jid;
+			int type = (int) TYPE_STRING;
+			m_storage->updateUserSetting(info.id, instance, value);
+		}
+		else {
+			send_ack(conn, true, response);
+			return;
+		}
+
+		Document json;
+		json.SetObject();
+		json.AddMember("error", false, json.GetAllocator());
+
+		response = server->send_command(instance, "get_oauth2_url " + jid);
+		if (!response.empty()) {
+			json.AddMember("oauth2_url", response.c_str(), json.GetAllocator());
+		}
+
+		send_json(conn, json);
+	}
+}
+
 void APIServer::serve_instances_register_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	std::string uri(hm->uri.p, hm->uri.len);
 	std::string instance = uri.substr(uri.rfind("/") + 1);
@@ -211,10 +254,13 @@ void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_c
 		serve_instances_stop(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/unregister/")) {
-		serve_instances_stop(server, sess, conn, hm);
+		serve_instances_unregister(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/register_form/")) {
 		serve_instances_register_form(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/register/")) {
+		serve_instances_register(server, sess, conn, hm);
 	}
 	else if (mg_vcmp(&hm->uri, "/api/v1/instances") == 0) {
 		serve_instances(server, sess, conn, hm);

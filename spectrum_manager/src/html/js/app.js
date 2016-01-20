@@ -67,6 +67,21 @@ function getQueryParams(qs) {
 function fill_instances_register_form() {
 	var query = getQueryParams(document.location.search);
 	$("#instance").attr("value", query.id);
+
+	$(".button_command").click(function(e) {
+		e.preventDefault();
+		$(this).parent().empty().progressbar( {value: false} ).css('height', '1em');
+
+		var postdata ={
+			"jid": $("#jid").val(),
+			"uin": $("#uin").val(),
+			"password": $("#password").val()
+		};
+
+		$.post($.cookie("base_location") + "api/v1/instances/register/" + $("#instance").val(), postdata, function(data) {
+			window.location.replace("index.shtml");
+		});
+	})
 	
 	$.get($.cookie("base_location") + "api/v1/instances/register_form/" + query.id, function(data) {
 		$("#jid_desc").html(data.username_label + ":");

@@ -18,7 +18,7 @@
 </label> 
 <label> 
 	<span>&nbsp;</span> 
-	<input type="submit" class="button" value="Register" />
+	<input type="submit" class="button_command" value="Register" />
 </label> 
 <input type="hidden" name="instance" id="instance" value=""></input> 
 </form><br/>
