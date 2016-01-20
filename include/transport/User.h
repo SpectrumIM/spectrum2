@@ -138,6 +138,8 @@ class User {
 			m_reconnectLimit = limit;
 		}
 
+		void leaveRoom(const std::string &room);
+
 		boost::signal<void ()> onReadyToConnect;
 		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
 		boost::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;

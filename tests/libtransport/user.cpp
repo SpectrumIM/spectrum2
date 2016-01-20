@@ -29,6 +29,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(handleDisconnected);
 	CPPUNIT_TEST(handleDisconnectedReconnect);
 	CPPUNIT_TEST(joinRoomHandleDisconnectedRejoin);
+	CPPUNIT_TEST(joinRoomAfterFlagNotAuthorized);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -138,6 +139,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		// simulate that backend joined the room
 		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "room", true);
 		conv->addJID("user@localhost/resource");
+		conv->setNickname("hanzz");
 		user->getConversationManager()->addConversation(conv);
 
 		received.clear();
@@ -450,6 +452,24 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string("password"), roomPassword);
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+	}
+
+	void joinRoomAfterFlagNotAuthorized() {
+		User *user = userManager->getUser("user@localhost");
+		handlePresenceJoinRoom();
+
+		Conversation *conv = user->getConversationManager()->getConversation("room");
+		conv->handleParticipantChanged("hanzz", Conversation::PARTICIPANT_FLAG_NOT_AUTHORIZED, Swift::StatusShow::Away, "my status message");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Error, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::ErrorPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::ErrorPayload::NotAuthorized, getStanza(received[0])->getPayload<Swift::ErrorPayload>()->getCondition());
+
+		received.clear();
+		handlePresenceJoinRoom();
 	}
 
 };

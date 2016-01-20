@@ -151,6 +151,23 @@ void User::setCacheMessages(bool cacheMessages) {
 	m_cacheMessages = cacheMessages;
 }
 
+void User::leaveRoom(const std::string &room) {
+	onRoomLeft(room);
+
+	BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
+		if (Buddy::JIDToLegacyName(p->getTo()) == room) {
+			m_joinedRooms.remove(p);
+			break;
+		}
+	}
+
+	Conversation *conv = m_conversationManager->getConversation(room);
+	if (conv) {
+		m_conversationManager->removeConversation(conv);
+		delete conv;
+	}
+}
+
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 	if (!m_connected) {
@@ -196,19 +213,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			if (getUserSetting("stay_connected") != "1") {
 				LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
 				onRawPresenceReceived(presence);
-				onRoomLeft(room);
-
-				BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
-					if (p->getTo() == presence->getTo()) {
-						m_joinedRooms.remove(p);
-						break;
-					}
-				}
-
-				if (conv) {
-					m_conversationManager->removeConversation(conv);
-					delete conv;
-				}
+				leaveRoom(room);
 			}
 
 			return;

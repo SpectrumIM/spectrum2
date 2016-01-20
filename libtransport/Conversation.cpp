@@ -363,6 +363,13 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 		m_conversationManager->getComponent()->getFrontend()->sendMessage(m_subject);
 		m_subject.reset();
 	}
+
+	// We send error presences only to inform user that he is disconnected
+	// from the room. This code must be extended in case we start sending error
+	// presences in other situations.
+	if (presence->getType() == Swift::Presence::Error) {
+		m_conversationManager->getUser()->leaveRoom(m_legacyName);
+	}
 }
 
 }
