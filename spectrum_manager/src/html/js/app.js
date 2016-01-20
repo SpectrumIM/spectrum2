@@ -18,6 +18,9 @@ function show_instances() {
 			else if (admin) {
 				var command = "start";
 			}
+			else {
+				var command = "";
+			}
 			var row = '<tr>'
 			row += '<td>' + instance.name + '</td>'
 			row += '<td>' + instance.status + '</td>'
@@ -26,8 +29,13 @@ function show_instances() {
 				row += '<td><a class="button_command" href="/instances/register.shtml?id=' + instance.id + '">' + command + '</a>' + '</td></tr>';
 				$("#main_result  > tbody:last-child").append(row);
 			}
+			else if (command == "") {
+				row += '<td></td></tr>';
+				$("#main_result  > tbody:last-child").append(row);
+			}
 			else {
 				row += '<td><a class="button_command" href="/api/v1/instances/' + command + '/' + instance.id + '">' + command + '</a>' + '</td></tr>';
+				$("#main_result  > tbody:last-child").append(row);
 				$(".button_command").click(function(e) {
 					e.preventDefault();
 					$(this).parent().empty().progressbar( {value: false} ).css('height', '1em');

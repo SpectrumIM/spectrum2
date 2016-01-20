@@ -63,7 +63,24 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 	m_password = CONFIG_STRING(m_config, "service.admin_password");
 
 	mg_mgr_init(&m_mgr, this);
-	m_nc = mg_bind(&m_mgr, std::string(":" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port"))).c_str(), &_event_handler);
+
+	struct mg_bind_opts opts;
+	memset(&opts, 0, sizeof(opts));
+	const char *error_string;
+	opts.error_string = &error_string;
+	m_nc = mg_bind_opt(&m_mgr, std::string(":" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port"))).c_str(), &_event_handler, opts);
+	if (!m_nc) {
+		std::cerr << "Error creating server: " << error_string << "\n";
+		exit(1);
+	}
+
+	if (!CONFIG_STRING(m_config, "service.cert").empty()) {
+		const char *err_str = mg_set_ssl(m_nc, CONFIG_STRING(m_config, "service.cert").c_str(), NULL);
+		if (err_str) {
+			std::cerr << "Error setting SSL certificate: " << err_str << "\n";
+			exit(1);
+		}
+	}
 	mg_set_protocol_http_websocket(m_nc);
 
 	s_http_server_opts.document_root = CONFIG_STRING(m_config, "service.data_dir").c_str();

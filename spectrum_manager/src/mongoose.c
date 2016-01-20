@@ -2228,6 +2228,7 @@ static int mg_use_cert(SSL_CTX *ctx, const char *pem_file) {
     return 0;
   } else if (SSL_CTX_use_certificate_file(ctx, pem_file, 1) == 0 ||
              SSL_CTX_use_PrivateKey_file(ctx, pem_file, 1) == 0) {
+	  ERR_print_errors_fp(stderr);
     return -2;
   } else {
 #ifndef MG_DISABLE_PFS

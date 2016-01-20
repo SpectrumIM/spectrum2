@@ -644,6 +644,7 @@ int json_emit_va(char *buf, int buf_len, const char *fmt, va_list);
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 #else
 typedef void *SSL;
 typedef void *SSL_CTX;
