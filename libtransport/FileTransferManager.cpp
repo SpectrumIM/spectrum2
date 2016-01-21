@@ -83,7 +83,7 @@ FileTransferManager::~FileTransferManager() {
 }
 
 FileTransferManager::Transfer FileTransferManager::sendFile(User *user, Buddy *buddy, boost::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info) {
-// 	FileTransferManager::Transfer transfer;
+ 	FileTransferManager::Transfer transfer;
 // 	transfer.from = buddy->getJID();
 // 	transfer.to = user->getJID();
 // 	transfer.readByteStream = byteStream;
@@ -96,7 +96,7 @@ FileTransferManager::Transfer FileTransferManager::sendFile(User *user, Buddy *b
 // // 		ft->onStateChange.connect(boost::bind(&User::handleFTStateChanged, this, _1, Buddy::JIDToLegacyName(from), info.getName(), info.getSize(), id));
 // // 		transfer.ft->start();
 // // 	}
-// 	return transfer;
+ 	return transfer;
 }
 
 }
