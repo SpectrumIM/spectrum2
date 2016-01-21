@@ -347,7 +347,7 @@ void XMPPFrontend::handleConnected() {
 }
 
 void XMPPFrontend::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
-	if(e != NULL ) {
+	if(e) {
 		if(*e == Swift::BoostConnectionServer::Conflict) {
 			LOG4CXX_INFO(logger, "Port "<< CONFIG_INT(m_config, "service.port") << " already in use! Stopping server..");
 			if (CONFIG_INT(m_config, "service.port") == 5347) {
