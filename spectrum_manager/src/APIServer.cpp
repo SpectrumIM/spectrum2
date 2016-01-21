@@ -101,9 +101,6 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		if (status.empty()) {
 			status = "Cannot get the instance status.";
 		}
-		else if (*(status.end() - 1) == '\n') {
-			status.erase(status.end() - 1);
-		}
 		instance.AddMember("status", status.c_str(), json.GetAllocator());
 
 		bool running = true;
