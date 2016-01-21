@@ -34,7 +34,7 @@
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
 
-      <p>If you don't have Spectrum 2 master account yet, you can <a href="/users">Register it here</a>. You will be able to manager your Spectrum 2 IM transports after that.</p>
+      <p>If you don't have Spectrum 2 master account yet, you can <a href="/users/register.shtml">Register it here</a>. You will be able to manager your Spectrum 2 IM transports after that.</p>
 
 <form action="/authorize" class="basic-grey" method="POST">
     <h1>Login form

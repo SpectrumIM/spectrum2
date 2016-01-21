@@ -1,0 +1,9 @@
+<!--#include virtual="/header.shtml" -->
+
+<script type="text/javascript">
+$(function() {
+	show_users();
+});
+</script>
+
+<!--#include virtual="/footer.shtml" -->

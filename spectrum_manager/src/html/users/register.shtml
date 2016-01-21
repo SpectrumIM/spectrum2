@@ -1,0 +1,28 @@
+<!--#include virtual="/header.shtml" -->
+
+<h2>Register new Spectrum 2 maanger account</h2>
+
+<form action="/api/v1/users/add" class="basic-grey" method="POST"> 
+	<h1>Register user 
+		<span>Register new user to Spectrum 2 manager web interface.</span> 
+	</h1> 
+	<label> 
+		<span>Username:</span> 
+		<input type="text" id="username" name="username" placeholder="Username"></textarea> 
+	</label> 
+	<label><span>Password:</span> 
+		<input type="password" id="password" name="password" placeholder="Password"></textarea> 
+	</label> 
+	<label> 
+		<span>&nbsp;</span> 
+		<input type="submit" class="button" value="Add user" />
+	</label> 
+</form><br/>
+
+<script type="text/javascript">
+$(function() {
+	fill_users_register_form();
+});
+</script>
+
+<!--#include virtual="/footer.shtml" -->

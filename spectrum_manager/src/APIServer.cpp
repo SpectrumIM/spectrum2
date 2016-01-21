@@ -246,6 +246,75 @@ void APIServer::serve_instances_register_form(Server *server, Server::session *s
 	send_json(conn, json);
 }
 
+void APIServer::serve_users(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	ALLOW_ONLY_ADMIN();
+
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+
+	std::vector<std::string> list;
+	m_storage->getUsers(list);
+
+	Value users(kArrayType);
+	BOOST_FOREACH(std::string &id, list) {
+		Value user;
+		user.SetObject();
+		user.AddMember("username", id.c_str(), json.GetAllocator());
+		users.PushBack(user, json.GetAllocator());
+	}
+
+	json.AddMember("users", users, json.GetAllocator());
+	send_json(conn, json);
+}
+
+void APIServer::serve_users_add(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string user = get_http_var(hm, "username");
+	std::string password = get_http_var(hm, "password");
+
+	if (!user.empty() && !password.empty()) {
+		if (m_storage) {
+			UserInfo dummy;
+			bool registered = m_storage->getUser(user, dummy);
+			if (!registered) {
+				UserInfo info;
+				info.jid = user;
+				info.password = password;
+				m_storage->setUser(info);
+			}
+			else {
+				send_ack(conn, true, "This user is already registered");
+				return;
+			}
+		}
+		else {
+			send_ack(conn, false, "Storage backend is not configured.");
+		}
+	}
+	else {
+		send_ack(conn, true, "Username or password has not been provided.");
+		return;
+	}
+	send_ack(conn, false, "");
+}
+
+void APIServer::serve_users_remove(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	ALLOW_ONLY_ADMIN();
+
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string user = uri.substr(uri.rfind("/") + 1);
+
+	if (!m_storage) {
+		return;
+	}
+
+	UserInfo info;
+	m_storage->getUser(user, info);
+	m_storage->removeUser(info.id);
+
+	send_ack(conn, false, "");
+}
+
 void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm) {
 	if (has_prefix(&hm->uri, "/api/v1/instances/start/")) {
 		serve_instances_start(server, sess, conn, hm);
@@ -261,6 +330,15 @@ void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_c
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/register/")) {
 		serve_instances_register(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/users/remove/")) {
+		serve_users_remove(server, sess, conn, hm);
+	}
+	else if (mg_vcmp(&hm->uri, "/api/v1/users/add") == 0) {
+		serve_users_add(server, sess, conn, hm);
+	}
+	else if (mg_vcmp(&hm->uri, "/api/v1/users") == 0) {
+		serve_users(server, sess, conn, hm);
 	}
 	else if (mg_vcmp(&hm->uri, "/api/v1/instances") == 0) {
 		serve_instances(server, sess, conn, hm);

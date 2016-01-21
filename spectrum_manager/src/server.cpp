@@ -300,69 +300,69 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd)
 	return response;
 }
 
-void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {
-	Server:session *session = get_session(hm);
-	if (!session->admin) {
-		redirect_to(conn, hm, "/");
-		return;
-	}
-
-	std::string html;
-	std::string jid = get_http_var(hm, "jid");
-
-	html += std::string("<h2>") + jid + " online users</h2><table><tr><th>JID<th>Command</th></tr>";
-
-	Swift::SimpleEventLoop eventLoop;
-	Swift::BoostNetworkFactories networkFactories(&eventLoop);
-
-	ask_local_server(m_config, networkFactories, jid, "online_users");
-	eventLoop.runUntilEvents();
-	while(get_response().empty()) {
-		eventLoop.runUntilEvents();
-	}
-
-	std::string response = get_response();
-	std::vector<std::string> users;
-	boost::split(users, response, boost::is_any_of("\n"));
-
-	BOOST_FOREACH(std::string &user, users) {
-		html += "<tr><td>" + user + "</td><td></td></tr>";
-	}
-
-	html += "</table><a href=\"/\">Back to main page</a>";
-	html += "</body></html>";
-	print_html(conn, hm, html);
-}
-
-void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
-	Server:session *session = get_session(hm);
-	if (!session->admin) {
-		redirect_to(conn, hm, "/");
-		return;
-	}
-
-	std::string html;
-	std::string jid = get_http_var(hm, "jid");
-	std::string cmd = get_http_var(hm, "cmd");
-
-	html += std::string("<h2>") + jid + " command result</h2>";
-
-	Swift::SimpleEventLoop eventLoop;
-	Swift::BoostNetworkFactories networkFactories(&eventLoop);
-
-	ask_local_server(m_config, networkFactories, jid, cmd);
-	while(get_response().empty()) {
-		eventLoop.runUntilEvents();
-	}
-
-	std::string response = get_response();
-	
-	html += "<pre>" + response + "</pre>";
-
-	html += "<a href=\"/\">Back to main page</a>";
-	html += "</body></html>";
-	print_html(conn, hm, html);
-}
+// void Server::serve_onlineusers(struct mg_connection *conn, struct http_message *hm) {
+// 	Server:session *session = get_session(hm);
+// 	if (!session->admin) {
+// 		redirect_to(conn, hm, "/");
+// 		return;
+// 	}
+// 
+// 	std::string html;
+// 	std::string jid = get_http_var(hm, "jid");
+// 
+// 	html += std::string("<h2>") + jid + " online users</h2><table><tr><th>JID<th>Command</th></tr>";
+// 
+// 	Swift::SimpleEventLoop eventLoop;
+// 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
+// 
+// 	ask_local_server(m_config, networkFactories, jid, "online_users");
+// 	eventLoop.runUntilEvents();
+// 	while(get_response().empty()) {
+// 		eventLoop.runUntilEvents();
+// 	}
+// 
+// 	std::string response = get_response();
+// 	std::vector<std::string> users;
+// 	boost::split(users, response, boost::is_any_of("\n"));
+// 
+// 	BOOST_FOREACH(std::string &user, users) {
+// 		html += "<tr><td>" + user + "</td><td></td></tr>";
+// 	}
+// 
+// 	html += "</table><a href=\"/\">Back to main page</a>";
+// 	html += "</body></html>";
+// 	print_html(conn, hm, html);
+// }
+// 
+// void Server::serve_cmd(struct mg_connection *conn, struct http_message *hm) {
+// 	Server:session *session = get_session(hm);
+// 	if (!session->admin) {
+// 		redirect_to(conn, hm, "/");
+// 		return;
+// 	}
+// 
+// 	std::string html;
+// 	std::string jid = get_http_var(hm, "jid");
+// 	std::string cmd = get_http_var(hm, "cmd");
+// 
+// 	html += std::string("<h2>") + jid + " command result</h2>";
+// 
+// 	Swift::SimpleEventLoop eventLoop;
+// 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
+// 
+// 	ask_local_server(m_config, networkFactories, jid, cmd);
+// 	while(get_response().empty()) {
+// 		eventLoop.runUntilEvents();
+// 	}
+// 
+// 	std::string response = get_response();
+// 	
+// 	html += "<pre>" + response + "</pre>";
+// 
+// 	html += "<a href=\"/\">Back to main page</a>";
+// 	html += "</body></html>";
+// 	print_html(conn, hm, html);
+// }
 
 void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
 	std::string host;
@@ -498,236 +498,6 @@ void Server::serve_users(struct mg_connection *conn, struct http_message *hm) {
 	print_html(conn, hm, html);
 }
 
-void Server::serve_instances_start(struct mg_connection *conn, struct http_message *hm) {
-	Server:session *session = get_session(hm);
-	if (!session->admin) {
-		redirect_to(conn, hm, "/");
-		return;
-	}
-
-	std::string html;
-	std::string jid = get_http_var(hm, "jid");
-	if (jid.empty()) {
-		redirect_to(conn, hm, "/");
-		return;
-	}
-
-	start_instances(m_config, jid);
-	html += "<h2>Starting Spectrum 2 instance</h2>";
-	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
-	print_html(conn, hm, html);
-}
-
-void Server::serve_instances_stop(struct mg_connection *conn, struct http_message *hm) {
-	Server:session *session = get_session(hm);
-	if (!session->admin) {
-		redirect_to(conn, hm, "/");
-		return;
-	}
-
-	std::string html;
-	std::string jid = get_http_var(hm, "jid");
-
-	stop_instances(m_config, jid);
-	html += "<b>" + get_response() + "</b><br/><a href=\"/\">Back to main page</a>";
-	html += "</body></html>";
-	print_html(conn, hm, html);
-}
-
-void Server::serve_instance(struct mg_connection *conn, struct http_message *hm, const std::string &jid) {
-	std::string html = "<h2>Spectrum 2 instance: " + jid + "</h2>";
-
-	print_html(conn, hm, html);
-}
-
-void Server::serve_instances_unregister(struct mg_connection *conn, struct http_message *hm) {
-	std::string instance = get_http_var(hm, "instance");
-	if (instance.empty()) {
-		serve_instances(conn, hm);
-		return;
-	}
-
-	Server:session *session = get_session(hm);
-	UserInfo info;
-	m_storage->getUser(session->user, info);
-
-	std::string value = "";
-	int type = (int) TYPE_STRING;
-	m_storage->getUserSetting(info.id, instance, type, value);
-
-	if (!value.empty()) {
-		std::string response = send_command(instance, "unregister " + value);
-		if (!response.empty()) {
-			value = "";
-			m_storage->updateUserSetting(info.id, instance, value);
-		}
-	}
-
-	redirect_to(conn, hm, "/instances");
-}
-
-void Server::serve_instances_register(struct mg_connection *conn, struct http_message *hm) {
-	std::string instance = get_http_var(hm, "instance");
-	if (instance.empty()) {
-		serve_instances(conn, hm);
-		return;
-	}
-
-	std::string jid = get_http_var(hm, "jid");
-	std::string uin = get_http_var(hm, "uin");
-	std::string password = get_http_var(hm, "password");
-	Server:session *session = get_session(hm);
-	UserInfo info;
-	m_storage->getUser(session->user, info);
-
-	if (jid.empty() || uin.empty() || password.empty()) {
-		std::string response = send_command(instance, "registration_fields");
-		std::vector<std::string> fields;
-		boost::split(fields, response, boost::is_any_of("\n"));
-
-		if (fields.size() < 3) {
-			fields.clear();
-			fields.push_back("Jabber ID");
-			fields.push_back("3rd-party network username");
-			fields.push_back("3rd-party network password");
-		}
-
-		std::string html = "<h2>Register Spectrum 2 instance</h2>";
-		html += "<form action=\"/instances/register\" class=\"basic-grey\" method=\"POST\"> \
-			<h1>Register Spectrum 2 instance \
-				<span>Write the " + fields[0] + ", " + fields[1] + " and " + fields[2] + ".</span> \
-			</h1> \
-			<label> \
-				<span>" + fields[0] + ":</span> \
-				<input type=\"text\" id=\"jid\" name=\"jid\" placeholder=\""+ fields[0] +"\"></textarea> \
-			</label> \
-			<label> \
-				<span>" + fields[1] + ":</span> \
-				<input type=\"text\" id=\"uin\" name=\"uin\" placeholder=\"" + fields[1] + "\"></textarea> \
-			</label> \
-			<label><span>" + fields[2] + ":</span> \
-				<input type=\"password\" id=\"password\" name=\"password\" placeholder=\"" + fields[2] + "\"></textarea> \
-			</label> \
-			<label> \
-				<span>&nbsp;</span> \
-				<input type=\"submit\" class=\"button\" value=\"Register\" />\
-			</label> \
-			<input type=\"hidden\" name=\"instance\" value=\"" + instance + "\"></input> \
-			</form><br/>";
-		print_html(conn, hm, html);
-	}
-	else {
-		std::string response = send_command(instance, "register " + jid + " " + uin + " " + password);
-		if (!response.empty()) {
-			std::string value = jid;
-			int type = (int) TYPE_STRING;
-			m_storage->updateUserSetting(info.id, instance, value);
-		}
-
-		response = send_command(instance, "get_oauth2_url " + jid);
-		if (!response.empty()) {
-			redirect_to(conn, hm, response.c_str());
-			return;
-		}
-
-		redirect_to(conn, hm, "/instances");
-	}
-
-}
-
-void Server::serve_instances(struct mg_connection *conn, struct http_message *hm) {
-	std::string jid = get_http_var(hm, "jid");
-	if (!jid.empty()) {
-		serve_instance(conn, hm, jid);
-		return;
-	}
-
-	std::vector<std::string> list = show_list(m_config, false);
-	std::string html = "<h2>List of Spectrum 2 instances</h2>";
-
-	Server:session *session = get_session(hm);
-
-	if (session->admin) {
-		if (list.empty()) {
-			html += "<p>There are no Spectrum 2 instances yet. You can create new instance by adding configuration files into <pre>/etc/spectrum2/transports</pre> directory. You can then maintain the Spectrum 2 instance here.</p>";
-		}
-		else {
-			html += "<table><tr><th>Hostname<th>Status</th><th>Command</th><th>Run command</th></tr>";
-			BOOST_FOREACH(std::string &instance, list) {
-				html += "<tr>";
-				html += "<td><a href=\"/instances?jid=" + instance + "\">" + instance + "</a></td>";
-
-				std::string response = send_command(instance, "status");
-				if (response.empty()) {
-					response = "Cannot get the server status";
-				}
-
-				html += "<td>" + response + "</td>";
-				if (response.find("Running") == 0) {
-					html += "<td><a href=\"/instances/stop?jid=" + instance + "\">Stop</a></td>";
-					html += "<td><form action=\"/cmd\">";
-					html += "<input type=\"hidden\" name=\"jid\" value=\"" + instance + "\"></input>";
-					html += "<input type=\"text\" name=\"cmd\"></input>";
-					html += "<input type=\"submit\" value=\"Run\"></input>";
-					html += "</form></td>";
-				}
-				else {
-					html += "<td><a href=\"/instances/start?jid=" + instance + "\">Start</a></td>";
-					html += "<td></td>";
-				}
-
-				html += "</tr>";
-			}
-
-			html += "</table>";
-		}
-	}
-	else {
-		UserInfo info;
-		m_storage->getUser(session->user, info);
-
-		if (list.empty()) {
-			html += "<p>There are no Spectrum 2 instances yet.</p>";
-		}
-		else {
-			html += "<table><tr><th>Hostname<th>Status</th><th>Action</th></tr>";
-			BOOST_FOREACH(std::string &instance, list) {
-				html += "<tr>";
-				html += "<td><a href=\"/instances?jid=" + instance + "\">" + instance + "</a></td>";
-
-				std::string response = send_command(instance, "status");
-				if (response.empty()) {
-					response = "Cannot get the server status";
-				}
-
-				if (response.find("Running") == 0) {
-					std::string value = "";
-					int type = (int) TYPE_STRING;
-					m_storage->getUserSetting(info.id, instance, type, value);
-
-					if (!value.empty()) {
-						html += "<td>Running. Registered as " + value + "</td>";
-						html += "<td><a href=\"/instances/unregister?instance=" + instance + "\">Unregister</a></td>";
-					}
-					else {
-						html += "<td>Running. No account registered yet.</td>";
-						html += "<td><a href=\"/instances/register?instance=" + instance + "\">Register</a></td>";
-					}
-				}
-				else {
-					html += "<td>" + response + "</td>";
-					html += "<td>No available action</td>";
-				}
-
-				html += "</tr>";
-			}
-
-			html += "</table>";
-		}
-	}
-	print_html(conn, hm, html);
-}
-
 void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 	std::cout << "OAUTH2 handler\n";
 }
@@ -757,24 +527,8 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		redirect_to(conn, hm, "/login");
 	} else if (mg_vcmp(&hm->uri, "/authorize") == 0) {
 		authorize(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/") == 0) {
-// 		serve_instances(conn, hm);
 	} else if (mg_vcmp(&hm->uri, "/logout") == 0) {
 		serve_logout(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/instances") == 0) {
-// 		serve_instances(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/onlineusers") == 0) {
-// 		serve_onlineusers(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/cmd") == 0) {
-// 		serve_cmd(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/instances/start") == 0) {
-// 		serve_instances_start(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/instances/stop") == 0) {
-// 		serve_instances_stop(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/instances/register") == 0) {
-// 		serve_instances_register(conn, hm);
-// 	} else if (mg_vcmp(&hm->uri, "/instances/unregister") == 0) {
-// 		serve_instances_unregister(conn, hm);
 // 	} else if (mg_vcmp(&hm->uri, "/users") == 0) {
 // 		serve_users(conn, hm);
 // 	} else if (mg_vcmp(&hm->uri, "/users/add") == 0) {
