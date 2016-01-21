@@ -1567,6 +1567,35 @@ static PurpleXferUiOps xferUiOps =
 	NULL
 };
 
+static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
+{
+	if (!in_progress) 
+	{
+		GList *rooms;
+		std::list<std::string> m_rooms;
+		for (rooms = list->rooms; rooms != NULL; rooms = rooms->next)
+		{
+			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;	
+			m_rooms.push_back(room->name);
+		}
+		np->handleRoomList("", m_rooms, m_rooms);
+	}
+}
+
+static PurpleRoomlistUiOps roomlist_ui_ops =
+{
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	RoomlistProgress,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops_wrapped(&blistUiOps);
@@ -1576,6 +1605,8 @@ static void transport_core_ui_init(void)
 	purple_xfers_set_ui_ops_wrapped(&xferUiOps);
 	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
 	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
+	purple_roomlist_set_ui_ops_wrapped(&roomlist_ui_ops);
+	
 // #ifndef WIN32
 // 	purple_dnsquery_set_ui_ops_wrapped(getDNSUiOps());
 // #endif
@@ -1672,7 +1703,8 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	malloc_trim(0);
 #endif
 #endif
-
+	purple_roomlist_get_list_wrapped(gc);
+	
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
 }
@@ -1848,7 +1880,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 		if (firstPing) {
 			firstPing = false;
-			NetworkPlugin::PluginConfig cfg;
+			NetworkPlugin::PluginConfig cfg;			
 			cfg.setSupportMUC(true);
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 				cfg.setNeedPassword(false);

@@ -314,6 +314,12 @@ extern purple_xfers_set_ui_ops_wrapped_fnc purple_xfers_set_ui_ops_wrapped;
 typedef void * (_cdecl * purple_xfers_get_handle_wrapped_fnc)(void);
 extern purple_xfers_get_handle_wrapped_fnc purple_xfers_get_handle_wrapped;
 
+typedef void (_cdecl * purple_roomlist_set_ui_ops_wrapped_fnc)(PurpleRoomlistUiOps *ops);
+extern purple_roomlist_set_ui_ops_wrapped_fnc purple_roomlist_set_ui_ops_wrapped;
+
+typedef PurpleRoomlist * (_cdecl * purple_roomlist_get_list_wrapped_fnc)(PurpleConnection *con);
+extern purple_roomlist_get_list_wrapped_fnc purple_roomlist_get_list_wrapped;
+
 typedef gconstpointer  (_cdecl * purple_imgstore_get_data_wrapped_fnc)(PurpleStoredImage *img);
 extern purple_imgstore_get_data_wrapped_fnc purple_imgstore_get_data_wrapped;
 
@@ -560,6 +566,8 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_xfer_ref_wrapped purple_xfer_ref
 #define purple_xfers_set_ui_ops_wrapped purple_xfers_set_ui_ops
 #define purple_xfers_get_handle_wrapped purple_xfers_get_handle
+#define purple_roomlist_set_ui_ops_wrapped purple_roomlist_set_ui_ops
+#define purple_roomlist_get_list_wrapped purple_roomlist_get_list
 #define purple_imgstore_get_data_wrapped purple_imgstore_get_data
 #define purple_imgstore_get_size_wrapped purple_imgstore_get_size
 #define purple_imgstore_unref_wrapped purple_imgstore_unref
