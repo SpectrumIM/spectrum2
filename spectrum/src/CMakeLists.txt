@@ -49,4 +49,8 @@ INSTALL(FILES
 	DESTINATION /etc/spectrum2
 	)
 
+INSTALL(FILES
+	manager-logging.cfg
+	DESTINATION /etc/spectrum2
+	)
 
