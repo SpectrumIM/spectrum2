@@ -105,7 +105,8 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 
 	m_storageCfg = new Config();
 	m_storageCfg->load(config_file);
-
+	
+	Logging::initManagerLogging(m_storageCfg);
 	std::string error;
 	m_storage = StorageBackend::createBackend(m_storageCfg, error);
 	if (m_storage == NULL) {

@@ -203,6 +203,9 @@ void initMainLogging(Config *config) {
 	initLogging(config, "logging.config");
 	initLogging(config, "logging.backend_config", true);
 }
+void initManagerLogging(Config *config) {
+        initLogging(config, "logging.config");
+}
 
 void redirect_stderr() {
 	 intercepter_cerr = new intercept_stream(std::cerr, "cerr");

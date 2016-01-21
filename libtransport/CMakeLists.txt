@@ -15,7 +15,6 @@ else()
 	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
 	string(REGEX REPLACE "[^;]+;?/SecureTransport/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
 endif()
-
 FILE(GLOB HEADERS ../include/transport/*.h)
 include_directories(../spectrum/src/frontends/xmpp/)
 
@@ -48,7 +47,7 @@ find_package(CURL)
 
 if (WIN32)
 	include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/sqlite3")
-	TARGET_LINK_LIBRARIES(transport transport-plugin sqlite3 ${PQXX_LIBRARY} ${CURL_LIBRARIES ${PQ_LIBRARY} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY} psapi.lib)
+	TARGET_LINK_LIBRARIES(transport transport-plugin sqlite3 ${PQXX_LIBRARY} ${CURL_LIBRARIES} ${PQ_LIBRARY} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY} psapi.lib)
 else()
 	TARGET_LINK_LIBRARIES(transport transport-plugin ${PQXX_LIBRARY} ${CURL_LIBRARIES} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY} ${PROTOBUF_LIBRARY})
 endif()

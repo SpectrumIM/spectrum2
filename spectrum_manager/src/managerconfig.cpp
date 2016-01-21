@@ -44,6 +44,7 @@ bool ManagerConfig::load(const std::string &configfile, boost::program_options::
 		("database.password", value<std::string>()->default_value(""), "Database Password.")
 		("database.port", value<int>()->default_value(0), "Database port.")
 		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
+		("logging.config", value<std::string>()->default_value("/etc/spectrum2/manager_logging.cfg"), "Logging configuration file")
 	;
 
 	store(parse_config_file(ifs, opts), m_variables);
