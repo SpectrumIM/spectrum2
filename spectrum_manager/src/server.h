@@ -66,9 +66,6 @@ class Server {
 		std::string send_command(const std::string &jid, const std::string &cmd);
 
 	private:
-		void serve_users(struct mg_connection *conn, struct http_message *hm);
-		void serve_users_add(struct mg_connection *conn, struct http_message *hm);
-		void serve_users_remove(struct mg_connection *conn, struct http_message *hm);
 		void serve_logout(struct mg_connection *conn, struct http_message *hm);
 		void serve_oauth2(struct mg_connection *conn, struct http_message *hm);
 		void print_html(struct mg_connection *conn, struct http_message *hm, const std::string &html);
