@@ -25,7 +25,7 @@
 
             <section id="menu" style="text-align: center;">
             <a class="menuitem" href="/instances">Instances</a>
-            <a class="menuitem" href="/users">Users</a>
+            <a class="menuitem" href="/users/list.shtml">Users</a>
             <a class="menuitem" href="/logout">Logout</a>
             </section>
         </header>
