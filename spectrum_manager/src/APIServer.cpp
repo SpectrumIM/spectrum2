@@ -78,12 +78,10 @@ void APIServer::send_ack(struct mg_connection *conn, bool error, const std::stri
 }
 
 void APIServer::serve_instances(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
-// 	std::string jid = get_http_var(hm, "jid");
-// 	if (!jid.empty()) {
-// 		serve_instance(conn, hm, jid);
-// 		return;
-// 	}
-
+	// rapidjson stores const char* pointer to status, so we have to keep
+	// the std::string stored out of BOOST_FOREACH scope, otherwise the
+	// const char * returned by c_str() would be invalid during send_json.
+	std::vector<std::string> statuses;
 	std::vector<std::string> list = show_list(m_config, false);
 
 	Document json;
@@ -101,7 +99,9 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		if (status.empty()) {
 			status = "Cannot get the instance status.";
 		}
-		instance.AddMember("status", status.c_str(), json.GetAllocator());
+
+		statuses.push_back(status);
+		instance.AddMember("status", statuses.back().c_str(), json.GetAllocator());
 
 		bool running = true;
 		if (status.find("Running") == std::string::npos) {
