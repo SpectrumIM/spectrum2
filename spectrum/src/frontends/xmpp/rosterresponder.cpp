@@ -82,7 +82,7 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		return true;
 	}
 
-	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(item.getJID()));
+	Buddy *buddy = Buddy::JIDToBuddy(item.getJID(), user);
 	if (buddy) {
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
 			LOG4CXX_INFO(logger, from.toBare().toString() << ": Removing buddy " << buddy->getName());
@@ -102,7 +102,7 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		BuddyInfo buddyInfo;
 		buddyInfo.id = -1;
 		buddyInfo.alias = item.getName();
-		buddyInfo.legacyName = Buddy::JIDToLegacyName(item.getJID());
+		buddyInfo.legacyName = Buddy::JIDToLegacyName(item.getJID(), user);
 		buddyInfo.subscription = "both";
 		buddyInfo.flags = Buddy::buddyFlagsFromJID(item.getJID());
 		LOG4CXX_INFO(logger, from.toBare().toString() << ": Adding buddy " << buddyInfo.legacyName);

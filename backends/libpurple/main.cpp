@@ -1259,7 +1259,6 @@ static PurpleConnectionUiOps conn_ui_ops =
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info) {
 	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	std::string name(purple_normalize_wrapped(account, who));
-	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
 	size_t pos = name.find("/");
 	if (pos != std::string::npos)

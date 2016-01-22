@@ -255,7 +255,7 @@ void BasicTest::add2Buddies() {
 
 	std::vector<std::string> grp;
 	grp.push_back("group1");
-	LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+	LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "BuddY1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
 	user->getRosterManager()->setBuddy(buddy);
 	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
 

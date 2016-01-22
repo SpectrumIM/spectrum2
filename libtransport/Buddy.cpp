@@ -189,7 +189,7 @@ void Buddy::handleVCardReceived(const std::string &id, Swift::VCard::ref vcard) 
 	m_rosterManager->getUser()->getComponent()->getFrontend()->sendVCard(vcard, m_rosterManager->getUser()->getJID());
 }
 
-std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
+std::string Buddy::JIDToLegacyName(const Swift::JID &jid, User *user) {
 	std::string name;
 	if (jid.getUnescapedNode() == jid.getNode()) {
 		name = jid.getNode();
@@ -199,12 +199,46 @@ std::string Buddy::JIDToLegacyName(const Swift::JID &jid) {
 	}
 	else {
 		name = jid.getUnescapedNode();
-		// Psi sucks...
-// 		if (name.find_last_of("\\40") != std::string::npos) {
-// 			name.replace(name.find_last_of("\\40"), 1, "@"); // OK
-// 		}
 	}
+
+	// If we have User associated with this request, we will find the
+	// buddy in his Roster, because JID received from network can be lower-case
+	// version of the original legacy name, but in the roster, we store the
+	// case-sensitive version of the legacy name.
+	if (user) {
+		Buddy *b = user->getRosterManager()->getBuddy(name);
+		if (b) {
+			return b->getName();
+		}
+	}
+
 	return name;
+}
+
+Buddy *Buddy::JIDToBuddy(const Swift::JID &jid, User *user) {
+	std::string name;
+	if (jid.getUnescapedNode() == jid.getNode()) {
+		name = jid.getNode();
+		if (name.find_last_of("%") != std::string::npos) {
+			name.replace(name.find_last_of("%"), 1, "@"); // OK
+		}
+	}
+	else {
+		name = jid.getUnescapedNode();
+	}
+
+	// If we have User associated with this request, we will find the
+	// buddy in his Roster, because JID received from network can be lower-case
+	// version of the original legacy name, but in the roster, we store the
+	// case-sensitive version of the legacy name.
+	if (user) {
+		Buddy *b = user->getRosterManager()->getBuddy(name);
+		if (b) {
+			return b;
+		}
+	}
+
+	return NULL;
 }
 
 BuddyFlag Buddy::buddyFlagsFromJID(const Swift::JID &jid) {

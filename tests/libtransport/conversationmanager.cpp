@@ -16,6 +16,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
 	CPPUNIT_TEST(conversationSize);
 	CPPUNIT_TEST(handleNormalMessages);
+	CPPUNIT_TEST(handleNormalMessagesInitiatedFromXMPP);
 	CPPUNIT_TEST(handleNormalMessagesHeadline);
 	CPPUNIT_TEST(handleGroupchatMessages);
 	CPPUNIT_TEST(handleGroupchatMessagesBouncer);
@@ -204,6 +205,28 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
 		received.clear();
+	}
+
+	void handleNormalMessagesInitiatedFromXMPP() {
+		User *user = userManager->getUser("user@localhost");
+
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setFrom("user@localhost/resource");
+		msg->setTo("buddy1@localhost/bot");
+		msg->setBody("hi there<>!");
+		injectMessage(msg);
+
+		// Forward it
+		loop->processEvents();
+		
+		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT(m_msg);
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), m_conv->getLegacyName());
+		
+		TestingConversation *conv = (TestingConversation *) user->getConversationManager()->getConversation("BuddY1");
+		CPPUNIT_ASSERT(conv);
+		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), conv->getLegacyName());
 	}
 
 	void handleNormalMessagesHeadline() {

@@ -94,7 +94,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		to_ = user->getJID();
 	}
 
-	name = Buddy::JIDToLegacyName(to_);
+	name = Buddy::JIDToLegacyName(to_, user);
 
 	LOG4CXX_INFO(logger, from.toBare().toString() << ": Requested VCard of " << name);
 

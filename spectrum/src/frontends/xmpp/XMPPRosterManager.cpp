@@ -177,9 +177,10 @@ void XMPPRosterManager::doUpdateBuddy(Buddy *buddy) {
 
 void XMPPRosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key) {
 	LOG4CXX_INFO(logger, "handleBuddyRosterPushResponse called for buddy " << key);
-	if (m_buddies[key] != NULL) {
-		if (m_buddies[key]->isAvailable()) {
-			std::vector<Swift::Presence::ref> &presences = m_buddies[key]->generatePresenceStanzas(255);
+	Buddy *b = getBuddy(key);
+	if (b) {
+		if (b->isAvailable()) {
+			std::vector<Swift::Presence::ref> &presences = b->generatePresenceStanzas(255);
 			BOOST_FOREACH(Swift::Presence::ref &presence, presences) {
 				m_component->getFrontend()->sendPresence(presence);
 			}
@@ -215,8 +216,9 @@ void XMPPRosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::Rost
 	return;
 
 	BOOST_FOREACH(const Swift::RosterItemPayload &item, payload->getItems()) {
-		std::string legacyName = Buddy::JIDToLegacyName(item.getJID());
-		if (m_buddies.find(legacyName) != m_buddies.end()) {
+		std::string legacyName = Buddy::JIDToLegacyName(item.getJID(), m_user);
+		Buddy *b = getBuddy(legacyName);
+		if (b) {
 			continue;
 		}
 

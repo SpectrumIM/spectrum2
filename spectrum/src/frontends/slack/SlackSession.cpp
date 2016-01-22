@@ -125,7 +125,7 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 			return;
 		}
 		channel = m_slackChannel;
-		from = Buddy::JIDToLegacyName(message->getFrom());
+		from = Buddy::JIDToLegacyName(message->getFrom(), m_user);
 
 		Buddy *b;
 		if (m_user && (b = m_user->getRosterManager()->getBuddy(from)) != NULL) {

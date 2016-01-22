@@ -52,17 +52,17 @@ bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& 
 		return true;
 	}
 
-	Buddy *buddy = user->getRosterManager()->getBuddy(Buddy::JIDToLegacyName(to));
+	Buddy *buddy = Buddy::JIDToBuddy(to, user);
 	if (!buddy) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": Buddy " << Buddy::JIDToLegacyName(to) << " does not exist");
+		LOG4CXX_WARN(logger, from.toBare().toString() << ": Buddy " << Buddy::JIDToLegacyName(to, user) << " does not exist");
 		return true;
 	}
 
 	if (buddy->isBlocked()) {
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unblocking buddy " << Buddy::JIDToLegacyName(to));
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unblocking buddy " << buddy->getName());
 	}
 	else {
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Blocking buddy " << Buddy::JIDToLegacyName(to));
+		LOG4CXX_INFO(logger, from.toBare().toString() << ": Blocking buddy " << buddy->getName());
 	}
 
 	onBlockToggled(buddy);

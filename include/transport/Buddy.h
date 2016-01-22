@@ -28,6 +28,7 @@
 namespace Transport {
 
 class RosterManager;
+class User;
 
 typedef enum { 	BUDDY_NO_FLAG = 0,
 				BUDDY_JID_ESCAPING = 2,
@@ -164,7 +165,8 @@ class Buddy {
 
 		/// \param jid Jabber ID.
 		/// \return legacy name of buddy from JID.
-		static std::string JIDToLegacyName(const Swift::JID &jid);
+		static std::string JIDToLegacyName(const Swift::JID &jid, User *user = NULL);
+		static Buddy *JIDToBuddy(const Swift::JID &jid, User *user);
 		static BuddyFlag buddyFlagsFromJID(const Swift::JID &jid);
 
 	protected:
