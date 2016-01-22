@@ -230,8 +230,8 @@ bool Server::is_authorized(const struct mg_connection *conn, struct http_message
 		!mg_vcmp(&hm->uri, "/form.css") ||
 		!mg_vcmp(&hm->uri, "/style.css") ||
 		!mg_vcmp(&hm->uri, "/logo.png") ||
-		!mg_vcmp(&hm->uri, "/users") ||
-		!mg_vcmp(&hm->uri, "/users/add") ||
+		!mg_vcmp(&hm->uri, "/users/register.shtml") ||
+		!mg_vcmp(&hm->uri, "/api/v1/users/add") ||
 		!mg_vcmp(&hm->uri, "/authorize")) {
 		return true;
 	}
