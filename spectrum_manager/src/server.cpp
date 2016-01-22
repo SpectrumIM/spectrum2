@@ -391,7 +391,13 @@ void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
 
 void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 // 	http://slack.spectrum.im/oauth2/localhostxmpp?code=14830663267.19140123492.e7f78a836d&state=534ab3b6-8bf1-4974-8274-847df8490bc5
-	std::cout << "OAUTH2 handler\n";
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+	std::string code = get_http_var(hm, "code");
+	std::string state = get_http_var(hm, "state");
+
+	send_command(instance, "set_oauth2_code " + code + " " + state)
+	redirect_to(conn, hm, "/instances/");
 }
 
 void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
