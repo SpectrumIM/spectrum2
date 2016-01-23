@@ -488,6 +488,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml, const std::string &id) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
+				LOG4CXX_INFO(logger, "Sending message to '" << legacyName.c_str() << "'");
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
 					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
