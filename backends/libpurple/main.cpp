@@ -488,7 +488,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleMessageSendRequest(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &xhtml, const std::string &id) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				LOG4CXX_INFO(logger, "Sending message to '" << legacyName.c_str() << "'");
+				LOG4CXX_INFO(logger, "Sending message to '" << legacyName << "'");
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
 					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
@@ -1027,7 +1027,6 @@ static PurpleBlistUiOps blistUiOps =
 };
 
 static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
-	LOG4CXX_INFO(logger, "MSG");
 	if (flags & PURPLE_MESSAGE_SYSTEM && CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 		PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
