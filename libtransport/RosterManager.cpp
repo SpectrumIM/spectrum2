@@ -34,6 +34,7 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/locale.hpp>
 
 #include <map>
 #include <iterator>
@@ -46,6 +47,9 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
 	m_user = user;
 	m_component = component;
+
+	boost::locale::generator gen;
+	std::locale::global(gen("en_GB.UTF8"));
 }
 
 RosterManager::~RosterManager() {
@@ -71,7 +75,7 @@ RosterManager::~RosterManager() {
 
 void RosterManager::removeBuddy(const std::string &_name) {
 	std::string name = _name;
-	boost::algorithm::to_lower(name);
+	name = boost::locale::to_lower(name);
 	Buddy *buddy = getBuddy(name);
 	if (!buddy) {
 		LOG4CXX_WARN(logger, m_user->getJID().toString() << ": Tried to remove unknown buddy " << name);
@@ -118,7 +122,7 @@ void RosterManager::handleBuddyChanged(Buddy *buddy) {
 
 void RosterManager::setBuddy(Buddy *buddy) {
 	std::string name = buddy->getName();
-	boost::algorithm::to_lower(name);
+	name = boost::locale::to_lower(name);
 	LOG4CXX_INFO(logger, "Associating buddy " << name << " with " << m_user->getJID().toString());
 	m_buddies[name] = buddy;
 	onBuddySet(buddy);
@@ -131,7 +135,7 @@ void RosterManager::setBuddy(Buddy *buddy) {
 
 void RosterManager::unsetBuddy(Buddy *buddy) {
 	std::string name = buddy->getName();
-	boost::algorithm::to_lower(name);
+	name = boost::locale::to_lower(name);
 	m_buddies.erase(name);
 	if (m_rosterStorage)
 		m_rosterStorage->removeBuddyFromQueue(buddy);
@@ -146,7 +150,7 @@ void RosterManager::storeBuddy(Buddy *buddy) {
 
 Buddy *RosterManager::getBuddy(const std::string &_name) {
 	std::string name = _name;
-	boost::algorithm::to_lower(name);
+	name = boost::locale::to_lower(name);
 	return m_buddies[name];
 }
 
@@ -349,7 +353,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 		if (buddy) {
 			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
 			std::string name = buddy->getName();
-			boost::algorithm::to_lower(name);
+			name = boost::locale::to_lower(name);
 			m_buddies[name] = buddy;
 			onBuddySet(buddy);
 		}
