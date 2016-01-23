@@ -396,7 +396,7 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 	std::string code = get_http_var(hm, "code");
 	std::string state = get_http_var(hm, "state");
 
-	send_command(instance, "set_oauth2_code " + code + " " + state)
+	send_command(instance, "set_oauth2_code " + code + " " + state);
 	redirect_to(conn, hm, "/instances/");
 }
 
