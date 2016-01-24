@@ -68,7 +68,7 @@ std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string
 						  "https://slack.com/oauth/authorize",
 						  "https://slack.com/api/oauth.access",
 						  redirect_url,
-						  "channels:read channels:write team:read im:read im:write chat:write:bot rtm:stream");
+						  "channels:read channels:write team:read im:read im:write chat:write:bot client");
 	std::string url = oauth2->generateAuthURL();
 
 	m_auths[oauth2->getState()] = oauth2;
