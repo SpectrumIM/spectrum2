@@ -84,15 +84,27 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token) {
 	rapidjson::Document resp;
 	HTTPRequest req(HTTPRequest::Get, url);
 	if (!req.execute(resp)) {
+		LOG4CXX_ERROR(logger, url);
+		LOG4CXX_ERROR(logger, req.getError());
 		return req.getError();
 	}
 
 	rapidjson::Value& access_token = resp["access_token"];
 	if (!access_token.IsString()) {
+		LOG4CXX_ERROR(logger, "No 'access_token' object in the reply.");
+		LOG4CXX_ERROR(logger, url);
+		LOG4CXX_ERROR(logger, req.getRawData());
 		return "No 'access_token' object in the reply.";
 	}
 
 	token = access_token.GetString();
+	if (token.empty()) {
+		LOG4CXX_ERROR(logger, "Empty 'access_token' object in the reply.");
+		LOG4CXX_ERROR(logger, url);
+		LOG4CXX_ERROR(logger, req.getRawData());
+		return "Empty 'access_token' object in the reply.";
+	}
+
 	return "";
 }
 

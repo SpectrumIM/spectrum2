@@ -62,7 +62,7 @@ SlackUserRegistration::~SlackUserRegistration(){
 }
 
 std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string> &args) {
-	std::string redirect_url = "http://slack.spectrum.im/oauth2/" + CONFIG_STRING(m_config, "service.jid");
+	std::string redirect_url = "https://slack.spectrum.im/oauth2/" + CONFIG_STRING(m_config, "service.jid");
 	OAuth2 *oauth2 = new OAuth2(CONFIG_STRING_DEFAULTED(m_config, "service.client_id",""),
 						  CONFIG_STRING_DEFAULTED(m_config, "service.client_secret",""),
 						  "https://slack.com/oauth/authorize",
