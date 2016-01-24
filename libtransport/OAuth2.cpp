@@ -89,6 +89,7 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 		return req.getError();
 	}
 
+	LOG4CXX_ERROR(logger, req.getRawData());
 	rapidjson::Value& access_token = resp["access_token"];
 	if (!access_token.IsString()) {
 		LOG4CXX_ERROR(logger, "No 'access_token' object in the reply.");
@@ -107,8 +108,8 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 
 	rapidjson::Value& bot = resp["bot"];
 	if (bot.IsObject()) {
-		rapidjson::Value& bot_access_token = resp["bot_access_token"];
-		if (!bot_access_token.IsString()) {
+		rapidjson::Value& bot_access_token = bot["bot_access_token"];
+		if (bot_access_token.IsString()) {
 			bot_token = bot_access_token.GetString();
 		}
 	}
