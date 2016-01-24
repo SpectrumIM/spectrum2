@@ -124,7 +124,6 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 			return "Received state code '" + state + "' not found in state codes list.";
 		}
 
-		std::string token;
 		std::string error = oauth2->requestToken(code, token);
 		if (!error.empty())  {
 			return error;
