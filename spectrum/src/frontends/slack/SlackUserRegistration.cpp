@@ -110,10 +110,12 @@ std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
 std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, const std::string &state) {
 	OAuth2 *oauth2 = NULL;
 	std::string token;
+	std::string access_token;
 	std::vector<std::string> data;
 
 	if (state == "use_bot_token") {
 		token = code;
+		access_token = code;
 	}
 	else {
 		if (m_auths.find(state) != m_auths.end()) {
@@ -124,9 +126,14 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 			return "Received state code '" + state + "' not found in state codes list.";
 		}
 
-		std::string error = oauth2->requestToken(code, token);
+		std::string error = oauth2->requestToken(code, access_token, token);
 		if (!error.empty())  {
 			return error;
+		}
+
+		if (token.empty()) {
+			LOG4CXX_INFO(logger, "Using 'token' as 'bot_access_token'");
+			token = access_token;
 		}
 	}
 
@@ -153,6 +160,9 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	std::string value = token;
 	int type = (int) TYPE_STRING;
 	m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
+
+	value = access_token;
+	m_storageBackend->getUserSetting(user.id, "access_token", type, value);
 
 	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid);
 

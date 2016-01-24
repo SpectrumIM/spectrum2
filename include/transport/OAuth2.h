@@ -39,7 +39,7 @@ class OAuth2 {
 			return m_state;
 		}
 
-		std::string requestToken(const std::string &code, std::string &error);
+		std::string requestToken(const std::string &code, std::string &token, std::string &bot_token);
 
 	private:
 		std::string m_clientId;

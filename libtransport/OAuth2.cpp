@@ -71,7 +71,7 @@ std::string OAuth2::generateAuthURL() {
 	return url;
 }
 
-std::string OAuth2::requestToken(const std::string &code, std::string &token) {
+std::string OAuth2::requestToken(const std::string &code, std::string &token, std::string &bot_token) {
 	std::string url = m_tokenURL + "?";
 	url += "client_id=" + Util::urlencode(m_clientId);
 	url += "&client_secret=" + Util::urlencode(m_clientSecret);
@@ -103,6 +103,14 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token) {
 		LOG4CXX_ERROR(logger, url);
 		LOG4CXX_ERROR(logger, req.getRawData());
 		return "Empty 'access_token' object in the reply.";
+	}
+
+	rapidjson::Value& bot = resp["bot"];
+	if (bot.IsObject()) {
+		rapidjson::Value& bot_access_token = resp["bot_access_token"];
+		if (!bot_access_token.IsString()) {
+			bot_token = bot_access_token.GetString();
+		}
 	}
 
 	return "";
