@@ -32,6 +32,9 @@ class HTTPRequest : public Thread {
 		bool execute();
 		bool execute(rapidjson::Document &json);
 		std::string getError() {return std::string(curl_errorbuffer);}
+		const std::string &getRawData() {
+			return m_data;
+		}
 
 		void run();
 		void finalize();

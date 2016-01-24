@@ -90,12 +90,14 @@ std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
 	rapidjson::Value &team = resp["team"];
 	if (!team.IsObject()) {
 		LOG4CXX_ERROR(logger, "No 'team' object in the reply.");
+		LOG4CXX_ERROR(logger, req.getRawData());
 		return "";
 	}
 
 	rapidjson::Value &domain = team["domain"];
 	if (!domain.IsString()) {
 		LOG4CXX_ERROR(logger, "No 'domain' string in the reply.");
+		LOG4CXX_ERROR(logger, req.getRawData());
 		return "";
 	}
 
