@@ -82,6 +82,7 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 	// the std::string stored out of BOOST_FOREACH scope, otherwise the
 	// const char * returned by c_str() would be invalid during send_json.
 	std::vector<std::string> statuses;
+	std::vector<std::string> usernames;
 	std::vector<std::string> list = show_list(m_config, false);
 
 	Document json;
@@ -115,8 +116,9 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		int type = (int) TYPE_STRING;
 		m_storage->getUserSetting(info.id, id, type, username);
 
+		usernames.push_back(username);
 		instance.AddMember("registered", !username.empty(), json.GetAllocator());
-		instance.AddMember("username", username.c_str(), json.GetAllocator());
+		instance.AddMember("username", usernames.back().c_str(), json.GetAllocator());
 
 		instances.PushBack(instance, json.GetAllocator());
 	}

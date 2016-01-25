@@ -330,6 +330,20 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 	else if (args[1] == "register" && args.size() == 5) {
 		handleRegisterMessage(message, args, quiet);
 	}
+	else if (args[1] == "set_main_channel" && args.size() == 3) {
+		std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[2], true);
+
+		m_storageBackend->setUser(m_uinfo);
+		int type = (int) TYPE_STRING;
+		m_storageBackend->getUserSetting(m_uinfo.id, "slack_channel", type, slackChannel);
+
+		Swift::Presence::ref presence = Swift::Presence::create();
+		presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+		presence->setTo(m_component->getJID());
+		presence->setType(Swift::Presence::Available);
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+		m_component->getFrontend()->onPresenceReceived(presence);
+	}
 	else if (args[1] == "list.rooms" && args.size() == 2) {
 		// .spectrum2 list.rooms
 		std::string rooms = "";
@@ -424,6 +438,16 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 				presence->setType(Swift::Presence::Available);
 				presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 				m_component->getFrontend()->onPresenceReceived(presence);
+			}
+			else {
+				std::string msg;
+				msg =  "Hi, it seems you have enabled Spectrum 2 transport for your Team. As a Team owner, you should now configure it:\\n";
+				msg += "1. At first, create new channel in which you want this Spectrum 2 transport to send the messages, or choose the existing one.\\n";
+				msg += "2. Invite this Spectrum 2 bot into this channel.\\n";
+				msg += "3. Configure the transportation between 3rd-party network and this channel by executing following command in this chat:\\n";
+				msg += "```.spectrum2 set_main_channel #SlackChannel```\\n";
+				msg += "To get full list of available commands, executa `.spectrum2 help`\\n";
+				m_rtm->sendMessage(m_ownerChannel, msg);
 			}
 		}
 	}
