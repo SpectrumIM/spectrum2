@@ -25,7 +25,7 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 	echo "---> Installing skype4pidgin" && \
 		git clone git://github.com/EionRobb/skype4pidgin.git && \
 		cd skype4pidgin/skypeweb && \
-		make && \
+		make CFLAGS=-DFEDORA=1 && \
 		make install && \
 		cd ../.. && \
 		rm -rf skype4pidgin && \

@@ -1,3 +1,43 @@
+Version 2.0.1 (2015-01-25):
+	General:
+	* Fix wrong nickname when joining room with some backends.
+	* Leave room when disconnected from 3rd-party network because of an error.
+	  Fixes a bug when users were not able to rejoin the room after Spectrum 2
+	  disconnected them from 3rd-party network.
+	* Fix building on Windows.
+	* Support case-sensitive buddy names transparently - boost_locale is now
+	  needed as a new dependency.
+
+	Spectrum2_manager:
+	* Add simple web interface, can be tested using "spectrum2_manager server".
+
+	XMPP frontend:
+	* Show MUC feature in room disco#info response.
+
+	Slack frontend:
+	* Slack frontend is now working as Slack app, so you need to obtain the
+	  client_id and client_secret from Slack to setup your own server and to
+	  do the OAuth2 flow, you have to setup the Spectrum2_manager Server. Read
+	  the documentation for more info.
+	* Fix OAuth2 registration flow.
+	* Fix multiple crashes when disconnected from Slack network or from
+	  3rd-party network.
+	* Slack frontend should still be used only for testing, it is till under
+	  the development.
+
+	Libpurple backend:
+	* Forward room list to frontend.
+	* Fix compatibility with latest telegram-purple - You mean need to
+	  unregister the transport and register it again if you experience
+	  compatibility problems.
+
+	Twitter backend:
+	* Fix default value of fetch timer.
+	* Disable useless Curl verbose output.
+	* Fix crash when populating roster when using Swiften 3.
+	* Do not set status message for buddies not in Friends list - fixes a bug
+	  when buddies who are not in Friends list have been added to roster.
+
 Version 2.0.0 (2015-12-29):
 	General:
 	* Fix compilation with new versions of Spectrum 2 dependencies.
