@@ -68,7 +68,7 @@ std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string
 						  "https://slack.com/oauth/authorize",
 						  "https://slack.com/api/oauth.access",
 						  redirect_url,
-						  "bot");
+						  "channels:read channels:write team:read im:read im:write chat:write:bot bot");
 	std::string url = oauth2->generateAuthURL();
 
 	m_auths[oauth2->getState()] = oauth2;
@@ -137,7 +137,7 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 		}
 	}
 
-	std::string domain = getTeamDomain(token);
+	std::string domain = getTeamDomain(access_token);
 	if (domain.empty()) {
 		return "The token you have provided is invalid";
 	}
