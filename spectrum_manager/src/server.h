@@ -64,7 +64,7 @@ class Server {
 
 		void redirect_to(struct mg_connection *conn, struct http_message *hm, const char *where);
 
-		std::string send_command(const std::string &jid, const std::string &cmd);
+		std::string send_command(const std::string &jid, const std::string &cmd, int timeout = 1);
 
 	private:
 		void serve_logout(struct mg_connection *conn, struct http_message *hm);

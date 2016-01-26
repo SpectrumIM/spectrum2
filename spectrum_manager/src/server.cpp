@@ -277,7 +277,7 @@ void Server::print_html(struct mg_connection *conn, struct http_message *hm, con
 			(int) html.size() + m_header.size() + m_footer.size(), m_header.c_str(), html.c_str(), m_footer.c_str());
 }
 
-std::string Server::send_command(const std::string &jid, const std::string &cmd) {
+std::string Server::send_command(const std::string &jid, const std::string &cmd, int timeout) {
 	Swift::SimpleEventLoop eventLoop;
 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
@@ -288,7 +288,7 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd)
 	gettimeofday(&td_end, NULL);
 
 	time_t started = time(NULL);
-	while(get_response().empty() && td_end.tv_sec - td_start.tv_sec < 1) {
+	while(get_response().empty() && td_end.tv_sec - td_start.tv_sec < timeout) {
 		gettimeofday(&td_end, NULL);
 		eventLoop.runOnce();
 	}
@@ -396,7 +396,7 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 	std::string code = get_http_var(hm, "code");
 	std::string state = get_http_var(hm, "state");
 
-	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state);
+	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state, 10);
 	std::cerr << "set_oauth2_code response: '" << response << "'\n";
 	if (response.find("Registered as ") == 0) {
 		std::vector<std::string> args;
