@@ -501,6 +501,45 @@ static void handleConnected(boost::shared_ptr<Swift::Connection> m_conn, const s
 	}
 }
 
+bool is_slack(ManagerConfig *config, const std::string &jid) {
+	path p(CONFIG_STRING(config, "service.config_directory"));
+
+	try {
+		if (!exists(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(6);
+		}
+
+		if (!is_directory(p)) {
+			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			exit(7);
+		}
+
+		directory_iterator end_itr;
+		for (directory_iterator itr(p); itr != end_itr; ++itr) {
+			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+				Config cfg;
+				if (cfg.load(itr->path().string()) == false) {
+					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
+					continue;
+				}
+
+				if (CONFIG_STRING(&cfg, "service.jid") != jid) {
+					continue;
+				}
+
+				return CONFIG_STRING(&cfg, "service.frontend") == "slack";
+			}
+		}
+
+	}
+	catch (const filesystem_error& ex) {
+		return false;
+	}
+
+	return false;
+}
+
 void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &jid, const std::string &message) {
 	response = "";
 	path p(CONFIG_STRING(config, "service.config_directory"));

@@ -397,9 +397,11 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 	std::string state = get_http_var(hm, "state");
 
 	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state);
+	std::cerr << "set_oauth2_code response: '" << response << "'\n";
 	if (response.find("Registered as ") == 0) {
 		std::vector<std::string> args;
 		boost::split(args, response, boost::is_any_of(" "));
+		std::cerr << "set_oauth2_code response size " << args.size() << "\n";
 		if (args.size() == 3) {
 			Server:session *session = get_session(hm);
 			UserInfo info;
