@@ -56,10 +56,16 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 
 	m_onlineBuddiesTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_onlineBuddiesTimer->onTick.connect(boost::bind(&SlackSession::sendOnlineBuddies, this));
+
+	int type = (int) TYPE_STRING;
+	std::string token;
+	m_storageBackend->getUserSetting(m_uinfo.id, "access_token", type, token);
+	m_api = new SlackAPI(m_component, token);
 }
 
 SlackSession::~SlackSession() {
 	delete m_rtm;
+	delete m_api;
 	m_onlineBuddiesTimer->stop();
 }
 
@@ -150,12 +156,11 @@ void SlackSession::setPurpose(const std::string &purpose, const std::string &cha
 	m_rtm->getAPI()->setPurpose(ch, purpose);
 }
 
-void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
-	// .spectrum2 join.room BotName #room irc.freenode.net channel
+void SlackSession::joinRoom(std::vector<std::string> args) {
 	std::string &name = args[2];
-	std::string legacyRoom = SlackAPI::SlackObjectToPlainText(args[3], true);
-	std::string legacyServer = SlackAPI::SlackObjectToPlainText(args[4]);
-	std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[5], true);
+	std::string &legacyRoom = args[3];
+	std::string &legacyServer = args[4];
+	std::string &slackChannel = args[5];
 
 	std::string to = legacyRoom + "%" + legacyServer + "@" + m_component->getJID().toString();
 	if (!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)) {
@@ -169,16 +174,6 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	m_jid2channel[to] = slackChannel;
 	m_channel2jid[slackChannel] = to;
 
-	LOG4CXX_INFO(logger, "Setting transport between " << to << " and " << slackChannel);
-
-	if (!quiet) {
-		std::string rooms = "";
-		int type = (int) TYPE_STRING;
-		m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
-		rooms += message + "\n";
-		m_storageBackend->updateUserSetting(m_uinfo.id, "rooms", rooms);
-	}
-
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
 	presence->setTo(Swift::JID(to + "/" + name));
@@ -187,12 +182,37 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	m_component->getFrontend()->onPresenceReceived(presence);
 
 	m_onlineBuddiesTimer->start();
+}
 
-	if (!quiet) {
-		std::string msg;
-		msg += "Spectrum 2 is now joining the room. To leave the room later to disable transporting, you can use `.spectrum2 leave.room #" + SlackAPI::SlackObjectToPlainText(args[5], true, true) + "`.";
-		m_rtm->sendMessage(m_ownerChannel, msg);
+void SlackSession::handleJoinRoomCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args) {
+	std::string channelId = m_api->getChannelId(req, ok, resp, data);
+	if (channelId.empty()) {
+		LOG4CXX_INFO(logger, args[1] << ": Error creating channel " << args[5] << ".");
+		return;
 	}
+
+	args[5] = channelId;
+	joinRoom(args);
+}
+
+void SlackSession::handleJoinRoomList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args) {
+	std::map<std::string, SlackChannelInfo> channels;
+	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
+
+	if (channels.find(args[5]) != channels.end()) {
+		LOG4CXX_INFO(logger, args[1] << ": Channel " << args[5] << " already exists. Joining the room.");
+		args[5] = channels[args[5]].id;
+		joinRoom(args);
+	}
+	else {
+		LOG4CXX_INFO(logger, args[1] << ": Channel " << args[5] << " does not exit. Creating it.");
+		m_api->channelsCreate(args[5], boost::bind(&SlackSession::handleJoinRoomCreate, this, _1, _2, _3, _4, args));
+	}
+}
+
+void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
+	LOG4CXX_INFO(logger, args[1] << ": Going to join the room, checking the ID of channel " << args[5]);
+	m_api->channelsList(boost::bind(&SlackSession::handleJoinRoomList, this, _1, _2, _3, _4, args));
 }
 
 void SlackSession::handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {

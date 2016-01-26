@@ -126,6 +126,10 @@ std::string SlackFrontend::getRegistrationFields() {
 	return "Slack team name\n3rd-party network username\n3rd-party network password";
 }
 
+bool SlackFrontend::handleAdminMessage(Swift::Message::ref message) {
+	return static_cast<SlackUserManager *>(m_userManager)->handleAdminMessage(message);
+}
+
 void SlackFrontend::disconnectFromServer() {
 
 }

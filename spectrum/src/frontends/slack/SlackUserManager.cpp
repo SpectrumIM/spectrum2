@@ -29,6 +29,8 @@
 #include "transport/StorageBackend.h"
 #include "transport/Logging.h"
 
+#include <boost/algorithm/string.hpp>
+
 namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackUserManager");
@@ -100,6 +102,53 @@ std::string SlackUserManager::getOAuth2URL(const std::vector<std::string> &args)
 void SlackUserManager::handleUserCreated(User *user) {
 	LOG4CXX_INFO(logger, "handleUserCreated");
 	static_cast<SlackUser *>(user)->getSession()->handleConnected();
+}
+
+bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
+	if (message->getBody().find("get_user_configuration") == 0) {
+// 		std::string body = message->getBody();
+// 		std::vector<std::string> args;
+// 		boost::split(args, body, boost::is_any_of(" "));
+// 		if (args.size() == 2) {
+// 			UserInfo uinfo;
+// 			if (!m_storageBackend->getUser(args[1], uinfo)) {
+// 				message->setBody("Error: Unknown user");
+// 				return true;
+// 			}
+// 
+// 			std::string rooms = "";
+// 			int type = (int) TYPE_STRING;
+// 			m_storageBackend->getUserSetting(uinfo.id, "rooms", type, rooms);
+// 
+// 			m_storageBackend->getUserSetting(uinfo.id, "slack_channel", type, m_slackChannel);
+// 		}
+	}
+	else if (message->getBody().find("join_room ") == 0) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 6) {
+			UserInfo uinfo;
+			if (!m_storageBackend->getUser(args[1], uinfo)) {
+				message->setBody("Error: Unknown user");
+				return true;
+			}
+
+			std::string rooms = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(uinfo.id, "rooms", type, rooms);
+			rooms += message->getBody() + "\n";
+			m_storageBackend->updateUserSetting(uinfo.id, "rooms", rooms);
+
+			SlackUser *user = static_cast<SlackUser *>(getUser(args[1]));
+			if (user) {
+				user->getSession()->handleJoinMessage("", args, true);
+			}
+			message->setBody("Joined the room");
+			return true;
+		}
+	}
+	return false;
 }
 
 

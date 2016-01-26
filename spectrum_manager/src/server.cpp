@@ -396,7 +396,20 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 	std::string code = get_http_var(hm, "code");
 	std::string state = get_http_var(hm, "state");
 
-	send_command(instance, "set_oauth2_code " + code + " " + state);
+	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state);
+	if (response.find("Registered as ") == 0) {
+		std::vector<std::string> args;
+		boost::split(args, response, boost::is_any_of(" "));
+		if (args.size() == 3) {
+			Server:session *session = get_session(hm);
+			UserInfo info;
+			m_storage->getUser(session->user, info);
+			std::string username = "";
+			int type = (int) TYPE_STRING;
+			m_storage->getUserSetting(info.id, instance, type, username);
+			m_storage->updateUserSetting(info.id, instance, args[2]);
+		}
+	}
 	redirect_to(conn, hm, "/instances/");
 }
 

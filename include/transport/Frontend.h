@@ -94,6 +94,7 @@ class Frontend {
 		virtual std::string setOAuth2Code(const std::string &code, const std::string &state) { return "OAuth2 code is not needed for this frontend."; }
 		virtual std::string getOAuth2URL(const std::vector<std::string> &args) { return ""; }
 		virtual std::string getRegistrationFields() { return "Jabber ID\n3rd-party network username\n3rd-party network password"; }
+		virtual bool handleAdminMessage(Swift::Message::ref /*message*/) { return false; }
 
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
 		boost::signal<void (User *, boost::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;

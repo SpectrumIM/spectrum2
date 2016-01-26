@@ -60,14 +60,18 @@ class SlackSession {
 		void handleDisconnected();
 		void handleConnected();
 
+		void handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
+		void handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
+		void handleRegisterMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
+
 	private:
 		void handleRTMStarted();
 		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet);
 		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
-		void handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
-		void handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
-		void handleRegisterMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
+		void joinRoom(std::vector<std::string> args);
+		void handleJoinRoomCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args);
+		void handleJoinRoomList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args);
 
 		void sendOnlineBuddies();
 
@@ -86,6 +90,7 @@ class SlackSession {
 		std::map<std::string, std::string> m_onlineBuddies;
 		bool m_disconnected;
 		std::string m_ownerId;
+		SlackAPI *m_api;
 };
 
 }

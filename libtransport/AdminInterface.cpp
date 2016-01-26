@@ -324,6 +324,9 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		std::string fields = m_component->getFrontend()->getRegistrationFields();
 		message->setBody(fields);
 	}
+	else if (m_component->getFrontend()->handleAdminMessage(message)) {
+		LOG4CXX_INFO(logger, "Message handled by frontend");
+	}
 	else if (message->getBody().find("help") == 0) {
 		std::string help;
 		help += "General:\n";

@@ -195,7 +195,7 @@ configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())
 configurations.append(JabberServerModeConf())
-configurations.append(JabberSlackServerModeConf())
+#configurations.append(JabberSlackServerModeConf())
 configurations.append(TwitterServerModeConf())
 
 exitcode = 0

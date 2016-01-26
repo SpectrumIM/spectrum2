@@ -68,6 +68,7 @@ namespace Transport {
 			virtual std::string setOAuth2Code(const std::string &code, const std::string &state);
 			virtual std::string getOAuth2URL(const std::vector<std::string> &args);
 			virtual std::string getRegistrationFields();
+			virtual bool handleAdminMessage(Swift::Message::ref message);
 		
 			void handleMessage(boost::shared_ptr<Swift::Message> message);
 

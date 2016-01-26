@@ -175,7 +175,7 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 
 	m_component->getFrontend()->reconnectUser(user.jid);
 
-	return "";
+	return "Registered as " + domain;
 }
 
 bool SlackUserRegistration::doUserRegistration(const UserInfo &row) {
