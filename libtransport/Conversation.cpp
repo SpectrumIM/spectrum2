@@ -61,6 +61,7 @@ void Conversation::destroyRoom() {
 		if (legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
+		legacyName = Swift::JID::getEscapedNode(legacyName);
 		presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), m_nickname));
 		presence->setType(Swift::Presence::Unavailable);
 
@@ -182,6 +183,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 				if (legacyName.find_last_of("@") != std::string::npos) {
 					legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 				}
+				legacyName = Swift::JID::getEscapedNode(legacyName);
 				message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 			}
 		}
@@ -191,6 +193,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 		if (legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
+		legacyName = Swift::JID::getEscapedNode(legacyName);
 
 		std::string n = nickname;
 		if (n.empty()) {
@@ -251,6 +254,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 		if (legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
+		legacyName = Swift::JID::getEscapedNode(legacyName);
 	}
 	presence->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), nickname));
 	presence->setType(Swift::Presence::Available);
