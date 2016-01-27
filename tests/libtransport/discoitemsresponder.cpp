@@ -16,6 +16,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST_SUITE(DiscoItemsResponderTest);
 	CPPUNIT_TEST(roomList);
 	CPPUNIT_TEST(roomInfo);
+	CPPUNIT_TEST(roomListEscaping);
+	CPPUNIT_TEST(roomInfoEscaping);
 	CPPUNIT_TEST(clearRooms);
 	CPPUNIT_TEST(receipts);
 	CPPUNIT_TEST_SUITE_END();
@@ -55,6 +57,42 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		iq->setTo("#room@localhost");
+		injectIQ(iq);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getName());
+		CPPUNIT_ASSERT_EQUAL(std::string("conference"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getCategory());
+		CPPUNIT_ASSERT_EQUAL(std::string("text"), getStanza(received[0])->getPayload<Swift::DiscoInfo>()->getIdentities()[0].getType());
+	}
+
+	void roomListEscaping() {
+		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID().toString(), "#room");
+
+		boost::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
+		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		iq->setFrom("user@localhost");
+		injectIQ(iq);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoItems>());
+		CPPUNIT_ASSERT_EQUAL(std::string("19\\3aroom\\40localhost@localhost"), getStanza(received[0])->getPayload<Swift::DiscoItems>()->getItems()[0].getJID().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room"), getStanza(received[0])->getPayload<Swift::DiscoItems>()->getItems()[0].getName());
+	}
+
+	void roomInfoEscaping() {
+		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID().toString(), "#room");
+
+		boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		iq->setFrom("user@localhost");
+		iq->setTo("19\\3aroom\\40localhost@localhost");
 		injectIQ(iq);
 		loop->processEvents();
 
