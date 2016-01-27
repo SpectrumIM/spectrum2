@@ -215,6 +215,40 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	m_api->channelsList(boost::bind(&SlackSession::handleJoinRoomList, this, _1, _2, _3, _4, args));
 }
 
+void SlackSession::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+	std::string channelId = m_api->getChannelId(req, ok, resp, data);
+	if (channelId.empty()) {
+		LOG4CXX_INFO(logger,"Error creating channel " << m_slackChannel << ".");
+		return;
+	}
+
+	m_slackChannel = channelId;
+	Swift::Presence::ref presence = Swift::Presence::create();
+	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+	presence->setTo(m_component->getJID());
+	presence->setType(Swift::Presence::Available);
+	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+	m_component->getFrontend()->onPresenceReceived(presence);
+}
+
+void SlackSession::handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+	std::map<std::string, SlackChannelInfo> channels;
+	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
+
+	if (channels.find(m_slackChannel) != channels.end()) {
+		m_slackChannel = channels[m_slackChannel].id;
+		Swift::Presence::ref presence = Swift::Presence::create();
+		presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+		presence->setTo(m_component->getJID());
+		presence->setType(Swift::Presence::Available);
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+		m_component->getFrontend()->onPresenceReceived(presence);
+	}
+	else {
+		m_api->channelsCreate(m_slackChannel, boost::bind(&SlackSession::handleSlackChannelCreate, this, _1, _2, _3, _4));
+	}
+}
+
 void SlackSession::handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
 	// .spectrum2 leave.room channel
 	std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[2], true);
@@ -452,12 +486,7 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 		else {
 			m_storageBackend->getUserSetting(m_uinfo.id, "slack_channel", type, m_slackChannel);
 			if (!m_slackChannel.empty()) {
-				Swift::Presence::ref presence = Swift::Presence::create();
-				presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
-				presence->setTo(m_component->getJID());
-				presence->setType(Swift::Presence::Available);
-				presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-				m_component->getFrontend()->onPresenceReceived(presence);
+				m_api->channelsList(boost::bind(&SlackSession::handleSlackChannelList, this, _1, _2, _3, _4));
 			}
 			else {
 				std::string msg;

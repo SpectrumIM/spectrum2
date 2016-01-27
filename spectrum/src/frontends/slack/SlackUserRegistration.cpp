@@ -112,6 +112,8 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	std::string token;
 	std::string access_token;
 	std::vector<std::string> data;
+	std::string value;
+	int type = (int) TYPE_STRING;
 
 	if (state == "use_bot_token") {
 		token = code;
@@ -148,6 +150,7 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	user.id = 0;
 	m_storageBackend->getUser(domain, user);
 
+	value = user.jid;
 	user.jid = domain;
 	user.language = "en";
 	user.encoding = "";
@@ -157,8 +160,11 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 
 	m_storageBackend->getUser(user.jid, user);
 
-	std::string value = token;
-	int type = (int) TYPE_STRING;
+	if (!value.empty()) {
+		m_storageBackend->getUserSetting(user.id, "slack_channel", type, value);
+	}
+
+	value = token;
 	m_storageBackend->getUserSetting(user.id, "bot_token", type, value);
 
 	value = access_token;

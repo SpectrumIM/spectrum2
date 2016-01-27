@@ -123,7 +123,7 @@ std::string SlackFrontend::getOAuth2URL(const std::vector<std::string> &args) {
 }
 
 std::string SlackFrontend::getRegistrationFields() {
-	return "Slack team name\n3rd-party network username\n3rd-party network password";
+	return "Main Slack channel\n3rd-party network username\n3rd-party network password";
 }
 
 bool SlackFrontend::handleAdminMessage(Swift::Message::ref message) {

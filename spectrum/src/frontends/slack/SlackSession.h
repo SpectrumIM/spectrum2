@@ -73,6 +73,9 @@ class SlackSession {
 		void handleJoinRoomCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args);
 		void handleJoinRoomList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args);
 
+		void handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+
 		void sendOnlineBuddies();
 
 	private:
