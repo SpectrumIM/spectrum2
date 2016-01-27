@@ -427,9 +427,9 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		msg += "```.spectrum2 register <3rdPartyNetworkAccount> <3rdPartyPassword> <#SlackChannel>``` Registers 3rd-party account for transportation.";
 		m_rtm->sendMessage(m_ownerChannel, msg);
 	}
-	else {
-		m_rtm->sendMessage(m_ownerChannel, "Unknown command. Use `.spectrum2 help` for help.");
-	}
+// 	else {
+// 		m_rtm->sendMessage(m_ownerChannel, "Unknown command. Use `.spectrum2 help` for help.");
+// 	}
 }
 
 void SlackSession::handleDisconnected() {

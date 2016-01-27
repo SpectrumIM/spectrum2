@@ -144,14 +144,24 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 		return "The token you have provided is invalid";
 	}
 
+	std::string slackChannel;
+	std::string uin;
+	std::string password;
+	if (data.size() == 4) {
+		slackChannel = data[1];
+		uin = data[2];
+		password = data[3];
+	}
+
 	UserInfo user;
 	user.uin = "";
 	user.password = "";
 	user.id = 0;
 	m_storageBackend->getUser(domain, user);
 
-	value = user.jid;
 	user.jid = domain;
+	user.uin = uin;
+	user.password = password;
 	user.language = "en";
 	user.encoding = "";
 	user.vip = 0;
@@ -160,8 +170,8 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 
 	m_storageBackend->getUser(user.jid, user);
 
-	if (!value.empty()) {
-		m_storageBackend->getUserSetting(user.id, "slack_channel", type, value);
+	if (!slackChannel.empty()) {
+		m_storageBackend->getUserSetting(user.id, "slack_channel", type, slackChannel);
 	}
 
 	value = token;

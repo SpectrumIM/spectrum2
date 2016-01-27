@@ -197,27 +197,27 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 		send_ack(conn, true, "Insufficient data.");
 	}
 	else {
-		std::string response = server->send_command(instance, "register " + jid + " " + uin + " " + password);
+		// Check if the frontend wants to use OAuth2 (Slack for example).
+		std::string response = server->send_command(instance, "get_oauth2_url " + jid + " " + uin + " " + password);
 		if (!response.empty()) {
-			std::string value = jid;
-			int type = (int) TYPE_STRING;
-			m_storage->updateUserSetting(info.id, instance, value);
+			Document json;
+			json.SetObject();
+			json.AddMember("error", false, json.GetAllocator());
+			json.AddMember("oauth2_url", response.c_str(), json.GetAllocator());
+			send_json(conn, json);
 		}
 		else {
-			send_ack(conn, true, response);
-			return;
+			response = server->send_command(instance, "register " + jid + " " + uin + " " + password);
+			if (!response.empty()) {
+				std::string value = jid;
+				int type = (int) TYPE_STRING;
+				m_storage->updateUserSetting(info.id, instance, value);
+			}
+			else {
+				send_ack(conn, true, response);
+				return;
+			}
 		}
-
-		Document json;
-		json.SetObject();
-		json.AddMember("error", false, json.GetAllocator());
-
-		response = server->send_command(instance, "get_oauth2_url " + jid);
-		if (!response.empty()) {
-			json.AddMember("oauth2_url", response.c_str(), json.GetAllocator());
-		}
-
-		send_json(conn, json);
 	}
 }
 
