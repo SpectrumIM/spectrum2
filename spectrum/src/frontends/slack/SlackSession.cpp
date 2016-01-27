@@ -153,7 +153,7 @@ void SlackSession::setPurpose(const std::string &purpose, const std::string &cha
 	}
 
 	LOG4CXX_INFO(logger, "Setting channel purppose: " << ch << " " << purpose);
-	m_rtm->getAPI()->setPurpose(ch, purpose);
+	m_api->setPurpose(ch, purpose);
 }
 
 void SlackSession::joinRoom(std::vector<std::string> args) {
