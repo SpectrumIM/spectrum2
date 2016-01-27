@@ -184,6 +184,15 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 
 	m_selfName = selfName.GetString();
 
+	rapidjson::Value &selfId = self["id"];
+	if (!selfId.IsString()) {
+		LOG4CXX_ERROR(logger, "No 'id' string in the reply.");
+		LOG4CXX_ERROR(logger, data);
+		return;
+	}
+
+	m_selfId = selfId.GetString();
+
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_channels);
 	SlackAPI::getSlackImInfo(req, ok, resp, data, m_ims);
 	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_users);

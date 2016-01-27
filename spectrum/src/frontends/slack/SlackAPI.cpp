@@ -147,6 +147,15 @@ void SlackAPI::channelsList( HTTPRequest::Callback callback) {
 	queueRequest(req);
 }
 
+void SlackAPI::channelsInvite(const std::string &channel, const std::string &user, HTTPRequest::Callback callback) {
+	std::string url = "https://slack.com/api/channels.invite?";
+	url += "&channel=" + Util::urlencode(channel);
+	url += "&user=" + Util::urlencode(user);
+	url += "&token=" + Util::urlencode(m_token);
+	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, callback);
+	queueRequest(req);
+}
+
 void SlackAPI::channelsCreate(const std::string &name, HTTPRequest::Callback callback) {
 	std::string url = "https://slack.com/api/channels.create?name=" + Util::urlencode(name) + "&token=" + Util::urlencode(m_token);
 	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, callback);

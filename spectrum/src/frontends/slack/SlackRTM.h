@@ -89,6 +89,10 @@ class SlackRTM {
 			return m_selfName;
 		}
 
+		const std::string &getSelfId() {
+			return m_selfId;
+		}
+
 	private:
 		void handlePayloadReceived(const std::string &payload);
 		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
@@ -100,6 +104,7 @@ class SlackRTM {
 		std::map<std::string, SlackImInfo> m_ims;
 		std::map<std::string, SlackUserInfo> m_users;
 		std::string m_selfName;
+		std::string m_selfId;
 
 	private:
 		Component *m_component;

@@ -76,6 +76,7 @@ class SlackAPI : public HTTPRequestQueue {
 		std::string getOwnerId(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 		void channelsCreate(const std::string &name, HTTPRequest::Callback callback);
+		void channelsInvite(const std::string &channel, const std::string &user, HTTPRequest::Callback callback);
 		void channelsList(HTTPRequest::Callback callback);
 
 		void imOpen(const std::string &uid, HTTPRequest::Callback callback);

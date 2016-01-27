@@ -215,14 +215,7 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	m_api->channelsList(boost::bind(&SlackSession::handleJoinRoomList, this, _1, _2, _3, _4, args));
 }
 
-void SlackSession::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
-	std::string channelId = m_api->getChannelId(req, ok, resp, data);
-	if (channelId.empty()) {
-		LOG4CXX_INFO(logger,"Error creating channel " << m_slackChannel << ".");
-		return;
-	}
-
-	m_slackChannel = channelId;
+void SlackSession::handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
 	presence->setTo(m_component->getJID());
@@ -231,18 +224,24 @@ void SlackSession::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson
 	m_component->getFrontend()->onPresenceReceived(presence);
 }
 
+void SlackSession::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+	std::string channelId = m_api->getChannelId(req, ok, resp, data);
+	if (channelId.empty()) {
+		LOG4CXX_INFO(logger,"Error creating channel " << m_slackChannel << ".");
+		return;
+	}
+
+	m_slackChannel = channelId;
+	m_api->channelsInvite(m_slackChannel, m_rtm->getSelfId(), boost::bind(&SlackSession::handleSlackChannelInvite, this, _1, _2, _3, _4));
+}
+
 void SlackSession::handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
 	std::map<std::string, SlackChannelInfo> channels;
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
 
 	if (channels.find(m_slackChannel) != channels.end()) {
 		m_slackChannel = channels[m_slackChannel].id;
-		Swift::Presence::ref presence = Swift::Presence::create();
-		presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
-		presence->setTo(m_component->getJID());
-		presence->setType(Swift::Presence::Available);
-		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-		m_component->getFrontend()->onPresenceReceived(presence);
+		m_api->channelsInvite(m_slackChannel, m_rtm->getSelfId(), boost::bind(&SlackSession::handleSlackChannelInvite, this, _1, _2, _3, _4));
 	}
 	else {
 		m_api->channelsCreate(m_slackChannel, boost::bind(&SlackSession::handleSlackChannelCreate, this, _1, _2, _3, _4));
