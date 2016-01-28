@@ -152,6 +152,10 @@ void APIServer::serve_instances_list_rooms(Server *server, Server::session *sess
 	Document json;
 	json.SetObject();
 	json.AddMember("error", 0, json.GetAllocator());
+	json.AddMember("name_label", "Nickname in 3rd-party room", json.GetAllocator());
+	json.AddMember("legacy_room_label", "3rd-party room name", json.GetAllocator());
+	json.AddMember("legacy_server_label", "3rd-party server", json.GetAllocator());
+	json.AddMember("frontend_room_label", "Slack channel", json.GetAllocator());
 
 	std::vector<std::vector<std::string> > tmp;
 	Value rooms(kArrayType);

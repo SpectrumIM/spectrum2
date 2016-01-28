@@ -137,7 +137,7 @@ function fill_instances_join_room_form() {
 		var postdata ={
 			"name": $("#name").val(),
 			"legacy_room": $("#legacy_room").val(),
-			"legacy_server": $("#legacy_server").val()
+			"legacy_server": $("#legacy_server").val(),
 			"frontend_room": $("#frontend_room").val()
 		};
 
