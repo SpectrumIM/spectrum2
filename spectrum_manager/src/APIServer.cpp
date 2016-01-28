@@ -119,6 +119,7 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		usernames.push_back(username);
 		instance.AddMember("registered", !username.empty(), json.GetAllocator());
 		instance.AddMember("username", usernames.back().c_str(), json.GetAllocator());
+		instance.AddMember("frontend", is_slack(m_config, id) ? "slack" : "xmpp", json.GetAllocator());
 
 		instances.PushBack(instance, json.GetAllocator());
 	}
@@ -219,6 +220,50 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 			}
 		}
 	}
+}
+
+void APIServer::serve_instances_join_room(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+
+	std::string username = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, username);
+
+	if (username.empty()) {
+		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
+		return;
+	}
+
+	std::string name = get_http_var(hm, "name");
+	std::string legacy_room = get_http_var(hm, "legacy_room");
+	std::string legacy_server = get_http_var(hm, "legacy_server");
+	std::string frontend_room = get_http_var(hm, "frontend_room");
+
+	std::string response = server->send_command(instance, "join_room " +
+		username + " " + name + " " + legacy_room + " " + legacy_server + " " + frontend_room);
+
+	if (response.find("Joined the room") == std::string::npos) {
+		send_ack(conn, true, response);
+	}
+	else {
+		send_ack(conn, false, response);
+	}
+}
+
+void APIServer::serve_instances_join_room_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	// So far we support just Slack here. For XMPP, it is up to user to initiate the join room request.
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+	json.AddMember("name_label", "Nickname in 3rd-party room", json.GetAllocator());
+	json.AddMember("legacy_room_label", "3rd-party room name", json.GetAllocator());
+	json.AddMember("legacy_server_label", "3rd-party server", json.GetAllocator());
+	json.AddMember("frontend_room_label", "Slack channel", json.GetAllocator());
+	send_json(conn, json);
 }
 
 void APIServer::serve_instances_register_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
@@ -329,6 +374,12 @@ void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_c
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/register/")) {
 		serve_instances_register(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/join_room_form/")) {
+		serve_instances_join_room_form(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/join_room/")) {
+		serve_instances_join_room(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/users/remove/")) {
 		serve_users_remove(server, sess, conn, hm);

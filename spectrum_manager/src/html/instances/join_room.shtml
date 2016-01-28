@@ -1,0 +1,37 @@
+<!--#include virtual="/header.shtml" -->
+
+<h2>Join room</h2>
+<form action="/api/v1/instances/join_room" class="basic-grey" method="POST"> 
+<h1>Join room
+	<span id="description">Join the room using this Spectrum 2 instance.</span> 
+</h1> 
+<label> 
+	<span id="name_desc"></span> 
+	<input type="text" id="name" name="name" placeholder=""></textarea> 
+</label> 
+<label> 
+	<span id="legacy_room_desc"></span> 
+	<input type="text" id="legacy_room" name="legacy_name" placeholder=""></textarea> 
+</label> 
+<label>
+	<span id="legacy_server_desc"></span> 
+	<input type="text" id="legacy_server" name="legacy_server" placeholder=""></textarea> 
+</label>
+<label>
+	<span id="frontend_room_desc"></span> 
+	<input type="text" id="frontend_room" name="frontend_room" placeholder=""></textarea> 
+</label>
+<label> 
+	<span>&nbsp;</span> 
+	<input type="submit" class="button_command" value="Join room" />
+</label> 
+<input type="hidden" name="instance" id="instance" value=""></input> 
+</form><br/>
+
+<script type="text/javascript">
+$(function() {
+	fill_instances_join_room_form();
+});
+</script>
+
+<!--#include virtual="/footer.shtml" -->
