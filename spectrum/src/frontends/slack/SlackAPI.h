@@ -91,8 +91,16 @@ class SlackAPI : public HTTPRequestQueue {
 		static void getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackUserInfo> &users);
 		static std::string SlackObjectToPlainText(const std::string &object, bool isChannel = false, bool returnName = false);
 
+		// Creates channel if it does not exist and invites the user to the channel.
+		typedef boost::function< void (const std::string &channelId) > CreateChannelCallback;
+		void createChannel(const std::string &channel, const std::string &user, CreateChannelCallback callback);
+
 	private:
 		void handleSendMessage(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+
+		void handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
+		void handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
+		void handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
 
 	private:
 		Component *m_component;

@@ -69,13 +69,8 @@ class SlackSession {
 		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet);
 		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
-		void joinRoom(std::vector<std::string> args);
-		void handleJoinRoomCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args);
-		void handleJoinRoomList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args);
-
-		void handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
-		void handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
-		void handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleJoinRoomCreated(const std::string &channelId, std::vector<std::string> args);
+		void handleSlackChannelCreated(const std::string &channelId);
 
 		void sendOnlineBuddies();
 

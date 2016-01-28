@@ -353,6 +353,35 @@ std::string SlackAPI::SlackObjectToPlainText(const std::string &object, bool isC
 	return ret;
 }
 
+void SlackAPI::handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback) {
+	callback(channel);
+}
+
+void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback) {
+	std::string channelId = getChannelId(req, ok, resp, data);
+	if (channelId.empty()) {
+		LOG4CXX_INFO(logger, "Error creating channel " << channel << ".");
+		return;
+	}
+
+	channelsInvite(channelId, user, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, user, callback));
+}
+
+void SlackAPI::handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback) {
+	std::map<std::string, SlackChannelInfo> channels;
+	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
+
+	if (channels.find(channel) != channels.end()) {
+		channelsInvite(channel, user, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channels[channel].id, user, callback));
+	}
+	else {
+		channelsCreate(channel, boost::bind(&SlackAPI::handleSlackChannelCreate, this, _1, _2, _3, _4, channel, user, callback));
+	}
+}
+
+void SlackAPI::createChannel(const std::string &channel, const std::string &user, CreateChannelCallback callback) {
+	channelsList(boost::bind(&SlackAPI::handleSlackChannelList, this, _1, _2, _3, _4, channel, user, callback));
+}
 
 
 }

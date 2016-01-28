@@ -156,7 +156,8 @@ void SlackSession::setPurpose(const std::string &purpose, const std::string &cha
 	m_api->setPurpose(ch, purpose);
 }
 
-void SlackSession::joinRoom(std::vector<std::string> args) {
+void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vector<std::string> args) {
+	args[5] = channelId;
 	std::string &name = args[2];
 	std::string &legacyRoom = args[3];
 	std::string &legacyServer = args[4];
@@ -167,9 +168,6 @@ void SlackSession::joinRoom(std::vector<std::string> args) {
 		m_uinfo.uin = name;
 		m_storageBackend->setUser(m_uinfo);
 	}
-// 	else {
-// 		to =  legacyRoom + "\\40" + legacyServer + "@" + m_component->getJID().toString();
-// 	}
 
 	m_jid2channel[to] = slackChannel;
 	m_channel2jid[slackChannel] = to;
@@ -184,68 +182,20 @@ void SlackSession::joinRoom(std::vector<std::string> args) {
 	m_onlineBuddiesTimer->start();
 }
 
-void SlackSession::handleJoinRoomCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args) {
-	std::string channelId = m_api->getChannelId(req, ok, resp, data);
-	if (channelId.empty()) {
-		LOG4CXX_INFO(logger, args[1] << ": Error creating channel " << args[5] << ".");
-		return;
-	}
-
-	args[5] = channelId;
-	joinRoom(args);
-}
-
-void SlackSession::handleJoinRoomList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::vector<std::string> args) {
-	std::map<std::string, SlackChannelInfo> channels;
-	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
-
-	if (channels.find(args[5]) != channels.end()) {
-		LOG4CXX_INFO(logger, args[1] << ": Channel " << args[5] << " already exists. Joining the room.");
-		args[5] = channels[args[5]].id;
-		joinRoom(args);
-	}
-	else {
-		LOG4CXX_INFO(logger, args[1] << ": Channel " << args[5] << " does not exit. Creating it.");
-		m_api->channelsCreate(args[5], boost::bind(&SlackSession::handleJoinRoomCreate, this, _1, _2, _3, _4, args));
-	}
-}
-
 void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
 	LOG4CXX_INFO(logger, args[1] << ": Going to join the room, checking the ID of channel " << args[5]);
-	m_api->channelsList(boost::bind(&SlackSession::handleJoinRoomList, this, _1, _2, _3, _4, args));
+	m_api->createChannel(args[5], m_rtm->getSelfId(), boost::bind(&SlackSession::handleJoinRoomCreated, this, _1, args));
 }
 
-void SlackSession::handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
+	m_slackChannel = channelId;
+
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
 	presence->setTo(m_component->getJID());
 	presence->setType(Swift::Presence::Available);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 	m_component->getFrontend()->onPresenceReceived(presence);
-}
-
-void SlackSession::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
-	std::string channelId = m_api->getChannelId(req, ok, resp, data);
-	if (channelId.empty()) {
-		LOG4CXX_INFO(logger,"Error creating channel " << m_slackChannel << ".");
-		return;
-	}
-
-	m_slackChannel = channelId;
-	m_api->channelsInvite(m_slackChannel, m_rtm->getSelfId(), boost::bind(&SlackSession::handleSlackChannelInvite, this, _1, _2, _3, _4));
-}
-
-void SlackSession::handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
-	std::map<std::string, SlackChannelInfo> channels;
-	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
-
-	if (channels.find(m_slackChannel) != channels.end()) {
-		m_slackChannel = channels[m_slackChannel].id;
-		m_api->channelsInvite(m_slackChannel, m_rtm->getSelfId(), boost::bind(&SlackSession::handleSlackChannelInvite, this, _1, _2, _3, _4));
-	}
-	else {
-		m_api->channelsCreate(m_slackChannel, boost::bind(&SlackSession::handleSlackChannelCreate, this, _1, _2, _3, _4));
-	}
 }
 
 void SlackSession::handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
@@ -485,7 +435,7 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 		else {
 			m_storageBackend->getUserSetting(m_uinfo.id, "slack_channel", type, m_slackChannel);
 			if (!m_slackChannel.empty()) {
-				m_api->channelsList(boost::bind(&SlackSession::handleSlackChannelList, this, _1, _2, _3, _4));
+				m_api->createChannel(m_slackChannel, m_rtm->getSelfId(), boost::bind(&SlackSession::handleSlackChannelCreated, this, _1));
 			}
 			else {
 				std::string msg;
