@@ -128,6 +128,54 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 	send_json(conn, json);
 }
 
+void APIServer::serve_instances_list_rooms(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+
+	std::string username = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, username);
+
+	if (username.empty()) {
+		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
+		return;
+	}
+
+	std::string response = server->send_command(instance, "list_rooms " + username);
+
+	std::vector<std::string> commands;
+	boost::split(commands, response, boost::is_any_of("\n"));
+
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+
+	std::vector<std::vector<std::string> > tmp;
+	Value rooms(kArrayType);
+	BOOST_FOREACH(const std::string &command, commands) {
+		if (command.size() > 5) {
+			std::vector<std::string> args2;
+			boost::split(args2, command, boost::is_any_of(" "));
+			if (args2.size() == 6) {
+				tmp.push_back(args2);
+				Value room;
+				room.SetObject();
+				room.AddMember("name", tmp.back()[2].c_str(), json.GetAllocator());
+				room.AddMember("legacy_room", tmp.back()[3].c_str(), json.GetAllocator());
+				room.AddMember("legacy_server", tmp.back()[4].c_str(), json.GetAllocator());
+				room.AddMember("frontend_room", tmp.back()[5].c_str(), json.GetAllocator());
+				rooms.PushBack(room, json.GetAllocator());
+			}
+		}
+	}
+
+	json.AddMember("rooms", rooms, json.GetAllocator());
+	send_json(conn, json);
+}
+
 void APIServer::serve_instances_start(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	ALLOW_ONLY_ADMIN();
 
@@ -380,6 +428,9 @@ void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_c
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/join_room/")) {
 		serve_instances_join_room(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/list_rooms/")) {
+		serve_instances_list_rooms(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/users/remove/")) {
 		serve_users_remove(server, sess, conn, hm);

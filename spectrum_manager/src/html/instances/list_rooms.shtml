@@ -1,0 +1,9 @@
+<!--#include virtual="/header.shtml" -->
+
+<script type="text/javascript">
+$(function() {
+	show_list_rooms();
+});
+</script>
+
+<!--#include virtual="/footer.shtml" -->

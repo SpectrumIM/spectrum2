@@ -1,3 +1,17 @@
+function getQueryParams(qs) {
+	qs = qs.split('+').join(' ');
+
+	var params = {},
+		tokens,
+		re = /[?&]?([^=]+)=([^&]*)/g;
+
+	while (tokens = re.exec(qs)) {
+		params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+	}
+
+	return params;
+}
+
 function show_instances() {
 	$.get($.cookie("base_location") + "api/v1/instances", function(data) {
 		$("#main_content").html("<h2>List of Spectrum 2 instances</h2><table id='main_result'><tr><th>Name<th>Status</th><th>Actions</th></tr>");
@@ -37,6 +51,7 @@ function show_instances() {
 				row += '<td>';
 				if (command == 'unregister' && instance.frontend == "slack") {
 					row += '<a href="' + $.cookie("base_location") + 'instances/join_room.shtml?id=' + instance.id + '">Join room</a> | ';
+					row += '<a href="' + $.cookie("base_location") + 'instances/list_rooms.shtml?id=' + instance.id + '">List joined rooms</a> | ';
 				}
 				row += '<a class="button_command" href="' + $.cookie("base_location") +  'api/v1/instances/' + command + '/' + instance.id + '">' + command + '</a>';
 				row += '</td></tr>';
@@ -51,6 +66,34 @@ function show_instances() {
 					});
 				})
 			}
+		});
+	});
+}
+
+function show_list_rooms() {
+	var query = getQueryParams(document.location.search);
+	$.get($.cookie("base_location") + "api/v1/instances/list_rooms/" + query.id, function(data) {
+		$("#main_content").html("<h2>Joined rooms</h2><table id='main_result'><tr><th>" + data.frontend_room_label + "</th><th>" + data.legacy_room_label + "</th><th>" + data.legacy_server_label + "</th><th>" + data.name_label + "</th><th>Actions</th></tr>");
+
+		$.each(data.room, function(i, instance) {
+			var row = '<tr>';
+			row += '<td>' + room.frontend_room + '</td>';
+			row += '<td>' + room.legacy_room + '</td>';
+			row += '<td>' + room.legacy_server + '</td>';
+			row += '<td>' + room.name + '</td>';
+			row += '<td><a class="button_command" href="' + $.cookie("base_location") +  'api/v1/instances/leave_room/' + instance.id + '?frontend_room=' + room.frontend_room + '">Leave</a></td>';
+			row += '</tr>';
+
+			$("#main_result  > tbody:last-child").append(row);
+			$(".button_command").click(function(e) {
+				e.preventDefault();
+				$(this).parent().empty().progressbar( {value: false} ).css('height', '1em');
+
+				var url = $(this).attr('href');
+				$.get(url, function(data) {
+					show_instances();
+				});
+			})
 		});
 	});
 }
@@ -83,20 +126,6 @@ function show_users() {
 	});
 }
 
-function getQueryParams(qs) {
-	qs = qs.split('+').join(' ');
-
-	var params = {},
-		tokens,
-		re = /[?&]?([^=]+)=([^&]*)/g;
-
-	while (tokens = re.exec(qs)) {
-		params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
-	}
-
-	return params;
-}
-
 function fill_instances_join_room_form() {
 	var query = getQueryParams(document.location.search);
 	$("#instance").attr("value", query.id);
@@ -121,12 +150,12 @@ function fill_instances_join_room_form() {
 		$("#name_desc").html(data.name_label + ":");
 		$("#legacy_room_desc").html(data.legacy_room_label + ":");
 		$("#legacy_server_desc").html(data.legacy_server_label + ":");
-		$("#frontend_room_desc").html(data.frontend_room_desc + ":");
+		$("#frontend_room_desc").html(data.frontend_room_label + ":");
 
 		$("#name").attr("placeholder", data.name_label + ":");
 		$("#legacy_room").attr("placeholder", data.legacy_room_label + ":");
 		$("#legacy_server").attr("placeholder", data.legacy_server_label + ":");
-		$("#frontend_room").attr("placeholder", data.frontend_room_desc + ":");
+		$("#frontend_room").attr("placeholder", data.frontend_room_label + ":");
 	});
 }
 

@@ -30,6 +30,7 @@
 #include "transport/Logging.h"
 
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 namespace Transport {
 
@@ -105,23 +106,24 @@ void SlackUserManager::handleUserCreated(User *user) {
 }
 
 bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
-	if (message->getBody().find("get_user_configuration") == 0) {
-// 		std::string body = message->getBody();
-// 		std::vector<std::string> args;
-// 		boost::split(args, body, boost::is_any_of(" "));
-// 		if (args.size() == 2) {
-// 			UserInfo uinfo;
-// 			if (!m_storageBackend->getUser(args[1], uinfo)) {
-// 				message->setBody("Error: Unknown user");
-// 				return true;
-// 			}
-// 
-// 			std::string rooms = "";
-// 			int type = (int) TYPE_STRING;
-// 			m_storageBackend->getUserSetting(uinfo.id, "rooms", type, rooms);
-// 
-// 			m_storageBackend->getUserSetting(uinfo.id, "slack_channel", type, m_slackChannel);
-// 		}
+	if (message->getBody().find("list_rooms") == 0) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 2) {
+			UserInfo uinfo;
+			if (!m_storageBackend->getUser(args[1], uinfo)) {
+				message->setBody("Error: Unknown user");
+				return true;
+			}
+
+			std::string rooms = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(uinfo.id, "rooms", type, rooms);
+
+			message->setBody(rooms);
+			return true;
+		}
 	}
 	else if (message->getBody().find("join_room ") == 0) {
 		std::string body = message->getBody();
@@ -145,6 +147,48 @@ bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 				user->getSession()->handleJoinMessage("", args, true);
 			}
 			message->setBody("Joined the room");
+			return true;
+		}
+	}
+	else if (message->getBody().find("leave_room ") == 0) {
+		std::string body = message->getBody();
+		std::vector<std::string> args;
+		boost::split(args, body, boost::is_any_of(" "));
+		if (args.size() == 3) {
+			UserInfo uinfo;
+			if (!m_storageBackend->getUser(args[1], uinfo)) {
+				message->setBody("Error: Unknown user");
+				return true;
+			}
+
+			std::string rooms = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(uinfo.id, "rooms", type, rooms);
+
+			std::vector<std::string> commands;
+			boost::split(commands, rooms, boost::is_any_of("\n"));
+			rooms = "";
+
+			BOOST_FOREACH(const std::string &command, commands) {
+				if (command.size() > 5) {
+					std::vector<std::string> args2;
+					boost::split(args2, command, boost::is_any_of(" "));
+					if (args2.size() == 6) {
+						if (args[2] != args2[5]) {
+							rooms += command + "\n";
+						}
+					}
+				}
+			}
+
+			m_storageBackend->updateUserSetting(uinfo.id, "rooms", rooms);
+
+			SlackUser *user = static_cast<SlackUser *>(getUser(args[1]));
+			if (user) {
+				// TODO
+// 				user->getSession()->handleJoinMessage("", args, true);
+			}
+			message->setBody("Left the room");
 			return true;
 		}
 	}
