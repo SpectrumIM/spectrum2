@@ -75,13 +75,13 @@ function show_list_rooms() {
 	$.get($.cookie("base_location") + "api/v1/instances/list_rooms/" + query.id, function(data) {
 		$("#main_content").html("<h2>Joined rooms</h2><table id='main_result'><tr><th>" + data.frontend_room_label + "</th><th>" + data.legacy_room_label + "</th><th>" + data.legacy_server_label + "</th><th>" + data.name_label + "</th><th>Actions</th></tr>");
 
-		$.each(data.room, function(i, instance) {
+		$.each(data.rooms, function(i, room) {
 			var row = '<tr>';
 			row += '<td>' + room.frontend_room + '</td>';
 			row += '<td>' + room.legacy_room + '</td>';
 			row += '<td>' + room.legacy_server + '</td>';
 			row += '<td>' + room.name + '</td>';
-			row += '<td><a class="button_command" href="' + $.cookie("base_location") +  'api/v1/instances/leave_room/' + instance.id + '?frontend_room=' + room.frontend_room + '">Leave</a></td>';
+			row += '<td><a class="button_command" href="' + $.cookie("base_location") +  'api/v1/instances/leave_room/' + query.id + '?frontend_room=' + room.frontend_room + '">Leave</a></td>';
 			row += '</tr>';
 
 			$("#main_result  > tbody:last-child").append(row);
@@ -91,7 +91,7 @@ function show_list_rooms() {
 
 				var url = $(this).attr('href');
 				$.get(url, function(data) {
-					show_instances();
+					show_list_rooms();
 				});
 			})
 		});
