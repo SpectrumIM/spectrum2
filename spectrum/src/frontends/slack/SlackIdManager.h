@@ -51,48 +51,51 @@
 
 namespace Transport {
 
-class Component;
-class StorageBackend;
-class HTTPRequest;
-class WebSocketClient;
-class SlackAPI;
-class SlackIdManager;
-
-class SlackRTM {
+class SlackIdManager {
 	public:
-		SlackRTM(Component *component, StorageBackend *storageBackend, SlackIdManager *idManager, UserInfo uinfo);
+		SlackIdManager();
 
-		virtual ~SlackRTM();
+		virtual ~SlackIdManager();
 
-		void sendPing();
-
-		void sendMessage(const std::string &channel, const std::string &message);
-
-		boost::signal<void ()> onRTMStarted;
-
-		SlackAPI *getAPI() {
-			return m_api;
+		std::map<std::string, SlackUserInfo> &getUsers() {
+			return m_users;
 		}
 
-		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
+		std::map<std::string, SlackChannelInfo> &getChannels() {
+			return m_channels;
+		}
+
+		std::map<std::string, SlackImInfo> &getIMs() {
+			return m_ims;
+		}
+
+		const std::string &getName(const std::string &id);
+		const std::string &getId(const std::string &name);
+
+		bool hasMember(const std::string &channelId, const std::string &userId);
+
+		const std::string &getSelfName() {
+			return m_selfName;
+		}
+
+		const std::string &getSelfId() {
+			return m_selfId;
+		}
+
+		void setSelfName(const std::string &name) {
+			m_selfName = name;
+		}
+
+		void setSelfId(const std::string &id) {
+			m_selfId = id;
+		}
 
 	private:
-		void handlePayloadReceived(const std::string &payload);
-		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
-		void handleWebSocketConnected();
-		void handleWebSocketDisconnected(const boost::optional<Swift::Connection::Error> &error);
-
-	private:
-		Component *m_component;
-		StorageBackend *m_storageBackend;
-		UserInfo m_uinfo;
-		WebSocketClient *m_client;
-		std::string m_token;
-		unsigned long m_counter;
-		Swift::Timer::ref m_pingTimer;
-		SlackAPI *m_api;
-		bool m_started;
-		SlackIdManager *m_idManager;
+		std::map<std::string, SlackChannelInfo> m_channels;
+		std::map<std::string, SlackImInfo> m_ims;
+		std::map<std::string, SlackUserInfo> m_users;
+		std::string m_selfName;
+		std::string m_selfId;
 };
 
 }

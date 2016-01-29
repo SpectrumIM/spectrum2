@@ -185,8 +185,7 @@ bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 
 			SlackUser *user = static_cast<SlackUser *>(getUser(args[1]));
 			if (user) {
-				// TODO
-// 				user->getSession()->handleJoinMessage("", args, true);
+				user->getSession()->leaveRoom(args[2]);
 			}
 			message->setBody("Left the room");
 			return true;

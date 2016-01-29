@@ -40,6 +40,7 @@ class HTTPRequest;
 class SlackRTM;
 class SlackAPI;
 class User;
+class SlackIdManager;
 
 class SlackSession {
 	public:
@@ -61,7 +62,7 @@ class SlackSession {
 		void handleConnected();
 
 		void handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
-		void handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
+		void leaveRoom(const std::string &channel);
 		void handleRegisterMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
 
 	private:
@@ -90,6 +91,7 @@ class SlackSession {
 		bool m_disconnected;
 		std::string m_ownerId;
 		SlackAPI *m_api;
+		SlackIdManager *m_idManager;
 };
 
 }

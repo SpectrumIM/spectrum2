@@ -23,6 +23,7 @@
 #include "SlackUser.h"
 #include "SlackRTM.h"
 #include "SlackRosterManager.h"
+#include "SlackIdManager.h"
 
 #include "transport/Transport.h"
 #include "transport/HTTPRequest.h"
@@ -50,7 +51,9 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	m_component = component;
 	m_storageBackend = storageBackend;
 
-	m_rtm = new SlackRTM(component, storageBackend, uinfo);
+	m_idManager = new SlackIdManager();
+
+	m_rtm = new SlackRTM(component, storageBackend, m_idManager, uinfo);
 	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
 	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3, _4, false));
 
@@ -60,12 +63,13 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	int type = (int) TYPE_STRING;
 	std::string token;
 	m_storageBackend->getUserSetting(m_uinfo.id, "access_token", type, token);
-	m_api = new SlackAPI(m_component, token);
+	m_api = new SlackAPI(m_component, m_idManager, token);
 }
 
 SlackSession::~SlackSession() {
 	delete m_rtm;
 	delete m_api;
+	delete m_idManager;
 	m_onlineBuddiesTimer->stop();
 }
 
@@ -184,7 +188,7 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 
 void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
 	LOG4CXX_INFO(logger, args[1] << ": Going to join the room, checking the ID of channel " << args[5]);
-	m_api->createChannel(args[5], m_rtm->getSelfId(), boost::bind(&SlackSession::handleJoinRoomCreated, this, _1, args));
+	m_api->createChannel(args[5], m_idManager->getSelfId(), boost::bind(&SlackSession::handleJoinRoomCreated, this, _1, args));
 }
 
 void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
@@ -198,36 +202,13 @@ void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
 	m_component->getFrontend()->onPresenceReceived(presence);
 }
 
-void SlackSession::handleLeaveMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
-	// .spectrum2 leave.room channel
-	std::string slackChannel = SlackAPI::SlackObjectToPlainText(args[2], true);
-	std::string to = m_channel2jid[slackChannel];
+void SlackSession::leaveRoom(const std::string &channel) {
+	std::string channelId = m_idManager->getId(channel);
+	std::string to = m_channel2jid[channel];
 	if (to.empty()) {
 		m_rtm->sendMessage(m_ownerChannel, "Spectrum 2 is not configured to transport this Slack channel.");
 		return;
 	}
-
-	std::string rooms = "";
-	int type = (int) TYPE_STRING;
-	m_storageBackend->getUserSetting(m_uinfo.id, "rooms", type, rooms);
-
-	std::vector<std::string> commands;
-	boost::split(commands, rooms, boost::is_any_of("\n"));
-	rooms = "";
-
-	BOOST_FOREACH(const std::string &command, commands) {
-		if (command.size() > 5) {
-			std::vector<std::string> args2;
-			boost::split(args2, command, boost::is_any_of(" "));
-			if (args2.size() == 6) {
-				if (slackChannel != SlackAPI::SlackObjectToPlainText(args2[5], true)) {
-					rooms += command + "\n";
-				}
-			}
-		}
-	}
-
-	m_storageBackend->updateUserSetting(m_uinfo.id, "rooms", rooms);
 
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
@@ -264,7 +245,7 @@ void SlackSession::handleRegisterMessage(const std::string &message, std::vector
 void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet) {
 	if (m_ownerChannel != channel) {
 		std::string to = m_channel2jid[channel];
-		if (m_rtm->getUserName(user) == m_rtm->getSelfName()) {
+		if (m_idManager->getName(user) == m_idManager->getSelfName()) {
 			return;
 		}
 
@@ -273,7 +254,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 			msg->setType(Swift::Message::Groupchat);
 			msg->setTo(to);
 			msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
-			msg->setBody("<" + m_rtm->getUserName(user) + "> " + message);
+			msg->setBody("<" + m_idManager->getName(user) + "> " + message);
 			m_component->getFrontend()->onMessageReceived(msg);
 		}
 		else {
@@ -309,7 +290,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setTo(b->getJID());
 				msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
-				msg->setBody("<" + m_rtm->getUserName(user) + "> " + message);
+				msg->setBody("<" + m_idManager->getName(user) + "> " + message);
 				m_component->getFrontend()->onMessageReceived(msg);
 			}
 		}
@@ -328,7 +309,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		handleJoinMessage(message, args, quiet);
 	}
 	else if (args[1] == "leave.room" && args.size() == 3) {
-		handleLeaveMessage(message, args, quiet);
+// 		handleLeaveMessage(message, args, quiet);
 	}
 	else if (args[1] == "register" && args.size() == 5) {
 		handleRegisterMessage(message, args, quiet);
@@ -435,7 +416,7 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 		else {
 			m_storageBackend->getUserSetting(m_uinfo.id, "slack_channel", type, m_slackChannel);
 			if (!m_slackChannel.empty()) {
-				m_api->createChannel(m_slackChannel, m_rtm->getSelfId(), boost::bind(&SlackSession::handleSlackChannelCreated, this, _1));
+				m_api->createChannel(m_slackChannel, m_idManager->getSelfId(), boost::bind(&SlackSession::handleSlackChannelCreated, this, _1));
 			}
 			else {
 				std::string msg;
@@ -465,7 +446,7 @@ void SlackSession::handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &
 }
 
 void SlackSession::handleRTMStarted() {
-	std::map<std::string, SlackUserInfo> &users = m_rtm->getUsers();
+	std::map<std::string, SlackUserInfo> &users = m_idManager->getUsers();
 	for (std::map<std::string, SlackUserInfo>::iterator it = users.begin(); it != users.end(); it++) {
 		SlackUserInfo &info = it->second;
 		if (info.isPrimaryOwner) {

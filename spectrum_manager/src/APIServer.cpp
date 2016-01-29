@@ -306,6 +306,33 @@ void APIServer::serve_instances_join_room(Server *server, Server::session *sessi
 	}
 }
 
+void APIServer::serve_instances_leave_room(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+
+	std::string username = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, username);
+
+	if (username.empty()) {
+		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
+		return;
+	}
+
+	std::string frontend_room = get_http_var(hm, "frontend_room");
+	std::string response = server->send_command(instance, "leave_room " + username + " " + frontend_room);
+
+	if (response.find("Left the room") == std::string::npos) {
+		send_ack(conn, true, response);
+	}
+	else {
+		send_ack(conn, false, response);
+	}
+}
+
 void APIServer::serve_instances_join_room_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	// So far we support just Slack here. For XMPP, it is up to user to initiate the join room request.
 	Document json;
@@ -435,6 +462,9 @@ void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_c
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/list_rooms/")) {
 		serve_instances_list_rooms(server, sess, conn, hm);
+	}
+	else if (has_prefix(&hm->uri, "/api/v1/instances/leave_room/")) {
+		serve_instances_leave_room(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/users/remove/")) {
 		serve_users_remove(server, sess, conn, hm);

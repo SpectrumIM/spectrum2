@@ -21,6 +21,7 @@
 #include "SlackRTM.h"
 #include "SlackFrontend.h"
 #include "SlackUser.h"
+#include "SlackIdManager.h"
 
 #include "transport/Transport.h"
 #include "transport/HTTPRequest.h"
@@ -38,11 +39,12 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackRTM");
 
-SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo) {
+SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackIdManager *idManager, UserInfo uinfo) : m_uinfo(uinfo) {
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_counter = 0;
 	m_started = false;
+	m_idManager = idManager;
 	m_client = new WebSocketClient(component);
 	m_client->onPayloadReceived.connect(boost::bind(&SlackRTM::handlePayloadReceived, this, _1));
 	m_client->onWebSocketConnected.connect(boost::bind(&SlackRTM::handleWebSocketConnected, this));
@@ -53,7 +55,7 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, UserInf
 	int type = (int) TYPE_STRING;
 	m_storageBackend->getUserSetting(m_uinfo.id, "bot_token", type, m_token);
 
-	m_api = new SlackAPI(component, m_token);
+	m_api = new SlackAPI(component, m_idManager, m_token);
 
 	std::string url = "https://slack.com/api/rtm.start?";
 	url += "token=" + Util::urlencode(m_token);
@@ -146,14 +148,6 @@ void SlackRTM::sendPing() {
 	m_pingTimer->start();
 }
 
-const std::string &SlackRTM::getUserName(const std::string &id) {
-	if (m_users.find(id) == m_users.end()) {
-		return id;
-	}
-
-	return m_users[id].name;
-}
-
 void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
@@ -182,7 +176,7 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 		return;
 	}
 
-	m_selfName = selfName.GetString();
+	m_idManager->setSelfName(selfName.GetString());
 
 	rapidjson::Value &selfId = self["id"];
 	if (!selfId.IsString()) {
@@ -191,11 +185,11 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 		return;
 	}
 
-	m_selfId = selfId.GetString();
+	m_idManager->setSelfId(selfId.GetString());
 
-	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_channels);
-	SlackAPI::getSlackImInfo(req, ok, resp, data, m_ims);
-	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_users);
+	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_idManager->getChannels());
+	SlackAPI::getSlackImInfo(req, ok, resp, data, m_idManager->getIMs());
+	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_idManager->getUsers());
 
 	std::string u = url.GetString();
 	LOG4CXX_INFO(logger, "Started RTM, WebSocket URL is " << u);

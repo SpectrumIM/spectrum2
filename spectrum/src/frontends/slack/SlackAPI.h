@@ -35,6 +35,7 @@ namespace Transport {
 class Component;
 class StorageBackend;
 class HTTPRequest;
+class SlackIdManager;
 
 class SlackChannelInfo {
 	public:
@@ -68,7 +69,7 @@ class SlackUserInfo {
 
 class SlackAPI : public HTTPRequestQueue {
 	public:
-		SlackAPI(Component *component, const std::string &token);
+		SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token);
 
 		virtual ~SlackAPI();
 
@@ -104,6 +105,7 @@ class SlackAPI : public HTTPRequestQueue {
 
 	private:
 		Component *m_component;
+		SlackIdManager *m_idManager;
 		std::string m_token;
 };
 
