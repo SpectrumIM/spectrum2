@@ -1,6 +1,7 @@
 ---
 layout: page
 title: Spectrum 2
+redirect_from: "/documentation/installation/debian_ubuntu.html"
 ---
 
 ## Installing on Debian Jessie from our packages repository
