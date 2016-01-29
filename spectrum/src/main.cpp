@@ -227,10 +227,11 @@ int mainloop() {
 
 	try {
 		creator = self.get_alias<boost::shared_ptr<FrontendPlugin>()>(plugin_fc);
+	} catch(boost::system::system_error& e) {
+		LOG4CXX_ERROR(logger, "Error when loading frontend " << e.what());
+		return -3;
 	}
-	catch (...) {
-	}
-	
+
 	if (!creator) {
 		LOG4CXX_ERROR(logger, "Unknown Frontend name " << frontend_name);
 		return -3;
