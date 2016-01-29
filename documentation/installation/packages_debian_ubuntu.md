@@ -23,8 +23,8 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
         # apt-get install devscripts fakeroot libssl-dev libqt4-dev
         # dget -x http://packages.spectrum.im/spectrum2/pool/main/c/communi/communi_3.4.0-1.dsc
         # cd communi_3.4.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
-        # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
-        # dget -x http://packages.spectrum.im/spectrum2/pool/main/s/spectrum2/spectrum2_2.0.0-1.dsc
-        # cd spectrum2_2.0.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
+        # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev libcommuni-dev
+        # dget -x http://packages.spectrum.im/spectrum2/pool/main/s/spectrum2/spectrum2_2.0.1-1.dsc
+        # cd spectrum2_2.0.1-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
 
 When the compilation process has ended the .deb packages for libcommuni and spectrum will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
