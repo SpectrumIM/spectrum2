@@ -68,7 +68,6 @@ class SlackSession {
 	private:
 		void handleRTMStarted();
 		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet);
-		void handleImOpen(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 
 		void handleJoinRoomCreated(const std::string &channelId, std::vector<std::string> args);
 		void handleSlackChannelCreated(const std::string &channelId);
@@ -79,9 +78,7 @@ class SlackSession {
 		Component *m_component;
 		StorageBackend *m_storageBackend;
 		UserInfo m_uinfo;
-		std::string m_ownerName;
 		SlackRTM *m_rtm;
-		std::string m_ownerChannel;
 		std::map<std::string, std::string> m_jid2channel;
 		std::map<std::string, std::string> m_channel2jid;
 		std::string m_slackChannel;
