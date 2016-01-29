@@ -55,22 +55,22 @@ const std::string &SlackIdManager::getName(const std::string &id) {
 }
 
 const std::string &SlackIdManager::getId(const std::string &name) {
-	for (std::map<std::string, SlackChannelInfo>::const_iterator it = m_channels.begin(); it != m_channels.end(); ++it) {
-		if (it->second.name == name) {
-			return it->second.id;
-		}
+	if (m_channels.find(name) == m_channels.end()) {
+		return name;
 	}
 
-	return name;
+	return m_channels[name].id;
 }
 
 bool SlackIdManager::hasMember(const std::string &channelId, const std::string &userId) {
-	if (m_channels.find(channelId) == m_channels.end()) {
-		return false;
+
+	for (std::map<std::string, SlackChannelInfo>::const_iterator it = m_channels.begin(); it != m_channels.end(); ++it) {
+		if (it->second.id == channelId) {
+			return std::find(it->second.members.begin(), it->second.members.end(), userId) != it->second.members.end();
+		}
 	}
 
-	SlackChannelInfo &channel = m_channels[channelId];
-	return std::find(channel.members.begin(), channel.members.end(), userId) != channel.members.end();
+	return false;
 }
 
 

@@ -125,10 +125,16 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 			STORE_STRING(d, user);
 			onMessageReceived(channel, user, text, ts);
 		}
+		else if (subtype == "channel_join") {
+			
+		}
 		else {
 			STORE_STRING(d, user);
 			onMessageReceived(channel, user, text, ts);
 		}
+	}
+	else if (type == "channel_joined") {
+		
 	}
 }
 

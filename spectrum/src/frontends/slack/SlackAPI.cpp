@@ -217,7 +217,31 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 		return;
 	}
 
-	GET_ARRAY(resp, channels);
+	rapidjson::Value &channels = resp["channels"];
+	if (!channels.IsArray()) {
+		rapidjson::Value &channel = resp["channel"];
+		if (channel.IsObject()) {
+			SlackChannelInfo info;
+
+			STORE_STRING(channel, id);
+			info.id = id;
+
+			STORE_STRING(channel, name);
+			info.name = name;
+
+			rapidjson::Value &members = channel["members"];
+			for (int y = 0; members.IsArray() && y < members.Size(); y++) {
+				if (!members[y].IsString()) {
+					continue;
+				}
+
+				info.members.push_back(members[y].GetString());
+			}
+
+			ret[info.name] = info;
+		}
+		return;
+	}
 
 	for (int i = 0; i < channels.Size(); i++) {
 		if (!channels[i].IsObject()) {
@@ -360,8 +384,11 @@ void SlackAPI::handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Do
 }
 
 void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
-	std::string channelId = getChannelId(req, ok, resp, data);
-	if (channelId.empty()) {
+	std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
+	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
+
+	std::string channelId = m_idManager->getId(channel);
+	if (channelId == channel) {
 		LOG4CXX_INFO(logger, "Error creating channel " << channel << ".");
 		return;
 	}
