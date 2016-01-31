@@ -396,7 +396,7 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 	std::string code = get_http_var(hm, "code");
 	std::string state = get_http_var(hm, "state");
 
-	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state, 10);
+	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state, 30);
 	std::cerr << "set_oauth2_code response: '" << response << "'\n";
 	if (response.find("Registered as ") == 0) {
 		std::vector<std::string> args;
