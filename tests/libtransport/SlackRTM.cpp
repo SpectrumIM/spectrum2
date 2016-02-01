@@ -9,6 +9,8 @@ using namespace Transport;
 class SlackRTMTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(SlackRTMTest);
 	CPPUNIT_TEST(handleRTMStart);
+	CPPUNIT_TEST(handlePayloadReceivedChannelJoined);
+	CPPUNIT_TEST(handlePayloadReceivedChannelCreated);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -42,8 +44,23 @@ class SlackRTMTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			CPPUNIT_ASSERT_EQUAL(std::string("C0H6B0SQM"), m_idManager->getId("spectrum2_contactlist"));
 			CPPUNIT_ASSERT_EQUAL(true, m_idManager->hasMember("C0KH09UQ2", "U0KECRDJB"));
 			CPPUNIT_ASSERT_EQUAL(false, m_idManager->hasMember("C0KH09UQ2", "U1KECRDJB"));
-			
-			
+		}
+
+		void handlePayloadReceivedChannelJoined() {
+			CPPUNIT_ASSERT_EQUAL(false, m_idManager->hasMember("C0KSK7V7E", "U0KECRDJB"));
+
+			std::string payload = "{\"type\":\"channel_joined\",\"channel\":{\"id\":\"C0KSK7V7E\",\"name\":\"new_slack_channel\",\"is_channel\":true,\"created\":1454231085,\"creator\":\"U0H6EEWNN\",\"is_archived\":false,\"is_general\":false,\"is_member\":true,\"last_read\":\"1454231085.000002\",\"latest\":{\"user\":\"U0H6EEWNN\",\"type\":\"message\",\"subtype\":\"channel_join\",\"text\":\"<@U0H6EEWNN|owner> has joined the channel\",\"ts\":\"1454231085.000002\"},\"unread_count\":0,\"unread_count_display\":0,\"members\":[\"U0H6EEWNN\",\"U0KECRDJB\"],\"topic\":{\"value\":\"\",\"creator\":\"\",\"last_set\":0},\"purpose\":{\"value\":\"\",\"creator\":\"\",\"last_set\":0}}}";
+			m_rtm->handlePayloadReceived(payload);
+			CPPUNIT_ASSERT_EQUAL(std::string("C0KSK7V7E"), m_idManager->getId("new_slack_channel"));
+			CPPUNIT_ASSERT_EQUAL(true, m_idManager->hasMember("C0KSK7V7E", "U0KECRDJB"));
+			CPPUNIT_ASSERT_EQUAL(false, m_idManager->hasMember("C0KSK7V7E", "U1KECRDJB"));
+		}
+
+
+		void handlePayloadReceivedChannelCreated() {
+			std::string payload = "{\"type\":\"channel_created\",\"channel\":{\"id\":\"C0KH09UQ2\",\"is_channel\":true,\"name\":\"my_new_channel\",\"created\":1453906652,\"creator\":\"U0H6EEWNN\"},\"event_ts\":\"1453906652.085393\"}";
+			m_rtm->handlePayloadReceived(payload);
+			CPPUNIT_ASSERT_EQUAL(std::string("C0KH09UQ2"), m_idManager->getId("my_new_channel"));
 		}
 
 };

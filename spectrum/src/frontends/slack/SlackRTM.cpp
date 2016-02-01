@@ -135,8 +135,10 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 			onMessageReceived(channel, user, text, ts);
 		}
 	}
-	else if (type == "channel_joined") {
-		
+	else if (type == "channel_joined"
+		  || type == "channel_created") {
+		std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
+		SlackAPI::getSlackChannelInfo(NULL, true, d, payload, channels);
 	}
 }
 
