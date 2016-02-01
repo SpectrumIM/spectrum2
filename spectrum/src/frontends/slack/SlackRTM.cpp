@@ -107,6 +107,7 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_STRING(d, text);
 		STORE_STRING(d, ts);
 		STORE_STRING_OPTIONAL(d, subtype);
+		STORE_STRING_OPTIONAL(d, purpose);
 
 		rapidjson::Value &attachments = d["attachments"];
 		if (attachments.IsArray()) {
@@ -128,6 +129,9 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 			onMessageReceived(channel, user, text, ts);
 		}
 		else if (subtype == "channel_join") {
+			
+		}
+		else if (!purpose.empty()) {
 			
 		}
 		else {
