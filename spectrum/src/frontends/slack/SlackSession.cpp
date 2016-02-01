@@ -65,6 +65,8 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	std::string token;
 	m_storageBackend->getUserSetting(m_uinfo.id, "access_token", type, token);
 	m_api = new SlackAPI(m_component, m_idManager, token, m_uinfo.jid);
+
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": SlackSession created.");
 }
 
 SlackSession::~SlackSession() {
@@ -72,6 +74,8 @@ SlackSession::~SlackSession() {
 	delete m_api;
 	delete m_idManager;
 	m_onlineBuddiesTimer->stop();
+
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": SlackSession destroyed.");
 }
 
 void SlackSession::sendOnlineBuddies() {
@@ -107,7 +111,7 @@ void SlackSession::sendMessageToAll(const std::string &msg) {
 	for (std::map<std::string, std::string>::const_iterator it = m_jid2channel.begin(); it != m_jid2channel.end(); it++) {
 		if (std::find(channels.begin(), channels.end(), it->second) == channels.end()) {
 			channels.push_back(it->second);
-			m_rtm->getAPI()->sendMessage("Soectrum 2", it->second, msg);
+			m_rtm->getAPI()->sendMessage("Spectrum 2", it->second, msg);
 		}
 	}
 }
@@ -129,7 +133,6 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 
 	std::string from = message->getFrom().getResource();
 	std::string channel = m_jid2channel[message->getFrom().toBare().toString()];
-	LOG4CXX_INFO(logger, "JID is " << message->getFrom().toBare().toString() << " channel is " << channel);
 	if (channel.empty()) {
 		if (m_slackChannel.empty()) {
 			LOG4CXX_ERROR(logger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());
@@ -144,7 +147,7 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 		}
 	}
 
-	LOG4CXX_INFO(logger, "FROM " << from);
+	LOG4CXX_INFO(logger, m_uinfo.jid << "Sending message to Slack channel " << channel << " from " << from);
 	m_rtm->getAPI()->sendMessage(from, channel, message->getBody());
 }
 
@@ -157,7 +160,7 @@ void SlackSession::setPurpose(const std::string &purpose, const std::string &cha
 		return;
 	}
 
-	LOG4CXX_INFO(logger, "Setting channel purppose: " << ch << " " << purpose);
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": Setting channel purppose: " << ch << " " << purpose);
 	m_api->setPurpose(ch, purpose);
 }
 
@@ -169,10 +172,12 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 	std::string &slackChannel = args[5];
 
 	std::string to = legacyRoom + "%" + legacyServer + "@" + m_component->getJID().toString();
-	if (!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)) {
-		m_uinfo.uin = name;
-		m_storageBackend->setUser(m_uinfo);
-	}
+// 	if (!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)) {
+// 		m_uinfo.uin = name;
+// 		m_storageBackend->setUser(m_uinfo);
+// 	}
+
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": Channel " << args[5] << " is created. Joining the room on legacy network.");
 
 	m_jid2channel[to] = slackChannel;
 	m_channel2jid[slackChannel] = to;
@@ -188,13 +193,14 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 }
 
 void SlackSession::handleJoinMessage(const std::string &message, std::vector<std::string> &args, bool quiet) {
-	LOG4CXX_INFO(logger, args[1] << ": Going to join the room, checking the ID of channel " << args[5]);
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": Going to join the room " << args[3] << "@" << args[4] << ", transporting it to channel " << args[5]);
 	m_api->createChannel(args[5], m_idManager->getSelfId(), boost::bind(&SlackSession::handleJoinRoomCreated, this, _1, args));
 }
 
 void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
 	m_slackChannel = channelId;
 
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": Main Slack Channel created, connecting the legacy network");
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
 	presence->setTo(m_component->getJID());
@@ -210,6 +216,8 @@ void SlackSession::leaveRoom(const std::string &channel) {
 		LOG4CXX_ERROR(logger, "Spectrum 2 is not configured to transport this Slack channel.")
 		return;
 	}
+
+	LOG4CXX_INFO(logger, m_uinfo.jid << ": Leaving the legacy network room " << to);
 
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
@@ -296,6 +304,9 @@ void SlackSession::handleRTMStarted() {
 	m_storageBackend->getUserSetting(m_uinfo.id, "slack_channel", type, m_slackChannel);
 	if (!m_slackChannel.empty()) {
 		m_api->createChannel(m_slackChannel, m_idManager->getSelfId(), boost::bind(&SlackSession::handleSlackChannelCreated, this, _1));
+	}
+	else {
+		LOG4CXX_WARN(logger, m_uinfo.jid << ": There is no Main Slack Channel set for this user.");
 	}
 
 	// Auto-join the rooms configured by the Slack channel owner.
