@@ -39,6 +39,10 @@ class HTTPRequest : public Thread {
 		void run();
 		void finalize();
 
+		const std::string &getURL() {
+			return m_url;
+		}
+
 		boost::signal<void ()> onRequestFinished;
 
 	private:

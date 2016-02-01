@@ -18,7 +18,7 @@ class Component;
 
 class HTTPRequestQueue {
 	public:
-		HTTPRequestQueue(Component *component, int delayBetweenRequests = 1);
+		HTTPRequestQueue(Component *component, const std::string &user, int delayBetweenRequests = 1);
 
 		virtual ~HTTPRequestQueue();
 
@@ -34,6 +34,7 @@ class HTTPRequestQueue {
 		std::queue<HTTPRequest *> m_queue;
 		HTTPRequest *m_req;
 		Swift::Timer::ref m_queueTimer;
+		std::string m_user;
 };
 
 }

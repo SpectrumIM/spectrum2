@@ -71,7 +71,7 @@ DEFINE_LOGGER(logger, "SlackAPI");
 		 NAME = NAME##_tmp.GetString(); \
 	}
 
-SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token, const std::string &domain) : HTTPRequestQueue(component) {
+SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token, const std::string &domain) : HTTPRequestQueue(component, domain) {
 	m_component = component;
 	m_token = token;
 	m_idManager = idManager;
