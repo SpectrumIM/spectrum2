@@ -55,7 +55,7 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackId
 	int type = (int) TYPE_STRING;
 	m_storageBackend->getUserSetting(m_uinfo.id, "bot_token", type, m_token);
 
-	m_api = new SlackAPI(component, m_idManager, m_token);
+	m_api = new SlackAPI(component, m_idManager, m_token, m_uinfo.jid);
 }
 
 SlackRTM::~SlackRTM() {
@@ -203,7 +203,9 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 	LOG4CXX_INFO(logger, "Started RTM, WebSocket URL is " << u);
 	LOG4CXX_INFO(logger, data);
 
+#ifndef LIBTRANSPORT_TEST
 	m_client->connectServer(u);
+#endif
 }
 
 void SlackRTM::handleWebSocketConnected() {

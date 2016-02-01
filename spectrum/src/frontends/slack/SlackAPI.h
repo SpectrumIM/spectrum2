@@ -69,7 +69,7 @@ class SlackUserInfo {
 
 class SlackAPI : public HTTPRequestQueue {
 	public:
-		SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token);
+		SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token, const std::string &domain);
 
 		virtual ~SlackAPI();
 
@@ -107,6 +107,7 @@ class SlackAPI : public HTTPRequestQueue {
 		Component *m_component;
 		SlackIdManager *m_idManager;
 		std::string m_token;
+		std::string m_domain;
 };
 
 }

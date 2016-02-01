@@ -71,10 +71,11 @@ DEFINE_LOGGER(logger, "SlackAPI");
 		 NAME = NAME##_tmp.GetString(); \
 	}
 
-SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token) : HTTPRequestQueue(component) {
+SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token, const std::string &domain) : HTTPRequestQueue(component) {
 	m_component = component;
 	m_token = token;
 	m_idManager = idManager;
+	m_domain = domain;
 }
 
 SlackAPI::~SlackAPI() {
@@ -393,6 +394,7 @@ void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Do
 		return;
 	}
 
+	LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " created, going to invite " << userId << " there.");
 	channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 }
 
@@ -400,10 +402,13 @@ void SlackAPI::handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Docu
 	std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
 
-	if (channels.find(channel) != channels.end()) {
-		channelsInvite(channel, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channels[channel].id, userId, callback));
+	std::string channelId = m_idManager->getId(channel);
+	if (channelId != channel) {
+		LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " already exists, will just invite " << userId << " there.");
+		channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 	}
 	else {
+		LOG4CXX_INFO(logger, m_domain << ": createChannel: Going to create channel " << channel << ".");
 		channelsCreate(channel, boost::bind(&SlackAPI::handleSlackChannelCreate, this, _1, _2, _3, _4, channel, userId, callback));
 	}
 }
@@ -412,13 +417,16 @@ void SlackAPI::createChannel(const std::string &channel, const std::string &user
 	std::string channelId = m_idManager->getId(channel);
 	if (channelId != channel) {
 		if (m_idManager->hasMember(channelId, userId)) {
+			LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " already exists and " << userId << " is already there.");
 			callback(channelId);
 		}
 		else {
-			channelsInvite(channel, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
+			LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " already exists, will just invite " << userId << " there.");
+			channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 		}
 	}
 	else {
+		LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " not found in the cache, will refresh the channels list.");
 		channelsList(boost::bind(&SlackAPI::handleSlackChannelList, this, _1, _2, _3, _4, channel, userId, callback));
 	}
 }

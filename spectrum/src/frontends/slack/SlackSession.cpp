@@ -64,7 +64,7 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	int type = (int) TYPE_STRING;
 	std::string token;
 	m_storageBackend->getUserSetting(m_uinfo.id, "access_token", type, token);
-	m_api = new SlackAPI(m_component, m_idManager, token);
+	m_api = new SlackAPI(m_component, m_idManager, token, m_uinfo.jid);
 }
 
 SlackSession::~SlackSession() {
