@@ -45,7 +45,7 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackId
 	m_counter = 0;
 	m_started = false;
 	m_idManager = idManager;
-	m_client = new WebSocketClient(component);
+	m_client = new WebSocketClient(component, m_uinfo.jid);
 	m_client->onPayloadReceived.connect(boost::bind(&SlackRTM::handlePayloadReceived, this, _1));
 	m_client->onWebSocketConnected.connect(boost::bind(&SlackRTM::handleWebSocketConnected, this));
 

@@ -50,7 +50,7 @@ class Component;
 
 class WebSocketClient {
 	public:
-		WebSocketClient(Component *component);
+		WebSocketClient(Component *component, const std::string &user);
 
 		virtual ~WebSocketClient();
 
@@ -82,6 +82,7 @@ class WebSocketClient {
 		std::string m_buffer;
 		bool m_upgraded;
 		Swift::Timer::ref m_reconnectTimer;
+		std::string m_user;
 };
 
 }
