@@ -64,6 +64,8 @@ class SlackRTM {
 
 		virtual ~SlackRTM();
 
+		void start();
+
 		void sendPing();
 
 		void sendMessage(const std::string &channel, const std::string &message);
@@ -76,7 +78,9 @@ class SlackRTM {
 
 		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
 
+#ifndef LIBTRANSPORT_TEST
 	private:
+#endif
 		void handlePayloadReceived(const std::string &payload);
 		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
 		void handleWebSocketConnected();

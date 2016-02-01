@@ -56,6 +56,7 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	m_rtm = new SlackRTM(component, storageBackend, m_idManager, uinfo);
 	m_rtm->onRTMStarted.connect(boost::bind(&SlackSession::handleRTMStarted, this));
 	m_rtm->onMessageReceived.connect(boost::bind(&SlackSession::handleMessageReceived, this, _1, _2, _3, _4, false));
+	m_rtm->start();
 
 	m_onlineBuddiesTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_onlineBuddiesTimer->onTick.connect(boost::bind(&SlackSession::sendOnlineBuddies, this));

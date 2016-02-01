@@ -18,12 +18,14 @@ endif()
 
 FILE(GLOB HEADERS ../../include/transport/*.h)
 include_directories(../../spectrum/src/frontends/xmpp/)
+include_directories(../../spectrum/src/frontends/slack/)
 
 if (CPPUNIT_FOUND)
 	FILE(GLOB SRC_TEST *.cpp)
-	FILE(GLOB SRC_TEST_FRONTEND ../../spectrum/src/frontends/xmpp/*.cpp)
+	FILE(GLOB SRC_TEST_FRONTEND_XMPP ../../spectrum/src/frontends/xmpp/*.cpp)
+	FILE(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
 
-	ADD_EXECUTABLE(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND})
+	ADD_EXECUTABLE(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
 	set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
 	
 

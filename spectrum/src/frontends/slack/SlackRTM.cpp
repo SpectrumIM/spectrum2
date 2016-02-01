@@ -56,18 +56,20 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackId
 	m_storageBackend->getUserSetting(m_uinfo.id, "bot_token", type, m_token);
 
 	m_api = new SlackAPI(component, m_idManager, m_token);
-
-	std::string url = "https://slack.com/api/rtm.start?";
-	url += "token=" + Util::urlencode(m_token);
-
-	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, boost::bind(&SlackRTM::handleRTMStart, this, _1, _2, _3, _4));
-	req->execute();
 }
 
 SlackRTM::~SlackRTM() {
 	delete m_client;
 	delete m_api;
 	m_pingTimer->stop();
+}
+
+void SlackRTM::start() {
+	std::string url = "https://slack.com/api/rtm.start?";
+	url += "token=" + Util::urlencode(m_token);
+
+	HTTPRequest *req = new HTTPRequest(THREAD_POOL(m_component), HTTPRequest::Get, url, boost::bind(&SlackRTM::handleRTMStart, this, _1, _2, _3, _4));
+	req->execute();
 }
 
 #define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
