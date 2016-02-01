@@ -94,7 +94,15 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		Value instance;
 		instance.SetObject();
 		instance.AddMember("id", id.c_str(), json.GetAllocator());
-		instance.AddMember("name", id.c_str(), json.GetAllocator());
+
+		std::string name = get_config(m_config, id, "identity.name");
+		if (name.empty() || name == "Spectrum 2 Transport") {
+			instance.AddMember("name", id.c_str(), json.GetAllocator());
+		}
+		else {
+			statuses.push_back(name);
+			instance.AddMember("name", statuses.back().c_str(), json.GetAllocator());
+		}
 
 		std::string status = server->send_command(id, "status");
 		if (status.empty()) {
@@ -119,7 +127,9 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		usernames.push_back(username);
 		instance.AddMember("registered", !username.empty(), json.GetAllocator());
 		instance.AddMember("username", usernames.back().c_str(), json.GetAllocator());
-		instance.AddMember("frontend", is_slack(m_config, id) ? "slack" : "xmpp", json.GetAllocator());
+
+		usernames.push_back(get_config(m_config, id, "service.frontend"));
+		instance.AddMember("frontend", usernames.back().c_str(), json.GetAllocator());
 
 		instances.PushBack(instance, json.GetAllocator());
 	}

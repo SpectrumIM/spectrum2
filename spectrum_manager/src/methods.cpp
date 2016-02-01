@@ -501,7 +501,7 @@ static void handleConnected(boost::shared_ptr<Swift::Connection> m_conn, const s
 	}
 }
 
-bool is_slack(ManagerConfig *config, const std::string &jid) {
+std::string get_config(ManagerConfig *config, const std::string &jid, const std::string &key) {
 	path p(CONFIG_STRING(config, "service.config_directory"));
 
 	try {
@@ -528,16 +528,16 @@ bool is_slack(ManagerConfig *config, const std::string &jid) {
 					continue;
 				}
 
-				return CONFIG_STRING(&cfg, "service.frontend") == "slack";
+				return CONFIG_STRING(&cfg, key);
 			}
 		}
 
 	}
 	catch (const filesystem_error& ex) {
-		return false;
+		return "";
 	}
 
-	return false;
+	return "";
 }
 
 void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &jid, const std::string &message) {

@@ -51,7 +51,7 @@ void stop_instances(ManagerConfig *config, const std::string &_jid = "");
 int show_status(ManagerConfig *config);
 
 void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &networkFactories, const std::string &jid, const std::string &message);
-bool is_slack(ManagerConfig *config, const std::string &jid);
+std::string get_config(ManagerConfig *config, const std::string &jid, const std::string &key);
 
 std::vector<std::string> show_list(ManagerConfig *config, bool show = true);
 
