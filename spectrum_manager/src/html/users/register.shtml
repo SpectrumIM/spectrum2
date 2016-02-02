@@ -1,6 +1,6 @@
 <!--#include virtual="/header.shtml" -->
 
-<h2>Register new Spectrum 2 maanger account</h2>
+<h2>Register new Spectrum 2 manager account</h2>
 
 <form action="/api/v1/users/add" class="basic-grey" method="POST"> 
 	<h1>Register user 
