@@ -321,8 +321,8 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 		STORE_STRING(users[i], name);
 		info.name = name;
 
-		STORE_BOOL(users[i], is_primary_owner);
-		info.isPrimaryOwner = is_primary_owner;
+// 		STORE_BOOL(users[i], is_primary_owner);
+		info.isPrimaryOwner = false;
 
 		ret[info.id] = info;
 		LOG4CXX_INFO(logger, info.id << " " << info.name);
