@@ -153,18 +153,18 @@ int start_instances(ManagerConfig *config, const std::string &_jid) {
 
 	try {
 		if (!exists(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
 			return 6;
 		}
 
 		if (!is_directory(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
 			return 7;
 		}
 
 		std::string spectrum2_binary = searchForBinary("spectrum2");
 		if (spectrum2_binary.empty()) {
-			std::cerr << "spectrum2 binary not found in PATH\n";
+			response = "Error: spectrum2 binary not found in PATH\n";
 			return 8;
 		}
 
@@ -198,7 +198,6 @@ int start_instances(ManagerConfig *config, const std::string &_jid) {
 					if (pid == 0) {
 						int rc;
 						response = "Starting " + itr->path().string() + ": OK\n";
-						std::cout << "Starting " << itr->path() << ": OK\n";
 						exec_(spectrum2_binary, itr->path().string(), vhost, rc);
 						if (rv == 0) {
 							rv = rc;
@@ -206,14 +205,13 @@ int start_instances(ManagerConfig *config, const std::string &_jid) {
 					}
 					else {
 						response = "Starting " + itr->path().string() + ": Already started (PID=" + boost::lexical_cast<std::string>(pid) + ")\n";
-						std::cout << "Starting " << itr->path() << ": Already started (PID=" << pid << ")\n";
 					}
 				}
 			}
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "Filesystem error: " << ex.what() << "\n";
+		response = "Error: Filesystem error: " + std::string(ex.what()) + "\n";
 		return 6;
 	}
 	return rv;
@@ -225,13 +223,13 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 
 	try {
 		if (!exists(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(6);
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
+			return;
 		}
 
 		if (!is_directory(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(7);
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
+			return;
 		}
 
 		directory_iterator end_itr;
@@ -289,8 +287,8 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "Filesystem error: " << ex.what() << "\n";
-		exit(5);
+		response = "Error: Filesystem error: " + std::string(ex.what()) + "\n";
+		return;
 	}
 }
 
@@ -302,18 +300,18 @@ int restart_instances(ManagerConfig *config, const std::string &_jid) {
 
 	try {
 		if (!exists(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(6);
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
+			return 1;
 		}
 
 		if (!is_directory(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(7);
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
+			return 2;
 		}
 
 		std::string spectrum2_binary = searchForBinary("spectrum2");
 		if (spectrum2_binary.empty()) {
-			std::cerr << "spectrum2 binary not found in PATH\n";
+			response = "Error: spectrum2 binary not found in PATH\n";
 			return 8;
 		}
 
@@ -381,8 +379,8 @@ int restart_instances(ManagerConfig *config, const std::string &_jid) {
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "Filesystem error: " << ex.what() << "\n";
-		exit(5);
+		response = "Error: Filesystem error: " + std::string(ex.what()) + "\n";
+		return 1;
 	}
 
 	return rv;
@@ -525,12 +523,12 @@ std::string get_config(ManagerConfig *config, const std::string &jid, const std:
 	try {
 		if (!exists(p)) {
 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(6);
+			return "";
 		}
 
 		if (!is_directory(p)) {
 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(7);
+			return "";
 		}
 
 		directory_iterator end_itr;
@@ -564,13 +562,13 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 
 	try {
 		if (!exists(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(6);
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
+			return;
 		}
 
 		if (!is_directory(p)) {
-			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(7);
+			response = "Error: Config directory " + CONFIG_STRING(config, "service.config_directory") + " does not exist\n";
+			return;
 		}
 
 		bool found = false;
@@ -594,28 +592,15 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 				m_conn->onDataRead.connect(boost::bind(&handleDataRead, m_conn, _1));
 				m_conn->onConnectFinished.connect(boost::bind(&handleConnected, m_conn, message, _1));
 				m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(CONFIG_STRING(&cfg, "service.backend_host")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
-
-// 				finished++;
-// 				Swift::Client *client = new Swift::Client(CONFIG_VECTOR(&cfg, "service.admin_jid")[0], CONFIG_STRING(&cfg, "service.admin_password"), &networkFactories);
-// 				client->setAlwaysTrustCertificates();
-// 				client->onConnected.connect(boost::bind(&handleConnected, client, CONFIG_STRING(&cfg, "service.jid")));
-// 				client->onDisconnected.connect(bind(&handleDisconnected, client, _1, CONFIG_STRING(&cfg, "service.jid")));
-// 				client->onMessageReceived.connect(bind(&handleMessageReceived, client, _1, CONFIG_STRING(&cfg, "service.jid")));
-// 				Swift::ClientOptions opt;
-// 				opt.allowPLAINWithoutTLS = true;
-// 				client->connect(opt);
 			}
 		}
 
 		if (!found) {
-			response = "Config file for Spectrum instance with this JID was not found\n";
-			std::cerr << "Config file for Spectrum instance with this JID was not found\n";
-// 			exit(20);
+			response = "Error: Config file for Spectrum instance with this JID was not found\n";
 		}
 	}
 	catch (const filesystem_error& ex) {
-		std::cerr << "Filesystem error: " << ex.what() << "\n";
-		exit(5);
+		response = "Error: Filesystem error: " + std::string(ex.what()) + "\n";
 	}
 }
 
@@ -626,12 +611,12 @@ std::vector<std::string> show_list(ManagerConfig *config, bool show) {
 	try {
 		if (!exists(p)) {
 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(6);
+			return list;
 		}
 
 		if (!is_directory(p)) {
 			std::cerr << "Config directory " << CONFIG_STRING(config, "service.config_directory") << " does not exist\n";
-			exit(7);
+			return list;
 		}
 
 		bool found = false;

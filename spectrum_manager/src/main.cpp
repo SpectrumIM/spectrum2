@@ -29,6 +29,7 @@ int main(int argc, char **argv)
 	std::string config_file;
 	std::vector<std::string> command;
 	boost::program_options::variables_map vm;
+	int ret = 0;
 
 	boost::program_options::options_description desc("Usage: spectrum [OPTIONS] <COMMAND>\n"
 													 "       spectrum [OPTIONS] <instance_JID> <other>\nCommands:\n"
@@ -79,19 +80,35 @@ int main(int argc, char **argv)
 	}
 
 	if (command[0] == "start") {
-		return start_instances(&config);
+		ret = start_instances(&config);
+		if (get_response().find("Error") == 0) {
+			std::cerr << get_response();
+		}
+		return ret;
 	}
 	else if (command[0] == "stop") {
 		stop_instances(&config);
 	}
 	else if (command[0] == "status") {
-		return show_status(&config);
+		ret = show_status(&config);
+		if (get_response().find("Error") == 0) {
+			std::cerr << get_response();
+		}
+		return ret;
 	}
 	else if (command[0] == "list") {
 		std::vector<std::string> list = show_list(&config);
+		if (get_response().find("Error") == 0) {
+			std::cerr << get_response();
+		}
+		return ret;
 	}
 	else if (command[0] == "restart") {
-		return restart_instances(&config);
+		ret = restart_instances(&config);
+		if (get_response().find("Error") == 0) {
+			std::cerr << get_response();
+		}
+		return ret;
 	}
 	else if (command[0] == "server") {
 		Server server(&config, config_file);
@@ -113,14 +130,25 @@ int main(int argc, char **argv)
 		std::string cmd = boost::algorithm::join(command, " ");
 
 		if (cmd == "start") {
-			return start_instances(&config, jid);
+			ret = start_instances(&config, jid);
+			if (get_response().find("Error") == 0) {
+				std::cerr << get_response();
+			}
+			return ret;
 		}
 		else if (cmd == "stop") {
 			stop_instances(&config, jid);
-			return 0;
+			if (get_response().find("Error") == 0) {
+				std::cerr << get_response();
+			}
+			return ret;
 		}
 		else if (cmd == "restart") {
-			return restart_instances(&config, jid);
+			ret = restart_instances(&config, jid);
+			if (get_response().find("Error") == 0) {
+				std::cerr << get_response();
+			}
+			return ret;
 		}
 
 		ask_local_server(&config, networkFactories, jid, cmd);
