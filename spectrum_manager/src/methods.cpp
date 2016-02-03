@@ -106,7 +106,16 @@ int getPort(const std::string &portfile) {
 	if (port.empty())
 		return 0;
 
-	return boost::lexical_cast<int>(port);
+	int iport;
+	try {
+		iport = boost::lexical_cast<int>(port);
+	}
+	catch (const boost::bad_lexical_cast &e) {
+		std::cout << "Error: Error converting port \"" << port << "\" to integer.";
+		return 0;
+	}
+
+	return iport;
 }
 
 int isRunning(const std::string &pidfile) {
@@ -122,10 +131,19 @@ int isRunning(const std::string &pidfile) {
 	if (pid.empty())
 		return 0;
 
-	if (kill(boost::lexical_cast<int>(pid), 0) != 0)
+	int ipid = 0;
+	try {
+		ipid = boost::lexical_cast<int>(pid);
+	}
+	catch (const boost::bad_lexical_cast &e) {
+		std::cout << "Error: Error converting pid \"" << pid << "\" to integer.";
+		return -1;
+	}
+
+	if (kill(ipid, 0) != 0)
 		return 0;
 
-	return boost::lexical_cast<int>(pid);
+	return ipid;
 }
 
 int start_instances(ManagerConfig *config, const std::string &_jid) {
