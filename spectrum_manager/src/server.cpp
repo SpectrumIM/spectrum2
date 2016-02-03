@@ -15,6 +15,8 @@
 
 #define SESSION_TTL 120
 
+DEFINE_LOGGER(logger, "Server");
+
 static struct mg_serve_http_opts s_http_server_opts;
 
 static int has_prefix(const struct mg_str *uri, const char *prefix) {
@@ -285,16 +287,22 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd,
 	Swift::SimpleEventLoop eventLoop;
 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
 
-	ask_local_server(m_config, networkFactories, jid, cmd);
-	struct timeval td_start,td_end;
-	float elapsed = 0; 
-	gettimeofday(&td_start, NULL);
-	gettimeofday(&td_end, NULL);
-
-	time_t started = time(NULL);
-	while(get_response().empty() && td_end.tv_sec - td_start.tv_sec < timeout) {
+	try {
+		ask_local_server(m_config, networkFactories, jid, cmd);
+		struct timeval td_start,td_end;
+		float elapsed = 0; 
+		gettimeofday(&td_start, NULL);
 		gettimeofday(&td_end, NULL);
-		eventLoop.runOnce();
+
+		time_t started = time(NULL);
+		while(get_response().empty() && td_end.tv_sec - td_start.tv_sec < timeout) {
+			gettimeofday(&td_end, NULL);
+			eventLoop.runOnce();
+		}
+	}
+	catch (const boost::bad_any_cast &e) {
+		LOG4CXX_ERROR(logger, "Server::send_command: bad_any_cast: " << e.what());
+		return "";
 	}
 
 	std::string response = get_response();
