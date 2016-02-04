@@ -30,12 +30,14 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(handleDisconnectedReconnect);
 	CPPUNIT_TEST(joinRoomHandleDisconnectedRejoin);
 	CPPUNIT_TEST(joinRoomAfterFlagNotAuthorized);
+	CPPUNIT_TEST(requestVCard);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
 		std::string room;
 		std::string roomNickname;
 		std::string roomPassword;
+		std::string photo;
 		bool readyToConnect;
 		bool disconnected;
 		Swift::Presence::ref changedPresence;
@@ -47,11 +49,14 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			room = "";
 			roomNickname = "";
 			roomPassword = "";
+			photo = "";
 
 			setMeUp();
 			userManager->onUserCreated.connect(boost::bind(&UserTest::handleUserCreated, this, _1));
 			connectUser();
 			received.clear();
+
+			frontend->onVCardUpdated.connect(boost::bind(&UserTest::handleVCardUpdated, this, _1, _2));
 		}
 
 		void tearDown (void) {
@@ -62,6 +67,10 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			userManager->removeAllUsers();
 			tearMeDown();
 		}
+
+	void handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> v) {
+		photo = Swift::byteArrayToString(v->getPhoto());
+	}
 
 	void handleUserCreated(User *user) {
 		user->onReadyToConnect.connect(boost::bind(&UserTest::handleUserReadyToConnect, this, user));
@@ -470,6 +479,36 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		received.clear();
 		handlePresenceJoinRoom();
+	}
+
+	void requestVCard() {
+		User *user = userManager->getUser("user@localhost");
+		user->setStorageBackend(storage);
+
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost");
+		response->setFrom("user@localhost/resource");
+		response->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate("hash")));
+
+		injectPresence(response);
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		Swift::VCard::ref payload1 = getStanza(received[1])->getPayload<Swift::VCard>();
+		CPPUNIT_ASSERT(payload1);
+
+		boost::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
+		vcard->setPhoto(Swift::createByteArray("photo"));
+		injectIQ(Swift::IQ::createResult(getStanza(received[1])->getFrom(), getStanza(received[1])->getTo(), getStanza(received[1])->getID(), vcard));
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(std::string("photo"), photo);
+
+		received.clear();
+		injectPresence(response);
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 	}
 
 };

@@ -76,6 +76,7 @@ class User {
 		UserManager *getUserManager() { return m_userManager; }
 		
 		virtual void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) = 0;
+		virtual void requestVCard() {}
 
 		void setData(void *data) { m_data = data; }
 		void *getData() { return m_data; }
@@ -138,6 +139,10 @@ class User {
 			m_reconnectLimit = limit;
 		}
 
+		void setStorageBackend(StorageBackend *storageBackend) {
+			m_storageBackend = storageBackend;
+		}
+
 		void leaveRoom(const std::string &room);
 
 		boost::signal<void ()> onReadyToConnect;
@@ -172,6 +177,7 @@ class User {
 		std::map<std::string, std::string> m_settings;
 		bool m_cacheMessages;
 		int m_reconnectLimit;
+		StorageBackend *m_storageBackend;
 };
 
 }

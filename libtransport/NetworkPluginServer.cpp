@@ -1842,6 +1842,11 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 
 
 void NetworkPluginServer::handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> v) {
+	if (!v) {
+		LOG4CXX_INFO(logger, user->getJID().toString() << ": Received empty VCard");
+		return;
+	}
+
 	pbnetwork::VCard vcard;
 	vcard.set_username(user->getJID().toBare());
 	vcard.set_buddyname("");

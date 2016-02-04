@@ -26,6 +26,7 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
+#include "Swiften/Queries/IQRouter.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,6 +55,15 @@ XMPPUser::~XMPPUser(){
 		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>());
 #endif
 	}
+
+	if (m_vcardRequests.size() != 0) {
+		LOG4CXX_INFO(logger, m_jid.toString() <<  ": Removing " << m_vcardRequests.size() << " unresponded IQs");
+		BOOST_FOREACH(Swift::GetVCardRequest::ref request, m_vcardRequests) {
+			request->onResponse.disconnect_all_slots();
+			static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()->removeHandler(request);
+		}
+		m_vcardRequests.clear();
+	}
 }
 
 void XMPPUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) {
@@ -71,6 +81,21 @@ void XMPPUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPayl
 		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, boost::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
 #endif
 	}
+}
+
+void XMPPUser::handleVCardReceived(boost::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request) {
+	m_vcardRequests.remove(request);
+	request->onResponse.disconnect_all_slots();
+	m_component->getFrontend()->onVCardUpdated(this, vcard);
+}
+
+void XMPPUser::requestVCard() {
+	LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard");
+
+	Swift::GetVCardRequest::ref request = Swift::GetVCardRequest::create(m_jid, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter());
+	request->onResponse.connect(boost::bind(&XMPPUser::handleVCardReceived, this, _1, _2, request));
+	request->send();
+	m_vcardRequests.push_back(request);
 }
 
 

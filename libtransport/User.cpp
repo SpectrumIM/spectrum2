@@ -34,6 +34,7 @@
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/Elements/CapsInfo.h"
+#include "Swiften/Elements/VCardUpdate.h"
 #include <boost/foreach.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,6 +68,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 
 	m_rosterManager = component->getFrontend()->createRosterManager(this, m_component);
 	m_conversationManager = new ConversationManager(this, m_component);
+
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Created");
 	updateLastActivity();
 }
@@ -170,6 +172,21 @@ void User::leaveRoom(const std::string &room) {
 
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
+
+	if (m_storageBackend) {
+		boost::shared_ptr<Swift::VCardUpdate> vcardUpdate = presence->getPayload<Swift::VCardUpdate>();
+		if (vcardUpdate) {
+			std::string value = "";
+			int type = (int) TYPE_STRING;
+			m_storageBackend->getUserSetting(m_userInfo.id, "photohash", type, value);
+			if (value != vcardUpdate->getPhotoHash()) {
+				LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard")
+				m_storageBackend->updateUserSetting(m_userInfo.id, "photohash", vcardUpdate->getPhotoHash());
+				requestVCard();
+			}
+		}
+	}
+
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {

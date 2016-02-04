@@ -29,6 +29,7 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Network/Connection.h"
+#include "Swiften/VCards/GetVCardRequest.h"
 
 namespace Transport {
 
@@ -54,15 +55,17 @@ class XMPPUser : public User {
 
 		void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e);
 
-
+		void requestVCard();
 
 	private:
 		void onConnectingTimeout();
+		void handleVCardReceived(boost::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
 
 		Swift::JID m_jid;
 		Component *m_component;
 		UserManager *m_userManager;
 		UserInfo m_userInfo;
+		std::list <Swift::GetVCardRequest::ref> m_vcardRequests;
 };
 
 }
