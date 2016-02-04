@@ -292,6 +292,10 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			conv->setNickname(presence->getTo().getResource());
 			conv->addJID(presence->getFrom());
 
+			if (presence->getTo().toString().find("\\40") != std::string::npos) {
+				conv->setMUCEscaping(true);
+			}
+
 			onRawPresenceReceived(presence);
 			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
 

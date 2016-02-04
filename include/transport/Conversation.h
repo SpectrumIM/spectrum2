@@ -151,6 +151,8 @@ class Conversation {
 
 		void sendCachedMessages(const Swift::JID &to = Swift::JID());
 
+		void setMUCEscaping(bool mucEscaping);
+
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");
 		void cacheMessage(boost::shared_ptr<Swift::Message> &message);
@@ -165,6 +167,7 @@ class Conversation {
 		std::list<Swift::JID> m_jids;
 		bool m_sentInitialPresence;
 		bool m_nicknameChanged;
+		bool m_mucEscaping;
 
 		// TODO: Move this to some extra class to cache the most used
 		// rooms across different accounts. Just now if we have 10 users

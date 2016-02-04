@@ -45,6 +45,7 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 	m_jid = m_conversationManager->getUser()->getJID().toBare();
 	m_sentInitialPresence = false;
 	m_nicknameChanged = false;
+	m_mucEscaping = false;
 
 	if (CONFIG_BOOL_DEFAULTED(conversationManager->getComponent()->getConfig(), "features.rawxml", false)) {
 		m_sentInitialPresence = true;
@@ -54,11 +55,16 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 Conversation::~Conversation() {
 }
 
+void Conversation::setMUCEscaping(bool mucEscaping) {
+	LOG4CXX_INFO(logger, m_jid.toString() << ": Setting MUC escaping to " << mucEscaping);
+	m_mucEscaping = mucEscaping;
+}
+
 void Conversation::destroyRoom() {
 	if (m_muc) {
 		Swift::Presence::ref presence = Swift::Presence::create();
 		std::string legacyName = m_legacyName;
-		if (legacyName.find_last_of("@") != std::string::npos) {
+		if (!m_mucEscaping && legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
 		legacyName = Swift::JID::getEscapedNode(legacyName);
@@ -180,7 +186,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 			}
 			else {
 				std::string legacyName = m_room;
-				if (legacyName.find_last_of("@") != std::string::npos) {
+				if (!m_mucEscaping && legacyName.find_last_of("@") != std::string::npos) {
 					legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 				}
 				legacyName = Swift::JID::getEscapedNode(legacyName);
@@ -190,7 +196,7 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 	}
 	else {
 		std::string legacyName = m_legacyName;
-		if (legacyName.find_last_of("@") != std::string::npos) {
+		if (!m_mucEscaping && legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
 		legacyName = Swift::JID::getEscapedNode(legacyName);
@@ -251,7 +257,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 	Swift::Presence::ref presence = Swift::Presence::create();
 	std::string legacyName = m_legacyName;
 	if (m_muc) {
-		if (legacyName.find_last_of("@") != std::string::npos) {
+		if (!m_mucEscaping && legacyName.find_last_of("@") != std::string::npos) {
 			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
 		}
 		legacyName = Swift::JID::getEscapedNode(legacyName);
