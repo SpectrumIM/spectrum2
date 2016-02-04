@@ -107,7 +107,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 }
 
 bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
-	if (!to.getNode().empty()) {
+	if (!to.getNode().empty() && from.toBare().toString() != to.toBare().toString()) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": Tried to set VCard of somebody else");
 		return false;
 	}

@@ -62,6 +62,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_resources = 0;
 	m_reconnectCounter = 0;
 	m_reconnectLimit = 3;
+	m_storageBackend = NULL;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
 	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
@@ -173,17 +174,19 @@ void User::leaveRoom(const std::string &room) {
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 
-	if (m_storageBackend) {
-		boost::shared_ptr<Swift::VCardUpdate> vcardUpdate = presence->getPayload<Swift::VCardUpdate>();
-		if (vcardUpdate) {
-			std::string value = "";
-			int type = (int) TYPE_STRING;
+	boost::shared_ptr<Swift::VCardUpdate> vcardUpdate = presence->getPayload<Swift::VCardUpdate>();
+	if (vcardUpdate) {
+		std::string value = "";
+		int type = (int) TYPE_STRING;
+		if (m_storageBackend) {
 			m_storageBackend->getUserSetting(m_userInfo.id, "photohash", type, value);
-			if (value != vcardUpdate->getPhotoHash()) {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard")
+		}
+		if (value != vcardUpdate->getPhotoHash()) {
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard")
+			if (m_storageBackend) {
 				m_storageBackend->updateUserSetting(m_userInfo.id, "photohash", vcardUpdate->getPhotoHash());
-				requestVCard();
 			}
+			requestVCard();
 		}
 	}
 

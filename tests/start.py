@@ -46,6 +46,8 @@ class BaseTest:
 		responder.register_plugin('xep_0030')  # Service Discovery
 		responder.register_plugin('xep_0045')  # Multi-User Chat
 		responder.register_plugin('xep_0199')  # XMPP Ping
+		responder.register_plugin('xep_0153')
+		responder.register_plugin('xep_0054')
 		responder['feature_mechanisms'].unencrypted_plain = True
 
 		to = ("127.0.0.1", 5223)
@@ -63,6 +65,8 @@ class BaseTest:
 		client.register_plugin('xep_0030')  # Service Discovery
 		client.register_plugin('xep_0045')  # Multi-User Chat
 		client.register_plugin('xep_0199')  # XMPP Ping
+		client.register_plugin('xep_0153')
+		client.register_plugin('xep_0054')
 		client['feature_mechanisms'].unencrypted_plain = True
 
 		time.sleep(2)
