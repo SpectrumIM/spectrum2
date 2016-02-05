@@ -996,11 +996,7 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 
 	m_component->getFrontend()->clearRoomList();
 	for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
-		std::string legacyName = payload.room(i);
-		if (legacyName.find_last_of("@") != std::string::npos) {
-			legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
-		}
-		m_component->getFrontend()->addRoomToRoomList(Swift::JID::getEscapedNode(legacyName) + "@" + m_component->getJID().toString(), payload.name(i));
+		m_component->getFrontend()->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
 	}
 }
 #if HAVE_SWIFTEN_3
