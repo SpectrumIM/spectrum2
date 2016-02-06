@@ -1080,24 +1080,24 @@ void NetworkPluginServer::handleElement(boost::shared_ptr<Swift::Element> elemen
 		return;
 	}
 
-	// TODO: FIX TO MAKE RAW XML BACKENDS WORKING AGAIN.
-// 	boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
-// 	if (iq) {
-// 		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
-// 			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
-// 			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
-// 		}
-// 		else {
-// 			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
-// 			if (highest) {
-// 			    iq->setTo(highest->getFrom());
-// 			} else {
-// 			    iq->setTo(user->getJID());
-// 			}
-// 		}
-// 		m_component->getFrontend()->sendIQ(iq);
-// 		return;
-// 	}
+	// TODO: Move m_id2resource in User and clean it up
+	boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
+	if (iq) {
+		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
+			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
+			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
+		}
+		else {
+			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
+			if (highest) {
+			    iq->setTo(highest->getFrom());
+			} else {
+			    iq->setTo(user->getJID());
+			}
+		}
+		m_component->getFrontend()->sendIQ(iq);
+		return;
+	}
 }
 
 void NetworkPluginServer::handleRawXML(const std::string &xml) {

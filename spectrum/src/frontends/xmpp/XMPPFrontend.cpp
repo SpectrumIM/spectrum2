@@ -299,6 +299,7 @@ bool XMPPFrontend::handleIQ(boost::shared_ptr<Swift::IQ> iq) {
 
 void XMPPFrontend::handleBackendConfigChanged() {
 	if (!m_rawXML && CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
+		LOG4CXX_INFO(logger, "Enabled Raw XML mode");
 		m_rawXML = true;
 		m_iqRouter->addHandler(this);
 	}

@@ -44,6 +44,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleConvMessageAckPayload);
 	CPPUNIT_TEST(handleRawXML);
 	CPPUNIT_TEST(handleRawXMLSplit);
+	CPPUNIT_TEST(handleRawXMLIQ);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST(benchmarkSendUnavailablePresence);
@@ -51,12 +52,20 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	public:
 		NetworkPluginServer *serv;
+		NetworkPluginServer::Backend backend;
+		Swift::SafeByteArray protobufData;
 
 		void setUp (void) {
 			setMeUp();
 
 			serv = new NetworkPluginServer(component, cfg, userManager, NULL);
 			connectUser();
+			User *user = userManager->getUser("user@localhost");
+			user->setData(&backend);
+			boost::shared_ptr<Swift::Connection> client1 = factories->getConnectionFactory()->createConnection();
+			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.connect(boost::bind(&NetworkPluginServerTest::handleDataSent, this, _1));
+			backend.connection = client1;
+
 			received.clear();
 		}
 
@@ -65,6 +74,10 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			disconnectUser();
 			delete serv;
 			tearMeDown();
+		}
+
+		void handleDataSent(const Swift::SafeByteArray &data) {
+			protobufData = data;
 		}
 
 		void handleConvMessageAckPayload() {
@@ -310,6 +323,30 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
+		}
+
+		void handleRawXMLIQ() {
+			cfg->updateBackendConfig("[features]\nrawxml=1\n");
+			User *user = userManager->getUser("user@localhost");
+			std::vector<std::string> grp;
+			grp.push_back("group1");
+			LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1@domain.tld", "Buddy 1", grp, BUDDY_JID_ESCAPING);
+			user->getRosterManager()->setBuddy(buddy);
+			received.clear();
+
+			std::string xml = "<iq from='buddy1@domain.tld/res' to='user@localhost' type='get' id='1'/>";
+			serv->handleRawXML(xml);
+
+			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[0])));
+			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Get, dynamic_cast<Swift::IQ *>(getStanza(received[0]))->getType());
+
+			injectIQ(Swift::IQ::createResult(getStanza(received[0])->getFrom(), getStanza(received[0])->getTo(), getStanza(received[0])->getID()));
+			loop->processEvents();
+			
+			pbnetwork::WrapperMessage wrapper;
+			wrapper.ParseFromArray(&protobufData[4], protobufData.size());
+			CPPUNIT_ASSERT_EQUAL(pbnetwork::WrapperMessage_Type_TYPE_RAW_XML, wrapper.type());
 		}
 };
 
