@@ -517,6 +517,28 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void handleRoomSubjectChangedRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
+			PurpleAccount *account = m_sessions[user];
+			if (account) {
+				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
+				if (!conv) {
+					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+					if (!conv) {
+						conv = purple_conversation_new_wrapped(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+					}
+				}
+
+				PurplePlugin *prpl = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(account));
+				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
+				bool support_set_chat_topic = prpl_info && prpl_info->set_chat_topic;
+				if (support_set_chat_topic) {
+					prpl_info->set_chat_topic(purple_account_get_connection_wrapped(account),
+											  purple_conv_chat_get_id(PURPLE_CONV_CHAT(conv)),
+											  message.c_str());
+				}
+			}
+		}
+
 		void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
@@ -1767,6 +1789,11 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 	np->handleAttention(np->m_accounts[account], w, "");
 }
 
+static void conv_chat_topic_changed(PurpleConversation *conv, const char *old, const char *topic) {
+	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
+	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic, "Spectrum 2");
+}
+
 static bool initPurple() {
 	bool ret;
 
@@ -1844,7 +1871,7 @@ static bool initPurple() {
 // 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-signed-off", &blist_handle,PURPLE_CALLBACK(buddySignedOff), NULL);
 // 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-status-changed", &blist_handle,PURPLE_CALLBACK(buddyStatusChanged), NULL);
 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
-// 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
+		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
 		static int xfer_handle;
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-start", &xfer_handle, PURPLE_CALLBACK(fileSendStart), NULL);
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-start", &xfer_handle, PURPLE_CALLBACK(fileRecvStart), NULL);
