@@ -22,6 +22,7 @@
 #include "transport/User.h"
 #include "transport/RosterManager.h"
 #include "transport/Transport.h"
+#include "transport/Frontend.h"
 
 namespace Transport {
 
@@ -101,7 +102,7 @@ void LocalBuddy::setGroups(const std::vector<std::string> &groups) {
 }
 
 bool LocalBuddy::getStatus(Swift::StatusShow &status, std::string &statusMessage) {
-	if (getRosterManager()->getUser()->getComponent()->isRawXMLEnabled()) {
+	if (getRosterManager()->getUser()->getComponent()->getFrontend()->isRawXMLEnabled()) {
 		return false;
 	}
 	status = m_status;

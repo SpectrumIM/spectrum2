@@ -96,6 +96,8 @@ class Frontend {
 		virtual std::string getRegistrationFields() { return "Jabber ID\n3rd-party network username\n3rd-party network password"; }
 		virtual bool handleAdminMessage(Swift::Message::ref /*message*/) { return false; }
 
+		virtual bool isRawXMLEnabled() { return false; }
+
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
 		boost::signal<void (User *, boost::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyUpdated;

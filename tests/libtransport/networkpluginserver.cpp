@@ -42,8 +42,8 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleBuddyChangedPayloadUserContactInRoster);
 	CPPUNIT_TEST(handleMessageHeadline);
 	CPPUNIT_TEST(handleConvMessageAckPayload);
-// 	CPPUNIT_TEST(handleRawXML);
-// 	CPPUNIT_TEST(handleRawXMLSplit);
+	CPPUNIT_TEST(handleRawXML);
+	CPPUNIT_TEST(handleRawXMLSplit);
 
 	CPPUNIT_TEST(benchmarkHandleBuddyChangedPayload);
 	CPPUNIT_TEST(benchmarkSendUnavailablePresence);

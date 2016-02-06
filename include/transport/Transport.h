@@ -101,10 +101,6 @@ namespace Transport {
 
 			Config *getConfig() { return m_config; }
 
-			bool isRawXMLEnabled() {
-				return m_rawXML;
-			}
-
 			/// It's emitted only for presences addressed to transport itself
 			/// (for example to="j2j.domain.tld") and for presences comming to
 			/// MUC (for example to="#chat%irc.freenode.org@irc.domain.tld")
@@ -142,7 +138,6 @@ namespace Transport {
 			Swift::JID m_jid;
 			Factory *m_factory;
 			Swift::EventLoop *m_loop;
-			bool m_rawXML;
 			Frontend *m_frontend;
 
 		friend class User;

@@ -43,7 +43,6 @@ Component::Component(Frontend *frontend, Swift::EventLoop *loop, Swift::NetworkF
 	m_factory = factory;
 	m_loop = loop;
 	m_userRegistry = userRegistry;
-	m_rawXML = false;
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
 	m_factories = factories;
