@@ -5,6 +5,7 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
+#include <Swiften/Elements/VCardUpdate.h>
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
@@ -28,6 +29,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleParticipantChangedEscaped);
 	CPPUNIT_TEST(handleParticipantChangedEscaped2);
 	CPPUNIT_TEST(handleParticipantChangedTwoResources);
+	CPPUNIT_TEST(handleParticipantChangedIconHash);
 	CPPUNIT_TEST(handlePMFromXMPP);
 	CPPUNIT_TEST(handleGroupchatRemoved);
 	CPPUNIT_TEST(handleNicknameConflict);
@@ -593,6 +595,32 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::MUCUserPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+	}
+
+	void handleParticipantChangedIconHash() {
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "19:70027094a9c84c518535a610766bed65@thread.skype", true);
+		conv->setMUCEscaping(true);
+		
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+
+		// normal presence
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message", "", "hash");
+		loop->processEvents();
+
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("19\\3a70027094a9c84c518535a610766bed65\\40thread.skype@localhost/anotheruser"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+
+		Swift::VCardUpdate::ref payload = getStanza(received[0])->getPayload<Swift::VCardUpdate>();
+		CPPUNIT_ASSERT(payload);
 	}
 
 	void handleParticipantChangedTwoResources() {

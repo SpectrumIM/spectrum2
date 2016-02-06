@@ -34,6 +34,7 @@
 #include "Swiften/Elements/MUCUserPayload.h"
 #include "Swiften/Elements/Delay.h"
 #include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/VCardUpdate.h"
 
 namespace Transport {
 	
@@ -252,7 +253,7 @@ void Conversation::sendCachedMessages(const Swift::JID &to) {
 	m_cachedMessages.clear();
 }
 
-Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname) {
+Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname, const std::string &iconhash) {
 	std::string nickname = nick;
 	Swift::Presence::ref presence = Swift::Presence::create();
 	std::string legacyName = m_legacyName;
@@ -330,6 +331,10 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 		p->addStatusCode(c);
 		presence->setType(Swift::Presence::Unavailable);
 	}
+
+	if (!iconhash.empty()) {
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (iconhash)));
+	}
 	
 	p->addItem(item);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
@@ -350,8 +355,8 @@ void Conversation::handleRawPresence(Swift::Presence::ref presence) {
 	m_participants[presence->getFrom().getResource()] = presence;
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname) {
-	Swift::Presence::ref presence = generatePresence(nick, flag, status, statusMessage, newname);
+void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname, const std::string &iconhash) {
+	Swift::Presence::ref presence = generatePresence(nick, flag, status, statusMessage, newname, iconhash);
 
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		m_participants.erase(nick);
@@ -366,7 +371,7 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 	}
 	if (!newname.empty()) {
-		handleParticipantChanged(newname, flag, status, statusMessage);
+		handleParticipantChanged(newname, flag, status, statusMessage, "", iconhash);
 	}
 
 	if (m_sentInitialPresence && m_subject) {

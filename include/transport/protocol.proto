@@ -110,6 +110,7 @@ message Participant {
 	required StatusType status = 5;
 	optional string statusMessage = 6;
 	optional string newname = 7;
+	optional string iconHash = 8;
 }
 
 message VCard {

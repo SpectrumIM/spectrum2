@@ -95,6 +95,10 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	}
 
 	name = Buddy::JIDToLegacyName(to_, user);
+	// If the resource is not empty, it is probably VCard for room participant
+	if (!to.getResource().empty()) {
+		name += "/" + to.getResource();
+	}
 
 	LOG4CXX_INFO(logger, from.toBare().toString() << ": Requested VCard of " << name);
 

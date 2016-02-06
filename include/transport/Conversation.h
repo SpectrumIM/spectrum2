@@ -81,7 +81,7 @@ class Conversation {
 		/// \param status Current status of this participant.
 		/// \param statusMessage Current status message of this participant.
 		/// \param newname If participant was renamed, this variable contains his new name.
-		void handleParticipantChanged(const std::string &nickname, ParticipantFlag flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "");
+		void handleParticipantChanged(const std::string &nickname, ParticipantFlag flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "", const std::string &iconhash = "");
 
 		/// Sets XMPP user nickname in MUC rooms.
 
@@ -154,7 +154,7 @@ class Conversation {
 		void setMUCEscaping(bool mucEscaping);
 
 	private:
-		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "");
+		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "", const std::string &iconhash = "");
 		void cacheMessage(boost::shared_ptr<Swift::Message> &message);
 
 	private:
