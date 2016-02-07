@@ -522,16 +522,14 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (account) {
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
-					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
-					if (!conv) {
-						conv = purple_conversation_new_wrapped(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
-					}
+					LOG4CXX_ERROR(logger, user << ": Cannot set room subject. There is now conversation " << legacyName);
 				}
 
 				PurplePlugin *prpl = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(account));
 				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(prpl);
 				bool support_set_chat_topic = prpl_info && prpl_info->set_chat_topic;
 				if (support_set_chat_topic) {
+					LOG4CXX_INFO(logger, user << ": Setting room subject for room " << legacyName);
 					prpl_info->set_chat_topic(purple_account_get_connection_wrapped(account),
 											  purple_conv_chat_get_id(PURPLE_CONV_CHAT(conv)),
 											  message.c_str());
@@ -1799,9 +1797,9 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 	np->handleAttention(np->m_accounts[account], w, "");
 }
 
-static void conv_chat_topic_changed(PurpleConversation *conv, const char *old, const char *topic) {
+static void conv_chat_topic_changed(PurpleConversation *conv, const char *who, const char *topic) {
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
-	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic, "Spectrum 2");
+	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic ? topic : "", who ? who : "Spectrum 2");
 }
 
 static bool initPurple() {
