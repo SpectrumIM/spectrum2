@@ -704,6 +704,14 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (room + "/" + nickname).c_str());
 				} else {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
+					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
+					const char *disp;
+					if ((disp = purple_connection_get_display_name(account->gc))) {
+						handleRoomNicknameChanged(np->m_accounts[account], room, disp);
+					}
+					else {
+						handleRoomNicknameChanged(np->m_accounts[account], room, purple_account_get_username(account));
+					}
 				}
 			}
 
