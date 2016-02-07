@@ -523,6 +523,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
 				if (!conv) {
 					LOG4CXX_ERROR(logger, user << ": Cannot set room subject. There is now conversation " << legacyName);
+					return;
 				}
 
 				PurplePlugin *prpl = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(account));
