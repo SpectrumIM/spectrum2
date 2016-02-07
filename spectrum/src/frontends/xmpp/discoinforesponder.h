@@ -37,10 +37,11 @@
 namespace Transport {
 
 class Config;
+class UserManager;
 
 class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 	public:
-		DiscoInfoResponder(Swift::IQRouter *router, Config *config);
+		DiscoInfoResponder(Swift::IQRouter *router, Config *config, UserManager *userManager);
 		~DiscoInfoResponder();
 
 		void setTransportFeatures(std::list<std::string> &features);
@@ -70,6 +71,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 #if HAVE_SWIFTEN_3
 		boost::shared_ptr<Swift::CryptoProvider> crypto;
 #endif
+		UserManager *m_userManager;
 };
 
 }

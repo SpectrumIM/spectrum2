@@ -31,7 +31,6 @@
 #include "transport/Logging.h"
 #include "transport/Config.h"
 #include "transport/Transport.h"
-#include "discoitemsresponder.h"
 #include "storageparser.h"
 #ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
@@ -63,6 +62,7 @@
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RosterPayload.h"
+#include "discoitemsresponder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 
 using namespace Swift;
@@ -81,6 +81,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_server = NULL;
 	m_rawXML = false;
 	m_config = transport->getConfig();
+	m_userManager = NULL;
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
 	m_config->onBackendConfigUpdated.connect(boost::bind(&XMPPFrontend::handleBackendConfigChanged, this));
@@ -173,9 +174,6 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 	m_stanzaChannel->onPresenceReceived.connect(bind(&XMPPFrontend::handleGeneralPresence, this, _1));
 	m_stanzaChannel->onMessageReceived.connect(bind(&XMPPFrontend::handleMessage, this, _1));
-
-	m_discoItemsResponder = new DiscoItemsResponder(transport);
-	m_discoItemsResponder->start();
 }
 
 XMPPFrontend::~XMPPFrontend() {
@@ -200,16 +198,16 @@ void XMPPFrontend::handleMessage(boost::shared_ptr<Swift::Message> message) {
 
 
 void XMPPFrontend::clearRoomList() {
-	m_discoItemsResponder->clearRooms();
+	static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->clearRooms();
 }
 
 void XMPPFrontend::addRoomToRoomList(const std::string &handle, const std::string &name) {
-	m_discoItemsResponder->addRoom(handle, name);
+	static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->addRoom(handle, name);
 }
 
 void XMPPFrontend::sendPresence(Swift::Presence::ref presence) {
 	if (!presence->getFrom().getNode().empty()) {
-		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo(m_discoItemsResponder->getBuddyCapsInfo())));
+		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::CapsInfo(static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->getBuddyCapsInfo())));
 	}
 
 	m_stanzaChannel->sendPresence(presence);
@@ -277,7 +275,8 @@ User *XMPPFrontend::createUser(const Swift::JID &jid, UserInfo &userInfo, Compon
 }
 
 UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
-	return new XMPPUserManager(component, userRegistry, storageBackend);
+	m_userManager = new XMPPUserManager(component, userRegistry, storageBackend);
+	return m_userManager;
 }
 
 bool XMPPFrontend::handleIQ(boost::shared_ptr<Swift::IQ> iq) {

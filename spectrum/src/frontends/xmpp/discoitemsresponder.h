@@ -29,10 +29,11 @@ namespace Transport {
 
 class Component;
 class DiscoInfoResponder;
+class UserManager;
 
 class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 	public:
-		DiscoItemsResponder(Component *component);
+		DiscoItemsResponder(Component *component, UserManager *userManager);
 		~DiscoItemsResponder();
 
 		Swift::CapsInfo &getBuddyCapsInfo();
@@ -52,6 +53,7 @@ class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 		boost::shared_ptr<Swift::DiscoItems> m_commands;
 		boost::shared_ptr<Swift::DiscoItems> m_rooms;
 		DiscoInfoResponder *m_discoInfoResponder;
+		UserManager *m_userManager;
 };
 
 }

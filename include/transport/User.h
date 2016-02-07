@@ -76,6 +76,8 @@ class User {
 		UserManager *getUserManager() { return m_userManager; }
 		
 		virtual void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) = 0;
+		virtual void clearRoomList() {}
+		virtual void addRoomToRoomList(const std::string &handle, const std::string &name) {}
 		virtual void requestVCard() {}
 
 		void setData(void *data) { m_data = data; }

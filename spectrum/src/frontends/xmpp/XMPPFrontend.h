@@ -47,7 +47,6 @@ namespace Transport {
 	class UserRegistry;
 	class Frontend;
 	class Config;
-	class DiscoItemsResponder;
 	class VCardResponder;
 
 	class XMPPFrontend : public Frontend, Swift::IQHandler {
@@ -95,10 +94,6 @@ namespace Transport {
 				return m_rawXML;
 			}
 
-			DiscoItemsResponder *getDiscoItemsResponder() {
-				return m_discoItemsResponder;
-			}
-
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);
@@ -121,13 +116,13 @@ namespace Transport {
 			Swift::CapsMemoryStorage *m_capsMemoryStorage;
 			Swift::StanzaChannel *m_stanzaChannel;
 			Swift::IQRouter *m_iqRouter;
-			DiscoItemsResponder *m_discoItemsResponder;
 			VCardResponder *m_vcardResponder;
 			
 			Config* m_config;
 			Swift::JID m_jid;
 			bool m_rawXML;
 			Component *m_transport;
+			UserManager *m_userManager;
 
 		friend class XMPPUser;
 		friend class UserRegistration;

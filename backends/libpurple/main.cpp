@@ -1599,7 +1599,17 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;	
 			m_rooms.push_back(room->name);
 		}
-		np->handleRoomList("", m_rooms, m_rooms);
+
+		std::string user = "";
+		if (list->account) {
+			user = np->m_accounts[list->account];
+		}
+
+		LOG4CXX_INFO(logger, "RoomList is fetched for user " << user);
+		np->handleRoomList(user, m_rooms, m_rooms);
+	}
+	else {
+		LOG4CXX_INFO(logger, "RoomList is still in progress");
 	}
 }
 

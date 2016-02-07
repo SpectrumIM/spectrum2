@@ -376,6 +376,8 @@ void NetworkPlugin::handleRoomList(const std::string &user, const std::list<std:
 		d.add_name(*it);
 	}
 
+	d.set_user(user);
+
 	std::string message;
 	d.SerializeToString(&message);
 

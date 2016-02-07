@@ -994,9 +994,23 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 		return;
 	}
 
-	m_component->getFrontend()->clearRoomList();
-	for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
-		m_component->getFrontend()->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+	if (!payload.user().empty()) {
+		User *user = m_userManager->getUser(payload.user());
+		if (!user) {
+			LOG4CXX_ERROR(logger, "Room list payload received for unknown user " << payload.user());
+			return;
+		}
+
+		user->clearRoomList();
+		for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
+			user->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+		}
+	}
+	else {
+		m_component->getFrontend()->clearRoomList();
+		for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
+			m_component->getFrontend()->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+		}
 	}
 }
 #if HAVE_SWIFTEN_3

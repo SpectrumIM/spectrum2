@@ -30,6 +30,7 @@
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Network/Connection.h"
 #include "Swiften/VCards/GetVCardRequest.h"
+#include "Swiften/Elements/DiscoItems.h"
 
 namespace Transport {
 
@@ -57,6 +58,14 @@ class XMPPUser : public User {
 
 		void requestVCard();
 
+		void clearRoomList();
+
+		void addRoomToRoomList(const std::string &handle, const std::string &name);
+
+		boost::shared_ptr<Swift::DiscoItems> getRoomList() {
+			return m_rooms;
+		}
+
 	private:
 		void onConnectingTimeout();
 		void handleVCardReceived(boost::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
@@ -66,6 +75,7 @@ class XMPPUser : public User {
 		UserManager *m_userManager;
 		UserInfo m_userInfo;
 		std::list <Swift::GetVCardRequest::ref> m_vcardRequests;
+		boost::shared_ptr<Swift::DiscoItems> m_rooms;
 };
 
 }

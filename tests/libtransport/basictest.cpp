@@ -55,7 +55,7 @@ void BasicTest::setMeUp (void) {
 
 	userManager = frontend->createUserManager(component, userRegistry, storage);
 
-	itemsResponder = frontend->getDiscoItemsResponder();
+	itemsResponder = static_cast<XMPPUserManager *>(userManager)->getDiscoItemsResponder();
 
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();

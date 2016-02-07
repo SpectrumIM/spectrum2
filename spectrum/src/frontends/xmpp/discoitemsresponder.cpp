@@ -29,6 +29,8 @@
 #include "discoinforesponder.h"
 #include "XMPPFrontend.h"
 #include "transport/Frontend.h"
+#include "transport/UserManager.h"
+#include "XMPPUser.h"
 
 using namespace Swift;
 using namespace boost;
@@ -37,14 +39,16 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "DiscoItemsResponder");
 
-DiscoItemsResponder::DiscoItemsResponder(Component *component) : Swift::GetResponder<DiscoItems>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()) {
+DiscoItemsResponder::DiscoItemsResponder(Component *component, UserManager *userManager) : Swift::GetResponder<DiscoItems>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()) {
 	m_component = component;
 	m_commands = boost::shared_ptr<DiscoItems>(new DiscoItems());
 	m_commands->setNode("http://jabber.org/protocol/commands");
 
 	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
-	m_discoInfoResponder = new DiscoInfoResponder(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter(), component->getConfig());
+	m_discoInfoResponder = new DiscoInfoResponder(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter(), component->getConfig(), userManager);
 	m_discoInfoResponder->start();
+
+	m_userManager = userManager;
 }
 
 DiscoItemsResponder::~DiscoItemsResponder() {
@@ -80,7 +84,21 @@ bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::
 		sendResponse(from, id, m_commands);
 	}
 	else if (to.getNode().empty()) {
-		sendResponse(from, id, m_rooms);
+		XMPPUser *user = static_cast<XMPPUser *>(m_userManager->getUser(from.toBare().toString()));
+		if (!user) {
+			sendResponse(from, id, m_rooms);
+			return true;
+		}
+
+		boost::shared_ptr<DiscoItems> rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+		BOOST_FOREACH(const DiscoItems::Item &item, m_rooms->getItems()) {
+			rooms->addItem(item);
+		}
+		BOOST_FOREACH(const DiscoItems::Item &item, user->getRoomList()->getItems()) {
+			rooms->addItem(item);
+		}
+
+		sendResponse(from, id, rooms);
 	}
 	else {
 		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));

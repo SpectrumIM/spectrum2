@@ -89,6 +89,7 @@ message Room {
 message RoomList {
 	repeated string room = 1;
 	repeated string name = 2;
+	optional string user = 3;
 }
 
 enum ParticipantFlag {

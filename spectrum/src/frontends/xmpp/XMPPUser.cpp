@@ -45,6 +45,7 @@ XMPPUser::XMPPUser(const Swift::JID &jid, UserInfo &userInfo, Component *compone
 	m_component = component;
 	m_userManager = userManager;
 	m_userInfo = userInfo;
+	m_rooms = boost::shared_ptr<Swift::DiscoItems>(new Swift::DiscoItems());
 }
 
 XMPPUser::~XMPPUser(){
@@ -96,6 +97,14 @@ void XMPPUser::requestVCard() {
 	request->onResponse.connect(boost::bind(&XMPPUser::handleVCardReceived, this, _1, _2, request));
 	request->send();
 	m_vcardRequests.push_back(request);
+}
+
+void XMPPUser::clearRoomList() {
+	m_rooms = boost::shared_ptr<Swift::DiscoItems>(new Swift::DiscoItems());
+}
+
+void XMPPUser::addRoomToRoomList(const std::string &handle, const std::string &name) {
+	m_rooms->addItem(Swift::DiscoItems::Item(name, handle));
 }
 
 

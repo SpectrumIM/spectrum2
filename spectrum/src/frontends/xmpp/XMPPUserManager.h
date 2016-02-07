@@ -40,6 +40,7 @@ class GatewayResponder;
 class AdHocManager;
 class SettingsAdHocCommandFactory;
 class RosterResponder;
+class DiscoItemsResponder;
 
 class XMPPUserManager : public UserManager {
 	public:
@@ -50,6 +51,10 @@ class XMPPUserManager : public UserManager {
 		virtual void sendVCard(unsigned int id, Swift::VCard::ref vcard);
 
 		UserRegistration *getUserRegistration();
+
+		DiscoItemsResponder *getDiscoItemsResponder() {
+			return m_discoItemsResponder;
+		}
 
 	private:
 		void handleVCardRequired(User *, const std::string &name, unsigned int id);
@@ -63,6 +68,7 @@ class XMPPUserManager : public UserManager {
 		AdHocManager *m_adHocManager;
 		SettingsAdHocCommandFactory *m_settings;
 		RosterResponder *m_rosterResponder;
+		DiscoItemsResponder *m_discoItemsResponder;
 };
 
 }

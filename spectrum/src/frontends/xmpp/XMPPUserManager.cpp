@@ -32,6 +32,7 @@
 #include "adhocmanager.h"
 #include "settingsadhoccommand.h"
 #include "RosterResponder.h"
+#include "discoitemsresponder.h"
 
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Elements/StreamError.h"
@@ -82,7 +83,10 @@ XMPPUserManager::XMPPUserManager(Component *component, UserRegistry *userRegistr
 	m_rosterResponder = new RosterResponder(frontend->getIQRouter(), this);
 	m_rosterResponder->start();
 
-	m_adHocManager = new AdHocManager(component, frontend->getDiscoItemsResponder(), this, storageBackend);
+	m_discoItemsResponder = new DiscoItemsResponder(component, this);
+	m_discoItemsResponder->start();
+
+	m_adHocManager = new AdHocManager(component, m_discoItemsResponder, this, storageBackend);
 	m_adHocManager->start();
 
 	SettingsAdHocCommandFactory *m_settings = new SettingsAdHocCommandFactory();
@@ -111,6 +115,9 @@ XMPPUserManager::~XMPPUserManager() {
 
 	m_rosterResponder->stop();
 	delete m_rosterResponder;
+
+	m_discoItemsResponder->stop();
+	delete m_discoItemsResponder;
 }
 
 void XMPPUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {

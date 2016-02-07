@@ -30,6 +30,8 @@
 #include "transport/Logging.h"
 #include "Swiften/Disco/CapsInfoGenerator.h"
 #include "XMPPFrontend.h"
+#include "transport/UserManager.h"
+#include "XMPPUser.h"
 
 using namespace Swift;
 using namespace boost;
@@ -38,7 +40,7 @@ DEFINE_LOGGER(logger, "DiscoInfoResponder");
 
 namespace Transport {
 
-DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) : Swift::GetResponder<DiscoInfo>(router) {
+DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config, UserManager *userManager) : Swift::GetResponder<DiscoInfo>(router) {
 	m_config = config;
 	m_config->onBackendConfigUpdated.connect(boost::bind(&DiscoInfoResponder::updateFeatures, this));
 	m_buddyInfo = NULL;
@@ -50,6 +52,7 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config) 
 #endif
 
 	updateFeatures();
+	m_userManager = userManager;
 }
 
 DiscoInfoResponder::~DiscoInfoResponder() {
@@ -148,21 +151,39 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 			res->setNode(info->getNode());
 			sendResponse(from, id, res);
 		}
+		return true;
 	}
+
 	// disco#info for room
-	else if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
+	if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
 		boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
 		res->addIdentity(DiscoInfo::Identity(m_rooms[to.toBare().toString()], "conference", "text"));
 		res->addFeature("http://jabber.org/protocol/muc");
 		res->setNode(info->getNode());
 		sendResponse(from, to, id, res);
+		return true;
 	}
+
+	// disco#info for per-user rooms (like Skype/Facebook groupchats)
+	XMPPUser *user = static_cast<XMPPUser *>(m_userManager->getUser(from.toBare().toString()));
+	if (user) {
+		BOOST_FOREACH(const DiscoItems::Item &item, user->getRoomList()->getItems()) {
+			LOG4CXX_INFO(logger, "XXX " << item.getNode() << " " << to.toBare().toString());
+			if (item.getJID().toString() == to.toBare().toString()) {
+				boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
+				res->addIdentity(DiscoInfo::Identity(item.getName(), "conference", "text"));
+				res->addFeature("http://jabber.org/protocol/muc");
+				res->setNode(info->getNode());
+				sendResponse(from, to, id, res);
+				return true;
+			}
+		}
+	}
+
 	// disco#info for buddy
-	else {
-		boost::shared_ptr<DiscoInfo> res(new DiscoInfo(*m_buddyInfo));
-		res->setNode(info->getNode());
-		sendResponse(from, to, id, res);
-	}
+	boost::shared_ptr<DiscoInfo> res(new DiscoInfo(*m_buddyInfo));
+	res->setNode(info->getNode());
+	sendResponse(from, to, id, res);
 	return true;
 }
 
