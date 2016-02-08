@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 project(libtransport)
 
+cmake_policy(SET CMP0037 OLD)
+
 message(STATUS "Variables to override default places where to find libraries:")
 message(STATUS "|- cppunit : -DCPPUNIT_INCLUDE_DIR,  -DCPPUNIT_LIBRARY")
 message(STATUS "|- swiften : -DSWIFTEN_INCLUDE_DIR,  -DSWIFTEN_LIBRARY")

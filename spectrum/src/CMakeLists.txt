@@ -17,7 +17,6 @@ endif()
 
 
 ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
-ADD_DEPENDENCIES(spectrum2 spectrum2_libircclient-qt_backend)
 
 if (WIN32)
 target_link_libraries(spectrum2 transport sqlite3 spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
