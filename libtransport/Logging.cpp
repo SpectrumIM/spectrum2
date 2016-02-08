@@ -112,9 +112,11 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 		}
 		catch(log4cxx::helpers::IOException &ex) {
 			std::cerr << "Can't create FileInputStream logger instance: " << ex.what() << "\n";
+			std::cerr << "This is usually caused by the non-existing \"" << CONFIG_STRING(config, key) << "\" file or bad permissions.\n";
 		}
 		catch (...) {
 			std::cerr << "Can't create FileInputStream logger instance\n";
+			std::cerr << "This is usually caused by the non-existing \"" << CONFIG_STRING(config, key) << "\" file or bad permissions.\n";
 		}
 
 		if (!istream) {
