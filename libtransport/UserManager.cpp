@@ -220,6 +220,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", false)
 					&& CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needPassword", true)) {
 					m_userRegistry->onPasswordInvalid(presence->getFrom());
+					LOG4CXX_INFO(logger, userkey << ": Tried to login, but is not registered.");
 					return;
 				}
 				res.password = "";

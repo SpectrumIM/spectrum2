@@ -636,7 +636,7 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 		return;
 	}
 
-	conv->handleParticipantChanged(payload.nickname(), (Conversation::ParticipantFlag) payload.flag(), payload.status(), payload.statusmessage(), payload.newname(), payload.iconhash());
+	conv->handleParticipantChanged(payload.nickname(), (Conversation::ParticipantFlag) payload.flag(), payload.status(), payload.statusmessage(), payload.newname(), payload.iconhash(), payload.alias());
 }
 
 void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
@@ -646,11 +646,14 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 	}
 
 	User *user = m_userManager->getUser(payload.username());
-	if (!user)
+	if (!user) {
+		LOG4CXX_ERROR(logger, "RoomChangePayload for unknown user " << user);
 		return;
+	}
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.room());
 	if (!conv) {
+		LOG4CXX_ERROR(logger, "RoomChangePayload for unknown conversation " << payload.room());
 		return;
 	}
 

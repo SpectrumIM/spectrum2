@@ -44,12 +44,6 @@ class Conversation {
 			PARTICIPANT_FLAG_ROOM_NOT_FOUD = 64
 		} ParticipantFlag;
 
-		typedef struct _Participant {
-			ParticipantFlag flag;
-			int status;
-			std::string statusMessage;
-		} Participant;
-
 		/// Creates new conversation.
 
 		/// \param conversationManager ConversationManager associated with this Conversation.
@@ -81,7 +75,7 @@ class Conversation {
 		/// \param status Current status of this participant.
 		/// \param statusMessage Current status message of this participant.
 		/// \param newname If participant was renamed, this variable contains his new name.
-		void handleParticipantChanged(const std::string &nickname, ParticipantFlag flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "", const std::string &iconhash = "");
+		void handleParticipantChanged(const std::string &nickname, ParticipantFlag flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "", const std::string &iconhash = "", const std::string &alias = "");
 
 		/// Sets XMPP user nickname in MUC rooms.
 
@@ -176,7 +170,12 @@ class Conversation {
 		// every time, so we can get history messages for IRC for example.
 		boost::shared_ptr<Swift::Message> m_subject;
 		std::list<boost::shared_ptr<Swift::Message> > m_cachedMessages;
-		std::map<std::string, Swift::Presence::ref> m_participants;
+
+		typedef struct {
+			Swift::Presence::ref presence;
+			std::string alias;
+		} Participant;
+		std::map<std::string, Participant> m_participants;
 };
 
 }

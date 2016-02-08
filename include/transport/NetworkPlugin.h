@@ -103,7 +103,8 @@ class NetworkPlugin {
 		/// \param statusMessage Current status message of participant.
 		/// \param newname New name of participant if he changed the nickname. Otherwise empty.
 		void handleParticipantChanged(const std::string &user, const std::string &nickname, const std::string &room, int flags,
-			pbnetwork::StatusType = pbnetwork::STATUS_NONE, const std::string &statusMessage = "", const std::string &newname = "");
+			pbnetwork::StatusType = pbnetwork::STATUS_NONE, const std::string &statusMessage = "", const std::string &newname = "",
+			const std::string &alias = "");
 
 		/// Call this function when user disconnected the legacy network because of some legacy network error.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")

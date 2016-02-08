@@ -704,14 +704,19 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (room + "/" + nickname).c_str());
 				} else {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
-					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
-					const char *disp;
-					if ((disp = purple_connection_get_display_name(account->gc))) {
-						handleRoomNicknameChanged(np->m_accounts[account], room, disp);
-					}
-					else {
-						handleRoomNicknameChanged(np->m_accounts[account], room, purple_account_get_username(account));
-					}
+				}
+			}
+
+			if (CONFIG_STRING(config, "service.protocol") != "prpl-jabber") {
+				np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
+				const char *disp;
+				if ((disp = purple_connection_get_display_name(account->gc))) {
+					handleRoomNicknameChanged(np->m_accounts[account], room, disp);
+					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
+				}
+				else {
+					handleRoomNicknameChanged(np->m_accounts[account], room, purple_account_get_username(account));
+					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", purple_account_get_username(account));
 				}
 			}
 
@@ -1182,6 +1187,7 @@ static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gbool
 	while (l != NULL) {
 		PurpleConvChatBuddy *cb = (PurpleConvChatBuddy *)l->data;
 		std::string name(cb->name);
+		std::string alias = cb->alias ? cb->alias : cb->name;
 		int flags = GPOINTER_TO_INT(cb->flags);
 		if (flags & PURPLE_CBFLAGS_OP || flags & PURPLE_CBFLAGS_HALFOP) {
 // 			item->addAttribute("affiliation", "admin");
@@ -1199,7 +1205,7 @@ static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gbool
 // 			item->addAttribute("role", "participant");
 		}
 
-		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name_wrapped(conv), (int) flags, pbnetwork::STATUS_ONLINE);
+		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name_wrapped(conv), (int) flags, pbnetwork::STATUS_ONLINE, "", "", alias);
 
 		l = l->next;
 	}
@@ -1597,14 +1603,47 @@ static PurpleXferUiOps xferUiOps =
 
 static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 {
-	if (!in_progress) 
-	{
+	if (!in_progress) {
+		GList *fields = purple_roomlist_get_fields(list);
+		GList *field;
+		int topicId = -1;
+		int id = 0;
+		for (field = fields; field != NULL; field = field->next, id++) {
+			PurpleRoomlistField *f = (PurpleRoomlistField *) field->data;
+			if (!f || !f->name) {
+				continue;
+			}
+			std::string fstring = f->name;
+			if (fstring == "topic") {
+				topicId = id;
+			}
+			else {
+				LOG4CXX_INFO(logger, "Uknown RoomList field " << fstring);
+			}
+		}
+
+		LOG4CXX_INFO(logger, "RoomList topic ID: " << topicId);
+
 		GList *rooms;
 		std::list<std::string> m_rooms;
-		for (rooms = list->rooms; rooms != NULL; rooms = rooms->next)
-		{
+		std::list<std::string> m_topics;
+		for (rooms = list->rooms; rooms != NULL; rooms = rooms->next) {
 			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;	
 			m_rooms.push_back(room->name);
+
+			if (topicId == -1) {
+				m_topics.push_back(room->name);
+			}
+			else {
+				char *topic = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), topicId);
+				if (topic) {
+					m_topics.push_back(topic);
+				}
+				else {
+					LOG4CXX_WARN(logger, "RoomList topic is NULL");
+					m_topics.push_back(room->name);
+				}
+			}
 		}
 
 		std::string user = "";
@@ -1613,7 +1652,7 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		}
 
 		LOG4CXX_INFO(logger, "RoomList is fetched for user " << user);
-		np->handleRoomList(user, m_rooms, m_rooms);
+		np->handleRoomList(user, m_rooms, m_topics);
 	}
 	else {
 		LOG4CXX_INFO(logger, "RoomList is still in progress");
@@ -1927,6 +1966,9 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			cfg.setSupportMUC(true);
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 				cfg.setNeedPassword(false);
+			}
+			if (CONFIG_STRING(config, "service.protocol") != "prpl-irc") {
+				cfg.setNeedRegistration(false);
 			}
 			np->sendConfig(cfg);
 		}

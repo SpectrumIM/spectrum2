@@ -207,6 +207,11 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 			n = " ";
 		}
 
+		std::map<std::string, Participant>::iterator it = m_participants.find(n);
+		if (it != m_participants.end() && !it->second.alias.empty()) {
+			n = it->second.alias;
+		}
+
 		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
 		LOG4CXX_INFO(logger, "MSG FROM " << message->getFrom().toString());
 	}
@@ -216,16 +221,16 @@ void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, con
 
 std::string Conversation::getParticipants() {
 	std::string ret;
-	for (std::map<std::string, Swift::Presence::ref>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
-		ret += (*it).second->getFrom().getResource() + ", ";
+	for (std::map<std::string, Participant>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
+		ret += (*it).second.presence->getFrom().getResource() + ", ";
 	}
 	return ret;
 }
 
 void Conversation::sendParticipants(const Swift::JID &to) {
-	for (std::map<std::string, Swift::Presence::ref>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
-		(*it).second->setTo(to);
-		m_conversationManager->getComponent()->getFrontend()->sendPresence((*it).second);
+	for (std::map<std::string, Participant>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
+		(*it).second.presence->setTo(to);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence((*it).second.presence);
 	}
 }
 
@@ -352,17 +357,18 @@ void Conversation::setNickname(const std::string &nickname) {
 void Conversation::handleRawPresence(Swift::Presence::ref presence) {
 	// TODO: Detect nickname change.
 	m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
-	m_participants[presence->getFrom().getResource()] = presence;
+	m_participants[presence->getFrom().getResource()].presence = presence;
 }
 
-void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname, const std::string &iconhash) {
-	Swift::Presence::ref presence = generatePresence(nick, flag, status, statusMessage, newname, iconhash);
+void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname, const std::string &iconhash, const std::string &alias) {
+	Swift::Presence::ref presence = generatePresence(alias.empty() ? nick : alias, flag, status, statusMessage, newname, iconhash);
 
 	if (presence->getType() == Swift::Presence::Unavailable) {
 		m_participants.erase(nick);
 	}
 	else {
-		m_participants[nick] = presence;
+		m_participants[nick].presence = presence;
+		m_participants[nick].alias = alias;
 	}
 
 

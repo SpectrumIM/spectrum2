@@ -112,6 +112,7 @@ message Participant {
 	optional string statusMessage = 6;
 	optional string newname = 7;
 	optional string iconHash = 8;
+	optional string alias = 9;
 }
 
 message VCard {
