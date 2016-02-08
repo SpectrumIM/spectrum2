@@ -24,6 +24,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(handlePresenceLeaveRoomBouncer);
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesBouncer);
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesOneDisconnectsBouncer);
+	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesAnotherOneDisconnects);
 	CPPUNIT_TEST(leaveJoinedRoom);
 	CPPUNIT_TEST(joinRoomBeforeConnected);
 	CPPUNIT_TEST(handleDisconnected);
@@ -281,6 +282,36 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Conversation *conv = user->getConversationManager()->getConversation("room");
 		CPPUNIT_ASSERT_EQUAL(1, (int) conv->getJIDs().size());
 		CPPUNIT_ASSERT_EQUAL(Swift::JID("user@localhost/resource2"), conv->getJIDs().front());
+	}
+
+	void handlePresenceLeaveRoomTwoResourcesAnotherOneDisconnects() {
+		handlePresenceJoinRoom();
+		User *user = userManager->getUser("user@localhost");
+
+		// Add 1 participant
+		Conversation *conv = user->getConversationManager()->getConversation("room");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+
+		// Connect 2nd resource
+		connectSecondResource();
+		received2.clear();
+		received.clear();
+
+		// User is still connected from resource2, but not in room, so we should leave the room
+		Swift::Presence::ref response = Swift::Presence::create();
+		response->setTo("localhost/hanzz");
+		response->setFrom("user@localhost/resource");
+		response->setType(Swift::Presence::Unavailable);
+		injectPresence(response);
+		loop->processEvents();
+
+
+		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		conv = user->getConversationManager()->getConversation("room");
+		CPPUNIT_ASSERT(!conv);
 	}
 
 	void handlePresenceLeaveRoomBouncer() {
