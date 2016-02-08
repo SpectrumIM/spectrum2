@@ -131,21 +131,6 @@ Spectrum2 SMSTools3 backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_smstools3_backend
 
-# SKYPE
-
-%package skype-backend
-Summary:    Libtransport
-Group:      Development/Libraries
-Requires:   boost
-Requires:   libtransport%{?_isa} = %{version}-%{release}
-
-%description skype-backend
-Spectrum2 Skype backend
-
-%files skype-backend
-%defattr(-, root, root,-)
-/usr/bin/spectrum2_skype_backend
-
 # SWIFTEN
 
 %package swiften-backend
