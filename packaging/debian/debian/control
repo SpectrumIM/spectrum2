@@ -147,24 +147,6 @@ Replaces: spectrum2-backend-swiften-git-dbg
 Description: Spectrum2 Swiften backend - debugging symbols
  Debugging symbols for the Spectrum2 Swiften backend
 
-Package: spectrum2-backend-skype
-Architecture: any
-Section: net
-Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}, dbus-x11, xvfb
-Replaces: spectrum2-backend-skype-git
-Description: Spectrum2 Skype backend
- Spectrum2 backend for Skype
-
-Package: spectrum2-backend-skype-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends: spectrum2-backend-skype (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Replaces: spectrum2-backend-skype-git-dbg
-Description: Spectrum2 Skype backend - debugging symbols
- Debugging symbols for the Spectrum2 Skype backend
-
 Package: spectrum2-backend-smstools3
 Architecture: any
 Section: net
