@@ -1607,6 +1607,7 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		GList *fields = purple_roomlist_get_fields(list);
 		GList *field;
 		int topicId = -1;
+		int usersId = -1;
 		int id = 0;
 		for (field = fields; field != NULL; field = field->next, id++) {
 			PurpleRoomlistField *f = (PurpleRoomlistField *) field->data;
@@ -1617,12 +1618,13 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 			if (fstring == "topic") {
 				topicId = id;
 			}
+			else if (fstring == "users") {
+				usersId = id;
+			}
 			else {
 				LOG4CXX_INFO(logger, "Uknown RoomList field " << fstring);
 			}
 		}
-
-		LOG4CXX_INFO(logger, "RoomList topic ID: " << topicId);
 
 		GList *rooms;
 		std::list<std::string> m_rooms;
@@ -1640,8 +1642,20 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 					m_topics.push_back(topic);
 				}
 				else {
-					LOG4CXX_WARN(logger, "RoomList topic is NULL");
-					m_topics.push_back(room->name);
+					if (usersId) {
+						char *users = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), usersId);
+						if (users) {
+							m_topics.push_back(users);
+						}
+						else {
+							LOG4CXX_WARN(logger, "RoomList topic and users is NULL");
+							m_topics.push_back(room->name);
+						}
+					}
+					else {
+						LOG4CXX_WARN(logger, "RoomList topic is NULL");
+						m_topics.push_back(room->name);
+					}
 				}
 			}
 		}
