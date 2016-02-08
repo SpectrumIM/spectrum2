@@ -8,8 +8,8 @@ SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/
 
 target_link_libraries(spectrum2_manager transport ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES})
 
-if (CMAKE_COMPILER_IS_GNUCXX AND ${OPENSSL_FOUND})
 add_definitions(-DMG_ENABLE_SSL)
+if (CMAKE_COMPILER_IS_GNUCXX)
 target_link_libraries(spectrum2_manager ${OPENSSL_LIBRARIES})
 endif()
 
