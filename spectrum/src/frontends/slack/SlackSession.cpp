@@ -183,7 +183,7 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 	m_channel2jid[slackChannel] = to;
 
 	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(Swift::JID(to + "/" + name));
 	presence->setType(Swift::Presence::Available);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
@@ -202,7 +202,7 @@ void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
 
 	LOG4CXX_INFO(logger, m_uinfo.jid << ": Main Slack Channel created, connecting the legacy network");
 	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(m_component->getJID());
 	presence->setType(Swift::Presence::Available);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
@@ -220,7 +220,7 @@ void SlackSession::leaveRoom(const std::string &channel) {
 	LOG4CXX_INFO(logger, m_uinfo.jid << ": Leaving the legacy network room " << to);
 
 	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(Swift::JID(to + "/" + m_uinfo.uin));
 	presence->setType(Swift::Presence::Unavailable);
 	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
@@ -237,7 +237,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setType(Swift::Message::Groupchat);
 		msg->setTo(to);
-		msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+		msg->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 		msg->setBody("<" + m_idManager->getName(user) + "> " + message);
 		m_component->getFrontend()->onMessageReceived(msg);
 	}
@@ -273,7 +273,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 
 			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
 			msg->setTo(b->getJID());
-			msg->setFrom(Swift::JID("", m_uinfo.jid, "default"));
+			msg->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 			msg->setBody("<" + m_idManager->getName(user) + "> " + message);
 			m_component->getFrontend()->onMessageReceived(msg);
 		}

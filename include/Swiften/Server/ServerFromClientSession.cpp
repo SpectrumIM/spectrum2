@@ -135,7 +135,7 @@ void ServerFromClientSession::handleElement(boost::shared_ptr<Element> element) 
 }
 
 void ServerFromClientSession::handleStreamStart(const ProtocolHeader& incomingHeader) {
-	setLocalJID(JID("", incomingHeader.getTo()));
+	setLocalJID(JID(incomingHeader.getTo()));
 	ProtocolHeader header;
 	header.setFrom(incomingHeader.getTo());
 	header.setID(id_);
