@@ -1,4 +1,51 @@
-Version 2.0.1 (2015-01-25):
+Version 2.0.2 (2016-02-xx):
+	General:
+	* Fix joining the room when using JID Escaping even for '@' character.
+	* Fix Raw XML mode - fixes the Swiften backend.
+	* Allow backends to set avatars to buddies in room - currently no backend
+	  uses it.
+	* Set the room list per frontend user - this fixes possible information
+	  for networks like Skype or Facebook where the room list is not global
+	  per network.
+	* Support usage of aliases in the rooms, so backends can use the
+	  network-based UID for the buddies in the room while still setting
+	  user-friendly aliases to them.
+
+	XMPP frontend:
+	* Handle the XMPP VCard changes - updating avatar should work now for
+	  backends supporting it.
+
+	Slack frontend:
+	* Slack frontend is now completely managed by the web interface, old
+	  way of managing (".spectrum2 ..." commands sent to Spectrum 2 bot)
+	  are not supported.
+	* Slack channels are now created automatically on Slack when you join them
+	  using web-interface. The same applies also to the Main channel.
+	* Logging has been improved to show the name of Slack team for each log
+	  line.
+
+	Libpurple backend:
+	* Forward the room topic to frontend.
+	* Fix joining the rooms on networks when the nickname in the room cannot
+	  be changed (Skype or Facebook). Libpurple backend changes your nickname
+	  to the right one in that case.
+	* Show the buddies aliases in the Facebook rooms instead of Facebook
+	  buddies numbers.
+
+	Twitter backend:
+	* Fix compilation with newer gcc.
+
+	Swiften backend:
+	* Swiften backend works as before the frontends introduction.
+
+	Web interface:
+	* Allow setting "port" and "base_location" in the config file.
+	* Allow maintaining joined rooms in the Web interface for the Slack
+	  frontend.
+	* "[identity] name" config variables is now used as a name of the
+	  transport.
+
+Version 2.0.1 (2016-01-25):
 	General:
 	* Fix wrong nickname when joining room with some backends.
 	* Leave room when disconnected from 3rd-party network because of an error.
