@@ -111,6 +111,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 				m_firstPing = false;
 				NetworkPlugin::PluginConfig cfg;
 				cfg.setRawXML(true);
+				cfg.setNeedRegistration(false);
 				sendConfig(cfg);
 			}
 			std::string d(data->begin(), data->end());
