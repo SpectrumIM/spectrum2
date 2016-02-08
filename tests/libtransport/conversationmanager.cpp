@@ -20,6 +20,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST(handleNormalMessagesInitiatedFromXMPP);
 	CPPUNIT_TEST(handleNormalMessagesHeadline);
 	CPPUNIT_TEST(handleGroupchatMessages);
+	CPPUNIT_TEST(handleGroupchatMessagesAlias);
 	CPPUNIT_TEST(handleGroupchatMessagesBouncer);
 	CPPUNIT_TEST(handleGroupchatMessagesBouncerLeave);
 	CPPUNIT_TEST(handleGroupchatMessagesTwoResources);
@@ -321,6 +322,42 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
 		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+	}
+
+	void handleGroupchatMessagesAlias() {
+		User *user = userManager->getUser("user@localhost");
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		user->getConversationManager()->addConversation(conv);
+		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		conv->setNickname("nickname");
+		conv->addJID("user@localhost/resource");
+		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message", "", "", "alias");
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/alias"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
+		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+		received.clear();
+
+		// reset resources should not touch this resource
+		user->getConversationManager()->resetResources();
+
+		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->setBody("hi there!");
+
+		// Forward it
+		conv->handleMessage(msg, "anotheruser");
+
+		loop->processEvents();
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/alias"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 	}
 
 	void handleGroupchatMessagesBouncer() {
