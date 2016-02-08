@@ -213,11 +213,6 @@ endif()
 set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
-if (NOT WIN32 AND ENABLE_SKYPE)
-set(dbus_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-find_package(dbus)
-endif()
-
 
 ####### Miscallanous ######
 
@@ -372,16 +367,6 @@ if (PROTOBUF_FOUND)
 			message("SMSTools3 plugin  : yes")
 		else()
 			message("SMSTools3 plugin  : no (user disabled)")
-		endif()
-		if(${LIBDBUSGLIB_FOUND})
-			message("Skype plugin      : yes")
-			include_directories(${LIBDBUSGLIB_INCLUDE_DIRS})
-		else()
-			if(ENABLE_SKYPE)
-				message("Skype plugin      : no (install dbus-glib-devel)")
-			else(ENABLE_SKYPE)
-				message("Skype plugin      : no (user disabled)")
-			endif()
 		endif()
 	else()
 		message("Frotz plugin      : no (does not run on Win32)")

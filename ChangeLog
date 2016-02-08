@@ -38,6 +38,9 @@ Version 2.0.2 (2016-02-xx):
 	Swiften backend:
 	* Swiften backend works as before the frontends introduction.
 
+	Skype backend:
+	* The old skype backend has been removed. Use purple-skypeweb instead.
+
 	Web interface:
 	* Allow setting "port" and "base_location" in the config file.
 	* Allow maintaining joined rooms in the Web interface for the Slack
