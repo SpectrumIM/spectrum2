@@ -360,6 +360,10 @@ void Conversation::handleRawPresence(Swift::Presence::ref presence) {
 	m_participants[presence->getFrom().getResource()].presence = presence;
 }
 
+void Conversation::removeJID(const Swift::JID &jid) {
+	m_jids.remove(jid);
+}
+
 void Conversation::handleParticipantChanged(const std::string &nick, Conversation::ParticipantFlag flag, int status, const std::string &statusMessage, const std::string &newname, const std::string &iconhash, const std::string &alias) {
 	Swift::Presence::ref presence = generatePresence(alias.empty() ? nick : alias, flag, status, statusMessage, newname, iconhash);
 

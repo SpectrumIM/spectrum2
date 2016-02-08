@@ -98,9 +98,7 @@ class Conversation {
 			m_jids.clear();
 		}
 
-		void removeJID(const Swift::JID &jid) {
-			m_jids.remove(jid);
-		}
+		void removeJID(const Swift::JID &jid);
 
 		const std::list<Swift::JID> &getJIDs() {
 			return m_jids;

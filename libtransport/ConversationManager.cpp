@@ -103,8 +103,20 @@ void ConversationManager::resetResources() {
 }
 
 void ConversationManager::removeJID(const Swift::JID &jid) {
+	std::vector<std::string> toRemove;
 	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
 		(*it).second->removeJID(jid);
+		if (it->second->getJIDs().empty()) {
+			toRemove.push_back(it->first);
+		}
+	}
+
+	if (m_user->getUserSetting("stay_connected") != "1") {
+		while(!toRemove.empty()) {
+			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Leaving room " << toRemove.back() << ".");
+			m_user->leaveRoom(toRemove.back());
+			toRemove.pop_back();
+		}
 	}
 }
 
