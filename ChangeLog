@@ -1,4 +1,4 @@
-Version 2.0.2 (2016-02-xx):
+Version 2.0.2 (2016-02-09):
 	General:
 	* Fix joining the room when using JID Escaping even for '@' character.
 	* Fix Raw XML mode - fixes the Swiften backend.
@@ -10,6 +10,10 @@ Version 2.0.2 (2016-02-xx):
 	* Support usage of aliases in the rooms, so backends can use the
 	  network-based UID for the buddies in the room while still setting
 	  user-friendly aliases to them.
+	* Fix leaving the room when user is connected to transport using two
+	  clients, but only one of them joined the room and that one disconnects
+	  the transport without leaving the room (For example when he just
+	  quits the client).
 
 	XMPP frontend:
 	* Handle the XMPP VCard changes - updating avatar should work now for
