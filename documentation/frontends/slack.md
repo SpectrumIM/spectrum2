@@ -16,7 +16,7 @@ You have to choose this frontend in Spectrum 2 configuration file to use it:
 	client_id=42132532467.11232153249
 	client_secret=cfdw9erw9ew0gew9gds0sa9wqd9f8d6a
 
-To obtain the `client_id` and `client_secret` values, you have to create new Slack application on [Slack website](https://slack.com/apps/build). You also have to setup Spectrum 2 Web Interface to allow Slack users to register the transport and configure it. While creating new Slack application, you also have to setup the `Redirect URI`. Spectrum 2 Web Interface expects the `Redirect URI` to be configured as `http://domain.tld/oauth2`. You can choose whatever domain you are running at, but you have to preserve the `/oauth2` location.
+To obtain the `client_id` and `client_secret` values, you have to create new Slack application on [Slack website](https://slack.com/apps/build). You also have to setup [Spectrum 2 Web Interface](../management/web_interface.html) to allow Slack users to register the transport and configure it. While creating new Slack application, you also have to setup the `Redirect URI`. Spectrum 2 Web Interface expects the `Redirect URI` to be configured as `http://domain.tld/oauth2`. You can choose whatever domain you are running at, but you have to preserve the `/oauth2` location.
 
 ## Usage
 
