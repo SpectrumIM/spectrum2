@@ -43,11 +43,10 @@ This is Admin documentation for Spectrum 2 transport. If you are user trying to 
 * [PostgreSQL Support](configuration/postgresql.html)
 * [Logging](configuration/logging.html)
 
-
-
 #### Management
 
 * [spectrum2_manager tool](management/spectrum2_manager.html)
+* [Web Interface](management/web_interface.html)
 * [Getting a backtrace](management/getting_backtrace.html)
 * [Munin integration](management/munin.html)
 
