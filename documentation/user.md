@@ -9,10 +9,10 @@ This is User documentation for Spectrum 2 transport. If you are administrator tr
 
 * [What is Spectrum 2?](about.html)
 
-#### Using as Jabber user
+<!-- #### Using as Jabber user -->
 
-* [Registering with Spectrum 2 transport](user_xmpp/register.html)
-* [Joining the Multi-User Chat](user_xmpp/join_muc.html)
+<!-- * [Registering with Spectrum 2 transport](user_xmpp/register.html) -->
+<!-- * [Joining the Multi-User Chat](user_xmpp/join_muc.html) -->
 
 #### Using as Slack user
 
