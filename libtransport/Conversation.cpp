@@ -313,6 +313,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 				Swift::MUCUserPayload::StatusCode c;
 				c.code = 210;
 				p->addStatusCode(c);
+				m_nicknameChanged = false;
 			}
 			m_sentInitialPresence = true;
 		}

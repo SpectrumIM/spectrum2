@@ -710,13 +710,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (CONFIG_STRING(config, "service.protocol") != "prpl-jabber") {
 				np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
 				const char *disp;
-				if ((disp = purple_connection_get_display_name(account->gc))) {
+				if ((disp = purple_connection_get_display_name(account->gc)) == NULL) {
+					disp = purple_account_get_username(account);
+				}
+
+				if (nickname != disp) {
 					handleRoomNicknameChanged(np->m_accounts[account], room, disp);
 					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
-				}
-				else {
-					handleRoomNicknameChanged(np->m_accounts[account], room, purple_account_get_username(account));
-					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", purple_account_get_username(account));
 				}
 			}
 

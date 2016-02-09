@@ -139,7 +139,6 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		received.clear();
 
 		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::None), "");
-		dumpReceived();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::None, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());
