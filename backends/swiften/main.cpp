@@ -301,7 +301,11 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
 			LOG4CXX_INFO(logger, user << ": connecting as " << legacyName);
-			boost::shared_ptr<Swift::Client> client = boost::make_shared<Swift::Client>(Swift::JID(legacyName + "/Spectrum"), password, m_factories);
+			Swift::JID jid(legacyName);
+			if (legacyName.find("/") == std::string::npos) {
+				jid = Swift::JID(legacyName + "/Spectrum");
+			}
+			boost::shared_ptr<Swift::Client> client = boost::make_shared<Swift::Client>(jid, password, m_factories);
 			m_users[user] = client;
 			client->setAlwaysTrustCertificates();
 			client->onConnected.connect(boost::bind(&SwiftenPlugin::handleSwiftConnected, this, user));
