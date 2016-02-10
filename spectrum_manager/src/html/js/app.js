@@ -197,20 +197,24 @@ function fill_instances_register_form() {
 function fill_users_register_form() {
 	$(".button").click(function(e) {
 		e.preventDefault();
-		$(this).parent().empty().progressbar( {value: false} ).css('height', '1em');
 
 		var postdata ={
 			"username": $("#username").val(),
 			"password": $("#password").val()
 		};
 
-		$.post($.cookie("base_location") + "api/v1/users/add", postdata, function(data) {
-			var query = getQueryParams(document.location.search);
-			if (query.back_to_list == "1") {
-				window.location.replace("list.shtml");
+		$.post("/api/v1/users/add", postdata, function(data) {
+			if (data.error) {
+				$('#error').text(data.message);
 			}
 			else {
-				window.location.replace("../login/");
+				var query = getQueryParams(document.location.search);
+				if (query.back_to_list == "1") {
+					window.location.replace("list.shtml");
+				}
+				else {
+					window.location.replace("../login/");
+				}
 			}
 		});
 	})

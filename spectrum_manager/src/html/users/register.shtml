@@ -1,7 +1,7 @@
 <!--#include virtual="/header.shtml" -->
 
 <h2>Register new Spectrum 2 manager account</h2>
-
+<div id="error" style="text-align:center;color:red;"></div>
 <form action="/api/v1/users/add" class="basic-grey" method="POST"> 
 	<h1>Register user 
 		<span>Register new user to Spectrum 2 manager web interface.</span> 
@@ -13,7 +13,7 @@
 	<label><span>Password:</span> 
 		<input type="password" id="password" name="password" placeholder="Password"></textarea> 
 	</label> 
-	<label> 
+	<label id="submitbutton">
 		<span>&nbsp;</span> 
 		<input type="submit" class="button" value="Add user" />
 	</label> 
