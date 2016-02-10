@@ -139,7 +139,7 @@ class Conversation {
 		void destroyRoom();
 
 		std::string getParticipants();
-		void sendParticipants(const Swift::JID &to);
+		void sendParticipants(const Swift::JID &to, const std::string &nickname);
 
 		void sendCachedMessages(const Swift::JID &to = Swift::JID());
 
@@ -160,6 +160,7 @@ class Conversation {
 		bool m_sentInitialPresence;
 		bool m_nicknameChanged;
 		bool m_mucEscaping;
+		bool m_sentInitialSubject;
 
 		// TODO: Move this to some extra class to cache the most used
 		// rooms across different accounts. Just now if we have 10 users

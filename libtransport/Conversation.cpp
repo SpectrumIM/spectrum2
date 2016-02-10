@@ -47,6 +47,7 @@ Conversation::Conversation(ConversationManager *conversationManager, const std::
 	m_sentInitialPresence = false;
 	m_nicknameChanged = false;
 	m_mucEscaping = false;
+	m_sentInitialSubject = false;
 
 	if (CONFIG_BOOL_DEFAULTED(conversationManager->getComponent()->getConfig(), "features.rawxml", false)) {
 		m_sentInitialPresence = true;
@@ -128,9 +129,11 @@ void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) 
 			BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 				message->setTo(jid);
 				// Subject has to be sent after our own presence (the one with code 110)
-				if (!message->getSubject().empty() && m_sentInitialPresence == false) {
+				if (!message->getSubject().empty()) {
 					m_subject = message;
-					return;
+					if (m_sentInitialPresence == false) {
+						return;
+					}
 				}
 				m_conversationManager->getComponent()->getFrontend()->sendMessage(message);
 			}
@@ -227,7 +230,33 @@ std::string Conversation::getParticipants() {
 	return ret;
 }
 
-void Conversation::sendParticipants(const Swift::JID &to) {
+void Conversation::sendParticipants(const Swift::JID &to, const std::string &nickname) {
+	// When user tries to join this room from another resource using
+	// different nickname than the original one has, we have to rename
+	// him.
+	if (m_nickname != nickname && !nickname.empty()) {
+		Swift::Presence::ref presence;
+		std::string tmp = m_nickname;
+
+		// At first connect the user.
+		m_nickname = nickname;
+		presence = generatePresence(nickname, 0, (int) Swift::StatusShow::Online, "", "", "");
+		presence->setTo(to);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
+
+		// Now change his nickname to the right one.
+		m_nicknameChanged = true;
+		presence = generatePresence(nickname, 0, (int) Swift::StatusShow::Online, "", tmp, "");
+		presence->setTo(to);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
+
+		// And send the presence from as new user
+		m_nickname = tmp;
+		presence = generatePresence(m_nickname, 0, (int) Swift::StatusShow::Online, "", "", "");
+		presence->setTo(to);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
+	}
+
 	for (std::map<std::string, Participant>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
 		(*it).second.presence->setTo(to);
 		m_conversationManager->getComponent()->getFrontend()->sendPresence((*it).second.presence);
@@ -385,9 +414,9 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 		handleParticipantChanged(newname, flag, status, statusMessage, "", iconhash);
 	}
 
-	if (m_sentInitialPresence && m_subject) {
+	if (m_sentInitialPresence && !m_sentInitialSubject && m_subject) {
+		m_sentInitialSubject = true;
 		m_conversationManager->getComponent()->getFrontend()->sendMessage(m_subject);
-		m_subject.reset();
 	}
 
 	// We send error presences only to inform user that he is disconnected

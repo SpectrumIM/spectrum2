@@ -122,7 +122,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// this user presence - status code 110
 		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message");
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
 		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getSubject());
@@ -410,21 +410,29 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(4, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(7, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[2])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/hanzz"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received[2])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(std::string("nickname"), *getStanza(received[2])->getPayload<Swift::MUCUserPayload>()->getItems()[0].nick);
+		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[2])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[2].code);
 
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[2])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[4])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getFrom().toString());
 
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[3])));
-		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getSubject());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[3]))->getFrom().toString());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[5])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getFrom().toString());
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[6])));
+		CPPUNIT_ASSERT_EQUAL(std::string("subject"), dynamic_cast<Swift::Message *>(getStanza(received[6]))->getSubject());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[6]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[6]))->getFrom().toString());
 	}
 
 	void handleGroupchatMessagesBouncerLeave() {
@@ -479,16 +487,24 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
+		CPPUNIT_ASSERT_EQUAL(6, (int) received.size());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[2])));
+		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getType());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/hanzz"), dynamic_cast<Swift::Presence *>(getStanza(received[2]))->getFrom().toString());
+		CPPUNIT_ASSERT(getStanza(received[2])->getPayload<Swift::MUCUserPayload>());
+		CPPUNIT_ASSERT_EQUAL(std::string("nickname"), *getStanza(received[2])->getPayload<Swift::MUCUserPayload>()->getItems()[0].nick);
+		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[2])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[2].code);
 
-		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[2])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getBody());
-		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getTo().toString());
-		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[2]))->getFrom().toString());
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[4])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getFrom().toString());
+
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[5])));
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getTo().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getFrom().toString());
 
 	}
 

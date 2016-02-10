@@ -259,7 +259,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 				else {
 					conv->addJID(presence->getFrom());
-					conv->sendParticipants(presence->getFrom());
+					conv->sendParticipants(presence->getFrom(), presence->getTo().getResource());
 					conv->sendCachedMessages(presence->getFrom());
 				}
 
