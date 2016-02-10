@@ -18,4 +18,4 @@ This is User documentation for Spectrum 2 transport. If you are administrator tr
 
 * [How does Spectrum 2 interact with my team?](user_slack/workflow.html)
 * [Our Privacy Policy](user_slack/privacy.html)
-* [Adding Spectrum 2 transport to the team](https://slack.spectrum.im/)
+* [Adding Spectrum 2 transport to the team](user_slack/add.html)
