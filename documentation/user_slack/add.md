@@ -9,4 +9,4 @@ You have to register new account on our [Spectrum 2 Web Interface](https://slack
 
 Following is the video showing whole process:
 
-<iframe width="630" height="472" src="https://www.youtube.com/embed/lfPsey60RIs" frameborder="0" allowfullscreen></iframe>
+<iframe width="756" height="567" src="https://www.youtube.com/embed/lfPsey60RIs" frameborder="0" allowfullscreen></iframe>
