@@ -1305,6 +1305,7 @@ void NetworkPluginServer::send(boost::shared_ptr<Swift::Connection> &c, const st
 }
 
 void NetworkPluginServer::pingTimeout() {
+	LOG4CXX_INFO(logger, "Sending PING to backends");
 	// TODO: move to separate timer, those 2 loops could be expensive
 	// Some users are connected for weeks and they are blocking backend to be destroyed and its memory
 	// to be freed. We are finding users who are inactive for more than "idle_reconnect_time" seconds and
@@ -1349,6 +1350,9 @@ void NetworkPluginServer::pingTimeout() {
 			// when registering backend.
 			if ((*it)->pongReceived) {
 				sendPing((*it));
+			}
+			else {
+				LOG4CXX_INFO(logger, "Tried to send PING to backend without pongReceived= " << (*it)->pongReceived << ": (ID=" << (*it)->id << ")");
 			}
 		}
 		else {
@@ -1965,6 +1969,9 @@ void NetworkPluginServer::sendPing(Backend *c) {
 		LOG4CXX_INFO(logger, "PING to " << c << " (ID=" << c->id << ")");
 		send(c->connection, message);
 		c->pongReceived = false;
+	}
+	else {
+		LOG4CXX_WARN(logger, "Tried to send PING to backend without connection: " << c << " (ID=" << c->id << ")");
 	}
 // 	LOG4CXX_INFO(logger, "PING to " << c);
 }

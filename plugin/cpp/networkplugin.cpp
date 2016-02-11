@@ -676,6 +676,7 @@ void NetworkPlugin::send(const std::string &data) {
 
 void NetworkPlugin::checkPing() {
 	if (m_pingReceived == false) {
+		LOG4CXX_ERROR(logger, "PING request not received - exiting...");
 		handleExitRequest();
 	}
 	m_pingReceived = false;
