@@ -1500,6 +1500,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 			buddy->set_username(user->getJID().toBare());
 			buddy->set_buddyname(b->getName());
 			buddy->set_alias(b->getAlias());
+			buddy->set_iconhash(b->getIconHash());
 			BOOST_FOREACH(const std::string &g, b->getGroups()) {
 				buddy->add_group(g);
 			}
