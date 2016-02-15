@@ -1,0 +1,9 @@
+return {
+        ["responder@localhost"] = {
+                ["groups"] = {
+                        ["Buddies"] = true;
+                };
+                ["name"] = "responder";
+                ["subscription"] = "both";
+        };                                                                                                                                                                                                                               
+};

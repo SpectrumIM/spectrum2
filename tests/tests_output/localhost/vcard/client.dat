@@ -1,0 +1,28 @@
+return {
+	[1] = {
+		[1] = {
+			[1] = "image/png";
+			["attr"] = {
+				["xmlns"] = "vcard-temp";
+			};
+			["name"] = "TYPE";
+		};
+		[2] = {
+			[1] = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQAAAAAAAAAKSURBVHicY2AAAAACAAEAAAAASUVORA==";
+			["attr"] = {
+				["xmlns"] = "vcard-temp";
+			};
+			["name"] = "BINVAL";
+		};
+		["name"] = "PHOTO";
+		["attr"] = {
+			["xmlns"] = "vcard-temp";
+		};
+	};
+	["attr"] = {
+		["version"] = "2.0";
+		["prodid"] = "-//HandGen//NONSGML vGen v1.0//EN";
+		["xmlns"] = "vcard-temp";
+	};
+	["name"] = "vCard";
+};
