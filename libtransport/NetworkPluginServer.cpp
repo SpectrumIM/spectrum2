@@ -970,7 +970,11 @@ void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data
 	m_adminInterface->handleQuery(msg);
 
 	pbnetwork::BackendConfig response;
+#if HAVE_SWIFTEN_3
+	response.set_config(msg->getBody().value_or(""));
+#else
 	response.set_config(msg->getBody());
+#endif
 
 	std::string message;
 	response.SerializeToString(&message);
@@ -1692,7 +1696,11 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		pbnetwork::ConversationMessage m;
 		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 		m.set_buddyname(conv->getLegacyName());
+#if HAVE_SWIFTEN_3
+		m.set_message(msg->getBody().value_or(""));
+#else
 		m.set_message(msg->getBody());
+#endif
 
 		std::string message;
 		m.SerializeToString(&message);
@@ -1728,11 +1736,16 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 	}
 
 	// Send normal message
-	if (!msg->getBody().empty() || !xhtml.empty()) {
+#if HAVE_SWIFTEN_3
+	std::string body = msg->getBody().value_or("");
+#else
+	std::string body = msg->getBody();
+#endif
+	if (!body.empty() || !xhtml.empty()) {
 		pbnetwork::ConversationMessage m;
 		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 		m.set_buddyname(conv->getLegacyName());
-		m.set_message(msg->getBody());
+		m.set_message(body);
 		m.set_xhtml(xhtml);
 		boost::shared_ptr<Swift::DeliveryReceiptRequest> receiptPayload = msg->getPayload<Swift::DeliveryReceiptRequest>();
 		if (receiptPayload && !msg->getID().empty()) {

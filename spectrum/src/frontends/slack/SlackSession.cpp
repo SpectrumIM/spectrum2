@@ -39,6 +39,8 @@
 #include <boost/algorithm/string.hpp>
 
 #include "Swiften/Elements/MUCPayload.h"
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #include <map>
 #include <iterator>
@@ -148,7 +150,12 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 	}
 
 	LOG4CXX_INFO(logger, m_uinfo.jid << "Sending message to Slack channel " << channel << " from " << from);
-	m_rtm->getAPI()->sendMessage(from, channel, message->getBody());
+#if HAVE_SWIFTEN_3
+	std::string body = message->getBody().value_or("");
+#else
+	std::string body = message->getBody();
+#endif
+	m_rtm->getAPI()->sendMessage(from, channel, body);
 }
 
 void SlackSession::setPurpose(const std::string &purpose, const std::string &channel) {

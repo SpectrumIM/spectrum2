@@ -13,6 +13,10 @@
 
 using namespace Transport;
 
+#if !HAVE_SWIFTEN_3
+#define value_or(X) substr()
+#endif
+
 class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
 	CPPUNIT_TEST(conversationSize);
@@ -157,7 +161,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
@@ -172,7 +176,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg->getBody().value_or(""));
 
 		// send another message from legacy network, should be sent to user@localhost/resource now
 		boost::shared_ptr<Swift::Message> msg2(new Swift::Message());
@@ -184,7 +188,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
@@ -205,7 +209,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 		
@@ -226,7 +230,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), m_msg->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), m_conv->getLegacyName());
 		
 		TestingConversation *conv = (TestingConversation *) user->getConversationManager()->getConversation("BuddY1");
@@ -253,7 +257,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 
@@ -266,7 +270,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Message::Chat, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 
@@ -280,7 +284,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Message::Chat, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 	}
@@ -305,7 +309,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 
@@ -321,7 +325,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody().value_or(""));
 	}
 
 	void handleGroupchatMessagesAlias() {
@@ -355,7 +359,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/alias"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
 	}
@@ -420,12 +424,12 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[2])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[2].code);
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[4])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getFrom().toString());
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[5])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getFrom().toString());
 
@@ -497,12 +501,12 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[2])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[2].code);
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[4])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[4]))->getFrom().toString());
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[5])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there2!"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received[5]))->getFrom().toString());
 
@@ -531,7 +535,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received2.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received2[0])));
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource2"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room@localhost/anotheruser"), dynamic_cast<Swift::Message *>(getStanza(received2[0]))->getFrom().toString());
 
@@ -547,7 +551,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody().value_or(""));
 	}
 
 	void handleParticipantChanged() {
@@ -723,7 +727,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), m_msg->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), m_msg->getBody().value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("#room/anotheruser"), m_conv->getLegacyName());
 
 		Conversation *pmconv = user->getConversationManager()->getConversation("#room/anotheruser");

@@ -33,6 +33,9 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
+
 namespace Transport {
 
 DEFINE_LOGGER(logger, "AdminInterface");
@@ -60,19 +63,24 @@ AdminInterface::~AdminInterface() {
 }
 
 void AdminInterface::handleQuery(Swift::Message::ref message) {
-	LOG4CXX_INFO(logger, "Message from admin received: '" << message->getBody() << "'");
+#if HAVE_SWIFTEN_3
+	std::string msg = message->getBody().value_or("");
+#else
+	std::string msg = message->getBody();
+#endif
+	LOG4CXX_INFO(logger, "Message from admin received: '" << msg << "'");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
 
-	if (message->getBody() == "status") {
+	if (msg == "status") {
 		int users = m_userManager->getUserCount();
 		int backends = m_server->getBackendCount();
 		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
 	}
-	else if (message->getBody() == "uptime") {
+	else if (msg == "uptime") {
 		message->setBody(boost::lexical_cast<std::string>(time(0) - m_start));
 	}
-	else if (message->getBody() == "online_users") {
+	else if (msg == "online_users") {
 		std::string lst;
 		const std::map<std::string, User *> &users = m_userManager->getUsers();
 		if (users.size() == 0)
@@ -84,11 +92,11 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
-	else if (message->getBody() == "online_users_count") {
+	else if (msg == "online_users_count") {
 		int users = m_userManager->getUserCount();
 		message->setBody(boost::lexical_cast<std::string>(users));
 	}
-	else if (message->getBody() == "reload") {
+	else if (msg == "reload") {
 		bool done = m_component->getConfig()->reload();
 		if (done) {
 			message->setBody("Config reloaded");
@@ -97,7 +105,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Error during config reload");
 		}
 	}
-	else if (message->getBody() == "online_users_per_backend") {
+	else if (msg == "online_users_per_backend") {
 		std::string lst;
 		int id = 1;
 
@@ -125,16 +133,16 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
-	else if (message->getBody().find("has_online_user") == 0) {
-		User *user = m_userManager->getUser(getArg(message->getBody()));
-		std::cout << getArg(message->getBody()) << "\n";
+	else if (msg.find("has_online_user") == 0) {
+		User *user = m_userManager->getUser(getArg(msg));
+		std::cout << getArg(msg) << "\n";
 		message->setBody(boost::lexical_cast<std::string>(user != NULL));
 	}
-	else if (message->getBody() == "backends_count") {
+	else if (msg == "backends_count") {
 		int backends = m_server->getBackendCount();
 		message->setBody(boost::lexical_cast<std::string>(backends));
 	}
-	else if (message->getBody() == "res_memory") {
+	else if (msg == "res_memory") {
 		double shared = 0;
 		double rss = 0;
 		process_mem_usage(shared, rss);
@@ -145,7 +153,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(boost::lexical_cast<std::string>(rss));
 	}
-	else if (message->getBody() == "shr_memory") {
+	else if (msg == "shr_memory") {
 		double shared = 0;
 		double rss = 0;
 		process_mem_usage(shared, rss);
@@ -156,7 +164,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(boost::lexical_cast<std::string>(shared));
 	}
-	else if (message->getBody() == "used_memory") {
+	else if (msg == "used_memory") {
 		double shared = 0;
 		double rss = 0;
 		process_mem_usage(shared, rss);
@@ -169,7 +177,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(boost::lexical_cast<std::string>(rss));
 	}
-	else if (message->getBody() == "average_memory_per_user") {
+	else if (msg == "average_memory_per_user") {
 		if (m_userManager->getUserCount() == 0) {
 			message->setBody(boost::lexical_cast<std::string>(0));
 		}
@@ -185,7 +193,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody(boost::lexical_cast<std::string>(per_user / m_userManager->getUserCount()));
 		}
 	}
-	else if (message->getBody() == "res_memory_per_backend") {
+	else if (msg == "res_memory_per_backend") {
 		std::string lst;
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
@@ -196,7 +204,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
-	else if (message->getBody() == "shr_memory_per_backend") {
+	else if (msg == "shr_memory_per_backend") {
 		std::string lst;
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
@@ -207,7 +215,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
-	else if (message->getBody() == "used_memory_per_backend") {
+	else if (msg == "used_memory_per_backend") {
 		std::string lst;
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
@@ -218,7 +226,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
-	else if (message->getBody() == "average_memory_per_user_per_backend") {
+	else if (msg == "average_memory_per_user_per_backend") {
 		std::string lst;
 		int id = 1;
 		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
@@ -234,10 +242,10 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 		message->setBody(lst);
 	}
-	else if (message->getBody() == "collect_backend") {
+	else if (msg == "collect_backend") {
 		m_server->collectBackend();
 	}
-	else if (message->getBody() == "crashed_backends") {
+	else if (msg == "crashed_backends") {
 		std::string lst;
 		const std::vector<std::string> &backends = m_server->getCrashedBackends();
 		BOOST_FOREACH(const std::string &backend, backends) {
@@ -245,19 +253,19 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		}
 		message->setBody(lst);
 	}
-	else if (message->getBody() == "crashed_backends_count") {
+	else if (msg == "crashed_backends_count") {
 		message->setBody(boost::lexical_cast<std::string>(m_server->getCrashedBackends().size()));
 	}
-	else if (message->getBody() == "messages_from_xmpp") {
+	else if (msg == "messages_from_xmpp") {
 		int msgCount = m_userManager->getMessagesToBackend();
 		message->setBody(boost::lexical_cast<std::string>(msgCount));
 	}
-	else if (message->getBody() == "messages_to_xmpp") {
+	else if (msg == "messages_to_xmpp") {
 		int msgCount = m_userManager->getMessagesToXMPP();
 		message->setBody(boost::lexical_cast<std::string>(msgCount));
 	}
-	else if (message->getBody().find("register ") == 0 && m_userRegistration) {
-		std::string body = message->getBody();
+	else if (msg.find("register ") == 0 && m_userRegistration) {
+		std::string body = msg;
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 4) {
@@ -280,8 +288,8 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Bad argument count. See 'help'.");
 		}
 	}
-	else if (message->getBody().find("unregister ") == 0 && m_userRegistration) {
-		std::string body = message->getBody();
+	else if (msg.find("unregister ") == 0 && m_userRegistration) {
+		std::string body = msg;
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 2) {
@@ -296,8 +304,8 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Bad argument count. See 'help'.");
 		}
 	}
-	else if (message->getBody().find("set_oauth2_code ") == 0) {
-		std::string body = message->getBody();
+	else if (msg.find("set_oauth2_code ") == 0) {
+		std::string body = msg;
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 3) {
@@ -313,21 +321,21 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			message->setBody("Bad argument count. See 'help'.");
 		}
 	}
-	else if (message->getBody().find("get_oauth2_url") == 0) {
-		std::string body = message->getBody();
+	else if (msg.find("get_oauth2_url") == 0) {
+		std::string body = msg;
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		std::string url = m_component->getFrontend()->getOAuth2URL(args);
 		message->setBody(url);
 	}
-	else if (message->getBody() == "registration_fields") {
+	else if (msg == "registration_fields") {
 		std::string fields = m_component->getFrontend()->getRegistrationFields();
 		message->setBody(fields);
 	}
 	else if (m_component->getFrontend()->handleAdminMessage(message)) {
 		LOG4CXX_INFO(logger, "Message handled by frontend");
 	}
-	else if (message->getBody().find("help") == 0) {
+	else if (msg.find("help") == 0) {
 		std::string help;
 		help += "General:\n";
 		help += "    status - shows instance status\n";
@@ -365,7 +373,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		message->setBody(help);
 	}
 	else {
-		message->setBody("Unknown command \"" + message->getBody() + "\". Try \"help\"");
+		message->setBody("Unknown command \"" + msg + "\". Try \"help\"");
 	}
 }
 
@@ -381,9 +389,15 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	}
 	
 	// Ignore empty messages
+#if HAVE_SWIFTEN_3
+	if (message->getBody().value_or("").empty()) {
+		return;
+	}
+#else
 	if (message->getBody().empty()) {
 		return;
 	}
+#endif
 
 	handleQuery(message);
 

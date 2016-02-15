@@ -374,7 +374,12 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 		messageToBackendSent();
 	}
 
-	if (message->getBody().empty() && !statePayload && message->getSubject().empty()) {
+#if HAVE_SWIFTEN_3
+	std::string body = message->getBody().value_or("");
+#else
+	std::string body = message->getBody();
+#endif
+	if (body.empty() && !statePayload && message->getSubject().empty()) {
 		return;
 	}
 

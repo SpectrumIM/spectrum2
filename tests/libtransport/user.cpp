@@ -12,6 +12,10 @@
 
 using namespace Transport;
 
+#if !HAVE_SWIFTEN_3
+#define value_or(X) substr()
+#endif
+
 class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(UserTest);
 	CPPUNIT_TEST(sendCurrentPresence);
@@ -427,7 +431,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 		Swift::Message *m = dynamic_cast<Swift::Message *>(getStanza(received[0]));
-		CPPUNIT_ASSERT_EQUAL(std::string("Connection error"), m->getBody());
+		CPPUNIT_ASSERT_EQUAL(std::string("Connection error"), m->getBody().value_or(""));
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::StreamError *>(received[1].get()));
 		CPPUNIT_ASSERT_EQUAL(std::string("Connection error"), dynamic_cast<Swift::StreamError *>(received[1].get())->getText());

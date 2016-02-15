@@ -32,6 +32,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
+
 namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackUserManager");
@@ -106,8 +109,13 @@ void SlackUserManager::handleUserCreated(User *user) {
 }
 
 bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
-	if (message->getBody().find("list_rooms") == 0) {
-		std::string body = message->getBody();
+#if HAVE_SWIFTEN_3
+	std::string body = message->getBody().value_or("");
+#else
+	std::string body = message->getBody();
+#endif
+
+	if (body.find("list_rooms") == 0) {
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 2) {
@@ -125,8 +133,7 @@ bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 			return true;
 		}
 	}
-	else if (message->getBody().find("join_room ") == 0) {
-		std::string body = message->getBody();
+	else if (body.find("join_room ") == 0) {
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 6) {
@@ -139,7 +146,7 @@ bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 			std::string rooms = "";
 			int type = (int) TYPE_STRING;
 			m_storageBackend->getUserSetting(uinfo.id, "rooms", type, rooms);
-			rooms += message->getBody() + "\n";
+			rooms += body + "\n";
 			m_storageBackend->updateUserSetting(uinfo.id, "rooms", rooms);
 
 			SlackUser *user = static_cast<SlackUser *>(getUser(args[1]));
@@ -150,8 +157,7 @@ bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 			return true;
 		}
 	}
-	else if (message->getBody().find("leave_room ") == 0) {
-		std::string body = message->getBody();
+	else if (body.find("leave_room ") == 0) {
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
 		if (args.size() == 3) {
