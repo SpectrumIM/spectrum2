@@ -13,7 +13,7 @@
 using namespace Transport;
 
 #if !HAVE_SWIFTEN_3
-#define value_or(X) substr()
+#define get_value_or(X) substr()
 #endif
 
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
@@ -81,7 +81,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
-		CPPUNIT_ASSERT_EQUAL(std::string("Ahoj"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody().value_or(""));
+		CPPUNIT_ASSERT_EQUAL(std::string("Ahoj"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody().get_value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getFrom().toString());
 

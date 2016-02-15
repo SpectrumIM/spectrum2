@@ -64,7 +64,7 @@ AdminInterface::~AdminInterface() {
 
 void AdminInterface::handleQuery(Swift::Message::ref message) {
 #if HAVE_SWIFTEN_3
-	std::string msg = message->getBody().value_or("");
+	std::string msg = message->getBody().get_value_or("");
 #else
 	std::string msg = message->getBody();
 #endif
@@ -390,7 +390,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	
 	// Ignore empty messages
 #if HAVE_SWIFTEN_3
-	if (message->getBody().value_or("").empty()) {
+	if (message->getBody().get_value_or("").empty()) {
 		return;
 	}
 #else

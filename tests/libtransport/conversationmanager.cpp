@@ -14,7 +14,7 @@
 using namespace Transport;
 
 #if !HAVE_SWIFTEN_3
-#define value_or(X) substr()
+#define get_value_or(X) substr()
 #endif
 
 class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {

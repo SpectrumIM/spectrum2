@@ -13,7 +13,7 @@
 using namespace Transport;
 
 #if !HAVE_SWIFTEN_3
-#define value_or(X) substr()
+#define get_value_or(X) substr()
 #endif
 
 class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
@@ -204,7 +204,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT_EQUAL(std::string("localhost"), getStanza(received[0])->getPayload<Swift::RosterPayload>()->getItems()[0].getJID().toString());
 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
-			CPPUNIT_ASSERT_EQUAL(std::string("registered: user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody().value_or(""));
+			CPPUNIT_ASSERT_EQUAL(std::string("registered: user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody().get_value_or(""));
 
 			UserInfo user;
 			CPPUNIT_ASSERT_EQUAL(true, storage->getUser("user@localhost", user));
@@ -242,7 +242,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::RosterPayload>());
 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[1])));
-			CPPUNIT_ASSERT_EQUAL(std::string("unregistered: user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody().value_or(""));
+			CPPUNIT_ASSERT_EQUAL(std::string("unregistered: user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[1]))->getBody().get_value_or(""));
 
 
 			UserInfo user;

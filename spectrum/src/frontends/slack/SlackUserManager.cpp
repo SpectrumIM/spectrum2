@@ -110,7 +110,7 @@ void SlackUserManager::handleUserCreated(User *user) {
 
 bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 #if HAVE_SWIFTEN_3
-	std::string body = message->getBody().value_or("");
+	std::string body = message->getBody().get_value_or("");
 #else
 	std::string body = message->getBody();
 #endif

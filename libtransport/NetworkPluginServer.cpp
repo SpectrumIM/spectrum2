@@ -971,7 +971,7 @@ void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data
 
 	pbnetwork::BackendConfig response;
 #if HAVE_SWIFTEN_3
-	response.set_config(msg->getBody().value_or(""));
+	response.set_config(msg->getBody().get_value_or(""));
 #else
 	response.set_config(msg->getBody());
 #endif
@@ -1697,7 +1697,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 		m.set_buddyname(conv->getLegacyName());
 #if HAVE_SWIFTEN_3
-		m.set_message(msg->getBody().value_or(""));
+		m.set_message(msg->getBody().get_value_or(""));
 #else
 		m.set_message(msg->getBody());
 #endif
@@ -1737,7 +1737,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, boost
 
 	// Send normal message
 #if HAVE_SWIFTEN_3
-	std::string body = msg->getBody().value_or("");
+	std::string body = msg->getBody().get_value_or("");
 #else
 	std::string body = msg->getBody();
 #endif

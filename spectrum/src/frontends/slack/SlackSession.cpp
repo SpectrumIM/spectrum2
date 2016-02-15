@@ -151,7 +151,7 @@ void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
 
 	LOG4CXX_INFO(logger, m_uinfo.jid << "Sending message to Slack channel " << channel << " from " << from);
 #if HAVE_SWIFTEN_3
-	std::string body = message->getBody().value_or("");
+	std::string body = message->getBody().get_value_or("");
 #else
 	std::string body = message->getBody();
 #endif
