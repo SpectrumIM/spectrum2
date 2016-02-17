@@ -33,12 +33,12 @@ All config options with description are located at [Config file page](http://spe
 
 You have to choose the Spectrum 2 backend and legacy network to which this Spectrum 2 gateway will connect the users.
 
-The default backend is [Libpurple backend](http://spectrum.im/documentation/backends/libpurple.html). Read the [Libpurple backend documentation](http://hanzz.github.com/libtransport/documentation/backends/libpurple.html) to see how to choose particular legacy network. If you want to use different backend, change the path to it according to [List of backends](http://hanzz.github.com/libtransport/documentation/backends/backends.html).
+The default backend is [Libpurple backend](http://spectrum.im/documentation/backends/libpurple.html). Read the [Libpurple backend documentation](http://spectrum.im/documentation/backends/libpurple.html) to see how to choose particular legacy network. If you want to use different backend, change the path to it according to [List of backends](http://spectrum.im/documentation/backends/backends.html).
 
 #### Choose the storage backend
 
 By default, Spectrum 2 uses SQLite3. You don't have to configure it explicitely.
-You can also use [MySQL](http://spectrum.im/documentation/configuration/mysql.html) or [PostgreSQL](http://hanzz.github.com/libtransport/documentation/configuration/postgresql.html) instead of SQLite3 backend.
+You can also use [MySQL](http://spectrum.im/documentation/configuration/mysql.html) or [PostgreSQL](http://spectrum.im/documentation/configuration/postgresql.html) instead of SQLite3 backend.
 
 ### Start Spectrum 2
 
