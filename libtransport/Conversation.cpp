@@ -234,6 +234,7 @@ void Conversation::sendParticipants(const Swift::JID &to, const std::string &nic
 	// When user tries to join this room from another resource using
 	// different nickname than the original one has, we have to rename
 	// him.
+	LOG4CXX_INFO(logger, m_jid.toString() << ": Sending participants to " << to.toString() << ", Nickname:" << nickname << ", Conversation nickname:" << m_nickname);
 	if (m_nickname != nickname && !nickname.empty()) {
 		Swift::Presence::ref presence;
 		std::string tmp = m_nickname;
