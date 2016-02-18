@@ -9,6 +9,7 @@
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
+#include <fstream> 
 
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
@@ -1123,6 +1124,32 @@ static void conv_write(PurpleConversation *conv, const char *who, const char *al
 	}
 }
 
+static char *calculate_data_hash(guchar *data, size_t len,
+    const gchar *hash_algo)
+{
+	PurpleCipherContext *context;
+	static gchar digest[129]; /* 512 bits hex + \0 */
+
+	context = purple_cipher_context_new_by_name(hash_algo, NULL);
+	if (context == NULL)
+	{
+		purple_debug_error("jabber", "Could not find %s cipher\n", hash_algo);
+		g_return_val_if_reached(NULL);
+	}
+
+	/* Hash the data */
+	purple_cipher_context_append(context, data, len);
+	if (!purple_cipher_context_digest_to_str(context, sizeof(digest), digest, NULL))
+	{
+		purple_debug_error("jabber", "Failed to get digest for %s cipher.\n",
+		    hash_algo);
+		g_return_val_if_reached(NULL);
+	}
+	purple_cipher_context_destroy(context);
+
+	return g_strdup(digest);
+}
+
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	// Don't forwards our own messages.
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
@@ -1130,23 +1157,77 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	}
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
-// 	char *striped = purple_markup_strip_html_wrapped(message);
-// 	std::string msg = striped;
-// 	g_free(striped);
+	std::string message_;
+	std::string xhtml_;
 
+	if (flags & PURPLE_MESSAGE_IMAGES && !CONFIG_STRING(config, "service.web_directory").empty() && !CONFIG_STRING(config, "service.web_url").empty() ) {
+		LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
+		std::string body = msg;
+		std::string plain = msg;
+		size_t i;
+		while ((i = body.find("<img id=\"")) != std::string::npos) {
+			int from = i + strlen("<img id=\"");
+			int to = body.find("\"", from + 1);
+			std::string id = body.substr(from, to - from);
+			LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << from << " " << to);
 
-	// Escape HTML characters.
-	char *newline = purple_strdup_withhtml_wrapped(msg);
-	char *strip, *xhtml;
-	purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
-// 	xhtml_linkified = spectrum_markup_linkify(xhtml);
-	std::string message_(strip);
+			PurpleStoredImage *image = purple_imgstore_find_by_id(atoi(id.c_str()));
+			if (!image) {
+				LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
+				return;
+			}
 
-	std::string xhtml_(xhtml);
-	g_free(newline);
-	g_free(xhtml);
-// 	g_free(xhtml_linkified);
-	g_free(strip);
+			std::string ext = "icon";
+			std::string name;
+			guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
+			size_t len = purple_imgstore_get_size_wrapped(image);
+			if (len < 300000 && data) {
+				ext = purple_imgstore_get_extension(image);
+				char *hash = calculate_data_hash(data, len, "sha1");
+				if (!hash) {
+					return;
+				}
+				name = hash;
+				g_free(hash);
+
+				std::ofstream output;
+				output.open(std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext).c_str(), std::ios::out | std::ios::binary);
+				output.write((char *)data, len);
+				output.close();
+			}
+			else {
+				purple_imgstore_unref_wrapped(image);
+				return;
+			}
+			purple_imgstore_unref_wrapped(image);
+			
+			std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
+			std::string img = "<img src=\"" + src + "\"/>";
+			boost::replace_all(body, "<img id=\"" + id + "\">", img);
+			boost::replace_all(plain, "<img id=\"" + id + "\">", src);
+		}
+		LOG4CXX_INFO(logger, "New image body='" << body << "'");
+		char *strip, *xhtml;
+		purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
+		message_ = strip;
+		if (message_.empty()) {
+			message_ = plain;
+		}
+		xhtml_ = xhtml;
+		g_free(xhtml);
+		g_free(strip);
+	}
+	else {
+		// Escape HTML characters.
+		char *newline = purple_strdup_withhtml_wrapped(msg);
+		char *strip, *xhtml;
+		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
+		message_ = strip;
+		xhtml_ = xhtml;
+		g_free(newline);
+		g_free(xhtml);
+		g_free(strip);
+	}
 
 	// AIM and XMPP adds <body>...</body> here...
 	if (xhtml_.find("<body>") == 0) {
@@ -1167,8 +1248,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		timestamp = buf;
 	}
 
-// 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
-
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
 		std::string w = purple_normalize_wrapped(account, who);
 		std::string n;
@@ -1177,11 +1256,11 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 			n = w.substr((int) pos + 1, w.length() - (int) pos);
 			w.erase((int) pos, w.length() - (int) pos);
 		}
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << w);
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
 		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp);
 	}
 	else {
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
 		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, who, xhtml_, timestamp);
 	}
 }
