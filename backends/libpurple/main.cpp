@@ -1314,6 +1314,7 @@ static gboolean conv_has_focus(PurpleConversation *conv) {
 }
 
 static void conv_chat_topic_changed(PurpleConversation *conv, const char *who, const char *topic) {
+	LOG4CXX_INFO(logger, "Conversation topic changed");
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic ? topic : "", who ? who : "Spectrum 2");
 }
@@ -1323,6 +1324,9 @@ static void conv_present(PurpleConversation *conv) {
 		const char *topic = purple_conv_chat_get_topic(PURPLE_CONV_CHAT_WRAPPED(conv));
 		if (topic && *topic != '\0') {
 			conv_chat_topic_changed(conv, topic, PURPLE_CONV_CHAT_WRAPPED(conv)->who);
+		}
+		else {
+			LOG4CXX_INFO(logger, "Conversation created with an empty topic");
 		}
 	}
 }
