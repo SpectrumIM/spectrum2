@@ -721,6 +721,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					disp = purple_account_get_username(account);
 				}
 
+				LOG4CXX_INFO(logger, user << ": Display name is " << dip << ", nickname is " << nickname);
 				if (nickname != disp) {
 					handleRoomNicknameChanged(np->m_accounts[account], room, disp);
 					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
