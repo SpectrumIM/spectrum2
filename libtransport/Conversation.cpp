@@ -251,12 +251,12 @@ void Conversation::sendParticipants(const Swift::JID &to, const std::string &nic
 		presence->setTo(to);
 		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 
-		// And send the presence from as new user
-		m_nickname = tmp;
-		presence = generatePresence(m_nickname, 0, (int) Swift::StatusShow::Online, "", "", "");
-		presence->setTo(to);
-		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 	}
+
+	// Self presence has to be sent as first.
+	Swift::Presence::ref presence = generatePresence(m_nickname, 0, (int) Swift::StatusShow::Online, "", "", "");
+	presence->setTo(to);
+	m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 
 	for (std::map<std::string, Participant>::iterator it = m_participants.begin(); it != m_participants.end(); it++) {
 		(*it).second.presence->setTo(to);
