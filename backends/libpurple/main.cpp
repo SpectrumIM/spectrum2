@@ -1229,8 +1229,22 @@ static void conv_chat_remove_users(PurpleConversation *conv, GList *users) {
 	}
 }
 
-gboolean conv_has_focus(PurpleConversation *conv) {
+static gboolean conv_has_focus(PurpleConversation *conv) {
 	return TRUE;
+}
+
+static void conv_chat_topic_changed(PurpleConversation *conv, const char *who, const char *topic) {
+	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
+	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic ? topic : "", who ? who : "Spectrum 2");
+}
+
+static void conv_present(PurpleConversation *conv) {
+	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_CHAT) {
+		const char *topic = purple_conv_chat_get_topic(PURPLE_CONV_CHAT_WRAPPED(conv));
+		if (topic && *topic != '\0') {
+			conv_chat_topic_changed(conv, topic, PURPLE_CONV_CHAT_WRAPPED(conv)->who);
+		}
+	}
 }
 
 static PurpleConversationUiOps conversation_ui_ops =
@@ -1244,7 +1258,7 @@ static PurpleConversationUiOps conversation_ui_ops =
 	NULL,//conv_chat_rename_user,     /* chat_rename_user     */
 	conv_chat_remove_users,    /* chat_remove_users    */
 	NULL,//pidgin_conv_chat_update_user,     /* chat_update_user     */
-	NULL,//pidgin_conv_present_conversation, /* present              */
+	conv_present,//pidgin_conv_present_conversation, /* present              */
 	conv_has_focus,//pidgin_conv_has_focus,            /* has_focus            */
 	NULL,//pidgin_conv_custom_smiley_add,    /* custom_smiley_add    */
 	NULL,//pidgin_conv_custom_smiley_write,  /* custom_smiley_write  */
@@ -1867,11 +1881,6 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
 	np->handleAttention(np->m_accounts[account], w, "");
-}
-
-static void conv_chat_topic_changed(PurpleConversation *conv, const char *who, const char *topic) {
-	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
-	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic ? topic : "", who ? who : "Spectrum 2");
 }
 
 static bool initPurple() {

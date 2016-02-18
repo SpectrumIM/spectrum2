@@ -132,7 +132,11 @@ void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) 
 				if (!message->getSubject().empty()) {
 					m_subject = message;
 					if (m_sentInitialPresence == false) {
+						LOG4CXX_INFO(logger, m_jid.toString() << ": Caching subject message, initial presence not sent yet.");
 						return;
+					}
+					else {
+						LOG4CXX_INFO(logger, m_jid.toString() << ": Forwarding subject message.");
 					}
 				}
 				m_conversationManager->getComponent()->getFrontend()->sendMessage(message);
@@ -405,7 +409,6 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 		m_participants[nick].presence = presence;
 		m_participants[nick].alias = alias;
 	}
-
 
 	BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 		presence->setTo(jid);
