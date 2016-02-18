@@ -648,11 +648,23 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		void updateConversationActivity(PurpleAccount *account, const std::string &buddyName) {
+			PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, buddyName.c_str(), account);
+			if (!conv) {
+				conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, buddyName.c_str(), account);
+			}
+			if (conv) {
+				purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
+				purple_conversation_update_wrapped(conv, PURPLE_CONV_UPDATE_UNSEEN);
+			}
+		}
+
 		void handleTypingRequest(const std::string &user, const std::string &buddyName) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				LOG4CXX_INFO(logger, user << ": sending typing notify to " << buddyName);
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_TYPING);
+				updateConversationActivity(account, buddyName);
 			}
 		}
 
@@ -660,6 +672,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_TYPED);
+				updateConversationActivity(account, buddyName);
 			}
 		}
 
@@ -667,14 +680,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				serv_send_typing_wrapped(purple_account_get_connection_wrapped(account), buddyName.c_str(), PURPLE_NOT_TYPING);
-				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, buddyName.c_str(), account);
-				if (!conv) {
-					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, buddyName.c_str(), account);
-				}
-				if (conv) {
-					purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
-					purple_conversation_update_wrapped(conv, PURPLE_CONV_UPDATE_UNSEEN);
-				}
+				updateConversationActivity(account, buddyName);
 			}
 		}
 
@@ -1223,6 +1229,10 @@ static void conv_chat_remove_users(PurpleConversation *conv, GList *users) {
 	}
 }
 
+gboolean conv_has_focus(PurpleConversation *conv) {
+	return TRUE;
+}
+
 static PurpleConversationUiOps conversation_ui_ops =
 {
 	NULL,
@@ -1235,7 +1245,7 @@ static PurpleConversationUiOps conversation_ui_ops =
 	conv_chat_remove_users,    /* chat_remove_users    */
 	NULL,//pidgin_conv_chat_update_user,     /* chat_update_user     */
 	NULL,//pidgin_conv_present_conversation, /* present              */
-	NULL,//pidgin_conv_has_focus,            /* has_focus            */
+	conv_has_focus,//pidgin_conv_has_focus,            /* has_focus            */
 	NULL,//pidgin_conv_custom_smiley_add,    /* custom_smiley_add    */
 	NULL,//pidgin_conv_custom_smiley_write,  /* custom_smiley_write  */
 	NULL,//pidgin_conv_custom_smiley_close,  /* custom_smiley_close  */
