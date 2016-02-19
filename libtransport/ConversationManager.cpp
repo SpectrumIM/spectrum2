@@ -105,8 +105,12 @@ void ConversationManager::resetResources() {
 void ConversationManager::removeJID(const Swift::JID &jid) {
 	std::vector<std::string> toRemove;
 	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
+		if (it->first.empty() || !it->second) {
+			continue;
+		}
+
 		(*it).second->removeJID(jid);
-		if (it->second->getJIDs().empty()) {
+		if (it->second->getJIDs().empty() && (*it).second->isMUC()) {
 			toRemove.push_back(it->first);
 		}
 	}

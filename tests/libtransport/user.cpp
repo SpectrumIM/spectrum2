@@ -30,6 +30,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesOneDisconnectsBouncer);
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesAnotherOneDisconnects);
 	CPPUNIT_TEST(leaveJoinedRoom);
+	CPPUNIT_TEST(doNotLeaveNormalChat);
 	CPPUNIT_TEST(joinRoomBeforeConnected);
 	CPPUNIT_TEST(handleDisconnected);
 	CPPUNIT_TEST(handleDisconnectedReconnect);
@@ -418,6 +419,24 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		handlePresenceLeaveRoom();
 
 		CPPUNIT_ASSERT(!user->getConversationManager()->getConversation("room"));
+	}
+
+	void doNotLeaveNormalChat() {
+		User *user = userManager->getUser("user@localhost");
+
+		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
+		user->getConversationManager()->addConversation(conv);
+
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+
+		user->getConversationManager()->removeJID("user@localhost/resource");
+		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
+		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
+		Conversation *cv = user->getConversationManager()->getConversation("buddy1@test");
+		CPPUNIT_ASSERT(cv);
 	}
 
 	void handleDisconnected() {
