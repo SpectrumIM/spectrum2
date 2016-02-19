@@ -147,9 +147,11 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	std::string slackChannel;
 	std::string uin;
 	std::string password;
-	if (data.size() == 4) {
+	if (data.size() >= 3) {
 		slackChannel = data[1];
 		uin = data[2];
+	}
+	if (data.size() == 4) {
 		password = data[3];
 	}
 

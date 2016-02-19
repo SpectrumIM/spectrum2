@@ -256,7 +256,7 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 	std::string uin = get_http_var(hm, "uin");
 	std::string password = get_http_var(hm, "password");
 
-	if (jid.empty() || uin.empty() || password.empty()) {
+	if (jid.empty() || uin.empty()) {
 		send_ack(conn, true, "Insufficient data.");
 	}
 	else {

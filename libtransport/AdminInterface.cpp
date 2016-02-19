@@ -268,11 +268,16 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 		std::string body = msg;
 		std::vector<std::string> args;
 		boost::split(args, body, boost::is_any_of(" "));
-		if (args.size() == 4) {
+		if (args.size() == 4 || args.size() == 3) {
 			UserInfo res;
 			res.jid = args[1];
 			res.uin = args[2];
-			res.password = args[3];
+			if (args.size() == 3) {
+				res.password = args[3];
+			}
+			else {
+				res.password = args[4];
+			}
 			res.language = "en";
 			res.encoding = "utf-8";
 			res.vip = 0;
