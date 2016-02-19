@@ -67,7 +67,7 @@ void SlackUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPay
 	}
 
 	m_session->handleDisconnected();
-	m_session->sendMessageToAll("Maybe you have provided wrong 3rd-party network account information. In that case, you can use ```.spectrum2 register ...``` command again with corrected data. You can also try using ```.spectrum2 reconnect``` to reconnect.");
+	m_session->sendMessageToAll("Maybe you have provided wrong 3rd-party network account information.");
 	static_cast<SlackUserManager *>(m_userManager)->moveTempSession(m_jid.toString(), m_session);
 	m_session = NULL;
 }

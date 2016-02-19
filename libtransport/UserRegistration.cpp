@@ -66,15 +66,18 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 
 	// This user is not registered, nothing to do
 	if (!registered) {
+		LOG4CXX_WARN(logger, "Tried to unregister already unregistered user " << barejid);
 		return false;
 	}
 
+	LOG4CXX_INFO(logger, "Unregistering user " << barejid);
 	// Remove user from database
 	m_storageBackend->removeUser(userInfo.id);
 
 	// Disconnect the user
 	User *user = m_userManager->getUser(barejid);
 	if (user) {
+		LOG4CXX_INFO(logger, "Disconnecting user " << barejid);
 		m_userManager->removeUser(user);
 	}
 

@@ -74,6 +74,13 @@ std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string
 	m_auths[oauth2->getState()] = oauth2;
 	m_authsData[oauth2->getState()] = args;
 
+	if (args.size() >= 3) {
+		LOG4CXX_INFO(logger, "Generating OAUth2 URL with slack_channel=" << args[0] << ", 3rd_party_account=" << args[1]);
+	}
+	else {
+		LOG4CXX_WARN(logger, "Generating OAUth2 URL with too few arguments");
+	}
+
 	return url;
 }
 
@@ -182,7 +189,7 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	value = access_token;
 	m_storageBackend->getUserSetting(user.id, "access_token", type, value);
 
-	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid);
+	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid << ", slack_channel=" << slackChannel);
 
 	if (oauth2) {
 		m_auths.erase(state);

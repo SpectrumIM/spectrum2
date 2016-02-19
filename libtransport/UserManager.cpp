@@ -119,6 +119,7 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 		m_storageBackend->setUserOnline(user->getUserInfo().id, false);
 	}
 
+	LOG4CXX_INFO(logger, user->getJID().toBare().toString() << ": Disconnecting user");
 	onUserDestroyed(user);
 	delete user;
 #ifndef WIN32
