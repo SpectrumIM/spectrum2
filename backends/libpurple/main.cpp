@@ -349,13 +349,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			if (password.empty() && CONFIG_STRING(config, "service.protocol") != "prpl-telegram") {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
-				np->handleDisconnected(user, CONNECTION_ERROR_INVALID_USERNAME, "Empty password.");
+				np->handleDisconnected(user, 1, "Empty password.");
 				return;
 			}
 
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
-				np->handleDisconnected(user, CONNECTION_ERROR_INVALID_USERNAME, "Invalid protocol " + protocol);
+				np->handleDisconnected(user, 1, "Invalid protocol " + protocol);
 				return;
 			}
 
@@ -363,7 +363,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				account = purple_accounts_find_wrapped(name.c_str(), protocol.c_str());
 				if (m_accounts.find(account) != m_accounts.end() && m_accounts[account] != user) {
 					LOG4CXX_INFO(logger, "Account '" << name << "' is already used by '" << m_accounts[account] << "'");
-					np->handleDisconnected(user, CONNECTION_ERROR_INVALID_USERNAME, "Account '" + name + "' is already used by '" + m_accounts[account] + "'");
+					np->handleDisconnected(user, 1, "Account '" + name + "' is already used by '" + m_accounts[account] + "'");
 					return;
 				}
 				LOG4CXX_INFO(logger, "Using previously created account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
