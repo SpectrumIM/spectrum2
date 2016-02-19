@@ -313,6 +313,7 @@ void APIServer::serve_instances_join_room(Server *server, Server::session *sessi
 	}
 
 	std::string name = get_http_var(hm, "name");
+	boost::replace_all(name, " ", "_");
 	std::string legacy_room = get_http_var(hm, "legacy_room");
 	std::string legacy_server = get_http_var(hm, "legacy_server");
 	std::string frontend_room = get_http_var(hm, "frontend_room");
