@@ -398,7 +398,9 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->handleMessage(msg2, "anotheruser");
 
 		loop->processEvents();
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		// Presence from the room when disconnecting the user
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		received.clear();
 
 		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
 		userRegistry->onPasswordValid(Swift::JID("user@localhost/resource"));
@@ -475,7 +477,9 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->handleMessage(msg2, "anotheruser");
 
 		loop->processEvents();
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		// Presence to ack the user leave
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
+		received.clear();
 
 		userRegistry->isValidUserPassword(Swift::JID("user@localhost/resource"), serverFromClientSession.get(), Swift::createSafeByteArray("password"));
 		userRegistry->onPasswordValid(Swift::JID("user@localhost/resource"));

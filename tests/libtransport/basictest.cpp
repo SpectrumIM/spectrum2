@@ -245,6 +245,13 @@ void BasicTest::disconnectUser() {
 	loop->processEvents();
 
 	CPPUNIT_ASSERT_EQUAL(0, userManager->getUserCount());
+
+	// When user has been in a room, unavailable presence can be sent from that room.
+	if (received.size() == 2) {
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
+		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
+		return;
+	}
 	CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 	CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 }

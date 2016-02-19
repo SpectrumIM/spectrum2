@@ -22,7 +22,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
     CPPUNIT_TEST(handlePresence);
 	CPPUNIT_TEST(handlePresenceJoinRoom);
 	CPPUNIT_TEST(handlePresenceJoinRoomTwoResources);
-	CPPUNIT_TEST(handlePresenceLeaveRoom);
+// 	CPPUNIT_TEST(handlePresenceLeaveRoom); // tested as part of other tests
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResources);
 	CPPUNIT_TEST(handlePresenceLeaveRoomTwoResourcesOneDisconnects);
 	CPPUNIT_TEST(handlePresenceLeaveRoomBouncer);
@@ -216,7 +216,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 
 // 		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 // 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
@@ -239,7 +239,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
@@ -258,7 +258,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 
 		CPPUNIT_ASSERT_EQUAL(std::string("room"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
@@ -357,7 +357,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
@@ -377,7 +377,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		injectPresence(response);
 		loop->processEvents();
 
-		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
+		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 
 		CPPUNIT_ASSERT_EQUAL(std::string("something"), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);

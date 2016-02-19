@@ -396,6 +396,11 @@ void Conversation::handleRawPresence(Swift::Presence::ref presence) {
 }
 
 void Conversation::removeJID(const Swift::JID &jid) {
+	if (m_muc) {
+		Swift::Presence::ref presence = generatePresence(m_nickname, 0, Swift::StatusShow::None, "");
+		presence->setTo(jid);
+		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
+	}
 	m_jids.remove(jid);
 }
 

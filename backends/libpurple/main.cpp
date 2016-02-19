@@ -1321,6 +1321,8 @@ static void conv_chat_topic_changed(PurpleConversation *conv, const char *who, c
 
 static void conv_present(PurpleConversation *conv) {
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_CHAT) {
+		LOG4CXX_INFO(logger, "Conversation presented");
+		conv_chat_add_users(conv, PURPLE_CONV_CHAT_WRAPPED(conv)->in_room, TRUE);
 		const char *topic = purple_conv_chat_get_topic(PURPLE_CONV_CHAT_WRAPPED(conv));
 		if (topic && *topic != '\0') {
 			conv_chat_topic_changed(conv, topic, PURPLE_CONV_CHAT_WRAPPED(conv)->who);
