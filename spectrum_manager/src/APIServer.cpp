@@ -259,16 +259,17 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 	// For some networks like IRC, there is no registration.
 	// We detect such networks according to registration_fields and use
 	// "unknown" uin for them.
-	if (uin.empty()) {
+	if (uin.empty() || password.empty()) {
 		std::string response = server->send_command(instance, "registration_fields");
 		std::vector<std::string> fields;
 		boost::split(fields, response, boost::is_any_of("\n"));
 		if (fields.size() == 1) {
 			uin = "unknown";
+			password = "unknown";
 		}
 	}
 
-	if (jid.empty() || uin.empty()) {
+	if (jid.empty() || uin.empty() || password.empty()) {
 		send_ack(conn, true, "Insufficient data.");
 	}
 	else {
