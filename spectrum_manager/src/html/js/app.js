@@ -185,12 +185,23 @@ function fill_instances_register_form() {
 	
 	$.get($.cookie("base_location") + "api/v1/instances/register_form/" + query.id, function(data) {
 		$("#jid_desc").html(data.username_label + ":");
-		$("#uin_desc").html(data.legacy_username_label + ":");
-		$("#password_desc").html(data.password_label + ":");
-
 		$("#jid").attr("placeholder", data.username_label);
-		$("#uin").attr("placeholder", data.legacy_username_label);
-		$("#password").attr("placeholder", data.password_label);
+
+		if (data.legacy_username_label.length == 0) {
+			$('#uin_label').hide();
+		}
+		else {
+			$("#uin_desc").html(data.legacy_username_label + ":");
+			$("#uin").attr("placeholder", data.legacy_username_label);
+		}
+
+		if (data.password_label.length == 0) {
+			$('#password_label').hide();
+		}
+		else {
+			$("#password_desc").html(data.password_label + ":");
+			$("#password").attr("placeholder", data.password_label);
+		}
 	});
 }
 

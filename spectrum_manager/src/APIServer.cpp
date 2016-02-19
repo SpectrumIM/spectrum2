@@ -256,6 +256,18 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 	std::string uin = get_http_var(hm, "uin");
 	std::string password = get_http_var(hm, "password");
 
+	// For some networks like IRC, there is no registration.
+	// We detect such networks according to registration_fields and use
+	// "unknown" uin for them.
+	if (uin.empty()) {
+		std::string response = server->send_command(instance, "registration_fields");
+		std::vector<std::string> fields;
+		boost::split(fields, response, boost::is_any_of("\n"));
+		if (fields.size() == 1) {
+			uin = "unknown";
+		}
+	}
+
 	if (jid.empty() || uin.empty()) {
 		send_ack(conn, true, "Insufficient data.");
 	}
@@ -363,8 +375,7 @@ void APIServer::serve_instances_register_form(Server *server, Server::session *s
 	std::vector<std::string> fields;
 	boost::split(fields, response, boost::is_any_of("\n"));
 
-	if (fields.size() < 3) {
-		fields.clear();
+	if (fields.empty()) {
 		fields.push_back("Jabber ID");
 		fields.push_back("3rd-party network username");
 		fields.push_back("3rd-party network password");
@@ -374,8 +385,8 @@ void APIServer::serve_instances_register_form(Server *server, Server::session *s
 	json.SetObject();
 	json.AddMember("error", 0, json.GetAllocator());
 	json.AddMember("username_label", fields[0].c_str(), json.GetAllocator());
-	json.AddMember("legacy_username_label", fields[1].c_str(), json.GetAllocator());
-	json.AddMember("password_label", fields[2].c_str(), json.GetAllocator());
+	json.AddMember("legacy_username_label", fields.size() >= 2 ? fields[1].c_str() : "", json.GetAllocator());
+	json.AddMember("password_label", fields.size() >= 3 ? fields[2].c_str() : "", json.GetAllocator());
 	send_json(conn, json);
 }
 

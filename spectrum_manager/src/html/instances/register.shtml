@@ -9,11 +9,11 @@
 	<span id="jid_desc"></span> 
 	<input type="text" id="jid" name="jid" placeholder=""></textarea> 
 </label> 
-<label> 
+<label id="uin_label"> 
 	<span id="uin_desc"></span> 
 	<input type="text" id="uin" name="uin" placeholder=""></textarea> 
 </label> 
-<label><span id="password_desc"></span> 
+<label id="password_label"><span id="password_desc"></span> 
 	<input type="password" id="password" name="password" placeholder=""></textarea> 
 </label> 
 <label> 
