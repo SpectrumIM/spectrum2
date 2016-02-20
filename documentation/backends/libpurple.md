@@ -39,6 +39,10 @@ prpl-skypeweb| [https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb](w
 
 These plugins are included by default in our Docker image.
 
+### Support for Facebook stickers
+
+Facebook stickers are supported using [Web Storage](../configuration/web_storage.html).
+
 ### Setting libpurple plugins configurations
 
 Some libpurple protocol plugins allow setting configuration variables. Spectrum 2 passes every variable set in `purple` section to libpurple library. If you need to set such options, you can do it for example like this in your configuration file:

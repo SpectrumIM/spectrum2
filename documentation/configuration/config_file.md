@@ -39,7 +39,10 @@ title: Spectrum 2
 > * [pidfile](#servicepidfile)
 > * [user](#serviceuser)
 > * [users_per_backend](#servicusersperbackend)
+> * [web_directory](#servicewebdirectory)
+> * [web_url](#serviceweburl)
 > * [working_dir](#serviceworkingdir)
+
 
 
 
@@ -374,6 +377,35 @@ If you presume to have just few users on your personal server, it can be useful 
 get his own separated backend process.
 
 For bigger user-base, you have to increase the `service.users_per_backend` value, but there is no optimal value to be suggested yet.
+
+
+#### service.web_directory
+
+Key | val
+----|----
+Description:|Full path to directory used to save files to which the links are sent to users.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|
+
+When Spectrum 2 has some image or file for the user and this option is set, the image or file is stored in this directory and
+and link based on `service.web_url` is sent to the user so he can download the file.
+
+You can read more about this configuration on [Web Storage page](web_storage.html).
+
+#### service.web_url
+
+Key | val
+----|----
+Description:|URL on which files in `service.web_directory` are accessible.
+Context:|server-mode and gateway-mode
+Type:|string
+Default:|
+
+When Spectrum 2 has some image or file for the user and this option is set, the image or file is stored in the `service.web_directory` directory and
+and link based on `service.web_url` is sent to the user so he can download the file.
+
+You can read more about this configuration on [Web Storage page](web_storage.html).
 
 
 #### service.working_dir

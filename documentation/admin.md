@@ -42,6 +42,7 @@ This is Admin documentation for Spectrum 2 transport. If you are user trying to 
 * [MySQL Support](configuration/mysql.html)
 * [PostgreSQL Support](configuration/postgresql.html)
 * [Logging](configuration/logging.html)
+* [Web storage](configuration/web_storage.html);
 
 #### Management
 
