@@ -84,7 +84,9 @@ void WebSocketClient::connectServer(const std::string &url) {
 
 void WebSocketClient::disconnectServer() {
 	if (m_conn) {
+		m_reconnectTimer->stop();
 		m_conn->onDataRead.disconnect(boost::bind(&WebSocketClient::handleDataRead, this, _1));
+		m_conn->onDisconnected.connect(boost::bind(&WebSocketClient::handleDisconnected, this, _1));
 		m_conn->disconnect();
 	}
 }
