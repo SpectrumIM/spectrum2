@@ -28,6 +28,7 @@
 #include "transport/Transport.h"
 #include "transport/StorageBackend.h"
 #include "transport/Logging.h"
+#include "transport/Config.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
@@ -132,6 +133,30 @@ bool SlackUserManager::handleAdminMessage(Swift::Message::ref message) {
 			message->setBody(rooms);
 			return true;
 		}
+	}
+	else if (body.find("join_room_fields") == 0) {
+		std::string ret;
+
+		Config *cfg = m_component->getConfig();
+		ret += CONFIG_STRING_DEFAULTED(cfg, "service.join_room_nickname_label", "Nickname in 3rd-party room") + "\n";
+		std::string room_name = CONFIG_STRING_DEFAULTED(cfg, "service.join_room_room_label", "3rd-party room name");
+		if (room_name[0] == '%') {
+			room_name[0] = '#';
+		}
+		ret += room_name + "\n";
+		ret += CONFIG_STRING_DEFAULTED(cfg, "service.join_room_server_label", "3rd-party server") + "\n";
+		ret += "Slack Channel\n";
+		ret += CONFIG_STRING_DEFAULTED(cfg, "service.join_room_nickname_example", "BotNickname") + "\n";
+		room_name = CONFIG_STRING_DEFAULTED(cfg, "service.join_room_room_example", "3rd-party room name");
+		if (room_name[0] == '%') {
+			room_name[0] = '#';
+		}
+		ret += room_name + "\n";
+		ret += CONFIG_STRING_DEFAULTED(cfg, "service.join_room_server_example", "3rd.party.server.org") + "\n";
+		ret += "mychannel";
+
+		message->setBody(ret);
+		return true;
 	}
 	else if (body.find("join_room ") == 0) {
 		std::vector<std::string> args;

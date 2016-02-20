@@ -358,14 +358,37 @@ void APIServer::serve_instances_leave_room(Server *server, Server::session *sess
 }
 
 void APIServer::serve_instances_join_room_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+
 	// So far we support just Slack here. For XMPP, it is up to user to initiate the join room request.
 	Document json;
 	json.SetObject();
 	json.AddMember("error", 0, json.GetAllocator());
-	json.AddMember("name_label", "Nickname in 3rd-party room", json.GetAllocator());
-	json.AddMember("legacy_room_label", "3rd-party room name", json.GetAllocator());
-	json.AddMember("legacy_server_label", "3rd-party server", json.GetAllocator());
-	json.AddMember("frontend_room_label", "Slack channel", json.GetAllocator());
+
+	std::string response = server->send_command(instance, "join_room_fields");
+	std::vector<std::string> fields;
+	boost::split(fields, response, boost::is_any_of("\n"));
+
+	if (fields.size() != 8) {
+		fields.push_back("Nickname in 3rd-party room");
+		fields.push_back("3rd-party room name");
+		fields.push_back("3rd-party server");
+		fields.push_back("Slack Channel");
+		fields.push_back("BotNickname");
+		fields.push_back("room_name");
+		fields.push_back("3rd.party.server.org");
+		fields.push_back("mychannel");
+	}
+
+	json.AddMember("name_label", fields[0].c_str(), json.GetAllocator());
+	json.AddMember("legacy_room_label", fields[1].c_str(), json.GetAllocator());
+	json.AddMember("legacy_server_label", fields[2].c_str(), json.GetAllocator());
+	json.AddMember("frontend_room_label", fields[3].c_str(), json.GetAllocator());
+	json.AddMember("name_example", fields[4].c_str(), json.GetAllocator());
+	json.AddMember("legacy_room_example", fields[5].c_str(), json.GetAllocator());
+	json.AddMember("legacy_server_example", fields[6].c_str(), json.GetAllocator());
+	json.AddMember("frontend_room_example", fields[7].c_str(), json.GetAllocator());
 	send_json(conn, json);
 }
 

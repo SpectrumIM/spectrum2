@@ -40,7 +40,7 @@ function show_instances() {
 			row += '<td>' + instance.status + '</td>'
 
 			if (command == 'register') {
-				row += '<td><a class="button_command" href="' + $.cookie("base_location") + 'instances/register.shtml?id=' + instance.id + '">' + command + '</a>' + '</td></tr>';
+				row += '<td><a href="' + $.cookie("base_location") + 'instances/register.shtml?id=' + instance.id + '">' + command + '</a>' + '</td></tr>';
 				$("#main_result  > tbody:last-child").append(row);
 			}
 			else if (command == "") {
@@ -152,10 +152,10 @@ function fill_instances_join_room_form() {
 		$("#legacy_server_desc").html(data.legacy_server_label + ":");
 		$("#frontend_room_desc").html(data.frontend_room_label + ":");
 
-		$("#name").attr("placeholder", data.name_label + ":");
-		$("#legacy_room").attr("placeholder", data.legacy_room_label + ":");
-		$("#legacy_server").attr("placeholder", data.legacy_server_label + ":");
-		$("#frontend_room").attr("placeholder", data.frontend_room_label + ":");
+		$("#name").attr("placeholder", data.name_example);
+		$("#legacy_room").attr("placeholder", data.legacy_room_example);
+		$("#legacy_server").attr("placeholder", data.legacy_server_example);
+		$("#frontend_room").attr("placeholder", data.frontend_room_example);
 	});
 }
 
