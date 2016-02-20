@@ -81,7 +81,7 @@ function show_list_rooms() {
 			row += '<td>' + room.legacy_room + '</td>';
 			row += '<td>' + room.legacy_server + '</td>';
 			row += '<td>' + room.name + '</td>';
-			row += '<td><a class="button_command" href="' + $.cookie("base_location") +  'api/v1/instances/leave_room/' + query.id + '?frontend_room=' + room.frontend_room + '">Leave</a></td>';
+			row += '<td><a class="button_command" href="' + $.cookie("base_location") +  'api/v1/instances/leave_room/' + query.id + '?frontend_room=' + encodeURIComponent(room.frontend_room) + '">Leave</a></td>';
 			row += '</tr>';
 
 			$("#main_result  > tbody:last-child").append(row);
