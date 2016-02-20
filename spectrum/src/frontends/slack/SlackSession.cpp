@@ -203,6 +203,8 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	if (args[5][0] == '#') {
 		args[5].erase(0, 1);
 	}
+	boost::algorithm::to_lower(args[3]);
+	boost::algorithm::to_lower(args[4]);
 	LOG4CXX_INFO(logger, m_uinfo.jid << ": Going to join the room " << args[3] << "@" << args[4] << ", transporting it to channel " << args[5]);
 	m_api->createChannel(args[5], m_idManager->getSelfId(), boost::bind(&SlackSession::handleJoinRoomCreated, this, _1, args));
 }
