@@ -2086,8 +2086,11 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 				cfg.setNeedPassword(false);
 			}
-			if (CONFIG_STRING(config, "service.protocol") != "prpl-irc") {
+			if (CONFIG_STRING(config, "service.protocol") == "prpl-irc") {
 				cfg.setNeedRegistration(false);
+			}
+			else {
+				cfg.setNeedRegistration(true);
 			}
 			np->sendConfig(cfg);
 		}

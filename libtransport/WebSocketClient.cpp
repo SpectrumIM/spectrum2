@@ -82,6 +82,13 @@ void WebSocketClient::connectServer(const std::string &url) {
 	connectServer();
 }
 
+void WebSocketClient::disconnectServer() {
+	if (m_conn) {
+		m_conn->onDataRead.disconnect(boost::bind(&WebSocketClient::handleDataRead, this, _1));
+		m_conn->disconnect();
+	}
+}
+
 void WebSocketClient::write(const std::string &data) {
 	if (!m_conn) {
 		return;

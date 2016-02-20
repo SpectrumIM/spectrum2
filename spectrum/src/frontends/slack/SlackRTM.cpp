@@ -92,6 +92,14 @@ void SlackRTM::start() {
 		return; \
 	}
 
+#define STORE_INT(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.IsInt()) {  \
+		LOG4CXX_ERROR(logger, "No '" << #NAME << "' number in the reply."); \
+		LOG4CXX_ERROR(logger, payload); \
+		return; \
+	} \
+	int NAME = NAME##_tmp.GetInt();
+
 void SlackRTM::handlePayloadReceived(const std::string &payload) {
 	rapidjson::Document d;
 	if (d.Parse<0>(payload.c_str()).HasParseError()) {
@@ -143,6 +151,17 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		  || type == "channel_created") {
 		std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
 		SlackAPI::getSlackChannelInfo(NULL, true, d, payload, channels);
+	}
+	else if (type == "error") {
+		GET_OBJECT(d, error);
+		STORE_INT(error, code);
+
+		if (code == 1) {
+			LOG4CXX_INFO(logger, "Reconnecting to Slack network");
+			m_pingTimer->stop();
+			m_client->disconnectServer();
+			start();
+		}
 	}
 }
 

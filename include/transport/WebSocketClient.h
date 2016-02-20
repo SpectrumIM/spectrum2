@@ -55,6 +55,7 @@ class WebSocketClient {
 		virtual ~WebSocketClient();
 
 		void connectServer(const std::string &u);
+		void disconnectServer();
 
 		void write(const std::string &data);
 
