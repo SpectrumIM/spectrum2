@@ -1182,21 +1182,28 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 			std::string name;
 			guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
 			size_t len = purple_imgstore_get_size_wrapped(image);
-			if (len < 300000 && data) {
+			if (len < 1000000 && data) {
 				ext = purple_imgstore_get_extension(image);
 				char *hash = calculate_data_hash(data, len, "sha1");
 				if (!hash) {
+					LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
 					return;
 				}
 				name = hash;
 				g_free(hash);
 
 				std::ofstream output;
+				LOG4CXX_INFO(logger, "Storing image to " << std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext));
 				output.open(std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext).c_str(), std::ios::out | std::ios::binary);
+				if (output.fail()) {
+					LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
+					return;
+				}
 				output.write((char *)data, len);
 				output.close();
 			}
 			else {
+				LOG4CXX_WARN(logger, "Image bigger than 1MB.");
 				purple_imgstore_unref_wrapped(image);
 				return;
 			}
