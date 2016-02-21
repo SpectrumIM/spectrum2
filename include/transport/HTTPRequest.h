@@ -21,12 +21,7 @@ class HTTPRequest : public Thread {
 		HTTPRequest(ThreadPool *tp, Type type, const std::string &url, Callback callback);
 		HTTPRequest(Type type, const std::string &url);
 
-		virtual ~HTTPRequest() {
-			if(curlhandle) {
-				curl_easy_cleanup(curlhandle);
-				curlhandle = NULL;
-			}
-		}
+		virtual ~HTTPRequest();
 
 		void setProxy(std::string, std::string, std::string, std::string);
 		bool execute();

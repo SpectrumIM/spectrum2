@@ -188,6 +188,16 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 		return;
 	}
 
+	STORE_STRING_OPTIONAL(resp, error);
+	if (!error.empty()) {
+		if (error == "account_inactive") {
+			LOG4CXX_INFO(logger, "Account inactive, will not try connecting again");
+			m_pingTimer->stop();
+			m_client->disconnectServer();
+			return;
+		}
+	}
+
 	rapidjson::Value &url = resp["url"];
 	if (!url.IsString()) {
 		LOG4CXX_ERROR(logger, "No 'url' object in the reply.");

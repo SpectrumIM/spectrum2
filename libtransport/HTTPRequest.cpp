@@ -21,6 +21,14 @@ HTTPRequest::HTTPRequest(Type type, const std::string &url) {
 	init();
 }
 
+HTTPRequest::~HTTPRequest() {
+	if (curlhandle) {
+		LOG4CXX_INFO(logger, "Cleaning up CURL handle");
+		curl_easy_cleanup(curlhandle);
+		curlhandle = NULL;
+	}
+}
+
 bool HTTPRequest::init() {
 	curlhandle = curl_easy_init();
 	if (curlhandle) {
@@ -85,6 +93,7 @@ bool HTTPRequest::GET(std::string url, 	std::string &data) {
 		LOG4CXX_ERROR(logger, "CURL not initialized!")
 		strcpy(curl_errorbuffer, "CURL not initialized!");
 	}
+	LOG4CXX_ERROR(logger, "Error fetching " << url);
 	return false;
 }
 
