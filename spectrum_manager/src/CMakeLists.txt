@@ -18,10 +18,12 @@ target_link_libraries(spectrum2_manager transport ${APPLE_FRAMEWORKS})
 endif()
 INSTALL(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 
+IF(NOT EXISTS "/etc/spectrum2/spectrum_manager.cfg")
 INSTALL(FILES
 	spectrum_manager.cfg
 	DESTINATION /etc/spectrum2
 	)
+ENDIF()
 
 INSTALL(DIRECTORY
 	html

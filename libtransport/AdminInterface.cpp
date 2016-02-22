@@ -273,10 +273,10 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 			res.jid = args[1];
 			res.uin = args[2];
 			if (args.size() == 3) {
-				res.password = args[3];
+				res.password = "";
 			}
 			else {
-				res.password = args[4];
+				res.password = args[3];
 			}
 			res.language = "en";
 			res.encoding = "utf-8";

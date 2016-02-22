@@ -94,6 +94,8 @@ namespace Transport {
 				return m_rawXML;
 			}
 
+			std::string getRegistrationFields();
+
 		private:
 			void handleConnected();
 			void handleConnectionError(const Swift::ComponentError &error);

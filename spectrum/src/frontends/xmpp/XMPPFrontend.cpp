@@ -396,4 +396,13 @@ void XMPPFrontend::handleCapsChanged(const Swift::JID& jid) {
 	onCapabilitiesReceived(jid, m_entityCapsManager->getCaps(jid));
 }
 
+std::string XMPPFrontend::getRegistrationFields() {
+	std::string fields = "Jabber ID";
+// 	if (CONFIG_BOOL(m_config, "registration.needRegistration")) {
+		fields += "\n" + CONFIG_STRING(m_config, "registration.username_label") + "\n";
+		fields += CONFIG_STRING(m_config, "registration.password_label");
+// 	}
+	return fields;
+}
+
 }
