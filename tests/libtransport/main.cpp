@@ -11,6 +11,8 @@
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
 
+#include "transport/protocol.pb.h"
+
 using namespace log4cxx;
 #endif
 
@@ -55,6 +57,7 @@ int main (int argc, char* argv[])
 			testrunner.run(testresult, *i);
 		}
 		catch (const std::exception& e) {
+			google::protobuf::ShutdownProtobufLibrary();
 			std::cerr << "Error: " << e.what() << std::endl;
 			return -1;
 		}
@@ -63,6 +66,8 @@ int main (int argc, char* argv[])
 	// output results in compiler-format
 	CPPUNIT_NS :: CompilerOutputter compileroutputter (&collectedresults, std::cerr);
 	compileroutputter.write ();
+
+	google::protobuf::ShutdownProtobufLibrary();
 
 	// return 0 if tests were successful
 	return collectedresults.wasSuccessful () ? 0 : 1;

@@ -40,6 +40,11 @@ DummyNetworkFactories::~DummyNetworkFactories() {
 	delete connectionFactory;
 	delete timerFactory;
 	delete m_platformXMLParserFactory;
+
+#if HAVE_SWIFTEN_3
+	delete cryptoProvider;
+	delete networkEnvironment;
+#endif
 }
 
 }

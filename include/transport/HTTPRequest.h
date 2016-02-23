@@ -40,6 +40,14 @@ class HTTPRequest : public Thread {
 
 		boost::signal<void ()> onRequestFinished;
 
+		static void globalInit() {
+			curl_global_init(CURL_GLOBAL_ALL);
+		}
+
+		static void globalCleanup() {
+			curl_global_cleanup();
+		}
+
 	private:
 		bool init();
 		bool GET(std::string url, std::string &output);

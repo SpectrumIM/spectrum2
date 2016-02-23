@@ -60,22 +60,30 @@ void BasicTest::setMeUp (void) {
 	payloadSerializers = new Swift::FullPayloadSerializerCollection();
 	payloadParserFactories = new Swift::FullPayloadParserFactoryCollection();
 
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
-	payloadParserFactories->addFactory(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
 
-	payloadSerializers->addSerializer(new Swift::AttentionSerializer());
-	payloadSerializers->addSerializer(new Swift::XHTMLIMSerializer());
-	payloadSerializers->addSerializer(new Transport::BlockSerializer());
-	payloadSerializers->addSerializer(new Swift::InvisibleSerializer());
-	payloadSerializers->addSerializer(new Swift::StatsSerializer());
-	payloadSerializers->addSerializer(new Swift::SpectrumErrorSerializer());
-	payloadSerializers->addSerializer(new Swift::GatewayPayloadSerializer());
+	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
+		payloadParserFactories->addFactory(factory);
+	}
+
+	_payloadSerializers.push_back(new Swift::AttentionSerializer());
+	_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
+	_payloadSerializers.push_back(new Transport::BlockSerializer());
+	_payloadSerializers.push_back(new Swift::InvisibleSerializer());
+	_payloadSerializers.push_back(new Swift::StatsSerializer());
+	_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
+	_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
+
+	BOOST_FOREACH(Swift::PayloadSerializer *serializer, _payloadSerializers) {
+		payloadSerializers->addSerializer(serializer);
+	}
 
 	parser = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
 	parser2 = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
@@ -101,6 +109,7 @@ void BasicTest::tearMeDown (void) {
 		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->removeSession(serverFromClientSession2);
 		serverFromClientSession2.reset();
 	}
+	delete userManager;
 	delete component;
 	delete frontend;
 	delete userRegistry;
@@ -116,6 +125,20 @@ void BasicTest::tearMeDown (void) {
 	received2.clear();
 	receivedData.clear();
 	receivedData2.clear();
+
+	delete payloadParserFactories;
+	delete payloadSerializers;
+	
+
+	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
+		delete factory;
+	}
+	parserFactories.clear();
+
+	BOOST_FOREACH(Swift::PayloadSerializer *serializer, _payloadSerializers) {
+		delete serializer;
+	}
+	_payloadSerializers.clear();
 }
 
 void BasicTest::handleDataReceived(const Swift::SafeByteArray &data) {

@@ -282,5 +282,7 @@ class BasicTest : public Swift::XMPPParserClient {
 		DiscoItemsResponder *itemsResponder;
 		bool stream1_active;
 		Transport::XMPPFrontend *frontend;
+		std::vector<Swift::PayloadParserFactory *> parserFactories;
+		std::vector<Swift::PayloadSerializer *> _payloadSerializers;
 };
 

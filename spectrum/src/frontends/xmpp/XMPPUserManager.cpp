@@ -89,7 +89,7 @@ XMPPUserManager::XMPPUserManager(Component *component, UserRegistry *userRegistr
 	m_adHocManager = new AdHocManager(component, m_discoItemsResponder, this, storageBackend);
 	m_adHocManager->start();
 
-	SettingsAdHocCommandFactory *m_settings = new SettingsAdHocCommandFactory();
+	m_settings = new SettingsAdHocCommandFactory();
 	m_adHocManager->addAdHocCommand(m_settings);
 }
 
@@ -118,6 +118,8 @@ XMPPUserManager::~XMPPUserManager() {
 
 	m_discoItemsResponder->stop();
 	delete m_discoItemsResponder;
+
+	delete m_settings;
 }
 
 void XMPPUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {

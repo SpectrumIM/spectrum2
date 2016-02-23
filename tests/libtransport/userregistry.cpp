@@ -54,9 +54,9 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 
 		void tearDown (void) {
 			delete server;
-			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.disconnect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client1));
+			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.disconnect_all_slots();
 			client1.reset();
-			dynamic_cast<Swift::DummyConnection *>(client2.get())->onDataSent.disconnect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client2));
+			dynamic_cast<Swift::DummyConnection *>(client2.get())->onDataSent.disconnect_all_slots();
 			client2.reset();
 			connectionServer.reset();
 			delete userRegistry;

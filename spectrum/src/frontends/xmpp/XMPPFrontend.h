@@ -125,6 +125,8 @@ namespace Transport {
 			bool m_rawXML;
 			Component *m_transport;
 			UserManager *m_userManager;
+			std::vector<Swift::PayloadParserFactory *> m_parserFactories;
+			std::vector<Swift::PayloadSerializer *> m_payloadSerializers;
 
 		friend class XMPPUser;
 		friend class UserRegistration;

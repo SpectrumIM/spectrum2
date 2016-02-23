@@ -30,6 +30,7 @@
 #include "transport/Config.h"
 #include "transport/Transport.h"
 #include "transport/ThreadPool.h"
+#include "transport/HTTPRequest.h"
 
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
@@ -47,6 +48,7 @@ namespace Transport {
 DEFINE_LOGGER(logger, "SlackFrontend");
 
 SlackFrontend::SlackFrontend() {
+	HTTPRequest::globalInit();
 }
 
 void SlackFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Transport::UserRegistry *userRegistry) {
@@ -57,6 +59,7 @@ void SlackFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Ne
 }
 
 SlackFrontend::~SlackFrontend() {
+	HTTPRequest::globalCleanup();
 }
 
 void SlackFrontend::clearRoomList() {

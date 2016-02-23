@@ -86,6 +86,23 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 	m_config->onBackendConfigUpdated.connect(boost::bind(&XMPPFrontend::handleBackendConfigChanged, this));
 
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+
+	m_payloadSerializers.push_back(new Swift::AttentionSerializer());
+	m_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
+	m_payloadSerializers.push_back(new Transport::BlockSerializer());
+	m_payloadSerializers.push_back(new Swift::InvisibleSerializer());
+	m_payloadSerializers.push_back(new Swift::StatsSerializer());
+	m_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
+	m_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
+
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
 		m_server = new Swift::Server(loop, factories, userRegistry, m_jid, CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
@@ -109,22 +126,13 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
 
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
-		m_server->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
+			m_server->addPayloadParserFactory(factory);
+		}
 
-		m_server->addPayloadSerializer(new Swift::AttentionSerializer());
-		m_server->addPayloadSerializer(new Swift::XHTMLIMSerializer());
-		m_server->addPayloadSerializer(new Transport::BlockSerializer());
-		m_server->addPayloadSerializer(new Swift::InvisibleSerializer());
-		m_server->addPayloadSerializer(new Swift::StatsSerializer());
-		m_server->addPayloadSerializer(new Swift::SpectrumErrorSerializer());
-		m_server->addPayloadSerializer(new Swift::GatewayPayloadSerializer());
+		BOOST_FOREACH(Swift::PayloadSerializer *serializer, m_payloadSerializers) {
+			m_server->addPayloadSerializer(serializer);
+		}
 
 		m_server->onDataRead.connect(boost::bind(&XMPPFrontend::handleDataRead, this, _1));
 		m_server->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
@@ -142,22 +150,13 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_component->onDataRead.connect(boost::bind(&XMPPFrontend::handleDataRead, this, _1));
 		m_component->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
 
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
-		m_component->addPayloadParserFactory(new GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
+			m_component->addPayloadParserFactory(factory);
+		}
 
-		m_component->addPayloadSerializer(new Swift::AttentionSerializer());
-		m_component->addPayloadSerializer(new Swift::XHTMLIMSerializer());
-		m_component->addPayloadSerializer(new Transport::BlockSerializer());
-		m_component->addPayloadSerializer(new Swift::InvisibleSerializer());
-		m_component->addPayloadSerializer(new Swift::StatsSerializer());
-		m_component->addPayloadSerializer(new Swift::SpectrumErrorSerializer());
-		m_component->addPayloadSerializer(new Swift::GatewayPayloadSerializer());
+		BOOST_FOREACH(Swift::PayloadSerializer *serializer, m_payloadSerializers) {
+			m_component->addPayloadSerializer(serializer);
+		}
 
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
@@ -186,6 +185,16 @@ XMPPFrontend::~XMPPFrontend() {
 		m_server->stop();
 		delete m_server;
 	}
+
+	BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
+		delete factory;
+	}
+	m_parserFactories.clear();
+
+	BOOST_FOREACH(Swift::PayloadSerializer *serializer, m_payloadSerializers) {
+		delete serializer;
+	}
+	m_payloadSerializers.clear();
 }
 
 void XMPPFrontend::handleGeneralPresence(Swift::Presence::ref presence) {
@@ -275,6 +284,9 @@ User *XMPPFrontend::createUser(const Swift::JID &jid, UserInfo &userInfo, Compon
 }
 
 UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
+	if (m_userManager) {
+		delete m_userManager;
+	}
 	m_userManager = new XMPPUserManager(component, userRegistry, storageBackend);
 	return m_userManager;
 }

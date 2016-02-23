@@ -330,6 +330,7 @@ NetworkPluginServer::~NetworkPluginServer() {
 	m_server->stop();
 	m_server.reset();
 	delete m_component->m_factory;
+	delete m_xmppParser;
 // 	delete m_vcardResponder;
 // 	delete m_rosterResponder;
 // 	delete m_blockResponder;

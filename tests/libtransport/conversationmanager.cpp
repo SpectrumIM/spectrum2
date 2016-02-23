@@ -143,6 +143,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("subject"), m_msg->getSubject());
 
 		received.clear();
+		delete conv;
 	}
 
 	void handleNormalMessages() {
@@ -611,6 +612,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Moderator, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].nick);
 		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[0].code);
+		delete conv;
 	}
 
 	void handleParticipantChangedEscaped() {
@@ -633,6 +635,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::MUCUserPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+		delete conv;
 	}
 
 	void handleParticipantChangedEscaped2() {
@@ -656,6 +659,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::MUCUserPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+		delete conv;
 	}
 
 	void handleParticipantChangedIconHash() {
@@ -682,6 +686,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		Swift::VCardUpdate::ref payload = getStanza(received[0])->getPayload<Swift::VCardUpdate>();
 		CPPUNIT_ASSERT(payload);
+		delete conv;
 	}
 
 	void handleParticipantChangedTwoResources() {
@@ -707,6 +712,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(getStanza(received2[0])->getPayload<Swift::MUCUserPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Member, *getStanza(received2[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].affiliation);
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Participant, *getStanza(received2[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
+		delete conv;
 	}
 
 	void handlePMFromXMPP() {
@@ -776,6 +782,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Error, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::ErrorPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::ErrorPayload::Conflict, getStanza(received[0])->getPayload<Swift::ErrorPayload>()->getCondition());
+		delete conv;
 	}
 
 	void handleNotAuthorized() {
@@ -795,6 +802,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Error, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::ErrorPayload>());
 		CPPUNIT_ASSERT_EQUAL(Swift::ErrorPayload::NotAuthorized, getStanza(received[0])->getPayload<Swift::ErrorPayload>()->getCondition());
+		delete conv;
 	}
 
 	void handleSetNickname() {
@@ -814,6 +822,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(110, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[0].code);
 		CPPUNIT_ASSERT_EQUAL(210, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[1].code);
+		delete conv;
 	}
 
 };

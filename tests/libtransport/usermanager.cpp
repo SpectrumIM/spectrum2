@@ -18,7 +18,7 @@ using namespace Transport;
 
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(UserManagerTest);
-	CPPUNIT_TEST(connectUser);
+// 	CPPUNIT_TEST(connectUser); // executed as part of other tests
 	CPPUNIT_TEST(connectTwoResources);
 	CPPUNIT_TEST(connectUserTransportDisabled);
 	CPPUNIT_TEST(connectUserRegistrationNeeded);

@@ -21,6 +21,7 @@ class SlackRTMTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		void setUp (void) {
 			setMeUp();
 			UserInfo uinfo;
+			uinfo.id = 1;
 			m_idManager = new SlackIdManager();
 			m_rtm = new SlackRTM(component, storage, m_idManager, uinfo);
 
