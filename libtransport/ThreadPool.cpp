@@ -18,7 +18,7 @@ ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(max
 {
 	this->loop = loop;
 	activeThreads = 0;
-	worker = new boost::thread*[MAX_THREADS];
+	worker = (boost::thread **) malloc(sizeof(boost::thread *) * MAX_THREADS);
 	for(int i=0 ; i<MAX_THREADS ; i++) {
 		worker[i] = NULL;
 		freeThreads.push(i);
@@ -34,7 +34,7 @@ ThreadPool::~ThreadPool()
 			delete worker[i];
 		}
 	}
-	delete worker;
+	free(worker);
 
 	while(!requestQueue.empty()) {
 		Thread *t = requestQueue.front(); requestQueue.pop();

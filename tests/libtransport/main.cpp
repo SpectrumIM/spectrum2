@@ -12,6 +12,7 @@
 #include "log4cxx/propertyconfigurator.h"
 
 #include "transport/protocol.pb.h"
+#include "transport/HTTPRequest.h"
 
 using namespace log4cxx;
 #endif
@@ -38,6 +39,8 @@ int main (int argc, char* argv[])
 		testsToRun.push_back("");
 	}
 
+	Transport::HTTPRequest::globalInit();
+
 	// informs test-listener about testresults
 	CPPUNIT_NS :: TestResult testresult;
 
@@ -58,6 +61,7 @@ int main (int argc, char* argv[])
 		}
 		catch (const std::exception& e) {
 			google::protobuf::ShutdownProtobufLibrary();
+			Transport::HTTPRequest::globalCleanup();
 			std::cerr << "Error: " << e.what() << std::endl;
 			return -1;
 		}
@@ -68,6 +72,7 @@ int main (int argc, char* argv[])
 	compileroutputter.write ();
 
 	google::protobuf::ShutdownProtobufLibrary();
+	Transport::HTTPRequest::globalCleanup();
 
 	// return 0 if tests were successful
 	return collectedresults.wasSuccessful () ? 0 : 1;

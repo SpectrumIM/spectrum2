@@ -9,16 +9,14 @@ HTTPRequest::HTTPRequest(ThreadPool *tp, Type type, const std::string &url, Call
 	m_url = url;
 	m_tp = tp;
 	m_callback = callback;
-
-	init();
+	curlhandle = NULL;
 }
 
 HTTPRequest::HTTPRequest(Type type, const std::string &url) {
 	m_type = type;
 	m_url = url;
 	m_tp = NULL;
-
-	init();
+	curlhandle = NULL;
 }
 
 HTTPRequest::~HTTPRequest() {
@@ -30,9 +28,12 @@ HTTPRequest::~HTTPRequest() {
 }
 
 bool HTTPRequest::init() {
+	if (curlhandle) {
+		return true;
+	}
+
 	curlhandle = curl_easy_init();
 	if (curlhandle) {
-		curlhandle = curl_easy_init();
 		curl_easy_setopt(curlhandle, CURLOPT_PROXY, NULL);
 		curl_easy_setopt(curlhandle, CURLOPT_PROXYUSERPWD, NULL);
 		curl_easy_setopt(curlhandle, CURLOPT_PROXYAUTH, (long)CURLAUTH_ANY);
@@ -113,11 +114,19 @@ bool HTTPRequest::GET(std::string url, rapidjson::Document &json) {
 }
 
 void HTTPRequest::run() {
+	if (!init()) {
+		m_ok =  false;
+		return;
+	}
+
 	switch (m_type) {
 		case Get:
 			m_ok = GET(m_url, m_json);
 			break;
 	}
+
+	curl_easy_cleanup(curlhandle);
+	curlhandle = NULL;
 }
 
 void HTTPRequest::finalize() {
@@ -135,6 +144,7 @@ bool HTTPRequest::execute() {
 }
 
 bool HTTPRequest::execute(rapidjson::Document &json) {
+	init();
 	switch (m_type) {
 		case Get:
 			m_ok = GET(m_url, json);
