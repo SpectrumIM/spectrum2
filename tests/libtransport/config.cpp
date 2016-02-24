@@ -16,6 +16,7 @@ using namespace Transport;
 class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST_SUITE(ConfigTest);
 	CPPUNIT_TEST(setStringTwice);
+	CPPUNIT_TEST(setUnknownBool);
 	CPPUNIT_TEST(updateBackendConfig);
 	CPPUNIT_TEST(updateBackendConfigJIDEscaping);
 	CPPUNIT_TEST(unregisteredList);
@@ -38,6 +39,14 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		std::istringstream ifs("service.jids = irc.freenode.org\n");
 		cfg.load(ifs);
 		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), CONFIG_STRING(&cfg, "service.jids"));
+	}
+
+	void setUnknownBool() {
+		char *argv[3] = {"binary", "--service.jids=localhost", NULL};
+		Config cfg(2, argv);
+		std::istringstream ifs("service.irc_send_pass = 1\n");
+		cfg.load(ifs);
+		CPPUNIT_ASSERT_EQUAL(true, CONFIG_BOOL_DEFAULTED(&cfg, "service.irc_send_pass", false));
 	}
 
 	void updateBackendConfig() {
