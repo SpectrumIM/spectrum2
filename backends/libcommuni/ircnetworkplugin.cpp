@@ -91,18 +91,37 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 	session->setUserName(FROM_UTF8(nickname));
 	session->setNickName(FROM_UTF8(nickname));
 	session->setRealName(FROM_UTF8(nickname));
-	session->setHost(FROM_UTF8(hostname));
-	session->setPort(6667);
 // 	session->setEncoding("UTF8");
+
+	std::vector<std::string> hostname_parts;
+	boost::split(hostname_parts, hostname, boost::is_any_of(":/"));
+	if (hostname_parts.size() == 2 && !hostname_parts[0].empty() && !hostname_parts[1].empty()) { // hostname was splitted
+		session->setHost(FROM_UTF8(hostname_parts[0])); // real hostname
+		int port = atoi(hostname_parts[1].c_str()); // user port
+		if (hostname_parts[1][0] == '+' || port == 6697) { // use SSL
+			port = (port < 1 || port > 65535) ? 6697 : port; // default to standard SSL port
+			session->setSecure(true);
+		} else { // use TCP
+			port = (port < 1 || port > 65535) ? 6667 : port; // default to standart TCP port
+		}
+		session->setPort(port);
+	} else { // hostname was not splitted: default to old behaviour
+		session->setHost(FROM_UTF8(hostname));
+		session->setPort(6667);
+	}
 
 	if (!password.empty()) {
 		std::string identify = m_identify;
 		boost::replace_all(identify, "$password", password);
 		boost::replace_all(identify, "$name", nickname);
-		session->setIdentify(identify);
+		if (CONFIG_BOOL_DEFAULTED(m_config, "service.irc_send_pass", false)) {
+			session->setPassword(FROM_UTF8(password)); // use IRC PASS
+		} else {
+			session->setIdentify(identify); // use identify supplied
+		}
 	}
 
-	LOG4CXX_INFO(logger, user << ": Connecting " << hostname << " as " << nickname << ", suffix=" << suffix);
+	LOG4CXX_INFO(logger, user << ": Connecting " << hostname << " as " << nickname << ", port=" << session->port() << ", suffix=" << suffix);
 
 	session->open();
 
