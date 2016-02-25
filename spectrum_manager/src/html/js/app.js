@@ -214,7 +214,7 @@ function fill_users_register_form() {
 			"password": $("#password").val()
 		};
 
-		$.post("/api/v1/users/add", postdata, function(data) {
+		$.post(BaseLocation + "api/v1/users/add", postdata, function(data) {
 			if (data.error) {
 				$('#error').text(data.message);
 			}

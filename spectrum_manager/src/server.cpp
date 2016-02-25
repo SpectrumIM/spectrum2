@@ -105,6 +105,14 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 		footer.close();
 	}
 
+	std::ofstream output;
+	output.open(std::string(CONFIG_STRING(config, "service.data_dir") + "/js/config.js").c_str(), std::ios::out);
+	if (output.fail()) {
+		LOG4CXX_ERROR(logger, "Cannot open " << std::string(CONFIG_STRING(config, "service.data_dir") + "/js/config.js") << " for writing: " << strerror(errno));
+	}
+	output << "var BaseLocation = \"" << CONFIG_STRING(m_config, "service.base_location") << "\";\n";
+	output.close();
+
 	m_storageCfg = new Config();
 	m_storageCfg->load(config_file);
 	
@@ -235,6 +243,7 @@ bool Server::is_authorized(const struct mg_connection *conn, struct http_message
 		!mg_vcmp(&hm->uri, "/js/jquery.js") ||
 		!mg_vcmp(&hm->uri, "/js/jquery-ui.js") ||
 		!mg_vcmp(&hm->uri, "/js/jquery.cookie.js") ||
+		!mg_vcmp(&hm->uri, "/js/config.js") ||
 		!mg_vcmp(&hm->uri, "/js/app.js") ||
 		!mg_vcmp(&hm->uri, "/users/register.shtml") ||
 		!mg_vcmp(&hm->uri, "/api/v1/users/add") ||

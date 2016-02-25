@@ -20,8 +20,8 @@ return {
 		};
 	};
 	["attr"] = {
-		["version"] = "2.0";
 		["prodid"] = "-//HandGen//NONSGML vGen v1.0//EN";
+		["version"] = "2.0";
 		["xmlns"] = "vcard-temp";
 	};
 	["name"] = "vCard";

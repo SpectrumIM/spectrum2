@@ -11,6 +11,7 @@
     <script src="/js/jquery.js"></script>
     <script src="/js/jquery-ui.js"></script>
     <script src="/js/jquery.cookie.js"></script>
+    <script src="/js/config.js"></script>
     <script src="/js/app.js"></script>
     <title>Spectrum 2</title>
   </head>
