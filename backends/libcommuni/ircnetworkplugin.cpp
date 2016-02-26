@@ -146,6 +146,10 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 	}
 }
 
+void IRCNetworkPlugin::handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id) {
+	handleVCard(user, id, legacyName, "", "", "");
+}
+
 void IRCNetworkPlugin::handleLogoutRequest(const std::string &user, const std::string &legacyName) {
 	if (m_sessions[user] == NULL) {
 		LOG4CXX_WARN(logger, user << ": Already disconnected.");
@@ -253,6 +257,7 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 
 	// update nickname, because we have nickname per session, no nickname per room.
 	handleRoomNicknameChanged(user, target, TO_UTF8(m_sessions[session]->nickName()));
+	handleParticipantChanged(user, nickname, target, 0, pbnetwork::STATUS_ONLINE, "", TO_UTF8(m_sessions[session]->nickName()));
 }
 
 void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std::string &room) {

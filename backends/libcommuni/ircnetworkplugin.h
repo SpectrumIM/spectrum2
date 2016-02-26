@@ -47,6 +47,8 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 
 		void handleRoomSubjectChangedRequest(const std::string &user, const std::string &room, const std::string &message);
 
+		void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id);
+
 		void tryNextServer();
 
 	public slots:

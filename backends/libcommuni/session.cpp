@@ -389,11 +389,17 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			break;
 		case 433:
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+				m_np->handleRoomNicknameChanged(m_user, it->second->getChannel() + m_suffix, TO_UTF8(nickName() + "_"));
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, 0, pbnetwork::STATUS_ONLINE, "", TO_UTF8(nickName() + "_"));
 			}
-			if (m_suffix.empty()) {
-				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
-			}
+			setNickName(nickName() + "_");
+			open();
+// 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
+// 				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+// 			}
+// 			if (m_suffix.empty()) {
+// 				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
+// 			}
 			break;
 		case 436:
 			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {

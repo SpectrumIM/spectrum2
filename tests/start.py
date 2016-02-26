@@ -6,6 +6,10 @@ import os
 
 import sleekxmpp
 import imp
+import logging
+
+#logging.basicConfig(level=logging.DEBUG,
+                        #format='%(levelname)-8s %(message)s')
 
 def registerXMPPAccount(user, password):
 	responder = sleekxmpp.ClientXMPP(user, password)
@@ -69,7 +73,7 @@ class BaseTest:
 		client.register_plugin('xep_0054')
 		client['feature_mechanisms'].unencrypted_plain = True
 
-		time.sleep(2)
+		time.sleep(1)
 
 		to = ("127.0.0.1", 5223)
 		if self.responder_password != "password":
@@ -81,6 +85,7 @@ class BaseTest:
 			os.system("killall spectrum2")
 			self.post_test()
 			sys.exit(1)
+
 
 		max_time = 60
 		while not client.finished and not responder.finished and max_time > 0:
@@ -112,6 +117,11 @@ class LibcommuniServerModeSingleServerConf(BaseTest):
 	def __init__(self):
 		BaseTest.__init__(self, "../libcommuni/irc_test.cfg", True, "#channel@localhost")
 		self.directory = "../libcommuni/"
+
+	def skip_test(self, test):
+		if test in ["muc_join_nickname_used.py"]:
+			return True
+		return False
 
 	def pre_test(self):
 		os.system("ngircd -f ../libcommuni/ngircd.conf &")
@@ -199,8 +209,8 @@ configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())
 configurations.append(JabberServerModeConf())
-#configurations.append(JabberSlackServerModeConf())
-configurations.append(TwitterServerModeConf())
+##configurations.append(JabberSlackServerModeConf())
+#configurations.append(TwitterServerModeConf())
 
 exitcode = 0
 
