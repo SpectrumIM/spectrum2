@@ -121,9 +121,8 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 		}
 	}
 
+	session->createBufferModel();
 	LOG4CXX_INFO(logger, user << ": Connecting " << hostname << " as " << nickname << ", port=" << session->port() << ", suffix=" << suffix);
-
-	session->open();
 
 	return session;
 }
@@ -137,6 +136,7 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 		}
 
 		m_sessions[user] = createSession(user, m_servers[m_currentServer], legacyName, password, "");
+		m_sessions[user]->open();
 	}
 	else {
 		// We are waiting for first room join to connect user to IRC network, because we don't know which
@@ -233,12 +233,14 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 	std::string target = getTargetName(room);
 
 	LOG4CXX_INFO(logger, user << ": Session name: " << session << ", Joining room " << target);
+	bool createdSession = false;
 	if (m_sessions[session] == NULL) {
 		if (m_servers.empty()) {
 			// in gateway mode we want to login this user to network according to legacyName
 			if (room.find("@") != std::string::npos) {
 				// suffix is %irc.freenode.net to let MyIrcSession return #room%irc.freenode.net
 				m_sessions[session] = createSession(user, room.substr(room.find("@") + 1), nickname, "", room.substr(room.find("@")));
+				createdSession = true;
 			}
 			else {
 				LOG4CXX_WARN(logger, user << ": There's no proper server defined in room to which this user wants to join: " << room);
@@ -251,13 +253,18 @@ void IRCNetworkPlugin::handleJoinRoomRequest(const std::string &user, const std:
 		}
 	}
 
-	m_sessions[session]->addAutoJoinChannel(target, password);
 	m_sessions[session]->sendCommand(IrcCommand::createJoin(FROM_UTF8(target), FROM_UTF8(password)));
 	m_sessions[session]->rooms += 1;
 
+	if (createdSession) {
+		m_sessions[session]->open();
+	}
+
 	// update nickname, because we have nickname per session, no nickname per room.
-	handleRoomNicknameChanged(user, target, TO_UTF8(m_sessions[session]->nickName()));
-	handleParticipantChanged(user, nickname, target, 0, pbnetwork::STATUS_ONLINE, "", TO_UTF8(m_sessions[session]->nickName()));
+	if (nickname != TO_UTF8(m_sessions[session]->nickName())) {
+		handleRoomNicknameChanged(user, room, TO_UTF8(m_sessions[session]->nickName()));
+		handleParticipantChanged(user, nickname, room, 0, pbnetwork::STATUS_ONLINE, "", TO_UTF8(m_sessions[session]->nickName()));
+	}
 }
 
 void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std::string &room) {
@@ -269,7 +276,6 @@ void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std
 		return;
 
 	m_sessions[session]->sendCommand(IrcCommand::createPart(FROM_UTF8(target)));
-	m_sessions[session]->removeAutoJoinChannel(target);
 	m_sessions[session]->rooms -= 1;
 
 	if (m_sessions[session]->rooms <= 0 && m_servers.empty()) {
@@ -277,5 +283,20 @@ void IRCNetworkPlugin::handleLeaveRoomRequest(const std::string &user, const std
 		m_sessions[session]->close();
 		m_sessions[session]->deleteLater();
 		m_sessions.erase(session);
+	}
+}
+
+void IRCNetworkPlugin::handleStatusChangeRequest(const std::string &user, int status, const std::string &statusMessage) {
+	if (m_sessions[user] == NULL) {
+		return;
+	}
+
+	if (status == pbnetwork::STATUS_AWAY) {
+		LOG4CXX_INFO(logger, user << ": User is now away.");
+		m_sessions[user]->sendCommand(IrcCommand::createAway(statusMessage.empty() ? "Away" : FROM_UTF8(statusMessage)));
+	}
+	else {
+		LOG4CXX_INFO(logger, user << ": User is not away anymore.");
+		m_sessions[user]->sendCommand(IrcCommand::createAway(""));
 	}
 }

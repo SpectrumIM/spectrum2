@@ -23,6 +23,8 @@
 #include <iostream>
 #include <IrcCommand>
 #include <IrcMessage>
+#include <IrcUser>
+#include <IrcChannel>
 #include "backports.h"
 
 #include "ircnetworkplugin.h"
@@ -34,8 +36,6 @@
 
 DEFINE_LOGGER(logger, "IRCConnection");
 
-// static bool sentList;
-
 MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcConnection(parent)
 {
 	m_np = np;
@@ -43,35 +43,136 @@ MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const 
 	m_suffix = suffix;
 	m_connected = false;
 	rooms = 0;
+	m_bufferModel = NULL;
 
 	connect(this, SIGNAL(disconnected()), SLOT(on_disconnected()));
 	connect(this, SIGNAL(socketError(QAbstractSocket::SocketError)), SLOT(on_socketError(QAbstractSocket::SocketError)));
 	connect(this, SIGNAL(connected()), SLOT(on_connected()));
-	connect(this, SIGNAL(messageReceived(IrcMessage*)), this, SLOT(onMessageReceived(IrcMessage*)));
 
 	m_awayTimer = new QTimer(this);
 	connect(m_awayTimer, SIGNAL(timeout()), this, SLOT(awayTimeout()));
-	m_awayTimer->start(5*1000);
+	m_awayTimer->start(1 * 1000);
 }
 
 MyIrcSession::~MyIrcSession() {
 	delete m_awayTimer;
 }
 
+void MyIrcSession::createBufferModel() {
+	m_bufferModel = new IrcBufferModel(this);
+	connect(m_bufferModel, SIGNAL(added(IrcBuffer*)), this, SLOT(onBufferAdded(IrcBuffer*)));
+	connect(m_bufferModel, SIGNAL(removed(IrcBuffer*)), this, SLOT(onBufferRemoved(IrcBuffer*)));
+
+	// keep the command parser aware of the context
+// 	connect(m_bufferModel, SIGNAL(channelsChanged(QStringList)), parser, SLOT(setChannels(QStringList)));
+
+	// create a server buffer for non-targeted messages...
+	IrcBuffer* serverBuffer = m_bufferModel->add(host());
+	// ...and connect it to IrcBufferModel::messageIgnored()
+	// TODO: Make this configurable, so users can show the MOTD and other stuff as in normal
+	// IRC client.
+	connect(m_bufferModel, SIGNAL(messageIgnored(IrcMessage*)), serverBuffer, SLOT(receiveMessage(IrcMessage*)));
+}
+
+void MyIrcSession::onBufferAdded(IrcBuffer* buffer) {
+	LOG4CXX_INFO(logger, m_user << ": Created IrcBuffer " << TO_UTF8(buffer->name()));
+
+	connect(buffer, SIGNAL(messageReceived(IrcMessage*)), this, SLOT(onMessageReceived(IrcMessage*)));
+
+	if (buffer->isChannel()) {
+		QVariantMap userData;
+		userData["awayCycle"] = boost::lexical_cast<int>(CONFIG_STRING_DEFAULTED(m_np->getConfig(), "service.irc_away_timeout", "12")) + m_userModels.size();
+		userData["awayTick"] = 0;
+		buffer->setUserData(userData);
+	}
+
+	// create a  model for buffer users
+	IrcUserModel* userModel = new IrcUserModel(buffer);
+	connect(userModel, SIGNAL(added(IrcUser*)), this, SLOT(onIrcUserAdded(IrcUser*)));
+	connect(userModel, SIGNAL(removed(IrcUser*)), this, SLOT(onIrcUserRemoved(IrcUser*)));
+	m_userModels.insert(buffer, userModel);
+}
+
+void MyIrcSession::onBufferRemoved(IrcBuffer* buffer) {
+	LOG4CXX_INFO(logger, m_user << ": Removed IrcBuffer " << TO_UTF8(buffer->name()));
+	// the buffer specific models and documents are no longer needed
+	delete m_userModels.take(buffer);
+}
+
+bool MyIrcSession::hasIrcUser(const std::string &channel_, const std::string &name) {
+	std::string channel = channel_;
+	if (channel[0] != '#') {
+		channel = "#" + channel;
+	}
+
+	IrcBuffer *buffer = m_bufferModel->find(FROM_UTF8(channel));
+	if (!buffer) {
+		LOG4CXX_ERROR(logger, m_user << ": Cannot find IrcBuffer '" << channel << "'");
+		return false;
+	}
+
+	IrcUserModel *userModel = m_userModels.value(buffer);
+	if (!userModel) {
+		LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << channel);
+		return false;
+	}
+
+	return userModel->contains(FROM_UTF8(name));
+}
+
+void MyIrcSession::sendUserToFrontend(IrcUser *user, pbnetwork::StatusType statusType, const std::string &statusMessage, const std::string &newNick) {
+	std::string target = "#" + TO_UTF8(user->channel()->name().toLower()) + m_suffix;
+	int op = user->mode() == "o";
+
+	if (statusType != pbnetwork::STATUS_NONE) {
+		if (user->isAway()) {
+			statusType = pbnetwork::STATUS_AWAY;
+		}
+		if (newNick.empty()) {
+			LOG4CXX_INFO(logger, m_user << ": IrcUser connected: " << target << "/" << TO_UTF8(user->name()));
+		}
+		else {
+			LOG4CXX_INFO(logger, m_user << ": IrcUser changed nickname: " << target << "/" << TO_UTF8(user->name()) << ", newNick=" << newNick);
+		}
+	}
+	else {
+		LOG4CXX_INFO(logger, m_user << ": IrcUser disconnected: " << target << "/" << TO_UTF8(user->name()));
+	}
+
+	m_np->handleParticipantChanged(m_user, TO_UTF8(user->name()), target, op, statusType, statusMessage, newNick);
+}
+
+void MyIrcSession::onIrcUserChanged(bool dummy) {
+	IrcUser *user = dynamic_cast<IrcUser *>(QObject::sender());
+	if (!user) {
+		return;
+	}
+
+	LOG4CXX_INFO(logger, m_user << ": IrcUser " << TO_UTF8(user->name()) << " changed.");
+	sendUserToFrontend(user, pbnetwork::STATUS_ONLINE);
+}
+
+void MyIrcSession::onIrcUserChanged(const QString &) {
+	onIrcUserChanged(false);
+}
+
+void MyIrcSession::onIrcUserAdded(IrcUser *user) {
+	sendUserToFrontend(user, pbnetwork::STATUS_ONLINE);
+	connect(user, SIGNAL(modeChanged(const QString&)), this, SLOT(onIrcUserChanged(const QString&)));
+	connect(user, SIGNAL(awayChanged(bool)), this, SLOT(onIrcUserChanged(bool)));
+	
+}
+
+void MyIrcSession::onIrcUserRemoved(IrcUser *user) {
+	sendUserToFrontend(user, pbnetwork::STATUS_NONE);
+	disconnect(user, SIGNAL(modeChanged(const QString&)), this, SLOT(onIrcUserChanged(const QString&)));
+	disconnect(user, SIGNAL(awayChanged(bool)), this, SLOT(onIrcUserChanged(bool)));
+}
+
 void MyIrcSession::on_connected() {
 	m_connected = true;
 	if (m_suffix.empty()) {
 		m_np->handleConnected(m_user);
-// 		if (!sentList) {
-// 			sendCommand(IrcCommand::createList("", ""));
-// 			sentList = true;
-// 		}
-	}
-
-// 	sendCommand(IrcCommand::createCapability("REQ", QStringList("away-notify")));
-
-	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		sendCommand(IrcCommand::createJoin(FROM_UTF8(it->second->getChannel()), FROM_UTF8(it->second->getPassword())));
 	}
 
 	if (getIdentify().find(" ") != std::string::npos) {
@@ -104,8 +205,11 @@ void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
 	};
 
 	if (!m_suffix.empty()) {
-		for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-			m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_ROOM_NOT_FOUND, pbnetwork::STATUS_NONE, reason);
+		foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+			if (!buffer->isChannel()) {
+				continue;
+			}
+			m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), TO_UTF8(buffer->title()) + m_suffix, pbnetwork::PARTICIPANT_FLAG_ROOM_NOT_FOUND, pbnetwork::STATUS_NONE, reason);
 		}
 	}
 	else {
@@ -123,95 +227,81 @@ void MyIrcSession::on_disconnected() {
 	m_connected = false;
 }
 
-bool MyIrcSession::correctNickname(std::string &nickname) {
-	bool flags = 0;
-	if (!nickname.empty()) { 
-		switch(nickname.at(0)) {
-			case '@': nickname = nickname.substr(1); flags = 1; break;
-			case '+': nickname = nickname.substr(1); break;
-			case '~': nickname = nickname.substr(1); break;
-			case '&': nickname = nickname.substr(1); break;
-			case '%': nickname = nickname.substr(1); break;
-			default: break;
-		}
+void MyIrcSession::correctNickname(std::string &nick) {
+	if (nick.empty()) {
+		return;
 	}
-	return flags;
+
+	switch(nick.at(0)) {
+		case '@':
+		case '+':
+		case '~':
+		case '&':
+		case '%':
+			nick.erase(0, 1);
+			break;
+		default: break;
+	}
 }
 
-void MyIrcSession::on_joined(IrcMessage *message) {
-	IrcJoinMessage *m = (IrcJoinMessage *) message;
-	std::string nickname = TO_UTF8(m->nick());
-	bool op = correctNickname(nickname);
-	getIRCBuddy(TO_UTF8(m->channel().toLower()), nickname).setOp(op);
-	m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(m->channel().toLower()) + m_suffix, op, pbnetwork::STATUS_ONLINE);
-	LOG4CXX_INFO(logger, m_user << ": " << nickname << " joined " << TO_UTF8(m->channel().toLower()) + m_suffix);
+IrcUser *MyIrcSession::getIrcUser(IrcBuffer *buffer, std::string &nick) {
+	correctNickname(nick);
+	IrcUserModel *userModel = m_userModels.value(buffer);
+	if (!userModel) {
+		LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
+		return NULL;
+	}
+
+	return userModel->find(FROM_UTF8(nick));
 }
 
+IrcUser *MyIrcSession::getIrcUser(IrcBuffer *buffer, IrcMessage *message) {
+	std::string nick = TO_UTF8(message->nick());
+	return getIrcUser(buffer, nick);
+}
 
 void MyIrcSession::on_parted(IrcMessage *message) {
-	IrcPartMessage *m = (IrcPartMessage *) message;
-	std::string nickname = TO_UTF8(m->nick());
-	bool op = correctNickname(nickname);
-	removeIRCBuddy(TO_UTF8(m->channel().toLower()), nickname);
-	LOG4CXX_INFO(logger, m_user << ": " << nickname << " parted " << TO_UTF8(m->channel().toLower()) + m_suffix);
-	m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(m->channel().toLower()) + m_suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
+	// TODO: We currently use onIrcUserRemoved, but this does not allow sending
+	// part/quit message. We should use this method instead and write version
+	// of sendUserToFrontend which takes nickname instead of IrcUser just for
+	// part/quit messages.
+// 	IrcPartMessage *m = (IrcPartMessage *) message;
+// 	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
+// 	IrcUser *user = getIrcUser(buffer, message);
+// 	if (!user) {
+// 		LOG4CXX_ERROR(logger, m_user << ": Part: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
+// 		return;
+// 	}
+// 
+// 	sendUserToFrontend(user, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
 }
 
 void MyIrcSession::on_quit(IrcMessage *message) {
-	IrcQuitMessage *m = (IrcQuitMessage *) message;
-	std::string nickname = TO_UTF8(m->nick());
-	bool op = correctNickname(nickname);
-
-	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
-			continue;
-		}
-		removeIRCBuddy(it->second->getChannel(), nickname);
-		LOG4CXX_INFO(logger, m_user << ": " << nickname << " quit " << it->second->getChannel() + m_suffix);
-		m_np->handleParticipantChanged(m_user, nickname, it->second->getChannel() + m_suffix, op, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
-	}
+	// TODO: We currently use onIrcUserRemoved, but this does not allow sending
+	// part/quit message. We should use this method instead and write version
+	// of sendUserToFrontend which takes nickname instead of IrcUser just for
+	// part/quit messages.
+// 	IrcQuitMessage *m = (IrcQuitMessage *) message;
+// 	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
+// 	IrcUser *user = getIrcUser(buffer, message);
+// 	if (!user) {
+// 		LOG4CXX_ERROR(logger, m_user << ": Quit: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
+// 		return;
+// 	}
+// 
+// 	sendUserToFrontend(user, pbnetwork::STATUS_NONE, TO_UTF8(m->reason()));
 }
 
 void MyIrcSession::on_nickChanged(IrcMessage *message) {
 	IrcNickMessage *m = (IrcNickMessage *) message;
-	std::string nickname = TO_UTF8(m->nick());
-	correctNickname(nickname);
-
-	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
-			continue;
-		}
-		IRCBuddy &buddy = getIRCBuddy(it->second->getChannel(), nickname);
-		LOG4CXX_INFO(logger, m_user << ": " << nickname << " changed nickname to " << TO_UTF8(m->nick()));
-		m_np->handleParticipantChanged(m_user, nickname, it->second->getChannel() + m_suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->nick()));
-	}
-}
-
-void MyIrcSession::on_modeChanged(IrcMessage *message) {
-	IrcModeMessage *m = (IrcModeMessage *) message;
-
-	// mode changed: "#testik" "HanzZ" "+o" "hanzz_k"
-	std::string nickname = TO_UTF8(m->argument());
-	std::string mode = TO_UTF8(m->mode());
-	if (nickname.empty())
-		return;
-
-	correctNickname(nickname);
-
-	if (!hasIRCBuddy(TO_UTF8(m->target().toLower()), nickname)) {
+	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
+	IrcUser *user = getIrcUser(buffer, message);
+	if (!user) {
+		LOG4CXX_ERROR(logger, m_user << ": NickChanged: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
 		return;
 	}
-	IRCBuddy &buddy = getIRCBuddy(TO_UTF8(m->target().toLower()), nickname);
-	if (mode == "+o") {
-		buddy.setOp(true);
-	}
-	else {
-		buddy.setOp(false);
-	}
-	
-	m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(m->target().toLower()) + m_suffix,(int) buddy.isOp(), pbnetwork::STATUS_ONLINE, "");
 
-	LOG4CXX_INFO(logger, m_user << ": " << nickname << " changed mode to " << mode << " in " << TO_UTF8(m->target().toLower()));
+	sendUserToFrontend(user, pbnetwork::STATUS_ONLINE, "", TO_UTF8(m->newNick()));
 }
 
 void MyIrcSession::on_topicChanged(IrcMessage *message) {
@@ -245,6 +335,23 @@ void MyIrcSession::on_whoisMessageReceived(IrcMessage *message) {
 	m_whois.erase(nickname);
 }
 
+void MyIrcSession::on_namesMessageReceived(IrcMessage *message) {
+	LOG4CXX_INFO(logger, m_user << ": NAMES received");
+	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
+	IrcUserModel *userModel = m_userModels.value(buffer);
+	if (!userModel) {
+		LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
+		return;
+	}
+
+	foreach (IrcUser *user, userModel->users()) { 
+		sendUserToFrontend(user, pbnetwork::STATUS_ONLINE);
+	}
+
+	LOG4CXX_INFO(logger, m_user << "Asking /who for channel " << TO_UTF8(buffer->name()));
+	sendCommand(IrcCommand::createWho(buffer->name()));
+}
+
 void MyIrcSession::sendMessageToFrontend(const std::string &channel, const std::string &nick, const std::string &msg) {
 	QString html = "";//msg;
 // 	CommuniBackport::toPlainText(msg);
@@ -267,7 +374,7 @@ void MyIrcSession::sendMessageToFrontend(const std::string &channel, const std::
 		if (m_pms.find(nickname) != m_pms.end()) {
 			std::string room = m_pms[nickname].substr(0, m_pms[nickname].find("/"));
 			room = room.substr(0, room.find("@"));
-			if (hasIRCBuddy(room, nickname)) {
+			if (hasIrcUser(room, nickname)) {
 				m_np->handleMessage(m_user, room + m_suffix, msg, nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
@@ -276,12 +383,20 @@ void MyIrcSession::sendMessageToFrontend(const std::string &channel, const std::
 			}
 		}
 		else {
-			for (AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				if (!hasIRCBuddy(it->second->getChannel(), nickname)) {
+			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+				std::string room = "#" + TO_UTF8(buffer->name());
+				IrcUserModel *userModel = m_userModels.value(buffer);
+				if (!userModel) {
+					LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
 					continue;
 				}
-				addPM(nickname, it->second->getChannel());
-				m_np->handleMessage(m_user, it->second->getChannel() + m_suffix, msg, nickname, TO_UTF8(html), "", false, true);
+
+				if (!userModel->contains(FROM_UTF8(nickname))) {
+					continue;
+				}
+
+				addPM(nickname, room + "/" + nickname);
+				m_np->handleMessage(m_user, room + m_suffix, msg, nickname, TO_UTF8(html), "", false, true);
 				return;
 			}
 
@@ -320,15 +435,10 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	QStringList parameters = m->parameters();
 	switch (m->code()) {
-		case 301:
-			break;
-		case 315:
-			LOG4CXX_INFO(logger, "End of /who request " << TO_UTF8(parameters[1]));
-			break;
-		case 332:
+		case Irc::RPL_TOPIC:
 			m_topicData = TO_UTF8(parameters[2]);
 			break;
-		case 333:
+		case Irc::RPL_TOPICWHOTIME:
 			nick = TO_UTF8(parameters[2]);
 			if (nick.find("!") != std::string::npos) {
 				nick = nick.substr(0, nick.find("!"));
@@ -338,59 +448,24 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			}
 			m_np->handleSubject(m_user, TO_UTF8(parameters[1].toLower()) + m_suffix, m_topicData, nick);
 			break;
-		case 352: {
-			channel = parameters[1].toLower();
-			nick = TO_UTF8(parameters[5]);
-			IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nick);
-
-			if (parameters[6].toUpper().startsWith("G")) {
-				if (!buddy.isAway()) {
-					buddy.setAway(true);
-					m_np->handleParticipantChanged(m_user, nick, TO_UTF8(channel) + m_suffix, buddy.isOp(), pbnetwork::STATUS_AWAY);
-				}
-			}
-			else if (buddy.isAway()) {
-				buddy.setAway(false);
-				m_np->handleParticipantChanged(m_user, nick, TO_UTF8(channel) + m_suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
-			}
-			break;
-		}
-		case 353:
-			channel = parameters[2].toLower();
-			members = parameters[3].split(" ");
-
-			LOG4CXX_INFO(logger, m_user << ": Received members for " << TO_UTF8(channel) << m_suffix);
-			for (int i = 0; i < members.size(); i++) {
-				bool op = 0;
-				std::string nickname = TO_UTF8(members.at(i));
-				op = correctNickname(nickname);
-				IRCBuddy &buddy = getIRCBuddy(TO_UTF8(channel), nickname);
-				buddy.setOp(op);
-				m_np->handleParticipantChanged(m_user, nickname, TO_UTF8(channel) + m_suffix, buddy.isOp(), pbnetwork::STATUS_ONLINE);
-			}
-
-			break;
-		case 366:
-			// ask /who to get away states
-			channel = parameters[1].toLower();
-			LOG4CXX_INFO(logger, m_user << "Asking /who for channel " << TO_UTF8(channel));
-			sendCommand(IrcCommand::createWho(channel));
-			break;
-		case 401:
-		case 402:
+		case Irc::ERR_NOSUCHNICK:
+		case Irc::ERR_NOSUCHSERVER:
 			nick = TO_UTF8(parameters[1]);
 			if (m_whois.find(nick) != m_whois.end()) {
 				sendMessageToFrontend(m_whois[nick], "whois", nick + ": No such client");
 				m_whois.erase(nick);
 			}
 			break;
-		case 432:
+		case Irc::ERR_ERRONEUSNICKNAME:
 			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
 			break;
-		case 433:
-			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				m_np->handleRoomNicknameChanged(m_user, it->second->getChannel() + m_suffix, TO_UTF8(nickName() + "_"));
-				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, 0, pbnetwork::STATUS_ONLINE, "", TO_UTF8(nickName() + "_"));
+		case Irc::ERR_NICKNAMEINUSE:
+			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+				if (!buffer->isChannel()) {
+					continue;
+				}
+				m_np->handleRoomNicknameChanged(m_user, TO_UTF8(buffer->title()) + m_suffix, TO_UTF8(nickName() + "_"));
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), TO_UTF8(buffer->title()) + m_suffix, 0, pbnetwork::STATUS_ONLINE, "", TO_UTF8(nickName() + "_"));
 			}
 			setNickName(nickName() + "_");
 			open();
@@ -401,14 +476,21 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 // 				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
 // 			}
 			break;
-		case 436:
-			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+		case Irc::ERR_NICKCOLLISION:
+			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+				if (!buffer->isChannel()) {
+					continue;
+				}
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), TO_UTF8(buffer->title()) + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
 			}
 			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname collision KILL");
-		case 464:
-			for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), it->second->getChannel() + m_suffix, pbnetwork::PARTICIPANT_FLAG_NOT_AUTHORIZED);
+			break;
+		case Irc::ERR_PASSWDMISMATCH:
+			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+				if (!buffer->isChannel()) {
+					continue;
+				}
+				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), TO_UTF8(buffer->title()) + m_suffix, pbnetwork::PARTICIPANT_FLAG_NOT_AUTHORIZED);
 			}
 			if (m_suffix.empty()) {
 				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Password incorrect");
@@ -434,11 +516,25 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 }
 
 void MyIrcSession::awayTimeout() {
-	for(AutoJoinMap::iterator it = m_autoJoin.begin(); it != m_autoJoin.end(); it++) {
-		if (it->second->shouldAskWho()) {
-			LOG4CXX_INFO(logger, "The time has come. Asking /who " << it->second->getChannel() << " again to get current away states.");
-			sendCommand(IrcCommand::createWho(FROM_UTF8(it->second->getChannel())));
+	foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+		if (!buffer->isChannel()) {
+			continue;
 		}
+
+		QVariantMap userData = buffer->userData();
+		int awayCycle = userData["awayCycle"].toInt();
+		int awayTick = userData["awayTick"].toInt();
+
+		if (awayTick == awayCycle) {
+			LOG4CXX_INFO(logger, m_user << ": The time has come. Asking /who " << TO_UTF8(buffer->title()) << " again to get current away states.");
+			sendCommand(IrcCommand::createWho(buffer->title()));
+			awayTick = 0;
+		}
+		awayTick++;
+
+		userData["awayCycle"] = awayCycle;
+		userData["awayTick"] = awayTick;
+		buffer->setUserData(userData);
 	}
 }
 
@@ -446,46 +542,14 @@ void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
 	IrcNoticeMessage *m = (IrcNoticeMessage *) message;
 	LOG4CXX_INFO(logger, m_user << ": NOTICE " << TO_UTF8(m->content()));
 
-	QString msg = m->content();
-	CommuniBackport::toPlainText(msg);
-
+	std::string msg = TO_UTF8(m->content());
 	std::string target = TO_UTF8(m->target().toLower());
-	if (target.find("#") == 0) {
-		std::string nickname = TO_UTF8(m->nick());
-		correctNickname(nickname);
-		m_np->handleMessage(m_user, target + m_suffix, TO_UTF8(msg), nickname);
-	}
-	else {
-		std::string nickname = TO_UTF8(m->nick());
-		correctNickname(nickname);
-		if (nickname.find(".") != std::string::npos) {
-			return;
-		}
-		if (m_pms.find(nickname) != m_pms.end()) {
-			std::string room = m_pms[nickname].substr(0, m_pms[nickname].find("/"));
-			room = room.substr(0, room.find("@"));
-			if (hasIRCBuddy(room, nickname)) {
-				m_np->handleMessage(m_user, room + m_suffix, TO_UTF8(msg), nickname, "", "", false, true);
-				return;
-			}
-			else {
-				nickname = nickname + m_suffix;
-			}
-		}
-		else {
-			nickname = nickname + m_suffix;
-		}
-
-		LOG4CXX_INFO(logger, nickname);
-		m_np->handleMessage(m_user, nickname, TO_UTF8(msg), "");
-	}
+	std::string nickname = TO_UTF8(m->nick());
+	sendMessageToFrontend(target, nickname, msg);
 }
 
 void MyIrcSession::onMessageReceived(IrcMessage *message) {
 	switch (message->type()) {
-		case IrcMessage::Join:
-			on_joined(message);
-			break;
 		case IrcMessage::Part:
 			on_parted(message);
 			break;
@@ -494,9 +558,6 @@ void MyIrcSession::onMessageReceived(IrcMessage *message) {
 			break;
 		case IrcMessage::Nick:
 			on_nickChanged(message);
-			break;
-		case IrcMessage::Mode:
-			on_modeChanged(message);
 			break;
 		case IrcMessage::Topic:
 			on_topicChanged(message);
@@ -512,6 +573,9 @@ void MyIrcSession::onMessageReceived(IrcMessage *message) {
 			break;
 		case IrcMessage::Whois:
 			on_whoisMessageReceived(message);
+			break;
+		case IrcMessage::Names:
+			on_namesMessageReceived(message);
 			break;
 		default:break;
 	}

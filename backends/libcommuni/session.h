@@ -23,6 +23,9 @@
 
 #ifndef Q_MOC_RUN
 #include <IrcConnection>
+#include <IrcBufferModel>
+#include <IrcBuffer>
+#include <IrcUserModel>
 #include <transport/NetworkPlugin.h>
 #include "Swiften/Swiften.h"
 #include <boost/smart_ptr/make_shared.hpp>
@@ -38,58 +41,10 @@ class MyIrcSession : public IrcConnection
     Q_OBJECT
 
 public:
-	class AutoJoinChannel {
-		public:
-			AutoJoinChannel(const std::string &channel = "", const std::string &password = "", int awayCycle = 12) : m_channel(channel), m_password(password),
-				m_awayCycle(awayCycle), m_currentAwayTick(0) {}
-			virtual ~AutoJoinChannel() {}
-
-			const std::string &getChannel() { return m_channel; }
-			const std::string &getPassword() { return m_password; }
-			bool shouldAskWho() {
-				if (m_currentAwayTick == m_awayCycle) {
-					m_currentAwayTick = 0;
-					return true;
-				}
-				m_currentAwayTick++;
-				return false;
-			}
-
-		private:
-			std::string m_channel;
-			std::string m_password;
-			int m_awayCycle;
-			int m_currentAwayTick;
-	};
-
-	class IRCBuddy {
-		public:
-			IRCBuddy(bool op = false, bool away = false) : m_op(op), m_away(away) {};
-
-			void setOp(bool op) { m_op = op; }
-			bool isOp() { return m_op; }
-			void setAway(bool away) { m_away = away; }
-			bool isAway() { return m_away; }
-		
-		private:
-			bool m_op;
-			bool m_away;
-	};
-
-	typedef std::map<std::string, boost::shared_ptr<AutoJoinChannel> > AutoJoinMap;
-	typedef std::map<std::string, std::map<std::string, IRCBuddy> > IRCBuddyMap;
-
 	MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix = "", QObject* parent = 0);
 	virtual ~MyIrcSession();
 
-	void addAutoJoinChannel(const std::string &channel, const std::string &password) {
-		m_autoJoin[channel] = boost::make_shared<AutoJoinChannel>(channel, password, 12 + m_autoJoin.size());
-	}
-
-	void removeAutoJoinChannel(const std::string &channel) {
-		m_autoJoin.erase(channel);
-		removeIRCBuddies(channel);
-	}
+	void createBufferModel();
 
 	// We are sending PM message. On XMPP side, user is sending PM using the particular channel,
 	// for example #room@irc.freenode.org/hanzz. On IRC side, we are forwarding this message
@@ -105,37 +60,26 @@ public:
 		return m_identify;
 	}
 
-	bool hasIRCBuddy(const std::string &channel, const std::string &name) {
-		return m_buddies[channel].find(name) != m_buddies[channel].end();
-	}
+	bool hasIrcUser(const std::string &channel, const std::string &name);
 
-	IRCBuddy &getIRCBuddy(const std::string &channel, const std::string &name) {
-		return m_buddies[channel][name];
-	}
-
-	void removeIRCBuddy(const std::string &channel, const std::string &name) {
-		m_buddies[channel].erase(name);
-	}
-
-	void removeIRCBuddies(const std::string &channel) {
-		m_buddies.erase(channel);
-	}
-
-	bool correctNickname(std::string &nickname);
+	void correctNickname(std::string &nick);
+	IrcUser *getIrcUser(IrcBuffer *buffer, IrcMessage *message);
+	IrcUser *getIrcUser(IrcBuffer *buffer, std::string &nick);
 
 	void sendWhoisCommand(const std::string &channel, const std::string &to);
 	void sendMessageToFrontend(const std::string &channel, const std::string &nickname, const std::string &msg);
+	void sendUserToFrontend(IrcUser *user, pbnetwork::StatusType statusType, const std::string &statusMessage = "", const std::string &newNick = "");
 
 	void on_joined(IrcMessage *message);
 	void on_parted(IrcMessage *message);
 	void on_quit(IrcMessage *message);
 	void on_nickChanged(IrcMessage *message);
-	void on_modeChanged(IrcMessage *message);
 	void on_topicChanged(IrcMessage *message);
 	void on_messageReceived(IrcMessage *message);
 	void on_numericMessageReceived(IrcMessage *message);
 	void on_noticeMessageReceived(IrcMessage *message);
 	void on_whoisMessageReceived(IrcMessage *message);
+	void on_namesMessageReceived(IrcMessage *message);
 
 	int rooms;
 
@@ -144,24 +88,32 @@ protected Q_SLOTS:
 	void on_disconnected();
 	void on_socketError(QAbstractSocket::SocketError error);
 
+	void onBufferAdded(IrcBuffer* buffer);
+	void onBufferRemoved(IrcBuffer* buffer);
+
+	void onIrcUserAdded(IrcUser *user);
+	void onIrcUserChanged(const QString &);
+	void onIrcUserChanged(bool);
+	void onIrcUserRemoved(IrcUser *user);
+
 	void onMessageReceived(IrcMessage* message);
 	void awayTimeout();
 
 
 protected:
 	IRCNetworkPlugin *m_np;
+	IrcBufferModel *m_bufferModel;
 	std::string m_user;
 	std::string m_identify;
-	AutoJoinMap m_autoJoin;
 	std::string m_topicData;
 	bool m_connected;
 	std::list<std::string> m_rooms;
 	std::list<std::string> m_names;
 	std::map<std::string, std::string> m_pms;
-	IRCBuddyMap m_buddies;
 	QTimer *m_awayTimer;
 	std::string m_suffix;
 	std::map<std::string, std::string> m_whois;
+	QHash<IrcBuffer*, IrcUserModel*> m_userModels;
 };
 
 #endif // SESSION_H

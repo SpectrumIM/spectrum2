@@ -208,7 +208,7 @@ class TwitterServerModeConf(BaseTest):
 configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())
-configurations.append(JabberServerModeConf())
+#configurations.append(JabberServerModeConf())
 ##configurations.append(JabberSlackServerModeConf())
 #configurations.append(TwitterServerModeConf())
 

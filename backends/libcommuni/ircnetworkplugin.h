@@ -49,7 +49,13 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 
 		void handleVCardRequest(const std::string &user, const std::string &legacyName, unsigned int id);
 
+		void handleStatusChangeRequest(const std::string &user, int status, const std::string &statusMessage);
+
 		void tryNextServer();
+
+		Config *getConfig() {
+			return m_config;
+		}
 
 	public slots:
 		void readData();
