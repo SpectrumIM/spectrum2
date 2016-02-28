@@ -323,6 +323,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::Conflict)));
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_CONFLICT");
 			return presence;
 		}
 		else if (flag & PARTICIPANT_FLAG_NOT_AUTHORIZED) {
@@ -330,6 +331,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth, statusMessage)));
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_NOT_AUTHORIZED");
 			return presence;
 		}
 		else if (flag & PARTICIPANT_FLAG_ROOM_NOT_FOUD) {
@@ -337,6 +339,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::ItemNotFound, Swift::ErrorPayload::Cancel, statusMessage)));
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_ROOM_NOT_FOUND");
 			return presence;
 		}
 		else {
@@ -432,6 +435,7 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 	// from the room. This code must be extended in case we start sending error
 	// presences in other situations.
 	if (presence->getType() == Swift::Presence::Error) {
+		LOG4CXX_INFO(logger, m_jid.toString() << ": Leaving the conversation " << m_legacyName << " because of error.");
 		m_conversationManager->getUser()->leaveRoom(m_legacyName);
 	}
 }

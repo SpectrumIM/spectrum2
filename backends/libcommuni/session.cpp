@@ -216,6 +216,7 @@ void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
 		m_np->handleDisconnected(m_user, 0, reason);
 		m_np->tryNextServer();
 	}
+	LOG4CXX_INFO(logger, m_user << ": Disconnected from IRC network: " << reason);
 	m_connected = false;
 }
 
@@ -460,6 +461,7 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Erroneous Nickname");
 			break;
 		case Irc::ERR_NICKNAMEINUSE:
+		case Irc::ERR_NICKCOLLISION:
 			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
 				if (!buffer->isChannel()) {
 					continue;
@@ -476,15 +478,14 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 // 				m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname is already in use");
 // 			}
 			break;
-		case Irc::ERR_NICKCOLLISION:
-			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
-				if (!buffer->isChannel()) {
-					continue;
-				}
-				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), TO_UTF8(buffer->title()) + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
-			}
-			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname collision KILL");
-			break;
+// 			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
+// 				if (!buffer->isChannel()) {
+// 					continue;
+// 				}
+// 				m_np->handleParticipantChanged(m_user, TO_UTF8(nickName()), TO_UTF8(buffer->title()) + m_suffix, pbnetwork::PARTICIPANT_FLAG_CONFLICT);
+// 			}
+// 			m_np->handleDisconnected(m_user, pbnetwork::CONNECTION_ERROR_INVALID_USERNAME, "Nickname collision KILL");
+// 			break;
 		case Irc::ERR_PASSWDMISMATCH:
 			foreach (IrcBuffer *buffer, m_bufferModel->buffers()) {
 				if (!buffer->isChannel()) {
@@ -512,6 +513,9 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 
 	if (m->code() >= 400 && m->code() < 500) {
 		LOG4CXX_INFO(logger, m_user << ": Error message received: " << message->toData().data());
+	}
+	else {
+		LOG4CXX_INFO(logger, m_user << ": Numeric message received: " << message->toData().data());
 	}
 }
 
