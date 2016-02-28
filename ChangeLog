@@ -1,3 +1,48 @@
+Version 2.0.3 (2016-03-xx):
+	General:
+	* Swift 3.0rc2 is now minimum Swift 3.x version needed to compile Spectrum2,
+	  Swith 2.x remains supported.
+	* Rename user when he tries to connect to room from the second client
+	  with different nickname than he used with the first client.
+	* Send self presence as the first presence from the MUC room.
+	* Send the icon hash to the backend with other buddies information.
+	* Send unavailable presence as a response to presence for exiting
+	  the room. Fixes room rejoin in Pidgin.
+	* Fix memory leak in HTTPRequest - currently used only in Slack frontend.
+
+	Slack frontend:
+	* For IRC allow registering without providing account name/password.
+	* Do not reconnect to Slack RTM when no URL is available after disconnect.
+	* Handle "account_inactive" Slack error.
+
+	Web interface:
+	* Show warning when trying to register already registered username.
+	* Allow registering with empty password for networks like IRC where
+	  password is not needed.
+	* Allow showing examples of username or server in registration form. This
+	  is configured in config file.
+	* Fix `service.base_location` setting for register.shtml page.
+
+	Libpurple backend:
+	* Make the conversation active according to chatstates notifications.
+	  Should fix the issue with repeating messages with prpl-facebook.
+	* When `service.web_directory` and `service.web_url` is set, images sent
+	  in messages are stored to `service.web_directory` and link is forwarded
+	  to the user. Tested only with prpl-facebook for now.
+	* Treat empty password as fatal error - do no try to reconnect
+	  automatically in that case.
+
+	Libcommuni backend:
+	* Latest libcommuni 3.4.0 is now needed.
+	* Libcommuni backend has been improved to use the newest libcommuni
+	  features.
+	* Ports can now be set in `service.irc_server` option and in the JID. When
+	  '+' character is used before the port number, SSL is used automatically.
+	  When port 6697 is used, SSL is used automatically too.
+
+	Swiften backend:
+	* Respect the resource when connecting to 3rd-party XMPP network.
+
 Version 2.0.2 (2016-02-09):
 	General:
 	* Fix joining the room when using JID Escaping even for '@' character.
