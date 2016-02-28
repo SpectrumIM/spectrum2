@@ -81,7 +81,7 @@ void MyIrcSession::onBufferAdded(IrcBuffer* buffer) {
 
 	if (buffer->isChannel()) {
 		QVariantMap userData;
-		userData["awayCycle"] = boost::lexical_cast<int>(CONFIG_STRING_DEFAULTED(m_np->getConfig(), "service.irc_away_timeout", "12")) + m_userModels.size();
+		userData["awayCycle"] = boost::lexical_cast<int>(CONFIG_STRING_DEFAULTED(m_np->getConfig(), "service.irc_away_timeout", "60")) + m_userModels.size();
 		userData["awayTick"] = 0;
 		buffer->setUserData(userData);
 	}
