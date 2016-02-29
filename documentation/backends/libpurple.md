@@ -33,9 +33,9 @@ Spectrum 2 should work with any third-party libpurple plugin which is properly i
 
 Protocol variable| website | Description
 -----------------|------------
-prpl-facebook| [https://github.com/jgeboski/purple-facebook](website) | Facebook
-prpl-telegram| [https://github.com/majn/telegram-purple](website) | Telegram
-prpl-skypeweb| [https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb](website) | Skype
+prpl-facebook| [https://github.com/jgeboski/purple-facebook](https://github.com/jgeboski/purple-facebook) | Facebook
+prpl-telegram| [https://github.com/majn/telegram-purple](https://github.com/majn/telegram-purple) | Telegram
+prpl-skypeweb| [https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb](https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb) | Skype
 
 These plugins are included by default in our Docker image.
 
