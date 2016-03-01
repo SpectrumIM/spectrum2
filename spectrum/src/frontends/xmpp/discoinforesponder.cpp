@@ -149,33 +149,25 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 
 			boost::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
 			res->setNode(info->getNode());
-			sendResponse(from, id, res);
-		}
+			// disco#info for room
+			if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
+				res->addIdentity(DiscoInfo::Identity(m_rooms[to.toBare().toString()], "conference", "text"));
+				res->addFeature("http://jabber.org/protocol/muc");
+			}
 
-		// disco#info for room
-		if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
-			boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
-			res->addIdentity(DiscoInfo::Identity(m_rooms[to.toBare().toString()], "conference", "text"));
-			res->addFeature("http://jabber.org/protocol/muc");
-			res->setNode(info->getNode());
-			sendResponse(from, to, id, res);
-			return true;
-		}
-
-		// disco#info for per-user rooms (like Skype/Facebook groupchats)
-		XMPPUser *user = static_cast<XMPPUser *>(m_userManager->getUser(from.toBare().toString()));
-		if (user) {
-			BOOST_FOREACH(const DiscoItems::Item &item, user->getRoomList()->getItems()) {
-				LOG4CXX_INFO(logger, "XXX " << item.getNode() << " " << to.toBare().toString());
-				if (item.getJID().toString() == to.toBare().toString()) {
-					boost::shared_ptr<DiscoInfo> res(new DiscoInfo());
-					res->addIdentity(DiscoInfo::Identity(item.getName(), "conference", "text"));
-					res->addFeature("http://jabber.org/protocol/muc");
-					res->setNode(info->getNode());
-					sendResponse(from, to, id, res);
-					return true;
+			// disco#info for per-user rooms (like Skype/Facebook groupchats)
+			XMPPUser *user = static_cast<XMPPUser *>(m_userManager->getUser(from.toBare().toString()));
+			if (user) {
+				BOOST_FOREACH(const DiscoItems::Item &item, user->getRoomList()->getItems()) {
+					LOG4CXX_INFO(logger, "XXX " << item.getNode() << " " << to.toBare().toString());
+					if (item.getJID().toString() == to.toBare().toString()) {
+						res->addIdentity(DiscoInfo::Identity(item.getName(), "conference", "text"));
+						res->addFeature("http://jabber.org/protocol/muc");
+						res->setNode(info->getNode());
+					}
 				}
 			}
+			sendResponse(from, id, res);
 		}
 		return true;
 	}
