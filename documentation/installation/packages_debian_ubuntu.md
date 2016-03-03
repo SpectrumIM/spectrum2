@@ -6,7 +6,7 @@ redirect_from: "/documentation/installation/debian_ubuntu.html"
 
 ## Installing on Debian Jessie from our packages repository
 
-At the moment only AMD64 packages are available:
+At the moment we support AMD64 and armhf (for ARM-based machines, like Raspberry PI) binary packages:
 
         # apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
         # echo "deb http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list.d/spectrum.list
