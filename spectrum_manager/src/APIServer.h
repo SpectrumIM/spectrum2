@@ -56,12 +56,11 @@ class APIServer {
 		void serve_instances_start(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_instances_stop(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_instances_unregister(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_commands(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_variables(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_command_args(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
+		void serve_instances_execute(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_instances_register(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
-		void serve_instances_register_form(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
-		void serve_instances_list_rooms(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
-		void serve_instances_join_room(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
-		void serve_instances_join_room_form(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
-		void serve_instances_leave_room(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_users(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_users_add(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);
 		void serve_users_remove(Server *server, Server::session *sess, struct mg_connection *conn, struct http_message *hm);

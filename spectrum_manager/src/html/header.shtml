@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="description" content="Spectrum 2 : Spectrum 2 IM transports">
 
+    <link rel="stylesheet" type="text/css" href="/bootstrap.min.css">
     <link href="/style.css" rel="stylesheet" type="text/css" media="all">
     <link href="/form.css" rel="stylesheet" type="text/css" media="all">
     <link href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" media="all">
@@ -12,6 +13,8 @@
     <script src="/js/jquery-ui.js"></script>
     <script src="/js/jquery.cookie.js"></script>
     <script src="/js/config.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/bootbox.min.js"></script>
     <script src="/js/app.js"></script>
     <title>Spectrum 2</title>
   </head>

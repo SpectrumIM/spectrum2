@@ -127,15 +127,11 @@ std::string SlackFrontend::getOAuth2URL(const std::vector<std::string> &args) {
 
 std::string SlackFrontend::getRegistrationFields() {
 	std::string fields = "Main Slack channel";
-	if (CONFIG_BOOL(m_config, "registration.needRegistration")) {
+	if (CONFIG_BOOL_DEFAULTED(m_config, "registration.needRegistration", true)) {
 		fields += "\n" + CONFIG_STRING(m_config, "registration.username_label") + "\n";
 		fields += CONFIG_STRING(m_config, "registration.password_label");
 	}
 	return fields;
-}
-
-bool SlackFrontend::handleAdminMessage(Swift::Message::ref message) {
-	return static_cast<SlackUserManager *>(m_userManager)->handleAdminMessage(message);
 }
 
 void SlackFrontend::disconnectFromServer() {

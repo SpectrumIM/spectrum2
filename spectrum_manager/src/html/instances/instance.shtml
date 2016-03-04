@@ -2,7 +2,7 @@
 
 <script type="text/javascript">
 $(function() {
-	show_list_rooms();
+	show_instance();
 });
 </script>
 

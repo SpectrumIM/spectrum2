@@ -463,3 +463,14 @@ Small Device Styles
   }
 
 }
+
+.largeWidth {
+	margin: 0 auto;
+	width: 90%;
+}
+
+.maxHeight {
+    max-height: 500px;
+    overflow-y: auto;
+}
+

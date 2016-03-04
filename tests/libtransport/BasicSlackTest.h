@@ -56,7 +56,7 @@
 
 using namespace Transport;
 
-class BasicSlackTest : public Swift::XMPPParserClient {
+class BasicSlackTest {
 
 	public:
 		void setMeUp (void);

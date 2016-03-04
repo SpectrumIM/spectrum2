@@ -62,10 +62,9 @@ class SlackUserManager : public UserManager {
 		SlackSession *moveTempSession(const std::string &user);
 		void moveTempSession(const std::string &user, SlackSession *session);
 
-		bool handleAdminMessage(Swift::Message::ref message);
-
 	private:
 		void handleUserCreated(User *user);
+		void handleAdminInterfaceSet();
 
 	private:
 		Component *m_component;

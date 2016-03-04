@@ -19,6 +19,7 @@
  */
 
 #include "transport/AdminInterface.h"
+#include "transport/AdminInterfaceCommand.h"
 #include "transport/User.h"
 #include "transport/Transport.h"
 #include "transport/StorageBackend.h"
@@ -48,18 +49,1077 @@ static std::string getArg(const std::string &body) {
 	return body.substr(body.find(" ") + 1);
 }
 
+class StatusCommand : public AdminInterfaceCommand {
+	public:
+		
+		StatusCommand(NetworkPluginServer *server, UserManager *userManager) :
+												AdminInterfaceCommand("status",
+												AdminInterfaceCommand::General,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			m_userManager = userManager;
+			setDescription("Shows instance status");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			int users = m_userManager->getUserCount();
+			int backends = m_server->getBackendCount();
+			ret = "Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)";
+			return ret;
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+		UserManager *m_userManager;
+};
+
+class UptimeCommand : public AdminInterfaceCommand {
+	public:
+		
+		UptimeCommand() : AdminInterfaceCommand("uptime",
+							AdminInterfaceCommand::General,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Get) {
+			m_start = time(NULL);
+			setDescription("Returns ptime in seconds");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			return boost::lexical_cast<std::string>(time(0) - m_start);
+		}
+
+	private:
+		time_t m_start;
+};
+
+class OnlineUsersCommand : public AdminInterfaceCommand {
+	public:
+		
+		OnlineUsersCommand(UserManager *userManager) : AdminInterfaceCommand("online_users",
+							AdminInterfaceCommand::Users,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Get) {
+			m_userManager = userManager;
+			setDescription("Returns list of all online users");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			const std::map<std::string, User *> &users = m_userManager->getUsers();
+			if (users.empty()) {
+				ret = "0";
+			}
+
+			for (std::map<std::string, User *>::const_iterator it = users.begin(); it != users.end(); it ++) {
+				ret += (*it).first + "\n";
+			}
+			return ret;
+		}
+
+	private:
+		UserManager *m_userManager;
+};
+
+class OnlineUsersCountCommand : public AdminInterfaceCommand {
+	public:
+		
+		OnlineUsersCountCommand(UserManager *userManager) : AdminInterfaceCommand("online_users_count",
+							AdminInterfaceCommand::Users,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Get) {
+			m_userManager = userManager;
+			setDescription("Number of online users");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			int users = m_userManager->getUserCount();
+			return boost::lexical_cast<std::string>(users);
+		}
+
+	private:
+		UserManager *m_userManager;
+};
+
+class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
+	public:
+		
+		OnlineUsersPerBackendCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("online_users_per_backend",
+												AdminInterfaceCommand::General,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("Shows online users per backends");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string lst;
+			int id = 1;
+
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
+				NetworkPluginServer::Backend *backend = *b;
+				lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + ")";
+				lst += backend->acceptUsers ? "" : " - not-accepting";
+				lst += backend->longRun ? " - long-running" : "";
+				lst += ":\n";
+				if (backend->users.size() == 0) {
+					lst += "   waiting for users\n";
+				}
+				else {
+					time_t now = time(NULL);
+					for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
+						User *user = *u;
+						lst += "   " + user->getJID().toBare().toString();
+						lst += " - non-active for " + boost::lexical_cast<std::string>(now - user->getLastActivity()) + " seconds";
+						lst += "\n";
+					}
+				}
+				id++;
+			}
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class BackendsCountCommand : public AdminInterfaceCommand {
+	public:
+		
+		BackendsCountCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("backends_count",
+												AdminInterfaceCommand::Backends,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("Number of active backends");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			int backends = m_server->getBackendCount();
+			return boost::lexical_cast<std::string>(backends);
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class ReloadCommand : public AdminInterfaceCommand {
+	public:
+		
+		ReloadCommand(Component *component) : AdminInterfaceCommand("reload",
+							AdminInterfaceCommand::General,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_component = component;
+			setDescription("Reloads config file");
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			bool done = m_component->getConfig()->reload();
+			if (done) {
+				return "Config reloaded";
+			}
+			else {
+				return "Error: Error during config reload";
+			}
+		}
+
+	private:
+		Component *m_component;
+};
+
+class HasOnlineUserCommand : public AdminInterfaceCommand {
+	public:
+		
+		HasOnlineUserCommand(UserManager *userManager) : AdminInterfaceCommand("has_online_user",
+							AdminInterfaceCommand::Users,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_userManager = userManager;
+			setDescription("Returns 1 if user is online");
+			addArg("username", "Username", "user@domain.tld");
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			if (args.empty()) {
+				return "Error: Missing user name as an argument";
+			}
+
+			user = m_userManager->getUser(args[0]);
+			return boost::lexical_cast<std::string>(user != NULL);
+		}
+
+	private:
+		UserManager *m_userManager;
+};
+
+class ResMemoryCommand : public AdminInterfaceCommand {
+	public:
+		
+		ResMemoryCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("res_memory",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("Total RESident memory Spectrum 2 and its backends use in KB");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			double shared = 0;
+			double rss = 0;
+			process_mem_usage(shared, rss);
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				rss += backend->res;
+			}
+
+			return boost::lexical_cast<std::string>(rss);
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class ShrMemoryCommand : public AdminInterfaceCommand {
+	public:
+		
+		ShrMemoryCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("shr_memory",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("Total SHaRed memory spectrum2 backends share together in KB");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			double shared = 0;
+			double rss = 0;
+			process_mem_usage(shared, rss);
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				shared += backend->shared;
+			}
+
+			return boost::lexical_cast<std::string>(shared);
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class UsedMemoryCommand : public AdminInterfaceCommand {
+	public:
+		
+		UsedMemoryCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("used_memory",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("(res_memory - shr_memory)");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			double shared = 0;
+			double rss = 0;
+			process_mem_usage(shared, rss);
+			rss -= shared;
+
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				rss += backend->res - backend->shared;
+			}
+
+			return boost::lexical_cast<std::string>(rss);
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class AverageMemoryPerUserCommand : public AdminInterfaceCommand {
+	public:
+		
+		AverageMemoryPerUserCommand(NetworkPluginServer *server, UserManager *userManager) :
+												AdminInterfaceCommand("average_memory_per_user",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			m_userManager = userManager;
+			setDescription("(memory_used_without_any_user - res_memory)");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			if (m_userManager->getUserCount() == 0) {
+				return boost::lexical_cast<std::string>(0);
+			}
+			else {
+				unsigned long per_user = 0;
+				const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+				BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+					if (backend->res >= backend->init_res) {
+						per_user += (backend->res - backend->init_res);
+					}
+				}
+
+				return boost::lexical_cast<std::string>(per_user / m_userManager->getUserCount());
+			}
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+		UserManager *m_userManager;
+};
+
+class ResMemoryPerBackendCommand : public AdminInterfaceCommand {
+	public:
+		
+		ResMemoryPerBackendCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("res_memory_per_backend",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("RESident memory used by backends in KB");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string lst;
+			int id = 1;
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res) + "\n";
+				id++;
+			}
+
+			return lst;
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class ShrMemoryPerBackendCommand : public AdminInterfaceCommand {
+	public:
+		
+		ShrMemoryPerBackendCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("shr_memory_per_backend",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("SHaRed memory used by backends in KB");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string lst;
+			int id = 1;
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->shared) + "\n";
+				id++;
+			}
+
+			return lst;
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class UsedMemoryPerBackendCommand : public AdminInterfaceCommand {
+	public:
+		
+		UsedMemoryPerBackendCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("used_memory_per_backend",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("(res_memory - shr_memory) per backend");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string lst;
+			int id = 1;
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res - backend->shared) + "\n";
+				id++;
+			}
+
+			return lst;
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class AverageMemoryPerUserPerBackendCommand : public AdminInterfaceCommand {
+	public:
+		
+		AverageMemoryPerUserPerBackendCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("average_memory_per_user_per_backend",
+												AdminInterfaceCommand::Memory,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("(memory_used_without_any_user - res_memory) per backend");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string lst;
+			int id = 1;
+			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
+			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				if (backend->users.size() == 0 || backend->res < backend->init_res) {
+					lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): 0\n";
+				}
+				else {
+					lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>((backend->res - backend->init_res) / backend->users.size()) + "\n";
+				}
+				id++;
+			}
+
+			return lst;
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class CrashedBackendsCountCommand : public AdminInterfaceCommand {
+	public:
+		
+		CrashedBackendsCountCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("crashed_backends_count",
+												AdminInterfaceCommand::Backends,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("Returns number of crashed backends");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			return boost::lexical_cast<std::string>(m_server->getCrashedBackends().size());
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class CrashedBackendsCommand : public AdminInterfaceCommand {
+	public:
+		
+		CrashedBackendsCommand(NetworkPluginServer *server) :
+												AdminInterfaceCommand("crashed_backends",
+												AdminInterfaceCommand::Backends,
+												AdminInterfaceCommand::GlobalContext,
+												AdminInterfaceCommand::AdminMode,
+												AdminInterfaceCommand::Get) {
+			m_server = server;
+			setDescription("Returns IDs of crashed backends");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string lst;
+			const std::vector<std::string> &backends = m_server->getCrashedBackends();
+			BOOST_FOREACH(const std::string &backend, backends) {
+				lst += backend + "\n";
+			}
+			return lst;
+		}
+
+	private:
+		NetworkPluginServer *m_server;
+};
+
+class MessagesFromXMPPCommand : public AdminInterfaceCommand {
+	public:
+		
+		MessagesFromXMPPCommand(UserManager *userManager) : AdminInterfaceCommand("messages_from_xmpp",
+							AdminInterfaceCommand::Messages,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Get) {
+			m_userManager = userManager;
+			setDescription("Returns number of messages received from frontend network");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			int msgCount = m_userManager->getMessagesToBackend();
+			return boost::lexical_cast<std::string>(msgCount);
+		}
+
+	private:
+		UserManager *m_userManager;
+};
+
+class MessagesToXMPPCommand : public AdminInterfaceCommand {
+	public:
+		
+		MessagesToXMPPCommand(UserManager *userManager) : AdminInterfaceCommand("messages_to_xmpp",
+							AdminInterfaceCommand::Messages,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Get) {
+			m_userManager = userManager;
+			setDescription("Returns number of messages sent to Front network");
+		}
+
+		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			int msgCount = m_userManager->getMessagesToXMPP();
+			return boost::lexical_cast<std::string>(msgCount);
+		}
+
+	private:
+		UserManager *m_userManager;
+};
+
+class RegisterCommand : public AdminInterfaceCommand {
+	public:
+		RegisterCommand(UserRegistration *userRegistration, Component *component) : AdminInterfaceCommand("register",
+							AdminInterfaceCommand::Users,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::UserMode,
+							AdminInterfaceCommand::Execute) {
+			m_userRegistration = userRegistration;
+			setDescription("Registers the new user");
+
+			std::string fields = component->getFrontend()->getRegistrationFields();
+			std::vector<std::string> args;
+			boost::split(args, fields, boost::is_any_of("\n"));
+			addArg("username", args[0]);
+			if (fields.size() > 1) {
+				addArg("legacy_username", args[1]);
+			}
+			if (fields.size() > 2) {
+				addArg("legacy_password", args[2]);
+			}
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			if (args.size() != 2 && args.size() != 3) {
+				return "Error: Bad argument count";
+			}
+
+			UserInfo res;
+			res.jid = args[0];
+			res.uin = args[1];
+			if (args.size() == 2) {
+				res.password = "";
+			}
+			else {
+				res.password = args[2];
+			}
+			res.language = "en";
+			res.encoding = "utf-8";
+			res.vip = 0;
+
+			if (m_userRegistration->registerUser(res)) {
+				return "User registered";
+			}
+			else {
+				return "Error: User is already registered";
+			}
+		}
+
+	private:
+		UserRegistration *m_userRegistration;
+};
+
+class UnregisterCommand : public AdminInterfaceCommand {
+	public:
+		
+		UnregisterCommand(UserRegistration *userRegistration, Component *component) : AdminInterfaceCommand("unregister",
+							AdminInterfaceCommand::Users,
+							AdminInterfaceCommand::UserContext,
+							AdminInterfaceCommand::UserMode,
+							AdminInterfaceCommand::Execute) {
+			m_userRegistration = userRegistration;
+			setDescription("Unregisters existing user");
+
+// 			std::string fields = component->getFrontend()->getRegistrationFields();
+// 			std::vector<std::string> args;
+// 			boost::split(args, fields, boost::is_any_of("\n"));
+// 			addArg("username", args[0]);
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			if (m_userRegistration->unregisterUser(uinfo.jid)) {
+				return "User '" + args[0] + "' unregistered.";
+			}
+			else {
+				return "Error: User '" + args[0] + "' is not registered";
+			}
+		}
+
+	private:
+		UserRegistration *m_userRegistration;
+};
+
+class SetOAuth2CodeCommand : public AdminInterfaceCommand {
+	public:
+		
+		SetOAuth2CodeCommand(Component *component) : AdminInterfaceCommand("set_oauth2_code",
+							AdminInterfaceCommand::Frontend,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_component = component;
+			setDescription("set_oauth2_code <code> <state> - sets the OAuth2 code and state for this instance");
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			if (args.size() != 2) {
+				return "Error: Bad argument count";
+			}
+
+			ret = m_component->getFrontend()->setOAuth2Code(args[0], args[1]);
+			if (ret.empty()) {
+				return ret;
+				
+			}
+			return "OAuth2 code and state set.";
+		}
+
+	private:
+		Component *m_component;
+};
+
+class GetOAuth2URLCommand : public AdminInterfaceCommand {
+	public:
+		
+		GetOAuth2URLCommand(Component *component) : AdminInterfaceCommand("get_oauth2_url",
+							AdminInterfaceCommand::Frontend,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_component = component;
+			setDescription("get_oauth2_code - Get OAUth2 URL");
+			std::string fields = component->getFrontend()->getRegistrationFields();
+			std::vector<std::string> args;
+			boost::split(args, fields, boost::is_any_of("\n"));
+			addArg("username", args[0]);
+			if (fields.size() > 1) {
+				addArg("legacy_username", args[1]);
+			}
+			if (fields.size() > 2) {
+				addArg("legacy_password", args[2]);
+			}
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string url = m_component->getFrontend()->getOAuth2URL(args);
+			return url;
+		}
+
+	private:
+		Component *m_component;
+};
+
+class HelpCommand : public AdminInterfaceCommand {
+	public:
+		
+		HelpCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("help",
+							AdminInterfaceCommand::General,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_commands = commands;
+			setDescription("Shows help message");
+		}
+
+		void generateCategory(AdminInterfaceCommand::Category category, std::string &output) {
+			output += getCategoryName(category) + ":\n";
+
+			for (std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands->begin(); it != m_commands->end(); it++) {
+				AdminInterfaceCommand *command = it->second;
+				if (command->getCategory() != category) {
+					continue;
+				}
+
+				if (command->getActions() & AdminInterfaceCommand::Execute) {
+					output += "   CMD   ";
+				}
+				else {
+					output += "   VAR   ";
+				}
+
+				output += command->getName() + " - ";
+
+				output += command->getDescription() + "\n";
+			}
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string help;
+			generateCategory(AdminInterfaceCommand::General, help);
+			generateCategory(AdminInterfaceCommand::Users, help);
+			generateCategory(AdminInterfaceCommand::Messages, help);
+			generateCategory(AdminInterfaceCommand::Frontend, help);
+			generateCategory(AdminInterfaceCommand::Backends, help);
+			generateCategory(AdminInterfaceCommand::Memory, help);
+			return help;
+		}
+
+	private:
+		std::map<std::string, AdminInterfaceCommand *> *m_commands;
+};
+
+class CommandsCommand : public AdminInterfaceCommand {
+	public:
+		
+		CommandsCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("commands",
+							AdminInterfaceCommand::General,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_commands = commands;
+			setDescription("Shows all the available commands with extended information.");
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string output;
+			for (std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands->begin(); it != m_commands->end(); it++) {
+				AdminInterfaceCommand *command = it->second;
+				if ((command->getActions() & AdminInterfaceCommand::Execute) == 0) {
+					continue;
+				}
+
+				output += command->getName();
+				output += " - \"" + command->getDescription() + "\"";
+				output += " Category: " + command->getCategoryName(command->getCategory());
+
+				output += " AccesMode:";
+				if (command->getAccessMode() == AdminInterfaceCommand::UserMode) {
+					output += " User";
+				}
+				else {
+					output += " Admin";
+				}
+
+				output += " Context:";
+				if (command->getContext() == AdminInterfaceCommand::UserContext) {
+					output += " User";
+				}
+				else {
+					output += " Global";
+				}
+
+				output += "\n";
+			}
+
+			return output;
+		}
+
+	private:
+		std::map<std::string, AdminInterfaceCommand *> *m_commands;
+};
+
+
+class VariablesCommand : public AdminInterfaceCommand {
+	public:
+		
+		VariablesCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("variables",
+							AdminInterfaceCommand::General,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_commands = commands;
+			setDescription("Shows all the available variables.");
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::string output;
+			for (std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands->begin(); it != m_commands->end(); it++) {
+				AdminInterfaceCommand *command = it->second;
+				if ((command->getActions() & AdminInterfaceCommand::Get) == 0) {
+					continue;
+				}
+
+				output += command->getName();
+				output += " - \"" + command->getDescription() + "\"";
+				output += " Value: \"" + command->handleGetRequest(uinfo, user, args) + "\"";
+
+				if ((command->getActions() & AdminInterfaceCommand::Set) == 0) {
+					output += " Read-only: true";
+				}
+				else {
+					output += " Read-only: false";
+				}
+
+				output += " Category: " + command->getCategoryName(command->getCategory());
+
+				output += " AccesMode:";
+				if (command->getAccessMode() == AdminInterfaceCommand::UserMode) {
+					output += " User";
+				}
+				else {
+					output += " Admin";
+				}
+
+				output += " Context:";
+				if (command->getContext() == AdminInterfaceCommand::UserContext) {
+					output += " User";
+				}
+				else {
+					output += " Global";
+				}
+
+				output += "\n";
+			}
+
+			return output;
+		}
+
+	private:
+		std::map<std::string, AdminInterfaceCommand *> *m_commands;
+};
+
+class ArgsCommand : public AdminInterfaceCommand {
+	public:
+		
+		ArgsCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("args",
+							AdminInterfaceCommand::General,
+							AdminInterfaceCommand::GlobalContext,
+							AdminInterfaceCommand::AdminMode,
+							AdminInterfaceCommand::Execute) {
+			m_commands = commands;
+			setDescription("Shows descripton of arguments for command");
+			addArg("command", "Command", "register");
+		}
+
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
+			if (!ret.empty()) {
+				return ret;
+			}
+
+			std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands->find(args[0]);
+			if (it == m_commands->end()) {
+				return "Error: Unknown command passed as an argument.";
+			}
+			AdminInterfaceCommand *command = it->second;
+
+			BOOST_FOREACH(const AdminInterfaceCommand::Arg &arg, command->getArgs()) {
+				ret += arg.name + " - \"" + arg.label + "\" " + "Example: \"" + arg.example + "\"\n";
+			}
+
+			return ret;
+		}
+
+	private:
+		std::map<std::string, AdminInterfaceCommand *> *m_commands;
+};
+
+
 AdminInterface::AdminInterface(Component *component, UserManager *userManager, NetworkPluginServer *server, StorageBackend *storageBackend, UserRegistration *userRegistration) {
 	m_component = component;
 	m_storageBackend = storageBackend;
 	m_userManager = userManager;
 	m_server = server;
 	m_userRegistration = userRegistration;
-	m_start = time(NULL);
 
 	m_component->getFrontend()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
+
+	addCommand(new StatusCommand(m_server, m_userManager));
+	addCommand(new UptimeCommand());
+	addCommand(new OnlineUsersCommand(m_userManager));
+	addCommand(new OnlineUsersCountCommand(m_userManager));
+	addCommand(new ReloadCommand(m_component));
+	addCommand(new OnlineUsersPerBackendCommand(m_server));
+	addCommand(new HasOnlineUserCommand(m_userManager));
+	addCommand(new BackendsCountCommand(m_server));
+	addCommand(new ResMemoryCommand(m_server));
+	addCommand(new ShrMemoryCommand(m_server));
+	addCommand(new UsedMemoryCommand(m_server));
+	addCommand(new AverageMemoryPerUserCommand(m_server, m_userManager));
+	addCommand(new ResMemoryPerBackendCommand(m_server));
+	addCommand(new ShrMemoryPerBackendCommand(m_server));
+	addCommand(new UsedMemoryPerBackendCommand(m_server));
+	addCommand(new AverageMemoryPerUserPerBackendCommand(m_server));
+	addCommand(new CrashedBackendsCountCommand(m_server));
+	addCommand(new CrashedBackendsCommand(m_server));
+	addCommand(new MessagesFromXMPPCommand(m_userManager));
+	addCommand(new MessagesToXMPPCommand(m_userManager));
+	addCommand(new SetOAuth2CodeCommand(m_component));
+	addCommand(new GetOAuth2URLCommand(m_component));
+	addCommand(new HelpCommand(&m_commands));
+	addCommand(new ArgsCommand(&m_commands));
+	addCommand(new CommandsCommand(&m_commands));
+	addCommand(new VariablesCommand(&m_commands));
+
+	if (m_userRegistration) {
+		addCommand(new RegisterCommand(m_userRegistration, m_component));
+		addCommand(new UnregisterCommand(m_userRegistration, m_component));
+	}
 }
 
 AdminInterface::~AdminInterface() {
+	for (std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands.begin(); it != m_commands.end(); it++) {
+		delete it->second;
+	}
+}
+
+void AdminInterface::addCommand(AdminInterfaceCommand *command) {
+	m_commands[command->getName()] = command;
 }
 
 void AdminInterface::handleQuery(Swift::Message::ref message) {
@@ -72,314 +1132,90 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
 
-	if (msg == "status") {
-		int users = m_userManager->getUserCount();
-		int backends = m_server->getBackendCount();
-		message->setBody("Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)");
-	}
-	else if (msg == "uptime") {
-		message->setBody(boost::lexical_cast<std::string>(time(0) - m_start));
-	}
-	else if (msg == "online_users") {
-		std::string lst;
-		const std::map<std::string, User *> &users = m_userManager->getUsers();
-		if (users.size() == 0)
-			lst = "0";
+	std::string body = msg;
+	std::vector<std::string> args;
+	boost::split(args, body, boost::is_any_of(" "));
 
-		for (std::map<std::string, User *>::const_iterator it = users.begin(); it != users.end(); it ++) {
-			lst += (*it).first + "\n";
-		}
+	if (args.empty()) {
+		message->setBody("Error: Unknown variable or command");
+		return;
+	}
 
-		message->setBody(lst);
+	// Check for 'get' and 'set' command.
+	AdminInterfaceCommand::Actions action = AdminInterfaceCommand::None;
+	if (args[0] == "set") {
+		action = AdminInterfaceCommand::Set;
+		args.erase(args.begin());
 	}
-	else if (msg == "online_users_count") {
-		int users = m_userManager->getUserCount();
-		message->setBody(boost::lexical_cast<std::string>(users));
+	else if (args[0] == "get") {
+		action = AdminInterfaceCommand::Get;
+		args.erase(args.begin());
 	}
-	else if (msg == "reload") {
-		bool done = m_component->getConfig()->reload();
-		if (done) {
-			message->setBody("Config reloaded");
-		}
-		else {
-			message->setBody("Error during config reload");
-		}
-	}
-	else if (msg == "online_users_per_backend") {
-		std::string lst;
-		int id = 1;
 
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
-			NetworkPluginServer::Backend *backend = *b;
-			lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + ")";
-			lst += backend->acceptUsers ? "" : " - not-accepting";
-			lst += backend->longRun ? " - long-running" : "";
-			lst += ":\n";
-			if (backend->users.size() == 0) {
-				lst += "   waiting for users\n";
-			}
-			else {
-				time_t now = time(NULL);
-				for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
-					User *user = *u;
-					lst += "   " + user->getJID().toBare().toString();
-					lst += " - non-active for " + boost::lexical_cast<std::string>(now - user->getLastActivity()) + " seconds";
-					lst += "\n";
-				}
-			}
-			id++;
+	// We removed the 'get' and 'set' from args, so check we have more
+	// data there.
+	if (args.empty()) {
+		message->setBody("Error: Unknown variable or command");
+		return;
+	}
+
+	// Find the right AdminInterfaceCommand
+	std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands.find(args[0]);
+	if (it == m_commands.end()) {
+		message->setBody("Error: Unknown variable or command");
+		return;
+	}
+	AdminInterfaceCommand *command = it->second;
+	args.erase(args.begin());
+
+	// If action is None, then it's Get or Execute according to command type.
+	if (action == AdminInterfaceCommand::None) {
+		if (command->getActions() & AdminInterfaceCommand::Get) {
+			action = AdminInterfaceCommand::Get;
+		}
+		else if (command->getActions() & AdminInterfaceCommand::Execute) {
+			action = AdminInterfaceCommand::Execute;
+		}
+	}
+
+	User *user = NULL;
+	UserInfo uinfo;
+	uinfo.id = -1;
+
+	if (command->getContext() == AdminInterfaceCommand::UserContext) {
+		if (args.empty()) {
+			message->setBody("Error: No username given");
+			return;
 		}
 
-		message->setBody(lst);
-	}
-	else if (msg.find("has_online_user") == 0) {
-		User *user = m_userManager->getUser(getArg(msg));
-		std::cout << getArg(msg) << "\n";
-		message->setBody(boost::lexical_cast<std::string>(user != NULL));
-	}
-	else if (msg == "backends_count") {
-		int backends = m_server->getBackendCount();
-		message->setBody(boost::lexical_cast<std::string>(backends));
-	}
-	else if (msg == "res_memory") {
-		double shared = 0;
-		double rss = 0;
-		process_mem_usage(shared, rss);
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			rss += backend->res;
+		if (!m_storageBackend || !m_storageBackend->getUser(args[0], uinfo)) {
+			uinfo.id = -1;
 		}
 
-		message->setBody(boost::lexical_cast<std::string>(rss));
+		user = m_userManager->getUser(args[0]);
+		args.erase(args.begin());
 	}
-	else if (msg == "shr_memory") {
-		double shared = 0;
-		double rss = 0;
-		process_mem_usage(shared, rss);
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			shared += backend->shared;
-		}
 
-		message->setBody(boost::lexical_cast<std::string>(shared));
+	// Execute the command
+	switch (action) {
+		case AdminInterfaceCommand::None:
+			message->setBody("Error: Unknown variable or command");
+			break;
+		case AdminInterfaceCommand::Get:
+			message->setBody(command->handleGetRequest(uinfo, user, args));
+			break;
+		case AdminInterfaceCommand::Set:
+			message->setBody(command->handleSetRequest(uinfo, user, args));
+			break;
+		case AdminInterfaceCommand::Execute:
+			message->setBody(command->handleExecuteRequest(uinfo, user, args));
+			break;
 	}
-	else if (msg == "used_memory") {
-		double shared = 0;
-		double rss = 0;
-		process_mem_usage(shared, rss);
-		rss -= shared;
 
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			rss += backend->res - backend->shared;
-		}
-
-		message->setBody(boost::lexical_cast<std::string>(rss));
-	}
-	else if (msg == "average_memory_per_user") {
-		if (m_userManager->getUserCount() == 0) {
-			message->setBody(boost::lexical_cast<std::string>(0));
-		}
-		else {
-			unsigned long per_user = 0;
-			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-				if (backend->res >= backend->init_res) {
-					per_user += (backend->res - backend->init_res);
-				}
-			}
-
-			message->setBody(boost::lexical_cast<std::string>(per_user / m_userManager->getUserCount()));
-		}
-	}
-	else if (msg == "res_memory_per_backend") {
-		std::string lst;
-		int id = 1;
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res) + "\n";
-			id++;
-		}
-
-		message->setBody(lst);
-	}
-	else if (msg == "shr_memory_per_backend") {
-		std::string lst;
-		int id = 1;
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->shared) + "\n";
-			id++;
-		}
-
-		message->setBody(lst);
-	}
-	else if (msg == "used_memory_per_backend") {
-		std::string lst;
-		int id = 1;
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res - backend->shared) + "\n";
-			id++;
-		}
-
-		message->setBody(lst);
-	}
-	else if (msg == "average_memory_per_user_per_backend") {
-		std::string lst;
-		int id = 1;
-		const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-		BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-			if (backend->users.size() == 0 || backend->res < backend->init_res) {
-				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): 0\n";
-			}
-			else {
-				lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>((backend->res - backend->init_res) / backend->users.size()) + "\n";
-			}
-			id++;
-		}
-
-		message->setBody(lst);
-	}
-	else if (msg == "collect_backend") {
-		m_server->collectBackend();
-	}
-	else if (msg == "crashed_backends") {
-		std::string lst;
-		const std::vector<std::string> &backends = m_server->getCrashedBackends();
-		BOOST_FOREACH(const std::string &backend, backends) {
-			lst += backend + "\n";
-		}
-		message->setBody(lst);
-	}
-	else if (msg == "crashed_backends_count") {
-		message->setBody(boost::lexical_cast<std::string>(m_server->getCrashedBackends().size()));
-	}
-	else if (msg == "messages_from_xmpp") {
-		int msgCount = m_userManager->getMessagesToBackend();
-		message->setBody(boost::lexical_cast<std::string>(msgCount));
-	}
-	else if (msg == "messages_to_xmpp") {
-		int msgCount = m_userManager->getMessagesToXMPP();
-		message->setBody(boost::lexical_cast<std::string>(msgCount));
-	}
-	else if (msg.find("register ") == 0 && m_userRegistration) {
-		std::string body = msg;
-		std::vector<std::string> args;
-		boost::split(args, body, boost::is_any_of(" "));
-		if (args.size() == 4 || args.size() == 3) {
-			UserInfo res;
-			res.jid = args[1];
-			res.uin = args[2];
-			if (args.size() == 3) {
-				res.password = "";
-			}
-			else {
-				res.password = args[3];
-			}
-			res.language = "en";
-			res.encoding = "utf-8";
-			res.vip = 0;
-
-			if (m_userRegistration->registerUser(res)) {
-				message->setBody("User registered.");
-			}
-			else {
-				message->setBody("Registration failed: User is already registered");
-			}
-		}
-		else {
-			message->setBody("Bad argument count. See 'help'.");
-		}
-	}
-	else if (msg.find("unregister ") == 0 && m_userRegistration) {
-		std::string body = msg;
-		std::vector<std::string> args;
-		boost::split(args, body, boost::is_any_of(" "));
-		if (args.size() == 2) {
-			if (m_userRegistration->unregisterUser(args[1])) {
-				message->setBody("User '" + args[1] + "' unregistered.");
-			}
-			else {
-				message->setBody("Unregistration failed: User '" + args[1] + "' is not registered");
-			}
-		}
-		else {
-			message->setBody("Bad argument count. See 'help'.");
-		}
-	}
-	else if (msg.find("set_oauth2_code ") == 0) {
-		std::string body = msg;
-		std::vector<std::string> args;
-		boost::split(args, body, boost::is_any_of(" "));
-		if (args.size() == 3) {
-			std::string error = m_component->getFrontend()->setOAuth2Code(args[1], args[2]);
-			if (error.empty()) {
-				message->setBody("OAuth2 code and state set.");
-			}
-			else {
-				message->setBody(error);
-			}
-		}
-		else {
-			message->setBody("Bad argument count. See 'help'.");
-		}
-	}
-	else if (msg.find("get_oauth2_url") == 0) {
-		std::string body = msg;
-		std::vector<std::string> args;
-		boost::split(args, body, boost::is_any_of(" "));
-		std::string url = m_component->getFrontend()->getOAuth2URL(args);
-		message->setBody(url);
-	}
-	else if (msg == "registration_fields") {
-		std::string fields = m_component->getFrontend()->getRegistrationFields();
-		message->setBody(fields);
-	}
-	else if (m_component->getFrontend()->handleAdminMessage(message)) {
-		LOG4CXX_INFO(logger, "Message handled by frontend");
-	}
-	else if (msg.find("help") == 0) {
-		std::string help;
-		help += "General:\n";
-		help += "    status - shows instance status\n";
-		help += "    reload - Reloads config file\n";
-		help += "    uptime - returns ptime in seconds\n";
-		help += "Users:\n";
-		help += "    online_users - returns list of all online users\n";
-		help += "    online_users_count - number of online users\n";
-		help += "    online_users_per_backend - shows online users per backends\n";
-		help += "    has_online_user <bare_JID> - returns 1 if user is online\n";
-		if (m_userRegistration) {
-			help += "    register <bare_JID> <legacyName> <password> - registers the new user\n";
-			help += "    unregister <bare_JID> - unregisters existing user\n";
-		}
-		help += "Messages:\n";
-		help += "    messages_from_xmpp - get number of messages received from XMPP users\n";
-		help += "    messages_to_xmpp - get number of messages sent to XMPP users\n";
-		help += "Frontend:\n";
-		help += "    set_oauth2_code <code> <state> - sets the OAuth2 code and state for this instance\n";
-		help += "Backends:\n";
-		help += "    backends_count - number of active backends\n";
-		help += "    crashed_backends - returns IDs of crashed backends\n";
-		help += "    crashed_backends_count - returns number of crashed backends\n";
-		help += "Memory:\n";
-		help += "    res_memory - Total RESident memory spectrum2 and its backends use in KB\n";
-		help += "    shr_memory - Total SHaRed memory spectrum2 backends share together in KB\n";
-		help += "    used_memory - (res_memory - shr_memory)\n";
-		help += "    average_memory_per_user - (memory_used_without_any_user - res_memory)\n";
-		help += "    res_memory_per_backend - RESident memory used by backends in KB\n";
-		help += "    shr_memory_per_backend - SHaRed memory used by backends in KB\n";
-		help += "    used_memory_per_backend - (res_memory - shr_memory) per backend\n";
-		help += "    average_memory_per_user_per_backend - (memory_used_without_any_user - res_memory) per backend\n";
-		
-		
-		message->setBody(help);
-	}
-	else {
-		message->setBody("Unknown command \"" + msg + "\". Try \"help\"");
-	}
+	return;
+// 	else if (m_component->getFrontend()->handleAdminMessage(message)) {
+// 		LOG4CXX_INFO(logger, "Message handled by frontend");
+// 	}
 }
 
 void AdminInterface::handleMessageReceived(Swift::Message::ref message) {

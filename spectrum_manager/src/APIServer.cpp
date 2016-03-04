@@ -16,6 +16,10 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
+#include <boost/tokenizer.hpp>
+using boost::tokenizer;
+using boost::escaped_list_separator;
+
 #define ALLOW_ONLY_ADMIN() 	if (!session->admin) { \
 		send_ack(conn, true, "Only administrators can do this API call."); \
 		return; \
@@ -138,58 +142,6 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 	send_json(conn, json);
 }
 
-void APIServer::serve_instances_list_rooms(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
-	std::string uri(hm->uri.p, hm->uri.len);
-	std::string instance = uri.substr(uri.rfind("/") + 1);
-
-	UserInfo info;
-	m_storage->getUser(session->user, info);
-
-	std::string username = "";
-	int type = (int) TYPE_STRING;
-	m_storage->getUserSetting(info.id, instance, type, username);
-
-	if (username.empty()) {
-		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
-		return;
-	}
-
-	std::string response = server->send_command(instance, "list_rooms " + username);
-
-	std::vector<std::string> commands;
-	boost::split(commands, response, boost::is_any_of("\n"));
-
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
-	json.AddMember("name_label", "Nickname in 3rd-party room", json.GetAllocator());
-	json.AddMember("legacy_room_label", "3rd-party room name", json.GetAllocator());
-	json.AddMember("legacy_server_label", "3rd-party server", json.GetAllocator());
-	json.AddMember("frontend_room_label", "Slack channel", json.GetAllocator());
-
-	std::vector<std::vector<std::string> > tmp;
-	Value rooms(kArrayType);
-	BOOST_FOREACH(const std::string &command, commands) {
-		if (command.size() > 5) {
-			std::vector<std::string> args2;
-			boost::split(args2, command, boost::is_any_of(" "));
-			if (args2.size() == 6) {
-				tmp.push_back(args2);
-				Value room;
-				room.SetObject();
-				room.AddMember("name", tmp.back()[2].c_str(), json.GetAllocator());
-				room.AddMember("legacy_room", tmp.back()[3].c_str(), json.GetAllocator());
-				room.AddMember("legacy_server", tmp.back()[4].c_str(), json.GetAllocator());
-				room.AddMember("frontend_room", tmp.back()[5].c_str(), json.GetAllocator());
-				rooms.PushBack(room, json.GetAllocator());
-			}
-		}
-	}
-
-	json.AddMember("rooms", rooms, json.GetAllocator());
-	send_json(conn, json);
-}
-
 void APIServer::serve_instances_start(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	ALLOW_ONLY_ADMIN();
 
@@ -224,6 +176,10 @@ void APIServer::serve_instances_unregister(Server *server, Server::session *sess
 	std::string username = "";
 	int type = (int) TYPE_STRING;
 	m_storage->getUserSetting(info.id, instance, type, username);
+
+	if (username.empty() && session->admin) {
+		username = get_http_var(hm, "command_arg0");
+	}
 
 	if (!username.empty()) {
 		std::string response = server->send_command(instance, "unregister " + username);
@@ -275,7 +231,7 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 	else {
 		// Check if the frontend wants to use OAuth2 (Slack for example).
 		std::string response = server->send_command(instance, "get_oauth2_url " + jid + " " + uin + " " + password);
-		if (!response.empty()) {
+		if (!response.empty() && response.find("Error:") != 0) {
 			Document json;
 			json.SetObject();
 			json.AddMember("error", false, json.GetAllocator());
@@ -288,6 +244,7 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 				std::string value = jid;
 				int type = (int) TYPE_STRING;
 				m_storage->updateUserSetting(info.id, instance, value);
+				send_ack(conn, false, response);
 			}
 			else {
 				send_ack(conn, true, response);
@@ -297,7 +254,32 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 	}
 }
 
-void APIServer::serve_instances_join_room(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+
+
+// void APIServer::serve_instances_register_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+// 	std::string uri(hm->uri.p, hm->uri.len);
+// 	std::string instance = uri.substr(uri.rfind("/") + 1);
+// 
+// 	std::string response = server->send_command(instance, "registration_fields");
+// 	std::vector<std::string> fields;
+// 	boost::split(fields, response, boost::is_any_of("\n"));
+// 
+// 	if (fields.empty()) {
+// 		fields.push_back("Jabber ID");
+// 		fields.push_back("3rd-party network username");
+// 		fields.push_back("3rd-party network password");
+// 	}
+// 
+// 	Document json;
+// 	json.SetObject();
+// 	json.AddMember("error", 0, json.GetAllocator());
+// 	json.AddMember("username_label", fields[0].c_str(), json.GetAllocator());
+// 	json.AddMember("legacy_username_label", fields.size() >= 2 ? fields[1].c_str() : "", json.GetAllocator());
+// 	json.AddMember("password_label", fields.size() >= 3 ? fields[2].c_str() : "", json.GetAllocator());
+// 	send_json(conn, json);
+// }
+
+void APIServer::serve_instances_commands(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	std::string uri(hm->uri.p, hm->uri.len);
 	std::string instance = uri.substr(uri.rfind("/") + 1);
 
@@ -308,29 +290,61 @@ void APIServer::serve_instances_join_room(Server *server, Server::session *sessi
 	int type = (int) TYPE_STRING;
 	m_storage->getUserSetting(info.id, instance, type, username);
 
-	if (username.empty()) {
-		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
-		return;
+	std::string response = server->send_command(instance, "commands");
+
+	std::vector<std::string> commands;
+	boost::split(commands, response, boost::is_any_of("\n"));
+
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+
+	std::vector<std::vector<std::string> > tmp;
+	Value cmds(kArrayType);
+	BOOST_FOREACH(const std::string &command, commands) {
+		escaped_list_separator<char> els('\\', ' ', '\"');
+		tokenizer<escaped_list_separator<char> > tok(command, els);
+
+		std::vector<std::string> tokens;
+		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+			tokens.push_back(*beg);
+		}
+
+		if (tokens.size() != 9) {
+			continue;
+		}
+
+		if (!session->admin && tokens[6] == "Admin") {
+			continue;
+		}
+
+		// Skip command which needs registered users.
+		if (!session->admin && username.empty() && tokens[8] == "User") {
+			continue;
+		}
+
+
+		// Skip 'register' command when user is registered.
+		if (!session->admin && !username.empty() && tokens[0] == "register") {
+			continue;
+		}
+
+		tmp.push_back(tokens);
+
+		Value cmd;
+		cmd.SetObject();
+		cmd.AddMember("name", tokens[0].c_str(), json.GetAllocator());
+		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
+		cmd.AddMember("category", tokens[4].c_str(), json.GetAllocator());
+		cmd.AddMember("context", tokens[8].c_str(), json.GetAllocator());
+		cmds.PushBack(cmd, json.GetAllocator());
 	}
 
-	std::string name = get_http_var(hm, "name");
-	boost::replace_all(name, " ", "_");
-	std::string legacy_room = get_http_var(hm, "legacy_room");
-	std::string legacy_server = get_http_var(hm, "legacy_server");
-	std::string frontend_room = get_http_var(hm, "frontend_room");
-
-	std::string response = server->send_command(instance, "join_room " +
-		username + " " + name + " " + legacy_room + " " + legacy_server + " " + frontend_room);
-
-	if (response.find("Joined the room") == std::string::npos) {
-		send_ack(conn, true, response);
-	}
-	else {
-		send_ack(conn, false, response);
-	}
+	json.AddMember("commands", cmds, json.GetAllocator());
+	send_json(conn, json);
 }
 
-void APIServer::serve_instances_leave_room(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+void APIServer::serve_instances_variables(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	std::string uri(hm->uri.p, hm->uri.len);
 	std::string instance = uri.substr(uri.rfind("/") + 1);
 
@@ -341,78 +355,231 @@ void APIServer::serve_instances_leave_room(Server *server, Server::session *sess
 	int type = (int) TYPE_STRING;
 	m_storage->getUserSetting(info.id, instance, type, username);
 
-	if (username.empty()) {
-		send_ack(conn, true, "You are not registered to this Spectrum 2 instance.");
+	std::string response = server->send_command(instance, "variables");
+
+	std::vector<std::string> commands;
+	boost::split(commands, response, boost::is_any_of("\n"));
+
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+
+	std::vector<std::vector<std::string> > tmp;
+	Value cmds(kArrayType);
+	BOOST_FOREACH(const std::string &command, commands) {
+		escaped_list_separator<char> els('\\', ' ', '\"');
+		tokenizer<escaped_list_separator<char> > tok(command, els);
+
+		std::vector<std::string> tokens;
+		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+			tokens.push_back(*beg);
+		}
+
+		if (tokens.size() != 13) {
+			continue;
+		}
+
+		if (!session->admin && tokens[10] == "Admin") {
+			continue;
+		}
+
+		tmp.push_back(tokens);
+
+		Value cmd;
+		cmd.SetObject();
+		cmd.AddMember("name", tokens[0].c_str(), json.GetAllocator());
+		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
+		cmd.AddMember("value", tokens[4].c_str(), json.GetAllocator());
+		cmd.AddMember("read_only", tokens[6].c_str(), json.GetAllocator());
+		cmd.AddMember("category", tokens[8].c_str(), json.GetAllocator());
+		cmd.AddMember("context", tokens[12].c_str(), json.GetAllocator());
+		cmds.PushBack(cmd, json.GetAllocator());
+	}
+
+	json.AddMember("variables", cmds, json.GetAllocator());
+	send_json(conn, json);
+}
+
+
+void APIServer::serve_instances_command_args(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+	std::string command = get_http_var(hm, "command");
+	boost::trim(command);
+
+	std::string response = server->send_command(instance, "commands");
+
+	bool found = false;
+	bool userContext = false;
+	std::vector<std::string> commands;
+	boost::split(commands, response, boost::is_any_of("\n"));
+	BOOST_FOREACH(const std::string &cmd, commands) {
+		escaped_list_separator<char> els('\\', ' ', '\"');
+		tokenizer<escaped_list_separator<char> > tok(cmd, els);
+
+		std::vector<std::string> tokens;
+		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+			tokens.push_back(*beg);
+		}
+
+		if (tokens.size() != 9) {
+			continue;
+		}
+
+		std::cout << tokens[0] << " " << command << "\n";
+		if (tokens[0] != command) {
+			continue;
+		}
+
+		if (!session->admin && tokens[6] == "Admin") {
+			send_ack(conn, false, "Only admin is able to query this command.");
+			return;
+		}
+
+		if (tokens[8] == "User") {
+			userContext = true;
+		}
+
+		found = true;
+		break;
+	}
+
+	if (!found) {
+		command = "unknown";
+	}
+
+	response = server->send_command(instance, "args " + command);
+	if (response.find("Error:") == 0) {
+		send_ack(conn, false, response);
 		return;
 	}
 
-	std::string frontend_room = get_http_var(hm, "frontend_room");
-	std::string response = server->send_command(instance, "leave_room " + username + " " + frontend_room);
+	
 
-	if (response.find("Left the room") == std::string::npos) {
-		send_ack(conn, true, response);
+	std::vector<std::string> args;
+	boost::split(args, response, boost::is_any_of("\n"));
+
+	Document json;
+	json.SetObject();
+	json.AddMember("error", 0, json.GetAllocator());
+
+	std::vector<std::vector<std::string> > tmp;
+	Value argList(kArrayType);
+
+	if (userContext && session->admin) {
+		Value arg;
+		arg.SetObject();
+		arg.AddMember("name", "username", json.GetAllocator());
+		arg.AddMember("label", "Username", json.GetAllocator());
+		arg.AddMember("example", "", json.GetAllocator());
+		argList.PushBack(arg, json.GetAllocator());
 	}
-	else {
+
+	BOOST_FOREACH(const std::string &argument, args) {
+		escaped_list_separator<char> els('\\', ' ', '\"');
+		tokenizer<escaped_list_separator<char> > tok(argument, els);
+
+		std::vector<std::string> tokens;
+		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+			tokens.push_back(*beg);
+		}
+
+		if (tokens.size() != 5) {
+			continue;
+		}
+
+		tmp.push_back(tokens);
+
+		Value arg;
+		arg.SetObject();
+		arg.AddMember("name", tokens[0].c_str(), json.GetAllocator());
+		arg.AddMember("label", tokens[2].c_str(), json.GetAllocator());
+		arg.AddMember("example", tokens[4].c_str(), json.GetAllocator());
+		argList.PushBack(arg, json.GetAllocator());
+	}
+
+	json.AddMember("args", argList, json.GetAllocator());
+	send_json(conn, json);
+}
+
+
+void APIServer::serve_instances_execute(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
+	std::string uri(hm->uri.p, hm->uri.len);
+	std::string instance = uri.substr(uri.rfind("/") + 1);
+	std::string command = get_http_var(hm, "command");
+	boost::trim(command);
+
+	std::string response = server->send_command(instance, "commands");
+
+	bool found = false;
+	bool userContext = false;
+	std::vector<std::string> commands;
+	boost::split(commands, response, boost::is_any_of("\n"));
+	BOOST_FOREACH(const std::string &cmd, commands) {
+		escaped_list_separator<char> els('\\', ' ', '\"');
+		tokenizer<escaped_list_separator<char> > tok(cmd, els);
+
+		std::vector<std::string> tokens;
+		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+			tokens.push_back(*beg);
+		}
+
+		if (tokens.size() != 9) {
+			continue;
+		}
+
+		std::cout << tokens[0] << " " << command << "\n";
+		if (tokens[0] != command) {
+			continue;
+		}
+
+		if (!session->admin && tokens[6] == "Admin") {
+			send_ack(conn, false, "Only admin is able to execute.");
+			return;
+		}
+
+		if (tokens[8] == "User") {
+			userContext = true;
+		}
+
+		found = true;
+		break;
+	}
+
+	if (!found) {
+		command = "unknown";
+	}
+
+	UserInfo info;
+	m_storage->getUser(session->user, info);
+	std::string username = "";
+	int type = (int) TYPE_STRING;
+	m_storage->getUserSetting(info.id, instance, type, username);
+
+	if (userContext && !session->admin) {
+		if (username.empty()) {
+			send_ack(conn, false, "Error: You are not registered to this transport instance.");
+			return;
+		}
+
+		command += " " + username;
+	}
+
+	for (int i = 0; i < 10; ++i) {
+		std::string var = get_http_var(hm, std::string(std::string("command_arg") + boost::lexical_cast<std::string>(i)).c_str());
+		if (!var.empty()) {
+			command += " " + var;
+		}
+	}
+
+	response = server->send_command(instance, command);
+	boost::replace_all(response, "\n", "<br/>");
+	if (response.find("Error:") == 0) {
 		send_ack(conn, false, response);
 	}
-}
-
-void APIServer::serve_instances_join_room_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
-	std::string uri(hm->uri.p, hm->uri.len);
-	std::string instance = uri.substr(uri.rfind("/") + 1);
-
-	// So far we support just Slack here. For XMPP, it is up to user to initiate the join room request.
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
-
-	std::string response = server->send_command(instance, "join_room_fields");
-	std::vector<std::string> fields;
-	boost::split(fields, response, boost::is_any_of("\n"));
-
-	if (fields.size() != 8) {
-		fields.push_back("Nickname in 3rd-party room");
-		fields.push_back("3rd-party room name");
-		fields.push_back("3rd-party server");
-		fields.push_back("Slack Channel");
-		fields.push_back("BotNickname");
-		fields.push_back("room_name");
-		fields.push_back("3rd.party.server.org");
-		fields.push_back("mychannel");
+	else {
+		send_ack(conn, true, response);
 	}
-
-	json.AddMember("name_label", fields[0].c_str(), json.GetAllocator());
-	json.AddMember("legacy_room_label", fields[1].c_str(), json.GetAllocator());
-	json.AddMember("legacy_server_label", fields[2].c_str(), json.GetAllocator());
-	json.AddMember("frontend_room_label", fields[3].c_str(), json.GetAllocator());
-	json.AddMember("name_example", fields[4].c_str(), json.GetAllocator());
-	json.AddMember("legacy_room_example", fields[5].c_str(), json.GetAllocator());
-	json.AddMember("legacy_server_example", fields[6].c_str(), json.GetAllocator());
-	json.AddMember("frontend_room_example", fields[7].c_str(), json.GetAllocator());
-	send_json(conn, json);
-}
-
-void APIServer::serve_instances_register_form(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
-	std::string uri(hm->uri.p, hm->uri.len);
-	std::string instance = uri.substr(uri.rfind("/") + 1);
-
-	std::string response = server->send_command(instance, "registration_fields");
-	std::vector<std::string> fields;
-	boost::split(fields, response, boost::is_any_of("\n"));
-
-	if (fields.empty()) {
-		fields.push_back("Jabber ID");
-		fields.push_back("3rd-party network username");
-		fields.push_back("3rd-party network password");
-	}
-
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
-	json.AddMember("username_label", fields[0].c_str(), json.GetAllocator());
-	json.AddMember("legacy_username_label", fields.size() >= 2 ? fields[1].c_str() : "", json.GetAllocator());
-	json.AddMember("password_label", fields.size() >= 3 ? fields[2].c_str() : "", json.GetAllocator());
-	send_json(conn, json);
 }
 
 void APIServer::serve_users(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
@@ -494,23 +661,20 @@ void APIServer::handleRequest(Server *server, Server::session *sess, struct mg_c
 	else if (has_prefix(&hm->uri, "/api/v1/instances/unregister/")) {
 		serve_instances_unregister(server, sess, conn, hm);
 	}
-	else if (has_prefix(&hm->uri, "/api/v1/instances/register_form/")) {
-		serve_instances_register_form(server, sess, conn, hm);
-	}
 	else if (has_prefix(&hm->uri, "/api/v1/instances/register/")) {
 		serve_instances_register(server, sess, conn, hm);
 	}
-	else if (has_prefix(&hm->uri, "/api/v1/instances/join_room_form/")) {
-		serve_instances_join_room_form(server, sess, conn, hm);
+	else if (has_prefix(&hm->uri, "/api/v1/instances/commands/")) {
+		serve_instances_commands(server, sess, conn, hm);
 	}
-	else if (has_prefix(&hm->uri, "/api/v1/instances/join_room/")) {
-		serve_instances_join_room(server, sess, conn, hm);
+	else if (has_prefix(&hm->uri, "/api/v1/instances/variables/")) {
+		serve_instances_variables(server, sess, conn, hm);
 	}
-	else if (has_prefix(&hm->uri, "/api/v1/instances/list_rooms/")) {
-		serve_instances_list_rooms(server, sess, conn, hm);
+	else if (has_prefix(&hm->uri, "/api/v1/instances/command_args/")) {
+		serve_instances_command_args(server, sess, conn, hm);
 	}
-	else if (has_prefix(&hm->uri, "/api/v1/instances/leave_room/")) {
-		serve_instances_leave_room(server, sess, conn, hm);
+	else if (has_prefix(&hm->uri, "/api/v1/instances/execute/")) {
+		serve_instances_execute(server, sess, conn, hm);
 	}
 	else if (has_prefix(&hm->uri, "/api/v1/users/remove/")) {
 		serve_users_remove(server, sess, conn, hm);

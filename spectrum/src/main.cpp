@@ -275,6 +275,7 @@ int mainloop() {
 
 	AdminInterface adminInterface(&transport, userManager, &plugin, storageBackend, userRegistration);
 	plugin.setAdminInterface(&adminInterface);
+	transport.setAdminInterface(&adminInterface);
 
 	eventLoop_ = &eventLoop;
 

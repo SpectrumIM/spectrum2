@@ -32,6 +32,7 @@ class StorageBackend;
 class UserManager;
 class NetworkPluginServer;
 class UserRegistration;
+class AdminInterfaceCommand;
 
 class AdminInterface {
 	public:
@@ -41,15 +42,18 @@ class AdminInterface {
 
 		void handleQuery(Swift::Message::ref message);
 
-	private:
+		void addCommand(AdminInterfaceCommand *command);
+
 		void handleMessageReceived(Swift::Message::ref message);
+
+	private:
 
 		Component *m_component;
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
 		NetworkPluginServer *m_server;
 		UserRegistration *m_userRegistration;
-		time_t m_start;
+		std::map<std::string, AdminInterfaceCommand *> m_commands;
 };
 
 }

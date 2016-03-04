@@ -38,6 +38,7 @@ namespace Transport {
 	class Factory;
 	class Config;
 	class UserManager;
+	class AdminInterface;
 
 	class Component {
 		public:
@@ -108,6 +109,8 @@ namespace Transport {
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
 			boost::signal<void (boost::shared_ptr<Swift::IQ>)> onRawIQReceived;
+
+			boost::signal<void ()> onAdminInterfaceSet;
 			
 			void handlePresence(Swift::Presence::ref presence);
 			void handleConnected();
@@ -120,6 +123,15 @@ namespace Transport {
 			}
 
 			PresenceOracle *getPresenceOracle();
+
+			void setAdminInterface(AdminInterface *adminInterface) {
+				m_adminInterface = adminInterface;
+				onAdminInterfaceSet();
+			}
+
+			AdminInterface *getAdminInterface() {
+				return m_adminInterface;
+			}
 
 		private:
 			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
@@ -139,6 +151,7 @@ namespace Transport {
 			Factory *m_factory;
 			Swift::EventLoop *m_loop;
 			Frontend *m_frontend;
+			AdminInterface *m_adminInterface;
 
 		friend class User;
 		friend class UserRegistration;

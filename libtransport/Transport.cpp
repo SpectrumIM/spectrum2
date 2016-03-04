@@ -38,6 +38,7 @@ DEFINE_LOGGER(logger_xml, "Component.RAW");
 Component::Component(Frontend *frontend, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Factory *factory, Transport::UserRegistry *userRegistry) {
 	m_frontend = frontend;
 	m_userRegistry = NULL;
+	m_adminInterface = NULL;
 	m_reconnectCount = 0;
 	m_config = config;
 	m_factory = factory;

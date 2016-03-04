@@ -446,6 +446,7 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 		boost::replace_all(resp, "src=\"/", std::string("src=\"") + CONFIG_STRING(m_config, "service.base_location"));
 		boost::replace_all(resp, "action=\"/", std::string("action=\"") + CONFIG_STRING(m_config, "service.base_location"));
 		strcpy(conn->send_mbuf.buf, resp.c_str());
+		conn->send_mbuf.len = resp.size();
 		mbuf_trim(&conn->send_mbuf);
 		return;
 	}

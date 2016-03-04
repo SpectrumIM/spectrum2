@@ -34,7 +34,7 @@
 using namespace Transport;
 
 void BasicSlackTest::setMeUp (void) {
-	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost\nservice.more_resources=1\n");
+	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost\nservice.more_resources=1\nservice.admin_jid=me@localhost\n");
 	cfg = new Config();
 	cfg->load(ifs);
 
