@@ -245,7 +245,7 @@ function show_instance() {
 	$.get($.cookie("base_location") + "api/v1/instances/commands/" + query.id, function(data) {
 		$.each(data.commands, function(i, command) {
 			var row = '<tr>'
-			row += '<td><a class="button_command" command="' + command.name + '" instance="' + query.id + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + query.id + '?command=' + command.name +'">' + command.name + '</a></td>';
+			row += '<td><a class="button_command" command="' + command.name + '" instance="' + query.id + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + query.id + '?command=' + command.name +'">' + command.label + '</a></td>';
 			row += '<td>' + command.category + '</td>';
 			row += '<td>' + command.desc + '</td>';
 			row += '</tr>';

@@ -30,12 +30,13 @@
 
 namespace Transport {
 
-AdminInterfaceCommand::AdminInterfaceCommand(const std::string &name, Category category, Context context, AccessMode accessMode, Actions actions) {
+AdminInterfaceCommand::AdminInterfaceCommand(const std::string &name, Category category, Context context, AccessMode accessMode, Actions actions, const std::string &label) {
 	m_name = name;
 	m_category = category;
 	m_context = context;
 	m_accessMode = accessMode;
 	m_actions = actions;
+	m_label = label;
 }
 
 const std::string AdminInterfaceCommand::getCategoryName(Category category) {

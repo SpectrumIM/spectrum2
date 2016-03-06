@@ -49,7 +49,8 @@ class ListRoomsCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Frontend,
 							AdminInterfaceCommand::UserContext,
 							AdminInterfaceCommand::UserMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"List joined 3rd-party network rooms") {
 			m_storageBackend = storageBackend;
 			setDescription("List connected rooms");
 		}
@@ -81,7 +82,8 @@ class JoinRoomCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Frontend,
 							AdminInterfaceCommand::UserContext,
 							AdminInterfaceCommand::UserMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Join 3rd-party network room") {
 			m_storageBackend = storageBackend;
 			setDescription("Join the room");
 
@@ -140,7 +142,8 @@ class LeaveRoomCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Frontend,
 							AdminInterfaceCommand::UserContext,
 							AdminInterfaceCommand::UserMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Leave 3rd-party network room") {
 			m_storageBackend = storageBackend;
 			setDescription("Leave the room");
 

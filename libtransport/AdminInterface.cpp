@@ -247,7 +247,8 @@ class ReloadCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Reload Spectrum 2 configuration") {
 			m_component = component;
 			setDescription("Reloads config file");
 		}
@@ -278,7 +279,7 @@ class HasOnlineUserCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute, "Has online user") {
 			m_userManager = userManager;
 			setDescription("Returns 1 if user is online");
 			addArg("username", "Username", "user@domain.tld");
@@ -703,7 +704,8 @@ class RegisterCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::UserMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Register") {
 			m_userRegistration = userRegistration;
 			setDescription("Registers the new user");
 
@@ -761,7 +763,8 @@ class UnregisterCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::UserContext,
 							AdminInterfaceCommand::UserMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Unregister") {
 			m_userRegistration = userRegistration;
 			setDescription("Unregisters existing user");
 
@@ -866,7 +869,8 @@ class HelpCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Help") {
 			m_commands = commands;
 			setDescription("Shows help message");
 		}
@@ -920,7 +924,8 @@ class CommandsCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Available commands") {
 			m_commands = commands;
 			setDescription("Shows all the available commands with extended information.");
 		}
@@ -958,6 +963,8 @@ class CommandsCommand : public AdminInterfaceCommand {
 					output += " Global";
 				}
 
+				output += " Label: \"" + (command->getLabel().empty() ? command->getName() : command->getLabel()) + "\"";
+
 				output += "\n";
 			}
 
@@ -976,7 +983,8 @@ class VariablesCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute,
+							"Available variables") {
 			m_commands = commands;
 			setDescription("Shows all the available variables.");
 		}
@@ -1040,7 +1048,7 @@ class ArgsCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Execute) {
+							AdminInterfaceCommand::Execute, "Command's arguments") {
 			m_commands = commands;
 			setDescription("Shows descripton of arguments for command");
 			addArg("command", "Command", "register");

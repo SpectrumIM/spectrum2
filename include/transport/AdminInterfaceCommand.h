@@ -69,7 +69,7 @@ class AdminInterfaceCommand {
 				std::string example;
 		};
 
-		AdminInterfaceCommand(const std::string &name, Category category, Context context, AccessMode accessMode, Actions actions);
+		AdminInterfaceCommand(const std::string &name, Category category, Context context, AccessMode accessMode, Actions actions, const std::string &label = "");
 
 		virtual ~AdminInterfaceCommand() { }
 
@@ -112,6 +112,10 @@ class AdminInterfaceCommand {
 			return m_args;
 		}
 
+		const std::string &getLabel() {
+			return m_label;
+		}
+
 		virtual std::string handleSetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args);
 		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args);
 		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args);
@@ -124,6 +128,7 @@ class AdminInterfaceCommand {
 		Actions m_actions;
 		std::string m_desc;
 		std::list<Arg> m_args;
+		std::string m_label;
 };
 
 }

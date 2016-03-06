@@ -310,7 +310,7 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 			tokens.push_back(*beg);
 		}
 
-		if (tokens.size() != 9) {
+		if (tokens.size() != 11) {
 			continue;
 		}
 
@@ -337,6 +337,7 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
 		cmd.AddMember("category", tokens[4].c_str(), json.GetAllocator());
 		cmd.AddMember("context", tokens[8].c_str(), json.GetAllocator());
+		cmd.AddMember("label", tokens[10].c_str(), json.GetAllocator());
 		cmds.PushBack(cmd, json.GetAllocator());
 	}
 
@@ -422,7 +423,7 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 			tokens.push_back(*beg);
 		}
 
-		if (tokens.size() != 9) {
+		if (tokens.size() != 11) {
 			continue;
 		}
 
@@ -524,7 +525,7 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 			tokens.push_back(*beg);
 		}
 
-		if (tokens.size() != 9) {
+		if (tokens.size() != 11) {
 			continue;
 		}
 
