@@ -83,7 +83,7 @@ bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::
 	if (info->getNode() == "http://jabber.org/protocol/commands") {
 		sendResponse(from, id, m_commands);
 	}
-	else if (to.getNode().empty()) {
+	else if (to.getNode().empty() && info->getNode().empty()) {
 		XMPPUser *user = static_cast<XMPPUser *>(m_userManager->getUser(from.toBare().toString()));
 		if (!user) {
 			sendResponse(from, id, m_rooms);
