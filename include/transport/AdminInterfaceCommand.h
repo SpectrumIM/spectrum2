@@ -60,12 +60,13 @@ class AdminInterfaceCommand {
 
 		class Arg {
 			public:
-				Arg(const std::string &_name, const std::string &_label, const std::string &_example) :
-					name(_name), label(_label), example(_example) {}
+				Arg(const std::string &_name, const std::string &_label, const std::string &_type, const std::string &_example) :
+					name(_name), label(_label), type(_type), example(_example) {}
 				~Arg() {}
 
 				std::string name;
 				std::string label;
+				std::string type;
 				std::string example;
 		};
 
@@ -103,8 +104,8 @@ class AdminInterfaceCommand {
 			return m_accessMode;
 		}
 
-		void addArg(const std::string &name, const std::string &label, const std::string &example = "") {
-			Arg arg(name, label, example);
+		void addArg(const std::string &name, const std::string &label, const std::string &type = "string", const std::string &example = "") {
+			Arg arg(name, label, type, example);
 			m_args.push_back(arg);
 		}
 

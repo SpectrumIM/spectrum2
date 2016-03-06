@@ -112,24 +112,25 @@ class OnlineUsersCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::GlobalContext,
 							AdminInterfaceCommand::AdminMode,
-							AdminInterfaceCommand::Get) {
+							AdminInterfaceCommand::Execute,
+							"Online users") {
 			m_userManager = userManager;
 			setDescription("Returns list of all online users");
 		}
 
-		virtual std::string handleGetRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
-			std::string ret = AdminInterfaceCommand::handleGetRequest(uinfo, user, args);
+		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
+			std::string ret = AdminInterfaceCommand::handleExecuteRequest(uinfo, user, args);
 			if (!ret.empty()) {
 				return ret;
 			}
 
 			const std::map<std::string, User *> &users = m_userManager->getUsers();
 			if (users.empty()) {
-				ret = "0";
+				ret = "hanzz@njs.netlab.cz \"3rd-party network username:\" \"me\"\n";
 			}
 
 			for (std::map<std::string, User *>::const_iterator it = users.begin(); it != users.end(); it ++) {
-				ret += (*it).first + "\n";
+				ret += (*it).first + " \"3rd-party network username:\" \"" + user->getUserInfo().uin + "\"\n";
 			}
 			return ret;
 		}
@@ -282,7 +283,7 @@ class HasOnlineUserCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Execute, "Has online user") {
 			m_userManager = userManager;
 			setDescription("Returns 1 if user is online");
-			addArg("username", "Username", "user@domain.tld");
+			addArg("username", "Username", "string", "user@domain.tld");
 		}
 
 		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
@@ -717,7 +718,7 @@ class RegisterCommand : public AdminInterfaceCommand {
 				addArg("legacy_username", args[1]);
 			}
 			if (fields.size() > 2) {
-				addArg("legacy_password", args[2]);
+				addArg("legacy_password", args[2], "password");
 			}
 		}
 
@@ -844,7 +845,7 @@ class GetOAuth2URLCommand : public AdminInterfaceCommand {
 				addArg("legacy_username", args[1]);
 			}
 			if (fields.size() > 2) {
-				addArg("legacy_password", args[2]);
+				addArg("legacy_password", args[2], "password");
 			}
 		}
 
@@ -1051,7 +1052,7 @@ class ArgsCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::Execute, "Command's arguments") {
 			m_commands = commands;
 			setDescription("Shows descripton of arguments for command");
-			addArg("command", "Command", "register");
+			addArg("command", "Command", "string", "register");
 		}
 
 		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *user, std::vector<std::string> &args) {
@@ -1067,7 +1068,7 @@ class ArgsCommand : public AdminInterfaceCommand {
 			AdminInterfaceCommand *command = it->second;
 
 			BOOST_FOREACH(const AdminInterfaceCommand::Arg &arg, command->getArgs()) {
-				ret += arg.name + " - \"" + arg.label + "\" " + "Example: \"" + arg.example + "\"\n";
+				ret += arg.name + " - \"" + arg.label + "\" " + "Example: \"" + arg.example + "\" Type: \"" + arg.type + "\"\n";
 			}
 
 			return ret;
@@ -1092,17 +1093,17 @@ AdminInterface::AdminInterface(Component *component, UserManager *userManager, N
 	addCommand(new OnlineUsersCommand(m_userManager));
 	addCommand(new OnlineUsersCountCommand(m_userManager));
 	addCommand(new ReloadCommand(m_component));
-	addCommand(new OnlineUsersPerBackendCommand(m_server));
+// 	addCommand(new OnlineUsersPerBackendCommand(m_server));
 	addCommand(new HasOnlineUserCommand(m_userManager));
 	addCommand(new BackendsCountCommand(m_server));
 	addCommand(new ResMemoryCommand(m_server));
 	addCommand(new ShrMemoryCommand(m_server));
 	addCommand(new UsedMemoryCommand(m_server));
 	addCommand(new AverageMemoryPerUserCommand(m_server, m_userManager));
-	addCommand(new ResMemoryPerBackendCommand(m_server));
-	addCommand(new ShrMemoryPerBackendCommand(m_server));
-	addCommand(new UsedMemoryPerBackendCommand(m_server));
-	addCommand(new AverageMemoryPerUserPerBackendCommand(m_server));
+// 	addCommand(new ResMemoryPerBackendCommand(m_server));
+// 	addCommand(new ShrMemoryPerBackendCommand(m_server));
+// 	addCommand(new UsedMemoryPerBackendCommand(m_server));
+// 	addCommand(new AverageMemoryPerUserPerBackendCommand(m_server));
 	addCommand(new CrashedBackendsCountCommand(m_server));
 	addCommand(new CrashedBackendsCommand(m_server));
 	addCommand(new MessagesFromXMPPCommand(m_userManager));

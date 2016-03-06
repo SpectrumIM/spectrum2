@@ -99,12 +99,14 @@ class JoinRoomCommand : public AdminInterfaceCommand {
 
 			addArg("nickname",
 				   CONFIG_STRING_DEFAULTED(cfg, "service.join_room_nickname_label", "Nickname in 3rd-party room"),
+				   "string",
 				   CONFIG_STRING_DEFAULTED(cfg, "service.join_room_nickname_example", "BotNickname"));
-			addArg("legacy_room", legacyRoomLabel, legacyRoomExample);
+			addArg("legacy_room", legacyRoomLabel, "string", legacyRoomExample);
 			addArg("legacy_server",
 				   CONFIG_STRING_DEFAULTED(cfg, "service.join_room_server_label", "3rd-party server"),
+				   "string",
 				   CONFIG_STRING_DEFAULTED(cfg, "service.join_room_server_example", "3rd.party.server.org"));
-			addArg("slack_channel", "Slack Chanel", "mychannel");
+			addArg("slack_channel", "Slack Chanel", "string", "mychannel");
 		}
 
 		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *u, std::vector<std::string> &args) {
@@ -147,7 +149,7 @@ class LeaveRoomCommand : public AdminInterfaceCommand {
 			m_storageBackend = storageBackend;
 			setDescription("Leave the room");
 
-			addArg("slack_channel", "Slack Chanel", "mychannel");
+			addArg("slack_channel", "Slack Chanel", "string", "mychannel");
 		}
 
 		virtual std::string handleExecuteRequest(UserInfo &uinfo, User *u, std::vector<std::string> &args) {

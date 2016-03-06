@@ -485,7 +485,7 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 			tokens.push_back(*beg);
 		}
 
-		if (tokens.size() != 5) {
+		if (tokens.size() != 7) {
 			continue;
 		}
 
@@ -496,6 +496,7 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 		arg.AddMember("name", tokens[0].c_str(), json.GetAllocator());
 		arg.AddMember("label", tokens[2].c_str(), json.GetAllocator());
 		arg.AddMember("example", tokens[4].c_str(), json.GetAllocator());
+		arg.AddMember("type", tokens[6].c_str(), json.GetAllocator());
 		argList.PushBack(arg, json.GetAllocator());
 	}
 
@@ -574,11 +575,64 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 	}
 
 	response = server->send_command(instance, command);
-	boost::replace_all(response, "\n", "<br/>");
 	if (response.find("Error:") == 0) {
 		send_ack(conn, false, response);
 	}
+
+	std::vector<std::string> fields;
+	boost::split(fields, response, boost::is_any_of("\n"));
+	if (!fields.empty() && /*fields[0].find(" - ") != std::string::npos &&*/ (fields[0].find(": ") != std::string::npos || fields[0].find(":\"") != std::string::npos)) {
+		Document json;
+		json.SetObject();
+		json.AddMember("error", 0, json.GetAllocator());
+
+		std::vector<std::string> tmp;
+		std::vector<std::string> tmp2;
+		Value table(kArrayType);
+
+		BOOST_FOREACH(const std::string &line, fields) {
+			escaped_list_separator<char> els('\\', ' ', '\"');
+			tokenizer<escaped_list_separator<char> > tok(line, els);
+
+			Value arg;
+			arg.SetObject();
+
+			std::string key;
+			int i = 0;
+			bool hasDesc = true;
+			for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg, ++i) {
+				if (i == 1 && *beg != "-") {
+					hasDesc = false;
+				}
+				if (i == 0) {
+					tmp.push_back(*beg);
+					arg.AddMember("Key", tmp.back().c_str(), json.GetAllocator());
+				}
+				else if (i == 2 && hasDesc) {
+					tmp.push_back(*beg);
+					arg.AddMember("Description", tmp.back().c_str(), json.GetAllocator());
+				}
+				else if (i > 1 || (!hasDesc && i > 0)) {
+					if (key.empty()) {
+						key = *beg;
+					}
+					else {
+						tmp.push_back(key);
+						tmp2.push_back(*beg);
+						arg.AddMember(tmp.back().c_str(), tmp2.back().c_str(), json.GetAllocator());
+						key = "";
+					}
+				}
+			}
+			table.PushBack(arg, json.GetAllocator());
+		}
+
+		json.AddMember("table", table, json.GetAllocator());
+		json.AddMember("message", response.c_str(), json.GetAllocator());
+		send_json(conn, json);
+	}
 	else {
+		boost::replace_all(response, "\n", "<br/>");
 		send_ack(conn, true, response);
 	}
 }

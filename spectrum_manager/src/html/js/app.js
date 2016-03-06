@@ -135,7 +135,12 @@ function execute_command(instance, command) {
 				form += '<div class="form-group">';
 				form += '<label class="col-md-4 control-label" for="' + arg.name + '">' + arg.label + ':</label>';
 				form += '<div class="col-md-4">';
-				form += '<input id="command_arg' + i + '" name="command_arg' + i + '" type="text" placeholder="' + arg.example + '" class="form-control input-md"/>';
+				if (arg.type == "password") {
+					form += '<input id="command_arg' + i + '" name="command_arg' + i + '" type="password" placeholder="' + arg.example + '" class="form-control input-md"/>';
+				}
+				else {
+					form += '<input id="command_arg' + i + '" name="command_arg' + i + '" type="text" placeholder="' + arg.example + '" class="form-control input-md"/>';
+				}
 				form += '</div></div>';
 				console.log('command_arg' + i );
 			});
@@ -211,6 +216,26 @@ function execute_command(instance, command) {
 								}
 							}
 							$.post(posturl, postdata, function(data) {
+								if (data.table) {
+									data.message = "<table>";
+									data.message += "<tr>";
+									for (var key in data.table[0]) {
+										if (data.table[0].hasOwnProperty(key)) {
+											data.message += "<th>" + key + "</th>";
+										}
+									}
+									data.message += "</tr>";
+									$.each(data.table, function(i, line) {
+										data.message += "<tr>";
+										for (var key in line) {
+											if (line.hasOwnProperty(key)) {
+												data.message += "<td>" + line[key] + "</td>";
+											}
+										}
+										data.message += "</tr>";
+									})
+									data.message += "</table>";
+								}
 								var dialog = bootbox.dialog({
 									title: "Command result: " + command + ".",
 									message: "<pre>" + data.message + "</pre>",

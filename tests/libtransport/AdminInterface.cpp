@@ -69,10 +69,10 @@ class AdminInterfaceTest : public CPPUNIT_NS :: TestFixture, public BasicSlackTe
 
 	void joinRoomArgs() {
 		std::string resp = sendAdminMessage("args join_room");
-		CPPUNIT_ASSERT_EQUAL(std::string("nickname - \"Nickname in 3rd-party room\" Example: \"BotNickname\"\n"
-							"legacy_room - \"3rd-party room name\" Example: \"3rd-party room name\"\n"
-							"legacy_server - \"3rd-party server\" Example: \"3rd.party.server.org\"\n"
-							"slack_channel - \"Slack Chanel\" Example: \"mychannel\"\n"), resp);
+		CPPUNIT_ASSERT_EQUAL(std::string("nickname - \"Nickname in 3rd-party room\" Example: \"BotNickname\" Type: \"string\"\n"
+							"legacy_room - \"3rd-party room name\" Example: \"3rd-party room name\" Type: \"string\"\n"
+							"legacy_server - \"3rd-party server\" Example: \"3rd.party.server.org\" Type: \"string\"\n"
+							"slack_channel - \"Slack Chanel\" Example: \"mychannel\" Type: \"string\"\n"), resp);
 	}
 
 	void getOAuth2URLCommand() {
