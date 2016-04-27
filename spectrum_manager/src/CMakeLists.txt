@@ -7,8 +7,9 @@ ADD_DEPENDENCIES(spectrum2_manager pb)
 SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 
 target_link_libraries(spectrum2_manager transport ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES})
-
+if (${OPENSSL_FOUND})
 add_definitions(-DMG_ENABLE_SSL)
+endif()
 if (CMAKE_COMPILER_IS_GNUCXX)
 target_link_libraries(spectrum2_manager ${OPENSSL_LIBRARIES})
 endif()

@@ -75,7 +75,7 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 		std::cerr << "Error creating server: " << error_string << "\n";
 		exit(1);
 	}
-
+#ifdef MG_ENABLE_SSL
 	if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 		const char *err_str = mg_set_ssl(m_nc, CONFIG_STRING(m_config, "service.cert").c_str(), NULL);
 		if (err_str) {
@@ -83,6 +83,7 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 			exit(1);
 		}
 	}
+#endif
 	mg_set_protocol_http_websocket(m_nc);
 
 	s_http_server_opts.document_root = CONFIG_STRING(m_config, "service.data_dir").c_str();
