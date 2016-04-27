@@ -24,7 +24,7 @@ else ()
 target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
 endif()
 
-if (NOT MSVC)
+if (CMAKE_COMPILER_IS_GNUCXX)
 # export all symbols (used for loading frontends)
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export-dynamic")
 endif()
