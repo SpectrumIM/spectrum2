@@ -160,7 +160,13 @@ static void * requestInput(const char *title, const char *primary,const char *se
 static void *requestAction(const char *title, const char *primary, const char *secondary, int default_action, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data, size_t action_count, va_list actions){
 	std::string t(title ? title : "NULL");
 	if (t == "SSL Certificate Verification") {
-		LOG4CXX_INFO(logger,  "accepting SSL certificate");
+		if (CONFIG_BOOL_DEFAULTED(config, "service.verify_certs", false)) {
+			LOG4CXX_INFO(logger,  "rejecting SSL certificate");
+			va_arg(actions, char *);
+			va_arg(actions, GCallback);
+		} else {
+			LOG4CXX_INFO(logger,  "accepting SSL certificate");
+		}
 		va_arg(actions, char *);
 		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
 	}
@@ -176,6 +182,10 @@ static void *requestAction(const char *title, const char *primary, const char *s
 			std::string headerString(title);
 			LOG4CXX_INFO(logger,  "header string: " << headerString);
 			if (headerString == "SSL Certificate Verification") {
+				if (CONFIG_BOOL_DEFAULTED(config, "service.verify_certs", false)) {
+					va_arg(actions, char *);
+					va_arg(actions, GCallback);
+				}
 				va_arg(actions, char *);
 				((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
 			}
