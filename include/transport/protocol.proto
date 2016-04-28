@@ -1,5 +1,8 @@
 package pbnetwork;
 
+// define protobuf syntax version
+syntax = "proto2";
+
 enum ConnectionError {
 	CONNECTION_ERROR_NETWORK_ERROR = 0;
 	CONNECTION_ERROR_INVALID_USERNAME = 1;
