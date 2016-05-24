@@ -118,44 +118,13 @@ struct authRequest {
 	std::string mainJID;	// JID of user connected with this request
 };
 
-static void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
-	if (primary) {
-		std::string primaryString(primary);
-		if (primaryString == "Authorization Request Message:") {
-			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-			return NULL;
-		}
-		else if (primaryString == "Authorization Request Message:") {
-			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-			return NULL;
-		}
-		else if (primaryString == "Authorization Denied Message:") {
-			LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
-			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
-			return NULL;
-		}
-		else {
-			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
-		}
-	}
-	else if (title) {
-		std::string titleString(title);
-		if (titleString == "Xfire Invitation Message") {
-			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-			return NULL;
-		}
-		else {
-			LOG4CXX_WARN(logger, "Unhandled request input. title=" << titleString);
-		}
-	}
-	else {
-		LOG4CXX_WARN(logger, "Request input without primary string");
-	}
-	return NULL;
-}
+struct inputRequest {
+    PurpleRequestInputCb ok_cb;
+    void *user_data;
+    std::string who;
+    PurpleAccount *account;
+    std::string mainJID;	// JID of user connected with this request
+};
 
 static void *requestAction(const char *title, const char *primary, const char *secondary, int default_action, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data, size_t action_count, va_list actions){
 	std::string t(title ? title : "NULL");
@@ -357,7 +326,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			std::string protocol;
 			getProtocolAndName(legacyName, name, protocol);
 
-			if (password.empty() && CONFIG_STRING(config, "service.protocol") != "prpl-telegram") {
+			if (password.empty() && protocol != "prpl-telegram" && protocol != "prpl-hangouts") {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
 				np->handleDisconnected(user, 1, "Empty password.");
 				return;
@@ -410,6 +379,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			const PurpleStatusType *status_type = purple_account_get_status_type_with_primitive_wrapped(account, PURPLE_STATUS_AVAILABLE);
 			if (status_type != NULL) {
 				purple_account_set_status_wrapped(account, purple_status_type_get_id_wrapped(status_type), TRUE, NULL);
+			}
+			// OAuth helper
+			if (protocol == "prpl-hangouts") {
+				adminLegacyName = "hangouts";
+				adminAlias = "hangouts";
+				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
+				handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			}
 		}
 
@@ -501,6 +477,16 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (account) {
 				LOG4CXX_INFO(logger, "Sending message to '" << legacyName << "'");
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
+	                	if (legacyName == adminLegacyName) {
+					// expect OAuth code
+					if (m_inputRequests.find(user) != m_inputRequests.end()) {
+						LOG4CXX_INFO(logger, "Updating token for '" << user << "'");
+						m_inputRequests[user]->ok_cb(m_inputRequests[user]->user_data, message.c_str());
+						m_inputRequests.erase(user);
+					}
+					return;
+				}
+                
 				if (!conv) {
 					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
 					if (!conv) {
@@ -822,9 +808,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
+	        std::map<std::string, inputRequest *> m_inputRequests;
 		std::map<unsigned long, PurpleXfer *> m_xfers;
 		std::map<std::string, PurpleXfer *> m_unhandledXfers;
 		std::vector<PurpleXfer *> m_waitingXfers;
+	        std::string adminLegacyName;
+        	std::string adminAlias;
 };
 
 static bool getStatus(PurpleBuddy *m_buddy, pbnetwork::StatusType &status, std::string &statusMessage) {
@@ -1519,11 +1508,62 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			purple_buddy_icon_unref_wrapped(icon);
 		}
 	}
-
+    
 	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, photo);
 	np->m_vcards.erase(np->m_accounts[account] + name);
 
 	return NULL;
+}
+
+void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
+    if (primary) {
+        std::string primaryString(primary);
+        if (primaryString == "Authorization Request Message:") {
+            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+            return NULL;
+        }
+        else if (primaryString == "Authorization Request Message:") {
+            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+            return NULL;
+        }
+        else if (primaryString == "Authorization Denied Message:") {
+            LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
+            ((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
+            return NULL;
+        }
+        else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
+            LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
+            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
+            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: ") + primaryString, "");
+            inputRequest *req = new inputRequest;
+            req->ok_cb = (PurpleRequestInputCb)ok_cb;
+            req->user_data = user_data;
+            req->account = account;
+            req->mainJID = np->m_accounts[account];
+            np->m_inputRequests[req->mainJID] = req;
+            return NULL;
+        }
+        else {
+            LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
+        }
+    }
+    else if (title) {
+        std::string titleString(title);
+        if (titleString == "Xfire Invitation Message") {
+            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+            return NULL;
+        }
+        else {
+            LOG4CXX_WARN(logger, "Unhandled request input. title=" << titleString);
+        }
+    }
+    else {
+        LOG4CXX_WARN(logger, "Request input without primary string");
+    }
+    return NULL;
 }
 
 static PurpleNotifyUiOps notifyUiOps =
@@ -2101,6 +2141,9 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			NetworkPlugin::PluginConfig cfg;			
 			cfg.setSupportMUC(true);
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
+				cfg.setNeedPassword(false);
+			}
+			if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
 				cfg.setNeedPassword(false);
 			}
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-irc") {
