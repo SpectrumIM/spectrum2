@@ -331,6 +331,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				np->handleDisconnected(user, 1, "Empty password.");
 				return;
 			}
+			if (protocol == "prpl-hangouts") {
+			        adminLegacyName = "hangouts";
+			        adminAlias = "hangouts";
+			}
 
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
@@ -382,8 +386,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 			// OAuth helper
 			if (protocol == "prpl-hangouts") {
-				adminLegacyName = "hangouts";
-				adminAlias = "hangouts";
 				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
 				handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			}
