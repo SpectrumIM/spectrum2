@@ -44,6 +44,9 @@ extern purple_account_new_wrapped_fnc purple_account_new_wrapped;
 typedef void  (_cdecl * purple_accounts_add_wrapped_fnc)(PurpleAccount *account);
 extern purple_accounts_add_wrapped_fnc purple_accounts_add_wrapped;
 
+typedef const char *  (_cdecl * purple_account_get_password_wrapped_fnc)(const PurpleAccount *account);
+extern purple_account_get_password_wrapped_fnc purple_account_get_password_wrapped;
+
 typedef void  (_cdecl * purple_account_set_password_wrapped_fnc)(PurpleAccount *account, const char *password);
 extern purple_account_set_password_wrapped_fnc purple_account_set_password_wrapped;
 
@@ -476,6 +479,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_accounts_find_wrapped purple_accounts_find
 #define purple_account_new_wrapped purple_account_new
 #define purple_accounts_add_wrapped purple_accounts_add
+#define purple_account_get_password_wrapped purple_account_get_password
 #define purple_account_set_password_wrapped purple_account_set_password
 #define purple_account_set_enabled_wrapped purple_account_set_enabled
 #define purple_account_set_privacy_type_wrapped purple_account_set_privacy_type

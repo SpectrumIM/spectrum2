@@ -12,6 +12,7 @@ purple_account_set_proxy_info_wrapped_fnc purple_account_set_proxy_info_wrapped 
 purple_accounts_find_wrapped_fnc purple_accounts_find_wrapped = NULL;
 purple_account_new_wrapped_fnc purple_account_new_wrapped = NULL;
 purple_accounts_add_wrapped_fnc purple_accounts_add_wrapped = NULL;
+purple_account_get_password_wrapped_fnc purple_account_get_password_wrapped = NULL;
 purple_account_set_password_wrapped_fnc purple_account_set_password_wrapped = NULL;
 purple_account_set_enabled_wrapped_fnc purple_account_set_enabled_wrapped = NULL;
 purple_account_set_privacy_type_wrapped_fnc purple_account_set_privacy_type_wrapped = NULL;
@@ -191,6 +192,10 @@ bool resolvePurpleFunctions() {
 	purple_accounts_add_wrapped = (purple_accounts_add_wrapped_fnc)GetProcAddress(f_hPurple, "purple_accounts_add");
 	if (!purple_accounts_add_wrapped)
 		return false;
+
+	purple_account_get_password_wrapped = (purple_account_get_password_wrapped_fnc)GetProcAddress(f_hPurple, "purple_account_get_password");
+	        if (!purple_account_get_password_wrapped)
+			                return false;
 
 	purple_account_set_password_wrapped = (purple_account_set_password_wrapped_fnc)GetProcAddress(f_hPurple, "purple_account_set_password");
 	if (!purple_account_set_password_wrapped)
