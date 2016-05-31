@@ -1575,7 +1575,7 @@ void * requestInput(const char *title, const char *primary,const char *secondary
         else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
             LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
             np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
-            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: ");
+            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: "));
             inputRequest *req = new inputRequest;
             req->ok_cb = (PurpleRequestInputCb)ok_cb;
             req->user_data = user_data;
