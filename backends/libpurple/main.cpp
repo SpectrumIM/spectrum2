@@ -14,6 +14,7 @@
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
 #include "transport/Config.h"
+#include "transport/StorageBackend.h"
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"
@@ -81,6 +82,7 @@ class SpectrumNetworkPlugin;
 
 boost::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
+StorageBackend *storagebackend;
 
 static std::string host;
 static int port = 10000;
@@ -177,6 +179,35 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 	}
 	return alias;
 }
+
+static boost::mutex dblock;
+static std::string OAUTH_TOKEN = "hangouts_oauth_token";
+
+static bool getUserOAuthToken(const std::string user, std::string &token)
+{
+  boost::mutex::scoped_lock lock(dblock);
+  UserInfo info;
+  if(storagebackend->getUser(user, info) == false) {
+    LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+      return false;
+  }
+  token = "";
+  int type = TYPE_STRING;
+  storagebackend->getUserSetting((long)info.id, OAUTH_TOKEN, type, token);
+  return true;
+}
+
+static bool storeUserOAuthToken(const std::string user, const std::string OAuthToken)
+{
+  boost::mutex::scoped_lock lock(dblock);
+  UserInfo info;
+  if(storagebackend->getUser(user, info) == false) {
+    LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+      return false;
+  }
+  storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
+  return true;
+}     
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
@@ -367,6 +398,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool_wrapped(account, "custom_smileys", FALSE);
 			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
+			if (protocol == "prpl-hangouts") {
+				std::string token;
+				if (getUserOAuthToken(user, token)) {
+					purple_account_set_password_wrapped(account, token.c_str());
+				}
+			}
 
 			setDefaultAccountOptions(account);
 
@@ -1538,7 +1575,7 @@ void * requestInput(const char *title, const char *primary,const char *secondary
         else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
             LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
             np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
-            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: ") + primaryString, "");
+            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: ");
             inputRequest *req = new inputRequest;
             req->ok_cb = (PurpleRequestInputCb)ok_cb;
             req->user_data = user_data;
@@ -1967,6 +2004,9 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
+		storeUserOAuthToken(np->m_accounts[account], purple_account_get_password_wrapped(account));
+	}
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -2193,6 +2233,19 @@ int main(int argc, char **argv) {
 	config = boost::shared_ptr<Config>(cfg);
  
 	Logging::initBackendLogging(config.get());
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
+		storagebackend = StorageBackend::createBackend(config.get(), error);
+		if (storagebackend == NULL) {
+			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
+			LOG4CXX_ERROR(logger, "Hangouts backend needs storage backend configured to work! " << error);
+			return NetworkPlugin::StorageBackendNeeded;
+		}
+		else if (!storagebackend->connect()) {
+			LOG4CXX_ERROR(logger, "Can't connect to database!")
+				return -1;
+		}
+	}
+
 	initPurple();
  
 	main_socket = create_socket(host.c_str(), port);
