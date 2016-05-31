@@ -21,9 +21,11 @@
 #if !defined(__FreeBSD__) && !defined(__APPLE__)
 #include "malloc.h"
 #endif
-#include <algorithm>
 #include "errno.h"
 #include <boost/make_shared.hpp>
+#include <boost/locale.hpp>
+#include <boost/locale/conversion.hpp>
+#include <boost/thread/mutex.hpp>
 
 #ifdef WITH_LIBEVENT
 #include <event.h>
@@ -515,7 +517,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				LOG4CXX_INFO(logger, "Sending message to '" << legacyName << "'");
-				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
+				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, LegacyNameToName(account, legacyName).c_str(), account);
 	                	if (legacyName == adminLegacyName) {
 					// expect OAuth code
 					if (m_inputRequests.find(user) != m_inputRequests.end()) {
@@ -527,9 +529,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
                 
 				if (!conv) {
-					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, legacyName.c_str(), account);
+					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, LegacyNameToName(account, legacyName).c_str(), account);
 					if (!conv) {
-						conv = purple_conversation_new_wrapped(PURPLE_CONV_TYPE_IM, account, legacyName.c_str());
+						conv = purple_conversation_new_wrapped(PURPLE_CONV_TYPE_IM, account, LegacyNameToName(account, legacyName).c_str());
 					}
 				}
 				if (xhtml.empty()) {
@@ -556,7 +558,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleRoomSubjectChangedRequest(const std::string &user, const std::string &legacyName, const std::string &message) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, legacyName.c_str(), account);
+				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, LegacyNameToName(account, legacyName).c_str(), account);
 				if (!conv) {
 					LOG4CXX_ERROR(logger, user << ": Cannot set room subject. There is now conversation " << legacyName);
 					return;
@@ -727,6 +729,29 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		std::string LegacyNameToName(PurpleAccount *account, const std::string &legacyName) {
+			std::string conversationName = legacyName;
+			BOOST_FOREACH(std::string _room, m_rooms[np->m_accounts[account]]) {
+				std::string lowercased_room = boost::locale::to_lower(_room);
+				if (lowercased_room.compare(conversationName) == 0) {
+					conversationName = _room;
+					break;
+				}
+			}
+			return conversationName;
+		}
+
+		std::string NameToLegacyName(PurpleAccount *account, const std::string &legacyName) {
+			std::string conversationName = legacyName;
+			BOOST_FOREACH(std::string _room, m_rooms[np->m_accounts[account]]) {
+				if (_room.compare(conversationName) == 0) {
+					conversationName = boost::locale::to_lower(legacyName);
+					break;
+				}
+			}
+			return conversationName;
+		}
+
 		void handleJoinRoomRequest(const std::string &user, const std::string &room, const std::string &nickname, const std::string &pasword) {
 			PurpleAccount *account = m_sessions[user];
 			if (!account) {
@@ -735,17 +760,17 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 			PurpleConnection *gc = purple_account_get_connection_wrapped(account);
 			GHashTable *comps = NULL;
-
+			std::string roomName = LegacyNameToName(account, room);
 			// Check if the PurpleChat is not stored in buddy list
-			PurpleChat *chat = purple_blist_find_chat_wrapped(account, room.c_str());
+			PurpleChat *chat = purple_blist_find_chat_wrapped(account, roomName.c_str());
 			if (chat) {
 				comps = purple_chat_get_components_wrapped(chat);
 			}
 			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
 				if (CONFIG_STRING(config, "service.protocol") == "prpl-jabber") {
-					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (room + "/" + nickname).c_str());
+					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (roomName + "/" + nickname).c_str());
 				} else {
-					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, room.c_str());
+					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, roomName.c_str());
 				}
 			}
 
@@ -763,7 +788,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 			}
 
-			LOG4CXX_INFO(logger, user << ": Joining the room " << room);
+			LOG4CXX_INFO(logger, user << ": Joining the room " << roomName);
 			if (comps) {
 				serv_join_chat_wrapped(gc, comps);
 				g_hash_table_destroy(comps);
@@ -776,7 +801,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 
-			PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, room.c_str(), account);
+			PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, LegacyNameToName(account, room).c_str(), account);
 			purple_conversation_destroy_wrapped(conv);
 		}
 
@@ -848,6 +873,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
 	        std::map<std::string, inputRequest *> m_inputRequests;
+		std::map<std::string, std::list<std::string> > m_rooms;
 		std::map<unsigned long, PurpleXfer *> m_xfers;
 		std::map<std::string, PurpleXfer *> m_unhandledXfers;
 		std::vector<PurpleXfer *> m_waitingXfers;
@@ -1157,9 +1183,10 @@ static void conv_write(PurpleConversation *conv, const char *who, const char *al
 			np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
 		}
 		else {
-			LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
-			np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, who, xhtml_, timestamp);
-		}
+			std::string conversationName = purple_conversation_get_name_wrapped(conv);
+			LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
+			np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
+		}	
 	}
 }
 
@@ -1306,8 +1333,9 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp);
 	}
 	else {
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << purple_conversation_get_name_wrapped(conv) << "' " << who);
-		np->handleMessage(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), message_, who, xhtml_, timestamp);
+		std::string conversationName = purple_conversation_get_name_wrapped(conv);
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
+		np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
 	}
 }
 
@@ -1335,8 +1363,8 @@ static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gbool
 // 			item->addAttribute("affiliation", "member");
 // 			item->addAttribute("role", "participant");
 		}
-
-		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name_wrapped(conv), (int) flags, pbnetwork::STATUS_ONLINE, "", "", alias);
+		std::string conversationName = purple_conversation_get_name_wrapped(conv);
+		np->handleParticipantChanged(np->m_accounts[account], name, np->NameToLegacyName(account, conversationName), (int) flags, pbnetwork::STATUS_ONLINE, "", "", alias);
 
 		l = l->next;
 	}
@@ -1348,7 +1376,8 @@ static void conv_chat_remove_users(PurpleConversation *conv, GList *users) {
 	GList *l = users;
 	while (l != NULL) {
 		std::string name((char *) l->data);
-		np->handleParticipantChanged(np->m_accounts[account], name, purple_conversation_get_name_wrapped(conv), 0, pbnetwork::STATUS_NONE);
+		std::string conversationName = purple_conversation_get_name_wrapped(conv);
+		np->handleParticipantChanged(np->m_accounts[account], name, np->NameToLegacyName(account, conversationName), 0, pbnetwork::STATUS_NONE);
 
 		l = l->next;
 	}
@@ -1361,7 +1390,7 @@ static gboolean conv_has_focus(PurpleConversation *conv) {
 static void conv_chat_topic_changed(PurpleConversation *conv, const char *who, const char *topic) {
 	LOG4CXX_INFO(logger, "Conversation topic changed");
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
-	np->handleSubject(np->m_accounts[account], purple_conversation_get_name_wrapped(conv), topic ? topic : "", who ? who : "Spectrum 2");
+	np->handleSubject(np->m_accounts[account], np->NameToLegacyName(account, purple_conversation_get_name_wrapped(conv)), topic ? topic : "", who ? who : "Spectrum 2");
 }
 
 static void conv_present(PurpleConversation *conv) {
@@ -1833,11 +1862,10 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		}
 
 		GList *rooms;
-		std::list<std::string> m_rooms;
 		std::list<std::string> m_topics;
 		for (rooms = list->rooms; rooms != NULL; rooms = rooms->next) {
 			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;	
-			m_rooms.push_back(room->name);
+			np->m_rooms[np->m_accounts[list->account]].push_back(room->name);
 
 			if (topicId == -1) {
 				m_topics.push_back(room->name);
@@ -1872,7 +1900,7 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		}
 
 		LOG4CXX_INFO(logger, "RoomList is fetched for user " << user);
-		np->handleRoomList(user, m_rooms, m_topics);
+		np->handleRoomList(user, np->m_rooms[user], m_topics);
 	}
 	else {
 		LOG4CXX_INFO(logger, "RoomList is still in progress");
@@ -2209,6 +2237,8 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 }
 
 int main(int argc, char **argv) {
+	boost::locale::generator gen;
+	std::locale::global(gen(""));
 #ifndef WIN32
 #if !defined(__FreeBSD__) && !defined(__APPLE__)
 		mallopt(M_CHECK_ACTION, 2);
