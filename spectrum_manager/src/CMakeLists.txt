@@ -27,7 +27,7 @@ INSTALL(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 # ENDIF()
 
 install(CODE "
-if (NOT EXISTS \"/etc/spectrum2/spectrum_manager.cfg\")
+if (NOT EXISTS \"$ENV{DESTDIR}/etc/spectrum2/spectrum_manager.cfg\")
 file(INSTALL DESTINATION \"/etc/spectrum2\" TYPE FILES \"${CMAKE_CURRENT_SOURCE_DIR}/spectrum_manager.cfg\")
 endif()
 ")
