@@ -28,3 +28,9 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
         # cd spectrum2_2.0.3-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
 
 When the compilation process has ended the .deb packages for libcommuni and spectrum will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
+
+## Quick packaging with CPack
+
+If you want to test latest changes and save time on full rebuilding all packages, you can quickly create a single package from usual build tree, like:
+        # cpack -G DEB -D CPACK_PACKAGE_CONTACT="Your Name <your@email.address>" -D CPACK_PACKAGE_NAME="spectrum2-nightly" -D CPACK_PACKAGE_FILE_NAME="spectrum2-nightly" -D CPACK_PACKAGE_VERSION="2.0.x" -D CPACK_DEBIAN_PACKAGE_DEPENDS="libboost-all-dev (>= 1.49), libc6 (>= 2.14), libswiften2 | libswiften3, libcurl3, liblog4cxx10, libpurple0" -D CPACK_DEBIAN_PACKAGE_CONFLICTS="spectrum2, spectrum2-backend-libpurple, spectrum2-backend-twitter, spectrum2-backend-swiften, spectrum2-dbg, libtransport2.0, libtransport-plugin2.0"
+
