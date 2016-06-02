@@ -11,7 +11,7 @@ You have to have boost-devel and libidn-devel installed before compiling Swiften
 
 	git clone git://swift.im/swift
 	cd swift
-	git checkout swift-2.x
+	git checkout swift-3.0
 	./scons V=1 swiften_dll=1 Swiften SWIFTEN_INSTALLDIR=/usr/local force-configure=1
 	sudo ./scons V=1 swiften_dll=1 Swiften SWIFTEN_INSTALLDIR=/usr/local /usr/local
 
@@ -84,8 +84,8 @@ The instructions are defined on [libCommuni wiki](https://github.com/communi/com
 
 ## Install Spectrum 2
 
-	git clone git://github.com/hanzz/libtransport.git
-	cd libtransport
+	git clone git://github.com/hanzz/spectrum2.git
+	cd spectrum2
 	cmake . -DCMAKE_BUILD_TYPE=Debug
 	make
 
