@@ -1,0 +1,13 @@
+[Unit]
+Description=spectrum2
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/spectrum2_manager start
+TimeoutStopSec=3
+ExecStop=/usr/bin/spectrum2_manager stop
+ExecReload=/usr/bin/spectrum2_manager restart
+
+[Install]
+Alias=spectrum2

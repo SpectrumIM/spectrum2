@@ -1,0 +1,96 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          spectrum2
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+# Short-Description: an open source instant messaging transport
+# Required-Start:   $network
+# Required-Stop:     $network
+# Description:       Spectrum allows users to chat together even when
+#                    they are using different IM networks. It acts as 
+#                    a transport layer between the users and services.
+### END INIT INFO
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="an open source instant messaging transport"
+NAME=spectrum2
+MANAGER=/usr/bin/spectrum2_manager
+BASENAME=spectrum2_manager
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+# Exit if the package is not installed
+[ -x "$MANAGER" ] || exit 5
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	$MANAGER start || return 1
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+	$MANAGER stop
+	RETVAL="$?"
+	return $RETVAL
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+    log_end_msg $?
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	do_stop
+    log_end_msg $?
+	;;
+  #reload|force-reload)
+	#
+	# If do_reload() is not implemented then leave this commented out
+	# and leave 'force-reload' as an alias for 'restart'.
+	#
+	#log_daemon_msg "Reloading $DESC" "$NAME"
+	#do_reload
+	#log_end_msg $?
+	#;;
+  restart|force-reload)
+	#
+	# If the "reload" option is implemented then remove the
+	# 'force-reload' alias
+	#
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+        sleep 3
+	case "$?" in
+	  0)
+		do_start
+        log_end_msg "$?"
+		;;
+	  *)
+	  	# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  status)
+	$MANAGER status
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|status}" >&2
+	exit 3
+	;;
+esac
