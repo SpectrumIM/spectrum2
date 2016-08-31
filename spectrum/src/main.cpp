@@ -18,6 +18,7 @@
 #include "frontends/slack/SlackFrontendPlugin.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
+#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #ifndef WIN32
