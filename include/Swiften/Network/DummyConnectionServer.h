@@ -10,7 +10,6 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <Swiften/Base/boost_bsignals.h>
 
 #include <Swiften/Network/DummyConnection.h>
 #include <Swiften/Network/ConnectionServer.h>

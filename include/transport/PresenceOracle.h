@@ -26,8 +26,6 @@
 #include <Swiften/Elements/Presence.h>
 #include <Swiften/Client/StanzaChannel.h>
 
-#include <Swiften/Base/boost_bsignals.h>
-
 namespace Transport {
 
 class Frontend;

@@ -10,7 +10,6 @@
 
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include <Swiften/FileTransfer/ReadBytestream.h>
-#include <Swiften/Base/boost_bsignals.h>
 #include <Swiften/FileTransfer/FileTransferError.h>
 #include <Swiften/FileTransfer/SOCKS5BytestreamServer.h>
 #include <Swiften/JID/JID.h>

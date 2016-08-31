@@ -7,7 +7,6 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <Swiften/Base/boost_bsignals.h>
 #include <boost/enable_shared_from_this.hpp>
 
 #include <string>

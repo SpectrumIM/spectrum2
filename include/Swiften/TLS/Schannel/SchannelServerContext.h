@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "Swiften/Base/boost_bsignals.h"
-
 #include "Swiften/TLS/TLSServerContext.h"
 #include "Swiften/TLS/Schannel/SchannelUtil.h"
 #include <Swiften/TLS/CertificateWithKey.h>

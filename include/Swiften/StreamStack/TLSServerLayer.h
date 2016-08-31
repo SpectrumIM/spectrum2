@@ -4,8 +4,6 @@
  * See Documentation/Licenses/GPLv3.txt for more information.
  */
 
-#include "Swiften/Base/boost_bsignals.h"
-
 #include "Swiften/Base/SafeByteArray.h"
 #include "Swiften/StreamStack/StreamLayer.h"
 #include "Swiften/TLS/Certificate.h"
