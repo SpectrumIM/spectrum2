@@ -26,7 +26,7 @@ namespace Swift {
 			bool setServerCertificate(CertificateWithKey::ref cert);
 
 			Certificate::ref getPeerCertificate() const;
-			boost::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
+			std::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
 
 			void writeData(const SafeByteArray& data);
 			void handleDataRead(const SafeByteArray& data);

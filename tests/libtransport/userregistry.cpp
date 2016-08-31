@@ -67,12 +67,12 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			received2.clear();
 		}
 
-		void send(boost::shared_ptr<Swift::Connection> conn, const std::string &data) {
+		void send(std::shared_ptr<Swift::Connection> conn, const std::string &data) {
 			dynamic_cast<Swift::DummyConnection *>(conn.get())->receive(Swift::createSafeByteArray(data));
 			loop->processEvents();
 		}
 
-		void sendCredentials(boost::shared_ptr<Swift::Connection> conn, const std::string &username, const std::string &password, const std::string &b64) {
+		void sendCredentials(std::shared_ptr<Swift::Connection> conn, const std::string &username, const std::string &password, const std::string &b64) {
 			std::vector<std::string> &received = conn == client1 ? received1 : received2;
 			send(conn, "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -90,7 +90,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			CPPUNIT_ASSERT_EQUAL(std::string(""), userRegistry->getUserPassword("unknown@localhost"));
 		}
 
-		void bindSession(boost::shared_ptr<Swift::Connection> conn) {
+		void bindSession(std::shared_ptr<Swift::Connection> conn) {
 			std::vector<std::string> &received = conn == client1 ? received1 : received2;
 
 			send(conn, "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
@@ -101,7 +101,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			
 		}
 
-		void handleDataReceived(const Swift::SafeByteArray &data, boost::shared_ptr<Swift::Connection> conn) {
+		void handleDataReceived(const Swift::SafeByteArray &data, std::shared_ptr<Swift::Connection> conn) {
 			if (conn == client1) {
 				received1.push_back(safeByteArrayToString(data));
 // 				std::cout << received1.back() << "\n";
@@ -212,9 +212,9 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 		Swift::Server *server;
 		Swift::DummyNetworkFactories *factories;
 		Swift::DummyEventLoop *loop;
-		boost::shared_ptr<Swift::ConnectionServer> connectionServer;
-		boost::shared_ptr<Swift::Connection> client1;
-		boost::shared_ptr<Swift::Connection> client2;
+		std::shared_ptr<Swift::ConnectionServer> connectionServer;
+		std::shared_ptr<Swift::Connection> client1;
+		std::shared_ptr<Swift::Connection> client2;
 		std::vector<std::string> received1;
 		std::vector<std::string> received2;
 		State state1;

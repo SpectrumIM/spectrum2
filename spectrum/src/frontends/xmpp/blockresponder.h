@@ -38,7 +38,7 @@ class BlockResponder : public Swift::SetResponder<Transport::BlockPayload> {
 		boost::signal<void (Buddy *)> onBlockToggled;
 
 	private:
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Transport::BlockPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Transport::BlockPayload> payload);
 
 		UserManager *m_userManager;
 };

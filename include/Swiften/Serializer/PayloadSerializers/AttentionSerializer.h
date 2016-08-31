@@ -14,6 +14,6 @@ namespace Swift {
 		public:
 			AttentionSerializer();
 
-			virtual std::string serializePayload(boost::shared_ptr<AttentionPayload>)  const;
+			virtual std::string serializePayload(std::shared_ptr<AttentionPayload>)  const;
 	};
 }

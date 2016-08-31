@@ -18,10 +18,10 @@ namespace Swift {
 StatsSerializer::StatsSerializer() : GenericPayloadSerializer<StatsPayload>() {
 }
 
-std::string StatsSerializer::serializePayload(boost::shared_ptr<StatsPayload> stats)  const {
+std::string StatsSerializer::serializePayload(std::shared_ptr<StatsPayload> stats)  const {
 	XMLElement queryElement("query", "http://jabber.org/protocol/stats");
 	foreach(const StatsPayload::Item& item, stats->getItems()) {
-		boost::shared_ptr<XMLElement> statElement(new XMLElement("stat"));
+		std::shared_ptr<XMLElement> statElement(new XMLElement("stat"));
 		statElement->setAttribute("name", item.getName());
 		if (!item.getUnits().empty()) {
 			statElement->setAttribute("units", item.getUnits());

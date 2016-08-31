@@ -19,7 +19,7 @@ namespace Swift {
 		public:
 			ServerStanzaRouter();
 
-			bool routeStanza(boost::shared_ptr<Stanza>);
+			bool routeStanza(std::shared_ptr<Stanza>);
 
 			void addClientSession(ServerSession*);
 			void removeClientSession(ServerSession*);

@@ -36,8 +36,8 @@ class StorageResponder : public Swift::Responder<Swift::PrivateStorage> {
 		~StorageResponder();
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::PrivateStorage> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::PrivateStorage> payload);
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
 };

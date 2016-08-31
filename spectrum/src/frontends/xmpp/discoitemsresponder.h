@@ -46,12 +46,12 @@ class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoItems> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::DiscoItems> payload);
 
 	private:
 		Component *m_component;
-		boost::shared_ptr<Swift::DiscoItems> m_commands;
-		boost::shared_ptr<Swift::DiscoItems> m_rooms;
+		std::shared_ptr<Swift::DiscoItems> m_commands;
+		std::shared_ptr<Swift::DiscoItems> m_rooms;
 		DiscoInfoResponder *m_discoInfoResponder;
 		UserManager *m_userManager;
 };

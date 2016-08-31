@@ -62,7 +62,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
 			user->setData(&backend);
-			boost::shared_ptr<Swift::Connection> client1 = factories->getConnectionFactory()->createConnection();
+			std::shared_ptr<Swift::Connection> client1 = factories->getConnectionFactory()->createConnection();
 			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.connect(boost::bind(&NetworkPluginServerTest::handleDataSent, this, _1));
 			backend.connection = client1;
 

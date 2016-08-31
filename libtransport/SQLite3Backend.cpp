@@ -61,8 +61,6 @@
 		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
 			}
 
-using namespace boost;
-
 namespace Transport {
 
 DEFINE_LOGGER(logger, "SQLite3Backend");

@@ -39,7 +39,7 @@ namespace {
 
 	
 CFArrayRef CreateClientCertificateChainAsCFArrayRef(CertificateWithKey::ref key) {
-	boost::shared_ptr<PKCS12Certificate> pkcs12 = boost::dynamic_pointer_cast<PKCS12Certificate>(key);
+	std::shared_ptr<PKCS12Certificate> pkcs12 = std::dynamic_pointer_cast<PKCS12Certificate>(key);
 	if (!key) {
 		return NULL;
 	}
@@ -104,7 +104,7 @@ CFArrayRef CreateClientCertificateChainAsCFArrayRef(CertificateWithKey::ref key)
 }
 
 SecureTransportContext::SecureTransportServerContext(bool checkCertificateRevocation) : state_(None), checkCertificateRevocation_(checkCertificateRevocation) {
-	sslContext_ = boost::shared_ptr<SSLContext>(SSLCreateContext(NULL, kSSLClientSide, kSSLStreamType), CFRelease);
+	sslContext_ = std::shared_ptr<SSLContext>(SSLCreateContext(NULL, kSSLClientSide, kSSLStreamType), CFRelease);
 
 	OSStatus error = noErr;
 	// set IO callbacks
@@ -163,7 +163,7 @@ void SecureTransportServerContext::connect() {
 	if (clientCertificate_) {
 		CFArrayRef certs = CreateClientCertificateChainAsCFArrayRef(clientCertificate_);
 		if (certs) {
-			boost::shared_ptr<CFArray> certRefs(certs, CFRelease);
+			std::shared_ptr<CFArray> certRefs(certs, CFRelease);
 			OSStatus result = SSLSetCertificate(sslContext_.get(), certRefs.get());
 			if (result != noErr) {
 				SWIFT_LOG(error) << "SSLSetCertificate failed with error " << result << "." << std::endl;
@@ -191,7 +191,7 @@ void SecureTransportServerContext::processHandshake() {
 	}
 	else {
 		SWIFT_LOG(debug) << "Error returned from SSLHandshake call is " << error << "." << std::endl;
-		fatalError(nativeToTLSError(error), boost::make_shared<CertificateVerificationError>());
+		fatalError(nativeToTLSError(error), std::make_shared<CertificateVerificationError>());
 	}
 }
 
@@ -203,15 +203,15 @@ void SecureTransportServerContext::verifyServerCertificate() {
 	SecTrustRef trust = NULL;
 	OSStatus error = SSLCopyPeerTrust(sslContext_.get(), &trust);
 	if (error != noErr) {
-		fatalError(boost::make_shared<TLSError>(), boost::make_shared<CertificateVerificationError>());
+		fatalError(std::make_shared<TLSError>(), std::make_shared<CertificateVerificationError>());
 		return;
 	}
-	boost::shared_ptr<SecTrust> trustRef = boost::shared_ptr<SecTrust>(trust, CFRelease);
+	std::shared_ptr<SecTrust> trustRef = std::shared_ptr<SecTrust>(trust, CFRelease);
 
 	if (checkCertificateRevocation_) {
 		error = SecTrustSetOptions(trust, kSecTrustOptionRequireRevPerCert | kSecTrustOptionFetchIssuerFromNet);
 		if (error != noErr) {
-			fatalError(boost::make_shared<TLSError>(), boost::make_shared<CertificateVerificationError>());
+			fatalError(std::make_shared<TLSError>(), std::make_shared<CertificateVerificationError>());
 			return;
 		}
 	}
@@ -219,7 +219,7 @@ void SecureTransportServerContext::verifyServerCertificate() {
 	SecTrustResultType trustResult;
 	error = SecTrustEvaluate(trust, &trustResult);
 	if (error != errSecSuccess) {
-		fatalError(boost::make_shared<TLSError>(), boost::make_shared<CertificateVerificationError>());
+		fatalError(std::make_shared<TLSError>(), std::make_shared<CertificateVerificationError>());
 		return;
 	}
 
@@ -242,7 +242,7 @@ void SecureTransportServerContext::verifyServerCertificate() {
 					CSSM_TP_APPLE_EVIDENCE_INFO* statusChain;
 					error = SecTrustGetResult(trustRef.get(), &trustResult, &certChain, &statusChain);
 					if (error == errSecSuccess) {
-						boost::shared_ptr<CFArray> certChainRef = boost::shared_ptr<CFArray>(certChain, CFRelease);
+						std::shared_ptr<CFArray> certChainRef = std::shared_ptr<CFArray>(certChain, CFRelease);
 						for (CFIndex index = 0; index < CFArrayGetCount(certChainRef.get()); index++) {
 							for (CFIndex n = 0; n < statusChain[index].NumStatusCodes; n++) {
 								// Even though Secure Transport reported CSSMERR_APPLETP_INCOMPLETE_REVOCATION_CHECK on the whole certificate
@@ -259,11 +259,11 @@ void SecureTransportServerContext::verifyServerCertificate() {
 				}
 			}
 			else {
-				verificationError_ = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::UnknownError);
+				verificationError_ = std::make_shared<CertificateVerificationError>(CertificateVerificationError::UnknownError);
 			}
 			break;
 		case kSecTrustResultOtherError:
-			verificationError_ = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::UnknownError);
+			verificationError_ = std::make_shared<CertificateVerificationError>(CertificateVerificationError::UnknownError);
 			break;
 		default:
 			SWIFT_LOG(warning) << "Unhandled trust result " << trustResult << "." << std::endl;
@@ -274,7 +274,7 @@ void SecureTransportServerContext::verifyServerCertificate() {
 		setState(Error);
 		SSLClose(sslContext_.get());
 		sslContext_.reset();
-		onError(boost::make_shared<TLSError>());
+		onError(std::make_shared<TLSError>());
 	}
 	else {
 		// proceed with handshake
@@ -326,7 +326,7 @@ void SecureTransportServerContext::handleDataFromNetwork(const SafeByteArray& da
 				}
 				else {
 					SWIFT_LOG(error) << "SSLRead failed with error " << error << ", read bytes: " << bytesRead << "." << std::endl;
-					fatalError(boost::make_shared<TLSError>(), boost::make_shared<CertificateVerificationError>());
+					fatalError(std::make_shared<TLSError>(), std::make_shared<CertificateVerificationError>());
 					return;
 				}
 
@@ -358,7 +358,7 @@ void SecureTransportServerContext::handleDataFromApplication(const SafeByteArray
 			return;
 		default:
 			SWIFT_LOG(warning) << "SSLWrite returned error code: " << error << ", processed bytes: " << processedBytes << std::endl;
-			fatalError(boost::make_shared<TLSError>(), boost::shared_ptr<CertificateVerificationError>());
+			fatalError(std::make_shared<TLSError>(), std::shared_ptr<CertificateVerificationError>());
 	}
 }
 
@@ -367,18 +367,18 @@ std::vector<Certificate::ref> SecureTransportServerContext::getPeerCertificateCh
 
 	if (sslContext_) {
 			typedef boost::remove_pointer<SecTrustRef>::type SecTrust;
-			boost::shared_ptr<SecTrust> securityTrust;
+			std::shared_ptr<SecTrust> securityTrust;
 
 			SecTrustRef secTrust = NULL;;
 			OSStatus error = SSLCopyPeerTrust(sslContext_.get(), &secTrust);
 			if (error == noErr) {
-				securityTrust = boost::shared_ptr<SecTrust>(secTrust, CFRelease);
+				securityTrust = std::shared_ptr<SecTrust>(secTrust, CFRelease);
 
 				CFIndex chainSize = SecTrustGetCertificateCount(securityTrust.get());
 				for (CFIndex n = 0; n < chainSize; n++) {
 					SecCertificateRef certificate = SecTrustGetCertificateAtIndex(securityTrust.get(), n);
 					if (certificate) {
-						peerCertificateChain.push_back(boost::make_shared<SecureTransportCertificate>(certificate));
+						peerCertificateChain.push_back(std::make_shared<SecureTransportCertificate>(certificate));
 					}
 				}
 			}
@@ -436,30 +436,30 @@ OSStatus SecureTransportServerContext::SSLSocketWriteCallback(SSLConnectionRef c
 	return retValue;
 }
 
-boost::shared_ptr<TLSError> SecureTransportServerContext::nativeToTLSError(OSStatus /* error */) {
-	boost::shared_ptr<TLSError> swiftenError;
-	swiftenError = boost::make_shared<TLSError>();
+std::shared_ptr<TLSError> SecureTransportServerContext::nativeToTLSError(OSStatus /* error */) {
+	std::shared_ptr<TLSError> swiftenError;
+	swiftenError = std::make_shared<TLSError>();
 	return swiftenError;
 }
 
-boost::shared_ptr<CertificateVerificationError> SecureTransportServerContext::CSSMErrorToVerificationError(OSStatus resultCode) {
-	boost::shared_ptr<CertificateVerificationError> error;
+std::shared_ptr<CertificateVerificationError> SecureTransportServerContext::CSSMErrorToVerificationError(OSStatus resultCode) {
+	std::shared_ptr<CertificateVerificationError> error;
 	switch(resultCode) {
 		case CSSMERR_TP_NOT_TRUSTED:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_TP_NOT_TRUSTED" << std::endl;
-			error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::Untrusted);
+			error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::Untrusted);
 			break;
 		case CSSMERR_TP_CERT_NOT_VALID_YET:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_TP_CERT_NOT_VALID_YET" << std::endl;
-			error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::NotYetValid);
+			error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::NotYetValid);
 			break;
 		case CSSMERR_TP_CERT_EXPIRED:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_TP_CERT_EXPIRED" << std::endl;
-			error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::Expired);
+			error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::Expired);
 			break;
 		case CSSMERR_TP_CERT_REVOKED:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_TP_CERT_REVOKED" << std::endl;
-			error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::Revoked);
+			error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::Revoked);
 			break;
 		case CSSMERR_TP_VERIFY_ACTION_FAILED:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_TP_VERIFY_ACTION_FAILED" << std::endl;
@@ -467,28 +467,28 @@ boost::shared_ptr<CertificateVerificationError> SecureTransportServerContext::CS
 		case CSSMERR_APPLETP_INCOMPLETE_REVOCATION_CHECK:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_APPLETP_INCOMPLETE_REVOCATION_CHECK" << std::endl;
 			if (checkCertificateRevocation_) {
-				error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::RevocationCheckFailed);
+				error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::RevocationCheckFailed);
 			}
 			break;
 		case CSSMERR_APPLETP_OCSP_UNAVAILABLE:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_APPLETP_OCSP_UNAVAILABLE" << std::endl;
 			if (checkCertificateRevocation_) {
-				error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::RevocationCheckFailed);
+				error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::RevocationCheckFailed);
 			}
 			break;
 		case CSSMERR_APPLETP_SSL_BAD_EXT_KEY_USE:
 			SWIFT_LOG(debug) << "CSSM result code: CSSMERR_APPLETP_SSL_BAD_EXT_KEY_USE" << std::endl;
-			error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::InvalidPurpose);
+			error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::InvalidPurpose);
 			break;
 		default:
 			SWIFT_LOG(warning) << "unhandled CSSM error: " << resultCode << ", CSSM_TP_BASE_TP_ERROR: " << CSSM_TP_BASE_TP_ERROR << std::endl;
-			error = boost::make_shared<CertificateVerificationError>(CertificateVerificationError::UnknownError);
+			error = std::make_shared<CertificateVerificationError>(CertificateVerificationError::UnknownError);
 			break;
 	}
 	return error;
 }
 
-void SecureTransportServerContext::fatalError(boost::shared_ptr<TLSError> error, boost::shared_ptr<CertificateVerificationError> certificateError) {
+void SecureTransportServerContext::fatalError(std::shared_ptr<TLSError> error, std::shared_ptr<CertificateVerificationError> certificateError) {
 	setState(Error);
 	if (sslContext_) {
 		SSLClose(sslContext_.get());

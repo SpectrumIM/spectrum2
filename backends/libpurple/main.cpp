@@ -82,7 +82,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 class SpectrumNetworkPlugin;
 
-boost::shared_ptr<Config> config;
+std::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
 StorageBackend *storagebackend;
 
@@ -2260,7 +2260,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	config = boost::shared_ptr<Config>(cfg);
+	config = std::shared_ptr<Config>(cfg);
  
 	Logging::initBackendLogging(config.get());
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {

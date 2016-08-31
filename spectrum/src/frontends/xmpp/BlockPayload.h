@@ -17,7 +17,7 @@
 namespace Transport {
 	class BlockPayload : public Swift::Payload {
 		public:
-			typedef boost::shared_ptr<BlockPayload> ref;
+			typedef std::shared_ptr<BlockPayload> ref;
 
 		public:
 			BlockPayload();

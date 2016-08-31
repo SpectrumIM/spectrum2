@@ -38,7 +38,7 @@ HiddenFormField::ref
 #endif
 createHiddenField(const std::string &name, const std::string &value) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = boost::make_shared<FormField>(FormField::HiddenType, value);	
+	FormField::ref field = std::make_shared<FormField>(FormField::HiddenType, value);	
 #else
 	HiddenFormField::ref field = HiddenFormField::create();
 	field->setValue(value);
@@ -55,7 +55,7 @@ TextSingleFormField::ref
 #endif
 createTextSingleField(const std::string &name, const std::string &value, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = boost::make_shared<FormField>(FormField::TextSingleType, value);
+	FormField::ref field = std::make_shared<FormField>(FormField::TextSingleType, value);
 #else
 	TextSingleFormField::ref field = TextSingleFormField::create();
 	field->setValue(value);
@@ -74,7 +74,7 @@ TextPrivateFormField::ref
 #endif
 createTextPrivateField(const std::string &name, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = boost::make_shared<FormField>(FormField::TextPrivateType);
+	FormField::ref field = std::make_shared<FormField>(FormField::TextPrivateType);
 #else
 	TextPrivateFormField::ref field = TextPrivateFormField::create();
 #endif
@@ -92,7 +92,7 @@ ListSingleFormField::ref
 #endif
 createListSingleField(const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = boost::make_shared<FormField>(FormField::ListSingleType);
+	FormField::ref field = std::make_shared<FormField>(FormField::ListSingleType);
 #else
 	ListSingleFormField::ref field = ListSingleFormField::create();
 #endif
@@ -115,7 +115,7 @@ BooleanFormField::ref
 #endif
 createBooleanField(const std::string &name, const std::string &value, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = boost::make_shared<FormField>(FormField::BooleanType, value);
+	FormField::ref field = std::make_shared<FormField>(FormField::BooleanType, value);
 #else
 	BooleanFormField::ref field = BooleanFormField::create();
 	field->setValue(value == "1");
@@ -134,7 +134,7 @@ FixedFormField::ref
 #endif
 createTextFixedField(const std::string &value) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = boost::make_shared<FormField>(FormField::FixedType, value);
+	FormField::ref field = std::make_shared<FormField>(FormField::FixedType, value);
 #else
 	FixedFormField::ref field = FixedFormField::create(value);
 #endif
@@ -171,22 +171,22 @@ std::string fieldValue(Swift::FormField::ref field) {
 	const std::vector<std::string> values = field->getValues();
 	return values.empty() ? "" : values[0];
 #else
-	TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(field);
+	TextSingleFormField::ref textSingle = std::dynamic_pointer_cast<TextSingleFormField>(field);
 	if (textSingle) {
 		return textSingle->getValue();
 	}
 
-	TextPrivateFormField::ref textPrivate = boost::dynamic_pointer_cast<TextPrivateFormField>(field);
+	TextPrivateFormField::ref textPrivate = std::dynamic_pointer_cast<TextPrivateFormField>(field);
 	if (textPrivate) {
 		return textPrivate->getValue();
 	}
 
-	ListSingleFormField::ref listSingle = boost::dynamic_pointer_cast<ListSingleFormField>(field);
+	ListSingleFormField::ref listSingle = std::dynamic_pointer_cast<ListSingleFormField>(field);
 	if (listSingle) {
 		return listSingle->getValue();
 	}
 
-	BooleanFormField::ref boolean = boost::dynamic_pointer_cast<BooleanFormField>(field);
+	BooleanFormField::ref boolean = std::dynamic_pointer_cast<BooleanFormField>(field);
 	if (boolean) {
 		return boolean->getValue() ? "1" : "0";
 	}
@@ -205,22 +205,22 @@ std::string fieldValue(Swift::Form::ref form, const std::string &key, const std:
 			return values.empty() ? "" : values[0];
 		}
 #else
-		TextSingleFormField::ref textSingle = boost::dynamic_pointer_cast<TextSingleFormField>(*it);
+		TextSingleFormField::ref textSingle = std::dynamic_pointer_cast<TextSingleFormField>(*it);
 		if (textSingle && textSingle->getName() == key) {
 			return textSingle->getValue();
 		}
 
-		TextPrivateFormField::ref textPrivate = boost::dynamic_pointer_cast<TextPrivateFormField>(*it);
+		TextPrivateFormField::ref textPrivate = std::dynamic_pointer_cast<TextPrivateFormField>(*it);
 		if (textPrivate && textPrivate->getName() == key) {
 			return textPrivate->getValue();
 		}
 
-		ListSingleFormField::ref listSingle = boost::dynamic_pointer_cast<ListSingleFormField>(*it);
+		ListSingleFormField::ref listSingle = std::dynamic_pointer_cast<ListSingleFormField>(*it);
 		if (listSingle && listSingle->getName() == key) {
 			return listSingle->getValue();
 		}
 
-		BooleanFormField::ref boolean = boost::dynamic_pointer_cast<BooleanFormField>(*it);
+		BooleanFormField::ref boolean = std::dynamic_pointer_cast<BooleanFormField>(*it);
 		if (boolean && boolean->getName() == key) {
 			return boolean->getValue() ? "1" : "0";
 		}

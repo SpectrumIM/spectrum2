@@ -15,11 +15,11 @@ namespace Swift {
 XHTMLIMSerializer::XHTMLIMSerializer() : GenericPayloadSerializer<XHTMLIMPayload>() {
 }
 
-std::string XHTMLIMSerializer::serializePayload(boost::shared_ptr<XHTMLIMPayload> payload)  const {
+std::string XHTMLIMSerializer::serializePayload(std::shared_ptr<XHTMLIMPayload> payload)  const {
 	XMLElement html("html", "http://jabber.org/protocol/xhtml-im");
 
-	boost::shared_ptr<XMLElement> body(new XMLElement("body", "http://www.w3.org/1999/xhtml"));
-	body->addNode(boost::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(payload->getBody())));
+	std::shared_ptr<XMLElement> body(new XMLElement("body", "http://www.w3.org/1999/xhtml"));
+	body->addNode(std::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(payload->getBody())));
 	html.addNode(body);
 
 	return html.serialize();

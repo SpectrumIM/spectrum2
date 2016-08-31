@@ -44,7 +44,7 @@ class AdHocCommand {
 		/// Destructor.
 		virtual ~AdHocCommand();
 
-		virtual boost::shared_ptr<Swift::Command> handleRequest(boost::shared_ptr<Swift::Command> payload) = 0;
+		virtual std::shared_ptr<Swift::Command> handleRequest(std::shared_ptr<Swift::Command> payload) = 0;
 
 		const std::string &getId() {
 			return m_id;

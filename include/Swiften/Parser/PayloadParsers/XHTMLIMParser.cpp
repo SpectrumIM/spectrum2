@@ -50,7 +50,7 @@ void XHTMLIMParser::handleCharacterData(const std::string& data) {
 	}
 }
 
-boost::shared_ptr<XHTMLIMPayload> XHTMLIMParser::getLabelPayload() const {
+std::shared_ptr<XHTMLIMPayload> XHTMLIMParser::getLabelPayload() const {
 	return getPayloadInternal();
 }
 

@@ -15,7 +15,7 @@
 namespace Swift {
 	class AttentionPayload : public Payload {
 		public:
-			typedef boost::shared_ptr<AttentionPayload> ref;
+			typedef std::shared_ptr<AttentionPayload> ref;
 
 		public:
 			AttentionPayload();

@@ -31,7 +31,7 @@ void Plugin::sendData(const std::string &string) {
 }
 
 // This method has to call handleDataRead with all received data from network plugin server
-void Plugin::_handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
+void Plugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
 	std::string d(data->begin(), data->end());
 	handleDataRead(d);
 }

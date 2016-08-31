@@ -21,8 +21,6 @@ using namespace Transport;
 
 using namespace boost::filesystem;
 
-using namespace boost;
-
 int main(int argc, char **argv)
 {
 	ManagerConfig config;

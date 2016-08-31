@@ -77,7 +77,7 @@ namespace Swift {
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
 #if HAVE_SWIFTEN_3
-			boost::shared_ptr<IDNConverter> idnConverter;
+			std::shared_ptr<IDNConverter> idnConverter;
 			CryptoProvider* cryptoProvider;
 			NetworkEnvironment* networkEnvironment;
 #endif

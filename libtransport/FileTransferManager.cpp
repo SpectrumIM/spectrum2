@@ -46,7 +46,7 @@ FileTransferManager::FileTransferManager(Component *component, UserManager *user
 // #else
 // 	m_proxyManager = new Swift::SOCKS5BytestreamProxiesManager(m_component->getNetworkFactories()->getConnectionFactory(), m_component->getNetworkFactories()->getTimerFactory(), m_component->getNetworkFactories()->getDomainNameResolver(), m_component->getIQRouter(), "bar.com");
 // #endif
-// 	boost::shared_ptr<Swift::ConnectionServer> server = m_component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(19645);
+// 	std::shared_ptr<Swift::ConnectionServer> server = m_component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(19645);
 // 	server->start();
 // #if HAVE_SWIFTEN_3
 // 	m_proxyServerManager = new Swift::SOCKS5BytestreamServerManager(m_bytestreamRegistry, m_component->getNetworkFactories()->getConnectionServerFactory(), m_component->getNetworkFactories()->getNetworkEnvironment(), m_component->getNetworkFactories()->getNATTraverser());
@@ -82,7 +82,7 @@ FileTransferManager::~FileTransferManager() {
 // #endif
 }
 
-FileTransferManager::Transfer FileTransferManager::sendFile(User *user, Buddy *buddy, boost::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info) {
+FileTransferManager::Transfer FileTransferManager::sendFile(User *user, Buddy *buddy, std::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info) {
  	FileTransferManager::Transfer transfer;
 // 	transfer.from = buddy->getJID();
 // 	transfer.to = user->getJID();

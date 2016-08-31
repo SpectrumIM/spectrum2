@@ -18,6 +18,6 @@ namespace Swift {
 			virtual const JID& getJID() const = 0;
 			virtual int getPriority() const = 0;
 
-			virtual void sendStanza(boost::shared_ptr<Stanza>) = 0;
+			virtual void sendStanza(std::shared_ptr<Stanza>) = 0;
 	};
 }

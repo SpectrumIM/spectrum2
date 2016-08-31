@@ -44,10 +44,10 @@ class RosterStorage;
 // TODO: Once Swiften GetRosterRequest will support setting to="", this can be removed
 class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload> {
 	public:
-		typedef boost::shared_ptr<AddressedRosterRequest> ref;
+		typedef std::shared_ptr<AddressedRosterRequest> ref;
 
 		AddressedRosterRequest(Swift::IQRouter* router, Swift::JID to) :
-				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
+				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
 		}
 };
 
@@ -82,7 +82,7 @@ class XMPPRosterManager : public RosterManager {
 	private:
 		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key);
-		void handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> roster, Swift::ErrorPayload::ref error);
+		void handleRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> roster, Swift::ErrorPayload::ref error);
 
 		Component *m_component;
 		RosterStorage *m_rosterStorage;

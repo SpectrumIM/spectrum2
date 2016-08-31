@@ -24,11 +24,11 @@ class Plugin : public Transport::NetworkPlugin {
 
 	private:
 		// This method has to call handleDataRead with all received data from network plugin server
-		void _handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
+		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data);
 
 	private:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::Connection> m_conn;
 		Transport::Config *config;
 };

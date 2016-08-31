@@ -14,6 +14,6 @@ namespace Swift {
 		public:
 			SpectrumErrorSerializer();
 
-			virtual std::string serializePayload(boost::shared_ptr<SpectrumErrorPayload>)  const;
+			virtual std::string serializePayload(std::shared_ptr<SpectrumErrorPayload>)  const;
 	};
 }

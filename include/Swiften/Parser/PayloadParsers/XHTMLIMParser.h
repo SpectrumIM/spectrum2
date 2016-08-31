@@ -19,7 +19,7 @@ namespace Swift {
 			virtual void handleStartElement(const std::string& element, const std::string&, const AttributeMap& attributes);
 			virtual void handleEndElement(const std::string& element, const std::string&);
 			virtual void handleCharacterData(const std::string& data);
-			boost::shared_ptr<XHTMLIMPayload> getLabelPayload() const;
+			std::shared_ptr<XHTMLIMPayload> getLabelPayload() const;
 		private:
 			enum Level { 
 				TopLevel = 0, 

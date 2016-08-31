@@ -50,7 +50,7 @@ class SlackSession {
 
 		boost::signal<void (const std::string &user)> onInstallationDone;
 
-		void sendMessage(boost::shared_ptr<Swift::Message> message);
+		void sendMessage(std::shared_ptr<Swift::Message> message);
 
 		void sendMessageToAll(const std::string &msg);
 

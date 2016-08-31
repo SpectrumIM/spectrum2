@@ -36,7 +36,7 @@ class SlackFrontendPlugin : public FrontendPlugin {
 		Frontend *createFrontend();
 };
 
-boost::shared_ptr<FrontendPlugin> get_slack_frontend_plugin();
+std::shared_ptr<FrontendPlugin> get_slack_frontend_plugin();
 
 
 }

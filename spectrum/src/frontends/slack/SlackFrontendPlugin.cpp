@@ -43,8 +43,8 @@ Frontend *SlackFrontendPlugin::createFrontend() {
 
 // SlackFrontendPlugin plugin;
 
-boost::shared_ptr<FrontendPlugin> get_slack_frontend_plugin() {
-	return boost::make_shared<SlackFrontendPlugin>();
+std::shared_ptr<FrontendPlugin> get_slack_frontend_plugin() {
+	return std::make_shared<SlackFrontendPlugin>();
 }
 
 // BOOST_DLL_AUTO_ALIAS(plugin)

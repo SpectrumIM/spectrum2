@@ -28,7 +28,7 @@ namespace Swift {
 
 	class MyOutgoingSIFileTransfer : public OutgoingFileTransfer {
 		public:
-			MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, boost::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry);
+			MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, std::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry);
 
 			virtual void start();
 			virtual void stop();
@@ -49,10 +49,10 @@ namespace Swift {
 			std::string name;
 			int size;
 			std::string description;
-			boost::shared_ptr<ReadBytestream> bytestream;
+			std::shared_ptr<ReadBytestream> bytestream;
 			IQRouter* iqRouter;
 			SOCKS5BytestreamServer* socksServer;
-			boost::shared_ptr<IBBSendSession> ibbSession;
+			std::shared_ptr<IBBSendSession> ibbSession;
 			SOCKS5BytestreamRegistry *registry;
 	};
 }

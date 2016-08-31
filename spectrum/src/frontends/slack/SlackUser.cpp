@@ -31,8 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-using namespace boost;
-
 namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackUser");

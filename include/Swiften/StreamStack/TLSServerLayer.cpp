@@ -45,7 +45,7 @@ Certificate::ref TLSServerLayer::getPeerCertificate() const {
 	return context->getPeerCertificate();
 }
 
-boost::shared_ptr<CertificateVerificationError> TLSServerLayer::getPeerCertificateVerificationError() const {
+std::shared_ptr<CertificateVerificationError> TLSServerLayer::getPeerCertificateVerificationError() const {
 	return context->getPeerCertificateVerificationError();
 }
 

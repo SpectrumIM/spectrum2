@@ -22,6 +22,7 @@
 
 #include <string>
 #include <map>
+#include <boost/signal.hpp>
 
 #include "Swiften/FileTransfer/ReadBytestream.h"
 
@@ -34,7 +35,7 @@ class MemoryReadBytestream : public Swift::ReadBytestream {
 
 		unsigned long appendData(const std::string &data);
 
-		virtual boost::shared_ptr<std::vector<unsigned char> > read(size_t size);
+		virtual std::shared_ptr<std::vector<unsigned char> > read(size_t size);
 
 		void setFinished() { m_finished = true; }
 		bool isFinished() const;

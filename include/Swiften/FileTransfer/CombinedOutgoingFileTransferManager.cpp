@@ -31,30 +31,30 @@ CombinedOutgoingFileTransferManager::~CombinedOutgoingFileTransferManager() {
 	delete idGenerator;
 }
 
-boost::shared_ptr<OutgoingFileTransfer> CombinedOutgoingFileTransferManager::createOutgoingFileTransfer(const JID& from, const JID& receipient, boost::shared_ptr<ReadBytestream> readBytestream, const StreamInitiationFileInfo& fileInfo) {
+std::shared_ptr<OutgoingFileTransfer> CombinedOutgoingFileTransferManager::createOutgoingFileTransfer(const JID& from, const JID& receipient, std::shared_ptr<ReadBytestream> readBytestream, const StreamInitiationFileInfo& fileInfo) {
 	// check if receipient support Jingle FT
 	boost::optional<JID> fullJID = highestPriorityJIDSupportingJingle(receipient);
 	if (!fullJID.is_initialized()) {
 		fullJID = highestPriorityJIDSupportingSI(receipient);
 	}
 	else {
-		JingleSessionImpl::ref jingleSession = boost::make_shared<JingleSessionImpl>(from, receipient, idGenerator->generateID(), iqRouter);
+		JingleSessionImpl::ref jingleSession = std::make_shared<JingleSessionImpl>(from, receipient, idGenerator->generateID(), iqRouter);
 
 		//jsManager->getSession(receipient, idGenerator->generateID());
 		assert(jingleSession);
 		jsManager->registerOutgoingSession(from, jingleSession);
 #if !HAVE_SWIFTEN_3
-		boost::shared_ptr<OutgoingJingleFileTransfer> jingleFT =  boost::shared_ptr<OutgoingJingleFileTransfer>(new OutgoingJingleFileTransfer(jingleSession, remoteFactory, localFactory, iqRouter, idGenerator, from, receipient, readBytestream, fileInfo, bytestreamRegistry, bytestreamProxy));
+		std::shared_ptr<OutgoingJingleFileTransfer> jingleFT =  std::shared_ptr<OutgoingJingleFileTransfer>(new OutgoingJingleFileTransfer(jingleSession, remoteFactory, localFactory, iqRouter, idGenerator, from, receipient, readBytestream, fileInfo, bytestreamRegistry, bytestreamProxy));
 		return jingleFT;
 #endif
 	}
 
 	if (!fullJID.is_initialized()) {
-		return boost::shared_ptr<OutgoingFileTransfer>();
+		return std::shared_ptr<OutgoingFileTransfer>();
 	}
 	
 	// otherwise try SI
-	boost::shared_ptr<MyOutgoingSIFileTransfer> jingleFT =  boost::shared_ptr<MyOutgoingSIFileTransfer>(new MyOutgoingSIFileTransfer(idGenerator->generateID(), from, fullJID.get(), fileInfo.getName(), fileInfo.getSize(), fileInfo.getDescription(), readBytestream, iqRouter, bytestreamServer, bytestreamRegistry));
+	std::shared_ptr<MyOutgoingSIFileTransfer> jingleFT =  std::shared_ptr<MyOutgoingSIFileTransfer>(new MyOutgoingSIFileTransfer(idGenerator->generateID(), from, fullJID.get(), fileInfo.getName(), fileInfo.getSize(), fileInfo.getDescription(), readBytestream, iqRouter, bytestreamServer, bytestreamRegistry));
 	// else fail
 	
 	return jingleFT;

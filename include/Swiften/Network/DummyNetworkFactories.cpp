@@ -22,7 +22,7 @@ DummyNetworkFactories::DummyNetworkFactories(EventLoop* eventLoop) {
 	timerFactory = new DummyTimerFactory();
 	connectionFactory = new DummyConnectionFactory(eventLoop);
 #if HAVE_SWIFTEN_3
-	idnConverter = boost::shared_ptr<IDNConverter>(PlatformIDNConverter::create());
+	idnConverter = std::shared_ptr<IDNConverter>(PlatformIDNConverter::create());
 	domainNameResolver = new PlatformDomainNameResolver(idnConverter.get(), eventLoop);
 	cryptoProvider = PlatformCryptoProvider::create();
 	networkEnvironment = new PlatformNetworkEnvironment();

@@ -78,7 +78,7 @@ bool XMPPUserRegistration::doUserUnregistration(const UserInfo &row) {
 	return true;
 }
 
-void XMPPUserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &row){
+void XMPPUserRegistration::handleRegisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &row){
 	if (remoteRosterNotSupported || !payload) {
 		// Remote roster is not support, so send normal Subscribe presence to add transport.
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -103,7 +103,7 @@ void XMPPUserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<
 	// If the JID for registration notification is configured, send the notification message.
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
 	BOOST_FOREACH(const std::string &notify_jid, x) {
-		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody(std::string("registered: ") + row.jid);
 		msg->setTo(notify_jid);
 		msg->setFrom(m_component->getJID());
@@ -111,7 +111,7 @@ void XMPPUserRegistration::handleRegisterRemoteRosterResponse(boost::shared_ptr<
 	}
 }
 
-void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &userInfo) {
+void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &userInfo) {
 	if (remoteRosterNotSupported || !payload) {
 		// Remote roster is ont support, so get the buddies from database
 		// and send Unsubsribe and Unsubscribed presence to them.
@@ -196,7 +196,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(boost::shared_pt
 	// If the JID for registration notification is configured, send the notification message.
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
 	BOOST_FOREACH(const std::string &notify_jid, x) {
-		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody(std::string("unregistered: ") + userInfo.jid);
 		msg->setTo(notify_jid);
 		msg->setFrom(m_component->getJID());
@@ -236,8 +236,8 @@ Form::ref XMPPUserRegistration::generateRegistrationForm(const UserInfo &res, bo
 	return form;
 }
 
-boost::shared_ptr<InBandRegistrationPayload> XMPPUserRegistration::generateInBandRegistrationPayload(const Swift::JID& from) {
-	boost::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
+std::shared_ptr<InBandRegistrationPayload> XMPPUserRegistration::generateInBandRegistrationPayload(const Swift::JID& from) {
+	std::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
 
 	UserInfo res;
 	bool registered = m_storageBackend->getUser(from.toBare().toString(), res);
@@ -256,7 +256,7 @@ boost::shared_ptr<InBandRegistrationPayload> XMPPUserRegistration::generateInBan
 	return reg;
 }
 
-bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -272,13 +272,13 @@ bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift:
 		}
 	}
 
-	boost::shared_ptr<InBandRegistrationPayload> reg = generateInBandRegistrationPayload(from);
+	std::shared_ptr<InBandRegistrationPayload> reg = generateInBandRegistrationPayload(from);
 	sendResponse(from, id, reg);
 
 	return true;
 }
 
-bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);

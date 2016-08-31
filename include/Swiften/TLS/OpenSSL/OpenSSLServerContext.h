@@ -29,7 +29,7 @@ namespace Swift {
 			void handleDataFromApplication(const SafeByteArray&);
 
 			Certificate::ref getPeerCertificate() const;
-			boost::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
+			std::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
 
 			virtual ByteArray getFinishMessage() const;
 

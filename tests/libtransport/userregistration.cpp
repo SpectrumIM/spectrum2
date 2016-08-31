@@ -44,7 +44,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 		}
 
 		void getForm() {
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(new Swift::InBandRegistrationPayload()));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(new Swift::InBandRegistrationPayload()));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -67,7 +67,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			user.password = "password";
 			storage->setUser(user);
 
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(new Swift::InBandRegistrationPayload()));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(new Swift::InBandRegistrationPayload()));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -86,7 +86,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setUsername("legacyname");
 			reg->setPassword("password");
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -98,7 +98,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
 
-			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
 			received.clear();
 			injectIQ(iq);
 			loop->processEvents();
@@ -121,7 +121,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setUsername("legacyname");
 			reg->setPassword("password");
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -147,7 +147,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setRemove(true);
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -159,7 +159,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
 
-			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
 			received.clear();
 			injectIQ(iq);
 			loop->processEvents();
@@ -180,7 +180,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setUsername("legacyname");
 			reg->setPassword("password");
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -191,7 +191,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
 
-			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
 			received.clear();
 			injectIQ(iq);
 			loop->processEvents();
@@ -219,7 +219,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setRemove(true);
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -231,7 +231,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
 
-			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
 			received.clear();
 			injectIQ(iq);
 			loop->processEvents();
@@ -256,7 +256,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setUsername("legacyname");
 			reg->setPassword("another");
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -277,7 +277,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setUsername("");
 			reg->setPassword("password");
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -297,7 +297,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setRemove(true);
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -328,7 +328,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			cfg->updateBackendConfig("[registration]\nneedPassword=0\n");
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setUsername("legacyname");
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -339,7 +339,7 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 			CPPUNIT_ASSERT(dynamic_cast<Swift::IQ *>(getStanza(received[1])));
 			CPPUNIT_ASSERT_EQUAL(Swift::IQ::Result, dynamic_cast<Swift::IQ *>(getStanza(received[1]))->getType());
 
-			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), boost::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
+			iq = Swift::IQ::createResult(Swift::JID("localhost"), getStanza(received[0])->getTo(), getStanza(received[0])->getID(), std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()));
 			received.clear();
 			injectIQ(iq);
 			loop->processEvents();
@@ -362,26 +362,26 @@ class UserRegistrationTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 #if HAVE_SWIFTEN_3
 			Swift::Form::ref form(new Swift::Form(Swift::Form::FormType));
 
-			Swift::FormField::ref type = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "jabber:iq:register");	
+			Swift::FormField::ref type = std::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "jabber:iq:register");	
 			type->setName("FORM_TYPE");
 			form->addField(type);
 
-			Swift::FormField::ref username = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "legacyname");
+			Swift::FormField::ref username = std::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "legacyname");
 			username->setName("username");
 			form->addField(username);
 
-			Swift::FormField::ref password = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "password");
+			Swift::FormField::ref password = std::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "password");
 			password->setName("password");
 			form->addField(password);
 
-			Swift::FormField::ref language = boost::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "language");
+			Swift::FormField::ref language = std::make_shared<Swift::FormField>(Swift::FormField::UnknownType, "language");
 			language->setName("en");
 			form->addField(language);
 
 			Swift::InBandRegistrationPayload *reg = new Swift::InBandRegistrationPayload();
 			reg->setForm(form);
 
-			boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", boost::shared_ptr<Swift::Payload>(reg));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", std::shared_ptr<Swift::Payload>(reg));
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();

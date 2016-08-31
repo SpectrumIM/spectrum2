@@ -38,7 +38,7 @@ namespace Swift {
 		public:
 			ServerFromClientSession(
 					const std::string& id,
-					boost::shared_ptr<Connection> connection, 
+					std::shared_ptr<Connection> connection, 
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
 					UserRegistry* userRegistry,
@@ -63,9 +63,9 @@ namespace Swift {
 
 		private:
 #if HAVE_SWIFTEN_3
-			void handleElement(boost::shared_ptr<ToplevelElement>);
+			void handleElement(std::shared_ptr<ToplevelElement>);
 #else		
-			void handleElement(boost::shared_ptr<Element>);
+			void handleElement(std::shared_ptr<Element>);
 #endif
 			void handleStreamStart(const ProtocolHeader& header);
 			void handleSessionFinished(const boost::optional<SessionError>&);

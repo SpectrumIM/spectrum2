@@ -49,16 +49,16 @@ class Buddy;
 class FileTransferManager {
 	public:
 		typedef struct Transfer {
-			boost::shared_ptr<Swift::OutgoingFileTransfer> ft;
+			std::shared_ptr<Swift::OutgoingFileTransfer> ft;
 			Swift::JID from;
 			Swift::JID to;
-			boost::shared_ptr<Swift::ReadBytestream> readByteStream;
+			std::shared_ptr<Swift::ReadBytestream> readByteStream;
 		} Transfer;
 
 		FileTransferManager(Component *component, UserManager *userManager);
 		virtual ~FileTransferManager();
 		
-		FileTransferManager::Transfer sendFile(User *user, Buddy *buddy, boost::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info);
+		FileTransferManager::Transfer sendFile(User *user, Buddy *buddy, std::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info);
 
 	private:
 		Component *m_component;

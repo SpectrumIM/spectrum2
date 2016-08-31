@@ -24,7 +24,7 @@ namespace Swift {
 			
 			virtual void handleStartElement(const std::string& element, const std::string& xmlns, const AttributeMap& attributes) {
 				if (!root_) {
-					root_ = boost::make_shared<ParserElement>(element, xmlns, attributes);
+					root_ = std::make_shared<ParserElement>(element, xmlns, attributes);
 					elementStack_.push_back(root_);
 				}
 				else {

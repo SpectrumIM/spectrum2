@@ -8,6 +8,7 @@
 
 #include <string>
 #include <boost/bind.hpp>
+#include <boost/signal.hpp>
 
 #include "Swiften/Base/String.h"
 #include "Swiften/Base/foreach.h"
@@ -88,14 +89,14 @@ void Server::stop() {
 
 	stopping = true;
 
-// 	foreach(boost::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
+// 	foreach(std::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
 // 		session->finishSession();
 // 	}
 	serverFromClientSessions.clear();
 
 	if (serverFromClientConnectionServer) {
 		serverFromClientConnectionServer->stop();
-		foreach(boost::bsignals::connection& connection, serverFromClientConnectionServerSignalConnections) {
+		foreach(boost::signals2::connection& connection, serverFromClientConnectionServerSignalConnections) {
 			connection.disconnect();
 		}
 		serverFromClientConnectionServerSignalConnections.clear();
@@ -106,9 +107,9 @@ void Server::stop() {
 // 	onStopped(e);
 }
 
-void Server::handleNewClientConnection(boost::shared_ptr<Connection> connection) {
+void Server::handleNewClientConnection(std::shared_ptr<Connection> connection) {
 
-	boost::shared_ptr<ServerFromClientSession> serverFromClientSession = boost::shared_ptr<ServerFromClientSession>(
+	std::shared_ptr<ServerFromClientSession> serverFromClientSession = std::shared_ptr<ServerFromClientSession>(
 			new ServerFromClientSession(idGenerator.generateID(), connection, 
 					getPayloadParserFactories(), getPayloadSerializers(), userRegistry_, parserFactory_));
 	//serverFromClientSession->setAllowSASLEXTERNAL();
@@ -138,11 +139,11 @@ void Server::handleDataWritten(const SafeByteArray& data) {
 	onDataWritten(data);
 }
 
-void Server::handleSessionStarted(boost::shared_ptr<ServerFromClientSession> session) {
+void Server::handleSessionStarted(std::shared_ptr<ServerFromClientSession> session) {
 	dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->addSession(session);
 }
 
-void Server::handleSessionFinished(boost::shared_ptr<ServerFromClientSession> session) {
+void Server::handleSessionFinished(std::shared_ptr<ServerFromClientSession> session) {
 // 	if (!session->getRemoteJID().isValid()) {
 // 		Swift::Presence::ref presence = Swift::Presence::create();
 // 		presence->setFrom(session->getBareJID());

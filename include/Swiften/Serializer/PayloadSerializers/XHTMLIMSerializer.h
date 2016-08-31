@@ -14,6 +14,6 @@ namespace Swift {
 		public:
 			XHTMLIMSerializer();
 
-			virtual std::string serializePayload(boost::shared_ptr<XHTMLIMPayload> xhtml)  const;
+			virtual std::string serializePayload(std::shared_ptr<XHTMLIMPayload> xhtml)  const;
 	};
 }

@@ -17,7 +17,7 @@
 namespace Swift {
 	class InvisiblePayload : public Payload {
 		public:
-			typedef boost::shared_ptr<InvisiblePayload> ref;
+			typedef std::shared_ptr<InvisiblePayload> ref;
 
 		public:
 			InvisiblePayload();

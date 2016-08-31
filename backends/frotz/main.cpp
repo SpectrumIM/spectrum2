@@ -148,7 +148,7 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::Connection> m_conn;
 
 		FrotzNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
@@ -164,7 +164,7 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			m_conn->write(Swift::createSafeByteArray(string));
 		}
 
-		void _handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
+		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
 			std::string d(data->begin(), data->end());
 			handleDataRead(d);
 		}

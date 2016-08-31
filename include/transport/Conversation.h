@@ -63,9 +63,9 @@ class Conversation {
 
 		/// \param message Message received from legacy network.
 		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
-		void handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
+		void handleMessage(std::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
 
-		void handleRawMessage(boost::shared_ptr<Swift::Message> &message);
+		void handleRawMessage(std::shared_ptr<Swift::Message> &message);
 		void handleRawPresence(Swift::Presence::ref presence);
 
 		/// Handles participant change in MUC.
@@ -107,7 +107,7 @@ class Conversation {
 		/// Sends message to Legacy network.
 
 		/// \param message Message.
-		virtual void sendMessage(boost::shared_ptr<Swift::Message> &message) = 0;
+		virtual void sendMessage(std::shared_ptr<Swift::Message> &message) = 0;
 
 		/// Returns ConversationManager associated with this Conversation.
 
@@ -147,7 +147,7 @@ class Conversation {
 
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "", const std::string &iconhash = "");
-		void cacheMessage(boost::shared_ptr<Swift::Message> &message);
+		void cacheMessage(std::shared_ptr<Swift::Message> &message);
 
 	private:
 		ConversationManager *m_conversationManager;
@@ -167,8 +167,8 @@ class Conversation {
 		// connected to single room, we store all those things 10 times.
 		// It would be also great to store last 100 messages per room
 		// every time, so we can get history messages for IRC for example.
-		boost::shared_ptr<Swift::Message> m_subject;
-		std::list<boost::shared_ptr<Swift::Message> > m_cachedMessages;
+		std::shared_ptr<Swift::Message> m_subject;
+		std::list<std::shared_ptr<Swift::Message> > m_cachedMessages;
 
 		typedef struct {
 			Swift::Presence::ref presence;

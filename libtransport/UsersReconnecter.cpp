@@ -30,7 +30,6 @@
 #include "Swiften/Network/NetworkFactories.h"
 
 using namespace Swift;
-using namespace boost;
 
 namespace Transport {
 
@@ -44,11 +43,11 @@ UsersReconnecter::UsersReconnecter(Component *component, StorageBackend *storage
 	m_nextUserTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
 	m_nextUserTimer->onTick.connect(boost::bind(&UsersReconnecter::reconnectNextUser, this));
 
-	m_component->onConnected.connect(bind(&UsersReconnecter::handleConnected, this));
+	m_component->onConnected.connect(boost::bind(&UsersReconnecter::handleConnected, this));
 }
 
 UsersReconnecter::~UsersReconnecter() {
-	m_component->onConnected.disconnect(bind(&UsersReconnecter::handleConnected, this));
+	m_component->onConnected.disconnect(boost::bind(&UsersReconnecter::handleConnected, this));
 	m_nextUserTimer->stop();
 	m_nextUserTimer->onTick.disconnect(boost::bind(&UsersReconnecter::reconnectNextUser, this));
 }

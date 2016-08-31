@@ -38,16 +38,16 @@ class SecureTransportServerContext : public TLSServerContext {
 		static std::string stateToString(State state);
 		void setState(State newState);
 
-		static boost::shared_ptr<TLSError> nativeToTLSError(OSStatus error);
-		boost::shared_ptr<CertificateVerificationError> CSSMErrorToVerificationError(OSStatus resultCode);
+		static std::shared_ptr<TLSError> nativeToTLSError(OSStatus error);
+		std::shared_ptr<CertificateVerificationError> CSSMErrorToVerificationError(OSStatus resultCode);
 
 		void processHandshake();
 		void verifyServerCertificate();
 
-		void fatalError(boost::shared_ptr<TLSError> error, boost::shared_ptr<CertificateVerificationError> certificateError);
+		void fatalError(std::shared_ptr<TLSError> error, std::shared_ptr<CertificateVerificationError> certificateError);
 
 	private:
-		boost::shared_ptr<SSLContext> sslContext_;
+		std::shared_ptr<SSLContext> sslContext_;
 		SafeByteArray readingBuffer_;
 		State state_;
 		CertificateVerificationError::ref verificationError_;

@@ -31,7 +31,6 @@
 #include <boost/foreach.hpp>
 
 using namespace Swift;
-using namespace boost;
 
 namespace Transport {
 
@@ -48,7 +47,7 @@ VCardResponder::VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories 
 VCardResponder::~VCardResponder() {
 }
 
-void VCardResponder::sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard) {
+void VCardResponder::sendVCard(unsigned int id, std::shared_ptr<Swift::VCard> vcard) {
 	if (m_queries.find(id) == m_queries.end()) {
 		LOG4CXX_WARN(logger, "Unexpected VCard from legacy network with id " << id);
 		return;
@@ -75,12 +74,12 @@ void VCardResponder::collectTimeouted() {
 	}
 
 	BOOST_FOREACH(unsigned int id, candidates) {
-		sendVCard(id, boost::shared_ptr<Swift::VCard>(new Swift::VCard()));
+		sendVCard(id, std::shared_ptr<Swift::VCard>(new Swift::VCard()));
 	}
 	m_collectTimer->start();
 }
 
-bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
+bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::VCard> payload) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
@@ -110,7 +109,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	return true;
 }
 
-bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload) {
+bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::VCard> payload) {
 	if (!to.getNode().empty() && from.toBare().toString() != to.toBare().toString()) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": Tried to set VCard of somebody else");
 		return false;
@@ -125,7 +124,7 @@ bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& 
 	LOG4CXX_INFO(logger, from.toBare().toString() << ": Setting VCard");
 	onVCardUpdated(user, payload);
 
-	sendResponse(from, id, boost::shared_ptr<VCard>(new VCard()));
+	sendResponse(from, id, std::shared_ptr<VCard>(new VCard()));
 	return true;
 }
 

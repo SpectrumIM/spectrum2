@@ -38,8 +38,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void roomList() {
 		itemsResponder->addRoom("#room@localhost", "#room");
 
-		boost::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		injectIQ(iq);
 		loop->processEvents();
@@ -58,8 +58,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		user->addRoomToRoomList("#room2@localhost", "#room2");
 		itemsResponder->addRoom("#room@localhost", "#room");
 
-		boost::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		injectIQ(iq);
 		loop->processEvents();
@@ -80,8 +80,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		user->addRoomToRoomList("#room2@localhost", "#room2");
 		itemsResponder->addRoom("#room@localhost", "#room");
 
-		boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		iq->setTo("#room2@localhost");
 		injectIQ(iq);
@@ -99,8 +99,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void roomInfo() {
 		itemsResponder->addRoom("#room@localhost", "#room");
 
-		boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		iq->setTo("#room@localhost");
 		injectIQ(iq);
@@ -118,8 +118,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void roomListEscaping() {
 		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID().toString(), "#room");
 
-		boost::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		injectIQ(iq);
 		loop->processEvents();
@@ -135,8 +135,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void roomInfoEscaping() {
 		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID().toString(), "#room");
 
-		boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		iq->setTo("19\\3aroom\\40localhost@localhost");
 		injectIQ(iq);
@@ -155,8 +155,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		itemsResponder->addRoom("#room@localhost", "#room");
 		itemsResponder->clearRooms();
 
-		boost::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		injectIQ(iq);
 		loop->processEvents();
@@ -169,8 +169,8 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	}
 
 	void receipts() {
-		boost::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+		std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 		iq->setFrom("user@localhost");
 		iq->setTo("buddy@localhost");
 		injectIQ(iq);

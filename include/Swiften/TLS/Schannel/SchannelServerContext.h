@@ -26,7 +26,7 @@ namespace Swift
 	class SchannelServerContext : public TLSServerContext, boost::noncopyable 
 	{
 	public:
-		typedef boost::shared_ptr<SchannelServerContext> sp_t;
+		typedef std::shared_ptr<SchannelServerContext> sp_t;
 
 	public:
 		SchannelServerContext();

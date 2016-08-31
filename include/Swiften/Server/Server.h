@@ -53,7 +53,7 @@ namespace Swift {
 				return iqRouter_;
 			}
 
-			boost::shared_ptr<ConnectionServer> getConnectionServer() const {
+			std::shared_ptr<ConnectionServer> getConnectionServer() const {
 				return serverFromClientConnectionServer;
 			}
 
@@ -63,10 +63,10 @@ namespace Swift {
 			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert);
 
 		private:
-			void handleNewClientConnection(boost::shared_ptr<Connection> c);
-			void handleSessionStarted(boost::shared_ptr<ServerFromClientSession>);
-			void handleSessionFinished(boost::shared_ptr<ServerFromClientSession>);
-			void handleElementReceived(boost::shared_ptr<Element> element, boost::shared_ptr<ServerFromClientSession> session);
+			void handleNewClientConnection(std::shared_ptr<Connection> c);
+			void handleSessionStarted(std::shared_ptr<ServerFromClientSession>);
+			void handleSessionFinished(std::shared_ptr<ServerFromClientSession>);
+			void handleElementReceived(std::shared_ptr<Element> element, std::shared_ptr<ServerFromClientSession> session);
 			void handleDataRead(const SafeByteArray&);
 			void handleDataWritten(const SafeByteArray&);
 
@@ -77,9 +77,9 @@ namespace Swift {
 			EventLoop* eventLoop;
 			NetworkFactories* networkFactories_;
 			bool stopping;
-			boost::shared_ptr<ConnectionServer> serverFromClientConnectionServer;
-			std::vector<boost::bsignals::connection> serverFromClientConnectionServerSignalConnections;
-			std::list<boost::shared_ptr<ServerFromClientSession> > serverFromClientSessions;
+			std::shared_ptr<ConnectionServer> serverFromClientConnectionServer;
+			std::vector<boost::signals2::connection> serverFromClientConnectionServerSignalConnections;
+			std::list<std::shared_ptr<ServerFromClientSession> > serverFromClientSessions;
 			JID selfJID;
 			StanzaChannel *stanzaChannel_;
 			IQRouter *iqRouter_;

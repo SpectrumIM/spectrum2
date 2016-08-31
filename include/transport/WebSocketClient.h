@@ -66,7 +66,7 @@ class WebSocketClient {
 
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);
-		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
+		void handleDataRead(std::shared_ptr<Swift::SafeByteArray> data);
 		void handleConnected(bool error);
 		void handleDisconnected(const boost::optional<Swift::Connection::Error> &error);
 
@@ -74,8 +74,8 @@ class WebSocketClient {
 
 	private:
 		Component *m_component;
-		boost::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
+		std::shared_ptr<Swift::Connection> m_conn;
 		Swift::TLSConnectionFactory *m_tlsConnectionFactory;
 		Swift::PlatformTLSFactories *m_tlsFactory;
 		std::string m_host;

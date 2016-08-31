@@ -32,7 +32,7 @@ namespace {
 ServerStanzaRouter::ServerStanzaRouter() {
 }
 
-bool ServerStanzaRouter::routeStanza(boost::shared_ptr<Stanza> stanza) {
+bool ServerStanzaRouter::routeStanza(std::shared_ptr<Stanza> stanza) {
 	JID to = stanza->getTo();
 	assert(to.isValid());
 

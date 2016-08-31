@@ -87,7 +87,7 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	message_timer->start();
 
 #if HAVE_SWIFTEN_3
-		cryptoProvider = boost::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
+		cryptoProvider = std::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
 #endif
 	
 	
@@ -109,7 +109,7 @@ void TwitterPlugin::sendData(const std::string &string)
 }
 
 // Receive date from the NetworkPlugin server and invoke the appropirate payload handler (implement in the NetworkPlugin class)
-void TwitterPlugin::_handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) 
+void TwitterPlugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) 
 {
 	if (m_firstPing) {
 		m_firstPing = false;

@@ -17,7 +17,7 @@ namespace Swift {
 AttentionSerializer::AttentionSerializer() : GenericPayloadSerializer<AttentionPayload>() {
 }
 
-std::string AttentionSerializer::serializePayload(boost::shared_ptr<AttentionPayload> attention)  const {
+std::string AttentionSerializer::serializePayload(std::shared_ptr<AttentionPayload> attention)  const {
 	XMLElement attentionElement("attention", "urn:xmpp:attention:0");
 
 	return attentionElement.serialize();

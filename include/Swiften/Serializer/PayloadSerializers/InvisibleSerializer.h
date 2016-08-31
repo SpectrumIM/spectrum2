@@ -16,6 +16,6 @@ namespace Swift {
 		public:
 			InvisibleSerializer();
 
-			virtual std::string serializePayload(boost::shared_ptr<InvisiblePayload>)  const;
+			virtual std::string serializePayload(std::shared_ptr<InvisiblePayload>)  const;
 	};
 }

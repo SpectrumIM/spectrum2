@@ -34,7 +34,7 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			tearMeDown();
 		}
 
-	void handleUserDiscoInfoReceived(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
+	void handleUserDiscoInfoReceived(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info) {
 		onCapabilitiesReceived = true;
 	}
 

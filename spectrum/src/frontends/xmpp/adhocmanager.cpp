@@ -128,11 +128,11 @@ void AdHocManager::removeOldSessions() {
 	}
 }
 
-bool AdHocManager::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::Command> payload) {
+bool AdHocManager::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::Command> payload) {
 	return false;
 }
 
-bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::Command> payload) {
+bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::Command> payload) {
 	AdHocCommand *command = NULL;
 	// Try to find AdHocCommand according to 'from' and session_id
 	if (!payload->getSessionID().empty() && m_sessions.find(from) != m_sessions.end()) {
@@ -163,7 +163,7 @@ bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to
 		return true;
 	}
 
-	boost::shared_ptr<Swift::Command> response = command->handleRequest(payload);
+	std::shared_ptr<Swift::Command> response = command->handleRequest(payload);
 	if (!response) {
 		LOG4CXX_ERROR(logger, from.toString() << ": handleRequest for node " << payload->getNode() << " returned NULL pointer");
 		sendError(from, id, Swift::ErrorPayload::BadRequest, Swift::ErrorPayload::Modify);

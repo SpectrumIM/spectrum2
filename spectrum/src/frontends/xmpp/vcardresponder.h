@@ -38,10 +38,10 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 		VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager);
 		~VCardResponder();
 
-		void sendVCard(unsigned int id, boost::shared_ptr<Swift::VCard> vcard);
+		void sendVCard(unsigned int id, std::shared_ptr<Swift::VCard> vcard);
 
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
-		boost::signal<void (User *, boost::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
+		boost::signal<void (User *, std::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 
 		void collectTimeouted();
 
@@ -53,8 +53,8 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 			time_t received;
 		};
 
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::VCard> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::VCard> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::VCard> payload);
 		UserManager *m_userManager;
 		std::map<unsigned int, VCardData> m_queries;
 		unsigned int m_id;

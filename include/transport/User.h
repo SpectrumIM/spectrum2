@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <boost/signal.hpp>
 #include <time.h>
 #include "transport/StorageBackend.h"
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
@@ -89,7 +90,7 @@ class User {
 
 		void handleSubscription(Swift::Presence::ref presence);
 
-		void handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info);
+		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
 
 		time_t &getLastActivity() {
 			return m_lastActivity;
@@ -169,10 +170,10 @@ class User {
 		bool m_readyForConnect;
 		bool m_ignoreDisconnect;
 		Swift::Timer::ref m_reconnectTimer;
-		boost::shared_ptr<Swift::Connection> connection;
+		std::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
-		std::vector<boost::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
+		std::vector<std::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
 		int m_reconnectCounter;
 		std::list<Swift::Presence::ref> m_joinedRooms;

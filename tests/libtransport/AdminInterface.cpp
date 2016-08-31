@@ -48,7 +48,7 @@ class AdminInterfaceTest : public CPPUNIT_NS :: TestFixture, public BasicSlackTe
 		}
 
 	std::string sendAdminMessage(const std::string &cmd) {
-		Swift::Message::ref msg = boost::shared_ptr<Swift::Message>(new Swift::Message());
+		Swift::Message::ref msg = std::shared_ptr<Swift::Message>(new Swift::Message());
 		msg->setFrom(Swift::JID("me@localhost"));
 		msg->setTo(Swift::JID("localhost"));
 		msg->setBody(cmd);

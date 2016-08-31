@@ -31,7 +31,6 @@
 #include "transport/Config.h"
 
 using namespace Swift;
-using namespace boost;
 
 namespace Transport {
 
@@ -44,14 +43,14 @@ GatewayResponder::GatewayResponder(Swift::IQRouter *router, UserManager *userMan
 GatewayResponder::~GatewayResponder() {
 }
 
-bool GatewayResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::GatewayPayload> payload) {
+bool GatewayResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::GatewayPayload> payload) {
 	std::string prompt = CONFIG_STRING(m_userManager->getComponent()->getConfig(), "gateway_responder.prompt");
 	std::string label = CONFIG_STRING(m_userManager->getComponent()->getConfig(), "gateway_responder.label");
-	sendResponse(from, id, boost::shared_ptr<GatewayPayload>(new GatewayPayload(Swift::JID(), label, prompt)));
+	sendResponse(from, id, std::shared_ptr<GatewayPayload>(new GatewayPayload(Swift::JID(), label, prompt)));
 	return true;
 }
 
-bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::GatewayPayload> payload) {
+bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::GatewayPayload> payload) {
 	std::string prompt = payload->getPrompt();
 
 	std::string escaped = Swift::JID::getEscapedNode(prompt);
@@ -70,7 +69,7 @@ bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 
 	std::string jid = escaped + "@" + m_userManager->getComponent()->getJID().toBare().toString();
 
-	sendResponse(from, id, boost::shared_ptr<GatewayPayload>(new GatewayPayload(jid)));
+	sendResponse(from, id, std::shared_ptr<GatewayPayload>(new GatewayPayload(jid)));
 	return true;
 }
 

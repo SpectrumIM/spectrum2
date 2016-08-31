@@ -60,12 +60,12 @@ class XMPPUserRegistration : public UserRegistration, public Swift::Responder<Sw
 		virtual bool doUserUnregistration(const UserInfo &userInfo);
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload);
 
-		void handleRegisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
-		void handleUnregisterRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
-		boost::shared_ptr<Swift::InBandRegistrationPayload> generateInBandRegistrationPayload(const Swift::JID& from);
+		void handleRegisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
+		void handleUnregisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
+		std::shared_ptr<Swift::InBandRegistrationPayload> generateInBandRegistrationPayload(const Swift::JID& from);
 		Swift::Form::ref generateRegistrationForm(const UserInfo &res, bool registered);
 		
 		Component *m_component;

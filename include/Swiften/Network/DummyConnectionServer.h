@@ -20,7 +20,7 @@
 namespace Swift {
 	class DummyConnectionServer : public ConnectionServer, public EventOwner, public boost::enable_shared_from_this<DummyConnectionServer> {
 		public:
-			typedef boost::shared_ptr<DummyConnectionServer> ref;
+			typedef std::shared_ptr<DummyConnectionServer> ref;
 
 			enum Error {
 				Conflict,
@@ -31,7 +31,7 @@ namespace Swift {
 				return ref(new DummyConnectionServer(eventLoop));
 			}
 
-			void acceptConnection(boost::shared_ptr<Swift::Connection> connection);
+			void acceptConnection(std::shared_ptr<Swift::Connection> connection);
 
 #if (SWIFTEN_VERSION >= 0x030000)
 			virtual boost::optional<ConnectionServer::Error> tryStart() {

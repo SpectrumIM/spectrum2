@@ -18,9 +18,9 @@ namespace Swift {
 		public:
 			DummyConnectionServerFactory(EventLoop* eventLoop);
 
-			virtual boost::shared_ptr<ConnectionServer> createConnectionServer(int port);
+			virtual std::shared_ptr<ConnectionServer> createConnectionServer(int port);
 
-			virtual boost::shared_ptr<ConnectionServer> createConnectionServer(const Swift::HostAddress &hostAddress, int port);
+			virtual std::shared_ptr<ConnectionServer> createConnectionServer(const Swift::HostAddress &hostAddress, int port);
 
 		private:
 			EventLoop* eventLoop;

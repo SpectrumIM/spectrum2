@@ -142,7 +142,7 @@ int UserManager::getUserCount() {
 	return m_users.size();
 }
 
-void UserManager::handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info) {
+void UserManager::handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info) {
 	User *user = getUser(jid.toBare().toString());
 	if (!user) {
 		return;
@@ -278,7 +278,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 		if (CONFIG_BOOL(m_component->getConfig(), "service.vip_only") && res.vip == false) {
 			if (!CONFIG_STRING(m_component->getConfig(), "service.vip_message").empty()) {
-				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+				std::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody(CONFIG_STRING(m_component->getConfig(), "service.vip_message"));
 				msg->setTo(presence->getFrom());
 				msg->setFrom(m_component->getJID());
@@ -370,7 +370,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	// Do not count chatstate notification...
-	boost::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
+	std::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
 	if (!statePayload) {
 		messageToBackendSent();
 	}
@@ -555,7 +555,7 @@ void UserManager::connectUser(const Swift::JID &user) {
 			}
 			else {
 				// Send message to currently logged in session
-				boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+				std::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody("You have signed on from another location.");
 				msg->setTo(user);
 				msg->setFrom(m_component->getJID());
@@ -566,9 +566,9 @@ void UserManager::connectUser(const Swift::JID &user) {
 				m_userRegistry->onPasswordValid(user);
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
 // #if HAVE_SWIFTEN_3
-// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, boost::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
+// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, std::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
 // #else				
-// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, boost::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
+// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, std::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
 // #endif
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}

@@ -23,6 +23,7 @@
 #include <string>
 #include <algorithm>
 #include <map>
+#include <boost/signal.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
 // #include "rosterstorage.h"
