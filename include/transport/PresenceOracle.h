@@ -22,6 +22,8 @@
 
 #include <map>
 
+#include <boost/signals.hpp>
+
 #include <string>
 #include <Swiften/Elements/Presence.h>
 #include <Swiften/Client/StanzaChannel.h>
