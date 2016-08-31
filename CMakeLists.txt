@@ -485,3 +485,4 @@ if(NOT SQLITE3_FOUND AND NOT MYSQL_FOUND AND NOT PQXX_FOUND)
 	endif()
 endif()
 
+target_compile_features(transport-plugin PUBLIC cxx_nullptr)
