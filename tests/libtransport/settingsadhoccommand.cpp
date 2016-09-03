@@ -131,7 +131,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 #if (SWIFTEN_VERSION >= 0x030000)
 			f->setBoolValue(false);
 #else
-			std::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(false);
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(false);
 #endif
 
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
@@ -195,7 +195,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 #if (SWIFTEN_VERSION >= 0x030000)
 			CPPUNIT_ASSERT_EQUAL(false, f->getBoolValue());
 #else
-			CPPUNIT_ASSERT_EQUAL(false, std::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
+			CPPUNIT_ASSERT_EQUAL(false, SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
 #endif
 		}
 
@@ -347,7 +347,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 #if (SWIFTEN_VERSION >= 0x030000)
 			f->setBoolValue(true);
 #else
-			std::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(true);
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(true);
 #endif
 
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
@@ -393,7 +393,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 #if (SWIFTEN_VERSION >= 0x030000)
 			CPPUNIT_ASSERT_EQUAL(true, f->getBoolValue());
 #else
-			CPPUNIT_ASSERT_EQUAL(true, std::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
+			CPPUNIT_ASSERT_EQUAL(true, SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
 #endif
 		}
 
