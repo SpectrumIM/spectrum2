@@ -47,9 +47,11 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
+#include "Swiften/SwiftenCompat.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#include "Swiften/SwiftenCompat.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 using namespace Transport;
@@ -60,11 +62,11 @@ class TestingConversation : public Conversation {
 		}
 
 		// Called when there's new message to legacy network from XMPP network
-		void sendMessage(std::shared_ptr<Swift::Message> &message) {
+		void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message) {
 			onMessageToSend(this, message);
 		}
 
-		boost::signal<void (TestingConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
+		boost::signal<void (TestingConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class TestingFactory : public Factory {
@@ -79,7 +81,7 @@ class TestingFactory : public Factory {
 			return nc;
 		}
 
-		void handleMessageToSend(TestingConversation *_conv, std::shared_ptr<Swift::Message> &_msg) {
+		void handleMessageToSend(TestingConversation *_conv, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &_msg) {
 			onMessageToSend(_conv, _msg);
 		}
 
@@ -96,7 +98,7 @@ class TestingFactory : public Factory {
 			return buddy;
 		}
 
-		boost::signal<void (TestingConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
+		boost::signal<void (TestingConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class TestingStorageBackend : public StorageBackend {
@@ -228,15 +230,15 @@ class BasicTest : public Swift::XMPPParserClient {
 
 	void handleStreamStart(const Swift::ProtocolHeader&);
 #if HAVE_SWIFTEN_3
-	void handleElement(std::shared_ptr<Swift::ToplevelElement> element);
+	void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element);
 #else
-	void handleElement(std::shared_ptr<Swift::Element> element);
+	void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 #endif
 	void handleStreamEnd();
 
-	void injectPresence(std::shared_ptr<Swift::Presence> &response);
-	void injectIQ(std::shared_ptr<Swift::IQ> iq);
-	void injectMessage(std::shared_ptr<Swift::Message> msg);
+	void injectPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> &response);
+	void injectIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq);
+	void injectMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg);
 
 	void dumpReceived();
 
@@ -255,7 +257,7 @@ class BasicTest : public Swift::XMPPParserClient {
 	void disconnectUser();
 	void add2Buddies();
 
-	Swift::Stanza *getStanza(std::shared_ptr<Swift::Element> element);
+	Swift::Stanza *getStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 
 	protected:
 		bool streamEnded;
@@ -273,8 +275,8 @@ class BasicTest : public Swift::XMPPParserClient {
 		Swift::DummyEventLoop *loop;
 		TestingFactory *factory;
 		Component *component;
-		std::vector<std::shared_ptr<Swift::Element> > received;
-		std::vector<std::shared_ptr<Swift::Element> > received2;
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> > received;
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> > received2;
 		std::string receivedData;
 		std::string receivedData2;
 		StorageBackend *storage;

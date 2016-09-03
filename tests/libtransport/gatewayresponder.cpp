@@ -40,10 +40,10 @@ class GatewayResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 		}
 
 		void escape() {
-			std::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
 			iq->setTo("icq.localhost");
 			iq->setFrom("user@localhost");
-			iq->addPayload(std::shared_ptr<Swift::GatewayPayload>(new Swift::GatewayPayload(Swift::JID(), "", "a@b")));
+			iq->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GatewayPayload>(new Swift::GatewayPayload(Swift::JID(), "", "a@b")));
 			iq->setID("123");
 			injectIQ(iq);
 
@@ -56,10 +56,10 @@ class GatewayResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest 
 		}
 
 		void noEscapeEscaped() {
-			std::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
 			iq->setTo("icq.localhost");
 			iq->setFrom("user@localhost");
-			iq->addPayload(std::shared_ptr<Swift::GatewayPayload>(new Swift::GatewayPayload(Swift::JID(), "", "a\\40b")));
+			iq->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GatewayPayload>(new Swift::GatewayPayload(Swift::JID(), "", "a\\40b")));
 			iq->setID("123");
 			injectIQ(iq);
 			CPPUNIT_ASSERT_EQUAL(1, (int) received.size());

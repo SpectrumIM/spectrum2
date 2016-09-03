@@ -62,7 +62,7 @@ class RosterResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		p->addItem(item);
 		Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(p, "user@localhost", static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter());
 
-		std::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq(new Swift::IQ(Swift::IQ::Set));
 		iq->setTo("icq.localhost");
 		iq->setFrom("user@localhost");
 		iq->addPayload(p);

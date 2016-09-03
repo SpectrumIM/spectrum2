@@ -74,7 +74,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			tearMeDown();
 		}
 
-	void handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> v) {
+	void handleVCardUpdated(User *user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> v) {
 		photo = Swift::byteArrayToString(v->getPhoto());
 	}
 
@@ -138,7 +138,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -186,7 +186,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -213,7 +213,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -236,7 +236,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -255,7 +255,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -329,7 +329,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -354,7 +354,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -374,7 +374,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -486,7 +486,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -542,7 +542,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::Presence::ref response = Swift::Presence::create();
 		response->setTo("localhost");
 		response->setFrom("user@localhost/resource");
-		response->addPayload(std::shared_ptr<Swift::Payload>(new Swift::VCardUpdate("hash")));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::VCardUpdate("hash")));
 
 		injectPresence(response);
 		loop->processEvents();
@@ -551,7 +551,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::VCard::ref payload1 = getStanza(received[1])->getPayload<Swift::VCard>();
 		CPPUNIT_ASSERT(payload1);
 
-		std::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
 		vcard->setPhoto(Swift::createByteArray("photo"));
 		injectIQ(Swift::IQ::createResult(getStanza(received[1])->getFrom(), getStanza(received[1])->getTo(), getStanza(received[1])->getID(), vcard));
 		loop->processEvents();

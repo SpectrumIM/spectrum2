@@ -166,9 +166,9 @@ void BasicTest::dumpReceived() {
 	std::cout << receivedData2 << "\n";
 }
 #if HAVE_SWIFTEN_3
-void BasicTest::handleElement(std::shared_ptr<Swift::ToplevelElement> element) {
+void BasicTest::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element) {
 #else
-void BasicTest::handleElement(std::shared_ptr<Swift::Element> element) {
+void BasicTest::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element) {
 #endif
 	if (stream1_active) {
 		received.push_back(element);
@@ -182,19 +182,19 @@ void BasicTest::handleStreamEnd() {
 	streamEnded = true;
 }
 
-void BasicTest::injectPresence(std::shared_ptr<Swift::Presence> &response) {
+void BasicTest::injectPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> &response) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 }
 
-void BasicTest::injectIQ(std::shared_ptr<Swift::IQ> iq) {
+void BasicTest::injectIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onIQReceived(iq);
 }
 
-void BasicTest::injectMessage(std::shared_ptr<Swift::Message> msg) {
+void BasicTest::injectMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onMessageReceived(msg);
 }
 
-Swift::Stanza *BasicTest::getStanza(std::shared_ptr<Swift::Element> element) {
+Swift::Stanza *BasicTest::getStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element) {
 	Swift::Stanza *stanza = dynamic_cast<Swift::Stanza *>(element.get());
 	CPPUNIT_ASSERT(stanza);
 	return stanza;
