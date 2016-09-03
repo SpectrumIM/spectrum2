@@ -181,7 +181,7 @@ void OpenSSLServerContext::sendPendingDataToApplication() {
 }
 
 bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref) {
-	std::shared_ptr<PKCS12Certificate> certificate = std::dynamic_pointer_cast<PKCS12Certificate>(certref);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PKCS12Certificate> certificate = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<PKCS12Certificate>(certref);
 	if (certificate->isNull()) {
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate can't be loaded.");
 		return false;
@@ -223,7 +223,7 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 }
 
 Certificate::ref OpenSSLServerContext::getPeerCertificate() const {
-	std::shared_ptr<X509> x509Cert(SSL_get_peer_certificate(handle_), X509_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<X509> x509Cert(SSL_get_peer_certificate(handle_), X509_free);
 	if (x509Cert) {
 		return Certificate::ref(new OpenSSLCertificate(x509Cert));
 	}
@@ -232,13 +232,13 @@ Certificate::ref OpenSSLServerContext::getPeerCertificate() const {
 	}
 }
 
-std::shared_ptr<CertificateVerificationError> OpenSSLServerContext::getPeerCertificateVerificationError() const {
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> OpenSSLServerContext::getPeerCertificateVerificationError() const {
 	int verifyResult = SSL_get_verify_result(handle_);
 	if (verifyResult != X509_V_OK) {
-		return std::shared_ptr<CertificateVerificationError>(new CertificateVerificationError(getVerificationErrorTypeForResult(verifyResult)));
+		return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError>(new CertificateVerificationError(getVerificationErrorTypeForResult(verifyResult)));
 	}
 	else {
-		return std::shared_ptr<CertificateVerificationError>();
+		return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError>();
 	}
 }
 

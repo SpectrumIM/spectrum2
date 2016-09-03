@@ -19,6 +19,8 @@
 #include <Swiften/Version.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class ProtocolHeader;
 	class Element;
@@ -38,7 +40,7 @@ namespace Swift {
 		public:
 			ServerFromClientSession(
 					const std::string& id,
-					std::shared_ptr<Connection> connection, 
+					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection,
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
 					UserRegistry* userRegistry,
@@ -63,9 +65,9 @@ namespace Swift {
 
 		private:
 #if HAVE_SWIFTEN_3
-			void handleElement(std::shared_ptr<ToplevelElement>);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement>);
 #else		
-			void handleElement(std::shared_ptr<Element>);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element>);
 #endif
 			void handleStreamStart(const ProtocolHeader& header);
 			void handleSessionFinished(const boost::optional<SessionError>&);

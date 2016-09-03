@@ -25,6 +25,7 @@
 #include "Swiften/Elements/VCard.h"
 #include "Swiften/Network/NetworkFactories.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 #include <boost/signal.hpp>
 
 namespace Transport {
@@ -38,10 +39,10 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 		VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager);
 		~VCardResponder();
 
-		void sendVCard(unsigned int id, std::shared_ptr<Swift::VCard> vcard);
+		void sendVCard(unsigned int id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard);
 
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
-		boost::signal<void (User *, std::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
+		boost::signal<void (User *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 
 		void collectTimeouted();
 
@@ -53,8 +54,8 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 			time_t received;
 		};
 
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::VCard> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::VCard> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> payload);
 		UserManager *m_userManager;
 		std::map<unsigned int, VCardData> m_queries;
 		unsigned int m_id;

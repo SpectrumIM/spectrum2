@@ -9,11 +9,13 @@
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
 #include <Swiften/Elements/XHTMLIMPayload.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class XHTMLIMSerializer : public GenericPayloadSerializer<XHTMLIMPayload> {
 		public:
 			XHTMLIMSerializer();
 
-			virtual std::string serializePayload(std::shared_ptr<XHTMLIMPayload> xhtml)  const;
+			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XHTMLIMPayload> xhtml)  const;
 	};
 }

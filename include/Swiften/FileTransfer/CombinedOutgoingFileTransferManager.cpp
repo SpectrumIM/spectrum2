@@ -31,14 +31,14 @@ CombinedOutgoingFileTransferManager::~CombinedOutgoingFileTransferManager() {
 	delete idGenerator;
 }
 
-std::shared_ptr<OutgoingFileTransfer> CombinedOutgoingFileTransferManager::createOutgoingFileTransfer(const JID& from, const JID& receipient, std::shared_ptr<ReadBytestream> readBytestream, const StreamInitiationFileInfo& fileInfo) {
+std::shared_ptr<OutgoingFileTransfer> CombinedOutgoingFileTransferManager::createOutgoingFileTransfer(const JID& from, const JID& receipient, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> readBytestream, const StreamInitiationFileInfo& fileInfo) {
 	// check if receipient support Jingle FT
 	boost::optional<JID> fullJID = highestPriorityJIDSupportingJingle(receipient);
 	if (!fullJID.is_initialized()) {
 		fullJID = highestPriorityJIDSupportingSI(receipient);
 	}
 	else {
-		JingleSessionImpl::ref jingleSession = std::make_shared<JingleSessionImpl>(from, receipient, idGenerator->generateID(), iqRouter);
+		JingleSessionImpl::ref jingleSession = SWIFTEN_SHRPTR_NAMESPACE::make_shared<JingleSessionImpl>(from, receipient, idGenerator->generateID(), iqRouter);
 
 		//jsManager->getSession(receipient, idGenerator->generateID());
 		assert(jingleSession);

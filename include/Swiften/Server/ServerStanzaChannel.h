@@ -28,13 +28,13 @@ namespace Swift {
 			void addSession(std::shared_ptr<ServerFromClientSession> session);
 			void removeSession(std::shared_ptr<ServerFromClientSession> session);
 
-			void sendIQ(std::shared_ptr<IQ> iq);
-			void sendMessage(std::shared_ptr<Message> message);
-			void sendPresence(std::shared_ptr<Presence> presence);
+			void sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IQ> iq);
+			void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Message> message);
+			void sendPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Presence> presence);
 #if HAVE_SWIFTEN_3
-			void finishSession(const JID& to, std::shared_ptr<ToplevelElement> element, bool last = false);
+			void finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement> element, bool last = false);
 #else
-			void finishSession(const JID& to, std::shared_ptr<Element> element, bool last = false);
+			void finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, bool last = false);
 #endif
 			bool getStreamManagementEnabled() const {
 				return false;
@@ -50,9 +50,9 @@ namespace Swift {
 
 		private:
 			std::string getNewIQID();
-			void send(std::shared_ptr<Stanza> stanza);
+			void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza);
 			void handleSessionFinished(const boost::optional<Session::SessionError>&, const std::shared_ptr<ServerFromClientSession> &session);
-			void handleElement(std::shared_ptr<Element> element, const std::shared_ptr<ServerFromClientSession> &session);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const std::shared_ptr<ServerFromClientSession> &session);
 			void handleDataRead(const SafeByteArray &data, const std::shared_ptr<ServerFromClientSession> &session);
 			void handleSessionInitialized();
 

@@ -58,7 +58,7 @@ class XMPPUserManager : public UserManager {
 
 	private:
 		void handleVCardRequired(User *, const std::string &name, unsigned int id);
-		void handleVCardUpdated(User *, std::shared_ptr<Swift::VCard> vcard);
+		void handleVCardUpdated(User *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard);
 
 		StorageResponder *m_storageResponder;
 		VCardResponder *m_vcardResponder;

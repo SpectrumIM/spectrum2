@@ -29,6 +29,7 @@
 
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 
 #include <boost/signal.hpp>
 
@@ -50,7 +51,7 @@ class SlackSession {
 
 		boost::signal<void (const std::string &user)> onInstallationDone;
 
-		void sendMessage(std::shared_ptr<Swift::Message> message);
+		void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
 
 		void sendMessageToAll(const std::string &msg);
 

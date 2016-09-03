@@ -13,6 +13,8 @@
 
 #include <Swiften/EventLoop/EventLoop.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 
 DummyConnectionServer::DummyConnectionServer(EventLoop* eventLoop) : eventLoop(eventLoop) {
@@ -26,10 +28,10 @@ void DummyConnectionServer::stop() {
 	
 }
 
-void DummyConnectionServer::acceptConnection(std::shared_ptr<Swift::Connection> connection) {
+void DummyConnectionServer::acceptConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection) {
 		eventLoop->postEvent(
 				boost::bind(boost::ref(onNewConnection), connection), 
-				std::shared_ptr<DummyConnectionServer>(this));
+				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DummyConnectionServer>(this));
 // 		connection->listen();
 }
 

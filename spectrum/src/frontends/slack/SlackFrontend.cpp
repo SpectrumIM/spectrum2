@@ -80,14 +80,14 @@ void SlackFrontend::sendVCard(Swift::VCard::ref vcard, Swift::JID to) {
 void SlackFrontend::sendRosterRequest(Swift::RosterPayload::ref payload, Swift::JID to) {
 }
 
-void SlackFrontend::sendMessage(std::shared_ptr<Swift::Message> message) {
+void SlackFrontend::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
 	return static_cast<SlackUserManager *>(m_userManager)->sendMessage(message);
 }
 
-void SlackFrontend::sendIQ(std::shared_ptr<Swift::IQ> iq) {
+void SlackFrontend::sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
 }
 
-std::shared_ptr<Swift::DiscoInfo> SlackFrontend::sendCapabilitiesRequest(Swift::JID to) {
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> SlackFrontend::sendCapabilitiesRequest(Swift::JID to) {
 
 	return Swift::DiscoInfo::ref();
 }

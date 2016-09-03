@@ -9,6 +9,8 @@
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
 #include <BlockPayload.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
 namespace Transport {
@@ -16,6 +18,6 @@ namespace Transport {
 		public:
 			BlockSerializer();
 
-			virtual std::string serializePayload(std::shared_ptr<BlockPayload>)  const;
+			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<BlockPayload>)  const;
 	};
 }

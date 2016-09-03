@@ -23,6 +23,7 @@
 #include <vector>
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/RosterPayload.h"
+#include "Swiften/SwiftenCompat.h"
 
 #include <boost/signal.hpp>
 
@@ -43,8 +44,8 @@ class RosterResponder : public Swift::Responder<Swift::RosterPayload> {
 		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyAdded;
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::RosterPayload> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::RosterPayload> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload);
 		UserManager *m_userManager;
 		Swift::IQRouter *m_router;
 };

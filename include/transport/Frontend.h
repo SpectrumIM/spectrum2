@@ -30,6 +30,7 @@
 #include "Swiften/Elements/IQ.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/Presence.h"
+#include "Swiften/SwiftenCompat.h"
 
 #include <boost/signal.hpp>
 
@@ -74,11 +75,11 @@ class Frontend {
 
 		virtual void sendRosterRequest(Swift::RosterPayload::ref, Swift::JID to) = 0;
 
-		virtual void sendMessage(std::shared_ptr<Swift::Message> message) = 0;
+		virtual void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) = 0;
 
-		virtual void sendIQ(std::shared_ptr<Swift::IQ>) = 0;
+		virtual void sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>) = 0;
 
-		virtual std::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to) = 0;
+		virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to) = 0;
 
 		virtual void reconnectUser(const std::string &user) = 0;
 
@@ -98,14 +99,14 @@ class Frontend {
 		virtual bool isRawXMLEnabled() { return false; }
 
 		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
-		boost::signal<void (User *, std::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
+		boost::signal<void (User *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyUpdated;
 		boost::signal<void (Buddy *)> onBuddyRemoved;
 		boost::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyAdded;
 		boost::signal<void (Swift::Message::ref message)> onMessageReceived;
 		boost::signal<void (bool /* isAvailable */)> onAvailableChanged;
-		boost::signal<void (std::shared_ptr<Swift::Presence>) > onPresenceReceived;
-		boost::signal<void (const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info)> onCapabilitiesReceived;
+		boost::signal<void (SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence>) > onPresenceReceived;
+		boost::signal<void (const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info)> onCapabilitiesReceived;
 };
 
 }

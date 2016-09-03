@@ -14,6 +14,8 @@
 #include <Swiften/Parser/Tree/ParserElement.h>
 #include <Swiften/Parser/XMLParserClient.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	/**
 	 * Generics parser offering something a bit like a DOM to work with.
@@ -24,7 +26,7 @@ namespace Swift {
 			
 			virtual void handleStartElement(const std::string& element, const std::string& xmlns, const AttributeMap& attributes) {
 				if (!root_) {
-					root_ = std::make_shared<ParserElement>(element, xmlns, attributes);
+					root_ = SWIFTEN_SHRPTR_NAMESPACE::make_shared<ParserElement>(element, xmlns, attributes);
 					elementStack_.push_back(root_);
 				}
 				else {

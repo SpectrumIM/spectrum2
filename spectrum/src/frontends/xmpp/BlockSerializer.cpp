@@ -19,7 +19,7 @@ namespace Transport {
 BlockSerializer::BlockSerializer() : Swift::GenericPayloadSerializer<BlockPayload>() {
 }
 
-std::string BlockSerializer::serializePayload(std::shared_ptr<BlockPayload> attention)  const {
+std::string BlockSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<BlockPayload> attention)  const {
 	Swift::XMLElement attentionElement("block", "urn:xmpp:block:0");
 
 	return attentionElement.serialize();

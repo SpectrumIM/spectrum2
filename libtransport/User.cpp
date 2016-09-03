@@ -172,7 +172,7 @@ void User::leaveRoom(const std::string &room) {
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 
-	std::shared_ptr<Swift::VCardUpdate> vcardUpdate = presence->getPayload<Swift::VCardUpdate>();
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCardUpdate> vcardUpdate = presence->getPayload<Swift::VCardUpdate>();
 	if (vcardUpdate) {
 		std::string value = "";
 		int type = (int) TYPE_STRING;
@@ -191,7 +191,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 	if (!m_connected) {
 		// we are not connected to legacy network, so we should do it when disco#info arrive :)
 		if (m_readyForConnect == false) {
-			std::shared_ptr<Swift::CapsInfo> capsInfo = presence->getPayload<Swift::CapsInfo>();
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CapsInfo> capsInfo = presence->getPayload<Swift::CapsInfo>();
 			if (capsInfo && capsInfo->getHash() == "sha-1") {
 				if (m_component->getFrontend()->sendCapabilitiesRequest(presence->getFrom()) != Swift::DiscoInfo::ref()) {
 					LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
@@ -390,7 +390,7 @@ void User::handleSubscription(Swift::Presence::ref presence) {
 	m_rosterManager->handleSubscription(presence);
 }
 
-void User::handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info) {
+void User::handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info) {
 	LOG4CXX_INFO(logger, jid.toString() << ": got disco#info");
 #ifdef SUPPORT_LEGACY_CAPS
 	m_legacyCaps[jid] = info;
@@ -445,11 +445,11 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	}
 	onDisconnected();
 
-	std::shared_ptr<Swift::Message> msg(new Swift::Message());
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->setBody(error);
 	msg->setTo(m_jid.toBare());
 	msg->setFrom(m_component->getJID());
-	msg->addPayload(std::make_shared<Swift::SpectrumErrorPayload>(e));
+	msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::SpectrumErrorPayload>(e));
 	m_component->getFrontend()->sendMessage(msg);
 
 	disconnectUser(error, e);

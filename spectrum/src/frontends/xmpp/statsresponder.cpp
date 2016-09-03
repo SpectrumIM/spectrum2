@@ -71,7 +71,7 @@ unsigned long StatsResponder::usedMemory() {
 }
 
 bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<StatsPayload> stats) {
-	std::shared_ptr<StatsPayload> response(new StatsPayload());
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StatsPayload> response(new StatsPayload());
 
 	if (stats->getItems().empty()) {
 		response->addItem(StatsPayload::Item("uptime"));

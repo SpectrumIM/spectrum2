@@ -14,9 +14,11 @@
 #include <Swiften/FileTransfer/SOCKS5BytestreamRegistry.h>
 #include <Swiften/FileTransfer/IBBSendSession.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 
-MyOutgoingSIFileTransfer::MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, std::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry) : id(id), from(from), to(to), name(name), size(size), description(description), bytestream(bytestream), iqRouter(iqRouter), socksServer(socksServer), registry(registry) {
+MyOutgoingSIFileTransfer::MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry) : id(id), from(from), to(to), name(name), size(size), description(description), bytestream(bytestream), iqRouter(iqRouter), socksServer(socksServer), registry(registry) {
 }
 
 void MyOutgoingSIFileTransfer::start() {

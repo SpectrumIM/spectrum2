@@ -96,7 +96,7 @@ void Server::stop() {
 
 	if (serverFromClientConnectionServer) {
 		serverFromClientConnectionServer->stop();
-		foreach(boost::signals2::connection& connection, serverFromClientConnectionServerSignalConnections) {
+		foreach(SWIFTEN_SIGNAL_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
 			connection.disconnect();
 		}
 		serverFromClientConnectionServerSignalConnections.clear();
@@ -107,7 +107,7 @@ void Server::stop() {
 // 	onStopped(e);
 }
 
-void Server::handleNewClientConnection(std::shared_ptr<Connection> connection) {
+void Server::handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection) {
 
 	std::shared_ptr<ServerFromClientSession> serverFromClientSession = std::shared_ptr<ServerFromClientSession>(
 			new ServerFromClientSession(idGenerator.generateID(), connection, 

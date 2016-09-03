@@ -9,6 +9,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/signals.hpp>
 
+#include "Swiften/SwiftenCompat.h"
+
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include <Swiften/FileTransfer/ReadBytestream.h>
 #include <Swiften/FileTransfer/FileTransferError.h>
@@ -28,7 +30,7 @@ namespace Swift {
 
 	class MyOutgoingSIFileTransfer : public OutgoingFileTransfer {
 		public:
-			MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, std::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry);
+			MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry);
 
 			virtual void start();
 			virtual void stop();
@@ -49,7 +51,7 @@ namespace Swift {
 			std::string name;
 			int size;
 			std::string description;
-			std::shared_ptr<ReadBytestream> bytestream;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream;
 			IQRouter* iqRouter;
 			SOCKS5BytestreamServer* socksServer;
 			std::shared_ptr<IBBSendSession> ibbSession;

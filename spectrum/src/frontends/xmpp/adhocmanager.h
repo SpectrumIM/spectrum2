@@ -27,6 +27,7 @@
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/Command.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -67,8 +68,8 @@ class AdHocManager : public Swift::Responder<Swift::Command> {
 
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::Command> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::Command> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload);
 		
 		void handleUserCreated(User *user);
 

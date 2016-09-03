@@ -232,7 +232,7 @@ void SlackUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {
 
 }
 
-void SlackUserManager::sendMessage(std::shared_ptr<Swift::Message> message) {
+void SlackUserManager::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
 	User *user = getUser(message->getTo().toBare().toString());
 	if (!user) {
 		LOG4CXX_ERROR(logger, "Received message for unknown user " << message->getTo().toBare().toString());

@@ -47,12 +47,12 @@ RosterResponder::RosterResponder(Swift::IQRouter *router, UserManager *userManag
 RosterResponder::~RosterResponder() {
 }
 
-bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::RosterPayload> payload) {
+bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload) {
 	// Get means we're in server mode and user wants to fetch his roster.
 	// For now we send empty reponse, but TODO: Get buddies from database and send proper stored roster.
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		sendResponse(from, id, std::shared_ptr<RosterPayload>(new RosterPayload()));
+		sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<RosterPayload>(new RosterPayload()));
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
 		return true;
 	}
@@ -61,8 +61,8 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 	return true;
 }
 
-bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::RosterPayload> payload) {
-	sendResponse(from, id, std::shared_ptr<RosterPayload>(new RosterPayload()));
+bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload) {
+	sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<RosterPayload>(new RosterPayload()));
 
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {

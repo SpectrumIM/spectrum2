@@ -112,7 +112,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
-			CertificateWithKey::ref certificate = std::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password")));
+			CertificateWithKey::ref certificate = SWIFTEN_SHRPTR_NAMESPACE::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password")));
 			m_server->addTLSEncryption(f, certificate);
 #endif
 #endif
@@ -200,7 +200,7 @@ void XMPPFrontend::handleGeneralPresence(Swift::Presence::ref presence) {
 	onPresenceReceived(presence);
 }
 
-void XMPPFrontend::handleMessage(std::shared_ptr<Swift::Message> message) {
+void XMPPFrontend::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
 	onMessageReceived(message);
 }
 
@@ -215,7 +215,7 @@ void XMPPFrontend::addRoomToRoomList(const std::string &handle, const std::strin
 
 void XMPPFrontend::sendPresence(Swift::Presence::ref presence) {
 	if (!presence->getFrom().getNode().empty()) {
-		presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::CapsInfo(static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->getBuddyCapsInfo())));
+		presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::CapsInfo(static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->getBuddyCapsInfo())));
 	}
 
 	m_stanzaChannel->sendPresence(presence);
@@ -231,15 +231,15 @@ void XMPPFrontend::sendRosterRequest(Swift::RosterPayload::ref payload, Swift::J
 	request->send();
 }
 
-void XMPPFrontend::sendMessage(std::shared_ptr<Swift::Message> message) {
+void XMPPFrontend::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
 	m_stanzaChannel->sendMessage(message);
 }
 
-void XMPPFrontend::sendIQ(std::shared_ptr<Swift::IQ> iq) {
+void XMPPFrontend::sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
 	m_iqRouter->sendIQ(iq);
 }
 
-std::shared_ptr<Swift::DiscoInfo> XMPPFrontend::sendCapabilitiesRequest(Swift::JID to) {
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> XMPPFrontend::sendCapabilitiesRequest(Swift::JID to) {
 	Swift::DiscoInfo::ref caps = m_entityCapsManager->getCaps(to);
 	if (caps != Swift::DiscoInfo::ref()) {
 		onCapabilitiesReceived(to, caps);
@@ -290,7 +290,7 @@ UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry 
 	return m_userManager;
 }
 
-bool XMPPFrontend::handleIQ(std::shared_ptr<Swift::IQ> iq) {
+bool XMPPFrontend::handleIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
 	if (!m_rawXML) {
 		return false;
 	}
@@ -333,8 +333,8 @@ void XMPPFrontend::connectToServer() {
 
 		//Type casting to BoostConnectionServer since onStopped signal is not defined in ConnectionServer
 		//Ideally, onStopped must be defined in ConnectionServer
-		if (std::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
-			std::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&XMPPFrontend::handleServerStopped, this, _1));
+		if (SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&XMPPFrontend::handleServerStopped, this, _1));
 		}
 		
 		// We're connected right here, because we're in server mode...
@@ -397,7 +397,7 @@ void XMPPFrontend::handleDataWritten(const Swift::SafeByteArray &data) {
 	m_transport->handleDataWritten(d);
 }
 
-void XMPPFrontend::handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
+void XMPPFrontend::handleDiscoInfoResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
 #ifdef SUPPORT_LEGACY_CAPS
 	onCapabilitiesReceived(jid, info);
 #endif

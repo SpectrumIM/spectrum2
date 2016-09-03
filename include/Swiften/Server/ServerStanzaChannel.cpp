@@ -43,15 +43,15 @@ void ServerStanzaChannel::removeSession(std::shared_ptr<ServerFromClientSession>
 	lst.erase(std::remove(lst.begin(), lst.end(), session), lst.end());
 }
 
-void ServerStanzaChannel::sendIQ(std::shared_ptr<IQ> iq) {
+void ServerStanzaChannel::sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IQ> iq) {
 	send(iq);
 }
 
-void ServerStanzaChannel::sendMessage(std::shared_ptr<Message> message) {
+void ServerStanzaChannel::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Message> message) {
 	send(message);
 }
 
-void ServerStanzaChannel::sendPresence(std::shared_ptr<Presence> presence) {
+void ServerStanzaChannel::sendPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Presence> presence) {
 	send(presence);
 }
 
@@ -64,9 +64,9 @@ void ServerStanzaChannel::handleDataRead(const SafeByteArray &data, const std::s
 	}
 }
 #if HAVE_SWIFTEN_3
-void ServerStanzaChannel::finishSession(const JID& to, std::shared_ptr<ToplevelElement> element, bool last) {
+void ServerStanzaChannel::finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement> element, bool last) {
 #else
-void ServerStanzaChannel::finishSession(const JID& to, std::shared_ptr<Element> element, bool last) {
+void ServerStanzaChannel::finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, bool last) {
 #endif
 	std::vector<std::shared_ptr<ServerFromClientSession> > candidateSessions;
 	for (std::list<std::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
@@ -98,7 +98,7 @@ std::string ServerStanzaChannel::getNewIQID() {
 	return idGenerator.generateID();
 }
 
-void ServerStanzaChannel::send(std::shared_ptr<Stanza> stanza) {
+void ServerStanzaChannel::send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza) {
 	JID to = stanza->getTo();
 	assert(to.isValid());
 
@@ -145,8 +145,8 @@ void ServerStanzaChannel::handleSessionFinished(const boost::optional<Session::S
 // 	}
 }
 
-void ServerStanzaChannel::handleElement(std::shared_ptr<Element> element, const std::shared_ptr<ServerFromClientSession>& session) {
-	std::shared_ptr<Stanza> stanza = std::dynamic_pointer_cast<Stanza>(element);
+void ServerStanzaChannel::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const std::shared_ptr<ServerFromClientSession>& session) {
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Stanza>(element);
 	if (!stanza) {
 		return;
 	}
@@ -157,19 +157,19 @@ void ServerStanzaChannel::handleElement(std::shared_ptr<Element> element, const 
 		return;
 	
 
-	std::shared_ptr<Message> message = std::dynamic_pointer_cast<Message>(stanza);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Message> message = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Message>(stanza);
 	if (message) {
 		onMessageReceived(message);
 		return;
 	}
 
-	std::shared_ptr<Presence> presence = std::dynamic_pointer_cast<Presence>(stanza);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Presence> presence = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Presence>(stanza);
 	if (presence) {
 		onPresenceReceived(presence);
 		return;
 	}
 
-	std::shared_ptr<IQ> iq = std::dynamic_pointer_cast<IQ>(stanza);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IQ> iq = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<IQ>(stanza);
 	if (iq) {
 		onIQReceived(iq);
 		return;

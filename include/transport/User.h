@@ -31,6 +31,7 @@
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Network/Connection.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -90,7 +91,7 @@ class User {
 
 		void handleSubscription(Swift::Presence::ref presence);
 
-		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
+		void handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info);
 
 		time_t &getLastActivity() {
 			return m_lastActivity;

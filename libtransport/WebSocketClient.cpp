@@ -129,7 +129,7 @@ void WebSocketClient::write(const std::string &data) {
 	LOG4CXX_INFO(logger, m_user << ": > " << data);
 }
 
-void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
+void WebSocketClient::handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
 	std::string d = Swift::safeByteArrayToString(*data);
 	m_buffer += d;
 

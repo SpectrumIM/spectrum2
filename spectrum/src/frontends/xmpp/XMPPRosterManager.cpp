@@ -194,7 +194,7 @@ void XMPPRosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref e
 	request->onResponse.disconnect_all_slots();
 }
 
-void XMPPRosterManager::handleRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
+void XMPPRosterManager::handleRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
 	m_remoteRosterRequest.reset();
 	if (error) {
 		m_supportRemoteRoster = false;

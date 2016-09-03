@@ -19,7 +19,7 @@ namespace Swift {
 InvisibleSerializer::InvisibleSerializer() : GenericPayloadSerializer<InvisiblePayload>() {
 }
 
-std::string InvisibleSerializer::serializePayload(std::shared_ptr<InvisiblePayload> attention)  const {
+std::string InvisibleSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InvisiblePayload> attention)  const {
 	XMLElement attentionElement("invisible", "urn:xmpp:invisible:0");
 
 	return attentionElement.serialize();

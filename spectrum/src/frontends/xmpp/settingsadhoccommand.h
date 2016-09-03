@@ -45,13 +45,13 @@ class SettingsAdHocCommand : public AdHocCommand {
 		/// Destructor.
 		virtual ~SettingsAdHocCommand();
 
-		virtual std::shared_ptr<Swift::Command> handleRequest(std::shared_ptr<Swift::Command> payload);
+		virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> handleRequest(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload);
 
 	private:
 		void updateUserSetting(Swift::Form::ref form, UserInfo &user, const std::string &name);
 
-		std::shared_ptr<Swift::Command> getForm();
-		std::shared_ptr<Swift::Command> handleResponse(std::shared_ptr<Swift::Command> payload);
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> getForm();
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> handleResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload);
 		State m_state;
 };
 

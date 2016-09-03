@@ -53,16 +53,16 @@ namespace Transport {
 
 			virtual void sendRosterRequest(Swift::RosterPayload::ref, Swift::JID to);
 
-			virtual void sendMessage(std::shared_ptr<Swift::Message> message);
+			virtual void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
 
-			virtual void sendIQ(std::shared_ptr<Swift::IQ>);
+			virtual void sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>);
 
 			virtual void reconnectUser(const std::string &user);
 
 			virtual RosterManager *createRosterManager(User *user, Component *component);
 			virtual User *createUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager);
 			virtual UserManager *createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
-			virtual std::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to);
+			virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to);
 			virtual void clearRoomList();
 			virtual void addRoomToRoomList(const std::string &handle, const std::string &name);
 			virtual std::string setOAuth2Code(const std::string &code, const std::string &state);

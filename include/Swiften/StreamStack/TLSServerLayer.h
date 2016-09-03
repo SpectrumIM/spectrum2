@@ -11,6 +11,7 @@
 #include "Swiften/TLS/Certificate.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/TLS/CertificateVerificationError.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class TLSServerContext;
@@ -26,7 +27,7 @@ namespace Swift {
 			bool setServerCertificate(CertificateWithKey::ref cert);
 
 			Certificate::ref getPeerCertificate() const;
-			std::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
 
 			void writeData(const SafeByteArray& data);
 			void handleDataRead(const SafeByteArray& data);

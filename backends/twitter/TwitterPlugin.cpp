@@ -109,7 +109,7 @@ void TwitterPlugin::sendData(const std::string &string)
 }
 
 // Receive date from the NetworkPlugin server and invoke the appropirate payload handler (implement in the NetworkPlugin class)
-void TwitterPlugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) 
+void TwitterPlugin::_handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data)
 {
 	if (m_firstPing) {
 		m_firstPing = false;

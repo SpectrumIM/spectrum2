@@ -142,7 +142,7 @@ int UserManager::getUserCount() {
 	return m_users.size();
 }
 
-void UserManager::handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info) {
+void UserManager::handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info) {
 	User *user = getUser(jid.toBare().toString());
 	if (!user) {
 		return;
@@ -278,7 +278,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 		if (CONFIG_BOOL(m_component->getConfig(), "service.vip_only") && res.vip == false) {
 			if (!CONFIG_STRING(m_component->getConfig(), "service.vip_message").empty()) {
-				std::shared_ptr<Swift::Message> msg(new Swift::Message());
+				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody(CONFIG_STRING(m_component->getConfig(), "service.vip_message"));
 				msg->setTo(presence->getFrom());
 				msg->setFrom(m_component->getJID());
@@ -370,7 +370,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	// Do not count chatstate notification...
-	std::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
 	if (!statePayload) {
 		messageToBackendSent();
 	}
@@ -555,7 +555,7 @@ void UserManager::connectUser(const Swift::JID &user) {
 			}
 			else {
 				// Send message to currently logged in session
-				std::shared_ptr<Swift::Message> msg(new Swift::Message());
+				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody("You have signed on from another location.");
 				msg->setTo(user);
 				msg->setFrom(m_component->getJID());

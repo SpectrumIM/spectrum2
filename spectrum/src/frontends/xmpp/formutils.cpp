@@ -21,6 +21,8 @@
 #include "formutils.h"
 #include "adhoccommand.h"
 
+#include "Swiften/SwiftenCompat.h"
+
 #if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>
 #endif
@@ -38,7 +40,7 @@ HiddenFormField::ref
 #endif
 createHiddenField(const std::string &name, const std::string &value) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = std::make_shared<FormField>(FormField::HiddenType, value);	
+	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::HiddenType, value);
 #else
 	HiddenFormField::ref field = HiddenFormField::create();
 	field->setValue(value);
@@ -55,7 +57,7 @@ TextSingleFormField::ref
 #endif
 createTextSingleField(const std::string &name, const std::string &value, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = std::make_shared<FormField>(FormField::TextSingleType, value);
+	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::TextSingleType, value);
 #else
 	TextSingleFormField::ref field = TextSingleFormField::create();
 	field->setValue(value);
@@ -74,7 +76,7 @@ TextPrivateFormField::ref
 #endif
 createTextPrivateField(const std::string &name, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = std::make_shared<FormField>(FormField::TextPrivateType);
+	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::TextPrivateType);
 #else
 	TextPrivateFormField::ref field = TextPrivateFormField::create();
 #endif
@@ -92,7 +94,7 @@ ListSingleFormField::ref
 #endif
 createListSingleField(const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = std::make_shared<FormField>(FormField::ListSingleType);
+	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::ListSingleType);
 #else
 	ListSingleFormField::ref field = ListSingleFormField::create();
 #endif
@@ -115,7 +117,7 @@ BooleanFormField::ref
 #endif
 createBooleanField(const std::string &name, const std::string &value, const std::string &label, bool required) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = std::make_shared<FormField>(FormField::BooleanType, value);
+	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::BooleanType, value);
 #else
 	BooleanFormField::ref field = BooleanFormField::create();
 	field->setValue(value == "1");
@@ -134,7 +136,7 @@ FixedFormField::ref
 #endif
 createTextFixedField(const std::string &value) {
 #if HAVE_SWIFTEN_3
-	FormField::ref field = std::make_shared<FormField>(FormField::FixedType, value);
+	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::FixedType, value);
 #else
 	FixedFormField::ref field = FixedFormField::create(value);
 #endif

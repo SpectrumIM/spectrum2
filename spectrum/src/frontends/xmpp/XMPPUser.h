@@ -68,7 +68,7 @@ class XMPPUser : public User {
 
 	private:
 		void onConnectingTimeout();
-		void handleVCardReceived(std::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
+		void handleVCardReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
 
 		Swift::JID m_jid;
 		Component *m_component;
