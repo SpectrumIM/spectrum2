@@ -16,6 +16,7 @@
 #include "transport/PQXXBackend.h"
 #include "transport/StorageBackend.h"
 #include "Swiften/Swiften.h"
+#include "Swiften/SwiftenCompat.h"
 #include <boost/filesystem.hpp>
 #include "unistd.h"
 #include "signal.h"

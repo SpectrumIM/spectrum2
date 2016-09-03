@@ -11,6 +11,7 @@
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
 #include "Swiften/Swiften.h"
+#include "Swiften/SwiftenCompat.h"
 #include <boost/filesystem.hpp>
 #include "unistd.h"
 #include "signal.h"

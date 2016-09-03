@@ -11,6 +11,7 @@
 #include "transport/ThreadPool.h"
 
 #include "Swiften/Swiften.h"
+#include "Swiften/SwiftenCompat.h"
 #ifndef _WIN32
 #include "unistd.h"
 #include "signal.h"

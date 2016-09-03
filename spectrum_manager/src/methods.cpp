@@ -18,6 +18,8 @@
 #include "signal.h"
 #include "sys/wait.h"
 
+#include "Swiften/SwiftenCompat.h"
+
 #define WRAP(MESSAGE, TYPE) 	pbnetwork::WrapperMessage wrap; \
 	wrap.set_type(TYPE); \
 	wrap.set_payload(MESSAGE); \

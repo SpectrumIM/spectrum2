@@ -173,22 +173,22 @@ std::string fieldValue(Swift::FormField::ref field) {
 	const std::vector<std::string> values = field->getValues();
 	return values.empty() ? "" : values[0];
 #else
-	TextSingleFormField::ref textSingle = std::dynamic_pointer_cast<TextSingleFormField>(field);
+	TextSingleFormField::ref textSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextSingleFormField>(field);
 	if (textSingle) {
 		return textSingle->getValue();
 	}
 
-	TextPrivateFormField::ref textPrivate = std::dynamic_pointer_cast<TextPrivateFormField>(field);
+	TextPrivateFormField::ref textPrivate = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextPrivateFormField>(field);
 	if (textPrivate) {
 		return textPrivate->getValue();
 	}
 
-	ListSingleFormField::ref listSingle = std::dynamic_pointer_cast<ListSingleFormField>(field);
+	ListSingleFormField::ref listSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<ListSingleFormField>(field);
 	if (listSingle) {
 		return listSingle->getValue();
 	}
 
-	BooleanFormField::ref boolean = std::dynamic_pointer_cast<BooleanFormField>(field);
+	BooleanFormField::ref boolean = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<BooleanFormField>(field);
 	if (boolean) {
 		return boolean->getValue() ? "1" : "0";
 	}
@@ -207,22 +207,22 @@ std::string fieldValue(Swift::Form::ref form, const std::string &key, const std:
 			return values.empty() ? "" : values[0];
 		}
 #else
-		TextSingleFormField::ref textSingle = std::dynamic_pointer_cast<TextSingleFormField>(*it);
+		TextSingleFormField::ref textSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextSingleFormField>(*it);
 		if (textSingle && textSingle->getName() == key) {
 			return textSingle->getValue();
 		}
 
-		TextPrivateFormField::ref textPrivate = std::dynamic_pointer_cast<TextPrivateFormField>(*it);
+		TextPrivateFormField::ref textPrivate = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextPrivateFormField>(*it);
 		if (textPrivate && textPrivate->getName() == key) {
 			return textPrivate->getValue();
 		}
 
-		ListSingleFormField::ref listSingle = std::dynamic_pointer_cast<ListSingleFormField>(*it);
+		ListSingleFormField::ref listSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<ListSingleFormField>(*it);
 		if (listSingle && listSingle->getName() == key) {
 			return listSingle->getValue();
 		}
 
-		BooleanFormField::ref boolean = std::dynamic_pointer_cast<BooleanFormField>(*it);
+		BooleanFormField::ref boolean = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<BooleanFormField>(*it);
 		if (boolean && boolean->getName() == key) {
 			return boolean->getValue() ? "1" : "0";
 		}
