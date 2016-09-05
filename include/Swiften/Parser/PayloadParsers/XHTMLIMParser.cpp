@@ -4,6 +4,7 @@
  * See Documentation/Licenses/BSD-simplified.txt for more information.
  */
 
+#include <cassert>
 #include <Swiften/Parser/PayloadParsers/XHTMLIMParser.h>
 #include <Swiften/Parser/SerializingParser.h>
 #include "Swiften/SwiftenCompat.h"
