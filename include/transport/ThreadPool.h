@@ -56,8 +56,8 @@ class ThreadPool
 	boost::mutex criticalregion;
 	Swift::EventLoop *loop;
 
-	boost::signals2::signal  < void () > onWorkerAvailable;
-
+	boost::signals2::signal < void () > onWorkerAvailable;
+	
 	public:
 	ThreadPool(Swift::EventLoop *loop, int maxthreads);
 	~ThreadPool();
@@ -68,6 +68,7 @@ class ThreadPool
 	void scheduleFromQueue();
 	int getFreeThread();
 	void releaseThread(int i);
+	void workerBody(Thread *t, int wid);
 };
 
 }
