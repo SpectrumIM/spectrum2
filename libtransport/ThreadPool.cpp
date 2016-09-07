@@ -6,15 +6,6 @@
 namespace Transport {
 
 DEFINE_LOGGER(logger, "ThreadPool")
-boost::signals2::signal< void (Thread*, int) > onWorkCompleted;
-
-static void Worker(Thread *t, int wid, Swift::EventLoop *loop)
-{
-	LOG4CXX_INFO(logger, "Starting thread " << wid)
-	t->run();
-	loop->postEvent(boost::bind(boost::ref(onWorkCompleted), t, wid), SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::EventOwner>());
-}
-
 
 ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(maxthreads)
 {
@@ -25,7 +16,6 @@ ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(max
 		worker[i] = NULL;
 		freeThreads.push(i);
 	}
-	onWorkCompleted.connect(boost::bind(&ThreadPool::cleandUp, this, _1, _2));
 	onWorkerAvailable.connect(boost::bind(&ThreadPool::scheduleFromQueue, this));
 }
 
@@ -106,7 +96,7 @@ void ThreadPool::scheduleFromQueue()
 		LOG4CXX_INFO(logger, "Worker Available. Creating thread #" << w)
 		Thread *t = requestQueue.front(); requestQueue.pop();
 		t->setThreadID(w);
-		worker[w] = new boost::thread(Worker, t, w, loop);
+		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);
 		updateActiveThreadCount(-1);
 	}
 	criticalregion.unlock();
@@ -119,13 +109,19 @@ void ThreadPool::runAsThread(Thread *t)
 	if((w = getFreeThread()) != -1) {
 		LOG4CXX_INFO(logger, "Creating thread #" << w)
 		t->setThreadID(w);
-		worker[w] = new boost::thread(Worker, t, w, loop);
+		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);
 		updateActiveThreadCount(-1);
 	}
 	else {
 		LOG4CXX_INFO(logger, "No workers available! adding to queue.")
 		requestQueue.push(t);
 	}
+}
+
+void ThreadPool::workerBody(Thread *t, int wid) {
+	LOG4CXX_INFO(logger, "Starting thread " << wid)
+	t->run();
+	loop->postEvent(boost::bind(&ThreadPool::cleandUp, this, t, wid), SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::EventOwner>());
 }
 
 }
