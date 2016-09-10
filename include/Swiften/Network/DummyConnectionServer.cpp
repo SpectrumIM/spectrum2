@@ -30,8 +30,7 @@ void DummyConnectionServer::stop() {
 
 void DummyConnectionServer::acceptConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection) {
 		eventLoop->postEvent(
-				boost::bind(boost::ref(onNewConnection), connection), 
-				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DummyConnectionServer>(this));
+				boost::bind(boost::ref(onNewConnection), connection));
 // 		connection->listen();
 }
 

@@ -19,10 +19,8 @@
 #include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
-	class DummyConnectionServer : public ConnectionServer, public EventOwner, public boost::enable_shared_from_this<DummyConnectionServer> {
+	class DummyConnectionServer : public ConnectionServer {
 		public:
-			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DummyConnectionServer> ref;
-
 			enum Error {
 				Conflict,
 				UnknownError
