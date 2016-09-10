@@ -26,7 +26,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
-#include <boost/signal.hpp>
+#include <boost/signalslib.hpp>
 
 namespace Transport {
 
