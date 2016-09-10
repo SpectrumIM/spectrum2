@@ -40,23 +40,23 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			connectionServer = server->getConnectionServer();
 
 			client1 = factories->getConnectionFactory()->createConnection();
-			dynamic_cast<Swift::DummyConnectionServer *>(connectionServer.get())->acceptConnection(client1);
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client1);
 
-			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client1));
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client1));
 
 			client2 = factories->getConnectionFactory()->createConnection();
-			dynamic_cast<Swift::DummyConnectionServer *>(connectionServer.get())->acceptConnection(client2);
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client2);
 
-			dynamic_cast<Swift::DummyConnection *>(client2.get())->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client2));
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client2));
 
 			loop->processEvents();
 		}
 
 		void tearDown (void) {
 			delete server;
-			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.disconnect_all_slots();
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.disconnect_all_slots();
 			client1.reset();
-			dynamic_cast<Swift::DummyConnection *>(client2.get())->onDataSent.disconnect_all_slots();
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.disconnect_all_slots();
 			client2.reset();
 			connectionServer.reset();
 			delete userRegistry;
@@ -68,7 +68,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 		}
 
 		void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> conn, const std::string &data) {
-			dynamic_cast<Swift::DummyConnection *>(conn.get())->receive(Swift::createSafeByteArray(data));
+			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(conn)->receive(Swift::createSafeByteArray(data));
 			loop->processEvents();
 		}
 
