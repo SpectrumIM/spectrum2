@@ -21,25 +21,25 @@ namespace {
 
 	struct HasJID {
 		HasJID(const JID& jid) : jid(jid) {}
-		bool operator()(const std::shared_ptr<ServerFromClientSession> session) const {
+		bool operator()(const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) const {
 			return session->getRemoteJID().equals(jid, JID::WithResource);
 		}
 		JID jid;
 	};
 }
 
-void ServerStanzaChannel::addSession(std::shared_ptr<ServerFromClientSession> session) {
+void ServerStanzaChannel::addSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) {
 	sessions[session->getRemoteJID().toBare().toString()].push_back(session);
 	session->onSessionFinished.connect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.connect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
 	session->onDataRead.connect(boost::bind(&ServerStanzaChannel::handleDataRead, this, _1, session));
 }
 
-void ServerStanzaChannel::removeSession(std::shared_ptr<ServerFromClientSession> session) {
+void ServerStanzaChannel::removeSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) {
 	session->onSessionFinished.disconnect(boost::bind(&ServerStanzaChannel::handleSessionFinished, this, _1, session));
 	session->onElementReceived.disconnect(boost::bind(&ServerStanzaChannel::handleElement, this, _1, session));
 	session->onDataRead.disconnect(boost::bind(&ServerStanzaChannel::handleDataRead, this, _1, session));
-	std::list<std::shared_ptr<ServerFromClientSession> > &lst = sessions[session->getRemoteJID().toBare().toString()];
+	std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > &lst = sessions[session->getRemoteJID().toBare().toString()];
 	lst.erase(std::remove(lst.begin(), lst.end(), session), lst.end());
 }
 
@@ -55,7 +55,7 @@ void ServerStanzaChannel::sendPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Pres
 	send(presence);
 }
 
-void ServerStanzaChannel::handleDataRead(const SafeByteArray &data, const std::shared_ptr<ServerFromClientSession> &session) {
+void ServerStanzaChannel::handleDataRead(const SafeByteArray &data, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session) {
 	if (safeByteArrayToString(data).find("</stream:stream>") != std::string::npos) {
 		Swift::Presence::ref presence = Swift::Presence::create();
 		presence->setFrom(session->getRemoteJID());
@@ -68,12 +68,12 @@ void ServerStanzaChannel::finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE:
 #else
 void ServerStanzaChannel::finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, bool last) {
 #endif
-	std::vector<std::shared_ptr<ServerFromClientSession> > candidateSessions;
-	for (std::list<std::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
+	std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > candidateSessions;
+	for (std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[to.toBare().toString()].begin(); i != sessions[to.toBare().toString()].end(); ++i) {
 		candidateSessions.push_back(*i);
 	}
 
-	for (std::vector<std::shared_ptr<ServerFromClientSession> >::const_iterator i = candidateSessions.begin(); i != candidateSessions.end(); ++i) {
+	for (std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> >::const_iterator i = candidateSessions.begin(); i != candidateSessions.end(); ++i) {
 		removeSession(*i);
 		if (element) {
 			(*i)->sendElement(element);
@@ -108,7 +108,7 @@ void ServerStanzaChannel::send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stan
 
 	// For a full JID, first try to route to a session with the full JID
 	if (!to.isBare()) {
-		std::list<std::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions[stanza->getTo().toBare().toString()].begin(), sessions[stanza->getTo().toBare().toString()].end(), HasJID(to));
+		std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions[stanza->getTo().toBare().toString()].begin(), sessions[stanza->getTo().toBare().toString()].end(), HasJID(to));
 		if (i != sessions[stanza->getTo().toBare().toString()].end()) {
 			(*i)->sendElement(stanza);
 			return;
@@ -117,8 +117,8 @@ void ServerStanzaChannel::send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stan
 
 	// Look for candidate sessions
 	to = to.toBare();
-	std::vector<std::shared_ptr<ServerFromClientSession> > candidateSessions;
-	for (std::list<std::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[stanza->getTo().toBare().toString()].begin(); i != sessions[stanza->getTo().toBare().toString()].end(); ++i) {
+	std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > candidateSessions;
+	for (std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> >::const_iterator i = sessions[stanza->getTo().toBare().toString()].begin(); i != sessions[stanza->getTo().toBare().toString()].end(); ++i) {
 		if ((*i)->getRemoteJID().equals(to, JID::WithoutResource)) {
 			candidateSessions.push_back(*i);
 			(*i)->sendElement(stanza);
@@ -134,7 +134,7 @@ void ServerStanzaChannel::send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stan
 	return;
 }
 
-void ServerStanzaChannel::handleSessionFinished(const boost::optional<Session::SessionError>&, const std::shared_ptr<ServerFromClientSession>& session) {
+void ServerStanzaChannel::handleSessionFinished(const boost::optional<Session::SessionError>&, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>& session) {
 	removeSession(session);
 
 // 	if (!session->initiatedFinish()) {
@@ -145,7 +145,7 @@ void ServerStanzaChannel::handleSessionFinished(const boost::optional<Session::S
 // 	}
 }
 
-void ServerStanzaChannel::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const std::shared_ptr<ServerFromClientSession>& session) {
+void ServerStanzaChannel::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>& session) {
 	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Stanza>(element);
 	if (!stanza) {
 		return;

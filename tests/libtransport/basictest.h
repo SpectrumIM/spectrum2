@@ -262,8 +262,8 @@ class BasicTest : public Swift::XMPPParserClient {
 	protected:
 		bool streamEnded;
 		UserManager *userManager;
-		std::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
-		std::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession2;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession2;
 		Swift::FullPayloadSerializerCollection* payloadSerializers;
 		Swift::FullPayloadParserFactoryCollection* payloadParserFactories;
 		Swift::XMPPParser *parser;

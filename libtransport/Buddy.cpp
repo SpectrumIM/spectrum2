@@ -140,7 +140,7 @@ std::vector<Swift::Presence::ref> &Buddy::generatePresenceStanzas(int features, 
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (getIconHash())));
 // 		}
 // 		if (isBlocked()) {
-// 			presence->addPayload(std::shared_ptr<Swift::Payload>(new Transport::BlockPayload ()));
+// 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Transport::BlockPayload ()));
 // 		}
 	}
 

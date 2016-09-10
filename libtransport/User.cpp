@@ -76,9 +76,9 @@ User::~User(){
 	LOG4CXX_INFO(logger, m_jid.toString() << ": Destroying");
 // 	if (m_component->inServerMode()) {
 // #if HAVE_SWIFTEN_3
-// 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, std::shared_ptr<Swift::ToplevelElement>());
+// 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>());
 // #else
-// 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, std::shared_ptr<Swift::Element>());
+// 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element>());
 // #endif
 // 	}
 

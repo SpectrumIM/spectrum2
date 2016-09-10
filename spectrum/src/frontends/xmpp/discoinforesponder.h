@@ -70,7 +70,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		std::map<std::string, std::string> m_rooms;
 		std::map<std::string, std::string> m_commands;
 #if HAVE_SWIFTEN_3
-		std::shared_ptr<Swift::CryptoProvider> crypto;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider> crypto;
 #endif
 		UserManager *m_userManager;
 };

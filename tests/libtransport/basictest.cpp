@@ -88,7 +88,7 @@ void BasicTest::setMeUp (void) {
 	parser = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
 	parser2 = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
 
-	serverFromClientSession = std::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
+	serverFromClientSession = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
 			payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource")));
 	serverFromClientSession->startSession();
 
@@ -226,7 +226,7 @@ void BasicTest::connectUser() {
 }
 
 void BasicTest::connectSecondResource() {
-	serverFromClientSession2 = std::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
+	serverFromClientSession2 = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
 			payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource2")));
 	serverFromClientSession2->startSession();
 

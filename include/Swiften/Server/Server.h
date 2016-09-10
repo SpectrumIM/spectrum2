@@ -66,9 +66,9 @@ namespace Swift {
 
 		private:
 			void handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> c);
-			void handleSessionStarted(std::shared_ptr<ServerFromClientSession>);
-			void handleSessionFinished(std::shared_ptr<ServerFromClientSession>);
-			void handleElementReceived(std::shared_ptr<Element> element, std::shared_ptr<ServerFromClientSession> session);
+			void handleSessionStarted(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>);
+			void handleSessionFinished(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>);
+			void handleElementReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session);
 			void handleDataRead(const SafeByteArray&);
 			void handleDataWritten(const SafeByteArray&);
 
@@ -81,7 +81,7 @@ namespace Swift {
 			bool stopping;
 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> serverFromClientConnectionServer;
 			std::vector<SWIFTEN_SIGNAL_NAMESPACE::connection> serverFromClientConnectionServerSignalConnections;
-			std::list<std::shared_ptr<ServerFromClientSession> > serverFromClientSessions;
+			std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > serverFromClientSessions;
 			JID selfJID;
 			StanzaChannel *stanzaChannel_;
 			IQRouter *iqRouter_;

@@ -87,7 +87,7 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	message_timer->start();
 
 #if HAVE_SWIFTEN_3
-		cryptoProvider = std::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
+		cryptoProvider = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
 #endif
 	
 	

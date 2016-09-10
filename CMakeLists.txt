@@ -75,7 +75,8 @@ if(NOT SWIFTEN_FOUND)
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Secur32")
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Iphlpapi")
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Winscard")
-	message(STATUS "Using swiften: ${SWIFTEN_INCLUDE_DIR} ${SWIFTEN_LIBRARY}")
+	message(STATUS "XXXUsing swiften: ${SWIFTEN_INCLUDE_DIR} ${SWIFTEN_LIBRARY}
+	Version: ${SWIFTEN_VERSION}")
 endif()
 
 # FIND BOOST
@@ -484,5 +485,3 @@ if(NOT SQLITE3_FOUND AND NOT MYSQL_FOUND AND NOT PQXX_FOUND)
 		message("Please enable at least one of SQLITE3, MYSQL, PQXX databases to use transport mode.")
 	endif()
 endif()
-
-target_compile_features(transport-plugin PUBLIC cxx_nullptr)

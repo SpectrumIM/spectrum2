@@ -71,7 +71,7 @@ void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamIniti
 			request->send();
 		}
 		else if (response->getRequestedMethod() == "http://jabber.org/protocol/ibb") {
-			ibbSession = std::shared_ptr<IBBSendSession>(new IBBSendSession(id, from, to, bytestream, iqRouter));
+			ibbSession = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IBBSendSession>(new IBBSendSession(id, from, to, bytestream, iqRouter));
 			ibbSession->onFinished.connect(boost::bind(&MyOutgoingSIFileTransfer::handleIBBSessionFinished, this, _1));
 			ibbSession->start();
 #if !HAVE_SWIFTEN_3

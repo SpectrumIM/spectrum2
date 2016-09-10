@@ -5,6 +5,7 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 	find_program(SWIFTEN_CONFIG_EXECUTABLE NAMES swiften-config DOC "swiften-config executable" HINTS ../bin)
 	set( SWIFTEN_CFLAGS "" )
 	if (SWIFTEN_CONFIG_EXECUTABLE)
+		# Libs
 		execute_process(
 			COMMAND ${SWIFTEN_CONFIG_EXECUTABLE} --libs
 			OUTPUT_VARIABLE SWIFTEN_LIB)
@@ -29,7 +30,21 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 			else()
 				list(APPEND SWIFTEN_LIBRARY ${f})
 			endif()
-		endforeach(f) 
+		endforeach(f)
+		
+		# Version
+		execute_process(
+			COMMAND ${SWIFTEN_CONFIG_EXECUTABLE} --version
+			OUTPUT_VARIABLE SWIFTEN_VERSION)
+		string(REGEX REPLACE "[\r\n]"                  " " SWIFTEN_VERSION "${SWIFTEN_VERSION}")
+		string(REGEX REPLACE " +$"                     ""  SWIFTEN_VERSION "${SWIFTEN_VERSION}")
+		string(REGEX REPLACE "swiften-config "          ""  SWIFTEN_VERSION "${SWIFTEN_VERSION}")
+
+		if("${SWIFTEN_VERSION}" STRGREATER "4")
+			message( STATUS "Found Swiften > 4 requesting C++11")
+			add_definitions(-std=c++11)
+		endif()
+		
 		set( SWIFTEN_FOUND 1 )
 	else()
 		message( STATUS "Could NOT find swiften-config" )

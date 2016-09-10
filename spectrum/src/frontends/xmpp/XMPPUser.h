@@ -62,7 +62,7 @@ class XMPPUser : public User {
 
 		void addRoomToRoomList(const std::string &handle, const std::string &name);
 
-		std::shared_ptr<Swift::DiscoItems> getRoomList() {
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> getRoomList() {
 			return m_rooms;
 		}
 
@@ -75,7 +75,7 @@ class XMPPUser : public User {
 		UserManager *m_userManager;
 		UserInfo m_userInfo;
 		std::list <Swift::GetVCardRequest::ref> m_vcardRequests;
-		std::shared_ptr<Swift::DiscoItems> m_rooms;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> m_rooms;
 };
 
 }

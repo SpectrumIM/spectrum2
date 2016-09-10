@@ -179,7 +179,7 @@ void ServerFromClientSession::addTLSEncryption(TLSServerContextFactory* tlsConte
 	if (!tlsLayer->setServerCertificate(cert)) {
 // 		std::cout << "error\n";
 		// TODO:
-// 		onClosed(std::shared_ptr<Error>(new Error(Error::InvalidTLSCertificateError)));
+// 		onClosed(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Error>(new Error(Error::InvalidTLSCertificateError)));
 	}
 	else {
 		tlsLayer->onError.connect(boost::bind(&ServerFromClientSession::handleTLSError, this));

@@ -10,6 +10,8 @@
 
 #include <Swiften/Elements/Stanza.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class ServerSession {
 		public:
@@ -18,6 +20,6 @@ namespace Swift {
 			virtual const JID& getJID() const = 0;
 			virtual int getPriority() const = 0;
 
-			virtual void sendStanza(std::shared_ptr<Stanza>) = 0;
+			virtual void sendStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza>) = 0;
 	};
 }

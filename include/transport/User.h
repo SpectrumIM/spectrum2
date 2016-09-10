@@ -171,10 +171,10 @@ class User {
 		bool m_readyForConnect;
 		bool m_ignoreDisconnect;
 		Swift::Timer::ref m_reconnectTimer;
-		std::shared_ptr<Swift::Connection> connection;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
-		std::vector<std::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
 		int m_reconnectCounter;
 		std::list<Swift::Presence::ref> m_joinedRooms;

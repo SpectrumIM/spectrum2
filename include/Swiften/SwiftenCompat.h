@@ -31,7 +31,7 @@
  * These are guaranteed to be the same implementation as Swift uses internally,
  * thus can be used when passign/retrieveing data from/to swiften.
  *
- * This is due to Swift 4 moved from boost::shared_ptr to std::shared_ptr
+ * This is due to Swift 4 moved from boost::shared_ptr to SWIFTEN_SHRPTR_NAMESPACE::shared_ptr
  * and from boost::signals to boost::signals2 .
  */
 

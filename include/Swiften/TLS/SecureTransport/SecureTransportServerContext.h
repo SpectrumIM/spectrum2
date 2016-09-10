@@ -38,16 +38,16 @@ class SecureTransportServerContext : public TLSServerContext {
 		static std::string stateToString(State state);
 		void setState(State newState);
 
-		static std::shared_ptr<TLSError> nativeToTLSError(OSStatus error);
-		std::shared_ptr<CertificateVerificationError> CSSMErrorToVerificationError(OSStatus resultCode);
+		static SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<TLSError> nativeToTLSError(OSStatus error);
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> CSSMErrorToVerificationError(OSStatus resultCode);
 
 		void processHandshake();
 		void verifyServerCertificate();
 
-		void fatalError(std::shared_ptr<TLSError> error, std::shared_ptr<CertificateVerificationError> certificateError);
+		void fatalError(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<TLSError> error, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> certificateError);
 
 	private:
-		std::shared_ptr<SSLContext> sslContext_;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<SSLContext> sslContext_;
 		SafeByteArray readingBuffer_;
 		State state_;
 		CertificateVerificationError::ref verificationError_;

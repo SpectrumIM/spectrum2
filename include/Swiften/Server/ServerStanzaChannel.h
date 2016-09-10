@@ -25,8 +25,8 @@ namespace Swift {
 			ServerStanzaChannel(const JID &selfJID) : StanzaChannel() {
 				m_jid = selfJID;
 			}
-			void addSession(std::shared_ptr<ServerFromClientSession> session);
-			void removeSession(std::shared_ptr<ServerFromClientSession> session);
+			void addSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session);
+			void removeSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session);
 
 			void sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IQ> iq);
 			void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Message> message);
@@ -51,16 +51,16 @@ namespace Swift {
 		private:
 			std::string getNewIQID();
 			void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza);
-			void handleSessionFinished(const boost::optional<Session::SessionError>&, const std::shared_ptr<ServerFromClientSession> &session);
-			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const std::shared_ptr<ServerFromClientSession> &session);
-			void handleDataRead(const SafeByteArray &data, const std::shared_ptr<ServerFromClientSession> &session);
+			void handleSessionFinished(const boost::optional<Session::SessionError>&, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session);
+			void handleDataRead(const SafeByteArray &data, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session);
 			void handleSessionInitialized();
 
 		private:
 			JID m_jid;
 			IDGenerator idGenerator;
 			// [JID][resources][ServerFromClientSession]
-			std::map<std::string, std::list<std::shared_ptr<ServerFromClientSession> > > sessions;
+			std::map<std::string, std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > > sessions;
 	};
 
 }

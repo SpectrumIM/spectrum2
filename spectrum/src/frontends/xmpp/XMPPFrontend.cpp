@@ -222,7 +222,7 @@ void XMPPFrontend::sendPresence(Swift::Presence::ref presence) {
 }
 
 void XMPPFrontend::sendVCard(Swift::VCard::ref vcard, Swift::JID to) {
-	std::shared_ptr<Swift::GenericRequest<Swift::VCard> > request(new Swift::GenericRequest<Swift::VCard>(Swift::IQ::Result, to, vcard, m_iqRouter));
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GenericRequest<Swift::VCard> > request(new Swift::GenericRequest<Swift::VCard>(Swift::IQ::Result, to, vcard, m_iqRouter));
 	request->send();
 }
 

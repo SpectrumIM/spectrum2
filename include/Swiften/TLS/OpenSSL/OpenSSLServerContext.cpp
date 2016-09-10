@@ -190,7 +190,7 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 	// Create a PKCS12 structure
 	BIO* bio = BIO_new(BIO_s_mem());
 	BIO_write(bio, vecptr(certificate->getData()), certificate->getData().size());
-	std::shared_ptr<PKCS12> pkcs12(d2i_PKCS12_bio(bio, NULL), PKCS12_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PKCS12> pkcs12(d2i_PKCS12_bio(bio, NULL), PKCS12_free);
 	BIO_free(bio);
 	if (!pkcs12) {
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
@@ -206,9 +206,9 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
 		return false;
 	}
-	std::shared_ptr<X509> cert(certPtr, X509_free);
-	std::shared_ptr<EVP_PKEY> privateKey(privateKeyPtr, EVP_PKEY_free);
-	std::shared_ptr<STACK_OF(X509)> caCerts(caCertsPtr, freeX509Stack);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<X509> cert(certPtr, X509_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<EVP_PKEY> privateKey(privateKeyPtr, EVP_PKEY_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<STACK_OF(X509)> caCerts(caCertsPtr, freeX509Stack);
 
 	// Use the key & certificates
 	if (SSL_CTX_use_certificate(context_, cert.get()) != 1) {

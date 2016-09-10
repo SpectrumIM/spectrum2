@@ -44,7 +44,7 @@ BlockResponder::~BlockResponder() {
 	
 }
 
-bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Transport::BlockPayload> info) {
+bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Transport::BlockPayload> info) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");

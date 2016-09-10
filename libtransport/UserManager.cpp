@@ -566,9 +566,9 @@ void UserManager::connectUser(const Swift::JID &user) {
 				m_userRegistry->onPasswordValid(user);
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
 // #if HAVE_SWIFTEN_3
-// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, std::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
+// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
 // #else				
-// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, std::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
+// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
 // #endif
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}

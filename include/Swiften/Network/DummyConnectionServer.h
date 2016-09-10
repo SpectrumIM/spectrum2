@@ -21,7 +21,7 @@
 namespace Swift {
 	class DummyConnectionServer : public ConnectionServer, public EventOwner, public boost::enable_shared_from_this<DummyConnectionServer> {
 		public:
-			typedef std::shared_ptr<DummyConnectionServer> ref;
+			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DummyConnectionServer> ref;
 
 			enum Error {
 				Conflict,

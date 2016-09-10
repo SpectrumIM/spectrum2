@@ -41,7 +41,7 @@ public:
 	CombinedOutgoingFileTransferManager(JingleSessionManager* jingleSessionManager, IQRouter* router, EntityCapsProvider* capsProvider, RemoteJingleTransportCandidateSelectorFactory* remoteFactory, LocalJingleTransportCandidateGeneratorFactory* localFactory, SOCKS5BytestreamRegistry* bytestreamRegistry, SOCKS5BytestreamProxy* bytestreamProxy, Transport::PresenceOracle* presOracle, SOCKS5BytestreamServer *server);
 	~CombinedOutgoingFileTransferManager();
 	
-	std::shared_ptr<OutgoingFileTransfer> createOutgoingFileTransfer(const JID& from, const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream>, const StreamInitiationFileInfo&);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<OutgoingFileTransfer> createOutgoingFileTransfer(const JID& from, const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream>, const StreamInitiationFileInfo&);
 
 private:
 	boost::optional<JID> highestPriorityJIDSupportingJingle(const JID& bareJID);

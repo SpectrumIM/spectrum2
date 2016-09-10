@@ -251,7 +251,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		void handleSwiftPresenceChanged(const std::string &user, Swift::Presence::ref presence) {
-// 			std::shared_ptr<Swift::Client> client = m_users[user];
+// 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 // 			if (client->getMUCRegistry()->isMUC(presence->getFrom().toBare())) {
 // 				return;
 // 			}
@@ -265,7 +265,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 // 			std::string message = presence->getStatus();
 // 			std::string photo = "";
 // 
-// 			std::shared_ptr<Swift::VCardUpdate> update = presence->getPayload<Swift::VCardUpdate>();
+// 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCardUpdate> update = presence->getPayload<Swift::VCardUpdate>();
 // 			if (update) {
 // 				photo = update->getPhotoHash();
 // 			}

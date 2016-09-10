@@ -12,6 +12,8 @@
 #include <Swiften/JID/JID.h>
 #include <Swiften/Elements/Stanza.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class ServerSession;
 
@@ -19,7 +21,7 @@ namespace Swift {
 		public:
 			ServerStanzaRouter();
 
-			bool routeStanza(std::shared_ptr<Stanza>);
+			bool routeStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza>);
 
 			void addClientSession(ServerSession*);
 			void removeClientSession(ServerSession*);

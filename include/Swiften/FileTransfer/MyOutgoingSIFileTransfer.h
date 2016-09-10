@@ -54,7 +54,7 @@ namespace Swift {
 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream;
 			IQRouter* iqRouter;
 			SOCKS5BytestreamServer* socksServer;
-			std::shared_ptr<IBBSendSession> ibbSession;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IBBSendSession> ibbSession;
 			SOCKS5BytestreamRegistry *registry;
 	};
 }

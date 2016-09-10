@@ -136,7 +136,7 @@ namespace Transport {
 			}
 
 		private:
-			void handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+			void handleDiscoInfoResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
 			void handleBackendConfigChanged();

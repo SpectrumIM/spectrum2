@@ -47,7 +47,7 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config, 
 													CONFIG_STRING(m_config, "identity.category"),
 													CONFIG_STRING(m_config, "identity.type")));
 #if HAVE_SWIFTEN_3
-	crypto = std::shared_ptr<CryptoProvider>(PlatformCryptoProvider::create());
+	crypto = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CryptoProvider>(PlatformCryptoProvider::create());
 #endif
 
 	updateFeatures();

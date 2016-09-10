@@ -89,7 +89,7 @@ void Server::stop() {
 
 	stopping = true;
 
-// 	foreach(std::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
+// 	foreach(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
 // 		session->finishSession();
 // 	}
 	serverFromClientSessions.clear();
@@ -109,7 +109,7 @@ void Server::stop() {
 
 void Server::handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection) {
 
-	std::shared_ptr<ServerFromClientSession> serverFromClientSession = std::shared_ptr<ServerFromClientSession>(
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> serverFromClientSession = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>(
 			new ServerFromClientSession(idGenerator.generateID(), connection, 
 					getPayloadParserFactories(), getPayloadSerializers(), userRegistry_, parserFactory_));
 	//serverFromClientSession->setAllowSASLEXTERNAL();
@@ -139,11 +139,11 @@ void Server::handleDataWritten(const SafeByteArray& data) {
 	onDataWritten(data);
 }
 
-void Server::handleSessionStarted(std::shared_ptr<ServerFromClientSession> session) {
+void Server::handleSessionStarted(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) {
 	dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->addSession(session);
 }
 
-void Server::handleSessionFinished(std::shared_ptr<ServerFromClientSession> session) {
+void Server::handleSessionFinished(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) {
 // 	if (!session->getRemoteJID().isValid()) {
 // 		Swift::Presence::ref presence = Swift::Presence::create();
 // 		presence->setFrom(session->getBareJID());

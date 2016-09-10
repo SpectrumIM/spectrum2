@@ -277,7 +277,7 @@ void XMPPRosterManager::sendRIE() {
 
 	BOOST_FOREACH(Swift::JID &jid, jidWithRIE) {
 		LOG4CXX_INFO(logger, "Sending RIE stanza to " << jid.toString());
-		std::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()));
 		request->send();
 	}
 }

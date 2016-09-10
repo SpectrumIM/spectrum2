@@ -831,7 +831,7 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	fileInfo.setName(payload.filename());
 
 	Backend *c = (Backend *) user->getData();
-	std::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream(payload.size()));
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream(payload.size()));
 	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, c, bytestream_id + 1));
 
 	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());

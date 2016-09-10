@@ -69,7 +69,7 @@ namespace Transport {
 			virtual std::string getOAuth2URL(const std::vector<std::string> &args);
 			virtual std::string getRegistrationFields();
 		
-			void handleMessage(std::shared_ptr<Swift::Message> message);
+			void handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
 
 			ThreadPool *getThreadPool() {
 				return m_tp;

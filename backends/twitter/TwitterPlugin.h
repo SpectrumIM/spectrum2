@@ -58,7 +58,7 @@ class TwitterPlugin : public NetworkPlugin {
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 #if HAVE_SWIFTEN_3
-		std::shared_ptr<Swift::CryptoProvider> cryptoProvider;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider> cryptoProvider;
 #endif
 		Swift::Timer::ref tweet_timer;
 		Swift::Timer::ref message_timer;
