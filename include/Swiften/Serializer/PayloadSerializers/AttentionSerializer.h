@@ -9,11 +9,13 @@
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
 #include <Swiften/Elements/AttentionPayload.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class AttentionSerializer : public GenericPayloadSerializer<AttentionPayload> {
 		public:
 			AttentionSerializer();
 
-			virtual std::string serializePayload(boost::shared_ptr<AttentionPayload>)  const;
+			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AttentionPayload>)  const;
 	};
 }

@@ -16,6 +16,7 @@
 #include "transport/PQXXBackend.h"
 #include "transport/StorageBackend.h"
 #include "Swiften/Swiften.h"
+#include "Swiften/SwiftenCompat.h"
 #include <boost/filesystem.hpp>
 #include "unistd.h"
 #include "signal.h"
@@ -45,7 +46,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 		Swift::Timer::ref m_timer;
 		int m_internalUser;
 		StorageBackend *storageBackend;
@@ -169,7 +170,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			m_conn->write(Swift::createSafeByteArray(string));
 		}
 
-		void _handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
+		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
 			std::string d(data->begin(), data->end());
 			handleDataRead(d);
 		}

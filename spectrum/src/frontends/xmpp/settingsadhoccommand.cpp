@@ -39,10 +39,10 @@ SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *us
 SettingsAdHocCommand::~SettingsAdHocCommand() {
 }
 
-boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 	if (!m_storageBackend) {
-		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
-		boost::shared_ptr<Swift::Form> form(new Swift::Form());
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Form> form(new Swift::Form());
 		FormUtils::addTextFixedField(form, "This server does not support transport settings. There is no storage backend configured");
 		response->setForm(form);
 		return response;
@@ -50,15 +50,15 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 
 	UserInfo user;
 	if (m_storageBackend->getUser(m_initiator.toBare().toString(), user) == false) {
-		boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
-		boost::shared_ptr<Swift::Form> form(new Swift::Form());
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Form> form(new Swift::Form());
 		FormUtils::addTextFixedField(form, "You are not registered.");
 		response->setForm(form);
 		return response;
 	}
 
-	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Executing));
-	boost::shared_ptr<Swift::Form> form(new Swift::Form());
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Executing));
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Form> form(new Swift::Form());
 
 	std::string value;
 	int type = (int) TYPE_BOOLEAN;
@@ -88,7 +88,7 @@ void SettingsAdHocCommand::updateUserSetting(Swift::Form::ref form, UserInfo &us
 	m_storageBackend->updateUserSetting(user.id, name, value);
 }
 
-boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::shared_ptr<Swift::Command> payload) {
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload) {
 	UserInfo user;
 	bool registered = m_storageBackend->getUser(m_initiator.toBare().toString(), user);
 
@@ -98,14 +98,14 @@ boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleResponse(boost::sh
 		updateUserSetting(payload->getForm(), user, "stay_connected");
 	}
 
-	boost::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> response(new Swift::Command("settings", m_id, Swift::Command::Completed));
 	return response;
 }
 
-boost::shared_ptr<Swift::Command> SettingsAdHocCommand::handleRequest(boost::shared_ptr<Swift::Command> payload) {
-	boost::shared_ptr<Swift::Command> response;
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> SettingsAdHocCommand::handleRequest(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload) {
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> response;
 	if (payload->getAction() == Swift::Command::Cancel) {
-		response = boost::shared_ptr<Swift::Command>(new Swift::Command("settings", m_id, Swift::Command::Canceled));
+		response = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings", m_id, Swift::Command::Canceled));
 		return response;
 	}
 

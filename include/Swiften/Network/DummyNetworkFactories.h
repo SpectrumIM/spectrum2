@@ -16,6 +16,8 @@
 #include <Swiften/IDN/PlatformIDNConverter.h>
 #endif
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class EventLoop;
 
@@ -77,7 +79,7 @@ namespace Swift {
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
 #if HAVE_SWIFTEN_3
-			boost::shared_ptr<IDNConverter> idnConverter;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IDNConverter> idnConverter;
 			CryptoProvider* cryptoProvider;
 			NetworkEnvironment* networkEnvironment;
 #endif

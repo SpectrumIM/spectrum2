@@ -10,16 +10,18 @@
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 
 XHTMLIMSerializer::XHTMLIMSerializer() : GenericPayloadSerializer<XHTMLIMPayload>() {
 }
 
-std::string XHTMLIMSerializer::serializePayload(boost::shared_ptr<XHTMLIMPayload> payload)  const {
+std::string XHTMLIMSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XHTMLIMPayload> payload)  const {
 	XMLElement html("html", "http://jabber.org/protocol/xhtml-im");
 
-	boost::shared_ptr<XMLElement> body(new XMLElement("body", "http://www.w3.org/1999/xhtml"));
-	body->addNode(boost::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(payload->getBody())));
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLElement> body(new XMLElement("body", "http://www.w3.org/1999/xhtml"));
+	body->addNode(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLRawTextNode>(new XMLRawTextNode(payload->getBody())));
 	html.addNode(body);
 
 	return html.serialize();

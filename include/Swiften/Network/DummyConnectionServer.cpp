@@ -6,11 +6,14 @@
 
 #include <Swiften/Network/DummyConnectionServer.h>
 
+#include <boost/signal.hpp>
 #include <boost/bind.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/asio/placeholders.hpp>
 
 #include <Swiften/EventLoop/EventLoop.h>
+
+#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 
@@ -25,10 +28,10 @@ void DummyConnectionServer::stop() {
 	
 }
 
-void DummyConnectionServer::acceptConnection(boost::shared_ptr<Swift::Connection> connection) {
+void DummyConnectionServer::acceptConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection) {
 		eventLoop->postEvent(
 				boost::bind(boost::ref(onNewConnection), connection), 
-				shared_from_this());
+				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DummyConnectionServer>(this));
 // 		connection->listen();
 }
 

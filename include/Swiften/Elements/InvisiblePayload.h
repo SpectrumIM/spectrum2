@@ -12,12 +12,14 @@
 
 #include <Swiften/Elements/Payload.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
 namespace Swift {
 	class InvisiblePayload : public Payload {
 		public:
-			typedef boost::shared_ptr<InvisiblePayload> ref;
+			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InvisiblePayload> ref;
 
 		public:
 			InvisiblePayload();

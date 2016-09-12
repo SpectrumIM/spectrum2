@@ -142,7 +142,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost");
 		response->setType(Swift::Presence::Error);
-		response->addPayload(boost::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
+		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
 		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 

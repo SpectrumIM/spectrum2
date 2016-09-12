@@ -18,6 +18,8 @@
 #include "signal.h"
 #include "sys/wait.h"
 
+#include "Swiften/SwiftenCompat.h"
+
 #define WRAP(MESSAGE, TYPE) 	pbnetwork::WrapperMessage wrap; \
 	wrap.set_type(TYPE); \
 	wrap.set_payload(MESSAGE); \
@@ -27,8 +29,6 @@
 using namespace Transport;
 
 using namespace boost::filesystem;
-
-using namespace boost;
 
 std::string _data;
 static std::string response;
@@ -440,7 +440,7 @@ int show_status(ManagerConfig *config) {
 	return ret;
 }
 
-static void handleDataRead(boost::shared_ptr<Swift::Connection> m_conn, boost::shared_ptr<Swift::SafeByteArray> data) {
+static void handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
 	_data += std::string(data->begin(), data->end());
 
 	// Parse data while there are some
@@ -490,7 +490,7 @@ static void handleDataRead(boost::shared_ptr<Swift::Connection> m_conn, boost::s
 	}
 }
 
-static void handleConnected(boost::shared_ptr<Swift::Connection> m_conn, const std::string &msg, bool error) {
+static void handleConnected(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn, const std::string &msg, bool error) {
 		m_conn->onConnectFinished.disconnect(boost::bind(&handleConnected, m_conn, msg, _1));
 	if (error) {
 		std::cerr << "Can't connect the server\n";
@@ -587,7 +587,7 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 
 				found = true;
 
-				boost::shared_ptr<Swift::Connection> m_conn;
+				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 				m_conn = networkFactories.getConnectionFactory()->createConnection();
 				m_conn->onDataRead.connect(boost::bind(&handleDataRead, m_conn, _1));
 				m_conn->onConnectFinished.connect(boost::bind(&handleConnected, m_conn, message, _1));

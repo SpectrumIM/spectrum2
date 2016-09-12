@@ -47,9 +47,11 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
+#include "Swiften/SwiftenCompat.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#include "Swiften/SwiftenCompat.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 using namespace Transport;
@@ -60,11 +62,11 @@ class TestingConversation : public Conversation {
 		}
 
 		// Called when there's new message to legacy network from XMPP network
-		void sendMessage(boost::shared_ptr<Swift::Message> &message) {
+		void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message) {
 			onMessageToSend(this, message);
 		}
 
-		boost::signal<void (TestingConversation *, boost::shared_ptr<Swift::Message> &)> onMessageToSend;
+		boost::signal<void (TestingConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class TestingFactory : public Factory {
@@ -79,7 +81,7 @@ class TestingFactory : public Factory {
 			return nc;
 		}
 
-		void handleMessageToSend(TestingConversation *_conv, boost::shared_ptr<Swift::Message> &_msg) {
+		void handleMessageToSend(TestingConversation *_conv, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &_msg) {
 			onMessageToSend(_conv, _msg);
 		}
 
@@ -96,7 +98,7 @@ class TestingFactory : public Factory {
 			return buddy;
 		}
 
-		boost::signal<void (TestingConversation *, boost::shared_ptr<Swift::Message> &)> onMessageToSend;
+		boost::signal<void (TestingConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class TestingStorageBackend : public StorageBackend {
@@ -228,15 +230,15 @@ class BasicTest : public Swift::XMPPParserClient {
 
 	void handleStreamStart(const Swift::ProtocolHeader&);
 #if HAVE_SWIFTEN_3
-	void handleElement(boost::shared_ptr<Swift::ToplevelElement> element);
+	void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element);
 #else
-	void handleElement(boost::shared_ptr<Swift::Element> element);
+	void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 #endif
 	void handleStreamEnd();
 
-	void injectPresence(boost::shared_ptr<Swift::Presence> &response);
-	void injectIQ(boost::shared_ptr<Swift::IQ> iq);
-	void injectMessage(boost::shared_ptr<Swift::Message> msg);
+	void injectPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> &response);
+	void injectIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq);
+	void injectMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg);
 
 	void dumpReceived();
 
@@ -255,13 +257,13 @@ class BasicTest : public Swift::XMPPParserClient {
 	void disconnectUser();
 	void add2Buddies();
 
-	Swift::Stanza *getStanza(boost::shared_ptr<Swift::Element> element);
+	Swift::Stanza *getStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 
 	protected:
 		bool streamEnded;
 		UserManager *userManager;
-		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
-		boost::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession2;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession> serverFromClientSession2;
 		Swift::FullPayloadSerializerCollection* payloadSerializers;
 		Swift::FullPayloadParserFactoryCollection* payloadParserFactories;
 		Swift::XMPPParser *parser;
@@ -273,8 +275,8 @@ class BasicTest : public Swift::XMPPParserClient {
 		Swift::DummyEventLoop *loop;
 		TestingFactory *factory;
 		Component *component;
-		std::vector<boost::shared_ptr<Swift::Element> > received;
-		std::vector<boost::shared_ptr<Swift::Element> > received2;
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> > received;
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> > received2;
 		std::string receivedData;
 		std::string receivedData2;
 		StorageBackend *storage;

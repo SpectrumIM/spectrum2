@@ -25,16 +25,16 @@ namespace Swift {
 			ServerStanzaChannel(const JID &selfJID) : StanzaChannel() {
 				m_jid = selfJID;
 			}
-			void addSession(boost::shared_ptr<ServerFromClientSession> session);
-			void removeSession(boost::shared_ptr<ServerFromClientSession> session);
+			void addSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session);
+			void removeSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session);
 
-			void sendIQ(boost::shared_ptr<IQ> iq);
-			void sendMessage(boost::shared_ptr<Message> message);
-			void sendPresence(boost::shared_ptr<Presence> presence);
+			void sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IQ> iq);
+			void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Message> message);
+			void sendPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Presence> presence);
 #if HAVE_SWIFTEN_3
-			void finishSession(const JID& to, boost::shared_ptr<ToplevelElement> element, bool last = false);
+			void finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement> element, bool last = false);
 #else
-			void finishSession(const JID& to, boost::shared_ptr<Element> element, bool last = false);
+			void finishSession(const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, bool last = false);
 #endif
 			bool getStreamManagementEnabled() const {
 				return false;
@@ -50,17 +50,17 @@ namespace Swift {
 
 		private:
 			std::string getNewIQID();
-			void send(boost::shared_ptr<Stanza> stanza);
-			void handleSessionFinished(const boost::optional<Session::SessionError>&, const boost::shared_ptr<ServerFromClientSession> &session);
-			void handleElement(boost::shared_ptr<Element> element, const boost::shared_ptr<ServerFromClientSession> &session);
-			void handleDataRead(const SafeByteArray &data, const boost::shared_ptr<ServerFromClientSession> &session);
+			void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza);
+			void handleSessionFinished(const boost::optional<Session::SessionError>&, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session);
+			void handleDataRead(const SafeByteArray &data, const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> &session);
 			void handleSessionInitialized();
 
 		private:
 			JID m_jid;
 			IDGenerator idGenerator;
 			// [JID][resources][ServerFromClientSession]
-			std::map<std::string, std::list<boost::shared_ptr<ServerFromClientSession> > > sessions;
+			std::map<std::string, std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > > sessions;
 	};
 
 }

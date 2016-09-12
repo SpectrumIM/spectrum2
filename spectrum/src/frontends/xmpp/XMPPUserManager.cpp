@@ -130,7 +130,7 @@ void XMPPUserManager::handleVCardRequired(User *user, const std::string &name, u
 	m_component->getFrontend()->onVCardRequired(user, name, id);
 }
 
-void XMPPUserManager::handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> vcard) {
+void XMPPUserManager::handleVCardUpdated(User *user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard) {
 	m_component->getFrontend()->onVCardUpdated(user, vcard);
 }
 

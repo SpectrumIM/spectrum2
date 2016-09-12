@@ -118,7 +118,7 @@ void SlackSession::sendMessageToAll(const std::string &msg) {
 	}
 }
 
-void SlackSession::sendMessage(boost::shared_ptr<Swift::Message> message) {
+void SlackSession::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
 	if (m_user) {
 		std::map<std::string, Conversation *> convs = m_user->getConversationManager()->getConversations();
 		for (std::map<std::string, Conversation *> ::const_iterator it = convs.begin(); it != convs.end(); it++) {
@@ -193,7 +193,7 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(Swift::JID(to + "/" + name));
 	presence->setType(Swift::Presence::Available);
-	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+	presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 	m_component->getFrontend()->onPresenceReceived(presence);
 
 	m_onlineBuddiesTimer->start();
@@ -217,7 +217,7 @@ void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
 	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(m_component->getJID());
 	presence->setType(Swift::Presence::Available);
-	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+	presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 	m_component->getFrontend()->onPresenceReceived(presence);
 }
 
@@ -239,7 +239,7 @@ void SlackSession::leaveRoom(const std::string &channel_) {
 	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(Swift::JID(to + "/" + m_uinfo.uin));
 	presence->setType(Swift::Presence::Unavailable);
-	presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+	presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 	m_component->getFrontend()->onPresenceReceived(presence);
 }
 
@@ -250,7 +250,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 	}
 
 	if (!to.empty()) {
-		boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setType(Swift::Message::Groupchat);
 		msg->setTo(to);
 		msg->setFrom(Swift::JID(m_uinfo.jid + "/default"));
@@ -287,7 +287,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 				continue;
 			}
 
-			boost::shared_ptr<Swift::Message> msg(new Swift::Message());
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
 			msg->setTo(b->getJID());
 			msg->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 			msg->setBody("<" + m_idManager->getName(user) + "> " + message);

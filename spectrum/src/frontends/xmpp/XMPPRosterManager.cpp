@@ -194,7 +194,7 @@ void XMPPRosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref e
 	request->onResponse.disconnect_all_slots();
 }
 
-void XMPPRosterManager::handleRemoteRosterResponse(boost::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
+void XMPPRosterManager::handleRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error) {
 	m_remoteRosterRequest.reset();
 	if (error) {
 		m_supportRemoteRoster = false;
@@ -277,7 +277,7 @@ void XMPPRosterManager::sendRIE() {
 
 	BOOST_FOREACH(Swift::JID &jid, jidWithRIE) {
 		LOG4CXX_INFO(logger, "Sending RIE stanza to " << jid.toString());
-		boost::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()));
 		request->send();
 	}
 }

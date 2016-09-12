@@ -21,6 +21,7 @@
 #pragma once
 
 #include <vector>
+#include <boost/signal.hpp>
 #include <boost/bind.hpp>
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
@@ -28,6 +29,7 @@
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Elements/IQ.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 	class StorageBackend;
@@ -108,7 +110,7 @@ namespace Transport {
 			/// \param presence Presence.
 			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
-			boost::signal<void (boost::shared_ptr<Swift::IQ>)> onRawIQReceived;
+			boost::signal<void (SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>)> onRawIQReceived;
 
 			boost::signal<void ()> onAdminInterfaceSet;
 			
@@ -134,7 +136,7 @@ namespace Transport {
 			}
 
 		private:
-			void handleDiscoInfoResponse(boost::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+			void handleDiscoInfoResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
 			void handleBackendConfigChanged();

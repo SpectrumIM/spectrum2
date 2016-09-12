@@ -43,8 +43,6 @@
 
 using namespace boost::filesystem;
 
-using namespace boost;
-
 namespace Transport {
 
 namespace Util {

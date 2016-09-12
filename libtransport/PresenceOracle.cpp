@@ -46,7 +46,7 @@ void PresenceOracle::handleStanzaChannelAvailableChanged(bool available) {
 }
 
 void PresenceOracle::clearPresences(const Swift::JID& bareJID) {
-	std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
+	std::map<JID, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Presence> > jidMap = entries_[bareJID];
 	jidMap.clear();
 	entries_[bareJID] = jidMap;
 }
@@ -69,7 +69,7 @@ void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 			passedPresence->setFrom(bareJID);
 			passedPresence->setStatus(presence->getStatus());
 		}
-		std::map<JID, boost::shared_ptr<Presence> > jidMap = entries_[bareJID];
+		std::map<JID, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Presence> > jidMap = entries_[bareJID];
 		if (passedPresence->getFrom().isBare() && presence->getType() == Presence::Unavailable) {
 			/* Have a bare-JID only presence of offline */
 			jidMap.clear();

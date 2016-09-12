@@ -16,6 +16,7 @@
 #include "transport/Config.h"
 #include "transport/StorageBackend.h"
 #include "geventloop.h"
+#include "Swiften/SwiftenCompat.h"
 
 // #include "valgrind/memcheck.h"
 #if !defined(__FreeBSD__) && !defined(__APPLE__)
@@ -82,7 +83,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 class SpectrumNetworkPlugin;
 
-boost::shared_ptr<Config> config;
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
 StorageBackend *storagebackend;
 
@@ -2260,7 +2261,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	config = boost::shared_ptr<Config>(cfg);
+	config = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config>(cfg);
  
 	Logging::initBackendLogging(config.get());
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {

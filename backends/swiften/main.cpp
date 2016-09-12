@@ -7,6 +7,7 @@
 
 // Swiften
 #include "Swiften/Swiften.h"
+#include "Swiften/SwiftenCompat.h"
 #include <Swiften/Version.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
@@ -51,7 +52,7 @@ class ForwardIQHandler : public Swift::IQHandler {
 			m_user = user;
 		}
 
-		bool handleIQ(boost::shared_ptr<Swift::IQ> iq) {
+		bool handleIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
 			if (iq->getPayload<Swift::RosterPayload>() != NULL) {
 				return false;
 			}
@@ -75,7 +76,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 		bool m_firstPing;
 		
 		Swift::FullPayloadSerializerCollection collection;
@@ -106,7 +107,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		// This method has to call handleDataRead with all received data from network plugin server
-		void _handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data) {
+		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
 			if (m_firstPing) {
 				m_firstPing = false;
 				NetworkPlugin::PluginConfig cfg;
@@ -120,36 +121,36 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 
 		void handleStreamStart(const Swift::ProtocolHeader&) {}
 #if HAVE_SWIFTEN_3
-		void handleElement(boost::shared_ptr<Swift::ToplevelElement> element) {
+		void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element) {
 #else
-		void handleElement(boost::shared_ptr<Swift::Element> element) {
+		void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element) {
 #endif
-			boost::shared_ptr<Swift::Stanza> stanza = boost::dynamic_pointer_cast<Swift::Stanza>(element);
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Stanza> stanza = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::Stanza>(element);
 			if (!stanza) {
 				return;
 			}
 
 			std::string user = stanza->getFrom().toBare();
 
-			boost::shared_ptr<Swift::Client> client = m_users[user];
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 			if (!client)
 				return;
 
 			stanza->setFrom(client->getJID());
 
-			boost::shared_ptr<Swift::Message> message = boost::dynamic_pointer_cast<Swift::Message>(stanza);
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::Message>(stanza);
 			if (message) {
 				client->sendMessage(message);
 				return;
 			}
 
-			boost::shared_ptr<Swift::Presence> presence = boost::dynamic_pointer_cast<Swift::Presence>(stanza);
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> presence = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::Presence>(stanza);
 			if (presence) {
 				client->sendPresence(presence);
 				return;
 			}
 
-			boost::shared_ptr<Swift::IQ> iq = boost::dynamic_pointer_cast<Swift::IQ>(stanza);
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::IQ>(stanza);
 			if (iq) {
 				if (m_handlers[user]->m_id2resource.find(stanza->getID()) != m_handlers[user]->m_id2resource.end()) {
 					std::string resource = m_handlers[user]->m_id2resource[stanza->getID()];
@@ -211,7 +212,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			LOG4CXX_INFO(logger, user << ": Disconnected " << message);
 			handleDisconnected(user, reconnect ? 0 : 3, message);
 
-			boost::shared_ptr<Swift::Client> client = m_users[user];
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
 				client->onConnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftConnected, this, user));
 				client->onDisconnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftDisconnected, this, user, _1));
@@ -250,7 +251,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		void handleSwiftPresenceChanged(const std::string &user, Swift::Presence::ref presence) {
-// 			boost::shared_ptr<Swift::Client> client = m_users[user];
+// 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 // 			if (client->getMUCRegistry()->isMUC(presence->getFrom().toBare())) {
 // 				return;
 // 			}
@@ -264,7 +265,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 // 			std::string message = presence->getStatus();
 // 			std::string photo = "";
 // 
-// 			boost::shared_ptr<Swift::VCardUpdate> update = presence->getPayload<Swift::VCardUpdate>();
+// 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCardUpdate> update = presence->getPayload<Swift::VCardUpdate>();
 // 			if (update) {
 // 				photo = update->getPhotoHash();
 // 			}
@@ -305,7 +306,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			if (legacyName.find("/") == std::string::npos) {
 				jid = Swift::JID(legacyName + "/Spectrum");
 			}
-			boost::shared_ptr<Swift::Client> client = boost::make_shared<Swift::Client>(jid, password, m_factories);
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::Client>(jid, password, m_factories);
 			m_users[user] = client;
 			client->setAlwaysTrustCertificates();
 			client->onConnected.connect(boost::bind(&SwiftenPlugin::handleSwiftConnected, this, user));
@@ -321,7 +322,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			opt.allowPLAINWithoutTLS = true;
 			client->connect(opt);
 
-			boost::shared_ptr<ForwardIQHandler> handler = boost::make_shared<ForwardIQHandler>(this, user);
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ForwardIQHandler> handler = SWIFTEN_SHRPTR_NAMESPACE::make_shared<ForwardIQHandler>(this, user);
 			client->getIQRouter()->addHandler(handler);
 			m_handlers[user] = handler;
 		}
@@ -339,7 +340,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName) {
-			boost::shared_ptr<Swift::Client> client = m_users[user];
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
 				client->onConnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftConnected, this, user));
 // 				client->onDisconnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftDisconnected, this, user, _1));
@@ -357,7 +358,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups) {
-			boost::shared_ptr<Swift::Client> client = m_users[user];
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
 				LOG4CXX_INFO(logger, user << ": Added/Updated buddy " << buddyName << ".");
 				if (!client->getRoster()->containsJID(buddyName) || client->getRoster()->getSubscriptionStateForJID(buddyName) != Swift::RosterItemPayload::Both) {
@@ -365,7 +366,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					item.setName(alias);
 					item.setJID(buddyName);
 					item.setGroups(groups);
-					boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
 					roster->addItem(item);
 					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
 // 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
@@ -376,7 +377,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					Swift::JID contact(buddyName);
 					Swift::RosterItemPayload item(contact, alias, client->getRoster()->getSubscriptionStateForJID(contact));
 					item.setGroups(groups);
-					boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
 					roster->addItem(item);
 					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
 // 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
@@ -387,10 +388,10 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		}
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
-			boost::shared_ptr<Swift::Client> client = m_users[user];
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
 				Swift::RosterItemPayload item(buddyName, "", Swift::RosterItemPayload::Remove);
-				boost::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
+				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
 				roster->addItem(item);
 				Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
 // 				request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
@@ -408,8 +409,8 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 
 	private:
 		Config *config;
-		std::map<std::string, boost::shared_ptr<Swift::Client> > m_users;
-		std::map<std::string, boost::shared_ptr<ForwardIQHandler> > m_handlers;
+		std::map<std::string, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> > m_users;
+		std::map<std::string, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ForwardIQHandler> > m_handlers;
 };
 
 #ifndef WIN32

@@ -62,20 +62,20 @@ class XMPPUser : public User {
 
 		void addRoomToRoomList(const std::string &handle, const std::string &name);
 
-		boost::shared_ptr<Swift::DiscoItems> getRoomList() {
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> getRoomList() {
 			return m_rooms;
 		}
 
 	private:
 		void onConnectingTimeout();
-		void handleVCardReceived(boost::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
+		void handleVCardReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
 
 		Swift::JID m_jid;
 		Component *m_component;
 		UserManager *m_userManager;
 		UserInfo m_userInfo;
 		std::list <Swift::GetVCardRequest::ref> m_vcardRequests;
-		boost::shared_ptr<Swift::DiscoItems> m_rooms;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> m_rooms;
 };
 
 }

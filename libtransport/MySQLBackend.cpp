@@ -86,8 +86,6 @@
 		exec_ok = false; \
 	}
 
-using namespace boost;
-
 namespace Transport {
 
 DEFINE_LOGGER(logger, "MySQLBackend");

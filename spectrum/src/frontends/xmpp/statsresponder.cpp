@@ -37,7 +37,6 @@
 #include <boost/lexical_cast.hpp>
 
 using namespace Swift;
-using namespace boost;
 
 namespace Transport {
 
@@ -71,8 +70,8 @@ unsigned long StatsResponder::usedMemory() {
 	return (unsigned long) rss;
 }
 
-bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<StatsPayload> stats) {
-	boost::shared_ptr<StatsPayload> response(new StatsPayload());
+bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StatsPayload> stats) {
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StatsPayload> response(new StatsPayload());
 
 	if (stats->getItems().empty()) {
 		response->addItem(StatsPayload::Item("uptime"));
@@ -145,7 +144,7 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 	return true;
 }
 
-bool StatsResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<StatsPayload> stats) {
+bool StatsResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StatsPayload> stats) {
 	return false;
 }
 

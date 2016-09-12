@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include "Swiften/Base/boost_bsignals.h"
-
 #include "Swiften/TLS/TLSServerContext.h"
 #include "Swiften/TLS/Schannel/SchannelUtil.h"
 #include <Swiften/TLS/CertificateWithKey.h>
@@ -26,7 +24,7 @@ namespace Swift
 	class SchannelServerContext : public TLSServerContext, boost::noncopyable 
 	{
 	public:
-		typedef boost::shared_ptr<SchannelServerContext> sp_t;
+		typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<SchannelServerContext> sp_t;
 
 	public:
 		SchannelServerContext();

@@ -19,7 +19,7 @@ namespace Swift {
 SpectrumErrorSerializer::SpectrumErrorSerializer() : GenericPayloadSerializer<SpectrumErrorPayload>() {
 }
 
-std::string SpectrumErrorSerializer::serializePayload(boost::shared_ptr<SpectrumErrorPayload> error)  const {
+std::string SpectrumErrorSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<SpectrumErrorPayload> error)  const {
 	std::string data;
 	switch (error->getError()) {
 		case SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR: data = "CONNECTION_ERROR_NETWORK_ERROR"; break;

@@ -11,6 +11,7 @@
 #include "transport/ThreadPool.h"
 
 #include "Swiften/Swiften.h"
+#include "Swiften/SwiftenCompat.h"
 #ifndef _WIN32
 #include "unistd.h"
 #include "signal.h"
@@ -55,9 +56,9 @@ class TwitterPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 #if HAVE_SWIFTEN_3
-		boost::shared_ptr<Swift::CryptoProvider> cryptoProvider;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider> cryptoProvider;
 #endif
 		Swift::Timer::ref tweet_timer;
 		Swift::Timer::ref message_timer;
@@ -70,7 +71,7 @@ class TwitterPlugin : public NetworkPlugin {
 		void sendData(const std::string &string);
 
 		// Receive date from the NetworkPlugin server and invoke the appropirate payload handler (implement in the NetworkPlugin class)
-		void _handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
+		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
 	
 		// User trying to login into his twitter account
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password);

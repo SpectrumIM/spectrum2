@@ -27,6 +27,7 @@
 
 #include "Swiften/Elements/FormField.h"
 #include "Swiften/Elements/Command.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -44,7 +45,7 @@ class AdHocCommand {
 		/// Destructor.
 		virtual ~AdHocCommand();
 
-		virtual boost::shared_ptr<Swift::Command> handleRequest(boost::shared_ptr<Swift::Command> payload) = 0;
+		virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> handleRequest(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload) = 0;
 
 		const std::string &getId() {
 			return m_id;

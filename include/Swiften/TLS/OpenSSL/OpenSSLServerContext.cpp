@@ -181,7 +181,7 @@ void OpenSSLServerContext::sendPendingDataToApplication() {
 }
 
 bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref) {
-	boost::shared_ptr<PKCS12Certificate> certificate = boost::dynamic_pointer_cast<PKCS12Certificate>(certref);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PKCS12Certificate> certificate = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<PKCS12Certificate>(certref);
 	if (certificate->isNull()) {
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate can't be loaded.");
 		return false;
@@ -190,7 +190,7 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 	// Create a PKCS12 structure
 	BIO* bio = BIO_new(BIO_s_mem());
 	BIO_write(bio, vecptr(certificate->getData()), certificate->getData().size());
-	boost::shared_ptr<PKCS12> pkcs12(d2i_PKCS12_bio(bio, NULL), PKCS12_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PKCS12> pkcs12(d2i_PKCS12_bio(bio, NULL), PKCS12_free);
 	BIO_free(bio);
 	if (!pkcs12) {
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
@@ -206,9 +206,9 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Certificate is not in PKCS#12 format.");
 		return false;
 	}
-	boost::shared_ptr<X509> cert(certPtr, X509_free);
-	boost::shared_ptr<EVP_PKEY> privateKey(privateKeyPtr, EVP_PKEY_free);
-	boost::shared_ptr<STACK_OF(X509)> caCerts(caCertsPtr, freeX509Stack);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<X509> cert(certPtr, X509_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<EVP_PKEY> privateKey(privateKeyPtr, EVP_PKEY_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<STACK_OF(X509)> caCerts(caCertsPtr, freeX509Stack);
 
 	// Use the key & certificates
 	if (SSL_CTX_use_certificate(context_, cert.get()) != 1) {
@@ -223,7 +223,7 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 }
 
 Certificate::ref OpenSSLServerContext::getPeerCertificate() const {
-	boost::shared_ptr<X509> x509Cert(SSL_get_peer_certificate(handle_), X509_free);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<X509> x509Cert(SSL_get_peer_certificate(handle_), X509_free);
 	if (x509Cert) {
 		return Certificate::ref(new OpenSSLCertificate(x509Cert));
 	}
@@ -232,13 +232,13 @@ Certificate::ref OpenSSLServerContext::getPeerCertificate() const {
 	}
 }
 
-boost::shared_ptr<CertificateVerificationError> OpenSSLServerContext::getPeerCertificateVerificationError() const {
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> OpenSSLServerContext::getPeerCertificateVerificationError() const {
 	int verifyResult = SSL_get_verify_result(handle_);
 	if (verifyResult != X509_V_OK) {
-		return boost::shared_ptr<CertificateVerificationError>(new CertificateVerificationError(getVerificationErrorTypeForResult(verifyResult)));
+		return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError>(new CertificateVerificationError(getVerificationErrorTypeForResult(verifyResult)));
 	}
 	else {
-		return boost::shared_ptr<CertificateVerificationError>();
+		return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError>();
 	}
 }
 

@@ -33,7 +33,6 @@
 #include "XMPPUser.h"
 
 using namespace Swift;
-using namespace boost;
 
 namespace Transport {
 
@@ -41,10 +40,10 @@ DEFINE_LOGGER(logger, "DiscoItemsResponder");
 
 DiscoItemsResponder::DiscoItemsResponder(Component *component, UserManager *userManager) : Swift::GetResponder<DiscoItems>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()) {
 	m_component = component;
-	m_commands = boost::shared_ptr<DiscoItems>(new DiscoItems());
+	m_commands = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoItems>(new DiscoItems());
 	m_commands->setNode("http://jabber.org/protocol/commands");
 
-	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+	m_rooms = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoItems>(new DiscoItems());
 	m_discoInfoResponder = new DiscoInfoResponder(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter(), component->getConfig(), userManager);
 	m_discoInfoResponder->start();
 
@@ -69,7 +68,7 @@ void DiscoItemsResponder::addRoom(const std::string &node, const std::string &na
 }
 
 void DiscoItemsResponder::clearRooms() {
-	m_rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+	m_rooms = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoItems>(new DiscoItems());
 	m_discoInfoResponder->clearRooms();
 }
 
@@ -78,7 +77,7 @@ Swift::CapsInfo &DiscoItemsResponder::getBuddyCapsInfo() {
 }
 
 
-bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoItems> info) {
+bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> info) {
 	LOG4CXX_INFO(logger, "get request received with node " << info->getNode());
 	if (info->getNode() == "http://jabber.org/protocol/commands") {
 		sendResponse(from, id, m_commands);
@@ -90,7 +89,7 @@ bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::
 			return true;
 		}
 
-		boost::shared_ptr<DiscoItems> rooms = boost::shared_ptr<DiscoItems>(new DiscoItems());
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoItems> rooms = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoItems>(new DiscoItems());
 		BOOST_FOREACH(const DiscoItems::Item &item, m_rooms->getItems()) {
 			rooms->addItem(item);
 		}
@@ -101,7 +100,7 @@ bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::
 		sendResponse(from, id, rooms);
 	}
 	else {
-		sendResponse(from, id, boost::shared_ptr<DiscoItems>(new DiscoItems()));
+		sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoItems>(new DiscoItems()));
 	}
 	return true;
 }

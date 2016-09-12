@@ -57,7 +57,7 @@ class SlackUserManager : public UserManager {
 
 		std::string getOAuth2URL(const std::vector<std::string> &args);
 
-		void sendMessage(boost::shared_ptr<Swift::Message> message);
+		void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
 
 		SlackSession *moveTempSession(const std::string &user);
 		void moveTempSession(const std::string &user, SlackSession *session);

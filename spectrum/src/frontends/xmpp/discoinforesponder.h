@@ -26,6 +26,7 @@
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
+#include "Swiften/SwiftenCompat.h"
 #include <Swiften/Version.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 #if HAVE_SWIFTEN_3
@@ -59,7 +60,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		}
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::DiscoInfo> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> payload);
 		void updateFeatures();
 
 		Swift::DiscoInfo m_transportInfo;
@@ -69,7 +70,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		std::map<std::string, std::string> m_rooms;
 		std::map<std::string, std::string> m_commands;
 #if HAVE_SWIFTEN_3
-		boost::shared_ptr<Swift::CryptoProvider> crypto;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider> crypto;
 #endif
 		UserManager *m_userManager;
 };

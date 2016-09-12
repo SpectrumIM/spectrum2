@@ -9,11 +9,13 @@
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
 #include <Swiften/Elements/SpectrumErrorPayload.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class SpectrumErrorSerializer : public GenericPayloadSerializer<SpectrumErrorPayload> {
 		public:
 			SpectrumErrorSerializer();
 
-			virtual std::string serializePayload(boost::shared_ptr<SpectrumErrorPayload>)  const;
+			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<SpectrumErrorPayload>)  const;
 	};
 }

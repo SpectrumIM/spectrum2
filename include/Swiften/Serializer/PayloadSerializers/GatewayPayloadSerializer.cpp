@@ -11,27 +11,29 @@
 #include <Swiften/Serializer/XML/XMLElement.h>
 #include <Swiften/Serializer/PayloadSerializerCollection.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 
 GatewayPayloadSerializer::GatewayPayloadSerializer()
 	: GenericPayloadSerializer<GatewayPayload>() {
 }
 
-std::string GatewayPayloadSerializer::serializePayload(boost::shared_ptr<GatewayPayload> payload)  const {
+std::string GatewayPayloadSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<GatewayPayload> payload)  const {
 	XMLElement query("query", "jabber:iq:gateway");
 
 	if (payload->getJID().isValid()) {
-		boost::shared_ptr<XMLElement> jid(new XMLElement("jid", "", payload->getJID().toBare().toString()));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLElement> jid(new XMLElement("jid", "", payload->getJID().toBare().toString()));
 		query.addNode(jid);
 	}
 
 	if (!payload->getDesc().empty()) {
-		boost::shared_ptr<XMLElement> desc(new XMLElement("desc", "", payload->getDesc()));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLElement> desc(new XMLElement("desc", "", payload->getDesc()));
 		query.addNode(desc);
 	}
 
 	if (!payload->getPrompt().empty()) {
-		boost::shared_ptr<XMLElement> prompt(new XMLElement("prompt", "", payload->getPrompt()));
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLElement> prompt(new XMLElement("prompt", "", payload->getPrompt()));
 		query.addNode(prompt);
 	}
 

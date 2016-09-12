@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <boost/signal.hpp>
 #include <string>
 #include <map>
 #include "Swiften/Elements/Message.h"
@@ -29,6 +30,7 @@
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/VCard.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -143,7 +145,7 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 		void handleSubscription(Swift::Presence::ref presence);
 		void handleMUCPresence(Swift::Presence::ref presence);
 		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
-		void handleDiscoInfo(const Swift::JID& jid, boost::shared_ptr<Swift::DiscoInfo> info);
+		void handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info);
 		void addUser(User *user);
 
 		long m_onlineBuddies;

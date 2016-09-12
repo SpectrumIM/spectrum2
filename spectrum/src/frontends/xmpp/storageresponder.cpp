@@ -31,7 +31,6 @@
 #include "transport/Logging.h"
 
 using namespace Swift;
-using namespace boost;
 
 namespace Transport {
 
@@ -45,7 +44,7 @@ StorageResponder::StorageResponder(Swift::IQRouter *router, StorageBackend *stor
 StorageResponder::~StorageResponder() {
 }
 
-bool StorageResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload) {
+bool StorageResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::PrivateStorage> payload) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
@@ -58,11 +57,11 @@ bool StorageResponder::handleGetRequest(const Swift::JID& from, const Swift::JID
 	m_storageBackend->getUserSetting(user->getUserInfo().id, "storage", type, value);
 	LOG4CXX_INFO(logger, from.toBare().toString() << ": Sending jabber:iq:storage");
 
-	sendResponse(from, id, boost::shared_ptr<PrivateStorage>(new PrivateStorage(boost::shared_ptr<RawXMLPayload>(new RawXMLPayload(value)))));
+	sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PrivateStorage>(new PrivateStorage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<RawXMLPayload>(new RawXMLPayload(value)))));
 	return true;
 }
 
-bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, boost::shared_ptr<Swift::PrivateStorage> payload) {
+bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::PrivateStorage> payload) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
@@ -70,14 +69,14 @@ bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 		return true;
 	}
 
-	boost::shared_ptr<Storage> storage = boost::dynamic_pointer_cast<Storage>(payload->getPayload());
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Storage> storage = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Storage>(payload->getPayload());
 
 	if (storage) {
 		StorageSerializer serializer;
-		std::string value = serializer.serializePayload(boost::dynamic_pointer_cast<Storage>(payload->getPayload()));
+		std::string value = serializer.serializePayload(SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Storage>(payload->getPayload()));
 		m_storageBackend->updateUserSetting(user->getUserInfo().id, "storage", value);
 		LOG4CXX_INFO(logger, from.toBare().toString() << ": Storing jabber:iq:storage");
-		sendResponse(from, id, boost::shared_ptr<PrivateStorage>());
+		sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PrivateStorage>());
 	}
 	else {
 		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unknown element. Libtransport does not support serialization of this.");

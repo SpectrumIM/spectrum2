@@ -39,6 +39,7 @@
 #include "Swiften/Parser/XMPPParser.h"
 #include "Swiften/Parser/XMPPParserClient.h"
 #include "Swiften/Serializer/XMPPSerializer.h"
+#include "Swiften/SwiftenCompat.h"
 #include <Swiften/Version.h>
 #include <Swiften/FileTransfer/FileTransfer.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
@@ -68,7 +69,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 			int pongReceived;
 			std::list<User *> users;
 			Swift::SafeByteArray data;
-			boost::shared_ptr<Swift::Connection> connection;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection;
 			unsigned long res;
 			unsigned long init_res;
 			unsigned long shared;
@@ -104,13 +105,13 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 
 		bool moveToLongRunBackend(User *user);
 
-		void handleMessageReceived(NetworkConversation *conv, boost::shared_ptr<Swift::Message> &message);
+		void handleMessageReceived(NetworkConversation *conv, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message);
 
 	public:
-		void handleNewClientConnection(boost::shared_ptr<Swift::Connection> c);
+		void handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> c);
 		void handleSessionFinished(Backend *c);
 		void handlePongReceived(Backend *c);
-		void handleDataRead(Backend *c, boost::shared_ptr<Swift::SafeByteArray> data);
+		void handleDataRead(Backend *c, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
 
 		void handleConnectedPayload(const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
@@ -148,7 +149,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 
 		void handleBlockToggled(Buddy *buddy);
 
-		void handleVCardUpdated(User *user, boost::shared_ptr<Swift::VCard> vcard);
+		void handleVCardUpdated(User *user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard);
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
 
 		void handleFTStateChanged(Swift::FileTransfer::State state, const std::string &userName, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id);
@@ -158,7 +159,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 
 		void handlePIDTerminated(unsigned long pid);
 	private:
-		void send(boost::shared_ptr<Swift::Connection> &, const std::string &data);
+		void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> &, const std::string &data);
 
 		void pingTimeout();
 		void sendPing(Backend *c);
@@ -166,14 +167,14 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false, bool check = false);
 		void connectWaitingUsers();
 		void loginDelayFinished();
-		void handleRawIQReceived(boost::shared_ptr<Swift::IQ> iq);
-		void handleRawPresenceReceived(boost::shared_ptr<Swift::Presence> presence);
+		void handleRawIQReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq);
+		void handleRawPresenceReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> presence);
 
 		void handleStreamStart(const Swift::ProtocolHeader&) {}
 #if HAVE_SWIFTEN_3
-		void handleElement(boost::shared_ptr<Swift::ToplevelElement> element);
+		void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element);
 #else
-		void handleElement(boost::shared_ptr<Swift::Element> element);
+		void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 #endif
 		void handleStreamEnd() {}
 
@@ -182,7 +183,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		RosterResponder *m_rosterResponder;
 		BlockResponder *m_blockResponder;
 		Config *m_config;
-		boost::shared_ptr<Swift::ConnectionServer> m_server;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Backend *>  m_clients;
 		std::vector<unsigned long> m_pids;
 		Swift::Timer::ref m_pingTimer;

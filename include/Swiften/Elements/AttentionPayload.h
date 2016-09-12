@@ -12,10 +12,12 @@
 
 #include <Swiften/Elements/Payload.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class AttentionPayload : public Payload {
 		public:
-			typedef boost::shared_ptr<AttentionPayload> ref;
+			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AttentionPayload> ref;
 
 		public:
 			AttentionPayload();

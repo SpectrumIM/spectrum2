@@ -88,7 +88,7 @@ void Conversation::destroyRoom() {
 		c2.code = 307;
 		p->addStatusCode(c2);
 
-		presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
+		presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(p));
 		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
 			presence->setTo(jid);
 			m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
@@ -101,9 +101,9 @@ void Conversation::setRoom(const std::string &room) {
 	m_legacyName = m_room + "/" + m_legacyName;
 }
 
-void Conversation::cacheMessage(boost::shared_ptr<Swift::Message> &message) {
+void Conversation::cacheMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message) {
 	boost::posix_time::ptime timestamp = boost::posix_time::second_clock::universal_time();
-	boost::shared_ptr<Swift::Delay> delay(boost::make_shared<Swift::Delay>());
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Delay> delay(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::Delay>());
 	delay->setStamp(timestamp);
 	message->addPayload(delay);
 	m_cachedMessages.push_back(message);
@@ -112,7 +112,7 @@ void Conversation::cacheMessage(boost::shared_ptr<Swift::Message> &message) {
 	}
 }
 
-void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) {
+void Conversation::handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message) {
 	if (message->getType() != Swift::Message::Groupchat) {
 		if (m_conversationManager->getComponent()->inServerMode() && m_conversationManager->getUser()->shouldCacheMessages()) {
 			cacheMessage(message);
@@ -145,7 +145,7 @@ void Conversation::handleRawMessage(boost::shared_ptr<Swift::Message> &message) 
 	}
 }
 
-void Conversation::handleMessage(boost::shared_ptr<Swift::Message> &message, const std::string &nickname) {
+void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname) {
 	if (m_muc) {
 		message->setType(Swift::Message::Groupchat);
 	}
@@ -269,7 +269,7 @@ void Conversation::sendParticipants(const Swift::JID &to, const std::string &nic
 }
 
 void Conversation::sendCachedMessages(const Swift::JID &to) {
-	for (std::list<boost::shared_ptr<Swift::Message> >::const_iterator it = m_cachedMessages.begin(); it != m_cachedMessages.end(); it++) {
+	for (std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >::const_iterator it = m_cachedMessages.begin(); it != m_cachedMessages.end(); it++) {
 		if (to.isValid()) {
 			(*it)->setTo(to);
 		}
@@ -321,24 +321,24 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 		if (flag & PARTICIPANT_FLAG_CONFLICT) {
 			delete p;
 			presence->setType(Swift::Presence::Error);
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::Conflict)));
+			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::Conflict)));
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_CONFLICT");
 			return presence;
 		}
 		else if (flag & PARTICIPANT_FLAG_NOT_AUTHORIZED) {
 			delete p;
 			presence->setType(Swift::Presence::Error);
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth, statusMessage)));
+			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth, statusMessage)));
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_NOT_AUTHORIZED");
 			return presence;
 		}
 		else if (flag & PARTICIPANT_FLAG_ROOM_NOT_FOUD) {
 			delete p;
 			presence->setType(Swift::Presence::Error);
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-			presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::ItemNotFound, Swift::ErrorPayload::Cancel, statusMessage)));
+			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
+			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::ItemNotFound, Swift::ErrorPayload::Cancel, statusMessage)));
 			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_ROOM_NOT_FOUND");
 			return presence;
 		}
@@ -376,11 +376,11 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 	}
 
 	if (!iconhash.empty()) {
-		presence->addPayload(boost::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (iconhash)));
+		presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::VCardUpdate (iconhash)));
 	}
 	
 	p->addItem(item);
-	presence->addPayload(boost::shared_ptr<Swift::Payload>(p));
+	presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(p));
 	return presence;
 }
 

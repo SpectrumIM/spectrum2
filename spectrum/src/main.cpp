@@ -18,6 +18,7 @@
 #include "frontends/slack/SlackFrontendPlugin.h"
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
+#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #ifndef WIN32
@@ -223,10 +224,10 @@ int mainloop() {
 	std::string plugin_fc = "create_" + frontend_name + "_frontend_plugin";
 
 	dll::shared_library self(dll::program_location());
-	boost::function<boost::shared_ptr<FrontendPlugin>()> creator;
+	boost::function<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<FrontendPlugin>()> creator;
 
 	try {
-		creator = self.get_alias<boost::shared_ptr<FrontendPlugin>()>(plugin_fc);
+		creator = self.get_alias<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<FrontendPlugin>()>(plugin_fc);
 	} catch(boost::system::system_error& e) {
 		LOG4CXX_ERROR(logger, "Error when loading frontend " << e.what());
 		return -3;

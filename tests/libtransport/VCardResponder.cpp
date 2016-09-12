@@ -39,8 +39,8 @@ class VCardResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handleGetRequestMUC() {
-		boost::shared_ptr<Swift::VCard> payload(new Swift::VCard());
-		boost::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "foobar", payload);
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> payload(new Swift::VCard());
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "foobar", payload);
 		iq->setFrom("user@localhost/me");
 		iq->setTo("#room@localhost/user");
 		injectIQ(iq);

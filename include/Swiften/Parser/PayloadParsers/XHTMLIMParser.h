@@ -9,6 +9,8 @@
 #include <Swiften/Elements/XHTMLIMPayload.h>
 #include <Swiften/Parser/GenericPayloadParser.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class SerializingParser;
 
@@ -19,7 +21,7 @@ namespace Swift {
 			virtual void handleStartElement(const std::string& element, const std::string&, const AttributeMap& attributes);
 			virtual void handleEndElement(const std::string& element, const std::string&);
 			virtual void handleCharacterData(const std::string& data);
-			boost::shared_ptr<XHTMLIMPayload> getLabelPayload() const;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XHTMLIMPayload> getLabelPayload() const;
 		private:
 			enum Level { 
 				TopLevel = 0, 

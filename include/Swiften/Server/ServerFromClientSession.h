@@ -7,8 +7,8 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <Swiften/Base/boost_bsignals.h>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/signals.hpp>
 
 #include <string>
 #include <Swiften/Session/Session.h>
@@ -18,6 +18,8 @@
 #include <Swiften/TLS/CertificateWithKey.h>
 #include <Swiften/Version.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
+
+#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class ProtocolHeader;
@@ -38,7 +40,7 @@ namespace Swift {
 		public:
 			ServerFromClientSession(
 					const std::string& id,
-					boost::shared_ptr<Connection> connection, 
+					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection,
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
 					UserRegistry* userRegistry,
@@ -63,9 +65,9 @@ namespace Swift {
 
 		private:
 #if HAVE_SWIFTEN_3
-			void handleElement(boost::shared_ptr<ToplevelElement>);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement>);
 #else		
-			void handleElement(boost::shared_ptr<Element>);
+			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element>);
 #endif
 			void handleStreamStart(const ProtocolHeader& header);
 			void handleSessionFinished(const boost::optional<SessionError>&);

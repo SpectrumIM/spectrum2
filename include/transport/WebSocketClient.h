@@ -31,6 +31,7 @@
 #include <Swiften/Base/SafeByteArray.h>
 #include "Swiften/Version.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
@@ -66,7 +67,7 @@ class WebSocketClient {
 
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);
-		void handleDataRead(boost::shared_ptr<Swift::SafeByteArray> data);
+		void handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
 		void handleConnected(bool error);
 		void handleDisconnected(const boost::optional<Swift::Connection::Error> &error);
 
@@ -74,8 +75,8 @@ class WebSocketClient {
 
 	private:
 		Component *m_component;
-		boost::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
-		boost::shared_ptr<Swift::Connection> m_conn;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 		Swift::TLSConnectionFactory *m_tlsConnectionFactory;
 		Swift::PlatformTLSFactories *m_tlsFactory;
 		std::string m_host;

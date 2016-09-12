@@ -43,8 +43,8 @@ Frontend *XMPPFrontendPlugin::createFrontend() {
 
 // XMPPFrontendPlugin plugin;
 
-boost::shared_ptr<FrontendPlugin> get_xmpp_frontend_plugin() {
-	return boost::make_shared<XMPPFrontendPlugin>();
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<FrontendPlugin> get_xmpp_frontend_plugin() {
+	return SWIFTEN_SHRPTR_NAMESPACE::make_shared<XMPPFrontendPlugin>();
 }
 
 // BOOST_DLL_AUTO_ALIAS(plugin)

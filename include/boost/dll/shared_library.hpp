@@ -12,6 +12,9 @@
 /// \brief Contains the boost::dll::shared_library class, core class for all the
 /// DLL/DSO operations.
 
+// Walkaround for compatibility with boost 1.54
+#include <boost/move/move.hpp>
+
 #include <boost/config.hpp>
 #include <boost/predef/os.h>
 #include <boost/utility/explicit_operator_bool.hpp>

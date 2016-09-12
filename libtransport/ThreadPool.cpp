@@ -1,6 +1,8 @@
 #include "transport/ThreadPool.h"
 #include "transport/Logging.h"
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Transport {
 
 DEFINE_LOGGER(logger, "ThreadPool")
@@ -10,7 +12,7 @@ static void Worker(Thread *t, int wid, Swift::EventLoop *loop)
 {
 	LOG4CXX_INFO(logger, "Starting thread " << wid)
 	t->run();
-	loop->postEvent(boost::bind(boost::ref(onWorkCompleted), t, wid), boost::shared_ptr<Swift::EventOwner>());
+	loop->postEvent(boost::bind(boost::ref(onWorkCompleted), t, wid), SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::EventOwner>());
 }
 
 

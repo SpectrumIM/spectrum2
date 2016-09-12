@@ -7,11 +7,11 @@
 #pragma once
 
 #include <openssl/ssl.h>
-#include "Swiften/Base/boost_bsignals.h"
 #include <boost/noncopyable.hpp>
 
 #include "Swiften/TLS/TLSServerContext.h"
 #include "Swiften/Base/ByteArray.h"
+#include "Swiften/SwiftenCompat.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 
 namespace Swift {
@@ -29,7 +29,7 @@ namespace Swift {
 			void handleDataFromApplication(const SafeByteArray&);
 
 			Certificate::ref getPeerCertificate() const;
-			boost::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
 
 			virtual ByteArray getFinishMessage() const;
 

@@ -10,28 +10,29 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <Swiften/Base/boost_bsignals.h>
 
 #include <Swiften/Network/DummyConnection.h>
 #include <Swiften/Network/ConnectionServer.h>
 #include <Swiften/EventLoop/EventOwner.h>
 #include <Swiften/Version.h>
 
+#include "Swiften/SwiftenCompat.h"
+
 namespace Swift {
 	class DummyConnectionServer : public ConnectionServer, public EventOwner, public boost::enable_shared_from_this<DummyConnectionServer> {
 		public:
-			typedef boost::shared_ptr<DummyConnectionServer> ref;
+			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DummyConnectionServer> ref;
 
 			enum Error {
 				Conflict,
 				UnknownError
 			};
 
-			static ref create(EventLoop* eventLoop) {
-				return ref(new DummyConnectionServer(eventLoop));
+			static SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DummyConnectionServer> create(EventLoop* eventLoop) {
+				return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DummyConnectionServer>(new DummyConnectionServer(eventLoop));
 			}
 
-			void acceptConnection(boost::shared_ptr<Swift::Connection> connection);
+			void acceptConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection);
 
 #if (SWIFTEN_VERSION >= 0x030000)
 			virtual boost::optional<ConnectionServer::Error> tryStart() {

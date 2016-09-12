@@ -12,6 +12,9 @@
 #include <Swiften/JID/JID.h>
 
 #include "transport/PresenceOracle.h"
+
+#include "Swiften/SwiftenCompat.h"
+
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include <Swiften/Version.h>
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
@@ -38,7 +41,7 @@ public:
 	CombinedOutgoingFileTransferManager(JingleSessionManager* jingleSessionManager, IQRouter* router, EntityCapsProvider* capsProvider, RemoteJingleTransportCandidateSelectorFactory* remoteFactory, LocalJingleTransportCandidateGeneratorFactory* localFactory, SOCKS5BytestreamRegistry* bytestreamRegistry, SOCKS5BytestreamProxy* bytestreamProxy, Transport::PresenceOracle* presOracle, SOCKS5BytestreamServer *server);
 	~CombinedOutgoingFileTransferManager();
 	
-	boost::shared_ptr<OutgoingFileTransfer> createOutgoingFileTransfer(const JID& from, const JID& to, boost::shared_ptr<ReadBytestream>, const StreamInitiationFileInfo&);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<OutgoingFileTransfer> createOutgoingFileTransfer(const JID& from, const JID& to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream>, const StreamInitiationFileInfo&);
 
 private:
 	boost::optional<JID> highestPriorityJIDSupportingJingle(const JID& bareJID);
