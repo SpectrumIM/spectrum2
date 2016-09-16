@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hanzz/spectrum2.png?branch=master)](https://travis-ci.org/hanzz/spectrum2)
+[![Build Status](https://travis-ci.org/hanzz/spectrum2.svg?branch=master)](https://travis-ci.org/hanzz/spectrum2)
 
 ![](http://spectrum.im/animation.gif)
 
