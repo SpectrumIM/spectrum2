@@ -19,15 +19,18 @@ At the moment we support AMD64 and armhf (for ARM-based machines, like Raspberry
 
 You need to rebuild source libcommuni and spectrum packages from our source package repository:
 
-        # apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51 
-        # apt-get install devscripts fakeroot libssl-dev libqt4-dev
-        # dget -x http://packages.spectrum.im/spectrum2/pool/main/c/communi/communi_3.4.0-1.dsc
-        # cd communi_3.4.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
+        $ apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51 
+        $ apt-get install devscripts fakeroot libssl-dev libqt4-dev
+        $ dget -x http://packages.spectrum.im/spectrum2/pool/main/c/communi/communi_3.4.0-1.dsc
+        $ cd communi_3.4.0-1 && dpkg-buildpackage -rfakeroot -us -uc  && cd ..
         # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev libcommuni-dev
-        # dget -x http://packages.spectrum.im/spectrum2/pool/main/s/spectrum2/spectrum2_2.0.3-1.dsc
-        # cd spectrum2_2.0.3-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
+        $ dget -x http://packages.spectrum.im/spectrum2/pool/main/s/spectrum2/spectrum2_2.0.3-1.dsc
+        $ cd spectrum2_2.0.3-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
 
 When the compilation process has ended the .deb packages for libcommuni and spectrum will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
+
+### Troubleshooting
+If you got gpg verification error, then `dscverify` can not find appropriate keystore, see http://askubuntu.com/a/215008 for fix. This shouldn't happened if you are install keys and build packages from the same account (Note, building doesn't require root)
 
 ## Quick packaging with CPack
 
