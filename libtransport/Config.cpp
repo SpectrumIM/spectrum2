@@ -219,15 +219,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		if (opt.unregistered) {
 			if (std::find(has_key.begin(), has_key.end(), opt.string_key) == has_key.end()) {
 				has_key.push_back(opt.string_key);
-				if (opt.value[0] == "true" || opt.value[0] == "1") {
-					m_unregistered[opt.string_key] = variable_value(true, false);
-				}
-				else if (opt.value[0] == "true" || opt.value[0] == "1") {
-					m_unregistered[opt.string_key] = variable_value(false, false);
-				}
-				else {
-					m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
-				}
+				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 			}
 			else {
 				std::list<std::string> list;
