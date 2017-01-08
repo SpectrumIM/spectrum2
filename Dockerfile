@@ -6,7 +6,7 @@ ARG commit=unknown
 RUN echo $commit
 
 # Spectrum 2
-RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurple-devel protobuf-devel swiften-devel rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel log4cxx-devel gettext libgcrypt-devel libwebp-devel libpurple-devel zlib-devel json-glib-devel python-pip zlib-devel libjpeg-devel python-devel  mysql-devel popt-devel git libevent-devel qt-devel dbus-glib-devel libcurl-devel wget -y && \
+RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurple-devel protobuf-devel swiften-devel rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel log4cxx-devel gettext libgcrypt-devel libwebp-devel libpurple-devel zlib-devel json-glib-devel python-pip zlib-devel libjpeg-devel python-devel  mysql-devel popt-devel git libevent-devel qt-devel dbus-glib-devel libcurl-devel wget mercurial libtool -y && \
 	echo "---> Installing Spectrum 2" && \
 		git clone git://github.com/hanzz/spectrum2.git && \
 		cd spectrum2 && \
@@ -17,8 +17,10 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		rm -rf spectrum2 && \
 		rm -rf ~/rpmbuild && \
 	echo "---> Installing purple-facebook" && \
-		wget https://github.com/jgeboski/purple-facebook/releases/download/6a0a79182ebc/purple-facebook-6a0a79182ebc.tar.gz && \
-		tar -xf purple-facebook-6a0a79182ebc.tar.gz  && cd purple-facebook-6a0a79182ebc && \
+		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.0-c9b74a765767/purple-facebook-0.9.0-c9b74a765767.tar.gz && \
+		tar -xf purple-facebook-0.9.0-c9b74a765767.tar.gz && \
+		cd purple-facebook-0.9.0-c9b74a765767 && \
+		./autogen.sh && \
 		./configure && \
 		make && \
 		make install && \
