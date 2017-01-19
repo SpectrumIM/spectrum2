@@ -17,6 +17,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST_SUITE(ConfigTest);
 	CPPUNIT_TEST(setStringTwice);
 	CPPUNIT_TEST(setUnknownBool);
+	CPPUNIT_TEST(enumerateConfigSection);
 	CPPUNIT_TEST(updateBackendConfig);
 	CPPUNIT_TEST(updateBackendConfigJIDEscaping);
 	CPPUNIT_TEST(unregisteredList);
@@ -44,9 +45,21 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	void setUnknownBool() {
 		char *argv[3] = {"binary", "--service.jids=localhost", NULL};
 		Config cfg(2, argv);
-		std::istringstream ifs("service.irc_send_pass = 1\n");
+		std::istringstream ifs("service.irc_send_pass = 1\npurple.group-chat-open=0\n");
 		cfg.load(ifs);
 		CPPUNIT_ASSERT_EQUAL(true, CONFIG_BOOL_DEFAULTED(&cfg, "service.irc_send_pass", false));
+		CPPUNIT_ASSERT_EQUAL(false, CONFIG_BOOL_DEFAULTED(&cfg, "purple.group-chat-open", true));
+	}
+
+	void enumerateConfigSection() {
+		char *argv[3] = {"binary", "--service.jids=localhost", NULL};
+		Config cfg(2, argv);
+		std::istringstream ifs("purple.irc_send_pass=1\npurple.group-chat-open=false\npurple.test=passed");
+		cfg.load(ifs);
+		Config::SectionValuesCont purpleConfigValues = cfg.getSectionValues("purple");
+		CPPUNIT_ASSERT_EQUAL(true, purpleConfigValues["purple.irc_send_pass"].as<bool>());
+		CPPUNIT_ASSERT_EQUAL(false, purpleConfigValues["purple.group-chat-open"].as<bool>());
+		CPPUNIT_ASSERT_EQUAL(std::string("passed"), purpleConfigValues["purple.test"].as<std::string>());
 	}
 
 	void updateBackendConfig() {

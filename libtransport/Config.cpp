@@ -222,7 +222,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 				if (opt.value[0] == "true" || opt.value[0] == "1") {
 					m_unregistered[opt.string_key] = variable_value(true, false);
 				}
-				else if (opt.value[0] == "true" || opt.value[0] == "1") {
+				else if (opt.value[0] == "false" || opt.value[0] == "0") {
 					m_unregistered[opt.string_key] = variable_value(false, false);
 				}
 				else {

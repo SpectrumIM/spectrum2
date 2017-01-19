@@ -278,7 +278,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					found = true;
 					switch (type) {
 						case PURPLE_PREF_BOOLEAN:
-							purple_account_set_bool_wrapped(account, strippedKey.c_str(), fromString<bool>(keyItem.second.as<std::string>()));
+							purple_account_set_bool_wrapped(account, strippedKey.c_str(), keyItem.second.as<bool>());
 							break;
 
 						case PURPLE_PREF_INT:
