@@ -215,7 +215,7 @@ static bool storeUserOAuthToken(const std::string user, const std::string OAuthT
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
 		SpectrumNetworkPlugin() : NetworkPlugin() {
-
+			LOG4CXX_INFO(logger, "Starting libpurple backend " << SPECTRUM_VERSION);
 		}
 
 		void handleExitRequest() {
