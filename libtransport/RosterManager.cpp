@@ -59,7 +59,7 @@ RosterManager::~RosterManager() {
 
 	sendUnavailablePresences(m_user->getJID().toBare());
 
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -365,7 +365,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -381,7 +381,7 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 }
 
 void RosterManager::sendCurrentPresences(const Swift::JID &to) {
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -416,7 +416,7 @@ void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID
 }
 
 void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;

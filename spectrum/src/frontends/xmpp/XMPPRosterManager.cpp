@@ -208,7 +208,7 @@ void XMPPRosterManager::handleRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::sha
 	//If we receive empty RosterPayload on login (not register) initiate full RosterPush
 	if(!m_buddies.empty() && payload->getItems().empty()){
 			LOG4CXX_INFO(logger, "Received empty Roster upon login. Pushing full Roster.");
-			for(std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
+			for(std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
 					c_it != m_buddies.end(); c_it++) {
 				sendBuddyRosterPush(c_it->second);
 			}
@@ -250,7 +250,7 @@ void XMPPRosterManager::sendRIE() {
 
 	// fallback to normal subscribe
 	if (jidWithRIE.empty()) {
-		for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+		for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 			Buddy *buddy = (*it).second;
 			if (!buddy) {
 				continue;
@@ -261,7 +261,7 @@ void XMPPRosterManager::sendRIE() {
 	}
 
 	Swift::RosterItemExchangePayload::ref payload = Swift::RosterItemExchangePayload::ref(new Swift::RosterItemExchangePayload());
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
