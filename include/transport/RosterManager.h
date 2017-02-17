@@ -44,7 +44,7 @@ class RosterStorage;
 /// Manages roster of one XMPP user.
 class RosterManager {
 	public:
-		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > BuddiesMap;
+		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > > BuddiesMap;
 		/// Creates new RosterManager.
 		/// \param user User associated with this RosterManager.
 		/// \param component Transport instance associated with this roster.
@@ -121,7 +121,7 @@ class RosterManager {
 		void sendUnavailablePresences(const Swift::JID &to);
 
 	protected:
-		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > m_buddies;
+		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > > m_buddies;
 
 	private:
 		Component *m_component;
