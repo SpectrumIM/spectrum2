@@ -17,9 +17,9 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		rm -rf spectrum2 && \
 		rm -rf ~/rpmbuild && \
 	echo "---> Installing purple-facebook" && \
-		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.0-c9b74a765767/purple-facebook-0.9.0-c9b74a765767.tar.gz && \
-		tar -xf purple-facebook-0.9.0-c9b74a765767.tar.gz && \
-		cd purple-facebook-0.9.0-c9b74a765767 && \
+		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.3-c9b74a765767/purple-facebook-0.9.3-c9b74a765767.tar.gz && \
+		tar -xf purple-facebook-0.9.3-c9b74a765767.tar.gz && \
+		cd purple-facebook-0.9.3-c9b74a765767 && \
 		./autogen.sh && \
 		./configure && \
 		make && \
