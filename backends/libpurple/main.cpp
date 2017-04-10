@@ -2217,7 +2217,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
 				cfg.setNeedPassword(false);
 			}
-			if (CONFIG_STRING(config, "service.protocol") == "prpl-irc") {
+			if (CONFIG_BOOL(config, "service.server_mode") || CONFIG_STRING(config, "service.protocol") == "prpl-irc") {
 				cfg.setNeedRegistration(false);
 			}
 			else {
