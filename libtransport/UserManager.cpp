@@ -246,7 +246,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		// the transport just by joining the room.
 		if (!m_component->inServerMode()) {
 			if (!registered && (CONFIG_BOOL(m_component->getConfig(), "registration.auto_register")
-				/*!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)*/)) {
+				 || !CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true))) {
 				res.password = "";
 				res.jid = userkey;
 
