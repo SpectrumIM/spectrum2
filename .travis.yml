@@ -7,7 +7,7 @@ sudo: required
 dist: trusty
 before_script:
           - curl -k https://swift.im/keys/packages.key | sudo apt-key add -
-          - echo "deb http://swift.im/packages/ubuntu/trusty development main" | sudo tee -a /etc/apt/sources.list
+          - echo "deb http://swift.im/packages/ubuntu/trusty beta main" | sudo tee -a /etc/apt/sources.list
           - echo "deb http://packages.spectrum.im/spectrum2/ trusty main" | sudo tee -a /etc/apt/sources.list
           - echo " deb http://packages.prosody.im/debian trusty main" | sudo tee -a /etc/apt/sources.list
           - sudo apt-get update -qq
