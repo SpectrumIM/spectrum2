@@ -53,7 +53,15 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		./configure && \
 		make && \
 		make install && \
+		cd .. && \
 		rm -rf telegram-purple && \
+	echo "---> Install Discord" && \
+		git clone https://github.com/EionRobb/purple-discord.git && \
+		cd purple-discord && \
+		make && \
+		make install && \
+		cd .. && \
+		rm -rf purple-discord && \
 	echo "---> cleanup" && \
 		rm -rf /usr/share/locale/* && \
 		rm -rf /usr/share/doc/* && \
