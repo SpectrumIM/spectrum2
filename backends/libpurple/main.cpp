@@ -9,7 +9,7 @@
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
-#include <fstream> 
+#include <fstream>
 
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
@@ -210,7 +210,7 @@ static bool storeUserOAuthToken(const std::string user, const std::string OAuthT
   }
   storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
   return true;
-}     
+}
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
@@ -274,7 +274,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					if (strippedKey != key2) {
 						continue;
 					}
-					
+
 					found = true;
 					switch (type) {
 						case PURPLE_PREF_BOOLEAN:
@@ -313,9 +313,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				std::string username(purple_account_get_username_wrapped(account));
 				std::vector <std::string> u = split(username, '@');
 				purple_account_set_username_wrapped(account, (const char*) u.front().c_str());
-				std::vector <std::string> s = split(u.back(), ':'); 
+				std::vector <std::string> s = split(u.back(), ':');
 				purple_account_set_string_wrapped(account, "server", s.front().c_str());
-				purple_account_set_int_wrapped(account, "port", atoi(s.back().c_str()));  
+				purple_account_set_int_wrapped(account, "port", atoi(s.back().c_str()));
 			}
 
 			if (!CONFIG_STRING_DEFAULTED(config, "proxy.type", "").empty()) {
@@ -532,7 +532,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					}
 					return;
 				}
-                
+
 				if (!conv) {
 					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, LegacyNameToName(account, legacyName).c_str(), account);
 					if (!conv) {
@@ -769,12 +769,15 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			// Check if the PurpleChat is not stored in buddy list
 			PurpleChat *chat = purple_blist_find_chat_wrapped(account, roomName.c_str());
 			if (chat) {
+				LOG4CXX_INFO(logger, "CHAT FOUND");
 				comps = purple_chat_get_components_wrapped(chat);
 			}
 			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
+				LOG4CXX_INFO(logger, "CHAT NOT FOUND");
 				if (CONFIG_STRING(config, "service.protocol") == "prpl-jabber") {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (roomName + "/" + nickname).c_str());
-				} else {
+				}
+				else {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, roomName.c_str());
 				}
 			}
@@ -815,7 +818,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (xfer) {
 				m_unhandledXfers.erase(user + fileName + buddyName);
 				FTData *ftData = (FTData *) xfer->ui_data;
-				
+
 				ftData->id = ftID;
 				m_xfers[ftID] = xfer;
 				purple_xfer_request_accepted_wrapped(xfer, fileName.c_str());
@@ -1035,7 +1038,7 @@ void buddyListNewNode(PurpleBlistNode *node) {
 		cache->nodes[node] = 1;
 		return;
 	}
-	
+
 
 	std::vector<std::string> groups = getGroups(buddy);
 	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name_wrapped(buddy) << " " << getAlias(buddy) << " group (" << groups.size() << ")=" << groups[0]);
@@ -1191,7 +1194,7 @@ static void conv_write(PurpleConversation *conv, const char *who, const char *al
 			std::string conversationName = purple_conversation_get_name_wrapped(conv);
 			LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
 			np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
-		}	
+		}
 	}
 }
 
@@ -1278,7 +1281,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 				return;
 			}
 			purple_imgstore_unref_wrapped(image);
-			
+
 			std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
 			std::string img = "<img src=\"" + src + "\"/>";
 			boost::replace_all(body, "<img id=\"" + id + "\">", img);
@@ -1403,6 +1406,7 @@ static void conv_present(PurpleConversation *conv) {
 		LOG4CXX_INFO(logger, "Conversation presented");
 		conv_chat_add_users(conv, PURPLE_CONV_CHAT_WRAPPED(conv)->in_room, TRUE);
 		const char *topic = purple_conv_chat_get_topic(PURPLE_CONV_CHAT_WRAPPED(conv));
+		LOG4CXX_INFO(logger, "topic: " << topic);
 		if (topic && *topic != '\0') {
 			conv_chat_topic_changed(conv, topic, PURPLE_CONV_CHAT_WRAPPED(conv)->who);
 		}
@@ -1488,7 +1492,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	if (pos != std::string::npos)
 		name.erase((int) pos, name.length() - (int) pos);
 
-	
+
 	GList *vcardEntries = purple_notify_user_info_get_entries_wrapped(user_info);
 	PurpleNotifyUserInfoEntry *vcardEntry;
 	std::string firstName;
@@ -1581,7 +1585,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			purple_buddy_icon_unref_wrapped(icon);
 		}
 	}
-    
+
 	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, photo);
 	np->m_vcards.erase(np->m_accounts[account] + name);
 
@@ -1833,7 +1837,7 @@ static gssize XferRead(PurpleXfer *xfer, guchar **buffer, gssize size) {
 // 	int data_size = repeater->getDataToSend(buffer, size);
 // 	if (data_size == 0)
 // 		return 0;
-// 	
+//
 // 	return data_size;
 	return 0;
 }
@@ -1859,6 +1863,8 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		GList *field;
 		int topicId = -1;
 		int usersId = -1;
+		int descriptionId = -1;
+		int roomId = -1;
 		int id = 0;
 		for (field = fields; field != NULL; field = field->next, id++) {
 			PurpleRoomlistField *f = (PurpleRoomlistField *) field->data;
@@ -1866,11 +1872,17 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 				continue;
 			}
 			std::string fstring = f->name;
-			if (fstring == "topic") {
+			if (fstring == "id") {
+				roomId = id;
+			}
+			else if (fstring == "topic" || fstring == "name") {
 				topicId = id;
 			}
 			else if (fstring == "users") {
 				usersId = id;
+			}
+			else if (fstring == "type") {
+				descriptionId = id;
 			}
 			else {
 				LOG4CXX_INFO(logger, "Uknown RoomList field " << fstring);
@@ -1880,34 +1892,66 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		GList *rooms;
 		std::list<std::string> m_topics;
 		for (rooms = list->rooms; rooms != NULL; rooms = rooms->next) {
-			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;	
-			np->m_rooms[np->m_accounts[list->account]].push_back(room->name);
+			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;
+
+			std::string roomIdentifier = room->name;
+			if (roomId != -1) {
+				char *roomIdField = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), roomId);
+				if (roomIdField) {
+					roomIdentifier = std::string(roomIdField);
+				}
+			}
+			np->m_rooms[np->m_accounts[list->account]].push_back(roomIdentifier);
+			
+			std::string roomName = "";
+			int nestedLevel = 0;
+			PurpleRoomlistRoom *parentRoom = purple_roomlist_room_get_parent(room);
+			while (parentRoom != NULL) {
+				nestedLevel++;
+				parentRoom = purple_roomlist_room_get_parent(parentRoom);
+			}
+			LOG4CXX_INFO(logger, "nestedLevel " << nestedLevel);
+
+			if (nestedLevel > 0) {
+				std::string roomNamePrefix = std::string(nestedLevel, '-');
+				if (roomNamePrefix != "") {
+					roomNamePrefix = roomNamePrefix + "> ";
+				}
+				roomName = roomNamePrefix;
+			}
 
 			if (topicId == -1) {
-				m_topics.push_back(room->name);
+				roomName += room->name;
 			}
 			else {
 				char *topic = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), topicId);
 				if (topic) {
-					m_topics.push_back(topic);
+					roomName += topic;
 				}
-				else {
-					if (usersId) {
-						char *users = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), usersId);
-						if (users) {
-							m_topics.push_back(users);
-						}
-						else {
-							LOG4CXX_WARN(logger, "RoomList topic and users is NULL");
-							m_topics.push_back(room->name);
-						}
+				else if (usersId) {
+					char *users = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), usersId);
+					if (users) {
+						roomName += users;
 					}
 					else {
-						LOG4CXX_WARN(logger, "RoomList topic is NULL");
-						m_topics.push_back(room->name);
+						LOG4CXX_WARN(logger, "RoomList topic and users is NULL");
+						roomName += room->name;
 					}
 				}
+				else {
+					LOG4CXX_WARN(logger, "RoomList topic is NULL");
+					roomName += room->name;
+				}
 			}
+
+			if (descriptionId != -1) {
+				char *description = (char *) g_list_nth_data(purple_roomlist_room_get_fields(room), descriptionId);
+				if (description) {
+					roomName += " (" + std::string(description) + ")";
+				}
+			}
+			
+			m_topics.push_back(roomName);
 		}
 
 		std::string user = "";
@@ -1947,7 +1991,7 @@ static void transport_core_ui_init(void)
 	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
 	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
 	purple_roomlist_set_ui_ops_wrapped(&roomlist_ui_ops);
-	
+
 // #ifndef WIN32
 // 	purple_dnsquery_set_ui_ops_wrapped(getDNSUiOps());
 // #endif
@@ -2018,7 +2062,7 @@ debug_init(void)
 	REGISTER_G_LOG_HANDLER("GLib-GObject");
 	REGISTER_G_LOG_HANDLER("GThread");
 	REGISTER_G_LOG_HANDLER("GConf");
-	
+
 
 #undef REGISTER_G_LOD_HANDLER
 }
@@ -2045,7 +2089,7 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 #endif
 #endif
 	purple_roomlist_get_list_wrapped(gc);
-	
+
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
@@ -2129,7 +2173,7 @@ static bool initPurple() {
 	std::string cacertsDir = CONFIG_STRING_DEFAULTED(config, "purple.cacerts_dir", "./ca-certs");
 	LOG4CXX_INFO(logger, "Setting libpurple cacerts directory to: " << cacertsDir);
 	purple_certificate_add_ca_search_path_wrapped(cacertsDir.c_str());
- 
+
 	std::string userDir = CONFIG_STRING_DEFAULTED(config, "service.working_dir", "./");
 	LOG4CXX_INFO(logger, "Setting libpurple user directory to: " << userDir);
 
@@ -2196,7 +2240,7 @@ static bool initPurple() {
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
-// 
+//
 // 		purple_commands_init();
 
 	}
@@ -2224,7 +2268,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 		if (firstPing) {
 			firstPing = false;
-			NetworkPlugin::PluginConfig cfg;			
+			NetworkPlugin::PluginConfig cfg;
 			cfg.setSupportMUC(true);
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 				cfg.setNeedPassword(false);
@@ -2277,7 +2321,7 @@ int main(int argc, char **argv) {
 	}
 
 	config = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config>(cfg);
- 
+
 	Logging::initBackendLogging(config.get());
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
 		storagebackend = StorageBackend::createBackend(config.get(), error);
@@ -2293,16 +2337,16 @@ int main(int argc, char **argv) {
 	}
 
 	initPurple();
- 
+
 	main_socket = create_socket(host.c_str(), port);
 	purple_input_add_wrapped(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
 	purple_timeout_add_seconds_wrapped(30, pingTimeout, NULL);
- 
+
 	np = new SpectrumNetworkPlugin();
-	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
 
 	GMainLoop *m_loop;
 #ifdef WITH_LIBEVENT
+	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
 	if (!libev) {
 		m_loop = g_main_loop_new(NULL, FALSE);
 	}
