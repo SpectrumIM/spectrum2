@@ -366,8 +366,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				return;
 			}
 			if (protocol == "prpl-hangouts") {
-			        adminLegacyName = "hangouts";
-			        adminAlias = "hangouts";
+				adminLegacyName = "hangouts";
+				adminAlias = "hangouts";
+			}
+			else if (protocol == "prpl-steam-mobile") {
+				adminLegacyName = "steam-mobile";
+				adminAlias = "steam-mobile";
 			}
 
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
@@ -519,7 +523,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (account) {
 				LOG4CXX_INFO(logger, "Sending message to '" << legacyName << "'");
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, LegacyNameToName(account, legacyName).c_str(), account);
-	                	if (legacyName == adminLegacyName) {
+				if (legacyName == adminLegacyName) {
 					// expect OAuth code
 					if (m_inputRequests.find(user) != m_inputRequests.end()) {
 						LOG4CXX_INFO(logger, "Updating token for '" << user << "'");
@@ -873,13 +877,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		std::map<std::string, authRequest *> m_authRequests;
-	        std::map<std::string, inputRequest *> m_inputRequests;
+		std::map<std::string, inputRequest *> m_inputRequests;
 		std::map<std::string, std::list<std::string> > m_rooms;
 		std::map<unsigned long, PurpleXfer *> m_xfers;
 		std::map<std::string, PurpleXfer *> m_unhandledXfers;
 		std::vector<PurpleXfer *> m_waitingXfers;
-	        std::string adminLegacyName;
-        	std::string adminAlias;
+		std::string adminLegacyName;
+		std::string adminAlias;
 };
 
 static bool getStatus(PurpleBuddy *m_buddy, pbnetwork::StatusType &status, std::string &statusMessage) {
@@ -1585,39 +1589,50 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 }
 
 void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
-    if (primary) {
-        std::string primaryString(primary);
-        if (primaryString == "Authorization Request Message:") {
-            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-            return NULL;
-        }
-        else if (primaryString == "Authorization Request Message:") {
-            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-            return NULL;
-        }
-        else if (primaryString == "Authorization Denied Message:") {
-            LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
-            ((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
-            return NULL;
-        }
-        else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
-            LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
-            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
-            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: "));
-            inputRequest *req = new inputRequest;
-            req->ok_cb = (PurpleRequestInputCb)ok_cb;
-            req->user_data = user_data;
-            req->account = account;
-            req->mainJID = np->m_accounts[account];
-            np->m_inputRequests[req->mainJID] = req;
-            return NULL;
-        }
-        else {
-            LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
-        }
-    }
+	if (primary) {
+		std::string primaryString(primary);
+		if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Denied Message:") {
+			LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
+			return NULL;
+		}
+		else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
+			LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else if (primaryString == "Set your Steam Guard Code") {
+			LOG4CXX_INFO(logger, "prpl-steam-mobile steam guard request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Steam Guard code: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else {
+			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
+		}
+	}
     else if (title) {
         std::string titleString(title);
         if (titleString == "Xfire Invitation Message") {
