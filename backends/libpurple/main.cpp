@@ -769,11 +769,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			// Check if the PurpleChat is not stored in buddy list
 			PurpleChat *chat = purple_blist_find_chat_wrapped(account, roomName.c_str());
 			if (chat) {
-				LOG4CXX_INFO(logger, "CHAT FOUND");
 				comps = purple_chat_get_components_wrapped(chat);
 			}
 			else if (PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults != NULL) {
-				LOG4CXX_INFO(logger, "CHAT NOT FOUND");
 				if (CONFIG_STRING(config, "service.protocol") == "prpl-jabber") {
 					comps = PURPLE_PLUGIN_PROTOCOL_INFO(gc->prpl)->chat_info_defaults(gc, (roomName + "/" + nickname).c_str());
 				}
