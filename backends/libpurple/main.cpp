@@ -1406,7 +1406,6 @@ static void conv_present(PurpleConversation *conv) {
 		LOG4CXX_INFO(logger, "Conversation presented");
 		conv_chat_add_users(conv, PURPLE_CONV_CHAT_WRAPPED(conv)->in_room, TRUE);
 		const char *topic = purple_conv_chat_get_topic(PURPLE_CONV_CHAT_WRAPPED(conv));
-		LOG4CXX_INFO(logger, "topic: " << topic);
 		if (topic && *topic != '\0') {
 			conv_chat_topic_changed(conv, topic, PURPLE_CONV_CHAT_WRAPPED(conv)->who);
 		}
@@ -1910,7 +1909,6 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 				nestedLevel++;
 				parentRoom = purple_roomlist_room_get_parent(parentRoom);
 			}
-			LOG4CXX_INFO(logger, "nestedLevel " << nestedLevel);
 
 			if (nestedLevel > 0) {
 				std::string roomNamePrefix = std::string(nestedLevel, '-');
