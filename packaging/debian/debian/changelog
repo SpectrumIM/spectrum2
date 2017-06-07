@@ -1,4 +1,4 @@
-spectrum2 (1:2197-5deb488-1) unstable; urgency=low
+spectrum2 (1:2197-b169fdb-1) unstable; urgency=low
 
   * Move package to git-buildpackage format
   * remove the -git suffix from package names
