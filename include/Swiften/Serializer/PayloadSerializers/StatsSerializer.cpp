@@ -8,7 +8,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <Swiften/Base/foreach.h>
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
@@ -22,7 +21,7 @@ StatsSerializer::StatsSerializer() : GenericPayloadSerializer<StatsPayload>() {
 
 std::string StatsSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StatsPayload> stats)  const {
 	XMLElement queryElement("query", "http://jabber.org/protocol/stats");
-	foreach(const StatsPayload::Item& item, stats->getItems()) {
+	for(const StatsPayload::Item& item: stats->getItems()) {
 		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLElement> statElement(new XMLElement("stat"));
 		statElement->setAttribute("name", item.getName());
 		if (!item.getUnits().empty()) {

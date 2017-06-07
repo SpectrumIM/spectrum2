@@ -8,7 +8,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <Swiften/Base/foreach.h>
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>

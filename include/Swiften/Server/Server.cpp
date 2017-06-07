@@ -11,7 +11,6 @@
 #include <boost/signal.hpp>
 
 #include "Swiften/Base/String.h"
-#include "Swiften/Base/foreach.h"
 #include "Swiften/Network/Connection.h"
 #include "Swiften/Network/ConnectionServer.h"
 #include "Swiften/Network/ConnectionServerFactory.h"
@@ -89,14 +88,14 @@ void Server::stop() {
 
 	stopping = true;
 
-// 	foreach(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
+// 	for(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session: serverFromClientSessions) {
 // 		session->finishSession();
 // 	}
 	serverFromClientSessions.clear();
 
 	if (serverFromClientConnectionServer) {
 		serverFromClientConnectionServer->stop();
-		foreach(SWIFTEN_SIGNAL_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
+		for(SWIFTEN_SIGNAL_NAMESPACE::connection& connection: serverFromClientConnectionServerSignalConnections) {
 			connection.disconnect();
 		}
 		serverFromClientConnectionServerSignalConnections.clear();
