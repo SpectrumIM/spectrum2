@@ -89,7 +89,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&SwiftenPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
+			m_conn->connect(Swift::HostAddressPort(*Swift::HostAddress::fromString(host), port));
 #if HAVE_SWIFTEN_3
 			serializer = new Swift::XMPPSerializer(&collection, Swift::ClientStreamType, false);
 #else

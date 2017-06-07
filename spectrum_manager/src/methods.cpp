@@ -591,7 +591,7 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 				m_conn = networkFactories.getConnectionFactory()->createConnection();
 				m_conn->onDataRead.connect(boost::bind(&handleDataRead, m_conn, _1));
 				m_conn->onConnectFinished.connect(boost::bind(&handleConnected, m_conn, message, _1));
-				m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(CONFIG_STRING(&cfg, "service.backend_host")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
+				m_conn->connect(Swift::HostAddressPort(*Swift::HostAddress::fromString(CONFIG_STRING(&cfg, "service.backend_host")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
 			}
 		}
 

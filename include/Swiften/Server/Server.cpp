@@ -70,7 +70,7 @@ void Server::start() {
 		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
 	}
 	else {
-		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(address_), port_);
+		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(*Swift::HostAddress::fromString(address_), port_);
 	}
 	serverFromClientConnectionServerSignalConnections.push_back(
 		serverFromClientConnectionServer->onNewConnection.connect(
