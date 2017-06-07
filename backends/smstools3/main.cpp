@@ -57,7 +57,11 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&SMSNetworkPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(*Swift::HostAddress::fromString(host), port));
+			auto hostAddress = Swift::HostAddress::fromString(host);
+			if (!hostAddress) {
+				hostAddress = Swift::HostAddress::fromString("127.0.0.1");
+			}
+			m_conn->connect(Swift::HostAddressPort(*hostAddress, port));
 // 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
 // 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
 

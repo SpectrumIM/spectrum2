@@ -587,11 +587,16 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 
 				found = true;
 
+				auto hostAddress = Swift::HostAddress::fromString(CONFIG_STRING(&cfg, "service.backend_host"));
+				if (!hostAddress) {
+					std::cerr << "service.backend_host is not set in " << itr->path();
+					continue;
+				}
 				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 				m_conn = networkFactories.getConnectionFactory()->createConnection();
 				m_conn->onDataRead.connect(boost::bind(&handleDataRead, m_conn, _1));
 				m_conn->onConnectFinished.connect(boost::bind(&handleConnected, m_conn, message, _1));
-				m_conn->connect(Swift::HostAddressPort(*Swift::HostAddress::fromString(CONFIG_STRING(&cfg, "service.backend_host")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
+				m_conn->connect(Swift::HostAddressPort(*hostAddress, getPort(CONFIG_STRING(&cfg, "service.portfile"))));
 			}
 		}
 

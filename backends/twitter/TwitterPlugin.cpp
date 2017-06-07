@@ -72,7 +72,11 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	m_factories = new Swift::BoostNetworkFactories(loop);
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
-	m_conn->connect(Swift::HostAddressPort(*Swift::HostAddress::fromString(host), port));
+	auto hostAddress = Swift::HostAddress::fromString(host);
+	if (!hostAddress) {
+		hostAddress = Swift::HostAddress::fromString("127.0.0.1");
+	}
+	m_conn->connect(Swift::HostAddressPort(*hostAddress, port));
 
 	tp = new ThreadPool(loop_, 10);
 

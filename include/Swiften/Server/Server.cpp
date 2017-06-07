@@ -69,7 +69,11 @@ void Server::start() {
 		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
 	}
 	else {
-		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(*Swift::HostAddress::fromString(address_), port_);
+		auto hostAddress = Swift::HostAddress::fromString(address_);
+		if (!hostAddress) {
+			hostAddress = Swift::HostAddress::fromString("0.0.0.0");
+		}
+		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(*hostAddress, port_);
 	}
 	serverFromClientConnectionServerSignalConnections.push_back(
 		serverFromClientConnectionServer->onNewConnection.connect(
