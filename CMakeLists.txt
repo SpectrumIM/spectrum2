@@ -27,7 +27,7 @@ option(ENABLE_IRC "Build IRC plugin" ON)
 option(ENABLE_PURPLE "Build Libpurple plugin" ON)
 option(ENABLE_SMSTOOLS3 "Build SMSTools3 plugin" ON)
 option(ENABLE_SKYPE "Build Skype plugin" ON)
-option(ENABLE_SWIFTEN "Build Swiften plugin" ON)
+option(ENABLE_XMPP "Build XMPP plugin" ON)
 option(ENABLE_TWITTER "Build Twitter plugin" ON)
 
 option(ENABLE_DOCS "Build Docs" ON)
