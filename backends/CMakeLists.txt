@@ -7,7 +7,7 @@ if (PROTOBUF_FOUND)
 		ADD_SUBDIRECTORY(libcommuni)
 	endif()
 
-	if (ENABLE_SWIFTEN)
+	if (ENABLE_XMPP)
 		ADD_SUBDIRECTORY(swiften)
 	endif()
 
