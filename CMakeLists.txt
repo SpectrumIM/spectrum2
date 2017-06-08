@@ -367,7 +367,7 @@ if (PROTOBUF_FOUND)
 		message("Skype plugin      : no (does not run on Win32)")
 	endif()
 
-	if(ENABLE_SWIFTEN)
+	if(ENABLE_XMPP)
 		message("Swiften plugin    : yes")
 	else()
 		message("Swiften plugin    : no (user disabled)")
