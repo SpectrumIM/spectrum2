@@ -26,6 +26,7 @@ RUN apk add --no-cache ca-certificates && \
     cd .. && rm -rf logging-log4cxx && \
 
     wget http://pqxx.org/download/software/libpqxx/libpqxx-4.0.1.tar.gz && \
+    tar xft libpqxx-*.tar.gz && \
     cd libpqxx-* && \
     ./autogen.sh && \
     make && \
