@@ -19,7 +19,6 @@ RUN apk add --no-cache ca-certificates && \
 
     git clone git://git.apache.org/logging-log4cxx.git && \
     cd logging-log4cxx && \
-    git checkout latest_stable && \
     ./autogen.sh && \
     ./configure && \
     make && \
