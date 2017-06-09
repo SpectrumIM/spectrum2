@@ -18,7 +18,6 @@
 #include <Swiften/FileTransfer/SOCKS5BytestreamServer.h>
 #include <Swiften/Base/IDGenerator.h>
 #include <Swiften/Elements/Presence.h>
-#include <Swiften/Base/foreach.h>
 
 
 namespace Swift {
@@ -68,7 +67,7 @@ boost::optional<JID> CombinedOutgoingFileTransferManager::highestPriorityJIDSupp
 	std::vector<Presence::ref> presences = presenceOracle->getAllPresence(bareJID);
 
 	//iterate over them
-	foreach(Presence::ref pres, presences) {
+	for(Presence::ref pres: presences) {
 		if (pres->getPriority() > priority) {
 			// look up caps from the jid
 			DiscoInfo::ref info = capsProvider->getCaps(pres->getFrom());
@@ -92,7 +91,7 @@ boost::optional<JID> CombinedOutgoingFileTransferManager::highestPriorityJIDSupp
 	std::vector<Presence::ref> presences = presenceOracle->getAllPresence(bareJID);
 
 	//iterate over them
-	foreach(Presence::ref pres, presences) {
+	for(Presence::ref pres: presences) {
 		if (pres->getPriority() > priority) {
 			// look up caps from the jid
 			DiscoInfo::ref info = capsProvider->getCaps(pres->getFrom());

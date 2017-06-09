@@ -10,14 +10,13 @@
 
 #include <Swiften/Parser/PayloadParserFactoryCollection.h>
 #include <Swiften/Parser/PayloadParserFactory.h>
-#include <Swiften/Base/foreach.h>
 #include <Swiften/Elements/MUCOccupant.h>
 #include <Swiften/Parser/Tree/TreeReparser.h>
 
 namespace Swift {
 
 void GatewayPayloadParser::handleTree(ParserElement::ref root) {
-	foreach (ParserElement::ref child, root->getAllChildren()) {
+	for (ParserElement::ref child: root->getAllChildren()) {
 		if (child->getName() == "desc") {
 			getPayloadInternal()->setDesc(child->getText());
 		}

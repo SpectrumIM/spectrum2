@@ -305,8 +305,11 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 // // 	m_blockResponder = new BlockResponder(component->getIQRouter(), userManager);
 // // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
 // // 	m_blockResponder->start();
-
-	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
+	auto hostAddress = Swift::HostAddress::fromString(CONFIG_STRING(m_config, "service.backend_host"));
+	if (!hostAddress) {
+		hostAddress = Swift::HostAddress::fromString("127.0.0.1");
+	}
+	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(*hostAddress, boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 }
 
