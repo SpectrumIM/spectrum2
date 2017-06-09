@@ -6,18 +6,18 @@
 
 #include <Swiften/Parser/PayloadParsers/MUCPayloadParser.h>
 
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <Swiften/Parser/PayloadParserFactoryCollection.h>
 #include <Swiften/Parser/PayloadParserFactory.h>
-#include <Swiften/Base/foreach.h>
 #include <Swiften/Elements/MUCOccupant.h>
 #include <Swiften/Parser/Tree/TreeReparser.h>
 
 namespace Swift {
 
 void MUCPayloadParser::handleTree(ParserElement::ref root) {
-	foreach (ParserElement::ref child, root->getAllChildren()) {
+	BOOST_FOREACH (ParserElement::ref child, root->getAllChildren()) {
 		if (child->getName() == "password" && child->getNamespace() == root->getNamespace()) {
 			getPayloadInternal()->setPassword(child->getText());
 		}

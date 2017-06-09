@@ -38,7 +38,9 @@
 #if (SWIFTEN_VERSION >= 0x040000)
 #define SWIFTEN_SHRPTR_NAMESPACE std
 #define SWIFTEN_SIGNAL_NAMESPACE boost::signals2
+#define SWIFT_HOSTADDRESS(x) *(Swift::HostAddress::fromString(x))
 #else
 #define SWIFTEN_SHRPTR_NAMESPACE boost
 #define SWIFTEN_SIGNAL_NAMESPACE boost::signals
+#define SWIFT_HOSTADDRESS(x) Swift::HostAddress(x)
 #endif

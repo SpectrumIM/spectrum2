@@ -306,7 +306,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 // // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
 // // 	m_blockResponder->start();
 
-	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
+	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(SWIFT_HOSTADDRESS(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 }
 

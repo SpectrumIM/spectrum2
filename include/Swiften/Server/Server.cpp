@@ -8,10 +8,10 @@
 
 #include <string>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <boost/signal.hpp>
 
 #include "Swiften/Base/String.h"
-#include "Swiften/Base/foreach.h"
 #include "Swiften/Network/Connection.h"
 #include "Swiften/Network/ConnectionServer.h"
 #include "Swiften/Network/ConnectionServerFactory.h"
@@ -70,7 +70,7 @@ void Server::start() {
 		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
 	}
 	else {
-		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(address_), port_);
+		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(SWIFT_HOSTADDRESS(address_), port_);
 	}
 	serverFromClientConnectionServerSignalConnections.push_back(
 		serverFromClientConnectionServer->onNewConnection.connect(
@@ -96,7 +96,7 @@ void Server::stop() {
 
 	if (serverFromClientConnectionServer) {
 		serverFromClientConnectionServer->stop();
-		foreach(SWIFTEN_SIGNAL_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
+		BOOST_FOREACH(SWIFTEN_SIGNAL_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
 			connection.disconnect();
 		}
 		serverFromClientConnectionServerSignalConnections.clear();

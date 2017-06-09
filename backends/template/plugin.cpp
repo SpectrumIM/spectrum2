@@ -20,7 +20,7 @@ Plugin::Plugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &
 	m_factories = new Swift::BoostNetworkFactories(loop);
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&Plugin::_handleDataRead, this, _1));
-	m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
+	m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(host), port));
 
 	LOG4CXX_INFO(logger, "Starting the plugin.");
 }
