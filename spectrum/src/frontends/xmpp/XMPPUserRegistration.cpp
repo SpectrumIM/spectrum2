@@ -36,7 +36,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/regex.hpp> 
+#include <boost/regex.hpp>
 #if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>
 #endif
@@ -266,7 +266,7 @@ bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, from.toBare().toString() << ": This user has no permissions to register an account")
+			LOG4CXX_INFO(logger, from.toBare().toString() << ": This user has no permissions to register an account");
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -290,7 +290,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
+			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account");
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -342,7 +342,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		} else */ if (local_username == "" || local_password == "") {
 			sendResponse(from, id, InBandRegistrationPayload::ref());
 			return true;
-		} 
+		}
 //		Swift::logging = true;
 		bool validLocal = false;
 		std::string localLookupServer = CONFIG_STRING(m_config, "registration.local_account_server");
@@ -350,7 +350,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		SimpleEventLoop localLookupEventLoop;
 		BoostNetworkFactories localLookupNetworkFactories(&localLookupEventLoop);
 		Client localLookupClient(localLookupJID, local_password, &localLookupNetworkFactories);
-		
+
 		// TODO: this is neccessary on my server ... but should maybe omitted
 		localLookupClient.setAlwaysTrustCertificates();
 		localLookupClient.connect();

@@ -45,7 +45,7 @@ static std::string toIsoTime(std::string in) {
 	output_facet->format("%Y%m%dT%H%M%S"); // boost::local_time::local_time_facet::iso_time_format_specifier ?
 	ss >> ldt;
 	ss.str("");
-	ss << ldt;	
+	ss << ldt;
 	return ss.str();
 }
 
@@ -53,7 +53,7 @@ EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 {
 	EmbeddedStatus status;
 	if(!element.IsObject()) {
-		LOG4CXX_ERROR(logger, "Not a status element!")
+		LOG4CXX_ERROR(logger, "Not a status element!");
 		return status;
 	}
 	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
@@ -68,15 +68,15 @@ EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
 "" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
 	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
 	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].GetBool() );
-	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());	
+	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());
 	return status;
 }
 
-User getUser(const rapidjson::Value &element) 
+User getUser(const rapidjson::Value &element)
 {
 	User user;
 	if(!element.IsObject()) {
-		LOG4CXX_ERROR(logger, "Not a user element!")
+		LOG4CXX_ERROR(logger, "Not a user element!");
 		return user;
 	}
 
@@ -85,12 +85,12 @@ User getUser(const rapidjson::Value &element)
 	user.setUserName( std::string( element[TwitterReponseTypes::name.c_str()].GetString() ) );
 	user.setProfileImgURL( std::string( element[TwitterReponseTypes::profile_image_url.c_str()].GetString() ) );
 	user.setNumberOfTweets( element[TwitterReponseTypes::statuses_count.c_str()].GetInt64() );
-	if(element[TwitterReponseTypes::status.c_str()].IsObject()) 
+	if(element[TwitterReponseTypes::status.c_str()].IsObject())
 		user.setLastStatus(getEmbeddedStatus(element[TwitterReponseTypes::status.c_str()]));
 	return user;
 }
 
-Status getStatus(const rapidjson::Value &element) 
+Status getStatus(const rapidjson::Value &element)
 {
 	Status status;
 
@@ -116,14 +116,14 @@ Status getStatus(const rapidjson::Value &element)
 		status.setCreationTime( toIsoTime ( std::string (rt[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 		status.setUserData( getUser ( rt[TwitterReponseTypes::user.c_str()]) );
 	}
-	
+
 	return status;
 }
 
-DirectMessage getDirectMessage(const rapidjson::Value &element) 
+DirectMessage getDirectMessage(const rapidjson::Value &element)
 {
 	DirectMessage DM;
-	
+
 	DM.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
 	DM.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
 	DM.setMessage( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
@@ -140,16 +140,16 @@ std::vector<Status> getTimeline(std::string &json)
 {
 	std::vector<Status> statuses;
 	rapidjson::Document rootElement;
-	
+
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, json);
 		return statuses;
 	}
 
 	if(!rootElement.IsArray()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to timeline:")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to timeline:");
+		LOG4CXX_ERROR(logger, json);
 		return statuses;
 	}
 
@@ -163,17 +163,17 @@ std::vector<DirectMessage> getDirectMessages(std::string &json)
 {
 	std::vector<DirectMessage> DMs;
 	rapidjson::Document rootElement;
-	
-	
+
+
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, json);
 		return DMs;
 	}
 
 	if(!rootElement.IsArray()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to direct messages:")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to direct messages:");
+		LOG4CXX_ERROR(logger, json);
 		return DMs;
 	}
 
@@ -187,40 +187,40 @@ std::vector<User> getUsers(std::string &json)
 {
 	std::vector<User> users;
 	rapidjson::Document rootElement;
-	
-	
+
+
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, json);
 		return users;
 	}
 
 	if(!rootElement.IsArray()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user list:")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user list:");
+		LOG4CXX_ERROR(logger, json);
 		return users;
 	}
 
 	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
 		users.push_back(getUser(rootElement[i]));
 	}
-	return users;	
+	return users;
 }
 
 User getUser(std::string &json)
 {
 	User user;
 	rapidjson::Document rootElement;
-	
+
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, json);
 		return user;
 	}
 
 	if(!rootElement.IsObject()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user object")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user object");
+		LOG4CXX_ERROR(logger, json);
 		return user;
 	}
 
@@ -231,21 +231,21 @@ std::vector<std::string> getIDs(std::string &json)
 {
 	std::vector<std::string> IDs;
 	rapidjson::Document rootElement;
-	
+
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, json);
 		return IDs;
 	}
 
 	if(!rootElement.IsObject()) {
 		LOG4CXX_ERROR(logger, "JSON doesn't correspond to id_list");
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, json);
 		return IDs;
 	}
 
 	const rapidjson::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
-	
+
 	for(int i=0 ; i<ids.Size() ; i++) {
 		IDs.push_back(stringOf( ids[i].GetInt64()) );
 	}
@@ -258,14 +258,14 @@ Error getErrorMessage(std::string &json)
 	std::string code = "0";
 	Error resp;
 	rapidjson::Document rootElement;
-	
+
 	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON")
-        LOG4CXX_ERROR(logger, json)
+		LOG4CXX_ERROR(logger, "Error while parsing JSON");
+		LOG4CXX_ERROR(logger, json);
 		return resp;
 	}
 	if (rootElement.IsObject()) {
-		if (!rootElement["errors"].IsNull()) {			
+		if (!rootElement["errors"].IsNull()) {
 			const rapidjson::Value &errorElement = rootElement["errors"][0u]; // first error
 			error = std::string(errorElement["message"].GetString());
 			code = stringOf(errorElement["code"].GetInt64());
@@ -277,22 +277,22 @@ Error getErrorMessage(std::string &json)
 	return resp;
 }
 
-std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element) 
+std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element)
 {
 
 	std::vector<UrlEntity> url_entities;
 
 	const rapidjson::Value &entities = element["entities"];
-	
+
 	if (entities.IsObject()) {
 		const rapidjson::Value &urls = entities["urls"];
-		if (urls.IsArray()) {		
+		if (urls.IsArray()) {
 			for (rapidjson::SizeType i = 0; i < urls.Size(); i++) {
-				UrlEntity entity(urls[i]["url"].GetString(), urls[i]["expanded_url"].GetString());	
+				UrlEntity entity(urls[i]["url"].GetString(), urls[i]["expanded_url"].GetString());
 				url_entities.push_back(entity);
 			}
 		}
 	}
-	
+
 	return url_entities;
 }
