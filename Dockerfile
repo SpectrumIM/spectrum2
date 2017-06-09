@@ -5,19 +5,20 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 ADD . /usr/src/spectrum2
 
-RUN apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev glib-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev && \
+RUN apk add --no-cache ca-certificates && \
+    apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev glib-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl && \
     cd /usr/src/ && \
 
     wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommuni-3.5.0.tar.gz && \
     tar xfz libcommuni-*.tar.gz && \
-    cd libcommuni && \
+    cd libcommuni-* && \
     ./configure && \
     make && \
     make install && \
-    cd .. && rm -rf libcommuni* && \
+    cd .. && rm -rf libcommuni-* && \
 
     git clone git://git.apache.org/logging-log4cxx.git && \
-    cd apache-log4cxx-* && \
+    cd logging-log4cxx && \
     git checkout latest_stable && \
     ./autogen.sh && \
     ./configure && \
