@@ -26,16 +26,18 @@ RUN apk add --no-cache ca-certificates && \
     cd .. && rm -rf logging-log4cxx && \
 
     wget http://pqxx.org/download/software/libpqxx/libpqxx-4.0.1.tar.gz && \
-    tar xft libpqxx-*.tar.gz && \
+    tar xfz libpqxx-*.tar.gz && \
     cd libpqxx-* && \
     ./autogen.sh && \
+    ./configure --disable-documentation && \
     make && \
     make install && \
     cd .. && rm -rf libpqxx-* && \
 
-    git clone https://github.com/swift/swift.git && \
-    cd swift && \
-    ./scons SWIFT_INSTALLDIR=/usr/local && \
-    cd .. && rm -rf swift && \
+    wget https://swift.im/downloads/releases/swift-4.0rc2/swift-4.0rc2.tar.gz && \
+    tar xfz swift-*.tar.gz && \
+    cd swift-* && \
+    ./scons SWIFT_INSTALLDIR=/usr/local /usr/local && \
+    cd .. && rm -rf swift-* && \
 
     apk del .build-deps
