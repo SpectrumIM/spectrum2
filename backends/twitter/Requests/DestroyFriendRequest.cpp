@@ -8,7 +8,7 @@ void DestroyFriendRequest::run()
 	if(success) {
 		twitObj->getLastWebResponse(replyMsg);
 
-		LOG4CXX_INFO(logger, user << replyMsg)
+		LOG4CXX_INFO(logger, user << replyMsg);
 
 
 	   	friendInfo = getUser(replyMsg);
