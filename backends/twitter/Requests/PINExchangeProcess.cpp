@@ -2,7 +2,7 @@
 DEFINE_LOGGER(logger, "PINExchangeProcess")
 void PINExchangeProcess::run()
 {
-	LOG4CXX_INFO(logger, user << ": Sending PIN " << data) 
+	LOG4CXX_INFO(logger, user << ": Sending PIN " << data)
 	LOG4CXX_INFO(logger, user << " " << twitObj->getProxyServerIp() << " " << twitObj->getProxyServerPort())
 	twitObj->getOAuth().setOAuthPin( data );
 	success = twitObj->oAuthAccessToken();
@@ -11,7 +11,7 @@ void PINExchangeProcess::run()
 void PINExchangeProcess::finalize()
 {
 	if(!success) {
-		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
+		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!");
 		np->handleMessage(user, "twitter.com", "Error while exchanging PIN for Access Token!");
 		np->handleLogoutRequest(user, "");
 	} else {
@@ -22,7 +22,7 @@ void PINExchangeProcess::finalize()
 
 		Error error = getErrorMessage(replyMsg);
 		if(error.getMessage().length()) {
-			LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token! " << error.getMessage())
+			LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token! " << error.getMessage());
 			np->handleMessage(user, "twitter.com", error.getMessage());
 			np->handleLogoutRequest(user, "");
 			return;
@@ -47,24 +47,24 @@ void PINExchangeProcess::finalize()
 /*void handlePINExchange(const std::string &user, std::string &data) {
 	sessions[user]->getOAuth().setOAuthPin( data );
 	if (sessions[user]->oAuthAccessToken() == false) {
-		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!")
+		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!");
 		handleLogoutRequest(user, "");
 		return;
 	}
-	
+
 	std::string OAuthAccessTokenKey, OAuthAccessTokenSecret;
 	sessions[user]->getOAuth().getOAuthTokenKey( OAuthAccessTokenKey );
 	sessions[user]->getOAuth().getOAuthTokenSecret( OAuthAccessTokenSecret );
 
 	UserInfo info;
 	if(storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
 		handleLogoutRequest(user, "");
 		return;
 	}
 
-	storagebackend->updateUserSetting((long)info.id, OAUTH_KEY, OAuthAccessTokenKey);	
-	storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);	
+	storagebackend->updateUserSetting((long)info.id, OAUTH_KEY, OAuthAccessTokenKey);
+	storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);
 
 	connectionState[user] = CONNECTED;
 	LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
