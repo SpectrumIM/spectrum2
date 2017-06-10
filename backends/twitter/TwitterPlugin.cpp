@@ -265,7 +265,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 			handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
 								std::string("Changed mode to ") + data, userdb[user].twitterMode == CHATROOM ? adminNickName : "");
 
-			LOG4CXX_INFO(logger, user << ": Changed mode to " << data  << " <" << (userdb[user].twitterMode == CHATROOM ? adminNickName : "") << ">" )
+			LOG4CXX_INFO(logger, user << ": Changed mode to " << data  << " <" << (userdb[user].twitterMode == CHATROOM ? adminNickName : "") << ">" );
 		}
 
 		else if(userdb[user].twitterMode == CHATROOM) {
@@ -329,7 +329,7 @@ void TwitterPlugin::handleVCardRequest(const std::string &user, const std::strin
 		return;
 	}
 
-	LOG4CXX_INFO(logger, user << " - VCardRequest for " << legacyName << ", " << userdb[user].buddiesInfo[legacyName].getProfileImgURL())
+	LOG4CXX_INFO(logger, user << " - VCardRequest for " << legacyName << ", " << userdb[user].buddiesInfo[legacyName].getProfileImgURL());
 
 	if(getTwitterMode(user) != SINGLECONTACT && userdb[user].buddies.count(legacyName)
 		&& userdb[user].buddiesInfo[legacyName].getProfileImgURL().length()) {
@@ -561,7 +561,7 @@ std::string TwitterPlugin::getMostRecentTweetIDUnsafe(const std::string user)
 			int type = TYPE_STRING;
 			UserInfo info;
 			if(storagebackend->getUser(user, info) == false) {
-				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
+				LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
 			}
 			else {
 				storagebackend->getUserSetting(info.id, "twitter_last_tweet", type, ID);
@@ -861,7 +861,7 @@ void TwitterPlugin::deleteFriendResponse(std::string &user, User &frnd, Error &e
 		return;
 	}
 
-	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL())
+	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL());
 	userdb[user].buddies.erase(frnd.getScreenName());
 
 	handleMessage(user, userdb[user].twitterMode == CHATROOM ? adminChatRoom : adminLegacyName,
