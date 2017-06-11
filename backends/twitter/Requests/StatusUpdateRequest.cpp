@@ -23,8 +23,11 @@ void StatusUpdateRequest::finalize()
 		callBack(user, error);
 	} else {
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger, user << " - " << error.getMessage());
-		else LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+		if(error.getMessage().length()) {
+			LOG4CXX_ERROR(logger, user << " - " << error.getMessage());
+		} else {
+			LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+		}
 		callBack(user, error);
 	}
 }
