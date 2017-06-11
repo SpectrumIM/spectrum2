@@ -2,7 +2,7 @@
 #include "../TwitterResponseParser.h"
 
 DEFINE_LOGGER(logger, "StatusUpdateRequest")
-void StatusUpdateRequest::run() 
+void StatusUpdateRequest::run()
 {
 	replyMsg = "";
 	success = twitObj->statusUpdate(data);
@@ -18,13 +18,16 @@ void StatusUpdateRequest::finalize()
 	if(!success) {
 		std::string curlerror;
 		twitObj->getLastCurlError(curlerror);
-		error.setMessage(curlerror);	
+		error.setMessage(curlerror);
 		LOG4CXX_ERROR(logger, user << " - Curl error: " << curlerror);
 		callBack(user, error);
 	} else {
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger, user << " - " << error.getMessage())
-		else LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+		if(error.getMessage().length()) {
+			LOG4CXX_ERROR(logger, user << " - " << error.getMessage());
+		} else {
+			LOG4CXX_INFO(logger, "Updated status for " << user << ": " << data);
+		}
 		callBack(user, error);
 	}
 }

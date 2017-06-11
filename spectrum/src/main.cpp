@@ -69,13 +69,13 @@ static void spectrum_sigterm_handler(int sig) {
 }
 
 #ifdef WIN32
-BOOL spectrum_control_handler( DWORD fdwCtrlType ) { 
+BOOL spectrum_control_handler( DWORD fdwCtrlType ) {
 	if (fdwCtrlType == CTRL_C_EVENT || fdwCtrlType == CTRL_CLOSE_EVENT) {
 		eventLoop_->postEvent(&stop_spectrum);
 		return TRUE;
 	}
 	return FALSE;
-} 
+}
 #endif
 
 static void removeOldIcons(std::string iconDir) {
@@ -131,7 +131,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 	if ((chdir(cwd)) < 0) {
 		exit(1);
 	}
-	
+
 	if (freopen( "/dev/null", "r", stdin) == NULL) {
 		std::cout << "EE cannot open /dev/null. Exiting\n";
 		exit(1);
@@ -146,7 +146,7 @@ static void _createDirectories(Transport::Config *config, boost::filesystem::pat
 
 	// First create branch, by calling ourself recursively
 	_createDirectories(config, ph.branch_path());
-	
+
 	// Now that parent's path exists, create the directory
 	boost::filesystem::create_directory(ph);
 
@@ -217,9 +217,9 @@ int mainloop() {
 	Swift::BoostNetworkFactories *factories = new Swift::BoostNetworkFactories(&eventLoop);
 	UserRegistry userRegistry(config_, factories);
 
-    
+
 	Frontend *frontend = NULL;
-	
+
 	std::string frontend_name = CONFIG_STRING_DEFAULTED(config_, "service.frontend", "xmpp");
 	std::string plugin_fc = "create_" + frontend_name + "_frontend_plugin";
 
@@ -311,8 +311,8 @@ int main(int argc, char **argv)
 	// determine the name of the currently executing file
 	char szFilePath[MAX_PATH];
 	GetModuleFileNameA(NULL, szFilePath, sizeof(szFilePath));
-	std::string exe_file(szFilePath);					
-#endif	
+	std::string exe_file(szFilePath);
+#endif
 	setlocale(LC_ALL, "");
 #ifndef WIN32
 #ifndef __FreeBSD__
@@ -334,11 +334,11 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #else
-	if( !SetConsoleCtrlHandler( (PHANDLER_ROUTINE) spectrum_control_handler, TRUE ) ) 
-	{ 
+	if( !SetConsoleCtrlHandler( (PHANDLER_ROUTINE) spectrum_control_handler, TRUE ) )
+	{
 		std::cout << "control handler can't be set\n";
 		return -1;
-	} 
+	}
 #endif
 	boost::program_options::options_description desc(std::string("Spectrum version: ") + SPECTRUM_VERSION + "\nUsage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	desc.add_options()
@@ -350,9 +350,9 @@ int main(int argc, char **argv)
 		("version,v", "Shows Spectrum version")
 		;
 #ifdef WIN32
- 	desc.add_options()
+	desc.add_options()
 		("install-service,i", boost::program_options::value<std::string>(&install_service_name)->default_value(""), "Install spectrum as Windows service")
- 		("uninstall-service,u", boost::program_options::value<std::string>(&uninstall_service_name)->default_value(""), "Uninstall Windows service")
+		("uninstall-service,u", boost::program_options::value<std::string>(&uninstall_service_name)->default_value(""), "Uninstall Windows service")
 		("run-as-service,r", boost::program_options::value<std::string>(&run_service_name)->default_value(""), "stub for Windows Service Manager");
 #endif
 	try
@@ -382,12 +382,12 @@ int main(int argc, char **argv)
 		if(vm.count("no-daemonize")) {
 			no_daemon = true;
 		}
-#ifdef WIN32	
-		if (!install_service_name.empty()) {				
+#ifdef WIN32
+		if (!install_service_name.empty()) {
 			// build command line for Service Manager
-			std::string service_path = exe_file + std::string(" --config ") + vm["config"].as<std::string>() 
-						+ std::string(" --run-as-service ") + install_service_name;													
-		
+			std::string service_path = exe_file + std::string(" --config ") + vm["config"].as<std::string>()
+						+ std::string(" --run-as-service ") + install_service_name;
+
 			ServiceWrapper ntservice((char *)install_service_name.c_str());
 			if (!ntservice.IsInstalled()) {
 				if (ntservice.Install((char *)service_path.c_str())) {
@@ -396,7 +396,7 @@ int main(int argc, char **argv)
 				} else {
 					std::cout << "Error installing service, are you an Administrator?" << std::endl;
 					return 1;
-				}                				
+				}
 			} else {
 				std::cout << "Already installed " << install_service_name << std::endl;
 				return 1;
@@ -411,12 +411,12 @@ int main(int argc, char **argv)
 				} else {
 					std::cout << "Error removing service, are you an Administrator?" << std::endl;
 					return 1;
-				}                               				
+				}
 			} else {
 				std::cout << "Service not installed: " << uninstall_service_name << std::endl;
 				return 1;
 			}
-		}		
+		}
 #endif
 	}
 	catch (std::runtime_error& e)
@@ -488,7 +488,7 @@ int main(int argc, char **argv)
 	if (!no_daemon) {
 		// daemonize
 		daemonize(CONFIG_STRING(&config, "service.working_dir").c_str(), CONFIG_STRING(&config, "service.pidfile").c_str());
-// 		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
+//		removeOldIcons(CONFIG_STRING(&config, "service.working_dir") + "/icons");
 	}
 	else {
 		if ((chdir(CONFIG_STRING(&config, "service.working_dir").c_str())) < 0) {

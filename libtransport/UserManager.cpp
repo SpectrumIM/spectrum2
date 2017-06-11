@@ -34,7 +34,7 @@
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/ChatState.h"
-#ifndef __FreeBSD__ 
+#ifndef __FreeBSD__
 #ifndef __MACH__
 #include "malloc.h"
 #endif
@@ -95,7 +95,7 @@ User *UserManager::getUser(const std::string &barejid){
 // 	if (it == m_users.end()) {
 // 		return Swift::DiscoInfo::ref();
 // 	}
-// 
+//
 // 	User *user = it->second;
 // 	return user->getCaps(jid);
 // }
@@ -481,7 +481,7 @@ void UserManager::handleErrorPresence(Swift::Presence::ref presence) {
 }
 
 void UserManager::handleSubscription(Swift::Presence::ref presence) {
-	
+
 	// answer to subscibe for transport itself
 	if (presence->getType() == Swift::Presence::Subscribe && presence->getTo().getNode().empty()) {
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -567,7 +567,7 @@ void UserManager::connectUser(const Swift::JID &user) {
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
 // #if HAVE_SWIFTEN_3
 // 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
-// #else				
+// #else
 // 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
 // #endif
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));

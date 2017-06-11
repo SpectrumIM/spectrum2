@@ -229,7 +229,7 @@ void SlackSession::leaveRoom(const std::string &channel_) {
 	std::string channelId = m_idManager->getId(channel);
 	std::string to = m_channel2jid[channelId];
 	if (to.empty()) {
-		LOG4CXX_ERROR(logger, "Spectrum 2 is not configured to transport this Slack channel.")
+		LOG4CXX_ERROR(logger, "Spectrum 2 is not configured to transport this Slack channel.");
 		return;
 	}
 
