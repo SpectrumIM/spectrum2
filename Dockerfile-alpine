@@ -45,7 +45,7 @@ RUN apk add --no-cache ca-certificates && \
 	rm -rf swift-* && \
 
 	cd spectrum2 && \
-	cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DLOG4CXX_INCLUDE_DIR=/opt/log4cxx/include -DLOG4CXX_LIBRARIES=/opt/log4cxx/lib/liblog4cxx.so -DSWIFTEN_INCLUDE_DIR=/opt/_swiften/include -DSWIFTEN_LIBRARY=/opt/_swiften/lib -DSWIFTEN_CONFIG_EXECUTABLE=/opt/_swiften/bin/swiften-config -DPQXX_INCLUDE_DIR=/opt/libpqxx/include -DPQXX_LIBRARY=/opt/libpqxx/lib/libpqxx.so -DPQ_LIBRARY=/opt/libpqxx/lib/libpqxx.so -DIRC_INCLUDE_DIR=/opt/libcommuni/include -DIRC_LIBRARY=/opt/libcommuni/lib/libIrcCore.so && \
+	cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DLOG4CXX_INCLUDE_DIR=/opt/log4cxx/include -DLOG4CXX_LIBRARIES=/opt/log4cxx/lib/liblog4cxx.so -DSWIFTEN_INCLUDE_DIR=/opt/_swiften/include -DSWIFTEN_LIBRARY=/opt/_swiften/lib -DSWIFTEN_CONFIG_EXECUTABLE=/opt/_swiften/bin/swiften-config -DPQXX_INCLUDE_DIR=/opt/libpqxx/include -DPQXX_LIBRARY=/opt/libpqxx/lib/libpqxx.so -DPQ_LIBRARY=/opt/libpqxx/lib/libpqxx.so -DQT_INCLUDE_DIR=/opt/libcommuni/include -DQT_LIBRARY_DIR=/opt/libcommuni/lib -DIRC_MODEL_LIBRARY=/opt/libcommuni/lib/libIrcModel.so && \
 	make && \
 	make install && \
 	cd .. && \
