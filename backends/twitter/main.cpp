@@ -48,7 +48,7 @@ int main (int argc, char* argv[]) {
 	}
 
 	else if (!storagebackend->connect()) {
-		LOG4CXX_ERROR(logger, "Can't connect to database!")
+		LOG4CXX_ERROR(logger, "Can't connect to database!");
 		return -1;
 	}
 

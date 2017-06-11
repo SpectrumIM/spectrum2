@@ -188,28 +188,28 @@ static std::string OAUTH_TOKEN = "hangouts_oauth_token";
 
 static bool getUserOAuthToken(const std::string user, std::string &token)
 {
-  boost::mutex::scoped_lock lock(dblock);
-  UserInfo info;
-  if(storagebackend->getUser(user, info) == false) {
-    LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
-      return false;
-  }
-  token = "";
-  int type = TYPE_STRING;
-  storagebackend->getUserSetting((long)info.id, OAUTH_TOKEN, type, token);
-  return true;
+	boost::mutex::scoped_lock lock(dblock);
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		return false;
+	}
+	token = "";
+	int type = TYPE_STRING;
+	storagebackend->getUserSetting((long)info.id, OAUTH_TOKEN, type, token);
+	return true;
 }
 
 static bool storeUserOAuthToken(const std::string user, const std::string OAuthToken)
 {
-  boost::mutex::scoped_lock lock(dblock);
-  UserInfo info;
-  if(storagebackend->getUser(user, info) == false) {
-    LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
-      return false;
-  }
-  storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
-  return true;
+	boost::mutex::scoped_lock lock(dblock);
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		return false;
+	}
+	storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
+	return true;
 }
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
@@ -430,7 +430,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 			// OAuth helper
 			if (protocol == "prpl-hangouts") {
-				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
+				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias);
 				handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			}
 		}
@@ -1899,7 +1899,7 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 				}
 			}
 			np->m_rooms[np->m_accounts[list->account]].push_back(roomIdentifier);
-			
+
 			std::string roomName = "";
 			int nestedLevel = 0;
 			PurpleRoomlistRoom *parentRoom = purple_roomlist_room_get_parent(room);
@@ -1946,7 +1946,7 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 					roomName += " (" + std::string(description) + ")";
 				}
 			}
-			
+
 			m_topics.push_back(roomName);
 		}
 
@@ -2327,8 +2327,8 @@ int main(int argc, char **argv) {
 			return NetworkPlugin::StorageBackendNeeded;
 		}
 		else if (!storagebackend->connect()) {
-			LOG4CXX_ERROR(logger, "Can't connect to database!")
-				return -1;
+			LOG4CXX_ERROR(logger, "Can't connect to database!");
+			return -1;
 		}
 	}
 

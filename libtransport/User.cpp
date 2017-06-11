@@ -63,7 +63,7 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_storageBackend = NULL;
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(5000);
-	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this)); 
+	m_reconnectTimer->onTick.connect(boost::bind(&User::onConnectingTimeout, this));
 
 	m_rosterManager = component->getFrontend()->createRosterManager(this, m_component);
 	m_conversationManager = new ConversationManager(this, m_component);
@@ -180,7 +180,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			m_storageBackend->getUserSetting(m_userInfo.id, "photohash", type, value);
 		}
 		if (value != vcardUpdate->getPhotoHash()) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard")
+			LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard");
 			if (m_storageBackend) {
 				m_storageBackend->updateUserSetting(m_userInfo.id, "photohash", vcardUpdate->getPhotoHash());
 			}

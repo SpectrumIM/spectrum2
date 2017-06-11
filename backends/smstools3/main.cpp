@@ -82,7 +82,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 
 		void handleSMS(const std::string &sms) {
-			LOG4CXX_INFO(logger, "Handling SMS " << sms << ".")
+			LOG4CXX_INFO(logger, "Handling SMS " << sms << ".");
 			std::ifstream t(sms.c_str());
 			std::string str;
 
@@ -149,7 +149,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void sendSMS(const std::string &to, const std::string &msg) {
-			// TODO: Probably 
+			// TODO: Probably
 			std::string data = "To: " + to + "\n";
 			data += "\n";
 			data += msg;
@@ -232,7 +232,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 
 	private:
-		
+
 		Config *config;
 };
 

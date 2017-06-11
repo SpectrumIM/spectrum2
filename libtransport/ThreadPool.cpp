@@ -35,9 +35,9 @@ ThreadPool::~ThreadPool()
 }
 
 int ThreadPool::getActiveThreadCount()
-{	
+{
 	int res;
-	count_lock.lock(); 
+	count_lock.lock();
 	res = activeThreads;
 	count_lock.unlock();
 	return res;
@@ -71,29 +71,29 @@ void ThreadPool::releaseThread(int i)
 	delete worker[i];
 	worker[i] = NULL;
 	freeThreads.push(i);
-	
+
 	updateActiveThreadCount(1);
-	
+
 	pool_lock.unlock();
 }
 
 void ThreadPool::cleandUp(Thread *t, int wid)
 {
-	LOG4CXX_INFO(logger, "Cleaning up thread #" << t->getThreadID())
+	LOG4CXX_INFO(logger, "Cleaning up thread #" << t->getThreadID());
 	t->finalize();
 	delete t;
 	releaseThread(wid);
-	onWorkerAvailable();	
+	onWorkerAvailable();
 }
 
 void ThreadPool::scheduleFromQueue()
 {
-	criticalregion.lock();	
+	criticalregion.lock();
 	while(!requestQueue.empty()) {
 		int  w = getFreeThread();
 		if(w == -1) break;
 
-		LOG4CXX_INFO(logger, "Worker Available. Creating thread #" << w)
+		LOG4CXX_INFO(logger, "Worker Available. Creating thread #" << w);
 		Thread *t = requestQueue.front(); requestQueue.pop();
 		t->setThreadID(w);
 		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);
@@ -107,19 +107,19 @@ void ThreadPool::runAsThread(Thread *t)
 {
 	int w;
 	if((w = getFreeThread()) != -1) {
-		LOG4CXX_INFO(logger, "Creating thread #" << w)
+		LOG4CXX_INFO(logger, "Creating thread #" << w);
 		t->setThreadID(w);
 		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);
 		updateActiveThreadCount(-1);
 	}
 	else {
-		LOG4CXX_INFO(logger, "No workers available! adding to queue.")
+		LOG4CXX_INFO(logger, "No workers available! adding to queue.");
 		requestQueue.push(t);
 	}
 }
 
 void ThreadPool::workerBody(Thread *t, int wid) {
-	LOG4CXX_INFO(logger, "Starting thread " << wid)
+	LOG4CXX_INFO(logger, "Starting thread " << wid);
 	t->run();
 	loop->postEvent(boost::bind(&ThreadPool::cleandUp, this, t, wid), SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::EventOwner>());
 }

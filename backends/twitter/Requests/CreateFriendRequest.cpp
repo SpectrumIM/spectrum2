@@ -4,20 +4,20 @@ DEFINE_LOGGER(logger, "CreateFriendRequest")
 
 void CreateFriendRequest::run()
 {
-	LOG4CXX_INFO(logger, user << " - Sending follow request for " << frnd)
+	LOG4CXX_INFO(logger, user << " - Sending follow request for " << frnd);
 	replyMsg = "";
 	success = twitObj->friendshipCreate(frnd, false);
 	if(success) {
 		twitObj->getLastWebResponse(replyMsg);
 
-		LOG4CXX_INFO(logger, user << replyMsg)		
+		LOG4CXX_INFO(logger, user << replyMsg);
 
 	   	friendInfo = getUser(replyMsg);
-		if(friendInfo.getScreenName() == "") {LOG4CXX_INFO(logger, user << " - Was unable to fetch user info for " << frnd)}
-		
+		if(friendInfo.getScreenName() == "") LOG4CXX_INFO(logger, user << " - Was unable to fetch user info for " << frnd);
+
 		HTTPRequest req;
 		std::string img;
-		
+
 		req.init();
 		req.setProxy(twitObj->getProxyServerIp(), twitObj->getProxyServerPort(), twitObj->getProxyUserName(), twitObj->getProxyPassword());
 
@@ -36,15 +36,15 @@ void CreateFriendRequest::finalize()
 	if(!success) {
 		std::string curlerror;
 		twitObj->getLastCurlError(curlerror);
-		error.setMessage(curlerror);	
-		LOG4CXX_ERROR(logger, user << " - Curl error: " << curlerror)
+		error.setMessage(curlerror);
+		LOG4CXX_ERROR(logger, user << " - Curl error: " << curlerror);
 		callBack(user, friendInfo, profileImg, error);
 	} else {
 		error = getErrorMessage(replyMsg);
 		if(error.getMessage().length()) {
-			LOG4CXX_ERROR(logger, user << " - " << error.getMessage())
+			LOG4CXX_ERROR(logger, user << " - " << error.getMessage());
 		}
-		else LOG4CXX_INFO(logger, user << ": Now following " << frnd)
+		else LOG4CXX_INFO(logger, user << ": Now following " << frnd);
 		callBack(user, friendInfo, profileImg, error);
 	}
 }
