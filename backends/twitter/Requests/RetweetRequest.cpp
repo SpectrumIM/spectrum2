@@ -18,8 +18,11 @@ void RetweetRequest::finalize()
 	} else {
 		twitObj->getLastWebResponse(replyMsg);
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger, user << " - " << error.getMessage());
-		else LOG4CXX_INFO(logger, user << " " << replyMsg);
+		if(error.getMessage().length()) {
+			LOG4CXX_ERROR(logger, user << " - " << error.getMessage());
+		} else {
+			LOG4CXX_INFO(logger, user << " " << replyMsg);
+		}
 		callBack(user, error);
 	}
 }
