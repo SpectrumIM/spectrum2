@@ -2,8 +2,8 @@
 DEFINE_LOGGER(logger, "PINExchangeProcess")
 void PINExchangeProcess::run()
 {
-	LOG4CXX_INFO(logger, user << ": Sending PIN " << data)
-	LOG4CXX_INFO(logger, user << " " << twitObj->getProxyServerIp() << " " << twitObj->getProxyServerPort())
+	LOG4CXX_INFO(logger, user << ": Sending PIN " << data);
+	LOG4CXX_INFO(logger, user << " " << twitObj->getProxyServerIp() << " " << twitObj->getProxyServerPort());
 	twitObj->getOAuth().setOAuthPin( data );
 	success = twitObj->oAuthAccessToken();
 }

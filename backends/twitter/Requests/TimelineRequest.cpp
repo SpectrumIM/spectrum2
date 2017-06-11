@@ -2,7 +2,7 @@
 DEFINE_LOGGER(logger, "TimelineRequest")
 void TimelineRequest::run()
 {
-	LOG4CXX_INFO(logger, "Sending timeline request for user " << userRequested)
+	LOG4CXX_INFO(logger, "Sending timeline request for user " << userRequested);
 
 	if(userRequested != "") success = twitObj->timelineUserGet(false, false, 20, userRequested, false);
 	else success = twitObj->timelineHomeGet(since_id);

@@ -1,4 +1,4 @@
-FROM frolvlad/alpine-glibc:alpine-3.6
+FROM alpine:3.6
 
 EXPOSE 5222 5269
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
@@ -6,7 +6,7 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 ADD . /usr/src/spectrum2
 
 RUN apk add --no-cache ca-certificates && \
-	apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev glib-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl libevent-dev && \
+	apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev glib-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl libevent-dev mercurial json-glib-dev py2-pip python2-dev libgcrypt-dev libwebp-dev libgnome-keyring-dev nss-dev && \
 	cd /usr/src/ && \
 
 	wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommuni-3.5.0.tar.gz && \
@@ -71,13 +71,15 @@ RUN apk add --no-cache ca-certificates && \
 	git clone git://github.com/stv0g/transwhat.git && \
 	git clone git://github.com/tgalal/yowsup.git && \
 	cd transwhat && \
-	git worktree add ../transwhat && \
+	git worktree add /opt/transwhat && \
 	cd .. && \
 	cd yowsup && \
-	cp -R yowsup ../transwhat/yowsup && \
+	cp -R yowsup /opt/transwhat/yowsup && \
 	cd .. && \
 	rm -r transwhat && \
 	rm -r yowsup && \
+	rm -rf /opt/transwhat/.git &&\
+	rm -rf /opt/transwhat/.gitignore &&\
 
 	git clone --recursive https://github.com/majn/telegram-purple && \
 	cd telegram-purple && \
