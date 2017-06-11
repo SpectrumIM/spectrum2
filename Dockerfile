@@ -2,14 +2,13 @@ FROM fedora:23
 
 EXPOSE 5222
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
-ARG commit=unknown
-RUN echo $commit
+
+ADD . /usr/src/spectrum2
 
 # Spectrum 2
 RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurple-devel protobuf-devel swiften-devel rpm-build avahi-devel boost-devel cmake cppunit-devel expat-devel libcommuni-devel libidn-devel libsqlite3x-devel log4cxx-devel gettext libgcrypt-devel libwebp-devel libpurple-devel zlib-devel json-glib-devel python-pip zlib-devel libjpeg-devel python-devel  mysql-devel popt-devel git libevent-devel qt-devel dbus-glib-devel libcurl-devel wget mercurial libtool libgnome-keyring-devel nss-devel -y && \
 	echo "---> Installing Spectrum 2" && \
-		git clone git://github.com/hanzz/spectrum2.git && \
-		cd spectrum2 && \
+		cd /usr/src/spectrum2 && \
 		./packaging/fedora/build_rpm.sh && \
 		rpm -U /root/rpmbuild/RPMS/x86_64/*.rpm && \
 		cp ./packaging/docker/run.sh /run.sh && \
