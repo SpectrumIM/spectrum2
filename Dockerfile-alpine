@@ -12,7 +12,7 @@ RUN apk add --no-cache ca-certificates && \
 	wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommuni-3.5.0.tar.gz && \
 	tar xfz libcommuni-*.tar.gz && \
 	cd libcommuni-* && \
-	./configure && \
+	./configure --prefix=/opt/libcommuni && \
 	make && \
 	make install && \
 	cd .. && \
@@ -21,7 +21,7 @@ RUN apk add --no-cache ca-certificates && \
 	git clone git://git.apache.org/logging-log4cxx.git && \
 	cd logging-log4cxx && \
 	./autogen.sh && \
-	./configure && \
+	./configure --prefix=/opt/log4cxx && \
 	make && \
 	make install && \
 	cd .. && \
@@ -31,7 +31,7 @@ RUN apk add --no-cache ca-certificates && \
 	tar xfz libpqxx-*.tar.gz && \
 	cd libpqxx-* && \
 	./autogen.sh && \
-	./configure --enable-shared --disable-documentation && \
+	./configure --enable-shared --disable-documentation --prefix=/opt/libpqxx && \
 	make && \
 	make install && \
 	cd .. && \
@@ -40,15 +40,17 @@ RUN apk add --no-cache ca-certificates && \
 	wget https://swift.im/downloads/releases/swift-4.0rc2/swift-4.0rc2.tar.gz && \
 	tar xfz swift-*.tar.gz && \
 	cd swift-* && \
-	./scons Swiften SWIFTEN_INSTALLDIR=/usr/local /usr/local && \
+	./scons Swiften SWIFTEN_INSTALLDIR=/opt/_swiften /opt/_swiften && \
 	cd .. && \
 	rm -rf swift-* && \
 
 	cd spectrum2 && \
-	cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr . && \
+	cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DLOG4CXX_INCLUDE_DIR=/opt/log4cxx/include -DLOG4CXX_LIBRARY=/opt/log4cxx/lib -DSWIFTEN_INCLUDE_DIR=/opt/_swiften/include -DSWIFTEN_LIBRARY=/opt/_swiften/lib -DSWIFTEN_CONFIG_EXECUTABLE=/opt/_swiften/bin/swiften-config -DPQXX_INCLUDE_DIR=/opt/libpqxx/include -DPQXX_LIBRARY=/opt/libpqxx/lib -DPQ_LIBRARY=/opt/libpqxx/lib -DIRC_INCLUDE_DIR=/opt/libcommuni/include -DIRC_LIBRARY=/opt/libcommuni/lib -DIRC_MODEL_LIBRARY=/opt/libcommuni/lib && \
 	make && \
 	make install && \
 	cd .. && \
+
+	rm /opt/* -rf && \
 
 	wget https://github.com/dequis/purple-facebook/releases/download/v0.9.4-c9b74a765767/purple-facebook-0.9.4-c9b74a765767.tar.gz && \
 	tar -xf purple-facebook-0.9.4-c9b74a765767.tar.gz && \

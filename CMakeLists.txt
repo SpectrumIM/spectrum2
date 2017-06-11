@@ -17,6 +17,8 @@ message(STATUS "           : -DPROTOBUF_PROTOC_EXECUTABLE")
 message(STATUS "|- log4cxx : -DLOG4CXX_INCLUDE_DIR,  -DLOG4CXX_LIBRARY")
 message(STATUS "|- purple  : -DPURPLE_INCLUDE_DIR,   -DPURPLE_LIBRARY")
 message(STATUS "           : -DPURPLE_NOT_RUNTIME - enables compilation with libpurple.lib")
+message(STATUS "|- pgxx    : -DPQXX_INCLUDE_DIR,     -DPQXX_LIBRARY")
+message(STATUS "|- irc     : -DIRC_INCLUDE_DIR,      -DIRC_LIBRARY")
 
 option(ENABLE_SQLITE3 "Build with SQLite3 support" ON)
 option(ENABLE_MYSQL "Build with MySQL support" ON)
