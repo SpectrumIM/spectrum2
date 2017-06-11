@@ -215,16 +215,8 @@ if(ENABLE_DOCS)
 	find_package(Doxygen)
 endif()
 
-# if(ENABLE_LOG)
-	if(LOG4CXX_INCLUDE_DIR AND LOG4CXX_LIBRARY)
-		set(LOG4CXX_LIBRARIES ${LOG4CXX_LIBRARY})
-		set(LOG4CXX_FOUND 1)
-		message(STATUS "Using log4cxx: ${CPPUNIT_INCLUDE_DIR} ${LOG4CXX_INCLUDE_DIR}")
-	else()
-		set(log4cxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-		find_package(log4cxx)
-	endif()
-# endif()
+set(log4cxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+find_package(log4cxx)
 
 # FIND CPPUNIT
 if(ENABLE_TESTS)

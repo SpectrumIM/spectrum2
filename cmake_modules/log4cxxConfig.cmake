@@ -3,7 +3,7 @@
 # LOG4CXX_LIBRARIES - liblog4cxx library
 
 FIND_PATH(LOG4CXX_INCLUDE_DIR log4cxx/logger.h PATHS /include /usr/include /usr/local/include )
-FIND_LIBRARY(LOG4CXX_LIBRARIES NAMES log4cxx log4cxxd PATHS /lib /usr/lib /usr/local/lib ${LOG4CXX_LIBRARIES})
+FIND_LIBRARY(LOG4CXX_LIBRARIES NAMES log4cxx log4cxxd PATHS /lib /usr/lib /usr/local/lib )
 
 IF(LOG4CXX_INCLUDE_DIR AND LOG4CXX_LIBRARIES)
   SET(LOG4CXX_FOUND 1)
