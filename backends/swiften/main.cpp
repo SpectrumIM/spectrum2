@@ -19,11 +19,9 @@
 #include "sys/signal.h"
 #endif
 
-#ifndef __FreeBSD__
-#ifndef __MACH__
+#if defined (__GLIBC__)
 // malloc_trim
 #include "malloc.h"
-#endif
 #endif
 
 // Boost
@@ -221,15 +219,9 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 				m_handlers.erase(user);
 			}
 
-#ifndef WIN32
-#ifndef __FreeBSD__
-#ifndef __MACH__
 #if defined (__GLIBC__)
 			// force returning of memory chunks allocated by libxml2 to kernel
 			malloc_trim(0);
-#endif
-#endif
-#endif
 #endif
 		}
 

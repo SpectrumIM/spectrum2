@@ -34,10 +34,8 @@
 #include "Swiften/Elements/StreamError.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/ChatState.h"
-#ifndef __FreeBSD__
-#ifndef __MACH__
+#if defined (__GLIBC__)
 #include "malloc.h"
-#endif
 #endif
 // #include "valgrind/memcheck.h"
 
@@ -122,14 +120,8 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 	LOG4CXX_INFO(logger, user->getJID().toBare().toString() << ": Disconnecting user");
 	onUserDestroyed(user);
 	delete user;
-#ifndef WIN32
-#ifndef __FreeBSD__
-#ifndef __MACH__
 #if defined (__GLIBC__)
 	malloc_trim(0);
-#endif
-#endif
-#endif
 #endif
 // 	VALGRIND_DO_LEAK_CHECK;
 }

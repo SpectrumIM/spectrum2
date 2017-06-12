@@ -28,10 +28,8 @@
 #include <grp.h>
 #include <sys/resource.h>
 #include "libgen.h"
-#ifndef __FreeBSD__
-#ifndef __MACH__
+#if defined (__GLIBC__)
 #include <malloc.h>
-#endif
 #endif
 #else
 #include <process.h>
@@ -314,15 +312,9 @@ int main(int argc, char **argv)
 	std::string exe_file(szFilePath);
 #endif
 	setlocale(LC_ALL, "");
-#ifndef WIN32
-#ifndef __FreeBSD__
-#ifndef __MACH__
 #if defined (__GLIBC__)
 	mallopt(M_CHECK_ACTION, 2);
 	mallopt(M_PERTURB, 0xb);
-#endif
-#endif
-#endif
 #endif
 
 #ifndef WIN32

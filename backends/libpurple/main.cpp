@@ -19,7 +19,7 @@
 #include "Swiften/SwiftenCompat.h"
 
 // #include "valgrind/memcheck.h"
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if defined (__GLIBC__)
 #include "malloc.h"
 #endif
 #include "errno.h"
@@ -456,10 +456,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				m_accounts.erase(account);
 
 				purple_accounts_delete_wrapped(account);
-#ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
+#if defined (__GLIBC__)
 				malloc_trim(0);
-#endif
 #endif
 // 				VALGRIND_DO_LEAK_CHECK;
 			}
@@ -2038,11 +2036,9 @@ static PurpleCoreUiOps coreUiOps =
 static void signed_on(PurpleConnection *gc, gpointer unused) {
 	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleConnected(np->m_accounts[account]);
-#ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
+#if defined (__GLIBC__)
 	// force returning of memory chunks allocated by libxml2 to kernel
 	malloc_trim(0);
-#endif
 #endif
 	purple_roomlist_get_list_wrapped(gc);
 
@@ -2256,7 +2252,7 @@ int main(int argc, char **argv) {
 	boost::locale::generator gen;
 	std::locale::global(gen("en_GB.UTF-8"));
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
+#if defined (__GLIBC__)
 		mallopt(M_CHECK_ACTION, 2);
 		mallopt(M_PERTURB, 0xb);
 #endif
