@@ -16,7 +16,7 @@ Package: libtransport2.0
 Architecture: any
 Section: net
 Priority: optional
-Depends: libswiften2 | libswiften3, ${shlibs:Depends}, ${misc:Depends}
+Depends: libswiften2 | libswiften3 | libswiften4, ${shlibs:Depends}, ${misc:Depends}
 Replaces: libtransport2.0-git
 Description: XMPP transport
  Spectrum 2 XMPP transport - development snapshots
