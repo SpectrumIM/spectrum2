@@ -26,7 +26,6 @@ option(ENABLE_FROTZ "Build Frotz plugin" ON)
 option(ENABLE_IRC "Build IRC plugin" ON)
 option(ENABLE_PURPLE "Build Libpurple plugin" ON)
 option(ENABLE_SMSTOOLS3 "Build SMSTools3 plugin" ON)
-option(ENABLE_SKYPE "Build Skype plugin" ON)
 option(ENABLE_XMPP "Build XMPP plugin" ON)
 option(ENABLE_TWITTER "Build Twitter plugin" ON)
 
@@ -153,7 +152,7 @@ if(ENABLE_PURPLE)
 endif()
 
 # FIND GLIB
-if(ENABLE_SKYPE OR ENABLE_PURPLE)
+if(ENABLE_PURPLE)
 #	if (GLIB2_INCLUDE_DIR AND GLIB2_LIBRARIES)
 #		set(GLIB2_FOUND TRUE)
 #	else()
