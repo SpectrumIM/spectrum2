@@ -1,4 +1,4 @@
-FIND_LIBRARY(SWIFTEN_LIBRARY NAMES Swiften Swiften3 HINTS ../lib)
+FIND_LIBRARY(SWIFTEN_LIBRARY NAMES Swiften Swiften3 Swiften4 HINTS ../lib)
 FIND_PATH(SWIFTEN_INCLUDE_DIR NAMES "Swiften/Swiften.h" PATH_SUFFIXES libSwiften Swiften HINTS ../include)
 
 if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
@@ -40,7 +40,7 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 		string(REGEX REPLACE " +$"                     ""  SWIFTEN_VERSION "${SWIFTEN_VERSION}")
 		string(REGEX REPLACE "swiften-config "          ""  SWIFTEN_VERSION "${SWIFTEN_VERSION}")
 
-		if("${SWIFTEN_VERSION}" STRGREATER "4")
+		if("${SWIFTEN_VERSION}" STRGREATER "4" AND NOT MSVC)
 			message( STATUS "Found Swiften > 4 requesting C++11")
 			add_definitions(-std=c++11)
 		endif()

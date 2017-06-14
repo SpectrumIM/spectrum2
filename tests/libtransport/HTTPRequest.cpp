@@ -20,6 +20,10 @@ using namespace Transport;
 #define get_value_or(X) substr()
 #endif
 
+#ifdef _MSC_VER
+#define sleep Sleep
+#endif
+
 class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(HTTPRequestTest);
 	CPPUNIT_TEST(GETThreadPool);
