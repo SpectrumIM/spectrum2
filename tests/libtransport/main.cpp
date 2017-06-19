@@ -10,12 +10,12 @@
 #include "log4cxx/fileappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/propertyconfigurator.h"
+using namespace log4cxx;
+#endif
 
 #include "transport/protocol.pb.h"
 #include "transport/HTTPRequest.h"
 
-using namespace log4cxx;
-#endif
 
 
 int main (int argc, char* argv[])

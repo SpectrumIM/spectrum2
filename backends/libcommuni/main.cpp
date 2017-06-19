@@ -17,12 +17,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
-
+#include <QtCore>
+#include <QtNetwork>
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
-#include <QtCore>
-#include <QtNetwork>
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
 #include "ircnetworkplugin.h"
 

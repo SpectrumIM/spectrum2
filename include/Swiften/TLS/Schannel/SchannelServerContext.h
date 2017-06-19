@@ -10,6 +10,7 @@
 #include "Swiften/TLS/Schannel/SchannelUtil.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/Base/ByteArray.h"
+#include "Swiften/SwiftenCompat.h"
 
 #define SECURITY_WIN32
 #include <Windows.h>

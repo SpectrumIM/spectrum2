@@ -25,8 +25,11 @@ void DirectMessageRequest::finalize()
 		callBack(user, username, messages, error);
 	} else {
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger,  user << " - " << error.getMessage());
-		else LOG4CXX_INFO(logger, user << " - " << replyMsg);
+		if(error.getMessage().length()) {
+			LOG4CXX_ERROR(logger,  user << " - " << error.getMessage());
+		} else {
+			LOG4CXX_INFO(logger, user << " - " << replyMsg);
+		}
 		callBack(user, username, messages, error);
 	}
 }
