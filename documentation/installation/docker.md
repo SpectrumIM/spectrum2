@@ -36,7 +36,6 @@ Now you have to decide where to store the configuration files for Spectrum 2. We
 You can use following default configuration files as a starting place:
 
 * [XMPP Frontend - gateway mode](https://github.com/hanzz/spectrum2/blob/master/spectrum/src/sample2_gateway.cfg)
-* [XMPP Frontend - server mode](https://github.com/hanzz/spectrum2/blob/master/spectrum/src/sample.cfg)
 
 Download the configuration file you chose into `/opt/spectrum2/configuration` directory you have created earlier and edit it as you want. Check the documentation and tutorials for configuration examples.
 
@@ -52,7 +51,7 @@ You also have to create persistent directory to store various Spectrum 2 data li
 
 To start Spectrum 2 on background using Docker, all you have to do is running following Docker command:
 
-	$ docker run --name="spectrum2" -d -p 5222:5222 -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum2
+	$ docker run --name="spectrum2" -d -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum2
 
 It will start Spectrum 2 and load the configuration files from `/opt/spectrum`. It also gives the spawned container name `spectrum2`.
 
