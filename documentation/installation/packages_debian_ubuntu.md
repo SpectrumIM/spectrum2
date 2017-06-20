@@ -24,7 +24,7 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
         $ echo "deb-src http://packages.spectrum.im/spectrum2/ stretch main" | sudo tee /etc/apt/sources.list.d/spectrum.list
         $ echo "deb http://swift.im/packages/debian/sid beta main" | sudo tee -a /etc/apt/sources.list.d/spectrum.list
         $ apt-get update
-        # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmysqlclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev libcommuni-dev
+        # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmariadbclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
         $ apt-get source communi spectrum2
         $ cd communi_3.5.0-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
         $ cd spectrum2_2.0.3-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
