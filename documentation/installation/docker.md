@@ -55,6 +55,10 @@ To start Spectrum 2 on background using Docker, all you have to do is running fo
 
 It will start Spectrum 2 and load the configuration files from `/opt/spectrum`. It also gives the spawned container name `spectrum2`.
 
+### Note
+
+If you are using Docker bridge networking, you should configure your XMPP server to listen on the bridge IP address. Some XMPP servers are listening only 127.0.0.1 by default. Check [Prosody](https://prosody.im/doc/components) documentation for example config.  
+
 ## Checking the Spectrum 2 logs
 
 To check the Spectrum 2 logs, use following Docker command:
