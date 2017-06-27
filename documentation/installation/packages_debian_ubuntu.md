@@ -4,13 +4,13 @@ title: Spectrum 2
 redirect_from: "/documentation/installation/debian_ubuntu.html"
 ---
 
-## Installing on Debian Jessie from our packages repository
+## Installing on Debian Stretch from our packages repository
 
-At the moment we support AMD64 and armhf (for ARM-based machines, like Raspberry PI) binary packages:
+At the moment we only support AMD64 binary packages:
 
         # apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
-        # echo "deb http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list.d/spectrum.list
-        # echo "deb-src http://packages.spectrum.im/spectrum2/ jessie main" >> /etc/apt/sources.list.d/spectrum.list
+        # echo "deb http://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
+        # echo "deb-src http://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
         # apt-get update 
         # apt-get install spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-twitter
 
