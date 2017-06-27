@@ -49,7 +49,7 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_component = component;
 
 	boost::locale::generator gen;
-	std::locale::global(gen("en_GB.UTF8"));
+	std::locale::global(gen(""));
 }
 
 RosterManager::~RosterManager() {
