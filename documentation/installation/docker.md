@@ -21,7 +21,7 @@ At first you have to install Docker. This is very well described on the official
 
 To download Spectrum 2 Docker image to your system, just run following command:
 
-	$ docker pull spectrum2/spectrum2
+	$ docker pull spectrum2/spectrum
 
 You can also update Spectrum 2 using this command later.
 
@@ -63,19 +63,19 @@ If you are using Docker bridge networking, you should configure your XMPP server
 
 To check the Spectrum 2 logs, use following Docker command:
 
-	$ docker logs spectrum2
+	$ docker logs spectrum
 
 ## Stopping the Spectrum 2
 
 To stop the Spectrum 2 container, use following Docker command:
 
-	$ docker stop spectrum2
+	$ docker stop spectrum
 
 ## Upgrading the Spectrum 2 container
 
 To upgrade Spectrum 2 container, you at first have to pull the updated Docker image, stop the current container, remove it and start it again using the new version of Docker image. It is very important to have all the Spectrum 2 data stored in the host system as described earlier in this document. Otherwise you won't be able to upgrade running container without loosing the data.
 
-	$ docker pull spectrum2/spectrum2
-	$ docker stop spectrum2
-	$ docker rm spectrum2
-	$ docker run --name="spectrum2" -d -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum2
+	$ docker pull spectrum2/spectrum
+	$ docker stop spectrum
+	$ docker rm spectrum
+	$ docker run --name="spectrum" -d -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum2
