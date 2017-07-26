@@ -3,22 +3,54 @@ layout: page
 title: Spectrum 2
 ---
 
-## Documentation
+#### About
 
-<div style="position: relative; width: 330px; height:194px; float:left;  color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1); margin-left:50px;">
-<h3>User documentation</h3>
-<hr/>
-This part of documentation is created for Spectrum 2 end users. It documents how to use the Spectrum 2 from user perspective.
-<br/>
-<a style="   position: absolute;bottom: 10px; right: 10px;" href="/documentation/user.html">Read More</a>
-</div>
+* [What is Spectrum 2?](about.html)
 
-<div style="position: relative;width: 330px; height:194px; float:left; color: #222; background-color: #fff;border-radius: 2px;-moz-border-radius: 2px;-webkit-border-radius: 2px;  padding: 10px; margin: 0 3px; box-shadow: 0 0 10px rgba(0,0,0,.1);margin-left: 50px;">
-<h3>Admin documentation</h3>
-<hr/>
-This part of documentation is created for Spectrum 2 administrator. It documents how to setup, configure and manage Spectrum 2 on your own server.
-<a style="   position: absolute;bottom: 10px; right: 10px;" href="/documentation/admin.html">Read More</a>
+#### Installation
 
-</div>
+* [Installing using Docker](installation/docker.html)
+* [Installing on Debian/Ubuntu](installation/packages_debian_ubuntu.html)
+* [Installing from source code](installation/from_source_code.html)
 
-<div style="clear: both;"></div> 
+#### Frontends
+
+* [Frontends overview](frontends/frontends.html)
+* [XMPP Frontend](frontends/xmpp.html)
+   * [Using SSL in server mode](configuration/server_ssl.html)
+   * [Spectrum 2 as bouncer](configuration/bouncer.html)
+* [Slack Frontend](frontends/slack.html)
+
+#### Backends
+
+* [Backends overview](backends/backends.html)
+* [Libpurple backend](backends/libpurple.html)
+* [Libcommuni backend](backends/libcommuni.html)
+* [Twitter backend](backends/twitter.html)
+* [Transwhat backend](backends/transwhat.html)
+
+#### Tutorials
+
+* [XMPP Frontend](frontends/xmpp.html)
+   * [Spectrum 2 in gateway mode](tutorials/gateway_mode.html)
+   * [Beginners guide (prosody + spectrum2 + twitter backend)](tutorials/beginners_guide.html)
+
+#### Configuration
+
+* [Configuration file description](configuration/config_file.html)
+* [MySQL Support](configuration/mysql.html)
+* [PostgreSQL Support](configuration/postgresql.html)
+* [Logging](configuration/logging.html)
+* [Web storage](configuration/web_storage.html)
+
+#### Management
+
+* [spectrum2_manager tool](management/spectrum2_manager.html)
+* [Web Interface](management/web_interface.html)
+* [Getting a backtrace](management/getting_backtrace.html)
+* [Munin integration](management/munin.html)
+
+#### Development
+
+* [Spectrum 2 architecture](development/architecture.html)
+* [Writing backend in any language (or How the backend works inside)](development/protocol.html)
