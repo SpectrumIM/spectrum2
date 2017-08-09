@@ -15,7 +15,7 @@ The Docker image is based on latest stable Fedora. It includes Spectrum 2 and al
 
 ## Install Docker
 
-At first you have to install Docker. This is very well described on the official [Docker Installation page](https://docs.docker.com/v1.8/installation/).
+At first you have to install Docker. This is very well described on the official [Docker Installation page](https://docs.docker.com/get-started/).
 
 ## Pull the Spectrum 2 Docker image
 
