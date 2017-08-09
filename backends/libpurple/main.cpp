@@ -1606,7 +1606,8 @@ void * requestInput(const char *title, const char *primary,const char *secondary
 			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
 			return NULL;
 		}
-		else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
+		else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth") ||
+                                boost::starts_with(primaryString, "https://www.youtube.com/watch?v=hlDhp-eNLMU")) {
 			LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
 			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
 			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: "));
