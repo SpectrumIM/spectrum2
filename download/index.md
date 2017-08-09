@@ -5,9 +5,7 @@ title: Spectrum 2
 
 ### Download
 
-**Spectrum 2.0.4 has been released:**
-
-Don't forget to check [Documentation](http://spectrum.im/documentation) and [Changelog](https://github.com/SpectrumIM/spectrum2/releases/tag/2.0.4) after downloading.
+Don't forget to check [Documentation](http://spectrum.im/documentation) and [Changelog](https://github.com/SpectrumIM/spectrum2/releases/latest) after downloading.
 
 * [Docker image](http://spectrum.im/documentation/installation/docker.html)
-* [Spectrum 2.0.4 source code](https://github.com/SpectrumIM/spectrum2/archive/2.0.4.tar.gz)
+* [Debian packages](http://spectrum.im/documentation/installation/packages_debian_ubuntu.html)
