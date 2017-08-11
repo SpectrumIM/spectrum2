@@ -146,6 +146,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_N
 		// Remote roster is support, so iterate over all buddies we received
 		// from the XMPP server and remove them using remote roster.
 		BOOST_FOREACH(Swift::RosterItemPayload it, payload->getItems()) {
+			if (it.getJID().getDomain() != m_component->getJID().getDomain()) continue;
 			Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
 			Swift::RosterItemPayload item;
 			item.setJID(it.getJID());
