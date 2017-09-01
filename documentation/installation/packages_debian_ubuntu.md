@@ -34,7 +34,8 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
 When the compilation process has ended the .deb packages for libcommuni and spectrum will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
 
 ### Troubleshooting
-If you got gpg verification error, then `dscverify` can not find appropriate keystore, see http://askubuntu.com/a/215008 for fix. This shouldn't happened if you are install keys and build packages from the same account (Note, building doesn't require root)
+1. If you got gpg verification error, then `dscverify` can not find appropriate keystore, see http://askubuntu.com/a/215008 for fix. This shouldn't happened if you are install keys and build packages from the same account (Note, building doesn't require root)
+2. There is unresolved issue with [MySQL 5.5](https://github.com/SpectrumIM/spectrum2/issues/150) - please upgrade to newer version
 
 ## Quick packaging with CPack
 
