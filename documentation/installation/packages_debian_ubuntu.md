@@ -12,6 +12,7 @@ At the moment we only support AMD64 binary packages:
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
         # echo "deb http://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
         # echo "deb https://swift.im/packages/debian/sid beta main" >> /etc/apt/sources.list.d/spectrum.list
+        # apt-get install apt-transport-https
         # apt-get update 
         # apt-get install spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-twitter
 
@@ -22,7 +23,7 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
 
         $ apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
-        $ apt-get install devscripts fakeroot libssl-dev libqt4-dev
+        $ apt-get install devscripts fakeroot libssl-dev libqt4-dev apt-transport-https
         $ echo "deb-src http://packages.spectrum.im/spectrum2/ stretch main" | sudo tee /etc/apt/sources.list.d/spectrum.list
         $ echo "deb http://swift.im/packages/debian/sid beta main" | sudo tee -a /etc/apt/sources.list.d/spectrum.list
         $ apt-get update
