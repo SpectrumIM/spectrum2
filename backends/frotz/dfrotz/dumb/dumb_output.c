@@ -132,13 +132,14 @@ void os_set_text_style(int x)
 static void dumb_display_char(char c)
 {
   dumb_set_cell(cursor_row, cursor_col, make_cell(current_style, c));
-  if (++cursor_col == h_screen_cols)
+  if (++cursor_col == h_screen_cols) {
     if (cursor_row == h_screen_rows - 1)
       cursor_col--;
     else {
       cursor_row++;
       cursor_col = 0;
     }
+}
 }
 
 void dumb_display_user_input(char *s)

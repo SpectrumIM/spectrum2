@@ -102,7 +102,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 		return;
 	}
 
-	for (int i = 0; i < format.length() && m_resultOffset == -1; i++) {
+	for (unsigned i = 0; i < format.length() && m_resultOffset == -1; i++) {
 		switch (format.at(i)) {
 			case 's':
 				m_params.resize(m_params.size() + 1);
@@ -138,7 +138,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 		}
 	}
 
-	for (int i = m_resultOffset; i >= 0 && i < format.length(); i++) {
+	for (unsigned i = m_resultOffset; i >= 0 && i < format.length(); i++) {
 		switch (format.at(i)) {
 			case 's':
 				m_results.resize(m_results.size() + 1);
@@ -186,11 +186,11 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 }
 
 MySQLBackend::Statement::~Statement() {
-	for (int i = 0; i < m_params.size(); i++) {
+	for (unsigned i = 0; i < m_params.size(); i++) {
 		free(m_params[i].buffer);
 		free(m_params[i].length);
 	}
-	for (int i = 0; i < m_results.size(); i++) {
+	for (unsigned i = 0; i < m_results.size(); i++) {
 		free(m_results[i].buffer);
 		free(m_results[i].length);
 	}

@@ -156,7 +156,6 @@ int main(int argc, char **argv)
 		float elapsed = 0; 
 		gettimeofday(&td_start, NULL);
 	
-		time_t started = time(NULL);
 		while(get_response().empty()) {
 			eventLoop.runUntilEvents();
 		}

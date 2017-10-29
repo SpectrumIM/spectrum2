@@ -213,7 +213,7 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 		std::string cmd = "", data = "";
 
 		/** Parsing the message - Assuming message format to be <cmd>[ ]*<data>**/
-		int i;
+		unsigned i;
 		for(i=0 ; i<message.size() && message[i] != ' '; i++) cmd += message[i];
 		while(i<message.size() && message[i] == ' ') i++;
 		data = message.substr(i);
@@ -652,7 +652,7 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 {
 	if(errMsg.getMessage().length() == 0)
 	{
-		for(int i=0 ; i<friends.size() ; i++) {
+		for(unsigned i=0 ; i<friends.size() ; i++) {
 			userdb[user].buddies.insert(friends[i].getScreenName());
 			userdb[user].buddiesInfo[friends[i].getScreenName()] = friends[i];
 			userdb[user].buddiesImgs[friends[i].getScreenName()] = friendAvatars[i];
@@ -691,7 +691,7 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 	if(errMsg.getMessage().length() == 0)
 	{
 		std::string userlist = "\n***************USER LIST****************\n";
-		for(int i=0 ; i < friends.size() ; i++) {
+		for(unsigned i=0 ; i < friends.size() ; i++) {
 			userlist += " - " + friends[i].getUserName() + " (" + friends[i].getScreenName() + ")\n";
 		}
 		userlist += "***************************************\n";
@@ -714,7 +714,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 		std::map<std::string, int> lastTweet;
 		std::map<std::string, int>::iterator it;
 
-		for(int i = tweets.size() - 1 ; i >= 0 ; i--) {
+		for(unsigned i = tweets.size() - 1 ; i >= 0 ; i--) {
 			if(userdb[user].twitterMode != CHATROOM) {
 				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")\n";
 				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime(), true);
@@ -788,7 +788,7 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 		std::string msgID = getMostRecentDMID(user);
 		std::string maxID = msgID;
 
-		for(int i=0 ; i < messages.size() ; i++) {
+		for(unsigned i=0 ; i < messages.size() ; i++) {
 			if(cmp(msgID, messages[i].getID()) == -1) {
 				msglist += " - " + messages[i].getSenderData().getScreenName() + ": " + messages[i].getMessage() + "\n";
 				if(cmp(maxID, messages[i].getID()) == -1) maxID = messages[i].getID();
@@ -803,7 +803,7 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 		std::string msgID = getMostRecentDMID(user);
 		std::string maxID = msgID;
 
-		for(int i=0 ; i < messages.size() ; i++) {
+		for(unsigned i=0 ; i < messages.size() ; i++) {
 			if(cmp(msgID, messages[i].getID()) == -1) {
 				if(userdb[user].twitterMode == MULTIPLECONTACT)
 					handleMessage(user, messages[i].getSenderData().getScreenName(), messages[i].getMessage(), "");

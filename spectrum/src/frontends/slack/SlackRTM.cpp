@@ -119,7 +119,7 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 
 		rapidjson::Value &attachments = d["attachments"];
 		if (attachments.IsArray()) {
-			for (int i = 0; i < attachments.Size(); i++) {
+			for (unsigned i = 0; i < attachments.Size(); i++) {
 				STORE_STRING_OPTIONAL(attachments[i], fallback);
 				if (!fallback.empty()) {
 					text += fallback;

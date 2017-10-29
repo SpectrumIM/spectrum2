@@ -41,6 +41,7 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "AdminInterface");
 
+__attribute__ ((unused))
 static std::string getArg(const std::string &body) {
 	std::string ret;
 	if (body.find(" ") == std::string::npos)

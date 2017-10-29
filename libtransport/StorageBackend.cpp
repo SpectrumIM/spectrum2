@@ -52,7 +52,7 @@ StorageBackend *StorageBackend::createBackend(Config *config, std::string &error
 std::string StorageBackend::encryptPassword(const std::string &password, const std::string &key) {
 	std::string encrypted;
 	encrypted.resize(password.size());
-	for (int i = 0; i < password.size(); i++) {
+	for (unsigned i = 0; i < password.size(); i++) {
 		char c = password[i];
 		char keychar = key[i % key.size()];
 		c += keychar;
@@ -67,7 +67,7 @@ std::string StorageBackend::decryptPassword(std::string &encrypted, const std::s
 	encrypted = Swift::byteArrayToString(Swift::Base64::decode(encrypted));
 	std::string password;
 	password.resize(encrypted.size());
-	for (int i = 0; i < encrypted.size(); i++) {
+	for (unsigned i = 0; i < encrypted.size(); i++) {
 		char c = encrypted[i];
 		char keychar = key[i % key.size()];
 		c -= keychar;

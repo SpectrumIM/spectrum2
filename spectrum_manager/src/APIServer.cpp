@@ -242,7 +242,6 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 			response = server->send_command(instance, "register " + jid + " " + uin + " " + password);
 			if (!response.empty()) {
 				std::string value = jid;
-				int type = (int) TYPE_STRING;
 				m_storage->updateUserSetting(info.id, instance, value);
 				send_ack(conn, false, response);
 			}

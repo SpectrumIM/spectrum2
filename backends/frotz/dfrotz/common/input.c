@@ -21,6 +21,7 @@
 #include "frotz.h"
 
 extern int save_undo (void);
+extern int os_read_mouse (void);
 
 extern zchar stream_read_key (zword, zword, bool);
 extern zchar stream_read_input (int, zchar *, zword, zword, bool, bool);

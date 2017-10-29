@@ -287,7 +287,7 @@ void Server::print_html(struct mg_connection *conn, struct http_message *hm, con
 	mg_printf(conn,
 			"HTTP/1.1 200 OK\r\n"
 			"Content-Type: text/html\r\n"
-			"Content-Length: %d\r\n"        // Always set Content-Length
+			"Content-Length: %zu\r\n"        // Always set Content-Length
 			"\r\n"
 			"%s%s%s",
 			(int) html.size() + m_header.size() + m_footer.size(), m_header.c_str(), html.c_str(), m_footer.c_str());
@@ -299,13 +299,12 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd,
 
 	try {
 		ask_local_server(m_config, networkFactories, jid, cmd);
-		struct timeval td_start,td_end;
-		float elapsed = 0; 
+		struct timeval td_start, td_end;
+
 		gettimeofday(&td_start, NULL);
 		gettimeofday(&td_end, NULL);
 
-		time_t started = time(NULL);
-		while(get_response().empty() && td_end.tv_sec - td_start.tv_sec < timeout) {
+		while (get_response().empty() && td_end.tv_sec - td_start.tv_sec < timeout) {
 			gettimeofday(&td_end, NULL);
 			eventLoop.runOnce();
 		}
@@ -400,7 +399,7 @@ void Server::serve_logout(struct mg_connection *conn, struct http_message *hm) {
 		host += std::string(host_hdr->p, host_hdr->len);
 	}
 
-	Server:session *session = get_session(hm);
+	Server::session *session = get_session(hm);
 	mg_printf(conn, "HTTP/1.1 302 Found\r\n"
 		"Set-Cookie: session=%s; max-age=0\r\n"
 		"Set-Cookie: admin=%s; max-age=0\r\n"
@@ -425,7 +424,7 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 		boost::split(args, response, boost::is_any_of(" "));
 		std::cerr << "set_oauth2_code response size " << args.size() << "\n";
 		if (args.size() == 3) {
-			Server:session *session = get_session(hm);
+			Server::session *session = get_session(hm);
 			UserInfo info;
 			m_storage->getUser(session->user, info);
 			std::string username = "";

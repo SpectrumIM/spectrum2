@@ -1440,6 +1440,7 @@ struct Dis {
 	std::string protocol;
 };
 
+__attribute__ ((unused))
 static gboolean disconnectMe(void *data) {
 	Dis *d = (Dis *) data;
 	PurpleAccount *account = purple_accounts_find_wrapped(d->name.c_str(), d->protocol.c_str());
@@ -2300,10 +2301,10 @@ int main(int argc, char **argv) {
 	purple_timeout_add_seconds_wrapped(30, pingTimeout, NULL);
 
 	np = new SpectrumNetworkPlugin();
-	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
 
 	GMainLoop *m_loop;
 #ifdef WITH_LIBEVENT
+	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
 	if (!libev) {
 		m_loop = g_main_loop_new(NULL, FALSE);
 	}

@@ -10,7 +10,7 @@ DEFINE_LOGGER(logger, "TwitterResponseParser")
 static std::string tolowercase(std::string inp)
 {
 	std::string out = inp;
-	for(int i=0 ; i<out.size() ; i++) out[i] = tolower(out[i]);
+	for(unsigned i=0 ; i<out.size() ; i++) out[i] = tolower(out[i]);
 	return out;
 }
 
@@ -246,7 +246,7 @@ std::vector<std::string> getIDs(std::string &json)
 
 	const rapidjson::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
 
-	for(int i=0 ; i<ids.Size() ; i++) {
+	for(unsigned i=0 ; i<ids.Size() ; i++) {
 		IDs.push_back(stringOf( ids[i].GetInt64()) );
 	}
 	return IDs;

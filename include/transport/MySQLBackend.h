@@ -127,9 +127,9 @@ class MySQLBackend : public StorageBackend
 				MYSQL *m_conn;
 				std::vector<MYSQL_BIND> m_params;
 				std::vector<MYSQL_BIND> m_results;
-				int m_resultOffset;
-				int m_offset;
 				int m_error;
+				unsigned m_resultOffset;
+				unsigned m_offset;
 				std::string m_string;
 		};
 

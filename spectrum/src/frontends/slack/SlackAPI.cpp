@@ -183,7 +183,7 @@ std::string SlackAPI::getOwnerId(HTTPRequest *req, bool ok, rapidjson::Document 
 		return "";
 	}
 
-	for (int i = 0; i < members.Size(); i++) {
+	for (unsigned i = 0; i < members.Size(); i++) {
 		if (!members[i].IsObject()) {
 			continue;
 		}
@@ -231,7 +231,7 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 			info.name = name;
 
 			rapidjson::Value &members = channel["members"];
-			for (int y = 0; members.IsArray() && y < members.Size(); y++) {
+			for (unsigned y = 0; members.IsArray() && y < members.Size(); y++) {
 				if (!members[y].IsString()) {
 					continue;
 				}
@@ -244,7 +244,7 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 		return;
 	}
 
-	for (int i = 0; i < channels.Size(); i++) {
+	for (unsigned i = 0; i < channels.Size(); i++) {
 		if (!channels[i].IsObject()) {
 			continue;
 		}
@@ -258,7 +258,7 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 		info.name = name;
 
 		rapidjson::Value &members = channels[i]["members"];
-		for (int y = 0; members.IsArray() && y < members.Size(); y++) {
+		for (unsigned y = 0; members.IsArray() && y < members.Size(); y++) {
 			if (!members[y].IsString()) {
 				continue;
 			}
@@ -280,7 +280,7 @@ void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &re
 
 	GET_ARRAY(resp, ims);
 
-	for (int i = 0; i < ims.Size(); i++) {
+	for (unsigned i = 0; i < ims.Size(); i++) {
 		if (!ims[i].IsObject()) {
 			continue;
 		}
@@ -308,7 +308,7 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 
 	GET_ARRAY(resp, users);
 
-	for (int i = 0; i < users.Size(); i++) {
+	for (unsigned i = 0; i < users.Size(); i++) {
 		if (!users[i].IsObject()) {
 			continue;
 		}
@@ -337,7 +337,7 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 
 	GET_ARRAY(resp, bots);
 
-	for (int i = 0; i < bots.Size(); i++) {
+	for (unsigned i = 0; i < bots.Size(); i++) {
 		if (!bots[i].IsObject()) {
 			continue;
 		}

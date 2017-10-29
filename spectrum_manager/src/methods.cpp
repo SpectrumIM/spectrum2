@@ -43,7 +43,7 @@ std::string searchForBinary(const std::string &binary) {
 
 	if (env_path != NULL) {
 		std::string buffer = "";
-		for (int s = 0; s < strlen(env_path); s++) {
+		for (unsigned s = 0; s < strlen(env_path); s++) {
 			if (env_path[s] == ':') {
 				path_list.insert(path_list.end(), std::string(buffer));
 				buffer = "";
@@ -619,7 +619,6 @@ std::vector<std::string> show_list(ManagerConfig *config, bool show) {
 			return list;
 		}
 
-		bool found = false;
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
 			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {

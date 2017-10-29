@@ -1317,7 +1317,7 @@ void NetworkPluginServer::pingTimeout() {
 	// reconnect them to long-running backend, where they can idle hapilly till the end of ages.
 	time_t now = time(NULL);
 	std::vector<User *> usersToMove;
-	unsigned long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
+	long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
 	if (diff != 0) {
 		for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 			// Users from long-running backends can't be moved
@@ -2060,7 +2060,7 @@ static void __unblock_signals ( void )
 NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUsers, bool longRun, bool check) {
 	NetworkPluginServer::Backend *c = NULL;
 
-	unsigned long diff = CONFIG_INT(m_config, "service.login_delay");
+	long diff = CONFIG_INT(m_config, "service.login_delay");
 	time_t now = time(NULL);
 	if (diff && (now - m_lastLogin < diff)) {
 		m_loginTimer->stop();
@@ -2077,11 +2077,11 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 
 	// Check all backends and find free one
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->willDie == false && (*it)->acceptUsers == acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
+		if ((*it)->willDie == false && (*it)->acceptUsers == acceptUsers && (int) (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
 			c = *it;
 			// if we're not reusing all backends and backend is full, stop accepting new users on this backend
 			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
-				if (!check && c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
+				if (!check && (int) c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
 					c->acceptUsers = false;
 				}
 			}

@@ -207,6 +207,9 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					case Swift::ClientError::InvalidCertificateSignatureError: message = ("Invalid certificate signature"); break;
 					case Swift::ClientError::InvalidCAError: message = ("Invalid Certificate Authority"); break;
 					case Swift::ClientError::InvalidServerIdentityError: message = ("Certificate does not match the host identity"); break;
+					case Swift::ClientError::CertificateCardRemoved: message = ("Certificate card has been removed"); break;
+					case Swift::ClientError::RevokedError: message = ("Certificate has been revoked"); break;
+					case Swift::ClientError::RevocationCheckFailedError: message = ("Certificate revocation check has failed"); break;
 				}
 			}
 			LOG4CXX_INFO(logger, user << ": Disconnected " << message);

@@ -23,7 +23,7 @@ void FetchFriends::run()
 	req.init();
 	req.setProxy(twitObj->getProxyServerIp(), twitObj->getProxyServerPort(), twitObj->getProxyUserName(), twitObj->getProxyPassword());
 
-	for(int i=0 ; i<friends.size() ; i++) {
+	for(unsigned i=0 ; i<friends.size() ; i++) {
 		std::string img;
 		friendAvatars.push_back("");
 		if(req.GET(friends[i].getProfileImgURL(), img)) friendAvatars[i] = img;

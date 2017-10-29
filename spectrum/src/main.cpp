@@ -78,6 +78,7 @@ BOOL spectrum_control_handler( DWORD fdwCtrlType ) {
 }
 #endif
 
+__attribute__ ((unused))
 static void removeOldIcons(std::string iconDir) {
 	std::vector<std::string> dirs;
 	dirs.push_back(iconDir);

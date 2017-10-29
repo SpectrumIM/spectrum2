@@ -60,7 +60,7 @@ void DiscoItemsResponder::addAdHocCommand(const std::string &node, const std::st
 }
 
 void DiscoItemsResponder::addRoom(const std::string &node, const std::string &name) {
-	if (m_rooms->getItems().size() > CONFIG_INT(m_component->getConfig(), "service.max_room_list_size")) {
+	if ((int) m_rooms->getItems().size() > CONFIG_INT(m_component->getConfig(), "service.max_room_list_size")) {
 		return;
 	}
 	m_rooms->addItem(DiscoItems::Item(name, node));
