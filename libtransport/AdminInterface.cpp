@@ -41,7 +41,8 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "AdminInterface");
 
-__attribute__ ((unused))
+// currently unused
+#if 0
 static std::string getArg(const std::string &body) {
 	std::string ret;
 	if (body.find(" ") == std::string::npos)
@@ -49,6 +50,7 @@ static std::string getArg(const std::string &body) {
 
 	return body.substr(body.find(" ") + 1);
 }
+#endif
 
 class StatusCommand : public AdminInterfaceCommand {
 	public:

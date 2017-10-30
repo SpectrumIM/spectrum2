@@ -1440,7 +1440,8 @@ struct Dis {
 	std::string protocol;
 };
 
-__attribute__ ((unused))
+// currently unused
+#if 0
 static gboolean disconnectMe(void *data) {
 	Dis *d = (Dis *) data;
 	PurpleAccount *account = purple_accounts_find_wrapped(d->name.c_str(), d->protocol.c_str());
@@ -1451,6 +1452,7 @@ static gboolean disconnectMe(void *data) {
 	}
 	return FALSE;
 }
+#endif
 
 static gboolean pingTimeout(void *data) {
 	np->checkPing();

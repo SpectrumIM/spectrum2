@@ -78,13 +78,15 @@ BOOL spectrum_control_handler( DWORD fdwCtrlType ) {
 }
 #endif
 
-__attribute__ ((unused))
+// currently unused
+#if 0
 static void removeOldIcons(std::string iconDir) {
 	std::vector<std::string> dirs;
 	dirs.push_back(iconDir);
 
 	boost::thread thread(boost::bind(Util::removeEverythingOlderThan, dirs, time(NULL) - 3600*24*14));
 }
+#endif
 
 #ifndef WIN32
 static void daemonize(const char *cwd, const char *lock_file) {
