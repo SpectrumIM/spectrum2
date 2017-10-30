@@ -18,6 +18,6 @@ namespace Transport {
 
 		private:
 			int level;
-			std::auto_ptr<Swift::PayloadParser> currentPayloadParser;
+			std::unique_ptr<Swift::PayloadParser> currentPayloadParser;
 	};
 }
