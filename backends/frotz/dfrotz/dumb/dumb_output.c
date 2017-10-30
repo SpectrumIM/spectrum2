@@ -193,7 +193,7 @@ void os_display_string (const zchar *s)
     else if (c == ZC_NEW_STYLE)
       os_set_text_style(*s++);
     else {
-     os_display_char (c); 
+     os_display_char (c);
      }
 }
 
@@ -268,8 +268,12 @@ static bool will_print_blank(cell c)
 
 static void show_line_prefix(int row, char c)
 {
-  if (show_line_numbers)
-    printf((row == -1) ? ".." : "%02d", (row + 1) % 100);
+  if (show_line_numbers) {
+    if (row == -1)
+      printf("..");
+    else
+      printf("%02d", (row + 1) % 100);
+  }
   if (show_line_types)
     putchar(c);
   /* Add a separator char (unless there's nothing to separate).  */
@@ -330,7 +334,7 @@ static bool is_blank(cell c)
 void dumb_show_screen(bool show_cursor)
 {
   int r, c, first, last;
-  char changed_rows[0x100]; 
+  char changed_rows[0x100];
 
   /* Easy case */
   if (compression_mode == COMPRESSION_NONE) {
@@ -343,7 +347,7 @@ void dumb_show_screen(bool show_cursor)
   /* Check which rows changed, and where the first and last change is.  */
   first = last = -1;
   memset(changed_rows, 0, h_screen_rows);
-  for (r = hide_lines; r < h_screen_rows; r++) { 
+  for (r = hide_lines; r < h_screen_rows; r++) {
     for (c = 0; c < h_screen_cols; c++)
       if (dumb_changes_row(r)[c] && !is_blank(dumb_row(r)[c]))
 	break;
@@ -368,7 +372,7 @@ void dumb_show_screen(bool show_cursor)
 
   /* Display the appropriate rows.  */
   if (compression_mode == COMPRESSION_MAX) {
-    for (r = first; r <= last; r++) 
+    for (r = first; r <= last; r++)
       if (changed_rows[r])
 	show_row(r);
   } else {

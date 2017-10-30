@@ -35,7 +35,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		}
 
 	void setStringTwice() {
-		char *argv[3] = {"binary", "--service.jids=localhost", NULL};
+		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
 		Config cfg(2, argv);
 		std::istringstream ifs("service.jids = irc.freenode.org\n");
 		cfg.load(ifs);
@@ -43,7 +43,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	}
 
 	void setUnknownBool() {
-		char *argv[3] = {"binary", "--service.jids=localhost", NULL};
+		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
 		Config cfg(2, argv);
 		std::istringstream ifs("service.irc_send_pass = 1\npurple.group-chat-open=0\n");
 		cfg.load(ifs);
@@ -52,7 +52,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	}
 
 	void enumerateConfigSection() {
-		char *argv[3] = {"binary", "--service.jids=localhost", NULL};
+		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
 		Config cfg(2, argv);
 		std::istringstream ifs("purple.irc_send_pass=1\npurple.group-chat-open=false\npurple.test=passed");
 		cfg.load(ifs);

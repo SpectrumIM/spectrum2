@@ -714,7 +714,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 		std::map<std::string, int> lastTweet;
 		std::map<std::string, int>::iterator it;
 
-		for(unsigned i = tweets.size() - 1 ; i >= 0 ; i--) {
+		for(int i = tweets.size() - 1 ; i >= 0 ; i--) {
 			if(userdb[user].twitterMode != CHATROOM) {
 				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")\n";
 				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime(), true);
