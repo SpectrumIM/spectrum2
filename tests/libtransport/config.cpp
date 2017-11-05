@@ -36,7 +36,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 
 	void setStringTwice() {
 		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
-		Config cfg(2, argv);
+		Config cfg(2, const_cast<char **>(argv));
 		std::istringstream ifs("service.jids = irc.freenode.org\n");
 		cfg.load(ifs);
 		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), CONFIG_STRING(&cfg, "service.jids"));
@@ -44,7 +44,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 
 	void setUnknownBool() {
 		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
-		Config cfg(2, argv);
+		Config cfg(2, const_cast<char **>(argv));
 		std::istringstream ifs("service.irc_send_pass = 1\npurple.group-chat-open=0\n");
 		cfg.load(ifs);
 		CPPUNIT_ASSERT_EQUAL(true, CONFIG_BOOL_DEFAULTED(&cfg, "service.irc_send_pass", false));
@@ -53,7 +53,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 
 	void enumerateConfigSection() {
 		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
-		Config cfg(2, argv);
+		Config cfg(2, const_cast<char **>(argv));
 		std::istringstream ifs("purple.irc_send_pass=1\npurple.group-chat-open=false\npurple.test=passed");
 		cfg.load(ifs);
 		Config::SectionValuesCont purpleConfigValues = cfg.getSectionValues("purple");
