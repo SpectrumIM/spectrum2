@@ -9,8 +9,6 @@ matrix:
       dist: trusty
       sudo: required
     - os: osx
-  allow_failures:
-    - os: osx
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       export DEBIAN_FRONTEND=noninteractive;
