@@ -42,7 +42,7 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 
 		if("${SWIFTEN_VERSION}" STRGREATER "4" AND NOT MSVC)
 			message( STATUS "Found Swiften > 4 requesting C++11")
-			add_definitions(-std=c++11)
+			set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 		endif()
 		
 		set( SWIFTEN_FOUND 1 )
