@@ -780,17 +780,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			if (CONFIG_STRING(config, "service.protocol") != "prpl-jabber") {
-				np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
-				const char *disp;
-				if ((disp = purple_connection_get_display_name(account->gc)) == NULL) {
-					disp = purple_account_get_username(account);
-				}
-
-				LOG4CXX_INFO(logger, user << ": Display name is " << disp << ", nickname is " << nickname);
-				if (nickname != disp) {
-					handleRoomNicknameChanged(np->m_accounts[account], room, disp);
-					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
-				}
+                               np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
+                               const char *disp;
+                               if ((disp = purple_account_get_name_for_display(account)) == NULL) {
+                                       if ((disp = purple_connection_get_display_name(account->gc)) == NULL) {
+                                               disp = purple_account_get_username(account);
+                                       }
+                               }
+                               LOG4CXX_INFO(logger, user << ": Display name is " << disp << ", nickname is " << nickname);
+                               if (nickname != disp) {
+                                       handleRoomNicknameChanged(np->m_accounts[account], room, disp);
+                                       np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
+                               }
 			}
 
 			LOG4CXX_INFO(logger, user << ": Joining the room " << roomName);
