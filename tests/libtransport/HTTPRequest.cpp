@@ -1,3 +1,4 @@
+#include <boost/thread/thread.hpp>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -18,10 +19,6 @@ using namespace Transport;
 
 #if !HAVE_SWIFTEN_3
 #define get_value_or(X) substr()
-#endif
-
-#ifdef _MSC_VER
-#define sleep Sleep
 #endif
 
 class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
@@ -61,7 +58,9 @@ class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		int i = 0;
 		while (result == false && i < 5) {
-			sleep(1);
+			boost::system_time time = boost::get_system_time();
+			time += boost::posix_time::seconds(1);
+			boost::thread::sleep(time);
 			loop->processEvents();
 			i++;
 		}
