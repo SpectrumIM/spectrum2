@@ -22,7 +22,6 @@
 
 #include <vector>
 #include <list>
-#include <boost/signal.hpp>
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
@@ -53,7 +52,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 		void addAdHocCommand(const std::string &node, const std::string &name);
 
-		boost::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
 
 		Swift::CapsInfo &getBuddyCapsInfo() {
 				return m_capsInfo;

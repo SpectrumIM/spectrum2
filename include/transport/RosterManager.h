@@ -23,7 +23,6 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include <boost/signal.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
 // #include "rosterstorage.h"
@@ -32,6 +31,7 @@
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -94,15 +94,15 @@ class RosterManager {
 
 		/// Called when new Buddy is added to this roster.
 		/// \param buddy newly added Buddy
-		boost::signal<void (Buddy *buddy)> onBuddySet;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddySet;
 
 		/// Called when Buddy has been removed from this roster.
 		/// \param buddy removed Buddy
-		boost::signal<void (Buddy *buddy)> onBuddyUnset;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddyUnset;
 
-		boost::signal<void (Buddy *buddy)> onBuddyAdded;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddyAdded;
 		
-		boost::signal<void (Buddy *buddy)> onBuddyRemoved;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddyRemoved;
 
 		void handleBuddyChanged(Buddy *buddy);
 

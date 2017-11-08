@@ -26,7 +26,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
-#include <boost/signalslib.hpp>
+#include <Swiften/SwiftenCompat.h>
 
 namespace Transport {
 
@@ -124,10 +124,10 @@ class Config {
 		const std::string &getConfigFile() { return m_file; }
 
 		/// This signal is emitted when config is loaded/reloaded.
-		boost::signal<void ()> onConfigReloaded;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onConfigReloaded;
 
 		void updateBackendConfig(const std::string &backendConfig);
-		boost::signal<void ()> onBackendConfigUpdated;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onBackendConfigUpdated;
 
 		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
 	

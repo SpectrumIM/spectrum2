@@ -25,7 +25,6 @@
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/SwiftenCompat.h"
 
-#include <boost/signal.hpp>
 #include <Swiften/Version.h>
 #include "transport/UserRegistration.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)

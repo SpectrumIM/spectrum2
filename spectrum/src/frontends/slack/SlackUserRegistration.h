@@ -22,8 +22,6 @@
 
 #include "transport/UserRegistration.h"
 
-#include <boost/signal.hpp>
-
 namespace Transport {
 
 struct UserInfo;

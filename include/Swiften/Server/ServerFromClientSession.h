@@ -8,7 +8,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/signals.hpp>
 
 #include <string>
 #include <Swiften/Session/Session.h>
@@ -48,7 +47,7 @@ namespace Swift {
 					Swift::JID remoteJID = Swift::JID());
 			~ServerFromClientSession();
 
-			boost::signal<void ()> onSessionStarted;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onSessionStarted;
 			void setAllowSASLEXTERNAL();
 			const std::string &getUser() {
 				return user_;

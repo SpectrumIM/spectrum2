@@ -4,8 +4,6 @@
  * See Documentation/Licenses/GPLv3.txt for more information.
  */
 
-#include <boost/signals.hpp>
-
 #include "Swiften/Base/SafeByteArray.h"
 #include "Swiften/StreamStack/StreamLayer.h"
 #include "Swiften/TLS/Certificate.h"
@@ -37,8 +35,8 @@ namespace Swift {
 			}
 
 		public:
-			boost::signal<void ()> onError;
-			boost::signal<void ()> onConnected;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onError;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onConnected;
 
 		private:
 			TLSServerContext* context;

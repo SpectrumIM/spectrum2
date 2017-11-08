@@ -48,7 +48,6 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "boost/signal.hpp"
 
 #include "transport/utf8.h"
 
@@ -87,7 +86,7 @@ class NetworkConversation : public Conversation {
 			onMessageToSend(this, message);
 		}
 
-		boost::signal<void (NetworkConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (NetworkConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class NetworkFactory : public Factory {

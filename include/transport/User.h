@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <boost/signal.hpp>
 #include <time.h>
 #include "transport/StorageBackend.h"
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
@@ -149,12 +148,12 @@ class User {
 
 		void leaveRoom(const std::string &room);
 
-		boost::signal<void ()> onReadyToConnect;
-		boost::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
-		boost::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
-		boost::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
-		boost::signal<void (const std::string &room)> onRoomLeft;
-		boost::signal<void ()> onDisconnected;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onReadyToConnect;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &room)> onRoomLeft;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onDisconnected;
 
 	private:
 		void onConnectingTimeout();

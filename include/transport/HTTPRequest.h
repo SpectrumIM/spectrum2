@@ -9,7 +9,7 @@
 #include <string.h>
 #include "rapidjson/document.h"
 
-#include <boost/signal.hpp>
+#include <Swiften/SwiftenCompat.h>
 
 namespace Transport {
 
@@ -38,7 +38,7 @@ class HTTPRequest : public Thread {
 			return m_url;
 		}
 
-		boost::signal<void ()> onRequestFinished;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onRequestFinished;
 
 		static void globalInit() {
 			curl_global_init(CURL_GLOBAL_ALL);

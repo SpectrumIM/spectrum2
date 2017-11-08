@@ -6,7 +6,6 @@
 #include "transport/Logging.h"
 #include "transport/Config.h"
 #include <string>
-#include <boost/signals.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <iostream>

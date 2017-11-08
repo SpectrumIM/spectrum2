@@ -47,8 +47,6 @@
 #include <algorithm>
 #include <map>
 
-#include <boost/signal.hpp>
-
 namespace Transport {
 
 class Component;
@@ -70,13 +68,13 @@ class SlackRTM {
 
 		void sendMessage(const std::string &channel, const std::string &message);
 
-		boost::signal<void ()> onRTMStarted;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onRTMStarted;
 
 		SlackAPI *getAPI() {
 			return m_api;
 		}
 
-		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
 
 #ifndef LIBTRANSPORT_TEST
 	private:

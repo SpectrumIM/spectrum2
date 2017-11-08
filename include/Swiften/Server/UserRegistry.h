@@ -8,7 +8,6 @@
 
 #include <string>
 #include <Swiften/Base/SafeByteArray.h>
-#include <boost/signal.hpp>
 #include "Swiften/Server/ServerFromClientSession.h"
 
 namespace Swift {

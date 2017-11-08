@@ -22,11 +22,10 @@
 
 #include <map>
 
-#include <boost/signals.hpp>
-
 #include <string>
 #include <Swiften/Elements/Presence.h>
 #include <Swiften/Client/StanzaChannel.h>
+#include <Swiften/SwiftenCompat.h>
 
 namespace Transport {
 
@@ -44,7 +43,7 @@ class PresenceOracle {
 		void clearPresences(const Swift::JID& bareJID);
 
 	public:
-		boost::signal<void (Swift::Presence::ref)> onPresenceChange;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref)> onPresenceChange;
 
 	private:
 		void handleIncomingPresence(Swift::Presence::ref presence);

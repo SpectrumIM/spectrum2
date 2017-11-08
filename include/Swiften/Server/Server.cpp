@@ -9,7 +9,6 @@
 #include <string>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include <boost/signal.hpp>
 
 #include "Swiften/Base/String.h"
 #include "Swiften/Network/Connection.h"
@@ -96,7 +95,7 @@ void Server::stop() {
 
 	if (serverFromClientConnectionServer) {
 		serverFromClientConnectionServer->stop();
-		BOOST_FOREACH(SWIFTEN_SIGNAL_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
+		BOOST_FOREACH(SWIFTEN_SIGNAL_CONNECTION_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
 			connection.disconnect();
 		}
 		serverFromClientConnectionServerSignalConnections.clear();

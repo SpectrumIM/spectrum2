@@ -21,7 +21,6 @@
 #pragma once
 
 #include <vector>
-#include <boost/signal.hpp>
 #include <boost/bind.hpp>
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
@@ -95,10 +94,10 @@ namespace Transport {
 			/// This signal is emitted when server disconnects the transport because of some error.
 
 			/// \param error disconnection error
-			boost::signal<void (const std::string &error)> onConnectionError;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &error)> onConnectionError;
 
 			/// This signal is emitted when transport successfully connects the server.
-			boost::signal<void ()> onConnected;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onConnected;
 
 			/// This signal is emitted when XML stanza is sent to server.
 
@@ -108,11 +107,11 @@ namespace Transport {
 			/// (for example to="j2j.domain.tld") and for presences comming to
 			/// MUC (for example to="#chat%irc.freenode.org@irc.domain.tld")
 			/// \param presence Presence.
-			boost::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
-			boost::signal<void (SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>)> onRawIQReceived;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void (SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>)> onRawIQReceived;
 
-			boost::signal<void ()> onAdminInterfaceSet;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onAdminInterfaceSet;
 			
 			void handlePresence(Swift::Presence::ref presence);
 			void handleConnected();

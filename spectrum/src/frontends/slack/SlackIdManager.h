@@ -47,8 +47,6 @@
 #include <algorithm>
 #include <map>
 
-#include <boost/signal.hpp>
-
 namespace Transport {
 
 class SlackIdManager {

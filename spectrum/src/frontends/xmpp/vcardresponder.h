@@ -26,7 +26,6 @@
 #include "Swiften/Network/NetworkFactories.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/SwiftenCompat.h"
-#include <boost/signal.hpp>
 
 namespace Transport {
 
@@ -41,8 +40,8 @@ class VCardResponder : public Swift::Responder<Swift::VCard> {
 
 		void sendVCard(unsigned int id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard);
 
-		boost::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
-		boost::signal<void (User *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (User *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
 
 		void collectTimeouted();
 

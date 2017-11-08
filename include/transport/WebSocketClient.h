@@ -43,8 +43,6 @@
 #include <algorithm>
 #include <map>
 
-#include <boost/signal.hpp>
-
 namespace Transport {
 
 class Component;
@@ -60,10 +58,10 @@ class WebSocketClient {
 
 		void write(const std::string &data);
 
-		boost::signal<void (const std::string &payload)> onPayloadReceived;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &payload)> onPayloadReceived;
 
-		boost::signal<void ()> onWebSocketConnected;
-		boost::signal<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onWebSocketConnected;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
 
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);

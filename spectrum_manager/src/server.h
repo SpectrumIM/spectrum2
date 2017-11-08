@@ -26,7 +26,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/assign.hpp>
 #include <boost/bind.hpp>
-#include <boost/signal.hpp>
 
 #include "mongoose.h"
 #include "managerconfig.h"

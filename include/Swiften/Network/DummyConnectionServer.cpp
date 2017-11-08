@@ -6,7 +6,6 @@
 
 #include <Swiften/Network/DummyConnectionServer.h>
 
-#include <boost/signal.hpp>
 #include <boost/bind.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/asio/placeholders.hpp>

@@ -402,10 +402,6 @@ if (WIN32)
 	ADD_DEFINITIONS(-DBOOST_THREAD_USE_LIB)
 endif()
 
-# We cannot use boost:signals2, because Swiften does not use them,
-# for now, just ignore the deprecation warning.
-ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
-
 if(CMAKE_BUILD_TYPE MATCHES Debug)
 	if (CMAKE_COMPILER_IS_GNUCXX)
 		ADD_DEFINITIONS(-O0)
