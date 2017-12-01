@@ -8,19 +8,27 @@ matrix:
     - os: linux
       dist: trusty
       sudo: required
+      env: CXX11=true
+    - os: linux
+      dist: trusty
+      sudo: required
     - os: osx
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       export DEBIAN_FRONTEND=noninteractive;
       export APT_LISTCHANGES_FRONTEND=none;
       echo force-confold | sudo tee -a /etc/dpkg/dpkg.cfg;
-      curl -k https://swift.im/keys/packages.key | sudo apt-key add -;
-      echo 'deb http://us.archive.ubuntu.com/ubuntu xenial           main restricted universe multiverse' | sudo tee    /etc/apt/sources.list.d/xenial.list > /dev/null;
-      echo 'deb http://us.archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse' | sudo tee -a /etc/apt/sources.list.d/xenial.list > /dev/null;
-      echo 'deb http://us.archive.ubuntu.com/ubuntu xenial-security  main restricted universe multiverse' | sudo tee -a /etc/apt/sources.list.d/xenial.list > /dev/null;
-      echo 'deb http://us.archive.ubuntu.com/ubuntu xenial-updates   main restricted universe multiverse' | sudo tee -a /etc/apt/sources.list.d/xenial.list > /dev/null;
-      echo "deb http://packages.spectrum.im/spectrum2/ xenial main" | sudo tee -a /etc/apt/sources.list;
-      echo "deb http://swift.im/packages/ubuntu/xenial beta main" | sudo tee -a /etc/apt/sources.list;
+      if [[ "CXX11" == "true" ]]; then
+        curl -k https://swift.im/keys/packages.key | sudo apt-key add -;
+        echo 'deb http://us.archive.ubuntu.com/ubuntu xenial           main restricted universe multiverse' | sudo tee    /etc/apt/sources.list.d/xenial.list > /dev/null;
+        echo 'deb http://us.archive.ubuntu.com/ubuntu xenial-backports main restricted universe multiverse' | sudo tee -a /etc/apt/sources.list.d/xenial.list > /dev/null;
+        echo 'deb http://us.archive.ubuntu.com/ubuntu xenial-security  main restricted universe multiverse' | sudo tee -a /etc/apt/sources.list.d/xenial.list > /dev/null;
+        echo 'deb http://us.archive.ubuntu.com/ubuntu xenial-updates   main restricted universe multiverse' | sudo tee -a /etc/apt/sources.list.d/xenial.list > /dev/null;
+        echo "deb http://packages.spectrum.im/spectrum2/ xenial main" | sudo tee -a /etc/apt/sources.list;
+        echo "deb http://swift.im/packages/ubuntu/xenial beta main" | sudo tee -a /etc/apt/sources.list;
+      else
+        echo "deb http://packages.spectrum.im/spectrum2/ trusty main" | sudo tee -a /etc/apt/sources.list;
+      fi;
       echo "deb http://packages.prosody.im/debian $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list;
       sudo apt-get update -qq;
       sudo apt-get purge chromium-browser;
