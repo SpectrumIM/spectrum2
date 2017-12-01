@@ -57,7 +57,7 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 			return m_config;
 		}
 
-	public slots:
+	public Q_SLOTS:
 		void readData();
 		void sendData(const std::string &string);
 

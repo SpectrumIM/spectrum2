@@ -46,7 +46,6 @@
 #else
 #define SWIFTEN_UNIQUE_PTR std::auto_ptr
 #define SWIFTEN_SHRPTR_NAMESPACE boost
-#define BOOST_SIGNALS_NO_DEPRECATION_WARNING
 #include <boost/signals.hpp>
 #define SWIFTEN_SIGNAL_NAMESPACE boost
 #define SWIFTEN_SIGNAL_CONNECTION_NAMESPACE boost::signals
