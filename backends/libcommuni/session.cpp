@@ -31,6 +31,7 @@
 
 #define FROM_UTF8(WHAT) QString::fromUtf8((WHAT).c_str(), (WHAT).size())
 #define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
+#define foreach BOOST_FOREACH
 
 #include "transport/Logging.h"
 
