@@ -42,6 +42,7 @@
 #include "Swiften/SwiftenCompat.h"
 #include <Swiften/Version.h>
 #include <Swiften/FileTransfer/FileTransfer.h>
+#include "transport/protocol.pb.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #define NETWORK_PLUGIN_API_VERSION (1)
@@ -177,6 +178,8 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 #endif
 		void handleStreamEnd() {}
+
+		void wrapIncomingImage(Swift::Message* msg, const pbnetwork::ConversationMessage& payload);
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;

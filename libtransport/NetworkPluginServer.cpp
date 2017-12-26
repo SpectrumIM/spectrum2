@@ -46,8 +46,10 @@
 #include "Swiften/Elements/DeliveryReceiptRequest.h"
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
+#include "Swiften/Elements/RawXMLPayload.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
+#include <boost/regex.hpp>
 
 #include "transport/utf8.h"
 
@@ -685,6 +687,8 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	else {
 		msg->setBody(payload.message());
 	}
+
+    wrapIncomingImage(msg.get(), payload);
 
 	if (payload.headline()) {
 		msg->setType(Swift::Message::Headline);
@@ -1787,6 +1791,32 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 		return;
 	}
 	send(c->connection, message);
+}
+
+void NetworkPluginServer::wrapIncomingImage(Swift::Message* msg, const pbnetwork::ConversationMessage& payload) {
+    static boost::regex image_expr{"<img src=[\"']([^\"']+)[\"'].*>"};
+
+    if (payload.xhtml().find("<img") != std::string::npos) {
+        boost::smatch match;
+
+        if (boost::regex_search(payload.xhtml(), match, image_expr)) {
+            const std::string& image_url = match[1];
+
+            SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
+                oob_payload(new Swift::RawXMLPayload(
+                    "<x xmlns='jabber:x:oob'><url>"
+                    + image_url
+                    + "</url>"
+                    + "</x>"
+                ));
+                // todo: add the payload itself as a caption
+
+            msg->addPayload(oob_payload);
+            msg->setBody(image_url);
+        } else {
+            LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml())
+        }
+    }
 }
 
 void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
