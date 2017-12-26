@@ -1794,7 +1794,7 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 }
 
 void NetworkPluginServer::wrapIncomingImage(Swift::Message* msg, const pbnetwork::ConversationMessage& payload) {
-    static boost::regex image_expr{"<img src=[\"']([^\"']+)[\"'].*>"};
+    static boost::regex image_expr("<img src=[\"']([^\"']+)[\"'].*>");
 
     if (payload.xhtml().find("<img") != std::string::npos) {
         boost::smatch match;
