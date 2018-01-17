@@ -124,7 +124,7 @@ class LibcommuniServerModeSingleServerConf(BaseTest):
 		return False
 
 	def pre_test(self):
-		os.system("ngircd -f ../libcommuni/ngircd.conf &")
+		os.system("/usr/sbin/ngircd -f ../libcommuni/ngircd.conf &")
 
 	def post_test(self):
 		os.system("killall ngircd 2>/dev/null")
@@ -136,7 +136,7 @@ class LibcommuniServerModeConf(BaseTest):
 		self.directory = "../libcommuni/"
 
 	def pre_test(self):
-		os.system("ngircd -f ../libcommuni/ngircd.conf &")
+		os.system("/usr/sbin/ngircd -f ../libcommuni/ngircd.conf &")
 
 	def post_test(self):
 		os.system("killall ngircd 2>/dev/null")
