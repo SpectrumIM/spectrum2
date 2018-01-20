@@ -28,6 +28,7 @@ purple_account_remove_buddy_wrapped_fnc purple_account_remove_buddy_wrapped = NU
 purple_account_add_buddy_wrapped_fnc purple_account_add_buddy_wrapped = NULL;
 purple_account_get_name_for_display_wrapped_fnc purple_account_get_name_for_display_wrapped = NULL;
 purple_accounts_set_ui_ops_wrapped_fnc purple_accounts_set_ui_ops_wrapped = NULL;
+purple_account_prefs_set_ui_ops_wrapped_fnc purple_account_prefs_set_ui_ops_wrapped = NULL;
 purple_account_option_get_type_wrapped_fnc purple_account_option_get_type_wrapped = NULL;
 purple_account_option_get_setting_wrapped_fnc purple_account_option_get_setting_wrapped = NULL;
 purple_blist_node_get_type_wrapped_fnc purple_blist_node_get_type_wrapped = NULL;
@@ -258,6 +259,9 @@ bool resolvePurpleFunctions() {
 
 	purple_accounts_set_ui_ops_wrapped = (purple_accounts_set_ui_ops_wrapped_fnc)GetProcAddress(f_hPurple, "purple_accounts_set_ui_ops");
 	if (!purple_accounts_set_ui_ops_wrapped)
+		return false;
+	purple_account_prefs_set_ui_ops_wrapped = (purple_account_prefs_set_ui_ops_wrapped_fnc)GetProcAddress(f_hPurple, "purple_account_prefs_set_ui_ops");
+	if (!purple_account_prefs_set_ui_ops_wrapped)
 		return false;
 
 	purple_account_option_get_type_wrapped = (purple_account_option_get_type_wrapped_fnc)GetProcAddress(f_hPurple, "purple_account_option_get_type");

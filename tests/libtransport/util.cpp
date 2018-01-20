@@ -10,15 +10,18 @@
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "basictest.h"
 #include "transport/utf8.h"
+#include <boost/lexical_cast.hpp>
 
 
 using namespace Transport;
+using boost::lexical_cast;
 
 class UtilTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST_SUITE(UtilTest);
 	CPPUNIT_TEST(encryptDecryptPassword);
 	CPPUNIT_TEST(serializeGroups);
 	CPPUNIT_TEST(replaceInvalid);
+    CPPUNIT_TEST(storeUserSettings);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -66,6 +69,30 @@ class UtilTest : public CPPUNIT_NS :: TestFixture{
 		utf8::remove_invalid(x.begin(), x.end(), std::back_inserter(a));
 		CPPUNIT_ASSERT_EQUAL(std::string("testtest"), a);
 	}
+    
+    void storeUserSettings() {
+        std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost\nservice.more_resources=1\nservice.admin_jid=me@localhost\ndatabase.type=sqlite3\ndatabase.database=demo.s3db");
+        Config *cfg = new Config();
+        cfg->load(ifs);
+        std::string err = "";
+        StorageBackend *storage = StorageBackend::createBackend(cfg, err);
+        UserInfo res;
+        res.uin = "123456";
+        res.jid = "test@localhost";
+        res.password = "secret";
+        storage->connect();
+        storage->setUser(res);
+        storage->getUser("test@localhost", res);
+        int ts = time(NULL);
+        std::string key = boost::lexical_cast<std::string>(ts);
+        int type = TYPE_INT;
+        storage->getUserSetting(res.id, "test_variable", type, key);
+        std::string value = "";
+        
+        storage->getUserSetting(res.id, "test_variable", type, value);
+        unlink("demo.s3db");
+        CPPUNIT_ASSERT_EQUAL(ts, boost::lexical_cast<int>(value));
+    }
 
 };
 

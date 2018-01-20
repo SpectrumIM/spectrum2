@@ -241,6 +241,7 @@ static boost::mutex dblock;
 static std::string OAUTH_TOKEN = "hangouts_oauth_token";
 static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
 static std::string DISCORD_ACCESS_TOKEN = "discord_access_token";
+static std::string LAST_MESSAGE_TIMESTAMP = "skypeweb_last_message_timestamp";
 
 static bool getUserToken(const std::string user, const std::string token_name, std::string &token_value)
 {
@@ -480,13 +481,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					purple_account_set_string_wrapped(account, "access_token", token.c_str());
 				}
 			}
-			else if (protocol == "prpl-eionrobb-discord") {
-				std::string token;
-				getUserToken(user, DISCORD_ACCESS_TOKEN, token);
-				if (!token.empty()) {
-					purple_account_set_string_wrapped(account, "token", token.c_str());
-				}
-			}
+                        else if (protocol == "prpl-eionrobb-discord") {
+                                std::string token;
+                                if (getUserToken(user, DISCORD_ACCESS_TOKEN, token)) {
+                                        purple_account_set_string_wrapped(account, "token", token.c_str());
+                                }
+                        }
+                        if (protocol == "prpl-skypeweb") {
+                                int ts = 0;
+                                if (getLastMessageTimestamp(user, ts)) {
+                                        purple_account_set_int_wrapped(account, "last_message_timestamp", ts);
+                                }
+                        }
 
 			setDefaultAccountOptions(account);
 
@@ -529,9 +535,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_disconnect_wrapped(account);
 				purple_account_set_enabled_wrapped(account, "spectrum", FALSE);
 
-				m_accounts.erase(account);
-
-				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
 #if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 				malloc_trim(0);
@@ -1682,11 +1685,17 @@ static void connection_report_disconnect(PurpleConnection *gc, PurpleConnectionE
 // 	purple_timeout_add_seconds_wrapped(10, disconnectMe, d);
 }
 
+static void connection_disconnected(PurpleConnection *gc) {
+	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
+	purple_accounts_delete_wrapped(account);
+	np->m_accounts.erase(account);
+}
+
 static PurpleConnectionUiOps conn_ui_ops =
 {
 	NULL,
 	NULL,
-	NULL,//connection_disconnected,
+	connection_disconnected,
 	NULL,
 	NULL,
 	NULL,
@@ -2201,6 +2210,72 @@ static PurpleRoomlistUiOps roomlist_ui_ops =
 	NULL
 };
 
+#if PURPLE_MAJOR_VERSION >=2 && PURPLE_MINOR_VERSION >=11
+
+static void preferencesIntChanged(PurpleAccount *account, const char *name, int value) {
+	boost::mutex::scoped_lock lock(dblock);
+        UserInfo info;
+	std::string user = np->m_accounts[account];
+	LOG4CXX_INFO(logger, "asking for " << user << " settings");
+        if(storagebackend->getUser(user, info) == false) {
+                LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+                return;
+        }
+        LOG4CXX_INFO(logger, "storing " << value << "as " << name << " for " << user);
+        std::string defaultValue = "0";
+        int type = TYPE_INT;
+        storagebackend->getUserSetting((long)info.id, std::string(name), type, defaultValue);
+        storagebackend->updateUserSetting((long)info.id, std::string(name), stringOf(value));
+};
+
+static void preferencesStringChanged(PurpleAccount *account, const char *name, const char *value) {
+	boost::mutex::scoped_lock lock(dblock);
+        UserInfo info;
+	std::string user = np->m_accounts[account];
+	LOG4CXX_INFO(logger, "asking for " << user << " settings");
+        if(storagebackend->getUser(user, info) == false) {
+                LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+                return;
+        }
+	LOG4CXX_INFO(logger, "storing " << value << "as " << name << " for " << user);
+	std::string defaultValue = "";
+	int type = TYPE_STRING;
+	storagebackend->getUserSetting((long)info.id, std::string(name), type, defaultValue);
+        storagebackend->updateUserSetting((long)info.id, std::string(name), std::string(value));
+};
+
+static void preferencesBoolChanged(PurpleAccount *account, const char *name, gboolean value) {
+	boost::mutex::scoped_lock lock(dblock);
+        UserInfo info;
+	std::string user = np->m_accounts[account];
+	LOG4CXX_INFO(logger, "asking for " << user << " settings");
+        if(storagebackend->getUser(user, info) == false) {
+                LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+                return;
+        }
+        LOG4CXX_INFO(logger, "storing " << value << "as " << name << " for " << user);
+        std::string defaultValue = "false";
+        int type = TYPE_BOOLEAN;
+        storagebackend->getUserSetting((long)info.id, std::string(name), type, defaultValue);
+        storagebackend->updateUserSetting((long)info.id, std::string(name), stringOf(value));
+};
+
+static PurpleAccountPrefsUiOps account_prefs_ui_ops =
+{
+	preferencesIntChanged,
+	preferencesStringChanged,
+	preferencesBoolChanged,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+
+#endif
+
 static void transport_core_ui_init(void)
 {
 	purple_blist_set_ui_ops_wrapped(&blistUiOps);
@@ -2211,7 +2286,9 @@ static void transport_core_ui_init(void)
 	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
 	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
 	purple_roomlist_set_ui_ops_wrapped(&roomlist_ui_ops);
-
+#if PURPLE_MAJOR_VERSION >=2 && PURPLE_MINOR_VERSION >= 11
+	purple_account_prefs_set_ui_ops_wrapped(&account_prefs_ui_ops);
+#endif
 // #ifndef WIN32
 // 	purple_dnsquery_set_ui_ops_wrapped(getDNSUiOps());
 // #endif
@@ -2557,7 +2634,7 @@ int main(int argc, char **argv) {
 	config = std::shared_ptr<Config>(cfg);
 
 	Logging::initBackendLogging(config.get());
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile" || CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile" || CONFIG_STRING(config, "service.protocol") == "prpl-skypeweb" || CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
 		storagebackend = StorageBackend::createBackend(config.get(), error);
 		if (storagebackend == NULL) {
 			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
