@@ -24,6 +24,7 @@
 #include "transport/User.h"
 #include "transport/Transport.h"
 #include "transport/Buddy.h"
+#include "transport/PresenceOracle.h"
 #include "transport/RosterManager.h"
 #include "transport/Frontend.h"
 #include "transport/Config.h"
@@ -32,8 +33,12 @@
 #include "Swiften/Elements/MUCItem.h"
 #include "Swiften/Elements/MUCOccupant.h"
 #include "Swiften/Elements/MUCUserPayload.h"
+#include "Swiften/Elements/CarbonsSent.h"
 #include "Swiften/Elements/Delay.h"
+#include "Swiften/Elements/Forwarded.h"
 #include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/Presence.h"
+#include "Swiften/Elements/RawXMLPayload.h"
 #include "Swiften/Elements/VCardUpdate.h"
 
 namespace Transport {
@@ -145,7 +150,7 @@ void Conversation::handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::
 	}
 }
 
-void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname) {
+void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname, const bool carbon) {
 	if (m_muc) {
 		message->setType(Swift::Message::Groupchat);
 	}
@@ -223,8 +228,85 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		LOG4CXX_INFO(logger, "MSG FROM " << message->getFrom().toString());
 	}
 
-	handleRawMessage(message);
+	if (carbon) {
+		LOG4CXX_INFO(logger, "CARBON MSG");
+		//Swap from and to
+		Swift::JID from = message->getFrom();
+		message->setFrom(message->getTo());
+		message->setTo(from);
+
+#define OWN_MESSAGE_SEND_CARBON
+//#define OWN_MESSAGE_SEND_DIRECT
+
+#ifdef OWN_MESSAGE_SEND_CARBON
+		//Wrap the message in a <sent><forwarded>
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded>
+			payloadForwarded(new Swift::Forwarded());
+		payloadForwarded->setStanza(message);
+
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsSent>
+		    payloadSent(new Swift::CarbonsSent());
+		payloadSent->setForwarded(payloadForwarded);
+		
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
+		    payloadNoCopy(new Swift::RawXMLPayload("<no-copy xmlns=\"urn:xmpp:hints\"/>"));
+		
+		//Carbons should be sent to every resource directly.
+		//Even if we tried to send to bare jid, the server would at best route it
+		//as it would normal message (usually to the highest priority resource),
+		//but won't produce carbons to other resources as it does with normal messages.
+		Component* transport = this->getConversationManager()->getComponent();
+		std::vector<Swift::Presence::ref> presences = transport->getPresenceOracle()->getAllPresence(this->m_jid.toBare());
+		if (presences.empty()) {
+			LOG4CXX_INFO(logger, "No presences for JID " << this->m_jid.toString()
+			    << ", will send to bare JID for archival.");
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> fwd =
+			    this->newCarbonWrapper(message, this->m_jid.toBare());
+			fwd->addPayload(payloadSent);
+			fwd->addPayload(payloadNoCopy);
+			handleRawMessage(fwd);
+		} else
+		BOOST_FOREACH(const Swift::Presence::ref &it, presences) {
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> fwd =
+			    this->newCarbonWrapper(message, it->getFrom());
+			fwd->addPayload(payloadSent);
+			fwd->addPayload(payloadNoCopy);
+			LOG4CXX_INFO(logger, "Carbon to -> " << fwd->getTo().toString());
+			handleRawMessage(fwd);
+		}
+#endif
+#ifdef OWN_MESSAGE_SEND_DIRECT
+		//Experimental: Send ANOTHER copy of the message directly, to have it archived
+		handleRawMessage(message);
+#endif
+	} else {
+		handleRawMessage(message);
+	}
 }
+
+SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> Conversation::newCarbonWrapper(
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+	const Swift::JID& to)
+{
+	//Message envelope
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> fwd(
+	    new Swift::Message());
+
+	//Type MUST be equal to the original message type
+	fwd->setType(payload->getType());
+
+	//XEP-0280 docs say "from" MUST be the carbon subscriber's JID,
+	//but XEP-0114 says a transport can only send from its own jid.
+	//XEP-0280 is probably more important, XEP-0114 can be disabled with
+	//  check_from: false
+	fwd->setFrom(m_jid.toBare());
+	//fwd->setFrom(this->getConversationManager()->getComponent()->getJID());
+
+	fwd->setTo(to);
+
+	return fwd;
+}
+
 
 std::string Conversation::getParticipants() {
 	std::string ret;

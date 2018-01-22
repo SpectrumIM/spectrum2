@@ -64,10 +64,14 @@ class Conversation {
 
 		/// \param message Message received from legacy network.
 		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
-		void handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname = "");
+		void handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname = "", const bool carbon = false);
 
 		void handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message);
 		void handleRawPresence(Swift::Presence::ref presence);
+		
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> newCarbonWrapper(
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+			const Swift::JID& to);
 
 		/// Handles participant change in MUC.
 
