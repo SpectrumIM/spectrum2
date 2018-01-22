@@ -449,7 +449,7 @@ int main(int argc, char **argv)
 #ifndef WIN32
 	// create directories
 	try {
-		boost::filesystem::create_directories(
+		_createDirectories(&config,
 			boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
 		);
 	}
@@ -459,7 +459,7 @@ int main(int argc, char **argv)
 	}
 	// create directories
 	try {
-		boost::filesystem::create_directories(
+		_createDirectories(&config,
 			boost::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
 		);
 	}
