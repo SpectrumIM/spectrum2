@@ -66,12 +66,18 @@ class Conversation {
 		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
 		void handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname = "", const bool carbon = false);
 
+		//Generates a carbon <sent> wrapper <message> around the given payload and delivers it
+		void forwardAsCarbonSent(
+			const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &payload,
+			const Swift::JID& to);
+
+		//Generates a impersonation request <message> arount the given payload and delivers it
+		void forwardImpersonated(
+			const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+			const Swift::JID& server);
+
 		void handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message);
 		void handleRawPresence(Swift::Presence::ref presence);
-		
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> newCarbonWrapper(
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
-			const Swift::JID& to);
 
 		/// Handles participant change in MUC.
 

@@ -41,6 +41,9 @@
 #include "Swiften/Elements/RawXMLPayload.h"
 #include "Swiften/Elements/VCardUpdate.h"
 
+#include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
+#include "Swiften/Serializer/PayloadSerializers/ForwardedSerializer.h"
+
 namespace Transport {
 	
 DEFINE_LOGGER(logger, "Conversation");
@@ -239,18 +242,6 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 //#define OWN_MESSAGE_SEND_DIRECT
 
 #ifdef OWN_MESSAGE_SEND_CARBON
-		//Wrap the message in a <sent><forwarded>
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded>
-			payloadForwarded(new Swift::Forwarded());
-		payloadForwarded->setStanza(message);
-
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsSent>
-		    payloadSent(new Swift::CarbonsSent());
-		payloadSent->setForwarded(payloadForwarded);
-		
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
-		    payloadNoCopy(new Swift::RawXMLPayload("<no-copy xmlns=\"urn:xmpp:hints\"/>"));
-		
 		//Carbons should be sent to every resource directly.
 		//Even if we tried to send to bare jid, the server would at best route it
 		//as it would normal message (usually to the highest priority resource),
@@ -260,53 +251,85 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		if (presences.empty()) {
 			LOG4CXX_INFO(logger, "No presences for JID " << this->m_jid.toString()
 			    << ", will send to bare JID for archival.");
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> fwd =
-			    this->newCarbonWrapper(message, this->m_jid.toBare());
-			fwd->addPayload(payloadSent);
-			fwd->addPayload(payloadNoCopy);
-			handleRawMessage(fwd);
+			this->forwardAsCarbonSent(message, this->m_jid.toBare());
 		} else
 		BOOST_FOREACH(const Swift::Presence::ref &it, presences) {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> fwd =
-			    this->newCarbonWrapper(message, it->getFrom());
-			fwd->addPayload(payloadSent);
-			fwd->addPayload(payloadNoCopy);
-			LOG4CXX_INFO(logger, "Carbon to -> " << fwd->getTo().toString());
-			handleRawMessage(fwd);
+			this->forwardAsCarbonSent(message, it->getFrom());
 		}
 #endif
 #ifdef OWN_MESSAGE_SEND_DIRECT
 		//Experimental: Send ANOTHER copy of the message directly, to have it archived
-		handleRawMessage(message);
+		forwardImpersonate(message, message->getFrom());
 #endif
 	} else {
 		handleRawMessage(message);
 	}
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> Conversation::newCarbonWrapper(
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+void Conversation::forwardAsCarbonSent(
+	const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &payload,
 	const Swift::JID& to)
 {
+	LOG4CXX_INFO(logger, "Carbon <sent> to -> " << to.toString());
+
 	//Message envelope
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> fwd(
-	    new Swift::Message());
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message(new Swift::Message());
 
 	//Type MUST be equal to the original message type
-	fwd->setType(payload->getType());
+	message->setType(payload->getType());
 
 	//XEP-0280 docs say "from" MUST be the carbon subscriber's JID,
-	//but XEP-0114 says a transport can only send from its own jid.
-	//XEP-0280 is probably more important, XEP-0114 can be disabled with
-	//  check_from: false
-	fwd->setFrom(m_jid.toBare());
-	//fwd->setFrom(this->getConversationManager()->getComponent()->getJID());
+	//so a transport will need to wrap this in another <privilege> wrapper.
+	message->setFrom(m_jid.toBare());
+	message->setTo(to);
 
-	fwd->setTo(to);
+	//Wrap the payload in a <sent><forwarded>
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded> forwarded(new Swift::Forwarded());
+	forwarded->setStanza(payload);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsSent> sent(new Swift::CarbonsSent());
+	sent->setForwarded(forwarded);
+	message->addPayload(sent);
 
-	return fwd;
+	//Add no-copy to prevent some servers from creating carbons of carbons
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
+	    noCopy(new Swift::RawXMLPayload("<no-copy xmlns=\"urn:xmpp:hints\"/>"));
+	message->addPayload(noCopy);
+
+	this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
 }
 
+//Generates a XEP-0356 privilege wrapper asking to impersonate a user from a given domain
+void Conversation::forwardImpersonated(
+	const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+	const Swift::JID& server)
+{
+	LOG4CXX_INFO(logger, "Impersonate to -> " << server.toString());
+	Component* transport = this->getConversationManager()->getComponent();
+
+	//Message envelope
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message(new Swift::Message());
+	// "from" MUST be our bare jid
+	message->setFrom(transport->getJID());
+	// "to" MUST be the bare jid of the server we're asking to impersonate
+	message->setTo(server);
+	message->setType(Swift::Message::Normal);
+
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded> forwarded(new Swift::Forwarded());
+	forwarded->setStanza(payload);
+
+	LOG4CXX_INFO(logger, "Impersonate: baking <privilege>");
+
+	//Swiften has no <privilege> element ATM so hack around T__T
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload> privilege(new Swift::RawXMLPayload());
+	static Swift::FullPayloadSerializerCollection serializerCollection;
+	static Swift::ForwardedSerializer forwardedSerializer(&serializerCollection);
+	std::string forwardedStr = forwardedSerializer.serialize(forwarded);
+	privilege->setRawXML("<privilege xmlns='urn:xmpp:privilege:1'>" + forwardedStr + "</privilege>");
+
+	message->addPayload(privilege);
+	LOG4CXX_INFO(logger, "Impersonate: sending message");
+	handleRawMessage(message);
+}
 
 std::string Conversation::getParticipants() {
 	std::string ret;
