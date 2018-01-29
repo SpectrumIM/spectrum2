@@ -14,7 +14,8 @@
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 
 #include "Swiften/Serializer/GenericPayloadSerializer.h"
-#include "Swiften/Serializer/GenericPayloadSerializer2.h"
+#include "Swiften/Parser/GenericPayloadParserFactory.h"
+#include "Swiften/Parser/GenericPayloadParserFactory2.h"
 
 #include "storageparser.h"
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
