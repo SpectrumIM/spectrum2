@@ -79,11 +79,18 @@ DEFINE_LOGGER(logger, "XMPPFrontend");
 XMPPFrontend::XMPPFrontend() {
 }
 
-class SwiftEntityExposed: public Swift::Entity
+class SwiftServerExposed: public Swift::Server
 {
 public:
-	PayloadParserFactoryCollection* getPayloadParserFactories() { return Swift::Entity::getPayloadParserFactories(); }
-	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Entity::getPayloadSerializers(); }
+	PayloadParserFactoryCollection* getPayloadParserFactories() { return Swift::Server::getPayloadParserFactories(); }
+	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Server::getPayloadSerializers(); }
+};
+
+class SwiftComponentExposed: public Swift::Component
+{
+public:
+	PayloadParserFactoryCollection* getPayloadParserFactories() { return Swift::Component::getPayloadParserFactories(); }
+	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Component::getPayloadSerializers(); }
 };
 
 void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Transport::UserRegistry *userRegistry) {
@@ -142,7 +149,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
 
-		SwiftEntityExposed* entity(reinterpret_cast<SwiftEntityExposed*>(&m_server));
+		SwiftServerExposed* entity(reinterpret_cast<SwiftServerExposed*>(m_server));
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
 
@@ -170,7 +177,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_component->onDataRead.connect(boost::bind(&XMPPFrontend::handleDataRead, this, _1));
 		m_component->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
 
-		SwiftEntityExposed* entity(reinterpret_cast<SwiftEntityExposed*>(&m_component));
+		SwiftComponentExposed* entity(reinterpret_cast<SwiftComponentExposed*>(m_component));
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
 
