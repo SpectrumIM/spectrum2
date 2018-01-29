@@ -59,6 +59,10 @@
 #include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
+#include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
+#include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
+#include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
+#include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RosterPayload.h"
@@ -93,6 +97,11 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-permanent-store", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1"));
 
 	m_payloadSerializers.push_back(new Swift::AttentionSerializer());
 	m_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
@@ -101,6 +110,8 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_payloadSerializers.push_back(new Swift::StatsSerializer());
 	m_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	m_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
+	m_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
+	m_payloadSerializers.push_back(new Swift::PrivilegeSerializer());
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));

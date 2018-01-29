@@ -30,6 +30,10 @@
 #include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
+#include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
+#include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
+#include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
+#include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
 
 using namespace Transport;
 
@@ -68,6 +72,11 @@ void BasicTest::setMeUp (void) {
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-permanent-store", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1"));
 
 	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
 		payloadParserFactories->addFactory(factory);
@@ -80,6 +89,8 @@ void BasicTest::setMeUp (void) {
 	_payloadSerializers.push_back(new Swift::StatsSerializer());
 	_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
+	_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
+	_payloadSerializers.push_back(new Swift::PrivilegeSerializer());
 
 	BOOST_FOREACH(Swift::PayloadSerializer *serializer, _payloadSerializers) {
 		payloadSerializers->addSerializer(serializer);

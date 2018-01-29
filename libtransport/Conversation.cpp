@@ -36,9 +36,10 @@
 #include "Swiften/Elements/CarbonsSent.h"
 #include "Swiften/Elements/Delay.h"
 #include "Swiften/Elements/Forwarded.h"
+#include "Swiften/Elements/HintPayload.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/Presence.h"
-#include "Swiften/Elements/RawXMLPayload.h"
+#include "Swiften/Elements/Privilege.h"
 #include "Swiften/Elements/VCardUpdate.h"
 
 #include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
@@ -291,9 +292,7 @@ void Conversation::forwardAsCarbonSent(
 	message->addPayload(sent);
 
 	//Add no-copy to prevent some servers from creating carbons of carbons
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
-	    noCopy(new Swift::RawXMLPayload("<no-copy xmlns=\"urn:xmpp:hints\"/>"));
-	message->addPayload(noCopy);
+	message->addPayload(new Swift::HintPayload(Swift::HintPayload::NoCopy));
 
 	this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
 }
@@ -316,15 +315,10 @@ void Conversation::forwardImpersonated(
 
 	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded> forwarded(new Swift::Forwarded());
 	forwarded->setStanza(payload);
-
-	LOG4CXX_INFO(logger, "Impersonate: baking <privilege>");
-
-	//Swiften has no <privilege> element ATM so hack around T__T
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload> privilege(new Swift::RawXMLPayload());
-	static Swift::FullPayloadSerializerCollection serializerCollection;
-	static Swift::ForwardedSerializer forwardedSerializer(&serializerCollection);
-	std::string forwardedStr = forwardedSerializer.serialize(forwarded);
-	privilege->setRawXML("<privilege xmlns='urn:xmpp:privilege:1'>" + forwardedStr + "</privilege>");
+	
+	Swift::Privilege::ref privilege(new Swift::Privilege());
+	privilege->setStanza(forwarded);
+	//"<privilege xmlns='urn:xmpp:privilege:1'>" + forwardedStr + "</privilege>"
 
 	message->addPayload(privilege);
 	LOG4CXX_INFO(logger, "Impersonate: sending message");
