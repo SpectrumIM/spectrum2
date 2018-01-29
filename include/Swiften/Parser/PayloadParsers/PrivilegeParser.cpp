@@ -12,32 +12,32 @@ namespace Swift {
 PrivilegeParser::PrivilegeParser(PayloadParserFactoryCollection* factories) : factories_(factories), level_(TopLevel) {
 }
 
-void PrivilegeParser::handleStartElement(const std::string& element, const std::string& /*ns*/, const AttributeMap& /*attributes*/) {
+void PrivilegeParser::handleStartElement(const std::string& element, const std::string& ns, const AttributeMap& attributes) {
 	if (level_ == PayloadLevel) {
-        if (element == "forwarded" && ns == "urn:xmpp:forward:0") {
-            childParser_ = std::dynamic_pointer_cast<StanzaParser>(std::make_shared<ForwardedParser>(factories_));
-        };
-    }
-    if (childParser_) {
-        childParser_->handleStartElement(element, ns, attributes);
-    }
+		if (element == "forwarded" && ns == "urn:xmpp:forward:0") {
+			childParser_ = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<PayloadParser>(SWIFTEN_SHRPTR_NAMESPACE::make_shared<ForwardedParser>(factories_));
+		};
+	}
+	if (childParser_) {
+		childParser_->handleStartElement(element, ns, attributes);
+	}
 	++level_;
 }
 
-void PrivilegeParser::handleEndElement(const std::string&, const std::string&) {
+void PrivilegeParser::handleEndElement(const std::string& element, const std::string& ns) {
 	--level_;
 	if (childParser_ && level_ >= PayloadLevel) {
-        childParser_->handleEndElement(element, ns);
-    }
-    if (childParser_ && level_ == PayloadLevel) {
-        getPayloadInternal()->setStanza(childParser_->getStanza());
-        childParser_.reset();
+		childParser_->handleEndElement(element, ns);
+	}
+	if (childParser_ && level_ == PayloadLevel) {
+		getPayloadInternal()->setForwarded(SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Forwarded>(childParser_->getPayload()));
+		childParser_.reset();
 	}
 }
 
-void PrivilegeParser::handleCharacterData(const std::string&) {
+void PrivilegeParser::handleCharacterData(const std::string& data) {
 	if (childParser_) {
-        childParser_->handleCharacterData(data);
+		childParser_->handleCharacterData(data);
 	}
 }
 

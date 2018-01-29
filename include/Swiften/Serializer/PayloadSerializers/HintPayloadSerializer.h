@@ -13,9 +13,9 @@
 
 namespace Swift {
 	class HintPayloadSerializer : public GenericPayloadSerializer<HintPayload> {
-		public:
-			HintPayloadSerializer();
+	public:
+		HintPayloadSerializer();
 
-			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<HintPayload>)  const;
+		virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<HintPayload>)  const;
 	};
 }

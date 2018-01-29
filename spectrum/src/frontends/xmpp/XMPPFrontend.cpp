@@ -64,6 +64,7 @@
 #include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
 #include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
+#include "Swiften/Parser/GenericPayloadParserFactory2.h"
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "discoitemsresponder.h"
@@ -77,6 +78,13 @@ DEFINE_LOGGER(logger, "XMPPFrontend");
 
 XMPPFrontend::XMPPFrontend() {
 }
+
+class SwiftEntityExposed: public Swift::Entity
+{
+public:
+	PayloadParserFactoryCollection* getPayloadParserFactories() { return Swift::Entity::getPayloadParserFactories(); }
+	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Entity::getPayloadSerializers(); }
+};
 
 void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Transport::UserRegistry *userRegistry) {
 	m_transport = transport;
@@ -101,7 +109,6 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
-	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1"));
 
 	m_payloadSerializers.push_back(new Swift::AttentionSerializer());
 	m_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
@@ -111,7 +118,6 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	m_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
 	m_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
-	m_payloadSerializers.push_back(new Swift::PrivilegeSerializer());
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
@@ -135,6 +141,10 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 // 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
+
+		SwiftEntityExposed* entity(reinterpret_cast<SwiftEntityExposed*>(&m_server));
+		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
+		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_server->addPayloadParserFactory(factory);
@@ -160,6 +170,10 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_component->onDataRead.connect(boost::bind(&XMPPFrontend::handleDataRead, this, _1));
 		m_component->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
 
+		SwiftEntityExposed* entity(reinterpret_cast<SwiftEntityExposed*>(&m_component));
+		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
+		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
+
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_component->addPayloadParserFactory(factory);
 		}
@@ -171,6 +185,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_stanzaChannel = m_component->getStanzaChannel();
 		m_iqRouter = m_component->getIQRouter();
 	}
+
 
 	m_capsMemoryStorage = new CapsMemoryStorage();
 #if HAVE_SWIFTEN_3

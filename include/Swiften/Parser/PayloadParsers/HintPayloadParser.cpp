@@ -33,7 +33,6 @@ void HintPayloadParser::handleEndElement(const std::string&, const std::string&)
 }
 
 void HintPayloadParser::handleCharacterData(const std::string&) {
-
 }
 
 }

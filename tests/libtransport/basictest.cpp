@@ -14,6 +14,7 @@
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 
 #include "Swiften/Serializer/GenericPayloadSerializer.h"
+#include "Swiften/Serializer/GenericPayloadSerializer2.h"
 
 #include "storageparser.h"
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
@@ -76,7 +77,7 @@ void BasicTest::setMeUp (void) {
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
-	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", payloadParserFactories));
 
 	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
 		payloadParserFactories->addFactory(factory);
@@ -90,7 +91,7 @@ void BasicTest::setMeUp (void) {
 	_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
 	_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
-	_payloadSerializers.push_back(new Swift::PrivilegeSerializer());
+	_payloadSerializers.push_back(new Swift::PrivilegeSerializer(payloadSerializers));
 
 	BOOST_FOREACH(Swift::PayloadSerializer *serializer, _payloadSerializers) {
 		payloadSerializers->addSerializer(serializer);

@@ -12,14 +12,16 @@
 #include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
+	class PayloadSerializerCollection;
+
 	class PrivilegeSerializer : public GenericPayloadSerializer<Privilege> {
-		public:
-			PrivilegeSerializer(PayloadSerializerCollection* serializers);
-			virtual ~PrivilegeSerializer() override;
+	public:
+		PrivilegeSerializer(PayloadSerializerCollection* serializers);
+		virtual ~PrivilegeSerializer();
 
-			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege>) const override;
+		virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege>) const;
 
-		private:
-			PayloadSerializerCollection* serializers_;
+	private:
+		PayloadSerializerCollection* serializers_;
 	};
 }

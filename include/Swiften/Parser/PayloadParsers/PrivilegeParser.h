@@ -12,24 +12,24 @@
 
 namespace Swift {
 	class PayloadParserFactoryCollection;
-	class StanzaParser;
+	class PayloadParser;
 
 	class PrivilegeParser : public GenericPayloadParser<Privilege> {
-		public:
-			PrivilegeParser(PayloadParserFactoryCollection* factories);
+	public:
+		PrivilegeParser(PayloadParserFactoryCollection* factories);
 
-			virtual void handleStartElement(const std::string& element, const std::string&, const AttributeMap& attributes);
-			virtual void handleEndElement(const std::string& element, const std::string&);
-			virtual void handleCharacterData(const std::string& data);
+		virtual void handleStartElement(const std::string& element, const std::string&, const AttributeMap& attributes);
+		virtual void handleEndElement(const std::string& element, const std::string&);
+		virtual void handleCharacterData(const std::string& data);
 
-			enum Level {
-                TopLevel = 0,
-                PayloadLevel = 1
-			};
+	enum Level {
+		TopLevel = 0,
+		PayloadLevel = 1
+	};
 
- 		private:
- 			PayloadParserFactoryCollection* factories_;
-			std::shared_ptr<StanzaParser> childParser_;
- 			int level_;
+	private:
+		PayloadParserFactoryCollection* factories_;
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PayloadParser> childParser_;
+		int level_;
 	};
 }

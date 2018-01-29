@@ -292,7 +292,8 @@ void Conversation::forwardAsCarbonSent(
 	message->addPayload(sent);
 
 	//Add no-copy to prevent some servers from creating carbons of carbons
-	message->addPayload(new Swift::HintPayload(Swift::HintPayload::NoCopy));
+	Swift::HintPayload::ref noCopy(new Swift::HintPayload(Swift::HintPayload::NoCopy));
+	message->addPayload(noCopy);
 
 	this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
 }
@@ -317,8 +318,7 @@ void Conversation::forwardImpersonated(
 	forwarded->setStanza(payload);
 	
 	Swift::Privilege::ref privilege(new Swift::Privilege());
-	privilege->setStanza(forwarded);
-	//"<privilege xmlns='urn:xmpp:privilege:1'>" + forwardedStr + "</privilege>"
+	privilege->setForwarded(forwarded);
 
 	message->addPayload(privilege);
 	LOG4CXX_INFO(logger, "Impersonate: sending message");

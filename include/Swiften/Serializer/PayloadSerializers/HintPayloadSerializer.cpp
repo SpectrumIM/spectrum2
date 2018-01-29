@@ -21,14 +21,14 @@ HintPayloadSerializer::HintPayloadSerializer() : GenericPayloadSerializer<HintPa
 
 std::string HintPayloadSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<HintPayload> hint)  const {
 	std::string tagname = "";
-	switch(hint->type) {
-	case NoPermanentStore: tagname = "no-permanent-store"; break;
-	case NoStore: tagname = "no-store"; break;
-	case NoCopy: tagname = "no-copy"; break;
-	case Store: tagname = "store"; break;
+	switch(hint->getType()) {
+	case HintPayload::NoPermanentStore: tagname = "no-permanent-store"; break;
+	case HintPayload::NoStore: tagname = "no-store"; break;
+	case HintPayload::NoCopy: tagname = "no-copy"; break;
+	case HintPayload::Store: tagname = "store"; break;
 	}
 
-	return xmlElement(tagname, "urn:xmpp:hints").serialize();
+	return XMLElement(tagname, "urn:xmpp:hints").serialize();
 }
 
 }

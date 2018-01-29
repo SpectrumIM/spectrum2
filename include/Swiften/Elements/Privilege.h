@@ -12,6 +12,7 @@
 
 #include <Swiften/Base/API.h>
 #include <Swiften/Elements/Payload.h>
+#include <Swiften/Elements/Forwarded.h>
 
 #include "Swiften/SwiftenCompat.h"
 
@@ -19,16 +20,16 @@ namespace Swift {
 	class Stanza;
 
 	class Privilege : public Payload {
-		public:
-			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege> ref;
+	public:
+		typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege> ref;
 
-		public:
-			Privilege();
+	public:
+		Privilege();
 
-			void setStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza) { stanza_ = stanza; }
-			const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza>& getStanza() const { return stanza_; }
+		void setForwarded(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Forwarded> forwarded) { forwarded_ = forwarded; }
+		const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Forwarded>& getForwarded() const { return forwarded_; }
 
-		private:
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stanza_;
+	private:
+		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Forwarded> forwarded_;
 	};
 }
