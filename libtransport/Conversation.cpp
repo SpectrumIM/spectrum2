@@ -33,17 +33,23 @@
 #include "Swiften/Elements/MUCItem.h"
 #include "Swiften/Elements/MUCOccupant.h"
 #include "Swiften/Elements/MUCUserPayload.h"
-#include "Swiften/Elements/CarbonsSent.h"
 #include "Swiften/Elements/Delay.h"
-#include "Swiften/Elements/Forwarded.h"
-#include "Swiften/Elements/HintPayload.h"
 #include "Swiften/Elements/MUCPayload.h"
 #include "Swiften/Elements/Presence.h"
-#include "Swiften/Elements/Privilege.h"
 #include "Swiften/Elements/VCardUpdate.h"
 
-#include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
-#include "Swiften/Serializer/PayloadSerializers/ForwardedSerializer.h"
+#if (SWIFTEN_VERSION >= 0x030000)
+//The version of Swiften used supports carbon tags.
+//Without this we cannot deliver carbons of our own messages sent in other legacy clients.
+#define SWIFTEN_SUPPORTS_CARBONS
+#include "Swiften/Elements/CarbonsSent.h"
+#include "Swiften/Elements/Forwarded.h"
+#include "Swiften/Elements/HintPayload.h"
+
+//<privilege> is implemented locally, but <forward> support is needed for it to work.
+#define SWIFTEN_SUPPORTS_PRIVILEGE
+#include "Swiften/Elements/Privilege.h"
+#endif
 
 namespace Transport {
 	
@@ -232,17 +238,15 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		LOG4CXX_INFO(logger, "MSG FROM " << message->getFrom().toString());
 	}
 
+
 	if (carbon) {
+#ifdef SWIFTEN_SUPPORTS_CARBONS
 		LOG4CXX_INFO(logger, "CARBON MSG");
 		//Swap from and to
 		Swift::JID from = message->getFrom();
 		message->setFrom(message->getTo());
 		message->setTo(from);
 
-#define OWN_MESSAGE_SEND_CARBON
-//#define OWN_MESSAGE_SEND_DIRECT
-
-#ifdef OWN_MESSAGE_SEND_CARBON
 		//Carbons should be sent to every resource directly.
 		//Even if we tried to send to bare jid, the server would at best route it
 		//as it would normal message (usually to the highest priority resource),
@@ -257,10 +261,8 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		BOOST_FOREACH(const Swift::Presence::ref &it, presences) {
 			this->forwardAsCarbonSent(message, it->getFrom());
 		}
-#endif
-#ifdef OWN_MESSAGE_SEND_DIRECT
-		//Experimental: Send ANOTHER copy of the message directly, to have it archived
-		forwardImpersonate(message, message->getFrom());
+#else //!SWIFTEN_SUPPORTS_CARBONS
+		//Ignore the message.
 #endif
 	} else {
 		handleRawMessage(message);
@@ -271,6 +273,7 @@ void Conversation::forwardAsCarbonSent(
 	const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &payload,
 	const Swift::JID& to)
 {
+#ifdef SWIFTEN_SUPPORTS_CARBONS
 	LOG4CXX_INFO(logger, "Carbon <sent> to -> " << to.toString());
 
 	//Message envelope
@@ -296,6 +299,9 @@ void Conversation::forwardAsCarbonSent(
 	message->addPayload(noCopy);
 
 	this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
+#else
+	//We cannot send the carbon.
+#endif
 }
 
 //Generates a XEP-0356 privilege wrapper asking to impersonate a user from a given domain
@@ -303,6 +309,7 @@ void Conversation::forwardImpersonated(
 	const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
 	const Swift::JID& server)
 {
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 	LOG4CXX_INFO(logger, "Impersonate to -> " << server.toString());
 	Component* transport = this->getConversationManager()->getComponent();
 
@@ -323,6 +330,10 @@ void Conversation::forwardImpersonated(
 	message->addPayload(privilege);
 	LOG4CXX_INFO(logger, "Impersonate: sending message");
 	handleRawMessage(message);
+#else
+	//Try to send the message as is -- some servers can be configured to accept this
+	handleRawMessage(payload);
+#endif
 }
 
 std::string Conversation::getParticipants() {
