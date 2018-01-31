@@ -181,6 +181,7 @@ Backend sends this payload when it receives new message from legacy network whic
 |message|Plain text message|
 |xhtml|Message formatted using XHTML-IM XEP if available|
 |nickname| If the conversation is room, this is the nickname of user who sent the original message|
+|carbon| If set, the message is a carbon copy of our own message sent in a different legacy network client. It should be treated as a message FROM us, not TO us|
 
 h3. Type: TYPE_ATTENTION, Payload: ConversationMessage
 

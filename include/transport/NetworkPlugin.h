@@ -122,7 +122,8 @@ class NetworkPlugin {
 		/// \param message Plain text message.
 		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
 		/// \param xhtml XHTML message.
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false, bool pm = false);
+		/// \param carbon If set, the message is a carbon copy of our own message, sent in a different legacy network client. The message should be treated as sent FROM us, not TO us.
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false, bool pm = false, bool carbon = false);
 
 		void handleMessageAck(const std::string &user, const std::string &legacyName, const std::string &id);
 

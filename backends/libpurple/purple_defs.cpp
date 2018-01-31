@@ -74,7 +74,9 @@ purple_find_conversation_with_account_wrapped_fnc purple_find_conversation_with_
 purple_conversation_new_wrapped_fnc purple_conversation_new_wrapped = NULL;
 purple_conversation_get_type_wrapped_fnc purple_conversation_get_type_wrapped = NULL;
 purple_conv_im_send_wrapped_fnc purple_conv_im_send_wrapped = NULL;
+purple_conv_im_send_with_flags_wrapped_fnc purple_conv_im_send_with_flags_wrapped = NULL;
 purple_conv_chat_send_wrapped_fnc purple_conv_chat_send_wrapped = NULL;
+purple_conv_chat_send_with_flags_wrapped_fnc purple_conv_chat_send_with_flags_wrapped = NULL;
 purple_conversation_destroy_wrapped_fnc purple_conversation_destroy_wrapped = NULL;
 purple_conversation_get_account_wrapped_fnc purple_conversation_get_account_wrapped = NULL;
 purple_conversation_get_name_wrapped_fnc purple_conversation_get_name_wrapped = NULL;
@@ -441,8 +443,16 @@ bool resolvePurpleFunctions() {
 	if (!purple_conv_im_send_wrapped)
 		return false;
 
+	purple_conv_im_send_with_flags_wrapped = (purple_conv_im_send_with_flags_wrapped_fnc)GetProcAddress(f_hPurple, "purple_conv_im_send_with_flags");
+	if (!purple_conv_im_send_with_flags_wrapped)
+		return false;
+
 	purple_conv_chat_send_wrapped = (purple_conv_chat_send_wrapped_fnc)GetProcAddress(f_hPurple, "purple_conv_chat_send");
 	if (!purple_conv_chat_send_wrapped)
+		return false;
+
+	purple_conv_chat_send_with_flags_wrapped = (purple_conv_chat_send_with_flags_wrapped_fnc)GetProcAddress(f_hPurple, "purple_conv_chat_send_with_flags");
+	if (!purple_conv_chat_send_with_flags_wrapped)
 		return false;
 
 	purple_conversation_destroy_wrapped = (purple_conversation_destroy_wrapped_fnc)GetProcAddress(f_hPurple, "purple_conversation_destroy");

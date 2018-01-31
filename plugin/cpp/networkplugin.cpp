@@ -94,7 +94,7 @@ void NetworkPlugin::sendRawXML(std::string &xml) {
 	send(xml);
 }
 
-void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml, const std::string &timestamp, bool headline, bool pm) {
+void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml, const std::string &timestamp, bool headline, bool pm, bool carbon) {
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
 	m.set_buddyname(legacyName);
@@ -104,6 +104,7 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	m.set_timestamp(timestamp);
 	m.set_headline(headline);
 	m.set_pm(pm);
+	m.set_carbon(carbon);
 
 	std::string message;
 	m.SerializeToString(&message);

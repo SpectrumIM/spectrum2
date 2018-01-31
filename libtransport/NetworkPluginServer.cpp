@@ -734,9 +734,8 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
-
 	// Forward it
-	conv->handleMessage(msg, payload.nickname());
+	conv->handleMessage(msg, payload.nickname(), payload.carbon());
 	m_userManager->messageToXMPPSent();
 }
 
