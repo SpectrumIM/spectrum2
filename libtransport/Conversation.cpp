@@ -38,6 +38,7 @@
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Elements/VCardUpdate.h"
 
+#include "Swiften/Version.h"
 #if (SWIFTEN_VERSION >= 0x030000)
 //The version of Swiften used supports carbon tags.
 //Without this we cannot deliver carbons of our own messages sent in other legacy clients.
