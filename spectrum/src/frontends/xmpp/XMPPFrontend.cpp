@@ -32,6 +32,7 @@
 #include "transport/Config.h"
 #include "transport/Transport.h"
 #include "storageparser.h"
+#include "Swiften/SwiftenCompat.h"
 #ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
 #include "Swiften/TLS/Schannel/SchannelServerContext.h"
@@ -61,10 +62,14 @@
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 #include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
 #include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 #include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
 #include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
+#endif
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
+#if SWIFTEN_VERSION >= 0x030000
 #include "Swiften/Parser/GenericPayloadParserFactory2.h"
+#endif
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "discoitemsresponder.h"
@@ -150,8 +155,10 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_iqRouter = m_server->getIQRouter();
 
 		SwiftServerExposed* entity(reinterpret_cast<SwiftServerExposed*>(m_server));
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
+#endif
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_server->addPayloadParserFactory(factory);
@@ -178,8 +185,10 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_component->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
 
 		SwiftComponentExposed* entity(reinterpret_cast<SwiftComponentExposed*>(m_component));
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
+#endif
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_component->addPayloadParserFactory(factory);
