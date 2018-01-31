@@ -73,7 +73,7 @@ class Conversation {
 
 		//Generates a impersonation request <message> arount the given payload and delivers it
 		void forwardImpersonated(
-			const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
 			const Swift::JID& server);
 
 		void handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message);

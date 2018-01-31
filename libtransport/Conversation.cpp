@@ -306,7 +306,7 @@ void Conversation::forwardAsCarbonSent(
 
 //Generates a XEP-0356 privilege wrapper asking to impersonate a user from a given domain
 void Conversation::forwardImpersonated(
-	const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
 	const Swift::JID& server)
 {
 #ifdef SWIFTEN_SUPPORTS_PRIVILEGE
