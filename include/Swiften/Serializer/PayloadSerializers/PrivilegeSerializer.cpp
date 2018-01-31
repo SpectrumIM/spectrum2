@@ -8,12 +8,12 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <Swiften/Elements/Forwarded.h>
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
 
 #ifdef SWIFTEN_SUPPORTS_FORWARDED
+#include <Swiften/Elements/Forwarded.h>
 #include <Swiften/Serializer/PayloadSerializers/ForwardedSerializer.h>
 #else
 #include <Swiften/Serializer/PayloadSerializerCollection.h>

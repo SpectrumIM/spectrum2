@@ -38,17 +38,14 @@
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Elements/VCardUpdate.h"
 
-#include "Swiften/Version.h"
-#if (SWIFTEN_VERSION >= 0x030000)
-//The version of Swiften used supports carbon tags.
-//Without this we cannot deliver carbons of our own messages sent in other legacy clients.
-#define SWIFTEN_SUPPORTS_CARBONS
+#include "Swiften/SwiftenCompat.h"
+#ifdef SWIFTEN_SUPPORTS_CARBONS
 #include "Swiften/Elements/CarbonsSent.h"
 #include "Swiften/Elements/Forwarded.h"
 #include "Swiften/Elements/HintPayload.h"
+#endif
 
-//<privilege> is implemented locally, but <forward> support is needed for it to work.
-#define SWIFTEN_SUPPORTS_PRIVILEGE
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 #include "Swiften/Elements/Privilege.h"
 #endif
 
