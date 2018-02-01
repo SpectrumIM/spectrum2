@@ -241,9 +241,13 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 #ifdef SWIFTEN_SUPPORTS_CARBONS
 		LOG4CXX_INFO(logger, "CARBON MSG");
 		//Swap from and to
-		Swift::JID from = message->getFrom();
-		message->setFrom(message->getTo());
-		message->setTo(from);
+		Swift::JID from = message->getTo();
+		if (from.getResource().empty()) {
+		    //If no resource is specified, set the same that is used for legacy network contacts
+		    from = Swift::JID(from.getNode(), from.getDomain(), JID_DEFAULT_RESOURCE);
+		}
+		message->setTo(message->getFrom());
+		message->setFrom(from);
 
 		//Carbons should be sent to every resource directly.
 		//Even if we tried to send to bare jid, the server would at best route it

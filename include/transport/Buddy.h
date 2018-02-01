@@ -25,6 +25,9 @@
 #include "Swiften/Elements/VCard.h"
 #include "Swiften/Elements/Presence.h"
 
+//Default resource name which contacts use
+#define JID_DEFAULT_RESOURCE "bot"
+
 namespace Transport {
 
 class RosterManager;
