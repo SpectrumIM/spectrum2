@@ -49,7 +49,7 @@ void Buddy::sendPresence() {
 
 void Buddy::generateJID() {
 	m_jid = Swift::JID();
-	m_jid = Swift::JID(getSafeName(), m_rosterManager->getUser()->getComponent()->getJID().toString(), "bot");
+	m_jid = Swift::JID(getSafeName(), m_rosterManager->getUser()->getComponent()->getJID().toString(), JID_DEFAULT_RESOURCE);
 }
 
 void Buddy::setID(long id) {
