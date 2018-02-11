@@ -36,7 +36,7 @@ Spectrum 2 is an XMPP transport/gateway and also simple XMPP server.
 %setup -q -n spectrum2
 
 %build
-%cmake . -DCMAKE_BUILD_TYPE=Debug
+%cmake . -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make VERBOSE=1 %{?_smp_mflags}
 
 %install
