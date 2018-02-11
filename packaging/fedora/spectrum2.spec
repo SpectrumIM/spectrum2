@@ -27,6 +27,10 @@ BuildRequires: avahi-devel
 BuildRequires: log4cxx-devel
 BuildRequires: swiften-devel
 BuildRequires: libcommuni-devel
+BuildRequires: libcurl-devel
+BuildRequires: libev-libevent-devel
+BuildRequires: libpqxx-devel
+BuildRequires: libpurple-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
 
 %description
