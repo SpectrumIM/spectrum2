@@ -18,11 +18,7 @@ endif()
 
 ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
 
-if (WIN32)
-target_link_libraries(spectrum2 transport sqlite3 spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
-else ()
 target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
-endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
 # export all symbols (used for loading frontends)

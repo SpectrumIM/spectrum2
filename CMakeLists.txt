@@ -106,17 +106,8 @@ endif()
 
 # FIND SQLITE3
 if (ENABLE_SQLITE3)
-	if (MSVC)
-		set(SQLITE3_FOUND 1)
-		ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/msvc-deps)
-	else()
-		if (WIN32)
-			ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/msvc-deps/sqlite3)
-		else()
-			set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-			find_package(sqlite3)
-		endif()
-	endif()
+	set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+	find_package(sqlite3)
 endif()
 
 # FIND MYSQL
