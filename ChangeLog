@@ -1,3 +1,19 @@
+Version 2.0.6 (2018-02-07):
+	General:
+	* Add support for forwading own messages sent from different legacy network client.
+	XMPP frontend:
+	* Forward own messages as XEP-280 Carbons. Requires XEP-0356 capable server
+	  and transport should be configured as privileged entity for outgoing messages.
+	* Fixed compatibility with XEP-0356: now it can be used to provide remote
+	  roster management support.
+	* Forward images using XEP-0066 attachments. May not be compatible with all backends.
+	Libpurple backend:
+	* Forward own messages to frontend. Tested with prpl-skypeweb.
+	* Fixed compatibility with latest prpl-steam-mobile
+	Minor bugfixes:
+	* packaging updates and improvements
+	* better compatibility with newest compilers and libraries
+
 Version 2.0.5 (2017-08-09):
 	Minor bugfixes:
 	* fix purple-hangouts login

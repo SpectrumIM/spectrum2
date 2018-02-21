@@ -1,3 +1,0 @@
-[submodule "msvc-deps/curl"]
-	path = msvc-deps/curl
-	url = https://github.com/bagder/curl.git

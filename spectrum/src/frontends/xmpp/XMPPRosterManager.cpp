@@ -198,11 +198,11 @@ void XMPPRosterManager::handleRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::sha
 	m_remoteRosterRequest.reset();
 	if (error) {
 		m_supportRemoteRoster = false;
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server does not support remote roster protoXEP");
+		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server does not allow us to modify your roster, consider enabling XEP-0321 or XEP-0356 support");
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server supports remote roster protoXEP");
+	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Roster modification is allowed");
 	m_supportRemoteRoster = true;
 
 	//If we receive empty RosterPayload on login (not register) initiate full RosterPush

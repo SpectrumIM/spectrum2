@@ -24,6 +24,7 @@
 #include "transport/User.h"
 #include "transport/Transport.h"
 #include "transport/Buddy.h"
+#include "transport/PresenceOracle.h"
 #include "transport/RosterManager.h"
 #include "transport/Frontend.h"
 #include "transport/Config.h"
@@ -34,7 +35,19 @@
 #include "Swiften/Elements/MUCUserPayload.h"
 #include "Swiften/Elements/Delay.h"
 #include "Swiften/Elements/MUCPayload.h"
+#include "Swiften/Elements/Presence.h"
 #include "Swiften/Elements/VCardUpdate.h"
+
+#include "Swiften/SwiftenCompat.h"
+#ifdef SWIFTEN_SUPPORTS_CARBONS
+#include "Swiften/Elements/CarbonsSent.h"
+#include "Swiften/Elements/Forwarded.h"
+#include "Swiften/Elements/HintPayload.h"
+#endif
+
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+#include "Swiften/Elements/Privilege.h"
+#endif
 
 namespace Transport {
 	
@@ -145,7 +158,7 @@ void Conversation::handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::
 	}
 }
 
-void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname) {
+void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname, const bool carbon) {
 	if (m_muc) {
 		message->setType(Swift::Message::Groupchat);
 	}
@@ -223,7 +236,106 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		LOG4CXX_INFO(logger, "MSG FROM " << message->getFrom().toString());
 	}
 
+
+	if (carbon) {
+#ifdef SWIFTEN_SUPPORTS_CARBONS
+		LOG4CXX_INFO(logger, "CARBON MSG");
+		//Swap from and to
+		Swift::JID from = message->getTo();
+		if (from.getResource().empty()) {
+		    //If no resource is specified, set the same that is used for legacy network contacts
+		    from = Swift::JID(from.getNode(), from.getDomain(), JID_DEFAULT_RESOURCE);
+		}
+		message->setTo(message->getFrom());
+		message->setFrom(from);
+
+		//Carbons should be sent to every resource directly.
+		//Even if we tried to send to bare jid, the server would at best route it
+		//as it would normal message (usually to the highest priority resource),
+		//but won't produce carbons to other resources as it does with normal messages.
+		Component* transport = this->getConversationManager()->getComponent();
+		std::vector<Swift::Presence::ref> presences = transport->getPresenceOracle()->getAllPresence(this->m_jid.toBare());
+		if (presences.empty()) {
+			LOG4CXX_INFO(logger, "No presences for JID " << this->m_jid.toString()
+			    << ", will send to bare JID for archival.");
+			this->forwardAsCarbonSent(message, this->m_jid.toBare());
+		} else
+		BOOST_FOREACH(const Swift::Presence::ref &it, presences) {
+			this->forwardAsCarbonSent(message, it->getFrom());
+		}
+#else //!SWIFTEN_SUPPORTS_CARBONS
+		//Ignore the message.
+#endif
+	} else {
+		handleRawMessage(message);
+	}
+}
+
+void Conversation::forwardAsCarbonSent(
+	const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &payload,
+	const Swift::JID& to)
+{
+#ifdef SWIFTEN_SUPPORTS_CARBONS
+	LOG4CXX_INFO(logger, "Carbon <sent> to -> " << to.toString());
+
+	//Message envelope
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message(new Swift::Message());
+
+	//Type MUST be equal to the original message type
+	message->setType(payload->getType());
+
+	//XEP-0280 docs say "from" MUST be the carbon subscriber's JID,
+	//so a transport will need to wrap this in another <privilege> wrapper.
+	message->setFrom(m_jid.toBare());
+	message->setTo(to);
+
+	//Wrap the payload in a <sent><forwarded>
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded> forwarded(new Swift::Forwarded());
+	forwarded->setStanza(payload);
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsSent> sent(new Swift::CarbonsSent());
+	sent->setForwarded(forwarded);
+	message->addPayload(sent);
+
+	//Add no-copy to prevent some servers from creating carbons of carbons
+	Swift::HintPayload::ref noCopy(new Swift::HintPayload(Swift::HintPayload::NoCopy));
+	message->addPayload(noCopy);
+
+	this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
+#else
+	//We cannot send the carbon.
+#endif
+}
+
+//Generates a XEP-0356 privilege wrapper asking to impersonate a user from a given domain
+void Conversation::forwardImpersonated(
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+	const Swift::JID& server)
+{
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+	LOG4CXX_INFO(logger, "Impersonate to -> " << server.toString());
+	Component* transport = this->getConversationManager()->getComponent();
+
+	//Message envelope
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message(new Swift::Message());
+	// "from" MUST be our bare jid
+	message->setFrom(transport->getJID());
+	// "to" MUST be the bare jid of the server we're asking to impersonate
+	message->setTo(server);
+	message->setType(Swift::Message::Normal);
+
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Forwarded> forwarded(new Swift::Forwarded());
+	forwarded->setStanza(payload);
+	
+	Swift::Privilege::ref privilege(new Swift::Privilege());
+	privilege->setForwarded(forwarded);
+
+	message->addPayload(privilege);
+	LOG4CXX_INFO(logger, "Impersonate: sending message");
 	handleRawMessage(message);
+#else
+	//Try to send the message as is -- some servers can be configured to accept this
+	handleRawMessage(payload);
+#endif
 }
 
 std::string Conversation::getParticipants() {

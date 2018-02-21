@@ -51,3 +51,12 @@
 #define SWIFTEN_SIGNAL_CONNECTION_NAMESPACE boost::signals
 #define SWIFT_HOSTADDRESS(x) Swift::HostAddress(x)
 #endif
+
+#if (SWIFTEN_VERSION >= 0x030000)
+//Swiften supports carbon Sent and Received tags as well as Forwarded tags inside those
+#define SWIFTEN_SUPPORTS_CARBONS
+//Swiften supports Forwarded tag
+#define SWIFTEN_SUPPORTS_FORWARDED
+//Privilege tag is implemented locally, but it makes little sense without forwarded tag
+#define SWIFTEN_SUPPORTS_PRIVILEGE
+#endif

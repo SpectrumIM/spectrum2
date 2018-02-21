@@ -106,17 +106,8 @@ endif()
 
 # FIND SQLITE3
 if (ENABLE_SQLITE3)
-	if (MSVC)
-		set(SQLITE3_FOUND 1)
-		ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/msvc-deps)
-	else()
-		if (WIN32)
-			ADD_SUBDIRECTORY(${CMAKE_SOURCE_DIR}/msvc-deps/sqlite3)
-		else()
-			set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
-			find_package(sqlite3)
-		endif()
-	endif()
+	set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
+	find_package(sqlite3)
 endif()
 
 # FIND MYSQL
@@ -254,10 +245,10 @@ else (SPECTRUM_VERSION)
 						OUTPUT_VARIABLE GIT_REVISION
 						OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
-		set(SPECTRUM_VERSION 2.0.5-git-${GIT_REVISION})
+		set(SPECTRUM_VERSION 2.0.x-git-${GIT_REVISION})
 		ADD_DEFINITIONS(-DSPECTRUM_VERSION="${SPECTRUM_VERSION}")
 	else (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
-		set(SPECTRUM_VERSION 2.0.5)
+		set(SPECTRUM_VERSION 2.0.6)
 		ADD_DEFINITIONS(-DSPECTRUM_VERSION="${SPECTRUM_VERSION}")
 	endif (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 endif (SPECTRUM_VERSION)

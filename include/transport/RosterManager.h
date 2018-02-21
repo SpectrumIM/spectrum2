@@ -60,7 +60,7 @@ class RosterManager {
 		/// Associates the buddy with this roster,
 		/// and if the buddy is not already in XMPP user's server-side roster, the proper requests
 		/// are sent to XMPP user (subscribe presences, Roster Item Exchange stanza or
-		/// the buddy is added to server-side roster using remote-roster protoXEP).
+		/// the buddy is added to server-side roster using XEP-0321 or XEP-0356).
 		/// \param buddy Buddy
 		void setBuddy(Buddy *buddy);
 

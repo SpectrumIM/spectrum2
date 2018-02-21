@@ -236,8 +236,14 @@ extern purple_conversation_update_wrapped_func purple_conversation_update_wrappe
 typedef void  (_cdecl * purple_conv_im_send_wrapped_fnc)(PurpleConvIm *im, const char *message);
 extern purple_conv_im_send_wrapped_fnc purple_conv_im_send_wrapped;
 
+typedef void  (_cdecl * purple_conv_im_send_with_flags_wrapped_fnc)(PurpleConvIm *im, const char *message, PurpleMessageFlags flags);
+extern purple_conv_im_send_with_flags_wrapped_fnc purple_conv_im_send_with_flags_wrapped;
+
 typedef void  (_cdecl * purple_conv_chat_send_wrapped_fnc)(PurpleConvChat *chat, const char *message);
 extern purple_conv_chat_send_wrapped_fnc purple_conv_chat_send_wrapped;
+
+typedef void  (_cdecl * purple_conv_chat_send_with_flags_wrapped_fnc)(PurpleConvChat *chat, const char *message, PurpleMessageFlags flags);
+extern purple_conv_chat_send_with_flags_wrapped_fnc purple_conv_chat_send_with_flags_wrapped;
 
 typedef void  (_cdecl * purple_conversation_destroy_wrapped_fnc)(PurpleConversation *conv);
 extern purple_conversation_destroy_wrapped_fnc purple_conversation_destroy_wrapped;
@@ -543,7 +549,9 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_conversation_set_data_wrapped purple_conversation_set_data
 #define purple_conversation_update_wrapped purple_conversation_update
 #define purple_conv_im_send_wrapped purple_conv_im_send
+#define purple_conv_im_send_with_flags_wrapped purple_conv_im_send_with_flags
 #define purple_conv_chat_send_wrapped purple_conv_chat_send
+#define purple_conv_chat_send_with_flags_wrapped purple_conv_chat_send_with_flags
 #define purple_conversation_destroy_wrapped purple_conversation_destroy
 #define purple_conversation_get_account_wrapped purple_conversation_get_account
 #define purple_conversation_get_name_wrapped purple_conversation_get_name
