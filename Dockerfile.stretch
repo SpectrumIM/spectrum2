@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 RUN echo force-confold | tee -a /etc/dpkg/dpkg.cfg
 RUN apt-get update -qq
-RUN apt-get install -y --force-yes apt-transport-https curl
+RUN apt-get install -y --force-yes apt-transport-https curl gnupg1
 RUN echo "deb https://packages.spectrum.im/spectrum2/ stretch main" | tee -a /etc/apt/sources.list
 RUN echo "deb https://swift.im/packages/debian/stretch beta main" | tee -a /etc/apt/sources.list
 RUN curl https://swift.im/keys/packages.key | apt-key add -
