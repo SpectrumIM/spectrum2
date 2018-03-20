@@ -76,7 +76,7 @@ void APIServer::send_ack(struct mg_connection *conn, bool error, const std::stri
 	Document json;
 	json.SetObject();
 	json.AddMember("error", error, json.GetAllocator());
-	json.AddMember("message", message.c_str(), json.GetAllocator());
+	json.AddMember("message", StringRef(message.c_str()), json.GetAllocator());
 
 	send_json(conn, json);
 }
@@ -97,15 +97,15 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 	BOOST_FOREACH(std::string &id, list) {
 		Value instance;
 		instance.SetObject();
-		instance.AddMember("id", id.c_str(), json.GetAllocator());
+		instance.AddMember("id", StringRef(id.c_str()), json.GetAllocator());
 
 		std::string name = get_config(m_config, id, "identity.name");
 		if (name.empty() || name == "Spectrum 2 Transport") {
-			instance.AddMember("name", id.c_str(), json.GetAllocator());
+			instance.AddMember("name", StringRef(id.c_str()), json.GetAllocator());
 		}
 		else {
 			statuses.push_back(name);
-			instance.AddMember("name", statuses.back().c_str(), json.GetAllocator());
+			instance.AddMember("name", StringRef(statuses.back().c_str()), json.GetAllocator());
 		}
 
 		std::string status = server->send_command(id, "status");
@@ -114,7 +114,7 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		}
 
 		statuses.push_back(status);
-		instance.AddMember("status", statuses.back().c_str(), json.GetAllocator());
+		instance.AddMember("status", StringRef(statuses.back().c_str()), json.GetAllocator());
 
 		bool running = true;
 		if (status.find("Running") == std::string::npos) {
@@ -130,10 +130,10 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 
 		usernames.push_back(username);
 		instance.AddMember("registered", !username.empty(), json.GetAllocator());
-		instance.AddMember("username", usernames.back().c_str(), json.GetAllocator());
+		instance.AddMember("username", StringRef(usernames.back().c_str()), json.GetAllocator());
 
 		usernames.push_back(get_config(m_config, id, "service.frontend"));
-		instance.AddMember("frontend", usernames.back().c_str(), json.GetAllocator());
+		instance.AddMember("frontend", StringRef(usernames.back().c_str()), json.GetAllocator());
 
 		instances.PushBack(instance, json.GetAllocator());
 	}
@@ -235,7 +235,7 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 			Document json;
 			json.SetObject();
 			json.AddMember("error", false, json.GetAllocator());
-			json.AddMember("oauth2_url", response.c_str(), json.GetAllocator());
+			json.AddMember("oauth2_url", StringRef(response.c_str()), json.GetAllocator());
 			send_json(conn, json);
 		}
 		else {
@@ -272,9 +272,9 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 // 	Document json;
 // 	json.SetObject();
 // 	json.AddMember("error", 0, json.GetAllocator());
-// 	json.AddMember("username_label", fields[0].c_str(), json.GetAllocator());
-// 	json.AddMember("legacy_username_label", fields.size() >= 2 ? fields[1].c_str() : "", json.GetAllocator());
-// 	json.AddMember("password_label", fields.size() >= 3 ? fields[2].c_str() : "", json.GetAllocator());
+// 	json.AddMember("username_label", StringRef(fields[0].c_str()), json.GetAllocator());
+// 	json.AddMember("legacy_username_label", fields.size() >= 2 ? StringRef(fields[1].c_str()) : "", json.GetAllocator());
+// 	json.AddMember("password_label", fields.size() >= 3 ? StringRef(fields[2].c_str()) : "", json.GetAllocator());
 // 	send_json(conn, json);
 // }
 
@@ -332,11 +332,11 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 
 		Value cmd;
 		cmd.SetObject();
-		cmd.AddMember("name", tokens[0].c_str(), json.GetAllocator());
-		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
-		cmd.AddMember("category", tokens[4].c_str(), json.GetAllocator());
-		cmd.AddMember("context", tokens[8].c_str(), json.GetAllocator());
-		cmd.AddMember("label", tokens[10].c_str(), json.GetAllocator());
+		cmd.AddMember("name", StringRef(tokens[0].c_str()), json.GetAllocator());
+		cmd.AddMember("desc", StringRef(tokens[2].c_str()), json.GetAllocator());
+		cmd.AddMember("category", StringRef(tokens[4].c_str()), json.GetAllocator());
+		cmd.AddMember("context", StringRef(tokens[8].c_str()), json.GetAllocator());
+		cmd.AddMember("label", StringRef(tokens[10].c_str()), json.GetAllocator());
 		cmds.PushBack(cmd, json.GetAllocator());
 	}
 
@@ -387,12 +387,12 @@ void APIServer::serve_instances_variables(Server *server, Server::session *sessi
 
 		Value cmd;
 		cmd.SetObject();
-		cmd.AddMember("name", tokens[0].c_str(), json.GetAllocator());
-		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
-		cmd.AddMember("value", tokens[4].c_str(), json.GetAllocator());
-		cmd.AddMember("read_only", tokens[6].c_str(), json.GetAllocator());
-		cmd.AddMember("category", tokens[8].c_str(), json.GetAllocator());
-		cmd.AddMember("context", tokens[12].c_str(), json.GetAllocator());
+		cmd.AddMember("name", StringRef(tokens[0].c_str()), json.GetAllocator());
+		cmd.AddMember("desc", StringRef(tokens[2].c_str()), json.GetAllocator());
+		cmd.AddMember("value", StringRef(tokens[4].c_str()), json.GetAllocator());
+		cmd.AddMember("read_only", StringRef(tokens[6].c_str()), json.GetAllocator());
+		cmd.AddMember("category", StringRef(tokens[8].c_str()), json.GetAllocator());
+		cmd.AddMember("context", StringRef(tokens[12].c_str()), json.GetAllocator());
 		cmds.PushBack(cmd, json.GetAllocator());
 	}
 
@@ -492,10 +492,10 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 
 		Value arg;
 		arg.SetObject();
-		arg.AddMember("name", tokens[0].c_str(), json.GetAllocator());
-		arg.AddMember("label", tokens[2].c_str(), json.GetAllocator());
-		arg.AddMember("example", tokens[4].c_str(), json.GetAllocator());
-		arg.AddMember("type", tokens[6].c_str(), json.GetAllocator());
+		arg.AddMember("name", StringRef(tokens[0].c_str()), json.GetAllocator());
+		arg.AddMember("label", StringRef(tokens[2].c_str()), json.GetAllocator());
+		arg.AddMember("example", StringRef(tokens[4].c_str()), json.GetAllocator());
+		arg.AddMember("type", StringRef(tokens[6].c_str()), json.GetAllocator());
 		argList.PushBack(arg, json.GetAllocator());
 	}
 
@@ -605,11 +605,11 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 				}
 				if (i == 0) {
 					tmp.push_back(*beg);
-					arg.AddMember("Key", tmp.back().c_str(), json.GetAllocator());
+					arg.AddMember("Key", StringRef(tmp.back().c_str()), json.GetAllocator());
 				}
 				else if (i == 2 && hasDesc) {
 					tmp.push_back(*beg);
-					arg.AddMember("Description", tmp.back().c_str(), json.GetAllocator());
+					arg.AddMember("Description", StringRef(tmp.back().c_str()), json.GetAllocator());
 				}
 				else if (i > 1 || (!hasDesc && i > 0)) {
 					if (key.empty()) {
@@ -618,7 +618,7 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 					else {
 						tmp.push_back(key);
 						tmp2.push_back(*beg);
-						arg.AddMember(tmp.back().c_str(), tmp2.back().c_str(), json.GetAllocator());
+						arg.AddMember(StringRef(tmp.back().c_str()), StringRef(tmp2.back().c_str()), json.GetAllocator());
 						key = "";
 					}
 				}
@@ -627,7 +627,7 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 		}
 
 		json.AddMember("table", table, json.GetAllocator());
-		json.AddMember("message", response.c_str(), json.GetAllocator());
+		json.AddMember("message", StringRef(response.c_str()), json.GetAllocator());
 		send_json(conn, json);
 	}
 	else {
@@ -650,7 +650,7 @@ void APIServer::serve_users(Server *server, Server::session *session, struct mg_
 	BOOST_FOREACH(std::string &id, list) {
 		Value user;
 		user.SetObject();
-		user.AddMember("username", id.c_str(), json.GetAllocator());
+		user.AddMember("username", StringRef(id.c_str()), json.GetAllocator());
 		users.PushBack(user, json.GetAllocator());
 	}
 
