@@ -37,38 +37,38 @@ namespace Transport {
 
 DEFINE_LOGGER(logger, "SlackAPI");
 
-#define GET_ARRAY(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
-	if (!NAME.IsArray()) { \
+#define GET_ARRAY(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
+	if (!NAME.isArray()) { \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 	
-#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsString()) {  \
+#define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.isString()) {  \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
 		LOG4CXX_ERROR(logger, data); \
 		return; \
 	} \
-	std::string NAME = NAME##_tmp.GetString();
+	std::string NAME = NAME##_tmp.asString();
 
-#define STORE_BOOL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsBool()) {  \
+#define STORE_BOOL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.isBool()) {  \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
 		LOG4CXX_ERROR(logger, data); \
 		return; \
 	} \
-	bool NAME = NAME##_tmp.GetBool();
+	bool NAME = NAME##_tmp.asBool();
 
-#define GET_OBJECT(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
-	if (!NAME.IsObject()) { \
+#define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
+	if (!NAME.isObject()) { \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 
-#define STORE_STRING_OPTIONAL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+#define STORE_STRING_OPTIONAL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	std::string NAME; \
-	if (NAME##_tmp.IsString()) {  \
-		 NAME = NAME##_tmp.GetString(); \
+	if (NAME##_tmp.isString()) {  \
+		 NAME = NAME##_tmp.asString(); \
 	}
 
 SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token, const std::string &domain) : HTTPRequestQueue(component, domain) {
@@ -81,7 +81,7 @@ SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::s
 SlackAPI::~SlackAPI() {
 }
 
-void SlackAPI::handleSendMessage(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+void SlackAPI::handleSendMessage(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	LOG4CXX_INFO(logger, data);
 }
 
@@ -120,28 +120,28 @@ void SlackAPI::setPurpose(const std::string &channel, const std::string &purpose
 	queueRequest(req);
 }
 
-std::string SlackAPI::getChannelId(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+std::string SlackAPI::getChannelId(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
 		LOG4CXX_ERROR(logger, data);
 		return "";
 	}
 
-	rapidjson::Value &channel = resp["channel"];
-	if (!channel.IsObject()) {
+	Json::Value &channel = resp["channel"];
+	if (!channel.isObject()) {
 		LOG4CXX_ERROR(logger, "No 'channel' object in the reply.");
 		LOG4CXX_ERROR(logger, data);
 		return "";
 	}
 
-	rapidjson::Value &id = channel["id"];
-	if (!id.IsString()) {
+	Json::Value &id = channel["id"];
+	if (!id.isString()) {
 		LOG4CXX_ERROR(logger, "No 'id' string in the reply.");
 		LOG4CXX_ERROR(logger, data);
 		return "";
 	}
 
-	return id.GetString();
+	return id.asString();
 }
 
 void SlackAPI::channelsList( HTTPRequest::Callback callback) {
@@ -171,35 +171,35 @@ void SlackAPI::imOpen(const std::string &uid, HTTPRequest::Callback callback) {
 	queueRequest(req);
 }
 
-std::string SlackAPI::getOwnerId(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+std::string SlackAPI::getOwnerId(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
 		return "";
 	}
 
-	rapidjson::Value &members = resp["members"];
-	if (!members.IsArray()) {
+	Json::Value &members = resp["members"];
+	if (!members.isArray()) {
 		LOG4CXX_ERROR(logger, "No 'members' object in the reply.");
 		return "";
 	}
 
-	for (unsigned i = 0; i < members.Size(); i++) {
-		if (!members[i].IsObject()) {
+	for (unsigned i = 0; i < members.size(); i++) {
+		if (!members[i].isObject()) {
 			continue;
 		}
 
-		rapidjson::Value &is_primary_owner = members[i]["is_primary_owner"];
-		if (!is_primary_owner.IsBool()) {
+		Json::Value &is_primary_owner = members[i]["is_primary_owner"];
+		if (!is_primary_owner.isBool()) {
 			continue;
 		}
 
-		if (is_primary_owner.GetBool()) {
-			rapidjson::Value &name = members[i]["id"];
-			if (!name.IsString()) {
+		if (is_primary_owner.asBool()) {
+			Json::Value &name = members[i]["id"];
+			if (!name.isString()) {
 				LOG4CXX_ERROR(logger, "No 'name' string in the reply.");
 				return "";
 			}
-			return name.GetString();
+			return name.asString();
 		}
 	}
 
@@ -212,16 +212,16 @@ void SlackAPI::usersList(HTTPRequest::Callback callback) {
 	queueRequest(req);
 }
 
-void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &ret) {
+void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &ret) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
 		return;
 	}
 
-	rapidjson::Value &channels = resp["channels"];
-	if (!channels.IsArray()) {
-		rapidjson::Value &channel = resp["channel"];
-		if (channel.IsObject()) {
+	Json::Value &channels = resp["channels"];
+	if (!channels.isArray()) {
+		Json::Value &channel = resp["channel"];
+		if (channel.isObject()) {
 			SlackChannelInfo info;
 
 			STORE_STRING(channel, id);
@@ -230,13 +230,13 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 			STORE_STRING(channel, name);
 			info.name = name;
 
-			rapidjson::Value &members = channel["members"];
-			for (unsigned y = 0; members.IsArray() && y < members.Size(); y++) {
-				if (!members[y].IsString()) {
+			Json::Value &members = channel["members"];
+			for (unsigned y = 0; members.isArray() && y < members.size(); y++) {
+				if (!members[y].isString()) {
 					continue;
 				}
 
-				info.members.push_back(members[y].GetString());
+				info.members.push_back(members[y].asString());
 			}
 
 			ret[info.name] = info;
@@ -244,8 +244,8 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 		return;
 	}
 
-	for (unsigned i = 0; i < channels.Size(); i++) {
-		if (!channels[i].IsObject()) {
+	for (unsigned i = 0; i < channels.size(); i++) {
+		if (!channels[i].isObject()) {
 			continue;
 		}
 
@@ -257,13 +257,13 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 		STORE_STRING(channels[i], name);
 		info.name = name;
 
-		rapidjson::Value &members = channels[i]["members"];
-		for (unsigned y = 0; members.IsArray() && y < members.Size(); y++) {
-			if (!members[y].IsString()) {
+		Json::Value &members = channels[i]["members"];
+		for (unsigned y = 0; members.isArray() && y < members.size(); y++) {
+			if (!members[y].isString()) {
 				continue;
 			}
 
-			info.members.push_back(members[y].GetString());
+			info.members.push_back(members[y].asString());
 		}
 
 		ret[info.name] = info;
@@ -272,7 +272,7 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Documen
 	return;
 }
 
-void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackImInfo> &ret) {
+void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackImInfo> &ret) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
 		return;
@@ -280,8 +280,8 @@ void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &re
 
 	GET_ARRAY(resp, ims);
 
-	for (unsigned i = 0; i < ims.Size(); i++) {
-		if (!ims[i].IsObject()) {
+	for (unsigned i = 0; i < ims.size(); i++) {
+		if (!ims[i].isObject()) {
 			continue;
 		}
 
@@ -300,7 +300,7 @@ void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &re
 	return;
 }
 
-void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackUserInfo> &ret) {
+void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackUserInfo> &ret) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
 		return;
@@ -308,8 +308,8 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 
 	GET_ARRAY(resp, users);
 
-	for (unsigned i = 0; i < users.Size(); i++) {
-		if (!users[i].IsObject()) {
+	for (unsigned i = 0; i < users.size(); i++) {
+		if (!users[i].isObject()) {
 			continue;
 		}
 
@@ -337,8 +337,8 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &
 
 	GET_ARRAY(resp, bots);
 
-	for (unsigned i = 0; i < bots.Size(); i++) {
-		if (!bots[i].IsObject()) {
+	for (unsigned i = 0; i < bots.size(); i++) {
+		if (!bots[i].isObject()) {
 			continue;
 		}
 
@@ -380,11 +380,11 @@ std::string SlackAPI::SlackObjectToPlainText(const std::string &object, bool isC
 	return ret;
 }
 
-void SlackAPI::handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
+void SlackAPI::handleSlackChannelInvite(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
 	callback(channel);
 }
 
-void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
+void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
 	std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
 
@@ -398,7 +398,7 @@ void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Do
 	channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 }
 
-void SlackAPI::handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
+void SlackAPI::handleSlackChannelList(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, const std::string &channel, const std::string &userId, CreateChannelCallback callback) {
 	std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, channels);
 

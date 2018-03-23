@@ -35,16 +35,17 @@ class SlackRTMTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		}
 
 		void handleRTMStart() {
-			rapidjson::Document json;
-			json.Parse<0>(rtmStartPayload.c_str());
+			Json::Value json;
+			Json::Reader reader;
+			bool ok = reader.parse(rtmStartPayload.c_str(), json);
+			CPPUNIT_ASSERT_EQUAL(true, ok);
 			m_rtm->handleRTMStart(NULL, true, json, rtmStartPayload);
-
 			CPPUNIT_ASSERT_EQUAL(std::string("spectrum2"), m_idManager->getSelfName());
 			CPPUNIT_ASSERT_EQUAL(std::string("U0KECRDJB"), m_idManager->getSelfId());
 			CPPUNIT_ASSERT_EQUAL(std::string("owner"), m_idManager->getName("U0H6EEWNN"));
 			CPPUNIT_ASSERT_EQUAL(std::string("C0H6B0SQM"), m_idManager->getId("spectrum2_contactlist"));
 			CPPUNIT_ASSERT_EQUAL(true, m_idManager->hasMember("C0KH09UQ2", "U0KECRDJB"));
-			CPPUNIT_ASSERT_EQUAL(false, m_idManager->hasMember("C0KH09UQ2", "U1KECRDJB"));
+			CPPUNIT_ASSERT_MESSAGE("Has member", m_idManager->hasMember("C0KH09UQ2", "U1KECRDJB") == false);
 		}
 
 		void handlePayloadReceivedChannelJoined() {

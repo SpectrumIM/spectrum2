@@ -21,7 +21,6 @@
 #pragma once
 
 #include "transport/StorageBackend.h"
-#include "rapidjson/document.h"
 
 #include <string>
 #include <algorithm>

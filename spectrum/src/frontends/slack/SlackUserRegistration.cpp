@@ -34,7 +34,7 @@
 #include "transport/Util.h"
 #include "transport/HTTPRequest.h"
 
-#include "rapidjson/document.h"
+#include <json/json.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
@@ -87,7 +87,7 @@ std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string
 std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
 	std::string url = "https://slack.com/api/team.info?token=" + Util::urlencode(token);
 
-	rapidjson::Document resp;
+	Json::Value resp;
 	HTTPRequest req(HTTPRequest::Get, url);
 	if (!req.execute(resp)) {
 		LOG4CXX_ERROR(logger, url);
@@ -95,23 +95,23 @@ std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
 		return "";
 	}
 
-	rapidjson::Value &team = resp["team"];
-	if (!team.IsObject()) {
+	Json::Value &team = resp["team"];
+	if (!team.isObject()) {
 		LOG4CXX_ERROR(logger, "No 'team' object in the reply.");
 		LOG4CXX_ERROR(logger, url);
 		LOG4CXX_ERROR(logger, req.getRawData());
 		return "";
 	}
 
-	rapidjson::Value &domain = team["domain"];
-	if (!domain.IsString()) {
+	Json::Value &domain = team["domain"];
+	if (!domain.isString()) {
 		LOG4CXX_ERROR(logger, "No 'domain' string in the reply.");
 		LOG4CXX_ERROR(logger, url);
 		LOG4CXX_ERROR(logger, req.getRawData());
 		return "";
 	}
 
-	return domain.GetString();
+	return domain.asString();
 }
 
 std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, const std::string &state) {

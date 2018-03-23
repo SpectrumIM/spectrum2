@@ -41,12 +41,12 @@ class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			delete tp;
 		}
 
-	void handleResult(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+	void handleResult(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 		result = true;
 	}
 
 	void GET() {
-		rapidjson::Document resp;
+		Json::Value resp;
 		HTTPRequest *req = new HTTPRequest(tp, HTTPRequest::Get, "http://spectrum.im/params.json", boost::bind(&HTTPRequestTest::handleResult, this, _1, _2, _3, _4));
 		req->execute(resp);
 		delete req;

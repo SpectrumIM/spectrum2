@@ -22,7 +22,7 @@
 
 #include "transport/HTTPRequestQueue.h"
 #include "transport/HTTPRequest.h"
-#include "rapidjson/document.h"
+#include <json/json.h>
 
 #include <string>
 #include <algorithm>
@@ -72,22 +72,22 @@ class SlackAPI : public HTTPRequestQueue {
 		virtual ~SlackAPI();
 
 		void usersList(HTTPRequest::Callback callback);
-		std::string getOwnerId(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		std::string getOwnerId(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data);
 
 		void channelsCreate(const std::string &name, HTTPRequest::Callback callback);
 		void channelsInvite(const std::string &channel, const std::string &user, HTTPRequest::Callback callback);
 		void channelsList(HTTPRequest::Callback callback);
 
 		void imOpen(const std::string &uid, HTTPRequest::Callback callback);
-		std::string getChannelId(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		std::string getChannelId(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data);
 
 		void deleteMessage(const std::string &channel, const std::string &ts);
 		void sendMessage(const std::string &from, const std::string &to, const std::string &text);
 		void setPurpose(const std::string &channel, const std::string &purpose);
 
-		static void getSlackChannelInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &channels);
-		static void getSlackImInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackImInfo> &ims);
-		static void getSlackUserInfo(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, std::map<std::string, SlackUserInfo> &users);
+		static void getSlackChannelInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &channels);
+		static void getSlackImInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackImInfo> &ims);
+		static void getSlackUserInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackUserInfo> &users);
 		static std::string SlackObjectToPlainText(const std::string &object, bool isChannel = false, bool returnName = false);
 
 		// Creates channel if it does not exist and invites the user to the channel.
@@ -95,11 +95,11 @@ class SlackAPI : public HTTPRequestQueue {
 		void createChannel(const std::string &channel, const std::string &user, CreateChannelCallback callback);
 
 	private:
-		void handleSendMessage(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleSendMessage(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data);
 
-		void handleSlackChannelCreate(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
-		void handleSlackChannelList(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
-		void handleSlackChannelInvite(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
+		void handleSlackChannelCreate(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
+		void handleSlackChannelList(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
+		void handleSlackChannelInvite(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, const std::string &channel, const std::string &user, CreateChannelCallback callback);
 
 	private:
 		Component *m_component;

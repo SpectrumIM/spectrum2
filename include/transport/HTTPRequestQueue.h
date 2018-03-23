@@ -7,7 +7,6 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
-#include "rapidjson/document.h"
 
 #include "Swiften/Network/Timer.h"
 

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
-#include "rapidjson/document.h"
+#include <json/json.h>
 
 #include <Swiften/SwiftenCompat.h>
 
@@ -16,7 +16,7 @@ namespace Transport {
 class HTTPRequest : public Thread {
 	public:
 		typedef enum { Get } Type;
-		typedef boost::function< void (HTTPRequest *, bool, rapidjson::Document &json, const std::string &data) > Callback;
+		typedef boost::function< void (HTTPRequest *, bool, Json::Value &json, const std::string &data) > Callback;
 
 		HTTPRequest(ThreadPool *tp, Type type, const std::string &url, Callback callback);
 		HTTPRequest(Type type, const std::string &url);
@@ -25,7 +25,7 @@ class HTTPRequest : public Thread {
 
 		void setProxy(std::string, std::string, std::string, std::string);
 		bool execute();
-		bool execute(rapidjson::Document &json);
+		bool execute(Json::Value &json);
 		std::string getError() {return std::string(curl_errorbuffer);}
 		const std::string &getRawData() {
 			return m_data;
@@ -51,7 +51,7 @@ class HTTPRequest : public Thread {
 	private:
 		bool init();
 		bool GET(std::string url, std::string &output);
-		bool GET(std::string url, rapidjson::Document &json);
+		bool GET(std::string url, Json::Value &json);
 
 
 		CURL *curlhandle;
@@ -61,7 +61,7 @@ class HTTPRequest : public Thread {
 		ThreadPool *m_tp;
 		std::string m_url;
 		bool m_ok;
-		rapidjson::Document m_json;
+		Json::Value m_json;
 		std::string m_data;
 		Callback m_callback;
 		Type m_type;

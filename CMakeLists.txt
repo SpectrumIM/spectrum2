@@ -172,6 +172,10 @@ if (NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
 	message(STATUS "Using protobuf: ${PROTOBUF_INCLUDE_DIRS} ${PROTOBUF_LIBRARY}")
 endif()
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
+include_directories(${JSONCPP_INCLUDE_DIRS})
+
 if (WIN32)
 	add_definitions(-DSWIFTEN_STATIC=1)
 	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0600)
