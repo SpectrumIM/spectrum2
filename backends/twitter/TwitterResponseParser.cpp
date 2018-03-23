@@ -49,88 +49,88 @@ static std::string toIsoTime(std::string in) {
 	return ss.str();
 }
 
-EmbeddedStatus getEmbeddedStatus(const rapidjson::Value &element)
+EmbeddedStatus getEmbeddedStatus(const Json::Value &element)
 {
 	EmbeddedStatus status;
-	if(!element.IsObject()) {
+	if(!element.isObject()) {
 		LOG4CXX_ERROR(logger, "Not a status element!");
 		return status;
 	}
-	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
-	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
-	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
-	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
-	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
-	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
-	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
-"" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
-	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
-	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].GetBool() );
-	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());
+	status.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
+	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
+	status.setTweet( unescape ( element[TwitterReponseTypes::text.c_str()].asString(), getUrlEntities(element) ) );
+	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].asBool());
+	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].isNull() ?
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].asInt64()) );
+	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].isNull() ?
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].asInt64())  );
+	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].isNull() ?
+"" : element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].asString() );
+	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].asInt64() );
+	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].asBool() );
+	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].asBool());
 	return status;
 }
 
-User getUser(const rapidjson::Value &element)
+User getUser(const Json::Value &element)
 {
 	User user;
-	if(!element.IsObject()) {
+	if(!element.isObject()) {
 		LOG4CXX_ERROR(logger, "Not a user element!");
 		return user;
 	}
 
-	user.setUserID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
-	user.setScreenName( tolowercase( std::string( element[TwitterReponseTypes::screen_name.c_str()].GetString() ) ) );
-	user.setUserName( std::string( element[TwitterReponseTypes::name.c_str()].GetString() ) );
-	user.setProfileImgURL( std::string( element[TwitterReponseTypes::profile_image_url.c_str()].GetString() ) );
-	user.setNumberOfTweets( element[TwitterReponseTypes::statuses_count.c_str()].GetInt64() );
-	if(element[TwitterReponseTypes::status.c_str()].IsObject())
+	user.setUserID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
+	user.setScreenName( tolowercase( element[TwitterReponseTypes::screen_name.c_str()].asString() ) );
+	user.setUserName( element[TwitterReponseTypes::name.c_str()].asString() );
+	user.setProfileImgURL( element[TwitterReponseTypes::profile_image_url.c_str()].asString() );
+	user.setNumberOfTweets( element[TwitterReponseTypes::statuses_count.c_str()].asInt64() );
+	if(element[TwitterReponseTypes::status.c_str()].isObject())
 		user.setLastStatus(getEmbeddedStatus(element[TwitterReponseTypes::status.c_str()]));
 	return user;
 }
 
-Status getStatus(const rapidjson::Value &element)
+Status getStatus(const Json::Value &element)
 {
 	Status status;
 
-	status.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
-	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64()  ));
-	status.setTweet( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
-	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].GetBool());
-	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].IsNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].GetInt64()) );
-	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].IsNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].GetInt64())  );
-	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].IsNull() ?
-"" : std::string(element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].GetString()) );
+	status.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
+	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64()  ));
+	status.setTweet( unescape ( element[TwitterReponseTypes::text.c_str()].asString(), getUrlEntities(element) ) );
+	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].asBool());
+	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].isNull() ?
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].asInt64()) );
+	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].isNull() ?
+"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].asInt64())  );
+	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].isNull() ?
+"" : element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].asString() );
 	status.setUserData( getUser(element[TwitterReponseTypes::user.c_str()]) );
-	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].GetInt64() );
-	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].GetBool() );
-	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].GetBool());
-	const rapidjson::Value &rt = element[TwitterReponseTypes::retweeted_status.c_str()];
-	if (rt.IsObject()) {
-		status.setTweet(unescape( std::string( rt[TwitterReponseTypes::text.c_str()].GetString()) + " (RT by @" + status.getUserData().getScreenName() + ")"
+	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].asInt64() );
+	status.setFavorited( element[TwitterReponseTypes::favorited.c_str()].asBool() );
+	status.setRetweeted( element[TwitterReponseTypes::retweeted.c_str()].asBool());
+	const Json::Value &rt = element[TwitterReponseTypes::retweeted_status.c_str()];
+	if (rt.isObject()) {
+		status.setTweet(unescape( rt[TwitterReponseTypes::text.c_str()].asString() + " (RT by @" + status.getUserData().getScreenName() + ")"
 			, getUrlEntities(element)) );
-		status.setRetweetID( stringOf(rt[TwitterReponseTypes::id.c_str()].GetInt64()) );
-		status.setCreationTime( toIsoTime ( std::string (rt[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
+		status.setRetweetID( stringOf(rt[TwitterReponseTypes::id.c_str()].asInt64()) );
+		status.setCreationTime( toIsoTime ( rt[TwitterReponseTypes::created_at.c_str()].asString() ) );
 		status.setUserData( getUser ( rt[TwitterReponseTypes::user.c_str()]) );
 	}
 
 	return status;
 }
 
-DirectMessage getDirectMessage(const rapidjson::Value &element)
+DirectMessage getDirectMessage(const Json::Value &element)
 {
 	DirectMessage DM;
 
-	DM.setCreationTime( toIsoTime ( std::string( element[TwitterReponseTypes::created_at.c_str()].GetString() ) ) );
-	DM.setID( stringOf( element[TwitterReponseTypes::id.c_str()].GetInt64() ) );
-	DM.setMessage( unescape ( std::string( element[TwitterReponseTypes::text.c_str()].GetString() ), getUrlEntities(element) ) );
-	DM.setSenderID( stringOf( element[TwitterReponseTypes::sender_id.c_str()].GetInt64())  );
-	DM.setRecipientID( stringOf( element[TwitterReponseTypes::recipient_id.c_str()].GetInt64() ) );
-	DM.setSenderScreenName( std::string( element[TwitterReponseTypes::sender_screen_name.c_str()].GetString() ) );
-	DM.setRecipientScreenName( std::string( element[TwitterReponseTypes::recipient_screen_name.c_str()].GetString() ) );
+	DM.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
+	DM.setID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
+	DM.setMessage( unescape ( element[TwitterReponseTypes::text.c_str()].asString(), getUrlEntities(element) ) );
+	DM.setSenderID( stringOf( element[TwitterReponseTypes::sender_id.c_str()].asInt64())  );
+	DM.setRecipientID( stringOf( element[TwitterReponseTypes::recipient_id.c_str()].asInt64() ) );
+	DM.setSenderScreenName( element[TwitterReponseTypes::sender_screen_name.c_str()].asString() );
+	DM.setRecipientScreenName( element[TwitterReponseTypes::recipient_screen_name.c_str()].asString() );
 	DM.setSenderData( getUser(element[TwitterReponseTypes::sender.c_str()] ));
 	DM.setRecipientData( getUser(element[TwitterReponseTypes::recipient.c_str()]) );
 	return DM;
@@ -139,21 +139,22 @@ DirectMessage getDirectMessage(const rapidjson::Value &element)
 std::vector<Status> getTimeline(std::string &json)
 {
 	std::vector<Status> statuses;
-	rapidjson::Document rootElement;
+	Json::Value rootElement;
+	Json::Reader reader;
 
-	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+	if(!reader.parse(json.c_str(), rootElement)){
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, json);
 		return statuses;
 	}
 
-	if(!rootElement.IsArray()) {
+	if(!rootElement.isArray()) {
 		LOG4CXX_ERROR(logger, "JSON doesn't correspond to timeline:");
 		LOG4CXX_ERROR(logger, json);
 		return statuses;
 	}
 
-	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
+	for(Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
 		statuses.push_back(getStatus(rootElement[i]));
 	}
 	return statuses;
@@ -162,22 +163,22 @@ std::vector<Status> getTimeline(std::string &json)
 std::vector<DirectMessage> getDirectMessages(std::string &json)
 {
 	std::vector<DirectMessage> DMs;
-	rapidjson::Document rootElement;
+	Json::Value rootElement;
+	Json::Reader reader;
 
-
-	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+	if(!reader.parse(json.c_str(), rootElement)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, json);
 		return DMs;
 	}
 
-	if(!rootElement.IsArray()) {
+	if(!rootElement.isArray()) {
 		LOG4CXX_ERROR(logger, "JSON doesn't correspond to direct messages:");
 		LOG4CXX_ERROR(logger, json);
 		return DMs;
 	}
 
-	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
+	for(Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
 		DMs.push_back(getDirectMessage(rootElement[i]));
 	}
 	return DMs;
@@ -186,22 +187,22 @@ std::vector<DirectMessage> getDirectMessages(std::string &json)
 std::vector<User> getUsers(std::string &json)
 {
 	std::vector<User> users;
-	rapidjson::Document rootElement;
+	Json::Value rootElement;
+	Json::Reader reader;
 
-
-	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+	if(!reader.parse(json.c_str(), rootElement)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, json);
 		return users;
 	}
 
-	if(!rootElement.IsArray()) {
+	if(!rootElement.isArray()) {
 		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user list:");
 		LOG4CXX_ERROR(logger, json);
 		return users;
 	}
 
-	for(rapidjson::SizeType i = 0; i < rootElement.Size(); i++) {
+	for(Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
 		users.push_back(getUser(rootElement[i]));
 	}
 	return users;
@@ -210,15 +211,16 @@ std::vector<User> getUsers(std::string &json)
 User getUser(std::string &json)
 {
 	User user;
-	rapidjson::Document rootElement;
+	Json::Value rootElement;
+	Json::Reader reader;
 
-	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+	if(!reader.parse(json.c_str(), rootElement)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, json);
 		return user;
 	}
 
-	if(!rootElement.IsObject()) {
+	if(!rootElement.isObject()) {
 		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user object");
 		LOG4CXX_ERROR(logger, json);
 		return user;
@@ -230,24 +232,25 @@ User getUser(std::string &json)
 std::vector<std::string> getIDs(std::string &json)
 {
 	std::vector<std::string> IDs;
-	rapidjson::Document rootElement;
+	Json::Value rootElement;
+	Json::Reader reader;
 
-	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+	if(!reader.parse(json.c_str(), rootElement)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, json);
 		return IDs;
 	}
 
-	if(!rootElement.IsObject()) {
+	if(!rootElement.isObject()) {
 		LOG4CXX_ERROR(logger, "JSON doesn't correspond to id_list");
 		LOG4CXX_ERROR(logger, json);
 		return IDs;
 	}
 
-	const rapidjson::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
+	const Json::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
 
-	for(unsigned i=0 ; i<ids.Size() ; i++) {
-		IDs.push_back(stringOf( ids[i].GetInt64()) );
+	for(Json::Value::ArrayIndex i=0 ; i<ids.size() ; i++) {
+		IDs.push_back(stringOf( ids[i].asInt64()) );
 	}
 	return IDs;
 }
@@ -257,18 +260,19 @@ Error getErrorMessage(std::string &json)
 	std::string error = "";
 	std::string code = "0";
 	Error resp;
-	rapidjson::Document rootElement;
+	Json::Value rootElement;
+	Json::Reader reader;
 
-	if(rootElement.Parse<0>(json.c_str()).HasParseError()) {
+	if(!reader.parse(json.c_str(), rootElement)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, json);
 		return resp;
 	}
-	if (rootElement.IsObject()) {
-		if (!rootElement["errors"].IsNull()) {
-			const rapidjson::Value &errorElement = rootElement["errors"][0u]; // first error
-			error = std::string(errorElement["message"].GetString());
-			code = stringOf(errorElement["code"].GetInt64());
+	if (rootElement.isObject()) {
+		if (!rootElement["errors"].isNull()) {
+			const Json::Value &errorElement = rootElement["errors"][0u]; // first error
+			error = errorElement["message"].asString();
+			code = stringOf(errorElement["code"].asInt64());
 			resp.setCode(code);
 			resp.setMessage(error);
 		}
@@ -277,18 +281,18 @@ Error getErrorMessage(std::string &json)
 	return resp;
 }
 
-std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element)
+std::vector<UrlEntity> getUrlEntities(const Json::Value &element)
 {
 
 	std::vector<UrlEntity> url_entities;
 
-	const rapidjson::Value &entities = element["entities"];
+	const Json::Value &entities = element["entities"];
 
-	if (entities.IsObject()) {
-		const rapidjson::Value &urls = entities["urls"];
-		if (urls.IsArray()) {
-			for (rapidjson::SizeType i = 0; i < urls.Size(); i++) {
-				UrlEntity entity(urls[i]["url"].GetString(), urls[i]["expanded_url"].GetString());
+	if (entities.isObject()) {
+		const Json::Value &urls = entities["urls"];
+		if (urls.isArray()) {
+			for (Json::Value::ArrayIndex i = 0; i < urls.size(); i++) {
+				UrlEntity entity(urls[i]["url"].asString(), urls[i]["expanded_url"].asString());
 				url_entities.push_back(entity);
 			}
 		}
