@@ -98,14 +98,14 @@ bool HTTPRequest::GET(std::string url, 	std::string &data) {
 	return false;
 }
 
-bool HTTPRequest::GET(std::string url, rapidjson::Document &json) {
+bool HTTPRequest::GET(std::string url, Json::Value &json) {
 	if (!GET(url, m_data)) {
 		return false;
 	}
-
-	if(json.Parse<0>(m_data.c_str()).HasParseError()) {
+	Json::Reader reader;
+	if(!reader.parse(m_data.c_str(), json)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-        LOG4CXX_ERROR(logger, m_data);
+	        LOG4CXX_ERROR(logger, m_data);
 		strcpy(curl_errorbuffer, "Error while parsing JSON");
 		return false;
 	}
@@ -143,7 +143,7 @@ bool HTTPRequest::execute() {
 	return true;
 }
 
-bool HTTPRequest::execute(rapidjson::Document &json) {
+bool HTTPRequest::execute(Json::Value &json) {
 	init();
 	switch (m_type) {
 		case Get:

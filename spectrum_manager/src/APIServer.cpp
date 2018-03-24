@@ -12,9 +12,7 @@
 #include <string>
 #include <cerrno>
 
-#include "rapidjson/rapidjson.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/writer.h"
+#include <json/json.h>
 
 #include <boost/tokenizer.hpp>
 using boost::tokenizer;
@@ -55,11 +53,9 @@ APIServer::APIServer(ManagerConfig *config, StorageBackend *storage) {
 APIServer::~APIServer() {
 }
 
-void APIServer::send_json(struct mg_connection *conn, const Document &d) {
-	StringBuffer buffer;
-	Writer<StringBuffer> writer(buffer);
-	d.Accept(writer);
-	std::string json(buffer.GetString());
+void APIServer::send_json(struct mg_connection *conn, const Json::Value &d) {
+	Json::FastWriter writer;
+	std::string json = writer.write(d);
 
 	std::cout << "Sending JSON:\n";
 	std::cout << json << "\n";
@@ -73,10 +69,9 @@ void APIServer::send_json(struct mg_connection *conn, const Document &d) {
 }
 
 void APIServer::send_ack(struct mg_connection *conn, bool error, const std::string &message) {
-	Document json;
-	json.SetObject();
-	json.AddMember("error", error, json.GetAllocator());
-	json.AddMember("message", message.c_str(), json.GetAllocator());
+	Json::Value json;
+	json["error"] = error;
+	json["message"] = message;
 
 	send_json(conn, json);
 }
@@ -89,23 +84,21 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 	std::vector<std::string> usernames;
 	std::vector<std::string> list = show_list(m_config, false);
 
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
+	Json::Value json;
+	json["error"] = 0;
 
-	Value instances(kArrayType);
+	Json::Value instances(Json::ValueType::arrayValue);
 	BOOST_FOREACH(std::string &id, list) {
-		Value instance;
-		instance.SetObject();
-		instance.AddMember("id", id.c_str(), json.GetAllocator());
+		Json::Value instance;
+		instance["id"] = id;
 
 		std::string name = get_config(m_config, id, "identity.name");
 		if (name.empty() || name == "Spectrum 2 Transport") {
-			instance.AddMember("name", id.c_str(), json.GetAllocator());
+			instance["name"] = id;
 		}
 		else {
 			statuses.push_back(name);
-			instance.AddMember("name", statuses.back().c_str(), json.GetAllocator());
+			instance["name"] = statuses.back();
 		}
 
 		std::string status = server->send_command(id, "status");
@@ -114,13 +107,13 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		}
 
 		statuses.push_back(status);
-		instance.AddMember("status", statuses.back().c_str(), json.GetAllocator());
+		instance["status"] = statuses.back();
 
 		bool running = true;
 		if (status.find("Running") == std::string::npos) {
 			running = false;
 		}
-		instance.AddMember("running", running, json.GetAllocator());
+		instance["running"] = running;
 
 		UserInfo info;
 		m_storage->getUser(session->user, info);
@@ -129,16 +122,16 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 		m_storage->getUserSetting(info.id, id, type, username);
 
 		usernames.push_back(username);
-		instance.AddMember("registered", !username.empty(), json.GetAllocator());
-		instance.AddMember("username", usernames.back().c_str(), json.GetAllocator());
+		instance["registered"] = !username.empty();
+		instance["username"] = usernames.back();
 
 		usernames.push_back(get_config(m_config, id, "service.frontend"));
-		instance.AddMember("frontend", usernames.back().c_str(), json.GetAllocator());
+		instance["frontend"] = usernames.back();
 
-		instances.PushBack(instance, json.GetAllocator());
+		instances.append(instance);
 	}
 
-	json.AddMember("instances", instances, json.GetAllocator());
+	json["instances"] = instances;
 	send_json(conn, json);
 }
 
@@ -232,10 +225,9 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 		// Check if the frontend wants to use OAuth2 (Slack for example).
 		std::string response = server->send_command(instance, "get_oauth2_url " + jid + " " + uin + " " + password);
 		if (!response.empty() && response.find("Error:") != 0) {
-			Document json;
-			json.SetObject();
-			json.AddMember("error", false, json.GetAllocator());
-			json.AddMember("oauth2_url", response.c_str(), json.GetAllocator());
+			Json::Value json;
+			json["error"] = false;
+			json["oauth2_url"] = response;
 			send_json(conn, json);
 		}
 		else {
@@ -272,9 +264,9 @@ void APIServer::serve_instances_register(Server *server, Server::session *sessio
 // 	Document json;
 // 	json.SetObject();
 // 	json.AddMember("error", 0, json.GetAllocator());
-// 	json.AddMember("username_label", fields[0].c_str(), json.GetAllocator());
-// 	json.AddMember("legacy_username_label", fields.size() >= 2 ? fields[1].c_str() : "", json.GetAllocator());
-// 	json.AddMember("password_label", fields.size() >= 3 ? fields[2].c_str() : "", json.GetAllocator());
+// 	json.AddMember("username_label", StringRef(fields[0].c_str()), json.GetAllocator());
+// 	json.AddMember("legacy_username_label", fields.size() >= 2 ? StringRef(fields[1].c_str()) : "", json.GetAllocator());
+// 	json.AddMember("password_label", fields.size() >= 3 ? StringRef(fields[2].c_str()) : "", json.GetAllocator());
 // 	send_json(conn, json);
 // }
 
@@ -294,12 +286,11 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 	std::vector<std::string> commands;
 	boost::split(commands, response, boost::is_any_of("\n"));
 
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
+	Json::Value json;
+	json["error"] = 0;
 
 	std::vector<std::vector<std::string> > tmp;
-	Value cmds(kArrayType);
+	Json::Value cmds(Json::ValueType::arrayValue);
 	BOOST_FOREACH(const std::string &command, commands) {
 		escaped_list_separator<char> els('\\', ' ', '\"');
 		tokenizer<escaped_list_separator<char> > tok(command, els);
@@ -330,17 +321,16 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 
 		tmp.push_back(tokens);
 
-		Value cmd;
-		cmd.SetObject();
-		cmd.AddMember("name", tokens[0].c_str(), json.GetAllocator());
-		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
-		cmd.AddMember("category", tokens[4].c_str(), json.GetAllocator());
-		cmd.AddMember("context", tokens[8].c_str(), json.GetAllocator());
-		cmd.AddMember("label", tokens[10].c_str(), json.GetAllocator());
-		cmds.PushBack(cmd, json.GetAllocator());
+		Json::Value cmd;
+		cmd["name"] = tokens[0];
+		cmd["desc"] = tokens[2];
+		cmd["category"] = tokens[4];
+		cmd["context"] = tokens[8];
+		cmd["label"] = tokens[10];
+		cmds.append(cmd);
 	}
 
-	json.AddMember("commands", cmds, json.GetAllocator());
+	json["commands"] = cmds;
 	send_json(conn, json);
 }
 
@@ -360,12 +350,11 @@ void APIServer::serve_instances_variables(Server *server, Server::session *sessi
 	std::vector<std::string> commands;
 	boost::split(commands, response, boost::is_any_of("\n"));
 
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
+	Json::Value json;
+	json["error"] = 0;
 
 	std::vector<std::vector<std::string> > tmp;
-	Value cmds(kArrayType);
+	Json::Value cmds(Json::ValueType::arrayValue);
 	BOOST_FOREACH(const std::string &command, commands) {
 		escaped_list_separator<char> els('\\', ' ', '\"');
 		tokenizer<escaped_list_separator<char> > tok(command, els);
@@ -385,18 +374,17 @@ void APIServer::serve_instances_variables(Server *server, Server::session *sessi
 
 		tmp.push_back(tokens);
 
-		Value cmd;
-		cmd.SetObject();
-		cmd.AddMember("name", tokens[0].c_str(), json.GetAllocator());
-		cmd.AddMember("desc", tokens[2].c_str(), json.GetAllocator());
-		cmd.AddMember("value", tokens[4].c_str(), json.GetAllocator());
-		cmd.AddMember("read_only", tokens[6].c_str(), json.GetAllocator());
-		cmd.AddMember("category", tokens[8].c_str(), json.GetAllocator());
-		cmd.AddMember("context", tokens[12].c_str(), json.GetAllocator());
-		cmds.PushBack(cmd, json.GetAllocator());
+		Json::Value cmd;
+		cmd["name"] = tokens[0];
+		cmd["desc"] = tokens[2];
+		cmd["value"] = tokens[4];
+		cmd["read_only"] = tokens[6];
+		cmd["category"] = tokens[8];
+		cmd["context"] = tokens[12];
+		cmds.append(cmd);
 	}
 
-	json.AddMember("variables", cmds, json.GetAllocator());
+	json["variables"] = cmds;
 	send_json(conn, json);
 }
 
@@ -459,20 +447,18 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 	std::vector<std::string> args;
 	boost::split(args, response, boost::is_any_of("\n"));
 
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
+	Json::Value json;
+	json["error"] = 0;
 
 	std::vector<std::vector<std::string> > tmp;
-	Value argList(kArrayType);
+	Json::Value argList(Json::ValueType::arrayValue);
 
 	if (userContext && session->admin) {
-		Value arg;
-		arg.SetObject();
-		arg.AddMember("name", "username", json.GetAllocator());
-		arg.AddMember("label", "Username", json.GetAllocator());
-		arg.AddMember("example", "", json.GetAllocator());
-		argList.PushBack(arg, json.GetAllocator());
+		Json::Value arg;
+		arg["name"] = "username";
+		arg["label"] = "Username";
+		arg["example"] = "";
+		argList.append(arg);
 	}
 
 	BOOST_FOREACH(const std::string &argument, args) {
@@ -490,16 +476,15 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 
 		tmp.push_back(tokens);
 
-		Value arg;
-		arg.SetObject();
-		arg.AddMember("name", tokens[0].c_str(), json.GetAllocator());
-		arg.AddMember("label", tokens[2].c_str(), json.GetAllocator());
-		arg.AddMember("example", tokens[4].c_str(), json.GetAllocator());
-		arg.AddMember("type", tokens[6].c_str(), json.GetAllocator());
-		argList.PushBack(arg, json.GetAllocator());
+		Json::Value arg;
+		arg["name"] = tokens[0];
+		arg["label"] = tokens[2];
+		arg["example"] = tokens[4];
+		arg["type"] = tokens[6];
+		argList.append(arg);
 	}
 
-	json.AddMember("args", argList, json.GetAllocator());
+	json["args"] = argList;
 	send_json(conn, json);
 }
 
@@ -581,20 +566,18 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 	std::vector<std::string> fields;
 	boost::split(fields, response, boost::is_any_of("\n"));
 	if (!fields.empty() && /*fields[0].find(" - ") != std::string::npos &&*/ (fields[0].find(": ") != std::string::npos || fields[0].find(":\"") != std::string::npos)) {
-		Document json;
-		json.SetObject();
-		json.AddMember("error", 0, json.GetAllocator());
+		Json::Value json;
+		json["error"] = 0;
 
 		std::vector<std::string> tmp;
 		std::vector<std::string> tmp2;
-		Value table(kArrayType);
+		Json::Value table(Json::ValueType::arrayValue);
 
 		BOOST_FOREACH(const std::string &line, fields) {
 			escaped_list_separator<char> els('\\', ' ', '\"');
 			tokenizer<escaped_list_separator<char> > tok(line, els);
 
-			Value arg;
-			arg.SetObject();
+			Json::Value arg;
 
 			std::string key;
 			int i = 0;
@@ -605,11 +588,11 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 				}
 				if (i == 0) {
 					tmp.push_back(*beg);
-					arg.AddMember("Key", tmp.back().c_str(), json.GetAllocator());
+					arg["Key"] = tmp.back();
 				}
 				else if (i == 2 && hasDesc) {
 					tmp.push_back(*beg);
-					arg.AddMember("Description", tmp.back().c_str(), json.GetAllocator());
+					arg["Description"] = tmp.back();
 				}
 				else if (i > 1 || (!hasDesc && i > 0)) {
 					if (key.empty()) {
@@ -618,16 +601,16 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 					else {
 						tmp.push_back(key);
 						tmp2.push_back(*beg);
-						arg.AddMember(tmp.back().c_str(), tmp2.back().c_str(), json.GetAllocator());
+						arg[tmp.back()] = tmp2.back();
 						key = "";
 					}
 				}
 			}
-			table.PushBack(arg, json.GetAllocator());
+			table.append(arg);
 		}
 
-		json.AddMember("table", table, json.GetAllocator());
-		json.AddMember("message", response.c_str(), json.GetAllocator());
+		json["table"] = table;
+		json["message"] = response;
 		send_json(conn, json);
 	}
 	else {
@@ -639,22 +622,20 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 void APIServer::serve_users(Server *server, Server::session *session, struct mg_connection *conn, struct http_message *hm) {
 	ALLOW_ONLY_ADMIN();
 
-	Document json;
-	json.SetObject();
-	json.AddMember("error", 0, json.GetAllocator());
+	Json::Value json;
+	json["error"] = 0;
 
 	std::vector<std::string> list;
 	m_storage->getUsers(list);
 
-	Value users(kArrayType);
+	Json::Value users(Json::ValueType::arrayValue);
 	BOOST_FOREACH(std::string &id, list) {
-		Value user;
-		user.SetObject();
-		user.AddMember("username", id.c_str(), json.GetAllocator());
-		users.PushBack(user, json.GetAllocator());
+		Json::Value user;
+		user["username"] = id;
+		users.append(user);
 	}
 
-	json.AddMember("users", users, json.GetAllocator());
+	json["users"] = users;
 	send_json(conn, json);
 }
 

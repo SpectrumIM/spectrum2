@@ -23,7 +23,7 @@
 #include "SlackAPI.h"
 
 #include "transport/StorageBackend.h"
-#include "rapidjson/document.h"
+#include <json/json.h>
 
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
@@ -80,7 +80,7 @@ class SlackRTM {
 	private:
 #endif
 		void handlePayloadReceived(const std::string &payload);
-		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data);
 		void handleWebSocketConnected();
 		void handleWebSocketDisconnected(const boost::optional<Swift::Connection::Error> &error);
 

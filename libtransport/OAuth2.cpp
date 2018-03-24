@@ -81,7 +81,7 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 		url += "&redirect_uri=" + Util::urlencode(m_redirectURL);
 	}
 
-	rapidjson::Document resp;
+	Json::Value resp;
 	HTTPRequest req(HTTPRequest::Get, url);
 	if (!req.execute(resp)) {
 		LOG4CXX_ERROR(logger, url);
@@ -90,15 +90,15 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 	}
 
 	LOG4CXX_ERROR(logger, req.getRawData());
-	rapidjson::Value& access_token = resp["access_token"];
-	if (!access_token.IsString()) {
+	Json::Value& access_token = resp["access_token"];
+	if (!access_token.isString()) {
 		LOG4CXX_ERROR(logger, "No 'access_token' object in the reply.");
 		LOG4CXX_ERROR(logger, url);
 		LOG4CXX_ERROR(logger, req.getRawData());
 		return "No 'access_token' object in the reply.";
 	}
 
-	token = access_token.GetString();
+	token = access_token.asString();
 	if (token.empty()) {
 		LOG4CXX_ERROR(logger, "Empty 'access_token' object in the reply.");
 		LOG4CXX_ERROR(logger, url);
@@ -106,11 +106,11 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 		return "Empty 'access_token' object in the reply.";
 	}
 
-	rapidjson::Value& bot = resp["bot"];
-	if (bot.IsObject()) {
-		rapidjson::Value& bot_access_token = bot["bot_access_token"];
-		if (bot_access_token.IsString()) {
-			bot_token = bot_access_token.GetString();
+	Json::Value& bot = resp["bot"];
+	if (bot.isObject()) {
+		Json::Value& bot_access_token = bot["bot_access_token"];
+		if (bot_access_token.isString()) {
+			bot_token = bot_access_token.asString();
 		}
 	}
 

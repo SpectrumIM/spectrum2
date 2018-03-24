@@ -11,9 +11,8 @@ matrix:
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew update;
-      brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/e6e43cf6a3%5E/Formula/cppunit.rb;
-      brew install protobuf log4cxx popt;
-      travis_wait 30 brew install -s libswiften;
+      brew install cppunit protobuf log4cxx popt jsoncpp;
+      travis_wait 30 brew install libswiften;
     fi
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then

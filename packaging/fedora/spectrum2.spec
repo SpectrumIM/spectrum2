@@ -31,6 +31,7 @@ BuildRequires: libcurl-devel
 BuildRequires: libev-libevent-devel
 BuildRequires: libpqxx-devel
 BuildRequires: libpurple-devel
+BuildRequires: jsoncpp-devel
 Requires:      libtransport%{?_isa} = %{version}-%{release}
 
 %description

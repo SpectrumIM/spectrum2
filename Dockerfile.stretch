@@ -4,11 +4,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 RUN echo force-confold | tee -a /etc/dpkg/dpkg.cfg
 RUN apt-get update -qq
-RUN apt-get install -y --force-yes apt-transport-https
-RUN echo "deb http://packages.spectrum.im/spectrum2/ stretch main" | tee -a /etc/apt/sources.list
-RUN echo "deb [trusted=yes] http://swift.im/packages/debian/sid beta main" | tee -a /etc/apt/sources.list
-RUN apt-get update -qq --allow-unauthenticated
-RUN apt-get install -y --force-yes build-essential git cmake prosody ngircd python-sleekxmpp libswiften-dev libprotobuf-dev protobuf-compiler libpurple-dev libglib2.0-dev libdbus-glib-1-dev liblog4cxx10-dev libpopt-dev libboost-dev libboost-signals-dev libboost-system-dev libboost-thread-dev libboost-locale-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-date-time-dev libcppunit-dev libcommuni-dev libminiupnpc-dev libnatpmp-dev libssl-dev libcurl4-openssl-dev libidn11-dev libxml2-dev libsqlite3-dev libqt4-dev
+RUN apt-get install -y --force-yes apt-transport-https curl gnupg1
+RUN echo "deb https://packages.spectrum.im/spectrum2/ stretch main" | tee -a /etc/apt/sources.list
+RUN echo "deb https://swift.im/packages/debian/stretch release main" | tee -a /etc/apt/sources.list
+RUN curl https://swift.im/keys/packages.key | apt-key add -
+RUN apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
+RUN apt-get update -qq
+RUN apt-get install -y --force-yes build-essential git cmake prosody ngircd python-sleekxmpp libswiften-dev libprotobuf-dev protobuf-compiler libpurple-dev libglib2.0-dev libdbus-glib-1-dev liblog4cxx10-dev libpopt-dev libboost-dev libboost-signals-dev libboost-system-dev libboost-thread-dev libboost-locale-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-date-time-dev libcppunit-dev libcommuni-dev libminiupnpc-dev libnatpmp-dev libssl-dev libcurl4-openssl-dev libidn11-dev libxml2-dev libsqlite3-dev libqt4-dev libjsoncpp-dev
 RUN git clone git://github.com/SpectrumIM/spectrum2.git && cd spectrum2
 RUN cd spectrum2 && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON . && make
 RUN cd spectrum2 && make extended_test

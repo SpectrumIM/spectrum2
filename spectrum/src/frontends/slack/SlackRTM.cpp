@@ -72,37 +72,38 @@ void SlackRTM::start() {
 	req->execute();
 }
 
-#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsString()) {  \
+#define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.isString()) {  \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
 		LOG4CXX_ERROR(logger, payload); \
 		return; \
 	} \
-	std::string NAME = NAME##_tmp.GetString();
+	std::string NAME = NAME##_tmp.asString();
 
-#define STORE_STRING_OPTIONAL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+#define STORE_STRING_OPTIONAL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	std::string NAME; \
-	if (NAME##_tmp.IsString()) {  \
-		 NAME = NAME##_tmp.GetString(); \
+	if (NAME##_tmp.isString()) {  \
+		 NAME = NAME##_tmp.asString(); \
 	}
 
-#define GET_OBJECT(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
-	if (!NAME.IsObject()) { \
+#define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
+	if (!NAME.isObject()) { \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 
-#define STORE_INT(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsInt()) {  \
+#define STORE_INT(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.isInt()) {  \
 		LOG4CXX_ERROR(logger, "No '" << #NAME << "' number in the reply."); \
 		LOG4CXX_ERROR(logger, payload); \
 		return; \
 	} \
-	int NAME = NAME##_tmp.GetInt();
+	int NAME = NAME##_tmp.asInt();
 
 void SlackRTM::handlePayloadReceived(const std::string &payload) {
-	rapidjson::Document d;
-	if (d.Parse<0>(payload.c_str()).HasParseError()) {
+	Json::Value d;
+	Json::Reader reader;
+	if (!reader.parse(payload.c_str(), d)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 		LOG4CXX_ERROR(logger, payload);
 		return;
@@ -117,9 +118,9 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_STRING_OPTIONAL(d, subtype);
 		STORE_STRING_OPTIONAL(d, purpose);
 
-		rapidjson::Value &attachments = d["attachments"];
-		if (attachments.IsArray()) {
-			for (unsigned i = 0; i < attachments.Size(); i++) {
+		Json::Value &attachments = d["attachments"];
+		if (attachments.isArray()) {
+			for (unsigned i = 0; i < attachments.size(); i++) {
 				STORE_STRING_OPTIONAL(attachments[i], fallback);
 				if (!fallback.empty()) {
 					text += fallback;
@@ -181,13 +182,12 @@ void SlackRTM::sendPing() {
 	m_pingTimer->start();
 }
 
-void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
 		LOG4CXX_ERROR(logger, req->getError());
 		LOG4CXX_ERROR(logger, data);
 		return;
 	}
-
 	STORE_STRING_OPTIONAL(resp, error);
 	if (!error.empty()) {
 		if (error == "account_inactive") {
@@ -197,44 +197,43 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &re
 			return;
 		}
 	}
-
-	rapidjson::Value &url = resp["url"];
-	if (!url.IsString()) {
+	Json::Value &url = resp["url"];
+	if (!url.isString()) {
 		LOG4CXX_ERROR(logger, "No 'url' object in the reply.");
 		LOG4CXX_ERROR(logger, data);
 		return;
 	}
 
-	rapidjson::Value &self = resp["self"];
-	if (!self.IsObject()) {
+	Json::Value &self = resp["self"];
+	if (!self.isObject()) {
 		LOG4CXX_ERROR(logger, "No 'self' object in the reply.");
 		LOG4CXX_ERROR(logger, data);
 		return;
 	}
 
-	rapidjson::Value &selfName = self["name"];
-	if (!selfName.IsString()) {
+	Json::Value &selfName = self["name"];
+	if (!selfName.isString()) {
 		LOG4CXX_ERROR(logger, "No 'name' string in the reply.");
 		LOG4CXX_ERROR(logger, data);
 		return;
 	}
 
-	m_idManager->setSelfName(selfName.GetString());
+	m_idManager->setSelfName(selfName.asString());
 
-	rapidjson::Value &selfId = self["id"];
-	if (!selfId.IsString()) {
+	Json::Value &selfId = self["id"];
+	if (!selfId.isString()) {
 		LOG4CXX_ERROR(logger, "No 'id' string in the reply.");
 		LOG4CXX_ERROR(logger, data);
 		return;
 	}
 
-	m_idManager->setSelfId(selfId.GetString());
+	m_idManager->setSelfId(selfId.asString());
 
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_idManager->getChannels());
 	SlackAPI::getSlackImInfo(req, ok, resp, data, m_idManager->getIMs());
 	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_idManager->getUsers());
 
-	std::string u = url.GetString();
+	std::string u = url.asString();
 	LOG4CXX_INFO(logger, "Started RTM, WebSocket URL is " << u);
 	LOG4CXX_INFO(logger, data);
 

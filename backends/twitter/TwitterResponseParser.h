@@ -1,7 +1,8 @@
 #ifndef TWITTERRESPOSNSEPARSER_H
 #define TWITTERRESPOSNSEPARSER_H
 
-#include "rapidjson/document.h"
+#include <json/json.h>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -234,8 +235,8 @@ std::vector<User> getUsers(std::string &xml);
 User getUser(std::string &xml);
 Error getErrorMessage(std::string &xml);
 
-std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element);
-Status getStatus(const rapidjson::Value &element);
-DirectMessage getDirectMessage(const rapidjson::Value &element);
-User getUser(const rapidjson::Value &element);
+std::vector<UrlEntity> getUrlEntities(const Json::Value &element);
+Status getStatus(const Json::Value &element);
+DirectMessage getDirectMessage(const Json::Value &element);
+User getUser(const Json::Value &element);
 #endif
