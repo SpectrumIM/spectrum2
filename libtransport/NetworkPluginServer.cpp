@@ -694,6 +694,8 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->setType(Swift::Message::Headline);
 	}
 
+        msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(Swift::ChatState::Active));
+
 	// Add xhtml-im payload.
 	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
 		msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
