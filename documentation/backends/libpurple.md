@@ -39,10 +39,6 @@ prpl-skypeweb| [https://github.com/EionRobb/skype4pidgin/tree/master/skypeweb](h
 
 These plugins are included by default in our Docker image.
 
-### Support for Facebook stickers
-
-Facebook stickers are supported using [Web Storage](../configuration/web_storage.html).
-
 ### Setting libpurple plugins configurations
 
 Some libpurple protocol plugins allow setting configuration variables. Spectrum 2 passes every variable set in `purple` section to libpurple library. If you need to set such options, you can do it for example like this in your configuration file:
@@ -50,3 +46,10 @@ Some libpurple protocol plugins allow setting configuration variables. Spectrum 
 	[purple]
 	clientlogin=1
 	ssl=0
+
+### Notes on Facebook support
+
+- It may be a good idea to [set up an application password](https://www.facebook.com/help/249378535085386/) instead of using your real credentials, for security alerts (and facebook paranoid security alerts) reasons.
+- Facebook stickers are supported using [Web Storage](../configuration/web_storage.html).
+- Messages aren't marked as read until you reply, and sometimes own messages aren't either, so you should set `show-unread=0` (see section above) if you want to avoid receiving duplicates
+- Group chats aren't joined automatically. To join a group chat, get its ID through [Facebook messenger's web interface](https://www.messenger.com) and join it as a `GROUP_CHAT_ID@your_facebook_transport.yourdomain.yourtld`
