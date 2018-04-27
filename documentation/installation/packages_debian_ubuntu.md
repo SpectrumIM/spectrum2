@@ -36,7 +36,7 @@ When the compilation process has ended the .deb packages for libcommuni and spec
 
 ### Troubleshooting
 1. If you got gpg verification error, then `dscverify` can not find appropriate keystore, see http://askubuntu.com/a/215008 for fix. This shouldn't happened if you are install keys and build packages from the same account (Note, building doesn't require root)
-2. There is unresolved issue with [MySQL 5.5](https://github.com/SpectrumIM/spectrum2/issues/150) - please upgrade to newer version
+2. There is unresolved issue with [MySQL private headers](https://github.com/SpectrumIM/spectrum2/issues/150) - please switch to MariaDB or follow [instructions](https://github.com/SpectrumIM/spectrum2/issues/150#issuecomment-273991724) to patch libpurple
 
 ## Quick packaging with CPack
 
