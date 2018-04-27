@@ -30,13 +30,13 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
         # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmariadbclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
         $ apt-get source communi spectrum2
         $ cd communi_3.5.0-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
-        $ cd spectrum2_2.0.4-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
+        $ cd spectrum2_2.0.7-1 && DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -rfakeroot -us -uc  && cd ..
 
 When the compilation process has ended the .deb packages for libcommuni and spectrum will be generated in the current directory and can be installed with `dpkg -i < filename.deb >`.
 
 ### Troubleshooting
 1. If you got gpg verification error, then `dscverify` can not find appropriate keystore, see http://askubuntu.com/a/215008 for fix. This shouldn't happened if you are install keys and build packages from the same account (Note, building doesn't require root)
-2. There is unresolved issue with [MySQL private headers](https://github.com/SpectrumIM/spectrum2/issues/150) - please switch to MariaDB or follow [instructions](https://github.com/SpectrumIM/spectrum2/issues/150#issuecomment-273991724) to patch libpurple
+2. There is an unresolved issue with [MySQL private headers](https://github.com/SpectrumIM/spectrum2/issues/150) - please switch to MariaDB or follow [instructions](https://github.com/SpectrumIM/spectrum2/issues/150#issuecomment-273991724) to patch libpurple
 
 ## Quick packaging with CPack
 
