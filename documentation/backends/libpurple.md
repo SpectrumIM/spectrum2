@@ -51,5 +51,5 @@ Some libpurple protocol plugins allow setting configuration variables. Spectrum 
 
 - It may be a good idea to [set up an application password](https://www.facebook.com/help/249378535085386/) instead of using your real credentials, for security alerts (and facebook paranoid security alerts) reasons.
 - Facebook stickers are supported using [Web Storage](../configuration/web_storage.html).
-- Messages aren't marked as read until you reply, and sometimes own messages aren't either, so you should set `show-unread=0` (see section above) if you want to avoid receiving duplicates
+- Your XMPP client should support [XEP-0085: Chat states](https://xmpp.org/extensions/xep-0085.html) to mark messages as read on the Facebook side. Otherwise, messages aren't marked as read until you reply, and sometimes own messages aren't either, so you should set `show-unread=0` (see section above) if you want to avoid receiving duplicates
 - Group chats aren't joined automatically. To join a group chat, get its ID through [Facebook messenger's web interface](https://www.messenger.com) and join it as a `GROUP_CHAT_ID@your_facebook_transport.yourdomain.yourtld`
