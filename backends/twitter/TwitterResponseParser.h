@@ -17,7 +17,7 @@ namespace TwitterReponseTypes
 	const std::string screen_name = "screen_name";
 	const std::string statuses_count = "statuses_count";
 	const std::string created_at = "created_at";
-	const std::string text = "text";
+	const std::string text = "full_text";
 	const std::string truncated = "truncated";
 	const std::string in_reply_to_status_id = "in_reply_to_user_id";
 	const std::string in_reply_to_user_id = "in_reply_to_user_id";
