@@ -2,12 +2,12 @@ Source: spectrum2
 Section: net
 Priority: optional
 Maintainer: Mathias Ertl <apt-repository@fsinf.at>
-Build-Depends: debhelper (>= 7.0.50~), libpurple-dev, libswiften-dev,
+Build-Depends: debhelper (>= 10), libpurple-dev, libswiften-dev,
  libprotobuf-dev, libmysqlclient-dev | default-libmysqlclient-dev, liblog4cxx10-dev, protobuf-compiler,
  libpopt-dev, libdbus-glib-1-dev, libpqxx-dev | libpqxx3-dev, cmake, libev-libevent-dev | libevent-dev, libboost-all-dev,
  libqt4-dev, libidn11-dev, libxml2-dev, libavahi-client-dev, libavahi-common-dev,
  libcurl4-openssl-dev, libcommuni-dev, libsqlite3-dev, libjsoncpp-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 VCS-Browser: http://git.fsinf.at/apt/spectrum2
 VCS-Git: https://git.fsinf.at/apt/spectrum2.git
 Homepage: http://www.spectrum.im
