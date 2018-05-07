@@ -4,7 +4,7 @@ void HelpMessageRequest::run()
 {
 	helpMsg = helpMsg
 			+ "You will receive tweets of people you follow from this contact."
-			+ "Following commands can be used to manage your Twitter account:"
+			+ "Following commands can be used to manage your Twitter account:\n\n"
 			+ "#timeline [username]       ==> Retrieve <username>'s timeline; Default - own timeline\n"
 			+ "#status <your status>      ==> Update your status\n"
 			+ "@<username> <message>      ==> Send a directed message to the user <username>\n"
