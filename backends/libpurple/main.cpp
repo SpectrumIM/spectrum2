@@ -1536,17 +1536,17 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	while (vcardEntries) {
 		vcardEntry = (PurpleNotifyUserInfoEntry *)(vcardEntries->data);
 		if (purple_notify_user_info_entry_get_label_wrapped(vcardEntry) && purple_notify_user_info_entry_get_value_wrapped(vcardEntry)){
-			label = purple_notify_user_info_entry_get_label_wrapped(vcardEntry);
-			if (label == "Given Name" || label == "First Name") {
+			label = boost::locale::to_lower(purple_notify_user_info_entry_get_label_wrapped(vcardEntry));
+			if (label == "given name" || label == "first name") {
 				firstName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label == "Family Name" || label == "Last Name") {
+			else if (label == "family name" || label == "last name") {
 				lastName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label=="Nickname" || label == "Nick") {
+			else if (label=="nickname" || label == "nick") {
 				nickname = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label=="Full Name" || label == "Display name") {
+			else if (label=="full name" || label == "display name") {
 				fullName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else {
