@@ -1,3 +1,10 @@
+Version 2.0.7 (2018-04-27):
+	General:
+	* Fix Web interface and Twitter backend compatibilty with Swiften 4 by switching to C++11-compatible JSON library
+	* Minor changes in packaging and build environment
+	XMPP:
+	* Fix XEP-0085 compatibility with some clients
+
 Version 2.0.6 (2018-02-07):
 	General:
 	* Add support for forwading own messages sent from different legacy network client.

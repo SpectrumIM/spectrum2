@@ -349,7 +349,7 @@ bool twitCurl::search( std::string& searchQuery, std::string resultCount )
                            twitterDefaults::TWITCURL_SEARCH_URL +
                            twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
                            twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_SEARCHQUERYSTRING +
-                           searchQuery;
+                           searchQuery + twitCurlDefaults::TWITCURL_URL_SEP_AMP + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED;
 
     /* Add number of results count if provided */
     if( resultCount.size() )
@@ -420,7 +420,8 @@ bool twitCurl::statusShowById( std::string& statusId )
     /* Prepare URL */
     std::string buildUrl = twitCurlDefaults::TWITCURL_PROTOCOLS[m_eProtocolType] +
                            twitterDefaults::TWITCURL_STATUSSHOW_URL + statusId +
-                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
+			twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED;
 
     /* Perform GET */
     return performGet( buildUrl );
@@ -499,10 +500,11 @@ bool twitCurl::timelineHomeGet( std::string sinceId )
 {
     std::string buildUrl = twitCurlDefaults::TWITCURL_PROTOCOLS[m_eProtocolType] +
                            twitterDefaults::TWITCURL_HOME_TIMELINE_URL +
-                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
+				twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED;
     if( sinceId.length() )
     {
-        buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_SINCEID + sinceId;
+        buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_AMP + twitCurlDefaults::TWITCURL_SINCEID + sinceId;
     }
 
     /* Perform GET */
@@ -525,7 +527,8 @@ bool twitCurl::timelinePublicGet()
     /* Perform GET */
     return performGet( twitCurlDefaults::TWITCURL_PROTOCOLS[m_eProtocolType] +
                        twitterDefaults::TWITCURL_PUBLIC_TIMELINE_URL +
-                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] );
+                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
+			twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED);
 }
 
 /*++
@@ -563,7 +566,8 @@ bool twitCurl::timelineFriendsGet()
     /* Perform GET */
     return performGet( twitCurlDefaults::TWITCURL_PROTOCOLS[m_eProtocolType] +
                        twitterDefaults::TWITCURL_FRIENDS_TIMELINE_URL +
-                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] );
+                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
+			twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED);
 }
 
 /*++
@@ -581,10 +585,11 @@ bool twitCurl::mentionsGet( std::string sinceId )
 {
     std::string buildUrl = twitCurlDefaults::TWITCURL_PROTOCOLS[m_eProtocolType] +
                            twitterDefaults::TWITCURL_MENTIONS_URL +
-                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType];
+                           twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
+			twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED;
     if( sinceId.length() )
     {
-        buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_SINCEID + sinceId;
+        buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_AMP + twitCurlDefaults::TWITCURL_SINCEID + sinceId;
     }
 
     /* Perform GET */
@@ -616,10 +621,7 @@ bool twitCurl::timelineUserGet( bool trimUser, bool includeRetweets, unsigned in
                         twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType],
                         userInfo, isUserId );
 
-    if( userInfo.empty() )
-    {
-        buildUrl += twitCurlDefaults::TWITCURL_URL_SEP_QUES;
-    }
+    buildUrl += userInfo.empty() ? twitCurlDefaults::TWITCURL_URL_SEP_QUES : twitCurlDefaults::TWITCURL_URL_SEP_AMP + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED;
 
     if( tweetCount )
     {
@@ -1093,7 +1095,8 @@ bool twitCurl::favoriteGet()
     /* Perform GET */
     return performGet( twitCurlDefaults::TWITCURL_PROTOCOLS[m_eProtocolType] +
                        twitterDefaults::TWITCURL_FAVORITESGET_URL +
-                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] );
+                       twitCurlDefaults::TWITCURL_EXTENSIONFORMATS[m_eApiFormatType] +
+			twitCurlDefaults::TWITCURL_URL_SEP_QUES + twitCurlDefaults::TWITCURL_TWEET_MODE_EXTENDED);
 }
 
 /*++
