@@ -192,6 +192,7 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 
 static boost::mutex dblock;
 static std::string OAUTH_TOKEN = "hangouts_oauth_token";
+static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
 
 static bool getUserOAuthToken(const std::string user, std::string &token)
 {
@@ -216,6 +217,32 @@ static bool storeUserOAuthToken(const std::string user, const std::string OAuthT
 		return false;
 	}
 	storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
+	return true;
+}
+
+static bool getUserSteamAccessToken(const std::string user, std::string &token)
+{
+	boost::mutex::scoped_lock lock(dblock);
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		return false;
+	}
+	token = "";
+	int type = TYPE_STRING;
+	storagebackend->getUserSetting((long)info.id, STEAM_ACCESS_TOKEN, type, token);
+	return true;
+}
+
+static bool storeUserSteamAccessToken(const std::string user, const std::string token)
+{
+	boost::mutex::scoped_lock lock(dblock);
+	UserInfo info;
+	if(storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		return false;
+	}
+	storagebackend->updateUserSetting((long)info.id, STEAM_ACCESS_TOKEN, token);
 	return true;
 }
 
@@ -416,6 +443,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				std::string token;
 				if (getUserOAuthToken(user, token)) {
 					purple_account_set_password_wrapped(account, token.c_str());
+				}
+			}
+			else if (protocol == "prpl-steam-mobile") {
+				std::string token;
+				if (getUserSteamAccessToken(user, token)) {
+					purple_account_set_string_wrapped(account, "access_token", token.c_str());
 				}
 			}
 
@@ -2154,6 +2187,9 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
 		storeUserOAuthToken(np->m_accounts[account], purple_account_get_password_wrapped(account));
 	}
+	else if (CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile") {
+		storeUserSteamAccessToken(np->m_accounts[account], purple_account_get_string_wrapped(account, "access_token", NULL));
+	}
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -2382,11 +2418,11 @@ int main(int argc, char **argv) {
 	config = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config>(cfg);
 
 	Logging::initBackendLogging(config.get());
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile") {
 		storagebackend = StorageBackend::createBackend(config.get(), error);
 		if (storagebackend == NULL) {
 			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
-			LOG4CXX_ERROR(logger, "Hangouts backend needs storage backend configured to work! " << error);
+			LOG4CXX_ERROR(logger, "Hangouts and Steam backends need storage backend configured to work! " << error);
 			return NetworkPlugin::StorageBackendNeeded;
 		}
 		else if (!storagebackend->connect()) {

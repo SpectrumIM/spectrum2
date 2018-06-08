@@ -23,6 +23,9 @@ extern purple_account_get_protocol_id_wrapped_fnc purple_account_get_protocol_id
 typedef void  (_cdecl * purple_account_set_int_wrapped_fnc)(PurpleAccount *account, const char *name, int value);
 extern purple_account_set_int_wrapped_fnc purple_account_set_int_wrapped;
 
+typedef const char * (_cdecl * purple_account_get_string_wrapped_fnc)(PurpleAccount *account, const char *name, const char *default_value);
+extern purple_account_get_string_wrapped_fnc purple_account_get_string_wrapped;
+
 typedef void  (_cdecl * purple_account_set_string_wrapped_fnc)(PurpleAccount *account, const char *name, const char *value);
 extern purple_account_set_string_wrapped_fnc purple_account_set_string_wrapped;
 
@@ -478,6 +481,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_account_set_bool_wrapped purple_account_set_bool
 #define purple_account_get_protocol_id_wrapped purple_account_get_protocol_id
 #define purple_account_set_int_wrapped purple_account_set_int
+#define purple_account_get_string_wrapped purple_account_get_string
 #define purple_account_set_string_wrapped purple_account_set_string
 #define purple_account_get_username_wrapped purple_account_get_username
 #define purple_account_set_username_wrapped purple_account_set_username
