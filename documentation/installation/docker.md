@@ -78,4 +78,4 @@ To upgrade Spectrum 2 container, you at first have to pull the updated Docker im
 	$ docker pull spectrum2/spectrum
 	$ docker stop spectrum2
 	$ docker rm spectrum2
-	$ docker run --name="spectrum" -d --restart unless-stopped -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum
+	$ docker run --name="spectrum2" -d --restart unless-stopped -v /opt/spectrum2/configuration:/etc/spectrum2/transports -v /opt/spectrum2/data:/var/lib/spectrum2 spectrum2/spectrum
