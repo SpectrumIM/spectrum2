@@ -1297,7 +1297,7 @@ static std::string check_incoming_document(const char *msg) {
 	std::string basename = match[3];
 	std::string file_type = match[4];
 
-	static boost::regex bad_symbol_expr("[^0-9a-zA-Z]");
+	static boost::regex bad_symbol_expr("[^0-9a-zA-Z._]");
 	basename = boost::regex_replace(basename, bad_symbol_expr, "_");
 
 	if (!target_dir.empty()) {
