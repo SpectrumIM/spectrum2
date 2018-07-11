@@ -46,14 +46,13 @@ if(NOT LIB_INSTALL_DIR)
 	set(LIB_INSTALL_DIR "lib")
 endif()
 
-set(CMAKE_MODULE_PATH "cmake_modules")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
 
 ###### Prerequisites ######
 
 
 # FIND SWIFTEN
 
-set(Swiften_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Swiften)
 
 if(NOT SWIFTEN_FOUND)
@@ -98,7 +97,6 @@ endif()
 
 # FIND POPT
 if (NOT WIN32)
-	set(popt_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(popt REQUIRED)
 endif()
 
@@ -106,19 +104,16 @@ endif()
 
 # FIND SQLITE3
 if (ENABLE_SQLITE3)
-	set(sqlite3_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(sqlite3)
 endif()
 
 # FIND MYSQL
 if(ENABLE_MYSQL)
-	set(mysql_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(mysql)
 endif()
 
 # FIND PQXX
 if(ENABLE_PQXX)
-	set(pqxx_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(pqxx)
 endif()
 
@@ -126,7 +121,6 @@ endif()
 
 # FIND LIBPURPLE
 if(ENABLE_PURPLE)
-	set(purple_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(purple)
 
 	if (WIN32)
@@ -140,7 +134,6 @@ if(ENABLE_PURPLE)
 	endif()
 
 	# FIND LIBEVENT
-	set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(event)
 endif()
 
@@ -149,17 +142,14 @@ if(ENABLE_PURPLE)
 #	if (GLIB2_INCLUDE_DIR AND GLIB2_LIBRARIES)
 #		set(GLIB2_FOUND TRUE)
 #	else()
-		set(glib_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 		find_package(glib)
 #	endif()
 endif()
 
 # FIND LIBXML2
-# set(libxml2_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 # find_package(libxml2)
 
 # FIND PROTOBUF
-set(Protobuf_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(Protobuf REQUIRED)
 
 if (NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
@@ -172,8 +162,7 @@ if (NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
 	message(STATUS "Using protobuf: ${PROTOBUF_INCLUDE_DIRS} ${PROTOBUF_LIBRARY}")
 endif()
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(JSONCPP jsoncpp)
+find_package(jsoncpp REQUIRED)
 include_directories(${JSONCPP_INCLUDE_DIRS})
 
 if (WIN32)
@@ -187,12 +176,10 @@ endif()
 
 
 if (CMAKE_COMPILER_IS_GNUCXX)
-set(openssl_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(openssl)
 endif()
 
 if(ENABLE_IRC)
-	set(Communi_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(Communi)
 
 	INCLUDE(FindQt4)
@@ -202,7 +189,6 @@ if(ENABLE_IRC)
 	# ADD_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION=2)
 endif()
 
-set(event_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 find_package(event)
 
 
@@ -225,7 +211,6 @@ endif()
 
 # FIND CPPUNIT
 if(ENABLE_TESTS)
-	set(cppunit_DIR "${CMAKE_SOURCE_DIR}/cmake_modules")
 	find_package(cppunit)
 
 	if(NOT CPPUNIT_FOUND AND CPPUNIT_INCLUDE_DIR AND CPPUNIT_LIBRARY)

@@ -2,7 +2,7 @@
 *.pb.h
 plugin/python/protocol_pb2.py
 Makefile
-*.cmake
+cmake_install.cmake
 *.so
 *.so.*
 *.log
