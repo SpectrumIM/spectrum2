@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/SpectrumIM/spectrum2.svg?branch=master)](https://travis-ci.org/SpectrumIM/spectrum2)
+[![Build Status](https://travis-ci.org/SpectrumIM/spectrum2.svg?branch=master)](https://travis-ci.org/SpectrumIM/spectrum2) [![Build status](https://ci.appveyor.com/api/projects/status/mfcvy164ndetieim?svg=true)](https://ci.appveyor.com/project/vitalyster/libtransport)
 
 ![](http://spectrum.im/animation.gif)
 

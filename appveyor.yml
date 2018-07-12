@@ -1,0 +1,24 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+cache: c:\projects\libtransport\dist
+build_script:
+- cmd: >-
+    curl -L -O http://packages.spectrum.im/deps32.zip
+
+    7z x deps32.zip
+
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
+
+    set PATH=%PATH%;C:\projects\libtransport\deps32\bin
+
+    set CMAKE_PREFIX_PATH=C:\projects\libtransport\deps32
+
+    cmake . -G "NMake Makefiles" -DENABLE_PURPLE=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=dist
+
+    nmake
+
+    nmake install
+
+    nmake test
+artifacts:
+- path: dist
