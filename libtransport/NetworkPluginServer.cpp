@@ -1815,7 +1815,7 @@ void NetworkPluginServer::wrapIncomingImage(Swift::Message* msg, const pbnetwork
             msg->addPayload(oob_payload);
             msg->setBody(image_url);
         } else {
-            LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml())
+            LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml());
         }
     }
 }
