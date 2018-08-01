@@ -1686,7 +1686,7 @@ void * requestInput(const char *title, const char *primary,const char *secondary
 			np->m_inputRequests[req->mainJID] = req;
 			return NULL;
 		}
-		else if (primaryString == "Steam two-factor authentication") {
+		else if (primaryString == "Set your Steam Guard Code") {
 			LOG4CXX_INFO(logger, "prpl-steam-mobile steam guard request");
 			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Steam Guard code: "));
 			inputRequest *req = new inputRequest;
