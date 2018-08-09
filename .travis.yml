@@ -12,8 +12,7 @@ matrix:
 before_script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew update;
-      brew install cppunit protobuf log4cxx popt jsoncpp;
-      brew install -s libswiften;
+      brew install cppunit protobuf log4cxx popt jsoncpp libswiften;
     fi
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
