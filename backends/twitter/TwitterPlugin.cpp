@@ -81,7 +81,7 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	message_timer = m_factories->getTimerFactory()->createTimer(CONFIG_INT_DEFAULTED(config, "twitter.fetch_timeout", 90000));
 
 	tweet_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForTweets, this));
-	message_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForDirectMessages, this));
+	//message_timer->onTick.connect(boost::bind(&TwitterPlugin::pollForDirectMessages, this));
 
 	tweet_timer->start();
 	message_timer->start();
