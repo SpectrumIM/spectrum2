@@ -208,7 +208,16 @@ void IRCNetworkPlugin::handleMessageSendRequest(const std::string &user, const s
 		return;
 	}
 	else {
-		m_sessions[session]->sendCommand(IrcCommand::createMessage(FROM_UTF8(target), FROM_UTF8(message)));
+		// IRC does not support newlines in messages, so we split the message into multiple Message commands
+		std::size_t cur = 0;
+		while (cur != std::string::npos) {
+			if (message[cur] == '\n') {
+				cur++;
+			}
+			std::size_t end = message.find('\n', cur);
+			m_sessions[session]->sendCommand(IrcCommand::createMessage(FROM_UTF8(target), FROM_UTF8(message.substr(cur, end - cur))));
+			cur = end;
+		}
 	}
 
 	if (target.find("#") == 0) {
