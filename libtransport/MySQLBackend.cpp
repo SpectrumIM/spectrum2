@@ -25,58 +25,12 @@
 #include "transport/Logging.h"
 #include <boost/bind.hpp>
 
-#define MYSQL_DB_VERSION 2
-#define CHECK_DB_RESPONSE(stmt) \
-	if(stmt) { \
-		sqlite3_EXEC(m_db, "ROLLBACK;", NULL, NULL, NULL); \
-		return 0; \
-	}
-
-// Prepare the SQL statement
-#define PREP_STMT(sql, str) \
-	sql = mysql_stmt_init(&m_conn);\
-	if (mysql_stmt_prepare(sql, std::string(str).c_str(), std::string(str).size())) {\
-		LOG4CXX_ERROR(logger, str << " " << mysql_error(&m_conn)); \
-		return false; \
-	}
-
-// Finalize the prepared statement
-#define FINALIZE_STMT(prep) \
-	if(prep != NULL) { \
-		mysql_stmt_close(prep); \
-	}
-	
-#define BEGIN(STATEMENT, SIZE) 	MYSQL_BIND STATEMENT##_bind[SIZE]; \
-							memset(STATEMENT##_bind, 0, sizeof(STATEMENT##_bind)); \
-							int STATEMENT##_id = 1;\
-							int STATEMENT##_id_get = 0;\
-							(void)STATEMENT##_id_get;
-
-#define BIND_INT(STATEMENT, VARIABLE) STATEMENT##_bind[STATEMENT##_id].buffer_type= MYSQL_TYPE_LONG;\
-							STATEMENT##_bind[STATEMENT##_id].buffer= (char *)&VARIABLE;\
-							STATEMENT##_bind[STATEMENT##_id].is_null= 0;\
-							STATEMENT##_bind[STATEMENT##_id++].length= 0;
-#define BIND_STR(STATEMENT, VARIABLE) STATEMENT##_bind[STATEMENT##_id].buffer_type= MYSQL_TYPE_STRING;\
-							STATEMENT##_bind[STATEMENT##_id].buffer= VARIABLE.c_str();\
-							STATEMENT##_bind[STATEMENT##_id].buffer_length= STRING_SIZE;\
-							STATEMENT##_bind[STATEMENT##_id].is_null= 0;\
-							STATEMENT##_bind[STATEMENT##_id++].length= VARIABLE.size();
-#define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
-#define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
-#define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
-#define EXECUTE_STATEMENT(STATEMENT, NAME) if (mysql_stmt_bind_param(STATEMENT, STATEMENT##_bind)) { \
-		LOG4CXX_ERROR(logger, NAME << " " << mysql_error(&m_conn)); \
-	} \
-	if (mysql_stmt_execute(STATEMENT)) { \
-		LOG4CXX_ERROR(logger, NAME << " " << mysql_error(&m_conn)); \
-	}
-
 #define EXEC(STMT, METHOD) \
 	{\
 	int ret = STMT->execute(); \
 	if (ret == 0) \
 		exec_ok = true; \
-	else if (ret == 2013) { \
+	else if (ret == CR_SERVER_LOST) { \
 		LOG4CXX_INFO(logger, "MySQL connection lost. Reconnecting...");\
 		disconnect(); \
 		connect(); \
@@ -194,7 +148,9 @@ MySQLBackend::Statement::~Statement() {
 		free(m_results[i].buffer);
 		free(m_results[i].length);
 	}
-	FINALIZE_STMT(m_stmt);
+	if(m_stmt != NULL) {
+		mysql_stmt_close(m_stmt);
+	}
 }
 
 int MySQLBackend::Statement::execute() {
@@ -207,6 +163,7 @@ int MySQLBackend::Statement::execute() {
 		LOG4CXX_ERROR(logger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
 		return mysql_stmt_errno(m_stmt);
 	}
+	mysql_stmt_store_result(m_stmt);
 	return 0;
 }
 

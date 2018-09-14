@@ -26,7 +26,8 @@
 #include <map>
 #include "transport/StorageBackend.h"
 #include "transport/Config.h"
-#include "mysql.h"
+#include <mysql/mysql.h>
+#include <mysql/errmsg.h>
 
 namespace Transport {
 
