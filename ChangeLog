@@ -1,3 +1,17 @@
+Version 2.0.8 (2018-09-17):
+	General:
+	* Fix some MySQL storage backend issues
+	* Appveyor build integration
+	Libpurple backend:
+	* Fix Steam Guard compatibility in Steam Mobile plugin
+	* Fix VCard forwarding and room joining issues
+	Twitter backend:
+	* 280 characters support
+	* Support for Direct Messages is disabled until switching to new
+	Direct Message API
+	Libcommuni backend:
+	* split multiline messages into series of PRIVMSG commands
+
 Version 2.0.7 (2018-04-27):
 	General:
 	* Fix Web interface and Twitter backend compatibilty with Swiften 4 by switching to C++11-compatible JSON library
