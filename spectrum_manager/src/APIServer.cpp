@@ -87,7 +87,7 @@ void APIServer::serve_instances(Server *server, Server::session *session, struct
 	Json::Value json;
 	json["error"] = 0;
 
-	Json::Value instances(Json::ValueType::arrayValue);
+	Json::Value instances(Json::arrayValue);
 	BOOST_FOREACH(std::string &id, list) {
 		Json::Value instance;
 		instance["id"] = id;
@@ -290,7 +290,7 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 	json["error"] = 0;
 
 	std::vector<std::vector<std::string> > tmp;
-	Json::Value cmds(Json::ValueType::arrayValue);
+	Json::Value cmds(Json::arrayValue);
 	BOOST_FOREACH(const std::string &command, commands) {
 		escaped_list_separator<char> els('\\', ' ', '\"');
 		tokenizer<escaped_list_separator<char> > tok(command, els);
@@ -354,7 +354,7 @@ void APIServer::serve_instances_variables(Server *server, Server::session *sessi
 	json["error"] = 0;
 
 	std::vector<std::vector<std::string> > tmp;
-	Json::Value cmds(Json::ValueType::arrayValue);
+	Json::Value cmds(Json::arrayValue);
 	BOOST_FOREACH(const std::string &command, commands) {
 		escaped_list_separator<char> els('\\', ' ', '\"');
 		tokenizer<escaped_list_separator<char> > tok(command, els);
@@ -451,7 +451,7 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 	json["error"] = 0;
 
 	std::vector<std::vector<std::string> > tmp;
-	Json::Value argList(Json::ValueType::arrayValue);
+	Json::Value argList(Json::arrayValue);
 
 	if (userContext && session->admin) {
 		Json::Value arg;
@@ -571,7 +571,7 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 
 		std::vector<std::string> tmp;
 		std::vector<std::string> tmp2;
-		Json::Value table(Json::ValueType::arrayValue);
+		Json::Value table(Json::arrayValue);
 
 		BOOST_FOREACH(const std::string &line, fields) {
 			escaped_list_separator<char> els('\\', ' ', '\"');
@@ -628,7 +628,7 @@ void APIServer::serve_users(Server *server, Server::session *session, struct mg_
 	std::vector<std::string> list;
 	m_storage->getUsers(list);
 
-	Json::Value users(Json::ValueType::arrayValue);
+	Json::Value users(Json::arrayValue);
 	BOOST_FOREACH(std::string &id, list) {
 		Json::Value user;
 		user["username"] = id;
