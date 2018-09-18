@@ -30,7 +30,7 @@
 	int ret = STMT->execute(); \
 	if (ret == 0) \
 		exec_ok = true; \
-	else if (ret == CR_SERVER_LOST) { \
+	else if (ret == CR_SERVER_LOST || ret == CR_SERVER_GONE_ERROR) { \
 		LOG4CXX_INFO(logger, "MySQL connection lost. Reconnecting...");\
 		disconnect(); \
 		connect(); \
@@ -52,7 +52,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 	m_string = statement;
 	m_stmt = mysql_stmt_init(conn);
 	if (mysql_stmt_prepare(m_stmt, statement.c_str(), statement.size())) {
-		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+		LOG4CXX_ERROR(logger, statement << " " << mysql_stmt_error(m_stmt));
 		return;
 	}
 
@@ -126,14 +126,14 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 	}
 
 	if (mysql_stmt_bind_param(m_stmt, &m_params.front())) {
-		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+		LOG4CXX_ERROR(logger, statement << " " << mysql_stmt_error(m_stmt));
 	}
 
 	if (m_resultOffset < 0)
 		m_resultOffset = format.size();
 	else {
 		if (mysql_stmt_bind_result(m_stmt, &m_results.front())) {
-			LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+			LOG4CXX_ERROR(logger, statement << " " << mysql_stmt_error(m_stmt));
 		}
 	}
 	m_resultOffset = 0;
@@ -227,12 +227,11 @@ MySQLBackend::MySQLBackend(Config *config) {
 	m_config = config;
 	m_prefix = CONFIG_STRING(m_config, "database.prefix");
 	mysql_init(&m_conn);
-	my_bool my_true = 1;
-	mysql_options(&m_conn, MYSQL_OPT_RECONNECT, &my_true);
 }
 
 MySQLBackend::~MySQLBackend(){
 	disconnect();
+	mysql_close(&m_conn);
 }
 
 void MySQLBackend::disconnect() {
@@ -257,7 +256,6 @@ void MySQLBackend::disconnect() {
 	delete m_setUserOnline;
 	delete m_getOnlineUsers;
 	delete m_getUsers;
-	mysql_close(&m_conn);
 }
 
 bool MySQLBackend::connect() {
