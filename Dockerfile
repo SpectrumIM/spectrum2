@@ -37,7 +37,7 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 	echo "---> Installing transwhat" && \
 		pip install --pre e4u protobuf python-dateutil yowsup2 Pillow==2.9.0 &&\
 		git clone git://github.com/stv0g/transwhat.git &&\
-		git clone git://github.com/tgalal/yowsup.git &&\
+		git clone git://github.com/AragurDEV/yowsup.git &&\
 		cd transwhat &&\
 		git worktree add /opt/transwhat &&\
 		cd .. &&\
