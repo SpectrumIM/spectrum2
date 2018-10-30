@@ -115,6 +115,7 @@ purple_notify_user_info_entry_get_label_wrapped_fnc purple_notify_user_info_entr
 purple_notify_user_info_entry_get_value_wrapped_fnc purple_notify_user_info_entry_get_value_wrapped = NULL;
 purple_notify_set_ui_ops_wrapped_fnc purple_notify_set_ui_ops_wrapped = NULL;
 purple_plugins_add_search_path_wrapped_fnc purple_plugins_add_search_path_wrapped = NULL;
+purple_plugins_load_saved_wrapped_fnc purple_plugins_load_saved_wrapped = NULL;
 purple_plugin_action_free_wrapped_fnc purple_plugin_action_free_wrapped = NULL;
 purple_prefs_load_wrapped_fnc purple_prefs_load_wrapped = NULL;
 purple_prefs_set_bool_wrapped_fnc purple_prefs_set_bool_wrapped = NULL;
@@ -606,6 +607,10 @@ bool resolvePurpleFunctions() {
 	purple_plugins_add_search_path_wrapped = (purple_plugins_add_search_path_wrapped_fnc)GetProcAddress(f_hPurple, "purple_plugins_add_search_path");
 	if (!purple_plugins_add_search_path_wrapped)
 		return false;
+    
+    purple_plugins_load_saved_wrapped = (purple_plugins_load_saved_wrapped_fnc)GetProcAddress(f_hPurple, "purple_plugins_load_saved");
+    if (!purple_plugins_load_saved_wrapped)
+        return false;
 
 	purple_plugin_action_free_wrapped = (purple_plugin_action_free_wrapped_fnc)GetProcAddress(f_hPurple, "purple_plugin_action_free");
 	if (!purple_plugin_action_free_wrapped)

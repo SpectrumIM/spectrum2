@@ -2253,6 +2253,7 @@ static bool initPurple() {
 		purple_prefs_set_bool_wrapped("/purple/logging/log_chats", false);
 		purple_prefs_set_bool_wrapped("/purple/logging/log_system", false);
 
+        purple_plugins_load_saved_wrapped("/spectrum/plugins/loaded");
 
 // 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "received-im-msg", &conversation_handle, PURPLE_CALLBACK(newMessageReceived), NULL);
 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);

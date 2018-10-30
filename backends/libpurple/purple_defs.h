@@ -362,6 +362,9 @@ extern purple_notify_set_ui_ops_wrapped_fnc purple_notify_set_ui_ops_wrapped;
 typedef void  (_cdecl * purple_plugins_add_search_path_wrapped_fnc)(const char *path);
 extern purple_plugins_add_search_path_wrapped_fnc purple_plugins_add_search_path_wrapped;
 
+typedef void  (_cdecl * purple_plugins_load_saved_wrapped_fnc)(const char *key);
+extern purple_plugins_load_saved_wrapped_fnc purple_plugins_load_saved_wrapped;
+
 typedef void  (_cdecl * purple_plugin_action_free_wrapped_fnc)(PurplePluginAction *action);
 extern purple_plugin_action_free_wrapped_fnc purple_plugin_action_free_wrapped;
 
@@ -594,6 +597,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_notify_user_info_entry_get_value_wrapped purple_notify_user_info_entry_get_value
 #define purple_notify_set_ui_ops_wrapped purple_notify_set_ui_ops
 #define purple_plugins_add_search_path_wrapped purple_plugins_add_search_path
+#define purple_plugins_load_saved_wrapped purple_plugins_load_saved
 #define purple_plugin_action_free_wrapped purple_plugin_action_free
 #define purple_prefs_load_wrapped purple_prefs_load
 #define purple_prefs_set_bool_wrapped purple_prefs_set_bool
