@@ -191,8 +191,9 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 static boost::mutex dblock;
 static std::string OAUTH_TOKEN = "hangouts_oauth_token";
 static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
+static std::string DISCORD_ACCESS_TOKEN = "discord_access_token";
 
-static bool getUserOAuthToken(const std::string user, std::string &token)
+static bool getUserToken(const std::string user, const std::string token_name, std::string &token_value)
 {
 	boost::mutex::scoped_lock lock(dblock);
 	UserInfo info;
@@ -200,13 +201,13 @@ static bool getUserOAuthToken(const std::string user, std::string &token)
 		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
 		return false;
 	}
-	token = "";
+	token_value = "";
 	int type = TYPE_STRING;
-	storagebackend->getUserSetting((long)info.id, OAUTH_TOKEN, type, token);
+	storagebackend->getUserSetting((long)info.id, token_name, type, token_value);
 	return true;
 }
 
-static bool storeUserOAuthToken(const std::string user, const std::string OAuthToken)
+static bool storeUserToken(const std::string user, const std::string token_name, const std::string token_value)
 {
 	boost::mutex::scoped_lock lock(dblock);
 	UserInfo info;
@@ -214,33 +215,7 @@ static bool storeUserOAuthToken(const std::string user, const std::string OAuthT
 		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
 		return false;
 	}
-	storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
-	return true;
-}
-
-static bool getUserSteamAccessToken(const std::string user, std::string &token)
-{
-	boost::mutex::scoped_lock lock(dblock);
-	UserInfo info;
-	if(storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
-		return false;
-	}
-	token = "";
-	int type = TYPE_STRING;
-	storagebackend->getUserSetting((long)info.id, STEAM_ACCESS_TOKEN, type, token);
-	return true;
-}
-
-static bool storeUserSteamAccessToken(const std::string user, const std::string token)
-{
-	boost::mutex::scoped_lock lock(dblock);
-	UserInfo info;
-	if(storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
-		return false;
-	}
-	storagebackend->updateUserSetting((long)info.id, STEAM_ACCESS_TOKEN, token);
+	storagebackend->updateUserSetting((long)info.id, token_name, token_value);
 	return true;
 }
 
@@ -405,6 +380,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				adminLegacyName = "steam-mobile";
 				adminAlias = "steam-mobile";
 			}
+            else if (protocol == "prpl-eionrobb-discord") {
+                adminLegacyName = "discord";
+                adminAlias = "discord";
+            }
 
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
@@ -439,16 +418,22 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
 			if (protocol == "prpl-hangouts") {
 				std::string token;
-				if (getUserOAuthToken(user, token)) {
+				if (getUserToken(user, OAUTH_TOKEN, token)) {
 					purple_account_set_password_wrapped(account, token.c_str());
 				}
 			}
 			else if (protocol == "prpl-steam-mobile") {
 				std::string token;
-				if (getUserSteamAccessToken(user, token)) {
+				if (getUserToken(user, STEAM_ACCESS_TOKEN, token)) {
 					purple_account_set_string_wrapped(account, "access_token", token.c_str());
 				}
 			}
+            else if (protocol == "prpl-eionrobb-discord") {
+                std::string token;
+                if (getUserToken(user, DISCORD_ACCESS_TOKEN, token)) {
+                    purple_account_set_string_wrapped(account, "token", token.c_str());
+                }
+            }
 
 			setDefaultAccountOptions(account);
 
@@ -467,7 +452,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_set_status_wrapped(account, purple_status_type_get_id_wrapped(status_type), TRUE, NULL);
 			}
 			// OAuth helper
-			if (protocol == "prpl-hangouts") {
+			if (protocol == "prpl-hangouts" || protocol == "prpl-steam-mobile" || protocol == "prpl-eionrobb-discord") {
 				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias);
 				handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			}
@@ -1697,6 +1682,17 @@ void * requestInput(const char *title, const char *primary,const char *secondary
 			np->m_inputRequests[req->mainJID] = req;
 			return NULL;
 		}
+        else if (primaryString == "Enter Discord auth code") {
+            LOG4CXX_INFO(logger, "prpl-discord 2FA request");
+            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("2FA code: "));
+            inputRequest *req = new inputRequest;
+            req->ok_cb = (PurpleRequestInputCb)ok_cb;
+            req->user_data = user_data;
+            req->account = account;
+            req->mainJID = np->m_accounts[account];
+            np->m_inputRequests[req->mainJID] = req;
+            return NULL;
+        }
 		else {
 			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
 		}
@@ -2123,11 +2119,14 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
-		storeUserOAuthToken(np->m_accounts[account], purple_account_get_password_wrapped(account));
+		storeUserToken(np->m_accounts[account], OAUTH_TOKEN, purple_account_get_password_wrapped(account));
 	}
 	else if (CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile") {
-		storeUserSteamAccessToken(np->m_accounts[account], purple_account_get_string_wrapped(account, "access_token", NULL));
+		storeUserToken(np->m_accounts[account], STEAM_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "access_token", NULL));
 	}
+    else if (CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
+        storeUserToken(np->m_accounts[account], DISCORD_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "token", NULL));
+    }
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
