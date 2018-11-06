@@ -424,16 +424,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 			else if (protocol == "prpl-steam-mobile") {
 				std::string token;
-				if (getUserToken(user, STEAM_ACCESS_TOKEN, token)) {
+				getUserToken(user, STEAM_ACCESS_TOKEN, token);
+				if (!token.empty()) {
 					purple_account_set_string_wrapped(account, "access_token", token.c_str());
 				}
 			}
-            else if (protocol == "prpl-eionrobb-discord") {
-                std::string token;
-                if (getUserToken(user, DISCORD_ACCESS_TOKEN, token)) {
-                    purple_account_set_string_wrapped(account, "token", token.c_str());
-                }
-            }
+			else if (protocol == "prpl-eionrobb-discord") {
+				std::string token;
+				getUserToken(user, DISCORD_ACCESS_TOKEN, token);
+				if (!token.empty()) {
+					purple_account_set_string_wrapped(account, "token", token.c_str());
+				}
+			}
 
 			setDefaultAccountOptions(account);
 
