@@ -1,3 +1,4 @@
+.DS_Store
 *.pb.cc
 *.pb.h
 plugin/python/protocol_pb2.py
@@ -8,6 +9,13 @@ cmake_install.cmake
 *.log
 libtransport_test
 CMakeFiles
+CMakeScripts
+cmake_install.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+**/*build/**
+**/Debug/**
+libtransport.xcodeproj
 spectrum2
 transport_config.h
 Doxyfile
