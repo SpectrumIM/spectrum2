@@ -10,7 +10,7 @@ At the moment we only support AMD64 binary packages:
 
         $ apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
-        # echo "deb http://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
+        # echo "deb https://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
         # echo "deb https://swift.im/packages/debian/stretch release main" >> /etc/apt/sources.list.d/spectrum.list
         # apt-get install apt-transport-https
         # apt-get update 
@@ -24,7 +24,7 @@ You need to rebuild source libcommuni and spectrum packages from our source pack
         $ apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
         $ apt-get install devscripts fakeroot libssl-dev libqt4-dev apt-transport-https
-        $ echo "deb-src http://packages.spectrum.im/spectrum2/ stretch main" | sudo tee /etc/apt/sources.list.d/spectrum.list
+        $ echo "deb-src https://packages.spectrum.im/spectrum2/ stretch main" | sudo tee /etc/apt/sources.list.d/spectrum.list
         $ echo "deb http://swift.im/packages/debian/stretch release main" | sudo tee -a /etc/apt/sources.list.d/spectrum.list
         $ apt-get update
         # apt-get install libpurple-dev libswiften-dev libprotobuf-dev libmariadbclient-dev liblog4cxx10-dev protobuf-compiler libpopt-dev libdbus-glib-1-dev libpqxx3-dev cmake libevent-dev libboost-all-dev libidn11-dev libxml2-dev libavahi-client-dev libavahi-common-dev libcurl4-openssl-dev libsqlite3-dev
