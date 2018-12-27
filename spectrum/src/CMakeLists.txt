@@ -20,7 +20,7 @@ ADD_DEPENDENCIES(spectrum2 spectrum2_libpurple_backend)
 
 target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
 
-if (CMAKE_COMPILER_IS_GNUCXX)
+if (NOT MSVC AND NOT APPLE)
 # export all symbols (used for loading frontends)
 set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export-dynamic")
 endif()
