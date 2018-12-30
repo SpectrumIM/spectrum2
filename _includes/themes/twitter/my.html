@@ -8,7 +8,8 @@
     <meta name="description" content="Spectrum 2 : Spectrum 2 IM transports" />
 
     <link href="/css/style.css" rel="stylesheet" type="text/css" media="all">
-
+    <link rel="stylesheet" type="text/css" media="screen" href="https://cdn.conversejs.org/4.0.6/css/converse.min.css">
+    <script src="https://cdn.conversejs.org/4.0.6/dist/converse.min.js" charset="utf-8"></script>
     <title>Spectrum 2</title>
   </head>
 
@@ -25,7 +26,6 @@
             <a class="menuitem" href="http://spectrum.im">About</a>
             <a class="menuitem" href="http://spectrum.im/documentation">Documentation</a>
             <a class="menuitem" href="http://spectrum.im/download">Download</a>
-            <a class="menuitem" href="http://spectrum.im/discussion">Discussion</a>
             <a class="menuitem" href="https://github.com/SpectrumIM/spectrum2/issues">Issue tracker</a>
             </section>
         </header>
@@ -45,7 +45,19 @@
       </footer>
     </div>
 
-    
+    <script>
+converse.initialize({
+        websocket_url: 'https://chat.spectrum.im/bosh', 
+        show_controlbox_by_default: false,
+        authentication: 'anonymous',
+        allow_registration: false,
+        auto_login: true,
+        auto_join_rooms: [{'jid': 'spectrum@conference.spectrum.im', 'nick': 'Guest' + Math.floor(Math.random() * 100) + 1 }],
+        blacklisted_plugins: ['converse-controlbox'],
+        jid: 'chat.spectrum.im'
+
+});
+        </script>
 
   </body>
 </html>
