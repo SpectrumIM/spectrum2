@@ -27,6 +27,8 @@
 #include <boost/locale.hpp>
 #include <boost/locale/conversion.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
 
 #ifdef WITH_LIBEVENT
 #include <event.h>
@@ -1255,6 +1257,64 @@ static char *calculate_data_hash(guchar *data, size_t len,
 	return g_strdup(digest);
 }
 
+static std::string check_incoming_document(const char *msg) {
+	/*
+		Sometimes, when a user sends a file, we receive a link with an absolute
+		path to the saved file in the backend's directory. This is a hack
+		which matches those links, moves the file to the web directory
+		and sends a proper link to the user.
+
+		This has to be fixed in the backend.
+	*/
+	if (strstr(msg, "[document") == NULL) {
+		return "";
+	}
+
+	static boost::regex document_expr("\[[a-z]+ <a href=[\"']file:///([^\"']+/download_([0-9]+)[^\"']+)[\"']>(.*)</a>[ ]*(.*)]");
+	boost::smatch match;
+	std::string plain;
+
+	if (!boost::regex_search(std::string(msg), match, document_expr)) {
+		return "";
+	}
+
+	std::string target_dir = CONFIG_STRING(config, "service.web_directory");
+	std::string local_file = match[1];
+	std::string hash = match[2];
+	std::string basename = match[3];
+	std::string file_type = match[4];
+
+	static boost::regex bad_symbol_expr("[^0-9a-zA-Z._]");
+	basename = boost::regex_replace(basename, bad_symbol_expr, "_");
+
+	if (!target_dir.empty()) {
+		target_dir += "/" + hash;	// todo: escape
+		std::string target_file = target_dir + "/" + basename;
+		std::string link = CONFIG_STRING(config, "service.web_url") + "/" + hash + "/" + basename;
+
+		boost::filesystem::create_directories(
+			boost::filesystem::path(target_dir)
+		);
+
+		boost::filesystem::rename(
+			boost::filesystem::path(local_file),
+			boost::filesystem::path(target_file)
+		);
+
+		plain
+			= std::string("file ")
+			+ "\"" + basename + "\""
+			+ " of type ["
+			+ file_type
+			+ "]: "
+			+ link;
+	} else {
+		plain = "[received a file]";
+	}
+
+	return plain;
+}
+
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	LOG4CXX_INFO(logger, "conv_write_im()");
 	bool isCarbon = false;
@@ -1347,15 +1407,26 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		g_free(strip);
 	}
 	else {
-		// Escape HTML characters.
-		char *newline = purple_strdup_withhtml_wrapped(msg);
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
-		message_ = strip;
-		xhtml_ = xhtml;
-		g_free(newline);
-		g_free(xhtml);
-		g_free(strip);
+		std::string file_link = check_incoming_document(msg);
+
+		if (!file_link.empty()) {
+			char *strip, *xhtml;
+			purple_markup_html_to_xhtml_wrapped(file_link.c_str(), &xhtml, &strip);
+			message_ = strip;
+			xhtml_ = xhtml;
+			g_free(xhtml);
+			g_free(strip);
+		} else {
+            // Escape HTML characters.
+            char *newline = purple_strdup_withhtml_wrapped(msg);
+            char *strip, *xhtml;
+            purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
+            message_ = strip;
+            xhtml_ = xhtml;
+            g_free(newline);
+            g_free(xhtml);
+            g_free(strip);
+        }
 	}
 
 	// AIM and XMPP adds <body>...</body> here...
