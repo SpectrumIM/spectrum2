@@ -1255,6 +1255,84 @@ static char *calculate_data_hash(guchar *data, size_t len,
 	return g_strdup(digest);
 }
 
+/*
+Forwards a PURPLE_MESSAGE_IMAGE by storing the image in the web store, if enabled.
+Populates message_ and xhtml_.
+Returns false if the image cannot be processed and the message should be forwarded
+the default way.
+*/
+static bool conv_forward_image(const char* msg, std::string* message_, std::string* xhtml_)
+{
+	if (CONFIG_STRING(config, "service.web_directory").empty()
+		|| CONFIG_STRING(config, "service.web_url").empty())
+		return false; //image store is disabled
+
+	LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
+	std::string body = msg;
+	std::string plain = msg;
+	size_t i;
+	while ((i = body.find("<img id=\"")) != std::string::npos) {
+		int from = i + strlen("<img id=\"");
+		int to = body.find("\"", from + 1);
+		std::string id = body.substr(from, to - from);
+		LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << from << " " << to);
+
+		PurpleStoredImage *image = purple_imgstore_find_by_id(atoi(id.c_str()));
+		if (!image) {
+			LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
+			return false;
+		}
+
+		std::string ext = "icon";
+		std::string name;
+		guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
+		size_t len = purple_imgstore_get_size_wrapped(image);
+		if (len < 1000000 && data) {
+			ext = purple_imgstore_get_extension(image);
+			char *hash = calculate_data_hash(data, len, "sha1");
+			if (!hash) {
+				LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
+				return false;
+			}
+			name = hash;
+			g_free(hash);
+
+			std::ofstream output;
+			LOG4CXX_INFO(logger, "Storing image to " << std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext));
+			output.open(std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext).c_str(), std::ios::out | std::ios::binary);
+			if (output.fail()) {
+				LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
+				return false;
+			}
+			output.write((char *)data, len);
+			output.close();
+		}
+		else {
+			LOG4CXX_WARN(logger, "Image bigger than 1MB.");
+			purple_imgstore_unref_wrapped(image);
+			return false;
+		}
+		purple_imgstore_unref_wrapped(image);
+
+		std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
+		std::string img = "<img src=\"" + src + "\"/>";
+		boost::replace_all(body, "<img id=\"" + id + "\">", img);
+		boost::replace_all(plain, "<img id=\"" + id + "\">", src);
+	}
+	LOG4CXX_INFO(logger, "New image body='" << body << "'");
+
+	char *strip, *xhtml;
+	purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
+	*message_ = strip;
+	if (message_->empty()) {
+		*message_ = plain;
+	}
+	*xhtml_ = xhtml;
+	g_free(xhtml);
+	g_free(strip);
+	return true;
+}
+
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	LOG4CXX_INFO(logger, "conv_write_im()");
 	bool isCarbon = false;
@@ -1282,69 +1360,8 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	std::string message_;
 	std::string xhtml_;
 
-	if (flags & PURPLE_MESSAGE_IMAGES && !CONFIG_STRING(config, "service.web_directory").empty() && !CONFIG_STRING(config, "service.web_url").empty() ) {
-		LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
-		std::string body = msg;
-		std::string plain = msg;
-		size_t i;
-		while ((i = body.find("<img id=\"")) != std::string::npos) {
-			int from = i + strlen("<img id=\"");
-			int to = body.find("\"", from + 1);
-			std::string id = body.substr(from, to - from);
-			LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << from << " " << to);
-
-			PurpleStoredImage *image = purple_imgstore_find_by_id(atoi(id.c_str()));
-			if (!image) {
-				LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
-				return;
-			}
-
-			std::string ext = "icon";
-			std::string name;
-			guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
-			size_t len = purple_imgstore_get_size_wrapped(image);
-			if (len < 1000000 && data) {
-				ext = purple_imgstore_get_extension(image);
-				char *hash = calculate_data_hash(data, len, "sha1");
-				if (!hash) {
-					LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
-					return;
-				}
-				name = hash;
-				g_free(hash);
-
-				std::ofstream output;
-				LOG4CXX_INFO(logger, "Storing image to " << std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext));
-				output.open(std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext).c_str(), std::ios::out | std::ios::binary);
-				if (output.fail()) {
-					LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
-					return;
-				}
-				output.write((char *)data, len);
-				output.close();
-			}
-			else {
-				LOG4CXX_WARN(logger, "Image bigger than 1MB.");
-				purple_imgstore_unref_wrapped(image);
-				return;
-			}
-			purple_imgstore_unref_wrapped(image);
-
-			std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
-			std::string img = "<img src=\"" + src + "\"/>";
-			boost::replace_all(body, "<img id=\"" + id + "\">", img);
-			boost::replace_all(plain, "<img id=\"" + id + "\">", src);
-		}
-		LOG4CXX_INFO(logger, "New image body='" << body << "'");
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
-		message_ = strip;
-		if (message_.empty()) {
-			message_ = plain;
-		}
-		xhtml_ = xhtml;
-		g_free(xhtml);
-		g_free(strip);
+	if (flags & PURPLE_MESSAGE_IMAGES && conv_forward_image(msg, &message_, &xhtml_)) {
+		//Image is forwarded in a special way, above
 	}
 	else {
 		// Escape HTML characters.
