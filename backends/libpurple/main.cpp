@@ -1255,17 +1255,43 @@ static char *calculate_data_hash(guchar *data, size_t len,
 	return g_strdup(digest);
 }
 
+
 /*
-Forwards a PURPLE_MESSAGE_IMAGE by storing the image in the web store, if enabled.
-Populates message_ and xhtml_.
+Converts HTML message body to XHTML and plain text representations.
+Requires and populates:
+  xhtml_
+  plain_
+May return empty strings if nothing is left after filtering out invalid contents.
+*/
+static void conv_msg_to_plain(const char* msg, std::string* xhtml_, std::string* plain_)
+{
+	//LOG4CXX_INFO(logger, "conv_message_to_plain(): msg='" << msg << "'");
+	char *newline = purple_strdup_withhtml_wrapped(msg); //Escape HTML characters.
+	char *strip, *xhtml;
+	purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
+	*plain_ = strip;
+	*xhtml_ = xhtml;
+	g_free(newline);
+	g_free(xhtml);
+	g_free(strip);
+	//LOG4CXX_INFO(logger, "conv_message_to_plain(): plain='" << plain_ << "' xhtml='" << xhtml_ << "'");
+}
+
+/*
+Converts a PURPLE_MESSAGE_IMAGE by storing the image in the image store, if enabled,
+and adjusts the message text to point to the new image URI.
+Populates XHTML and plain text versions of the adjusted message.
 Returns false if the image cannot be processed and the message should be forwarded
 the default way.
 */
-static bool conv_forward_image(const char* msg, std::string* message_, std::string* xhtml_)
+static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string* plain_)
 {
 	if (CONFIG_STRING(config, "service.web_directory").empty()
 		|| CONFIG_STRING(config, "service.web_url").empty())
+	{
+		//LOG4CXX_INFO(logger, "conv_msg_to_image(): image store is disabled");
 		return false; //image store is disabled
+	}
 
 	LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
 	std::string body = msg;
@@ -1323,15 +1349,16 @@ static bool conv_forward_image(const char* msg, std::string* message_, std::stri
 
 	char *strip, *xhtml;
 	purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
-	*message_ = strip;
-	if (message_->empty()) {
-		*message_ = plain;
+	*plain_ = strip;
+	if (plain_->empty()) {
+		*plain_ = plain;
 	}
 	*xhtml_ = xhtml;
 	g_free(xhtml);
 	g_free(strip);
 	return true;
 }
+
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
 	LOG4CXX_INFO(logger, "conv_write_im()");
@@ -1357,22 +1384,27 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	}
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
-	std::string message_;
-	std::string xhtml_;
+	std::string message_; //basic text
+	std::string xhtml_;   //enhanced xhtml version, if available
 
-	if (flags & PURPLE_MESSAGE_IMAGES && conv_forward_image(msg, &message_, &xhtml_)) {
-		//Image is forwarded in a special way, above
+	LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "'");
+
+	if (flags & PURPLE_MESSAGE_IMAGES) {
+		//Store image locally and adjust the message
+		if (!conv_msg_to_image(msg, &xhtml_, &message_))
+		{
+			//Fallback to plaintext treatment, which is likely to be empty
+			conv_msg_to_plain(msg, &xhtml_, &message_);
+			if (message_.empty())
+				message_ = "[Image cannot be delivered]";
+		}
 	}
 	else {
-		// Escape HTML characters.
-		char *newline = purple_strdup_withhtml_wrapped(msg);
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
-		message_ = strip;
-		xhtml_ = xhtml;
-		g_free(newline);
-		g_free(xhtml);
-		g_free(strip);
+		conv_msg_to_plain(msg, &xhtml_, &message_);
+		//Do not silently discard messages without valid text - at least make the user aware
+		if (message_.empty() && xhtml_.empty())
+			message_ = " "; //a space
+
 	}
 
 	// AIM and XMPP adds <body>...</body> here...
@@ -1402,7 +1434,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 			n = w.substr((int) pos + 1, w.length() - (int) pos);
 			w.erase((int) pos, w.length() - (int) pos);
 		}
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
+		LOG4CXX_INFO(logger_libpurple, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
 		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp, false, false, isCarbon);
 	}
 	else {
