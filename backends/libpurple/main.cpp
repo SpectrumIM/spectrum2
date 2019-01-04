@@ -1340,7 +1340,7 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 		std::string name;
 		guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
 		size_t len = purple_imgstore_get_size_wrapped(image);
-		if (len < 1000000 && data) {
+		if (len < CONFIG_INT(config, "service.web_maximgsize") && data) {
 			ext = purple_imgstore_get_extension(image);
 			char *hash = calculate_data_hash(data, len, "sha1");
 			if (!hash) {

@@ -107,6 +107,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.frontend", value<std::string>()->default_value("xmpp"), "")
 		("service.web_directory", value<std::string>()->default_value(""), "Full path to directory used to save files to which the links are sent to users.")
 		("service.web_url", value<std::string>()->default_value(""), "URL on which files in web_directory are accessible.")
+		("service.web_maximgsize", value<int>()->default_value(1000000), "Maximum image size in bytes allowed to be downloaded and stored locally.")
 		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
