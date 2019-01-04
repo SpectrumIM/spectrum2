@@ -1402,9 +1402,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	}
 	else {
 		conv_msg_to_plain(msg, &xhtml_, &message_);
-		//Don't silently discard empty messages - at least make the user aware
-		if (message_.empty() && xhtml_.empty())
-			message_ = " "; //a space
 	}
 
 	// AIM and XMPP adds <body>...</body> here...
