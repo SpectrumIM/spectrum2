@@ -1297,12 +1297,36 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 	LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
 	std::string body = msg;
 	std::string plain = msg;
-	size_t i;
-	while ((i = body.find("<img id=\"")) != std::string::npos) {
-		int from = i + strlen("<img id=\"");
-		int to = body.find("\"", from + 1);
-		std::string id = body.substr(from, to - from);
-		LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << from << " " << to);
+
+	size_t tag_from;
+	while ((tag_from = body.find("<img id=")) != std::string::npos) {
+		//Different plugins use different quote marks, or maybe none
+		int id_from = tag_from + strlen("<img id=");
+		char quoteMark = 0x00;
+		if ((body[id_from] == '"') || (body[id_from] == '\'') || (body[id_from] == '`')) {
+			quoteMark = body[id_from];
+			id_from++;
+		}
+
+		int id_to = 0; //last char + 1
+		int attr_to = 0; //last char incl. quotes + 1
+		if (quoteMark != 0x00) {
+			id_to = body.find(quoteMark, id_from + 1);
+			attr_to = id_to + 1;
+		} else { //without quotes the id ends on tag end or a space
+			id_to = body.find_first_of(" >/", id_from + 1);
+			attr_to = id_to;
+		}
+		int tag_to = body.find('>', attr_to);
+		if ((id_to == std::string::npos) || (tag_to == std::string::npos)) {
+			LOG4CXX_ERROR(logger, "Malformed image tag, cannot find attribute/tag end.");
+			return false;
+		}
+
+		std::string id = body.substr(id_from, id_to - id_from);
+		std::string attr = body.substr(tag_from, attr_to - tag_from); //without tag end
+		std::string tag = body.substr(tag_from, tag_to - tag_from);
+		LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << id_from << " " << id_to);
 
 		PurpleStoredImage *image = purple_imgstore_find_by_id(atoi(id.c_str()));
 		if (!image) {
@@ -1342,21 +1366,28 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 		purple_imgstore_unref_wrapped(image);
 
 		std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
-		std::string img = "<img src=\"" + src + "\"/>";
-		boost::replace_all(body, "<img id=\"" + id + "\">", img);
-		boost::replace_all(plain, "<img id=\"" + id + "\">", src);
+		std::string img = "<img src=\"" + src + "\""; //keep the rest of the tag
+		boost::replace_all(body, attr, img);
+		boost::replace_all(plain, tag, src); //the entire tag
 	}
 	LOG4CXX_INFO(logger, "New image body='" << body << "'");
 
+	//Convert this adjusted HTML to XHTML/plain
 	char *strip, *xhtml;
 	purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
 	*plain_ = strip;
-	if (plain_->empty()) {
-		*plain_ = plain;
-	}
 	*xhtml_ = xhtml;
 	g_free(xhtml);
 	g_free(strip);
+	if ((*plain_).empty()) {
+		//We have a version where we manually inserted plaintext, but the rest of it
+		//still needs to be converted
+		purple_markup_html_to_xhtml_wrapped(plain.c_str(), &xhtml, &strip);
+		*plain_ = plain;
+		g_free(xhtml);
+		g_free(strip);
+	}
+
 	return true;
 }
 
