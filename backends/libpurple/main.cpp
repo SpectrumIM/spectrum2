@@ -1419,7 +1419,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		if(flags & PURPLE_MESSAGE_SEND)
 			isCarbon = true;
 
-		//Ignore system messages as those are normally not true messags in the XMPP sense
+		//Ignore system messages as those are normally not true messages in the XMPP sense
 		if (flags & PURPLE_MESSAGE_SYSTEM) {
 			LOG4CXX_INFO(logger, "conv_write_im(): ignoring a system message");
 			return;
@@ -1428,7 +1428,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
 	std::string message_; //plain text
-	std::string xhtml_;   //enhanced xhtml version, if available
+	std::string xhtml_;   //enhanced xhtml, if available
 
 	//LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "'");
 
