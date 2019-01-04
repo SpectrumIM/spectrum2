@@ -1278,11 +1278,12 @@ static void conv_msg_to_plain(const char* msg, std::string* xhtml_, std::string*
 }
 
 /*
-Converts a PURPLE_MESSAGE_IMAGE by storing the image in the image store, if enabled,
-and adjusts the message text to point to the new image URI.
-Populates XHTML and plain text versions of the adjusted message.
-Returns false if the image cannot be processed and the message should be forwarded
-the default way.
+Converts a PURPLE_MESSAGE_IMAGE by storing the image in the image store and adjusting
+the message text to point to the new image URI.
+Requires and populates:
+  xhtml_
+  plain_
+Returns false if the adjustment for this image cannot be done.
 */
 static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string* plain_)
 {
@@ -1376,7 +1377,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		if(flags & PURPLE_MESSAGE_SEND)
 			isCarbon = true;
 
-		//Originally the transport had this filter too, I'm leaving it in for now:
+		//Ignore system messages as those are normally not true messags in the XMPP sense
 		if (flags & PURPLE_MESSAGE_SYSTEM) {
 			LOG4CXX_INFO(logger, "conv_write_im(): ignoring a system message");
 			return;
@@ -1384,27 +1385,26 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	}
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
-	std::string message_; //basic text
+	std::string message_; //plain text
 	std::string xhtml_;   //enhanced xhtml version, if available
 
-	LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "'");
+	//LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "'");
 
 	if (flags & PURPLE_MESSAGE_IMAGES) {
 		//Store image locally and adjust the message
 		if (!conv_msg_to_image(msg, &xhtml_, &message_))
 		{
-			//Fallback to plaintext treatment, which is likely to be empty
+			//Fallback to plaintext treatment which is likely to be empty
 			conv_msg_to_plain(msg, &xhtml_, &message_);
 			if (message_.empty())
-				message_ = "[Image cannot be delivered]";
+				message_ = "[The user has sent you an image]";
 		}
 	}
 	else {
 		conv_msg_to_plain(msg, &xhtml_, &message_);
-		//Do not silently discard messages without valid text - at least make the user aware
+		//Don't silently discard empty messages - at least make the user aware
 		if (message_.empty() && xhtml_.empty())
 			message_ = " "; //a space
-
 	}
 
 	// AIM and XMPP adds <body>...</body> here...
