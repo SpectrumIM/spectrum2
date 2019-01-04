@@ -1473,7 +1473,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 			n = w.substr((int) pos + 1, w.length() - (int) pos);
 			w.erase((int) pos, w.length() - (int) pos);
 		}
-		LOG4CXX_INFO(logger_libpurple, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
+		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
 		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp, false, false, isCarbon);
 	}
 	else {
