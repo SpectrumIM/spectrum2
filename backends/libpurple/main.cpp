@@ -1370,7 +1370,7 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 			}
 		}
 		else {
-			LOG4CXX_WARN(logger, "Image bigger than 1MB.");
+			LOG4CXX_WARN(logger, "Image bigger than the allowed size (web_maximgsize).");
 			purple_imgstore_unref_wrapped(image);
 			return false;
 		}
