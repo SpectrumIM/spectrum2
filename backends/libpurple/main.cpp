@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <sys/stat.h>
+#include <utime.h>
 
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
@@ -1349,14 +1351,23 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 			g_free(hash);
 
 			std::ofstream output;
-			LOG4CXX_INFO(logger, "Storing image to " << std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext));
-			output.open(std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext).c_str(), std::ios::out | std::ios::binary);
-			if (output.fail()) {
-				LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
-				return false;
+			std::string fpath (CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext);
+			LOG4CXX_INFO(logger, "Storing image to " << fpath);
+			struct stat buffer;
+			if (stat(fpath.c_str(), &buffer) == 0) {
+				LOG4CXX_INFO(logger, "File already exists, skipping.");
+				//If the file exists, skip writing but make sure to update mtime:
+				//otherwise people can't rely on it to trim cache (newer messages may reference older images)
+				utime(fpath.c_str(), NULL);
+			} else {
+				output.open(fpath.c_str(), std::ios::out | std::ios::binary);
+				if (output.fail()) {
+					LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
+					return false;
+				}
+				output.write((char *)data, len);
+				output.close();
 			}
-			output.write((char *)data, len);
-			output.close();
 		}
 		else {
 			LOG4CXX_WARN(logger, "Image bigger than 1MB.");
