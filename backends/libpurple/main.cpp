@@ -1259,6 +1259,70 @@ static char *calculate_data_hash(guchar *data, size_t len,
 
 
 /*
+Downloads an image by its purple_imgstore's ID and rehosts it locally
+in the web_* image store.
+Returns the rehosted image URI, or empty string if rehosting is disabled,
+the image could not be downloaded or is subject to restrictions.
+*/
+std::string web_rehost_image_by_id(int id)
+{
+	std::string web_dir = CONFIG_STRING(config, "service.web_directory");
+	std::string web_url = CONFIG_STRING(config, "service.web_url");
+	if (web_dir.empty() || web_url.empty()) {
+		LOG4CXX_DEBUG(logger, "Won't rehost image, web_directory is disabled.");
+		return std::string();
+	}
+
+	PurpleStoredImage *image = purple_imgstore_find_by_id(id);
+	if (!image) {
+		LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
+		return std::string();
+	}
+
+	std::string ext = "icon";
+	std::string name;
+	guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
+	size_t len = purple_imgstore_get_size_wrapped(image);
+	if (len < CONFIG_INT(config, "service.web_maximgsize") && data) {
+		ext = purple_imgstore_get_extension(image);
+		char *hash = calculate_data_hash(data, len, "sha1");
+		if (!hash) {
+			LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
+			return std::string();
+		}
+		name = hash;
+		g_free(hash);
+
+		std::ofstream output;
+		std::string fpath (web_dir + "/" + name + "." + ext);
+		LOG4CXX_INFO(logger, "Storing image to " << fpath);
+		struct stat buffer;
+		if (stat(fpath.c_str(), &buffer) == 0) {
+			LOG4CXX_INFO(logger, "File already exists, skipping.");
+			//If the file exists, skip writing but make sure to update mtime:
+			//otherwise people can't rely on it to trim cache (newer messages may reference older images)
+			utime(fpath.c_str(), NULL);
+		} else {
+			output.open(fpath.c_str(), std::ios::out | std::ios::binary);
+			if (output.fail()) {
+				LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
+				return std::string();
+			}
+			output.write((char *)data, len);
+			output.close();
+		}
+	}
+	else {
+		LOG4CXX_WARN(logger, "Image bigger than the allowed size (web_maximgsize).");
+		purple_imgstore_unref_wrapped(image);
+		return std::string();
+	}
+	purple_imgstore_unref_wrapped(image);
+	return web_url + "/" + name + "." + ext;
+}
+
+
+/*
 Converts HTML message body to XHTML and plain text representations.
 Requires and populates:
   xhtml_
@@ -1281,7 +1345,7 @@ static void conv_msg_to_plain(const char* msg, std::string* xhtml_, std::string*
 
 /*
 Converts a PURPLE_MESSAGE_IMAGE by storing the image in the image store and adjusting
-the message text to point to the new image URI.
+the message text to point to the new image URI / replacement text.
 Requires and populates:
   xhtml_
   plain_
@@ -1289,19 +1353,17 @@ Returns false if the adjustment for this image cannot be done.
 */
 static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string* plain_)
 {
-	if (CONFIG_STRING(config, "service.web_directory").empty()
-		|| CONFIG_STRING(config, "service.web_url").empty())
-	{
-		//LOG4CXX_INFO(logger, "conv_msg_to_image(): image store is disabled");
-		return false; //image store is disabled
-	}
+	/*
+	There could be one or more <img id=> instances. We need to parse each separately.
+	If web_directory is disabled, we still need to replace each with a replacement text 
+	*/
 
 	LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
 	std::string body = msg;
 	std::string plain = msg;
 
-	size_t tag_from;
-	while ((tag_from = body.find("<img id=")) != std::string::npos) {
+	size_t tag_from = -1;
+	while ((tag_from = body.find("<img id=", tag_from+1)) != std::string::npos) {
 		//Different plugins use different quote marks, or maybe none
 		int id_from = tag_from + strlen("<img id=");
 		char quoteMark = 0x00;
@@ -1322,64 +1384,26 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 		int tag_to = body.find('>', attr_to);
 		if ((id_to == std::string::npos) || (tag_to == std::string::npos)) {
 			LOG4CXX_ERROR(logger, "Malformed image tag, cannot find attribute/tag end.");
-			return false;
+			continue; //maybe there are other tags
 		}
+		tag_to++;
 
 		std::string id = body.substr(id_from, id_to - id_from);
 		std::string attr = body.substr(tag_from, attr_to - tag_from); //without tag end
 		std::string tag = body.substr(tag_from, tag_to - tag_from);
 		LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << id_from << " " << id_to);
 
-		PurpleStoredImage *image = purple_imgstore_find_by_id(atoi(id.c_str()));
-		if (!image) {
-			LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
-			return false;
+		std::string new_uri = web_rehost_image_by_id(atoi(id.c_str()));
+		if (!new_uri.empty()) {
+			std::string img = "<img src=\"" + new_uri + "\""; //keep the rest of the tag
+			boost::replace_all(body, attr, img);
+			boost::replace_all(plain, tag, new_uri); //the entire tag
+		} else {
+			//Replace with placeholder text
+			std::string img_text = "[The user has sent you an image]";
+			boost::replace_all(body, tag, img_text);
+			boost::replace_all(plain, tag, img_text);
 		}
-
-		std::string ext = "icon";
-		std::string name;
-		guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
-		size_t len = purple_imgstore_get_size_wrapped(image);
-		if (len < CONFIG_INT(config, "service.web_maximgsize") && data) {
-			ext = purple_imgstore_get_extension(image);
-			char *hash = calculate_data_hash(data, len, "sha1");
-			if (!hash) {
-				LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
-				return false;
-			}
-			name = hash;
-			g_free(hash);
-
-			std::ofstream output;
-			std::string fpath (CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext);
-			LOG4CXX_INFO(logger, "Storing image to " << fpath);
-			struct stat buffer;
-			if (stat(fpath.c_str(), &buffer) == 0) {
-				LOG4CXX_INFO(logger, "File already exists, skipping.");
-				//If the file exists, skip writing but make sure to update mtime:
-				//otherwise people can't rely on it to trim cache (newer messages may reference older images)
-				utime(fpath.c_str(), NULL);
-			} else {
-				output.open(fpath.c_str(), std::ios::out | std::ios::binary);
-				if (output.fail()) {
-					LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
-					return false;
-				}
-				output.write((char *)data, len);
-				output.close();
-			}
-		}
-		else {
-			LOG4CXX_WARN(logger, "Image bigger than the allowed size (web_maximgsize).");
-			purple_imgstore_unref_wrapped(image);
-			return false;
-		}
-		purple_imgstore_unref_wrapped(image);
-
-		std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
-		std::string img = "<img src=\"" + src + "\""; //keep the rest of the tag
-		boost::replace_all(body, attr, img);
-		boost::replace_all(plain, tag, src); //the entire tag
 	}
 	LOG4CXX_INFO(logger, "New image body='" << body << "'");
 
@@ -1398,7 +1422,6 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 		g_free(xhtml);
 		g_free(strip);
 	}
-
 	return true;
 }
 
@@ -1430,7 +1453,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	std::string message_; //plain text
 	std::string xhtml_;   //enhanced xhtml, if available
 
-	//LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "'");
+	LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 
 	if (flags & PURPLE_MESSAGE_IMAGES) {
 		//Store image locally and adjust the message
