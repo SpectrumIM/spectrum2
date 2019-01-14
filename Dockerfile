@@ -18,9 +18,9 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		rm -rf ~/rpmbuild && \
 	dnf mark install json-glib && \
 	echo "---> Installing purple-facebook" && \
-		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.5-9ff9acf9fa14/purple-facebook-0.9.5-9ff9acf9fa14.tar.gz && \
-		tar -xf purple-facebook-0.9.5-9ff9acf9fa14.tar.gz && \
-		cd purple-facebook-0.9.5-9ff9acf9fa14 && \
+		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.6/purple-facebook-0.9.6.tar.gz && \
+		tar -xf purple-facebook-0.9.6.tar.gz && \
+		cd purple-facebook-0.9.6 && \
 		./autogen.sh && \
 		./configure && \
 		make && \
