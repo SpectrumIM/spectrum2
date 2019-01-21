@@ -1,26 +1,38 @@
 language: cpp
-sudo: required
-services:
-  - docker
 matrix:
   include:
     - os: linux
-      dist: trusty
-      sudo: required
+      dist: xenial
     - os: osx
-      osx_image: xcode9.4
+      osx_image: xcode10.1
+addons:
+  homebrew:
+    packages:
+    - cppunit
+    - log4cxx
+    - popt
+    - jsoncpp
+    - libswiften
+    - protobuf
+    update: true
+  apt:
+    sources:
+    - sourceline: 'deb https://packages.spectrum.im/spectrum2/ xenial main'
+      key_url: 'https://packages.spectrum.im/packages.key'
+    - sourceline: 'deb https://swift.im/packages/ubuntu/xenial release main'
+      key_url: 'https://swift.im/keys/packages.key'
+    packages:
+    - git cmake prosody ngircd python-sleekxmpp libswiften-dev libprotobuf-dev protobuf-compiler libpurple-dev libglib2.0-dev libdbus-glib-1-dev liblog4cxx10-dev libpopt-dev libboost-dev libboost-signals-dev libboost-system-dev libboost-thread-dev libboost-locale-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-date-time-dev libcppunit-dev libcommuni-dev libminiupnpc-dev libnatpmp-dev libssl-dev libcurl4-openssl-dev libidn11-dev libxml2-dev libsqlite3-dev libqt4-dev libjsoncpp-dev
+    update: true
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew update;
-      brew install cppunit protobuf log4cxx popt jsoncpp libswiften;
-    fi
+  sudo rm /usr/include/mysql/plugin.h;
+  cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON .;
+  make;
 script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON .;
-      make;
       make test;
     else
-      travis_wait 30 docker build . -f Dockerfile.stretch;
+      make extended_test;
     fi
 notifications:
   slack: spectrum2:CIlYHtxGMAaxs3qVHfwBzCuy
