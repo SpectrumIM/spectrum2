@@ -8,7 +8,7 @@ redirect_from: "/documentation/installation/debian_ubuntu.html"
 
 At the moment we only support AMD64 binary packages:
 
-        $ apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
+        $ curl https://packages.spectrum.im/packages.key sudo apt-key add -
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
         # echo "deb https://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
         # echo "deb https://swift.im/packages/debian/stretch release main" >> /etc/apt/sources.list.d/spectrum.list
@@ -21,7 +21,7 @@ At the moment we only support AMD64 binary packages:
 
 You need to rebuild source libcommuni and spectrum packages from our source package repository:
 
-        $ apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv-keys 1AFDEA51
+        $ curl https://packages.spectrum.im/packages.key sudo apt-key add -
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
         $ apt-get install devscripts fakeroot libssl-dev libqt4-dev apt-transport-https
         $ echo "deb-src https://packages.spectrum.im/spectrum2/ stretch main" | sudo tee /etc/apt/sources.list.d/spectrum.list
