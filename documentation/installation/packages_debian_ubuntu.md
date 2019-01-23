@@ -8,7 +8,7 @@ redirect_from: "/documentation/installation/debian_ubuntu.html"
 
 At the moment we only support AMD64 binary packages:
 
-        $ curl https://packages.spectrum.im/packages.key sudo apt-key add -
+        $ curl https://packages.spectrum.im/packages.key | sudo apt-key add -
         $ curl https://swift.im/keys/packages.key | sudo apt-key add -
         # echo "deb https://packages.spectrum.im/spectrum2/ stretch main" >> /etc/apt/sources.list.d/spectrum.list
         # echo "deb https://swift.im/packages/debian/stretch release main" >> /etc/apt/sources.list.d/spectrum.list
