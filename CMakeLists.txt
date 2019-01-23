@@ -88,7 +88,11 @@ if (WIN32)
 	add_definitions(-DBOOST_ALL_NO_LIB)
 endif(WIN32)
 	set(Boost_FIND_QUIETLY ON)
+if ("${SWIFTEN_VERSION}" STRGREATER "4")
 	find_package(Boost COMPONENTS program_options date_time system filesystem regex thread locale REQUIRED)
+else()
+  find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals locale REQUIRED)
+endif()
 
 message( STATUS "Found Boost: ${Boost_VERSION}, ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
