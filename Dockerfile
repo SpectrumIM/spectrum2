@@ -34,20 +34,6 @@ RUN dnf install protobuf protobuf swiften gcc gcc-c++ make libpqxx-devel libpurp
 		make install && \
 		cd ../.. && \
 		rm -rf skype4pidgin && \
-	echo "---> Installing transwhat" && \
-		pip install --pre e4u protobuf python-dateutil yowsup2 Pillow==2.9.0 &&\
-		git clone git://github.com/stv0g/transwhat.git &&\
-		git clone git://github.com/AragurDEV/yowsup.git &&\
-		cd transwhat &&\
-		git worktree add /opt/transwhat &&\
-		cd .. &&\
-		cd yowsup &&\
-		cp -R yowsup /opt/transwhat/yowsup &&\
-		cd .. &&\
-		rm -r transwhat &&\
-		rm -r yowsup &&\
-		rm -rf /opt/transwhat/.git &&\
-		rm -rf /opt/transwhat/.gitignore &&\
 	echo "---> Installing Telegram" && \
 		git clone --recursive https://github.com/majn/telegram-purple && \
 		cd telegram-purple && \
