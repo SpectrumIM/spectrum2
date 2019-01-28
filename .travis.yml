@@ -20,7 +20,7 @@ script:
       make;
       make test;
     else
-      docker build . -f Dockerfile.stretch;
+      travis_wait 30 docker build . -f Dockerfile.stretch;
     fi
 notifications:
   slack: spectrum2:CIlYHtxGMAaxs3qVHfwBzCuy
