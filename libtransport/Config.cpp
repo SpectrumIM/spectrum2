@@ -98,6 +98,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
 		("service.enable_xhtml", value<bool>()->default_value(true), "")
+		("service.enable_remove_buddy", value<bool>()->default_value(false), "Remove your legacy network buddies when you unsubscribe from them. If disabled, you can still remove them in Spectrum but they'll remain on the legacy network roster.")
 		("service.max_room_list_size", value<int>()->default_value(100), "")
 		("service.login_delay", value<int>()->default_value(0), "")
 		("service.jid_escaping", value<bool>()->default_value(true), "")
