@@ -684,13 +684,18 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
 			PurpleAccount *account = m_sessions[user];
-			if (account) {
-				m_authRequests.deny(user, buddyName); //deny any outstanding friend requests
-				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
-				if (buddy) {
+			if (!account)
+				return;
+			LOG4CXX_DEBUG(logger, "handleBuddyRemovedRequest(): removing buddy from authRequests");
+			m_authRequests.deny(user, buddyName); //deny any outstanding friend requests
+			PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
+			if (buddy) {
+				if (CONFIG_BOOL(config, "service.enable_remove_buddy")) {
+					LOG4CXX_INFO(logger, "handleBuddyRemovedRequest(): removing buddy from the legacy contact list");
 					purple_account_remove_buddy_wrapped(account, buddy, purple_buddy_get_group_wrapped(buddy));
 					purple_blist_remove_buddy_wrapped(buddy);
-				}
+				} else
+					LOG4CXX_INFO(logger, "handleBuddyRemovedRequest(): service.enable_remove_buddy is off, leaving buddy in the legacy contact list");
 			}
 		}
 
