@@ -259,16 +259,12 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					removeBuddy(buddy->getName());
 					buddy = NULL;
 					break;
-				// just send response
+				// this can be a friend request rejection so remove buddy to forward it
 				case Swift::Presence::Unsubscribed:
 					response->setType(Swift::Presence::Unsubscribe);
-					// We set both here, because this Unsubscribed can be response to
-					// subscribe presence and we don't want that unsubscribe presence
-					// to be send later again
-					if (buddy->getSubscription() != Buddy::Both) {
-						buddy->setSubscription(Buddy::Both);
-						storeBuddy(buddy);
-					}
+					onBuddyRemoved(buddy);
+					removeBuddy(buddy->getName());
+					buddy = NULL;
 					break;
 				case Swift::Presence::Subscribed:
 					if (buddy->getSubscription() != Buddy::Both) {
