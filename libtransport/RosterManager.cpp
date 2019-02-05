@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
+#include "transport/Config.h"
 #include "transport/RosterManager.h"
 #include "transport/RosterStorage.h"
 #include "transport/StorageBackend.h"
