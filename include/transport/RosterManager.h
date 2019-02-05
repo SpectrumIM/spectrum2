@@ -113,6 +113,8 @@ class RosterManager {
 		void sendBuddySubscribePresence(Buddy *buddy);
 		
 		void sendBuddyUnsubscribePresence(Buddy *buddy);
+		
+		void sendBuddyPresences(Buddy *buddy, const Swift::JID &to);
 
 		void sendCurrentPresences(const Swift::JID &to);
 
