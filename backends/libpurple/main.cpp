@@ -121,6 +121,10 @@ static gboolean ft_ui_ready(void *data) {
 	return FALSE;
 }
 
+/*
+Authorization requests from buddies are cached for the duration of the session.
+To authorize or deny, call the cached callbacks.
+*/
 struct authRequest {
 	PurpleAccountRequestAuthorizationCb authorize_cb;
 	PurpleAccountRequestAuthorizationCb deny_cb;
@@ -129,6 +133,34 @@ struct authRequest {
 	PurpleAccount *account;
 	std::string mainJID;	// JID of user connected with this request
 };
+class AuthRequestList : public std::map<std::string, authRequest*> {
+	public:
+		bool accept(const std::string &user, const std::string &buddyName) {
+			iterator it = this->find(user + buddyName);
+			if (it == this->end()) {
+				LOG4CXX_TRACE(logger, "AuthRequestList::accept(" << user << ", " << buddyName << ")"
+					<< ": No such request.");
+				return false;
+			}
+			LOG4CXX_TRACE(logger, "AuthRequestList::accept(" << user << ", " << buddyName << ")");
+			it->second->authorize_cb(it->second->user_data);
+			this->erase(user + buddyName);
+		}
+		
+
+		bool deny(const std::string &user, const std::string &buddyName) {
+			iterator it = this->find(user + buddyName);
+			if (it == this->end()) {
+				LOG4CXX_TRACE(logger, "AuthRequestList::deny(" << user << ", " << buddyName << ")"
+					<< ": No such request.");
+				return false;
+			}
+			LOG4CXX_TRACE(logger, "AuthRequestList::deny(" << user << ", " << buddyName << ")");
+			it->second->deny_cb(it->second->user_data);
+			this->erase(user + buddyName);
+		}
+};
+
 
 struct inputRequest {
     PurpleRequestInputCb ok_cb;
@@ -653,10 +685,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
-				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
-					m_authRequests[user + buddyName]->deny_cb(m_authRequests[user + buddyName]->user_data);
-					m_authRequests.erase(user + buddyName);
-				}
+				m_authRequests.deny(user, buddyName); //deny any outstanding friend requests
 				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
 				if (buddy) {
 					purple_account_remove_buddy_wrapped(account, buddy, purple_buddy_get_group_wrapped(buddy));
@@ -665,15 +694,17 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
+		//Called when the frontend wants to:
+		// 1. Update buddy params
+		// 2. Accept their friend request (=> add to legacy contact list)
+		// 3. Add them to legacy contact list
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups_) {
+			LOG4CXX_DEBUG(logger, "handleBuddyUpdatedRequest(): user= " << user << ", buddyName=" << buddyName);
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				std::string groups = groups_.empty() ? "" : groups_[0];
 
-				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
-					m_authRequests[user + buddyName]->authorize_cb(m_authRequests[user + buddyName]->user_data);
-					m_authRequests.erase(user + buddyName);
-				}
+				m_authRequests.accept(user, buddyName);
 
 				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
 				if (buddy) {
@@ -904,7 +935,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
-		std::map<std::string, authRequest *> m_authRequests;
+		AuthRequestList m_authRequests;
 		std::map<std::string, inputRequest *> m_inputRequests;
 		std::map<std::string, std::list<std::string> > m_rooms;
 		std::map<unsigned long, PurpleXfer *> m_xfers;

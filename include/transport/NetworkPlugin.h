@@ -75,7 +75,18 @@ class NetworkPlugin {
 
 		void sendRawXML(std::string &xml);
 
-		/// Call this function when legacy network buddy changed.
+		/*
+		Spectrum backends follow Pidgin model where
+		- Buddies can only be mutual
+		- Adding a buddy sends a friend request and the buddy is not added until it's accepted.
+		- The only way to unfriend is to delete a buddy.
+		*/
+
+		/// Call this function to:
+		/// 1. Change legacy network buddy params
+		/// 2. Add buddy on the legacy network with the given params
+		///    a. Accepting their friend request if present
+		///    b. Sending a friend request from ourselves.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		/// \param alias Alias of legacy network buddy. If empty, then it's not changed on XMPP side.
@@ -89,7 +100,9 @@ class NetworkPlugin {
 			bool blocked = false
 		);
 
-		/// Call this method when buddy is removed from legacy network contact list.
+		/// Call this method to:
+		/// 1. Removed the buddy from the legacy network contact list.
+		/// 2. Reject a friend request from this buddy.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		void handleBuddyRemoved(const std::string &user, const std::string &buddyName);
