@@ -46,6 +46,7 @@ using namespace log4cxx;
 #define LOG4CXX_ERROR(LOGGER, DATA) std::cerr << "E: <" << LOGGER << "> " << DATA << "\n";
 #define LOG4CXX_WARN(LOGGER, DATA) std::cout << "W: <" << LOGGER << "> " << DATA << "\n";
 #define LOG4CXX_INFO(LOGGER, DATA) std::cout << "I: <" << LOGGER << "> " << DATA << "\n";
+#define LOG4CXX_TRACE(LOGGER, DATA)
 #endif
 
 namespace Transport {
