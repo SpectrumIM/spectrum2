@@ -227,54 +227,56 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				if (!newBuddy) {
 					removeBuddy(buddy->getName());
 					buddy = NULL;
-				};
+				}
 				response->setType(Swift::Presence::Unsubscribed);
 				break;
 		}
 	}
 	else {
 		switch (presence->getType()) {
-			case Swift::Presence::Subscribe:
+			case Swift::Presence::Subscribe:	// Add a friend on the backend network & send friend request.
+			case Swift::Presence::Subscribed:   // Confirm incoming friend request / Mark buddy as a friend
+				//Add buddy as Buddy::Both, confirm friend requests now and henceforth
+				LOG4CXX_TRACE(logger, "handleSubscription(): Subscribe/Subscribed");
 				if (newBuddy) {
 					// buddy is not in roster, so add him
 					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
 					setBuddy(buddy);
 					newBuddy=false; //do not autodelete
-				};
-				onBuddyAdded(buddy);
-				sendBuddyPresences(buddy, presence->getFrom());
-				if (buddy->getSubscription() != Buddy::Both) {
+				} else if (buddy->getSubscription() != Buddy::Both) {
 					buddy->setSubscription(Buddy::Both);
 					storeBuddy(buddy);
 				}
+				onBuddyAdded(buddy); //re-confirm, even if the buddy has already been Buddy::Both - it won't hurt
+				sendBuddyPresences(buddy, presence->getFrom());
+				break;
+
+			case Swift::Presence::Unsubscribe:   // Throw away the friend acceptance that the contact has given us.
+			case Swift::Presence::Unsubscribed:  // Remove existing friend / Reject SUBSCRIBE / Confirm UNSUBSCRIBE
+				LOG4CXX_TRACE(logger, "handleSubscription(): Unsubscribe/Unsubscribed");
+				//Delete buddy and reject any friend requests
+				onBuddyRemoved(buddy);
+				if (!newBuddy) {
+					removeBuddy(buddy->getName());
+					buddy = NULL;
+				}
+				break;
+		}
+
+		switch (presence->getType()) {
+			case Swift::Presence::Subscribed:
+				break;  //No XMPP response needed
+			case Swift::Presence::Subscribe:
+				//Auto-accept, as far as XMPP is concerned
 				response->setType(Swift::Presence::Subscribed);
 				break;
-
-			case Swift::Presence::Subscribed:
-				if (buddy->getSubscription() != Buddy::Both) {
-					buddy->setSubscription(Buddy::Both);
-					storeBuddy(buddy);
-				}
-				return;
-
-			case Swift::Presence::Unsubscribe:
-				// remove buddy
-				onBuddyRemoved(buddy);
-				if (!newBuddy) {
-					removeBuddy(buddy->getName());
-					buddy = NULL;
-				}
-				response->setType(Swift::Presence::Unsubscribed);
-				break;
-				
 			case Swift::Presence::Unsubscribed:
-				// this can be a friend request rejection so remove buddy to forward it
-				onBuddyRemoved(buddy);
-				if (!newBuddy) {
-					removeBuddy(buddy->getName());
-					buddy = NULL;
-				}
+				//XEP says the buddy should send "unsubscribe" if his attempt to "subscribe" had been rejected
 				response->setType(Swift::Presence::Unsubscribe);
+				break;
+			case Swift::Presence::Unsubscribe:
+				//XEP says the buddy should send "unsubscribed" to this request
+				response->setType(Swift::Presence::Unsubscribed);
 				break;
 		}
 	}
