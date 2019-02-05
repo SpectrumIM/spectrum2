@@ -257,12 +257,11 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				LOG4CXX_TRACE(logger, "handleSubscription(): Unsubscribe/Unsubscribed");
 				//Delete buddy and reject any friend requests
 				//If delete-protection is enabled, only delete from backend if the friend is Buddy::Ask or new.
-				if (newBuddy || (buddy->getSubscription() == Buddy::Ask) || CONFIG_BOOL(m_component->getConfig(), "service.enable_remove_buddy")) {
+				if (newBuddy || (buddy->getSubscription() == Buddy::Ask) || CONFIG_BOOL(m_component->getConfig(), "service.enable_remove_buddy"))
 					onBuddyRemoved(buddy);
-					if (!newBuddy) {
-						removeBuddy(buddy->getName());
-						buddy = NULL;
-					}
+				if (!newBuddy) {
+					removeBuddy(buddy->getName());
+					buddy = NULL;
 				}
 				break;
 		}
