@@ -524,7 +524,7 @@ void NetworkPlugin::handleVCardPayload(const std::string &data) {
 void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
+		LOG4CXX_ERROR(logger, "handleBuddyChangedPayload(): cannot parse: " << data);
 		return;
 	}
 	if (payload.has_blocked()) {
@@ -542,7 +542,7 @@ void NetworkPlugin::handleBuddyChangedPayload(const std::string &data) {
 void NetworkPlugin::handleBuddyRemovedPayload(const std::string &data) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
+		LOG4CXX_ERROR(logger, "handleBuddyRemovedPayload(): cannot parse: " << data);
 		return;
 	}
 
