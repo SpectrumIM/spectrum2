@@ -74,6 +74,7 @@
 #include "Swiften/Elements/RosterPayload.h"
 #include "discoitemsresponder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
+#include "carbonresponder.h"
 
 using namespace Swift;
 
@@ -214,9 +215,13 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 	m_stanzaChannel->onPresenceReceived.connect(bind(&XMPPFrontend::handleGeneralPresence, this, _1));
 	m_stanzaChannel->onMessageReceived.connect(bind(&XMPPFrontend::handleMessage, this, _1));
+	
+	m_carbonResponder = new CarbonResponder(m_iqRouter);
+	m_carbonResponder->start();
 }
 
 XMPPFrontend::~XMPPFrontend() {
+	delete m_carbonResponder;
 	delete m_entityCapsManager;
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
@@ -328,7 +333,9 @@ UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry 
 	if (m_userManager) {
 		delete m_userManager;
 	}
-	m_userManager = new XMPPUserManager(component, userRegistry, storageBackend);
+	XMPPUserManager *xmppUserManager = new XMPPUserManager(component, userRegistry, storageBackend);
+	m_userManager = xmppUserManager;
+	m_carbonResponder->setDiscoInfoResponder(xmppUserManager->getDiscoItemsResponder()->getDiscoInfoResponder());
 	return m_userManager;
 }
 

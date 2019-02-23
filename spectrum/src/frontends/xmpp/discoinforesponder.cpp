@@ -21,6 +21,7 @@
 #include "discoinforesponder.h"
 
 #include <iostream>
+#include <algorithm>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include "Swiften/Disco/DiscoInfoResponder.h"
@@ -58,6 +59,28 @@ DiscoInfoResponder::~DiscoInfoResponder() {
 	delete m_buddyInfo;
 }
 
+//Adds an advertised transport feature for the duration of this session
+void DiscoInfoResponder::addTransportFeature(const std::string &feature)
+{
+	std::vector<std::string>::iterator it = std::find(this->m_transportFeatures.begin(), this->m_transportFeatures.end(), feature);
+	if (it != this->m_transportFeatures.end())
+		return; //already present
+	LOG4CXX_TRACE(logger, "Adding transport feature: '" << feature << "'");
+	this->m_transportFeatures.push_back(feature);
+	this->updateFeatures();
+}
+
+void DiscoInfoResponder::removeTransportFeature(const std::string &feature)
+{
+	std::vector<std::string>::iterator it = std::find(this->m_transportFeatures.begin(), this->m_transportFeatures.end(), feature);
+	if (it == this->m_transportFeatures.end())
+		return; //already missing
+	LOG4CXX_TRACE(logger, "Removing transport feature: '" << feature << "'");
+	this->m_transportFeatures.erase(it);
+	this->updateFeatures();
+}
+
+//Compiles and re-sets the resulting list of transport and buddy features
 void DiscoInfoResponder::updateFeatures() {
 	std::list<std::string> features2;
 	features2.push_back("jabber:iq:register");
@@ -68,6 +91,7 @@ void DiscoInfoResponder::updateFeatures() {
 	if (CONFIG_BOOL_DEFAULTED(m_config, "features.muc", false)) {
 		features2.push_back("http://jabber.org/protocol/muc");
 	}
+	features2.insert(features2.end(), this->m_transportFeatures.begin(), this->m_transportFeatures.end());
 	setTransportFeatures(features2);
 
 	std::list<std::string> features;
@@ -82,6 +106,7 @@ void DiscoInfoResponder::updateFeatures() {
 }
 
 void DiscoInfoResponder::setTransportFeatures(std::list<std::string> &features) {
+	LOG4CXX_TRACE(logger, "Setting transport features");
 	for (std::list<std::string>::iterator it = features.begin(); it != features.end(); it++) {
 		if (!m_transportInfo.hasFeature(*it)) {
 			m_transportInfo.addFeature(*it);
@@ -146,6 +171,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 				return true;
 			}
 
+			LOG4CXX_TRACE(logger, "handleGetRequest(): Sending features");
 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
 			res->setNode(info->getNode());
 			sendResponse(from, id, res);

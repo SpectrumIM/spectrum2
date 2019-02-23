@@ -48,6 +48,7 @@ namespace Transport {
 	class Frontend;
 	class Config;
 	class VCardResponder;
+	class CarbonResponder;
 
 	class XMPPFrontend : public Frontend, Swift::IQHandler {
 		public:
@@ -119,6 +120,7 @@ namespace Transport {
 			Swift::StanzaChannel *m_stanzaChannel;
 			Swift::IQRouter *m_iqRouter;
 			VCardResponder *m_vcardResponder;
+			CarbonResponder *m_carbonResponder;
 			
 			Config* m_config;
 			Swift::JID m_jid;
