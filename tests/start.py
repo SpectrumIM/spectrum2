@@ -231,6 +231,7 @@ class JabberServerModeConf(BaseTest):
 		return False
 
 	def pre_test(self):
+		os.system("cp ../libpurple_jabber/prefs.xml ./ -f >/dev/null")
 		BaseTest.pre_test(self)
 		os.system("prosody --config ../libpurple_jabber/prosody.cfg.lua >prosody.log &")
 		time.sleep(3)

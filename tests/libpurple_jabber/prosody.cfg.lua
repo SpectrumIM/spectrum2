@@ -44,6 +44,7 @@ modules_enabled = {
 	-- Not essential, but recommended
 		"private"; -- Private XML storage (for room bookmarks, etc.)
 		"vcard"; -- Allow users to set vCards
+		"carbons"; -- Needed for carbon testing
 	
 	-- These are commented by default as they have a performance impact
 		--"privacy"; -- Support privacy lists
