@@ -239,7 +239,7 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 
 	if (carbon) {
 #ifdef SWIFTEN_SUPPORTS_CARBONS
-		LOG4CXX_INFO(logger, "CARBON MSG");
+		LOG4CXX_DEBUG(logger, "CARBON MSG");
 		//Swap from and to
 		Swift::JID from = message->getTo();
 		if (from.getResource().empty()) {
@@ -256,7 +256,7 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		Component* transport = this->getConversationManager()->getComponent();
 		std::vector<Swift::Presence::ref> presences = transport->getPresenceOracle()->getAllPresence(this->m_jid.toBare());
 		if (presences.empty()) {
-			LOG4CXX_INFO(logger, "No presences for JID " << this->m_jid.toString()
+			LOG4CXX_INFO(logger, "Carbon: No presences for JID " << this->m_jid.toString()
 			    << ", will send to bare JID for archival.");
 			this->forwardAsCarbonSent(message, this->m_jid.toBare());
 		} else
@@ -300,7 +300,12 @@ void Conversation::forwardAsCarbonSent(
 	Swift::HintPayload::ref noCopy(new Swift::HintPayload(Swift::HintPayload::NoCopy));
 	message->addPayload(noCopy);
 
-	this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
+	Component* transport = this->getConversationManager()->getComponent();
+	if (transport->inServerMode()) {
+		LOG4CXX_DEBUG(logger, "Sending carbon as is (server mode)");
+		handleRawMessage(message);
+	} else
+		this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
 #else
 	//We cannot send the carbon.
 #endif
@@ -312,7 +317,7 @@ void Conversation::forwardImpersonated(
 	const Swift::JID& server)
 {
 #ifdef SWIFTEN_SUPPORTS_PRIVILEGE
-	LOG4CXX_INFO(logger, "Impersonate to -> " << server.toString());
+	LOG4CXX_DEBUG(logger, "Impersonate to -> " << server.toString());
 	Component* transport = this->getConversationManager()->getComponent();
 
 	//Message envelope
@@ -330,7 +335,7 @@ void Conversation::forwardImpersonated(
 	privilege->setForwarded(forwarded);
 
 	message->addPayload(privilege);
-	LOG4CXX_INFO(logger, "Impersonate: sending message");
+	LOG4CXX_DEBUG(logger, "Impersonate: sending message");
 	handleRawMessage(message);
 #else
 	//Try to send the message as is -- some servers can be configured to accept this
