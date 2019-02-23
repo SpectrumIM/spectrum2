@@ -23,6 +23,7 @@ class Responder(sleekxmpp.ClientXMPP):
 	def message(self, msg):
 		if msg['subject'] == "New subject":
 			self.tests["subject_set1"][1] = True
+			self.finished = True
 
 	def start(self, event):
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, password=self.room_password, wait=True)
@@ -43,7 +44,7 @@ class Client(sleekxmpp.ClientXMPP):
 	def message(self, msg):
 		if msg['subject'] == "New subject":
 			self.tests["subject_set2"][1] = True
-		self.finished = True
+			self.finished = True
 
 	def start(self, event):
 		self.getRoster()
