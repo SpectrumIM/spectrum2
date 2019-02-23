@@ -202,6 +202,20 @@ static void *requestAction(const char *title, const char *primary, const char *s
 			}
 		}
 	}
+	
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-jabber") {
+		//prpl-jabber newly created MUCs need to be configured before they can work
+		if ((t == "Create New Room") && (action_count == 2)) {
+			va_arg(actions, char*);
+			va_arg(actions, GCallback);
+			if (std::string(va_arg(actions, char*)) != "Accept Defaults") {
+				LOG4CXX_DEBUG(logger, "New room: Accepting default room settings");
+				((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
+			} else
+				LOG4CXX_ERROR(logger, "New room: Unexpected prpl-jabber request format, cannot configure new room");
+		}
+	}
+	
 	return NULL;
 }
 
