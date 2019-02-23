@@ -19,8 +19,8 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.add_event_handler("muc::" + room + "::got_offline", self.muc_got_offline)
 
 		self.tests = {}
-		self.tests["online_received"] = ["libcommuni: Received available presence", False]
-		self.tests["offline_received"] = ["libcommuni: Received unavailable presence", False]
+		self.tests["online_received"] = ["MUC: Received available presence", False]
+		self.tests["offline_received"] = ["MUC: Received unavailable presence", False]
 
 	def muc_got_online(self, presence):
 		if presence['muc']['nick'] == "client":
@@ -49,3 +49,4 @@ class Client(sleekxmpp.ClientXMPP):
 		self.sendPresence()
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
 		self.plugin['xep_0045'].leaveMUC(self.room, self.nick)
+		self.finished = True

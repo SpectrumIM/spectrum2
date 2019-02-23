@@ -44,8 +44,8 @@ class Client(sleekxmpp.ClientXMPP):
 		self.finished = False
 
 		self.tests = {}
-		self.tests["echo1_received"] = ["libcommuni: Send and receive private messages - 1st msg", False]
-		self.tests["echo2_received"] = ["libcommuni: Send and receive private messages - 2nd msg", False]
+		self.tests["echo1_received"] = ["MUC: Send and receive private messages - 1st msg", False]
+		self.tests["echo2_received"] = ["MUC: Send and receive private messages - 2nd msg", False]
 
 	def message(self, msg):
 		if msg['body'] == "echo abc" and msg['from'] == self.room + "/responder":
