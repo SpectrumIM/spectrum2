@@ -12,6 +12,7 @@ title: Spectrum 2
 * [Installing using Docker](installation/docker.html)
 * [Installing on Debian/Ubuntu](installation/packages_debian_ubuntu.html)
 * [Installing from source code](installation/from_source_code.html)
+* [Troubleshooting](installation/troubleshooting.html)
 
 #### Frontends
 
