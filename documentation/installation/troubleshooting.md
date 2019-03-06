@@ -7,6 +7,11 @@ title: Troubleshooting
 
 > Q: Nothing worked!
 
+A: Make sure you are using latest Spectrum and latest plugins, most likely the issue was already fixed but your version is 1-2 years behind.
+
+
+> Q: Still nothing worked!
+
 A: Check Spectrum logs for error messages.
 By default it is `/var/log/spectrum2/<transport jid>/spectrum2.log` for the transport itself 
 and `/var/log/spectrum2/<transport jid>/backends/backend-N.log` for protocol plugin.
