@@ -5,7 +5,7 @@ title: Spectrum 2
 
 ### Description
 
-Transwhat backend adds support for Whatsapp network. It is included in our Docker image. For more information about it, check the [Transwhat GitHub page](https://github.com/stv0g/transwhat).
+Transwhat backend adds support for Whatsapp network. For more information about it, check the [Transwhat GitHub page](https://github.com/stv0g/transwhat).
 
 ### Configuration
 
