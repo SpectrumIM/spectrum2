@@ -666,7 +666,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	pbnetwork::ConversationMessage payload;
 
 	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
+		LOG4CXX_ERROR(logger, "handleConvMessagePayload: cannot parse payload");
 		return;
 	}
 
@@ -688,7 +688,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->setBody(payload.message());
 	}
 
-    wrapIncomingImage(msg.get(), payload);
+	wrapIncomingImage(msg.get(), payload);
 
 	if (payload.headline()) {
 		msg->setType(Swift::Message::Headline);
@@ -1813,7 +1813,13 @@ void NetworkPluginServer::wrapIncomingImage(Swift::Message* msg, const pbnetwork
                 // todo: add the payload itself as a caption
 
             msg->addPayload(oob_payload);
-            msg->setBody(image_url);
+            
+            // Some clients require <body> to match the OOB URL to be displayed
+            // This is not required by XEP and we lose parts of plaintext (e.g. captions).
+            if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false))
+                msg->setBody(image_url);
+            // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
+
         } else {
             LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml());
         }
