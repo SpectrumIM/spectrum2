@@ -1455,23 +1455,24 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 			boost::replace_all(plain, tag, img_text);
 		}
 	}
-	LOG4CXX_INFO(logger, "New image body='" << body << "'");
+	LOG4CXX_TRACE(logger, "New body='" << body << "', plain='" << plain << "'");
 
-	//Convert this adjusted HTML to XHTML/plain
+	//We've processed <img> tags but still need to sanitize the rest of the markup
+	//Convert this adjusted HTML to XHTML
 	char *strip, *xhtml;
 	purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
-	*plain_ = strip;
 	*xhtml_ = xhtml;
 	g_free(xhtml);
 	g_free(strip);
-	if ((*plain_).empty()) {
-		//We have a version where we manually inserted plaintext, but the rest of it
-		//still needs to be converted
-		purple_markup_html_to_xhtml_wrapped(plain.c_str(), &xhtml, &strip);
-		*plain_ = plain;
-		g_free(xhtml);
-		g_free(strip);
-	}
+	LOG4CXX_TRACE(logger, "New xhtml='" << xhtml_ << "'");
+
+	//For plaintext use our version with plain URIs or they'll be stripped
+	purple_markup_html_to_xhtml_wrapped(plain.c_str(), &xhtml, &strip);
+	*plain_ = strip;
+	g_free(xhtml);
+	g_free(strip);
+	LOG4CXX_TRACE(logger, "New plaintext='" << plain_ << "'");
+
 	return true;
 }
 
