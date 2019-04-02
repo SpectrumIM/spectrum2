@@ -17,6 +17,13 @@ RUN dnf install ImageMagick protobuf swiften gcc gcc-c++ make libpqxx-devel libp
 		rm -rf spectrum2 && \
 		rm -rf ~/rpmbuild && \
 	dnf mark install json-glib && \
+	echo "---> Installing purple-instagram" && \
+		git clone https://github.com/EionRobb/purple-instagram.git && \
+		cd purple-instagram && \
+		make && \
+		make install && \
+		cd .. && \
+		rm -rf purple-instagram && \
 	echo "---> Installing purple-facebook" && \
 		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.6/purple-facebook-0.9.6.tar.gz && \
 		tar -xf purple-facebook-0.9.6.tar.gz && \
@@ -27,13 +34,6 @@ RUN dnf install ImageMagick protobuf swiften gcc gcc-c++ make libpqxx-devel libp
 		make install && \
 		cd .. && \
 		rm -rf purple-facebook* && \
-	echo "---> Installing icyque" && \
-		git clone git://github.com/EionRobb/icyque.git && \
-		cd icyque && \
-		make && \
-		make install && \
-		cd .. && \
-		rm -rf icyque && \
 	echo "---> Installing skype4pidgin" && \
 		git clone git://github.com/EionRobb/skype4pidgin.git && \
 		cd skype4pidgin/skypeweb && \
