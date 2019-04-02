@@ -27,6 +27,13 @@ RUN dnf install ImageMagick protobuf swiften gcc gcc-c++ make libpqxx-devel libp
 		make install && \
 		cd .. && \
 		rm -rf purple-facebook* && \
+	echo "---> Installing icyque" && \
+		git clone git://github.com/EionRobb/icyque.git && \
+		cd icyque && \
+		make && \
+		make install && \
+		cd .. && \
+		rm -rf icyque && \
 	echo "---> Installing skype4pidgin" && \
 		git clone git://github.com/EionRobb/skype4pidgin.git && \
 		cd skype4pidgin/skypeweb && \
