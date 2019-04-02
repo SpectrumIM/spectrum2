@@ -23,6 +23,7 @@
 #include "transport/FileTransferManager.h"
 
 #include <time.h>
+#include <vector>
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Network/BoostConnectionServer.h"
@@ -179,7 +180,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 #endif
 		void handleStreamEnd() {}
 
-		void wrapIncomingImage(Swift::Message* msg, const pbnetwork::ConversationMessage& payload);
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg, const pbnetwork::ConversationMessage& payload);
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;

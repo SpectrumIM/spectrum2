@@ -50,6 +50,7 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "transport/utf8.h"
 
@@ -688,8 +689,6 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->setBody(payload.message());
 	}
 
-	wrapIncomingImage(msg.get(), payload);
-
 	if (payload.headline()) {
 		msg->setType(Swift::Message::Headline);
 	}
@@ -736,8 +735,15 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
-	// Forward it
-	conv->handleMessage(msg, payload.nickname(), payload.carbon());
+
+	// Split the message if configured, or just preprocess
+	typedef std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > MsgList;
+	MsgList msgs = wrapIncomingImage(msg, payload);
+
+	// Forward all parts
+	for (MsgList::iterator it=msgs.begin(); it!=msgs.end(); it++)
+		conv->handleMessage((*it), payload.nickname(), payload.carbon());
+
 	m_userManager->messageToXMPPSent();
 }
 
@@ -1794,36 +1800,118 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	send(c->connection, message);
 }
 
-void NetworkPluginServer::wrapIncomingImage(Swift::Message* msg, const pbnetwork::ConversationMessage& payload) {
+// Processes all media links (<img>, ..) in the message body and applies required wrappers
+// and mitigations to ensure broader support for inplace display.
+std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >
+NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg, const pbnetwork::ConversationMessage& payload) {
     static boost::regex image_expr("<img src=[\"']([^\"']+)[\"'].*>");
 
-    if (payload.xhtml().find("<img") != std::string::npos) {
-        boost::smatch match;
-
-        if (boost::regex_search(payload.xhtml(), match, image_expr)) {
-            const std::string& image_url = match[1];
-
-            SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
-                oob_payload(new Swift::RawXMLPayload(
-                    "<x xmlns='jabber:x:oob'><url>"
-                    + image_url
-                    + "</url>"
-                    + "</x>"
-                ));
-                // todo: add the payload itself as a caption
-
-            msg->addPayload(oob_payload);
-            
-            // Some clients require <body> to match the OOB URL to be displayed
-            // This is not required by XEP and we lose parts of plaintext (e.g. captions).
-            if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false))
-                msg->setBody(image_url);
-            // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
-
-        } else {
-            LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml());
-        }
+    //Quick exit
+    std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > result;
+    if (payload.xhtml().find("<img") == std::string::npos) {
+        result.push_back(msg);
+        return result;
     }
+
+    //Split the message into parts so that each part only contains one media instance or one chunk of text
+    bool splitMode = CONFIG_BOOL_DEFAULTED(m_config, "service.oob_split", true);
+
+    // Some clients require plaintext to contain only the OOB URL to be displayed
+    // This is not required by XEP and we lose parts of plaintext (e.g. captions).
+    bool singleOobMode = CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false);
+
+
+    bool matchCount = 0;
+    const std::string* firstUrl;
+    if (!splitMode)
+        result.push_back(msg);
+
+    //Find all <img...> entries
+    const std::string& xhtml = payload.xhtml();
+    std::string::const_iterator xhtml_pos = xhtml.begin();
+    const std::string& body = payload.message();
+    std::string::size_type body_pos = 0;
+
+    boost::smatch match;
+    while(boost::regex_search(xhtml_pos, xhtml.end(), match, image_expr)) {
+        matchCount++;
+        const std::string& image_tag = match[0];
+        const std::string& image_url = match[1];
+        if (firstUrl->empty())
+            firstUrl = &image_url;
+
+        //Process the part before the match
+        if (splitMode && (match[0].first != xhtml_pos)) {
+            std::string xhtml_prev(xhtml_pos, match[0].first);
+            std::string xhtml_test = xhtml_prev;
+            boost::replace_all(xhtml_test, " ", "");
+            boost::replace_all(xhtml_test, "\n", "");
+            boost::replace_all(xhtml_test, "<br/>", "");
+            boost::replace_all(xhtml_test, "<br>", "");
+            if (xhtml_test.empty())
+                xhtml_prev = "";
+
+            //Find the same URI in the plaintext body
+            std::string body_prev = "";
+            std::string::size_type body_match = body.find(image_url, body_pos);
+            if (body_match != std::string::npos) {
+                body_prev = body.substr(body_pos, body_match-body_pos);
+                std::string body_test = body_prev;
+                boost::replace_all(body_test, " ", "");
+                boost::replace_all(body_test, "\n", "");
+                if (body_test.empty())
+                    body_prev = "";
+                body_pos = body_match + image_url.size();
+            }
+
+            //If anything of that is not empty, post as a message
+            if (!xhtml_prev.empty() || !body_prev.empty()) {
+                SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> this_msg(new Swift::Message());
+                this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(xhtml_prev));
+                this_msg->setBody(body_prev);
+                result.push_back(this_msg);
+            }
+        }
+
+        //Now the match
+        SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> this_msg;
+        if (splitMode) {
+            Swift::Message& my_msg = *msg.get();
+            this_msg.reset(new Swift::Message(my_msg));
+            this_msg->setBody(image_url);
+            this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(image_tag));
+            result.push_back(this_msg);
+        } else {
+            this_msg = msg;
+        }
+
+        //Add OOB tag
+        SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
+            oob_payload(new Swift::RawXMLPayload(
+                "<x xmlns='jabber:x:oob'><url>"
+                + image_url
+                + "</url>"
+                + "</x>"
+            ));
+            // todo: add the payload itself as a caption
+        this_msg->addPayload(oob_payload);
+
+        //In single-OOB mode there's no point to process further media
+        if (singleOobMode)
+            break;
+
+        xhtml_pos = match[0].second;
+    }
+
+    if (matchCount==0) {
+        LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml());
+    } else {
+        // Replace the plaintext.
+        // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
+        if (singleOobMode)
+            msg->setBody(*firstUrl);
+    }
+    return result;
 }
 
 void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
