@@ -50,9 +50,10 @@ RUN dnf install ImageMagick protobuf swiften gcc gcc-c++ make libpqxx-devel libp
 		cd ../.. && \
 		rm -rf skype4pidgin && \
 	echo "---> Installing transwhat" && \
-		pip install --pre e4u protobuf python-dateutil yowsup Pillow==2.9.0 &&\
+		pip install --pre e4u six==1.10 protobuf python-dateutil yowsup Pillow==2.9.0 &&\
 		git clone git://github.com/stv0g/transwhat.git &&\
 		cd transwhat &&\
+		git checkout yowsup-3 &&\
 		python setup.py install &&\
 		cd .. &&\
 		rm -r transwhat &&\
