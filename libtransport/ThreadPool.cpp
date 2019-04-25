@@ -12,7 +12,7 @@ ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(max
 	this->loop = loop;
 	activeThreads = 0;
 	worker = (boost::thread **) malloc(sizeof(boost::thread *) * MAX_THREADS);
-	for(int i=0 ; i<MAX_THREADS ; i++) {
+	for (int i=0 ; i<MAX_THREADS ; i++) {
 		worker[i] = NULL;
 		freeThreads.push(i);
 	}
@@ -21,14 +21,14 @@ ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(max
 
 ThreadPool::~ThreadPool()
 {
-	for(int i=0; i<MAX_THREADS ; i++) {
-		if(worker[i]) {
+	for (int i=0; i<MAX_THREADS ; i++) {
+		if (worker[i]) {
 			delete worker[i];
 		}
 	}
 	free(worker);
 
-	while(!requestQueue.empty()) {
+	while (!requestQueue.empty()) {
 		Thread *t = requestQueue.front(); requestQueue.pop();
 		delete t;
 	}
@@ -54,7 +54,7 @@ int ThreadPool::getFreeThread()
 {
 	int res = -1;
 	pool_lock.lock();
-	if(!freeThreads.empty()){
+	if (!freeThreads.empty()){
 		res = freeThreads.front();
 		freeThreads.pop();
 		updateActiveThreadCount(-1);
@@ -65,7 +65,7 @@ int ThreadPool::getFreeThread()
 
 void ThreadPool::releaseThread(int i)
 {
-	if(i < 0 || i > MAX_THREADS) return;
+	if (i < 0 || i > MAX_THREADS) return;
 	pool_lock.lock();
 
 	delete worker[i];
@@ -89,9 +89,9 @@ void ThreadPool::cleandUp(Thread *t, int wid)
 void ThreadPool::scheduleFromQueue()
 {
 	criticalregion.lock();
-	while(!requestQueue.empty()) {
+	while (!requestQueue.empty()) {
 		int  w = getFreeThread();
-		if(w == -1) break;
+		if (w == -1) break;
 
 		LOG4CXX_INFO(logger, "Worker Available. Creating thread #" << w);
 		Thread *t = requestQueue.front(); requestQueue.pop();
@@ -106,7 +106,7 @@ void ThreadPool::scheduleFromQueue()
 void ThreadPool::runAsThread(Thread *t)
 {
 	int w;
-	if((w = getFreeThread()) != -1) {
+	if ((w = getFreeThread()) != -1) {
 		LOG4CXX_INFO(logger, "Creating thread #" << w);
 		t->setThreadID(w);
 		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);

@@ -339,7 +339,7 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd,
 // 
 // 	ask_local_server(m_config, networkFactories, jid, "online_users");
 // 	eventLoop.runUntilEvents();
-// 	while(get_response().empty()) {
+// 	while (get_response().empty()) {
 // 		eventLoop.runUntilEvents();
 // 	}
 // 
@@ -373,7 +373,7 @@ std::string Server::send_command(const std::string &jid, const std::string &cmd,
 // 	Swift::BoostNetworkFactories networkFactories(&eventLoop);
 // 
 // 	ask_local_server(m_config, networkFactories, jid, cmd);
-// 	while(get_response().empty()) {
+// 	while (get_response().empty()) {
 // 		eventLoop.runUntilEvents();
 // 	}
 // 

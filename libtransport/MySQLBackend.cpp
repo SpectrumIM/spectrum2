@@ -148,7 +148,7 @@ MySQLBackend::Statement::~Statement() {
 		free(m_results[i].buffer);
 		free(m_results[i].length);
 	}
-	if(m_stmt != NULL) {
+	if (m_stmt != NULL) {
 		mysql_stmt_close(m_stmt);
 	}
 }
@@ -550,7 +550,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			buddy_id = -1;
 		}
 
-		while(buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
+		while (buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
 			std::string val;
 			*m_getBuddiesSettings >> buddy_id >> var.type >> key >> val;
 
@@ -576,7 +576,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		}
 	}
 
-	while(m_getBuddiesSettings->fetch() == 0) {
+	while (m_getBuddiesSettings->fetch() == 0) {
 		// TODO: probably remove those settings, because there's no buddy for them.
 		// It should not happend, but one never know...
 	}

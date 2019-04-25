@@ -98,7 +98,7 @@ TwitterPlugin::~TwitterPlugin()
 {
 	delete storagebackend;
 	std::set<std::string>::iterator it;
-	for(it = onlineUsers.begin() ; it != onlineUsers.end() ; it++) delete userdb[*it].sessions;
+	for (it = onlineUsers.begin() ; it != onlineUsers.end() ; it++) delete userdb[*it].sessions;
 	delete tp;
 }
 
@@ -214,8 +214,8 @@ void TwitterPlugin::handleMessageSendRequest(const std::string &user, const std:
 
 		/** Parsing the message - Assuming message format to be <cmd>[ ]*<data>**/
 		unsigned i;
-		for(i=0 ; i<message.size() && message[i] != ' '; i++) cmd += message[i];
-		while(i<message.size() && message[i] == ' ') i++;
+		for (i=0 ; i<message.size() && message[i] != ' '; i++) cmd += message[i];
+		while (i<message.size() && message[i] == ' ') i++;
 		data = message.substr(i);
 		/***********************************************************************/
 
@@ -345,7 +345,7 @@ void TwitterPlugin::pollForTweets()
 {
 	boost::mutex::scoped_lock lock(userlock);
 	std::set<std::string>::iterator it = onlineUsers.begin();
-	while(it != onlineUsers.end()) {
+	while (it != onlineUsers.end()) {
 		std::string user = *it;
 		tp->runAsThread(new TimelineRequest(userdb[user].sessions, user, "", getMostRecentTweetIDUnsafe(user),
 											boost::bind(&TwitterPlugin::displayTweets, this, _1, _2, _3, _4)));
@@ -358,7 +358,7 @@ void TwitterPlugin::pollForDirectMessages()
 {
 	boost::mutex::scoped_lock lock(userlock);
 	std::set<std::string>::iterator it = onlineUsers.begin();
-	while(it != onlineUsers.end()) {
+	while (it != onlineUsers.end()) {
 		std::string user = *it;
 		tp->runAsThread(new DirectMessageRequest(userdb[user].sessions, user, "", getMostRecentDMIDUnsafe(user),
 											boost::bind(&TwitterPlugin::directMessageResponse, this, _1, _2, _3, _4)));
@@ -641,7 +641,7 @@ void TwitterPlugin::clearRoster(const std::string user)
 {
 	if(userdb[user].buddies.size() == 0) return;
 	std::set<std::string>::iterator it = userdb[user].buddies.begin();
-	while(it != userdb[user].buddies.end()) {
+	while (it != userdb[user].buddies.end()) {
 		handleBuddyRemoved(user, *it);
 		it++;
 	}
@@ -652,7 +652,7 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 {
 	if(errMsg.getMessage().length() == 0)
 	{
-		for(unsigned i=0 ; i<friends.size() ; i++) {
+		for (unsigned i=0 ; i<friends.size() ; i++) {
 			userdb[user].buddies.insert(friends[i].getScreenName());
 			userdb[user].buddiesInfo[friends[i].getScreenName()] = friends[i];
 			userdb[user].buddiesImgs[friends[i].getScreenName()] = friendAvatars[i];
@@ -691,7 +691,7 @@ void TwitterPlugin::displayFriendlist(std::string &user, std::vector<User> &frie
 	if(errMsg.getMessage().length() == 0)
 	{
 		std::string userlist = "\n***************USER LIST****************\n";
-		for(unsigned i=0 ; i < friends.size() ; i++) {
+		for (unsigned i=0 ; i < friends.size() ; i++) {
 			userlist += " - " + friends[i].getUserName() + " (" + friends[i].getScreenName() + ")\n";
 		}
 		userlist += "***************************************\n";
@@ -714,7 +714,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 		std::map<std::string, int> lastTweet;
 		std::map<std::string, int>::iterator it;
 
-		for(int i = tweets.size() - 1 ; i >= 0 ; i--) {
+		for (int i = tweets.size() - 1 ; i >= 0 ; i--) {
 			if(userdb[user].twitterMode != CHATROOM) {
 				std::string m = " - " + tweets[i].getUserData().getScreenName() + ": " + tweets[i].getTweet() + " (MsgId: " + (tweets[i].getRetweetID().empty() ? tweets[i].getID() : tweets[i].getRetweetID()) + ")\n";
 				handleMessage(user, adminLegacyName, m, "", "", tweets[i].getCreationTime(), true);
@@ -730,7 +730,7 @@ void TwitterPlugin::displayTweets(std::string &user, std::string &userRequested,
 
 		if(userdb[user].twitterMode == MULTIPLECONTACT) {
 			//Set as status user's last tweet
-			for(it=lastTweet.begin() ; it!=lastTweet.end() ; it++) {
+			for (it=lastTweet.begin() ; it!=lastTweet.end() ; it++) {
 				int t =  it->second;
 				if (userdb[user].buddies.count(tweets[t].getUserData().getScreenName()) != 0) {
 					handleBuddyChanged(user, tweets[t].getUserData().getScreenName(), tweets[t].getUserData().getUserName(),
@@ -788,7 +788,7 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 		std::string msgID = getMostRecentDMID(user);
 		std::string maxID = msgID;
 
-		for(unsigned i=0 ; i < messages.size() ; i++) {
+		for (unsigned i=0 ; i < messages.size() ; i++) {
 			if(cmp(msgID, messages[i].getID()) == -1) {
 				msglist += " - " + messages[i].getSenderData().getScreenName() + ": " + messages[i].getMessage() + "\n";
 				if(cmp(maxID, messages[i].getID()) == -1) maxID = messages[i].getID();
@@ -803,7 +803,7 @@ void TwitterPlugin::directMessageResponse(std::string &user, std::string &userna
 		std::string msgID = getMostRecentDMID(user);
 		std::string maxID = msgID;
 
-		for(unsigned i=0 ; i < messages.size() ; i++) {
+		for (unsigned i=0 ; i < messages.size() ; i++) {
 			if(cmp(msgID, messages[i].getID()) == -1) {
 				if(userdb[user].twitterMode == MULTIPLECONTACT)
 					handleMessage(user, messages[i].getSenderData().getScreenName(), messages[i].getMessage(), "");

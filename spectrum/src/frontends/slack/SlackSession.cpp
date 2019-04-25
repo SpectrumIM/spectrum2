@@ -273,7 +273,7 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		Swift::StatusShow s;
 		std::string statusMessage;
 		const RosterManager::BuddiesMap &roster = m_user->getRosterManager()->getBuddies();
-		for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+		for (RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
 			Buddy *b = (*bt).second;
 			if (!b) {
 				continue;

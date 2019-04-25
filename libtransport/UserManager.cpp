@@ -133,7 +133,7 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 }
 
 void UserManager::removeAllUsers(bool onUserBehalf) {
-	while(m_users.begin() != m_users.end()) {
+	while (m_users.begin() != m_users.end()) {
 		removeUser((*m_users.begin()).second, onUserBehalf);
 	}
 }

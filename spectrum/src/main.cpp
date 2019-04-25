@@ -337,7 +337,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #else
-	if( !SetConsoleCtrlHandler( (PHANDLER_ROUTINE) spectrum_control_handler, TRUE ) )
+	if ( !SetConsoleCtrlHandler( (PHANDLER_ROUTINE) spectrum_control_handler, TRUE ) )
 	{
 		std::cout << "control handler can't be set\n";
 		return -1;
@@ -371,18 +371,18 @@ int main(int argc, char **argv)
 			return 0;
 		}
 
-		if(vm.count("help"))
+		if (vm.count("help"))
 		{
 			std::cout << desc << "\n";
 			return 1;
 		}
 
-		if(vm.count("config") == 0) {
+		if (vm.count("config") == 0) {
 			std::cout << desc << "\n";
 			return 1;
 		}
 
-		if(vm.count("no-daemonize")) {
+		if (vm.count("no-daemonize")) {
 			no_daemon = true;
 		}
 #ifdef WIN32

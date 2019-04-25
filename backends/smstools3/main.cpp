@@ -94,7 +94,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 			std::string from = "";
 			std::string msg = "";
-			while(str.find("\n") != std::string::npos) {
+			while (str.find("\n") != std::string::npos) {
 				std::string line = str.substr(0, str.find("\n"));
 				if (line.find("From: ") == 0) {
 					from = line.substr(strlen("From: "));

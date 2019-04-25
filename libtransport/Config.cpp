@@ -377,13 +377,13 @@ Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::s
 			options(desc).positional(p).allow_unregistered().run(), vm);
 		boost::program_options::notify(vm);
 			
-		if(vm.count("help"))
+		if (vm.count("help"))
 		{
 			error = os.str();
 			return NULL;
 		}
 
-		if(vm.count("config") == 0) {
+		if (vm.count("config") == 0) {
 			error = os.str();
 			return NULL;
 		}

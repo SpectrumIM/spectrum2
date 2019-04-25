@@ -144,7 +144,7 @@ std::string urlencode( const std::string &c )
 
     std::string escaped;
 	int max = c.length();
-	for(int i=0; i<max; i++)
+	for (int i=0; i<max; i++)
 	{
 		if ( (48 <= c[i] && c[i] <= 57) ||//0-9
 			(65 <= c[i] && c[i] <= 90) ||//ABC...XYZ

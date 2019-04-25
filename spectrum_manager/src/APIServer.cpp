@@ -296,7 +296,7 @@ void APIServer::serve_instances_commands(Server *server, Server::session *sessio
 		tokenizer<escaped_list_separator<char> > tok(command, els);
 
 		std::vector<std::string> tokens;
-		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+		for (tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
 			tokens.push_back(*beg);
 		}
 
@@ -360,7 +360,7 @@ void APIServer::serve_instances_variables(Server *server, Server::session *sessi
 		tokenizer<escaped_list_separator<char> > tok(command, els);
 
 		std::vector<std::string> tokens;
-		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+		for (tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
 			tokens.push_back(*beg);
 		}
 
@@ -406,7 +406,7 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 		tokenizer<escaped_list_separator<char> > tok(cmd, els);
 
 		std::vector<std::string> tokens;
-		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+		for (tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
 			tokens.push_back(*beg);
 		}
 
@@ -466,7 +466,7 @@ void APIServer::serve_instances_command_args(Server *server, Server::session *se
 		tokenizer<escaped_list_separator<char> > tok(argument, els);
 
 		std::vector<std::string> tokens;
-		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+		for (tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
 			tokens.push_back(*beg);
 		}
 
@@ -506,7 +506,7 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 		tokenizer<escaped_list_separator<char> > tok(cmd, els);
 
 		std::vector<std::string> tokens;
-		for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
+		for (tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg) {
 			tokens.push_back(*beg);
 		}
 
@@ -582,7 +582,7 @@ void APIServer::serve_instances_execute(Server *server, Server::session *session
 			std::string key;
 			int i = 0;
 			bool hasDesc = true;
-			for(tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg, ++i) {
+			for (tokenizer<escaped_list_separator<char> >::iterator beg=tok.begin(); beg!=tok.end(); ++beg, ++i) {
 				if (i == 1 && *beg != "-") {
 					hasDesc = false;
 				}

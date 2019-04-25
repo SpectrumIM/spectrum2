@@ -48,7 +48,7 @@ void HTTPRequest::setProxy(std::string IP, std::string port, std::string usernam
 	if (curlhandle) {
 		std::string proxyIpPort = IP + ":" + port;
 		curl_easy_setopt(curlhandle, CURLOPT_PROXY, proxyIpPort.c_str());
-		if(username.length() && password.length()) {
+		if (username.length() && password.length()) {
 			std::string proxyUserPass = username + ":" + password;
 			curl_easy_setopt(curlhandle, CURLOPT_PROXYUSERPWD, proxyUserPass.c_str());
 		}
@@ -86,7 +86,7 @@ bool HTTPRequest::GET(std::string url, 	std::string &data) {
 		curl_easy_setopt(curlhandle, CURLOPT_URL, url.c_str());
 
 		/* Send http request and return status*/
-		if(CURLE_OK == curl_easy_perform(curlhandle)) {
+		if (CURLE_OK == curl_easy_perform(curlhandle)) {
 			data = callbackdata;
 			return true;
 		}
