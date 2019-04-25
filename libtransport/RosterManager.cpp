@@ -231,6 +231,13 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				}
 				response->setType(Swift::Presence::Unsubscribed);
 				break;
+
+			case Swift::Presence::Available:
+			case Swift::Presence::Error:
+			case Swift::Presence::Probe:
+			case Swift::Presence::Unavailable:
+			case Swift::Presence::Unsubscribed:
+				break;
 		}
 	}
 	else {
@@ -281,6 +288,12 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 					//XEP says the buddy should send "unsubscribe" if his attempt to "subscribe" had been rejected
 					response->setType(Swift::Presence::Unsubscribe);
 				}
+				break;
+
+			case Swift::Presence::Available:
+			case Swift::Presence::Error:
+			case Swift::Presence::Probe:
+			case Swift::Presence::Unavailable:
 				break;
 		}
 	}
