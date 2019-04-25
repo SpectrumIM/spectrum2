@@ -117,7 +117,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_N
 		// and send Unsubsribe and Unsubscribed presence to them.
 		std::list<BuddyInfo> roster;
 		m_storageBackend->getBuddies(userInfo.id, roster);
-		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
+		for (std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
 			std::string name = (*u).legacyName;
 			if ((*u).flags & BUDDY_JID_ESCAPING) {
 				name = Swift::JID::getEscapedNode((*u).legacyName);

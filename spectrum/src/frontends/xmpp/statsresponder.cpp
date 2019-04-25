@@ -96,7 +96,7 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 			}
 			const RosterManager::BuddiesMap &buddies = (*it).second->getRosterManager()->getBuddies();
 			contactsTotal += buddies.size();
-			for(RosterManager::BuddiesMap::const_iterator bt = buddies.begin(); bt != buddies.end(); bt++) {
+			for (RosterManager::BuddiesMap::const_iterator bt = buddies.begin(); bt != buddies.end(); bt++) {
 				if (!(*bt).second) {
 					continue;
 				}

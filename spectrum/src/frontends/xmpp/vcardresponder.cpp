@@ -63,7 +63,7 @@ void VCardResponder::collectTimeouted() {
 	time_t now = time(NULL);
 
 	std::vector<unsigned int> candidates;
-	for(std::map<unsigned int, VCardData>::iterator it = m_queries.begin(); it != m_queries.end(); it++) {
+	for (std::map<unsigned int, VCardData>::iterator it = m_queries.begin(); it != m_queries.end(); it++) {
 		if (now - (*it).second.received > 40) {
 			candidates.push_back((*it).first);
 		}

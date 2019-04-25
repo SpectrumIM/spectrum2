@@ -72,7 +72,7 @@ template <class T> std::string stringOf(T object) {
 static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
-    while(std::getline(ss, item, delim)) {
+    while (std::getline(ss, item, delim)) {
         elems.push_back(item);
     }
     return elems;
@@ -243,7 +243,7 @@ static bool getUserToken(const std::string user, const std::string token_name, s
 {
 	boost::mutex::scoped_lock lock(dblock);
 	UserInfo info;
-	if(storagebackend->getUser(user, info) == false) {
+	if (storagebackend->getUser(user, info) == false) {
 		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
 		return false;
 	}
@@ -257,7 +257,7 @@ static bool storeUserToken(const std::string user, const std::string token_name,
 {
 	boost::mutex::scoped_lock lock(dblock);
 	UserInfo info;
-	if(storagebackend->getUser(user, info) == false) {
+	if (storagebackend->getUser(user, info) == false) {
 		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
 		return false;
 	}
@@ -1048,11 +1048,11 @@ static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 	std::vector<std::string> groups;
 	if (purple_buddy_get_name_wrapped(m_buddy)) {
 		GSList *buddies = purple_find_buddies_wrapped(purple_buddy_get_account_wrapped(m_buddy), purple_buddy_get_name_wrapped(m_buddy));
-		while(buddies) {
+		while (buddies) {
 			PurpleGroup *g = purple_buddy_get_group_wrapped((PurpleBuddy *) buddies->data);
 			buddies = g_slist_delete_link(buddies, buddies);
 
-			if(g && purple_group_get_name_wrapped(g)) {
+			if (g && purple_group_get_name_wrapped(g)) {
 				groups.push_back(purple_group_get_name_wrapped(g));
 			}
 		}
@@ -1498,7 +1498,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		}
 
 		//If this is a carbon of a message from us, mark it as such
-		if(flags & PURPLE_MESSAGE_SEND)
+		if (flags & PURPLE_MESSAGE_SEND)
 			isCarbon = true;
 
 		//Ignore system messages as those are normally not true messages in the XMPP sense

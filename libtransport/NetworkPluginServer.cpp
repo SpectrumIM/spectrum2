@@ -194,7 +194,7 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 		setsid();
 		// close all files
 		int maxfd=sysconf(_SC_OPEN_MAX);
-		for(int fd=3; fd<maxfd; fd++) {
+		for (int fd=3; fd<maxfd; fd++) {
 			close(fd);
 		}
 		// child process
@@ -920,7 +920,7 @@ void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
 
 void NetworkPluginServer::connectWaitingUsers() {
 	// some users are in queue waiting for this backend
-	while(!m_waitingUsers.empty()) {
+	while (!m_waitingUsers.empty()) {
 		// There's no new backend, so stop associating users and wait for new backend,
 		// which has been already spawned in getFreeClient() call.
 		if (getFreeClient(true, false, true) == NULL)
@@ -1503,7 +1503,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 		pbnetwork::Buddies buddies;
 
 		const RosterManager::BuddiesMap &roster = user->getRosterManager()->getBuddies();
-		for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+		for (RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
 			Buddy *b = (*bt).second;
 			if (!b) {
 				continue;

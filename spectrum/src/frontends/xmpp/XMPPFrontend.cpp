@@ -407,14 +407,14 @@ void XMPPFrontend::handleConnected() {
 }
 
 void XMPPFrontend::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
-	if(e) {
-		if(*e == Swift::BoostConnectionServer::Conflict) {
+	if (e) {
+		if (*e == Swift::BoostConnectionServer::Conflict) {
 			LOG4CXX_INFO(logger, "Port "<< CONFIG_INT(m_config, "service.port") << " already in use! Stopping server..");
 			if (CONFIG_INT(m_config, "service.port") == 5347) {
 				LOG4CXX_INFO(logger, "Port 5347 is usually used for components. You are using server_mode=1. Are you sure you don't want to use server_mode=0 and run spectrum as component?");
 			}
 		}
-		if(*e == Swift::BoostConnectionServer::UnknownError)
+		if (*e == Swift::BoostConnectionServer::UnknownError)
 			LOG4CXX_INFO(logger, "Unknown error occured! Stopping server..");
 		exit(1);
 	}

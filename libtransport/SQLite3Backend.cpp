@@ -28,21 +28,21 @@
 
 #define SQLITE_DB_VERSION 3
 #define CHECK_DB_RESPONSE(stmt) \
-	if(stmt) { \
+	if (stmt) { \
 		sqlite3_exec(m_db, "ROLLBACK;", NULL, NULL, NULL); \
 		return 0; \
 	}
 
 // Prepare the SQL statement
 #define PREP_STMT(sql, str) \
-	if(sqlite3_prepare_v2(m_db, std::string(str).c_str(), -1, &sql, NULL)) { \
+	if (sqlite3_prepare_v2(m_db, std::string(str).c_str(), -1, &sql, NULL)) { \
 		LOG4CXX_ERROR(logger, str<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db))); \
 		return false; \
 	}
 
 // Finalize the prepared statement
 #define FINALIZE_STMT(prep) \
-	if(prep != NULL) { \
+	if (prep != NULL) { \
 		sqlite3_finalize(prep); \
 	}
 	
@@ -57,7 +57,7 @@
 #define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
 #define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
 #define GET_BLOB(STATEMENT)	(const void *) sqlite3_column_blob(STATEMENT, STATEMENT##_id_get++)
-#define EXECUTE_STATEMENT(STATEMENT, NAME) 	if(sqlite3_step(STATEMENT) != SQLITE_DONE) {\
+#define EXECUTE_STATEMENT(STATEMENT, NAME) 	if (sqlite3_step(STATEMENT) != SQLITE_DONE) {\
 		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
 			}
 
@@ -76,7 +76,7 @@ SQLite3Backend::~SQLite3Backend(){
 		// Would be nice to use this:
 		//
 		//   sqlite3_stmt *pStmt;
-		//   while((pStmt = sqlite3_next_stmt(db, 0)) != 0 ) {
+		//   while ((pStmt = sqlite3_next_stmt(db, 0)) != 0 ) {
 		//    sqlite3_finalize(pStmt);
 		//   }
 		//
@@ -229,7 +229,7 @@ void SQLite3Backend::setUser(const UserInfo &user) {
 	sqlite3_bind_text(m_setUser, 6, user.encoding.c_str(), -1, SQLITE_STATIC);
 	sqlite3_bind_int (m_setUser, 7, user.vip);
 
-	if(sqlite3_step(m_setUser) != SQLITE_DONE) {
+	if (sqlite3_step(m_setUser) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "setUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 	}
 }
@@ -240,7 +240,7 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 	sqlite3_bind_text(m_getUser, 1, barejid.c_str(), -1, SQLITE_TRANSIENT);
 
 	int ret;
-	while((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
+	while ((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
 		user.id = sqlite3_column_int(m_getUser, 0);
 		user.jid = (const char *) sqlite3_column_text(m_getUser, 1);
 		user.uin = (const char *) sqlite3_column_text(m_getUser, 2);
@@ -248,7 +248,7 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 		user.encoding = (const char *) sqlite3_column_text(m_getUser, 4);
 		user.language = (const char *) sqlite3_column_text(m_getUser, 5);
 		user.vip = sqlite3_column_int(m_getUser, 6) != 0;
-		while((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
+		while ((ret = sqlite3_step(m_getUser)) == SQLITE_ROW) {
 		}
 		return true;
 	}
@@ -271,7 +271,7 @@ bool SQLite3Backend::getOnlineUsers(std::vector<std::string> &users) {
 	sqlite3_reset(m_getOnlineUsers);
 
 	int ret;
-	while((ret = sqlite3_step(m_getOnlineUsers)) == SQLITE_ROW) {
+	while ((ret = sqlite3_step(m_getOnlineUsers)) == SQLITE_ROW) {
 		std::string jid = (const char *) sqlite3_column_text(m_getOnlineUsers, 0);
 		users.push_back(jid);
 	}
@@ -288,7 +288,7 @@ bool SQLite3Backend::getUsers(std::vector<std::string> &users) {
 	sqlite3_reset(m_getUsers);
 
 	int ret;
-	while((ret = sqlite3_step(m_getUsers)) == SQLITE_ROW) {
+	while ((ret = sqlite3_step(m_getUsers)) == SQLITE_ROW) {
 		std::string jid = (const char *) sqlite3_column_text(m_getUsers, 0);
 		users.push_back(jid);
 	}
@@ -312,7 +312,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	BIND_STR(m_addBuddy, buddyInfo.alias);
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
-	if(sqlite3_step(m_addBuddy) != SQLITE_DONE) {
+	if (sqlite3_step(m_addBuddy) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "addBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return -1;
 	}
@@ -370,7 +370,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 
 	int ret;
 	int ret2 = -10;
-	while((ret = sqlite3_step(m_getBuddies)) == SQLITE_ROW) {
+	while ((ret = sqlite3_step(m_getBuddies)) == SQLITE_ROW) {
 		BuddyInfo b;
 		RESET_GET_COUNTER(m_getBuddies);
 		b.id = GET_INT(m_getBuddies);
@@ -387,7 +387,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			buddy_id = -1;
 		}
 
-		while(buddy_id == -1 && ret2 != SQLITE_DONE && ret2 != SQLITE_ERROR && (ret2 = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+		while (buddy_id == -1 && ret2 != SQLITE_DONE && ret2 != SQLITE_ERROR && (ret2 = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
 			RESET_GET_COUNTER(m_getBuddiesSettings);
 			buddy_id = GET_INT(m_getBuddiesSettings);
 			
@@ -435,7 +435,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			return false;
 		}
 
-		while((ret2 = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
+		while ((ret2 = sqlite3_step(m_getBuddiesSettings)) == SQLITE_ROW) {
 		}
 
 		if (ret2 != SQLITE_DONE) {
@@ -450,14 +450,14 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 void SQLite3Backend::removeBuddy(long id) {
 	sqlite3_reset(m_removeBuddy);
 	sqlite3_bind_int(m_removeBuddy, 1, id);
-	if(sqlite3_step(m_removeBuddy) != SQLITE_DONE) {
+	if (sqlite3_step(m_removeBuddy) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "removeBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return;
 	}
 
 	sqlite3_reset(m_removeBuddySettings);
 	sqlite3_bind_int(m_removeBuddySettings, 1, id);
-	if(sqlite3_step(m_removeBuddySettings) != SQLITE_DONE) {
+	if (sqlite3_step(m_removeBuddySettings) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "removeBuddySettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return;
 	}
@@ -466,28 +466,28 @@ void SQLite3Backend::removeBuddy(long id) {
 bool SQLite3Backend::removeUser(long id) {
 	sqlite3_reset(m_removeUser);
 	sqlite3_bind_int(m_removeUser, 1, id);
-	if(sqlite3_step(m_removeUser) != SQLITE_DONE) {
+	if (sqlite3_step(m_removeUser) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "removeUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	sqlite3_reset(m_removeUserSettings);
 	sqlite3_bind_int(m_removeUserSettings, 1, id);
-	if(sqlite3_step(m_removeUserSettings) != SQLITE_DONE) {
+	if (sqlite3_step(m_removeUserSettings) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "removeUserSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	sqlite3_reset(m_removeUserBuddies);
 	sqlite3_bind_int(m_removeUserBuddies, 1, id);
-	if(sqlite3_step(m_removeUserBuddies) != SQLITE_DONE) {
+	if (sqlite3_step(m_removeUserBuddies) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "removeUserBuddies query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	sqlite3_reset(m_removeUserBuddiesSettings);
 	sqlite3_bind_int(m_removeUserBuddiesSettings, 1, id);
-	if(sqlite3_step(m_removeUserBuddiesSettings) != SQLITE_DONE) {
+	if (sqlite3_step(m_removeUserBuddiesSettings) != SQLITE_DONE) {
 		LOG4CXX_ERROR(logger, "removeUserBuddiesSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
@@ -499,7 +499,7 @@ void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &t
 	BEGIN(m_getUserSetting);
 	BIND_INT(m_getUserSetting, id);
 	BIND_STR(m_getUserSetting, variable);
-	if(sqlite3_step(m_getUserSetting) != SQLITE_ROW) {
+	if (sqlite3_step(m_getUserSetting) != SQLITE_ROW) {
 		BEGIN(m_setUserSetting);
 		BIND_INT(m_setUserSetting, id);
 		BIND_STR(m_setUserSetting, variable);
@@ -513,7 +513,7 @@ void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &t
 	}
 
 	int ret;
-	while((ret = sqlite3_step(m_getUserSetting)) == SQLITE_ROW) {
+	while ((ret = sqlite3_step(m_getUserSetting)) == SQLITE_ROW) {
 	}
 }
 
@@ -530,13 +530,13 @@ void SQLite3Backend::getBuddySetting(long userId, long buddyId, const std::strin
 	BIND_INT(m_getBuddySetting, userId);
 	BIND_INT(m_getBuddySetting, buddyId);
 	BIND_STR(m_getBuddySetting, variable);
-	if(sqlite3_step(m_getBuddySetting) == SQLITE_ROW) {
+	if (sqlite3_step(m_getBuddySetting) == SQLITE_ROW) {
 		type = GET_INT(m_getBuddySetting);
 		value = GET_STR(m_getBuddySetting);
 	}
 
 	int ret;
-	while((ret = sqlite3_step(m_getBuddySetting)) == SQLITE_ROW) {
+	while ((ret = sqlite3_step(m_getBuddySetting)) == SQLITE_ROW) {
 	}
 }
 

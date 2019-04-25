@@ -58,7 +58,7 @@ void SlackRosterManager::sendOnlineBuddies() {
 	std::string statusMessage;
 
 	const RosterManager::BuddiesMap &roster = getBuddies();
-	for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+	for (RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
 		Buddy *b = (*bt).second;
 		if (!b) {
 			continue;

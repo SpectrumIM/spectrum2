@@ -10,7 +10,7 @@ DEFINE_LOGGER(logger, "TwitterResponseParser")
 static std::string tolowercase(std::string inp)
 {
 	std::string out = inp;
-	for(unsigned i=0 ; i<out.size() ; i++) out[i] = tolower(out[i]);
+	for (unsigned i=0 ; i<out.size() ; i++) out[i] = tolower(out[i]);
 	return out;
 }
 
@@ -154,7 +154,7 @@ std::vector<Status> getTimeline(std::string &json)
 		return statuses;
 	}
 
-	for(Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
+	for (Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
 		statuses.push_back(getStatus(rootElement[i]));
 	}
 	return statuses;
@@ -178,7 +178,7 @@ std::vector<DirectMessage> getDirectMessages(std::string &json)
 		return DMs;
 	}
 
-	for(Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
+	for (Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
 		DMs.push_back(getDirectMessage(rootElement[i]));
 	}
 	return DMs;
@@ -202,7 +202,7 @@ std::vector<User> getUsers(std::string &json)
 		return users;
 	}
 
-	for(Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
+	for (Json::Value::ArrayIndex i = 0; i < rootElement.size(); i++) {
 		users.push_back(getUser(rootElement[i]));
 	}
 	return users;
@@ -249,7 +249,7 @@ std::vector<std::string> getIDs(std::string &json)
 
 	const Json::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
 
-	for(Json::Value::ArrayIndex i=0 ; i<ids.size() ; i++) {
+	for (Json::Value::ArrayIndex i=0 ; i<ids.size() ; i++) {
 		IDs.push_back(stringOf( ids[i].asInt64()) );
 	}
 	return IDs;

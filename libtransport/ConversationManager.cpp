@@ -52,7 +52,7 @@ void ConversationManager::sendCachedChatMessages() {
 }
 
 void ConversationManager::deleteAllConversations() {
-	while(!m_convs.empty()) {
+	while (!m_convs.empty()) {
 		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
 		(*m_convs.begin()).second->destroyRoom();
 		delete (*m_convs.begin()).second;
@@ -116,7 +116,7 @@ void ConversationManager::removeJID(const Swift::JID &jid) {
 	}
 
 	if (m_user->getUserSetting("stay_connected") != "1") {
-		while(!toRemove.empty()) {
+		while (!toRemove.empty()) {
 			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Leaving room " << toRemove.back() << ".");
 			m_user->leaveRoom(toRemove.back());
 			toRemove.pop_back();
