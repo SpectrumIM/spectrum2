@@ -32,7 +32,6 @@
 
 namespace Transport {
 	class StorageBackend;
-	class Factory;
 	class UserRegistry;
 	class Frontend;
 	class PresenceOracle;
