@@ -39,7 +39,8 @@ class Factory {
 
 		virtual Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) = 0;
 
-		virtual ~Factory();
+		virtual ~Factory()
+		{ }
 };
 
 }
