@@ -102,8 +102,10 @@ bool HTTPRequest::GET(std::string url, Json::Value &json) {
 	if (!GET(url, m_data)) {
 		return false;
 	}
-	Json::Reader reader;
-	if(!reader.parse(m_data.c_str(), json)) {
+
+	Json::CharReaderBuilder rbuilder;
+	std::unique_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
+	if (!reader->parse(m_data.c_str(), m_data.c_str() + m_data.size(), &json, nullptr)) {
 		LOG4CXX_ERROR(logger, "Error while parsing JSON");
 	        LOG4CXX_ERROR(logger, m_data);
 		strcpy(curl_errorbuffer, "Error while parsing JSON");
