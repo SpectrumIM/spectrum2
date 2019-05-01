@@ -1,2 +1,2 @@
-ADD_SUBDIRECTORY(xmpp)
-ADD_SUBDIRECTORY(slack)
+add_subdirectory(xmpp)
+add_subdirectory(slack)

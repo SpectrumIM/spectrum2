@@ -1,2 +1,2 @@
-ADD_SUBDIRECTORY(api)
-ADD_SUBDIRECTORY(guide)
+add_subdirectory(api)
+add_subdirectory(guide)
