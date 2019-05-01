@@ -26,6 +26,13 @@ When you establish the connection between your backend and Spectrum 2, it shows 
 
 	NetworkPluginServer: New backend 0x84ad60 connected. Current backend count=1
 
+### Example code
+
+Checkout the existing template code for creating new generic spectrum2 backends at [`backends/template/`](https://github.com/SpectrumIM/spectrum2/tree/master/backends/template).
+These examples are just templates to get you started with your own backend.
+
+Python-based backends can use the [`pyspectrum2`](https://pypi.org/project/pyspectrum2/) package for communicating with Spectrum.
+
 ### The protocol
 
 When connection betwen backend and Spectrum 2 is establish, Spectrum 2 starts communicating with the backend.
