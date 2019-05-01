@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 2.6)
 
-FILE(GLOB SRC *.cpp)
+file(GLOB SRC *.cpp)
 
-ADD_EXECUTABLE(spectrum2_swiften_backend ${SRC})
+add_executable(spectrum2_swiften_backend ${SRC})
 
-IF (NOT WIN32)
-target_link_libraries(spectrum2_swiften_backend transport pthread ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
+if(NOT WIN32)
+	target_link_libraries(spectrum2_swiften_backend transport pthread ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 else()
-target_link_libraries(spectrum2_swiften_backend transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
+	target_link_libraries(spectrum2_swiften_backend transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 endif()
 
-INSTALL(TARGETS spectrum2_swiften_backend RUNTIME DESTINATION bin)
-
+install(TARGETS spectrum2_swiften_backend RUNTIME DESTINATION bin)
