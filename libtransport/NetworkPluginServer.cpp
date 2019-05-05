@@ -1800,8 +1800,9 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	send(c->connection, message);
 }
 
-// Processes all media links (<img>, ..) in the message body and applies required wrappers
+// Process all media links (<img>, ..) in the message body and apply required wrappers
 // and mitigations to ensure broader support for inplace display.
+// Returns a list of resulting messages to deliver.
 std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >
 NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg, const pbnetwork::ConversationMessage& payload) {
     static boost::regex image_expr("<img src=[\"']([^\"']+)[\"'].*>");
@@ -1820,11 +1821,8 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
     // This is not required by XEP and we lose parts of plaintext (e.g. captions).
     bool singleOobMode = CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false);
 
-
     bool matchCount = 0;
     const std::string* firstUrl;
-    if (!splitMode)
-        result.push_back(msg);
 
     //Find all <img...> entries
     const std::string& xhtml = payload.xhtml();
@@ -1902,6 +1900,9 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
 
         xhtml_pos = match[0].second;
     }
+
+    if (!splitMode)
+        result.push_back(msg); //Push the non-splitted message itself
 
     if (matchCount==0) {
         LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + payload.xhtml());
