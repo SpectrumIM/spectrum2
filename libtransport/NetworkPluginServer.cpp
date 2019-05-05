@@ -1847,12 +1847,9 @@ std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >
 NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg, const pbnetwork::ConversationMessage& payload) {
     static boost::regex image_expr("<img src=[\"']([^\"']+)[\"'].*>");
 
-    LOG4CXX_TRACE(logger, "wrapIncomingImage");
-
     //Quick exit
     std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > result;
     if (payload.xhtml().find("<img") == std::string::npos) {
-        LOG4CXX_TRACE(logger, "simple case, no images, returning as is");
         result.push_back(msg);
         return result;
     }
@@ -1864,8 +1861,6 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
     // This is not required by XEP and we lose parts of plaintext (e.g. captions).
     bool singleOobMode = CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false);
 
-    LOG4CXX_TRACE(logger, "splitMode: " << splitMode << ", singleOobMode: " << singleOobMode);
-
     bool matchCount = 0;
     std::string firstUrl;
 
@@ -1875,6 +1870,7 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
     const std::string& body = payload.message();
     std::string::size_type body_pos = 0;
 
+    LOG4CXX_TRACE(logger, "wrapIncomingImage: splitMode: " << splitMode << ", singleOobMode: " << singleOobMode);
     LOG4CXX_TRACE(logger, "xhtml = " << xhtml);
     LOG4CXX_TRACE(logger, "body = " << body);
 
@@ -1942,7 +1938,7 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
         xhtml_pos = match[0].second;
     }
 
-    //Post the remainder text
+    //Post the text remainder
     if (splitMode && (xhtml_pos != xhtml.end())) {
         std::string xhtml_prev(xhtml_pos, xhtml.end());
         xhtml_trim(xhtml_prev);
