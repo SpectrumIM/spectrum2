@@ -665,6 +665,7 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool subject) {
 	pbnetwork::ConversationMessage payload;
+	LOG4CXX_TRACE(logger, "handleConvMessagePayload");
 
 	if (payload.ParseFromString(data) == false) {
 		LOG4CXX_ERROR(logger, "handleConvMessagePayload: cannot parse payload");
@@ -693,7 +694,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->setType(Swift::Message::Headline);
 	}
 
-        msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(Swift::ChatState::Active));
+	msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(Swift::ChatState::Active));
 
 	// Add xhtml-im payload.
 	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
@@ -737,6 +738,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	// Split the message if configured, or just preprocess
+	LOG4CXX_TRACE(logger, "handleConvMessagePayload: wrapping media");
 	typedef std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > MsgList;
 	MsgList msgs = wrapIncomingImage(msg, payload);
 
@@ -1800,16 +1802,57 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	send(c->connection, message);
 }
 
-// Process all media links (<img>, ..) in the message body and apply required wrappers
-// and mitigations to ensure broader support for inplace display.
-// Returns a list of resulting messages to deliver.
+// Trims linebreaks and spaces from XHTML chunk of text
+inline std::string xhtml_trim(std::string &s) {
+	static const std::string t[] = {" ", "\n", "\t", "<br>", "<br/>"};
+	bool match = true;
+	while (match) {
+		match = false;
+		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
+			if (boost::algorithm::istarts_with(s, t[i])) {
+				s.erase(0, t[i].size());
+				match = true;
+			}
+	}
+	match = true;
+	while (match) {
+		match = false;
+		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
+			if (boost::algorithm::iends_with(s, t[i])) {
+				s.erase(s.size() - t[i].size());
+				match = true;
+			}
+	}
+	return s;
+}
+//Same for plaintext
+std::string plaintext_trim(std::string &text) {
+	static std::string t = " \n\t";
+	text.erase(text.find_last_not_of(t) + 1);
+	text.erase(0, text.find_first_not_of(t));
+	return text;
+}
+
+/*
+Process all media links (<img>, ..) in the message body and apply required wrappers
+and mitigations to ensure broader support for inplace display.
+Returns a list of messages to deliver.
+
+Possible modes:
+1. Normal mode: Find all media and wrap them as OOB tags. (Standards-compliant)
+2. Single OOB mode: Find the first media and make it the only content of the message.
+3. Split mode: Find all media and wrap each in their own message.
+*/
 std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >
 NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg, const pbnetwork::ConversationMessage& payload) {
     static boost::regex image_expr("<img src=[\"']([^\"']+)[\"'].*>");
 
+    LOG4CXX_TRACE(logger, "wrapIncomingImage");
+
     //Quick exit
     std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > result;
     if (payload.xhtml().find("<img") == std::string::npos) {
+        LOG4CXX_TRACE(logger, "simple case, no images, returning as is");
         result.push_back(msg);
         return result;
     }
@@ -1821,8 +1864,10 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
     // This is not required by XEP and we lose parts of plaintext (e.g. captions).
     bool singleOobMode = CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false);
 
+    LOG4CXX_TRACE(logger, "splitMode: " << splitMode << ", singleOobMode: " << singleOobMode);
+
     bool matchCount = 0;
-    const std::string* firstUrl;
+    std::string firstUrl;
 
     //Find all <img...> entries
     const std::string& xhtml = payload.xhtml();
@@ -1830,35 +1875,29 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
     const std::string& body = payload.message();
     std::string::size_type body_pos = 0;
 
+    LOG4CXX_TRACE(logger, "xhtml = " << xhtml);
+    LOG4CXX_TRACE(logger, "body = " << body);
+
     boost::smatch match;
     while(boost::regex_search(xhtml_pos, xhtml.end(), match, image_expr)) {
         matchCount++;
         const std::string& image_tag = match[0];
         const std::string& image_url = match[1];
-        if (firstUrl->empty())
-            firstUrl = &image_url;
+        if (firstUrl.empty())
+            firstUrl = image_url;
+        LOG4CXX_TRACE(logger, "match: image_tag=" << image_tag << ", image_url="<< image_url);
 
         //Process the part before the match
         if (splitMode && (match[0].first != xhtml_pos)) {
             std::string xhtml_prev(xhtml_pos, match[0].first);
-            std::string xhtml_test = xhtml_prev;
-            boost::replace_all(xhtml_test, " ", "");
-            boost::replace_all(xhtml_test, "\n", "");
-            boost::replace_all(xhtml_test, "<br/>", "");
-            boost::replace_all(xhtml_test, "<br>", "");
-            if (xhtml_test.empty())
-                xhtml_prev = "";
+            xhtml_trim(xhtml_prev);
 
             //Find the same URI in the plaintext body
             std::string body_prev = "";
             std::string::size_type body_match = body.find(image_url, body_pos);
             if (body_match != std::string::npos) {
                 body_prev = body.substr(body_pos, body_match-body_pos);
-                std::string body_test = body_prev;
-                boost::replace_all(body_test, " ", "");
-                boost::replace_all(body_test, "\n", "");
-                if (body_test.empty())
-                    body_prev = "";
+                plaintext_trim(body_prev);
                 body_pos = body_match + image_url.size();
             }
 
@@ -1867,6 +1906,7 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
                 SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> this_msg(new Swift::Message());
                 this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(xhtml_prev));
                 this_msg->setBody(body_prev);
+                LOG4CXX_TRACE(logger, "adding partial message for the text: '" << xhtml_prev << "', '" << body_prev << "'");
                 result.push_back(this_msg);
             }
         }
@@ -1878,6 +1918,7 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
             this_msg.reset(new Swift::Message(my_msg));
             this_msg->setBody(image_url);
             this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(image_tag));
+            LOG4CXX_TRACE(logger, "adding partial message for the media");
             result.push_back(this_msg);
         } else {
             this_msg = msg;
@@ -1901,6 +1942,25 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
         xhtml_pos = match[0].second;
     }
 
+    //Post the remainder text
+    if (splitMode && (xhtml_pos != xhtml.end())) {
+        std::string xhtml_prev(xhtml_pos, xhtml.end());
+        xhtml_trim(xhtml_prev);
+
+        std::string body_prev = body.substr(body_pos, body.size() - body_pos);
+        plaintext_trim(body_prev);
+
+        if (!xhtml_prev.empty() || !body_prev.empty()) {
+            SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> this_msg(new Swift::Message());
+            this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(xhtml_prev));
+            this_msg->setBody(body_prev);
+            LOG4CXX_TRACE(logger, "adding partial message for the text: '" << xhtml_prev << "', '" << body_prev << "'");
+            result.push_back(this_msg);
+        }
+    }
+
+    LOG4CXX_TRACE(logger, "wrapIncomingImages: matchCount==" << matchCount);
+
     if (!splitMode)
         result.push_back(msg); //Push the non-splitted message itself
 
@@ -1910,7 +1970,7 @@ NetworkPluginServer::wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
         // Replace the plaintext.
         // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
         if (singleOobMode)
-            msg->setBody(*firstUrl);
+            msg->setBody(firstUrl);
     }
     return result;
 }
