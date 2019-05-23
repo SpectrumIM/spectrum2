@@ -1260,18 +1260,17 @@ static void conv_write(PurpleConversation *conv, const char *who, const char *al
 			timestamp = buf;
 		}
 
-	// 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
-
 		if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
 			std::string w = purple_normalize_wrapped(account, who);
 			size_t pos = w.find("/");
 			if (pos != std::string::npos)
 				w.erase((int) pos, w.length() - (int) pos);
+			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
 			np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
 		}
 		else {
 			std::string conversationName = purple_conversation_get_name_wrapped(conv);
-			LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
+			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
 			np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
 		}
 	}
@@ -1345,10 +1344,10 @@ std::string web_rehost_image_by_id(int id)
 
 		std::ofstream output;
 		std::string fpath (web_dir + "/" + name + "." + ext);
-		LOG4CXX_INFO(logger, "Storing image to " << fpath);
+		LOG4CXX_DEBUG(logger, "Storing image to " << fpath);
 		struct stat buffer;
 		if (stat(fpath.c_str(), &buffer) == 0) {
-			LOG4CXX_INFO(logger, "File already exists, skipping.");
+			LOG4CXX_DEBUG(logger, "File already exists, skipping.");
 			//If the file exists, skip writing but make sure to update mtime:
 			//otherwise people can't rely on it to trim cache (newer messages may reference older images)
 			utime(fpath.c_str(), NULL);
@@ -1381,7 +1380,7 @@ May return empty strings if nothing is left after filtering out invalid contents
 */
 static void conv_msg_to_plain(const char* msg, std::string* xhtml_, std::string* plain_)
 {
-	//LOG4CXX_INFO(logger, "conv_message_to_plain(): msg='" << msg << "'");
+	//LOG4CXX_TRACE(logger, "conv_message_to_plain(): msg='" << msg << "'");
 	char *newline = purple_strdup_withhtml_wrapped(msg); //Escape HTML characters.
 	char *strip, *xhtml;
 	purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
@@ -1390,7 +1389,7 @@ static void conv_msg_to_plain(const char* msg, std::string* xhtml_, std::string*
 	g_free(newline);
 	g_free(xhtml);
 	g_free(strip);
-	//LOG4CXX_INFO(logger, "conv_message_to_plain(): plain='" << plain_ << "' xhtml='" << xhtml_ << "'");
+	//LOG4CXX_TRACE(logger, "conv_message_to_plain(): plain='" << plain_ << "' xhtml='" << xhtml_ << "'");
 }
 
 /*
@@ -1408,7 +1407,7 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 	If web_directory is disabled, we still need to replace each with a replacement text 
 	*/
 
-	LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
+	LOG4CXX_DEBUG(logger, "Received image body='" << msg << "'");
 	std::string body = msg;
 	std::string plain = msg;
 
@@ -1441,7 +1440,7 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 		std::string id = body.substr(id_from, id_to - id_from);
 		std::string attr = body.substr(tag_from, attr_to - tag_from); //without tag end
 		std::string tag = body.substr(tag_from, tag_to - tag_from);
-		LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << id_from << " " << id_to);
+		LOG4CXX_DEBUG(logger, "Image ID = '" << id << "' " << id_from << " " << id_to);
 
 		std::string new_uri = web_rehost_image_by_id(atoi(id.c_str()));
 		if (!new_uri.empty()) {
@@ -1513,7 +1512,7 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 	std::string message_; //plain text
 	std::string xhtml_;   //enhanced xhtml, if available
 
-	LOG4CXX_INFO(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
+	LOG4CXX_DEBUG(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 
 	if (flags & PURPLE_MESSAGE_IMAGES) {
 		//Store image locally and adjust the message
@@ -1556,12 +1555,12 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 			n = w.substr((int) pos + 1, w.length() - (int) pos);
 			w.erase((int) pos, w.length() - (int) pos);
 		}
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
+		LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
 		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp, false, false, isCarbon);
 	}
 	else {
 		std::string conversationName = purple_conversation_get_name_wrapped(conv);
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
+		LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
 		np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp, false, false, isCarbon);
 	}
 }
