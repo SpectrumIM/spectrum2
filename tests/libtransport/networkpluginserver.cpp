@@ -381,7 +381,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(OOB_TEST_XHTML, parts[0]->getPayload<Swift::XHTMLIMPayload>()->getBody());
 
 			//There must be OOB tags for each link
-			const std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>> payloads =
+			const std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload> > payloads =
 				parts[0]->getPayloads<Swift::RawXMLPayload>();
 			CPPUNIT_ASSERT_EQUAL(2, (int)payloads.size());
 			CPPUNIT_ASSERT_EQUAL(OOB_XML_START+"http://example.org/example1.png"+OOB_XML_END, payloads[0]->getRawXML());

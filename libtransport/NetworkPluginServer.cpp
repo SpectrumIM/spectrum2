@@ -1840,9 +1840,10 @@ std::string plaintext_trim(std::string &text) {
 Swift::Message::ref copySwiftMessage(const Swift::Message* msg, const std::string& xhtml, const std::string& body) {
     Swift::Message::ref this_msg(new Swift::Message());
     //Copy all payloads by reference, except for body and XHTML
-    for (Swift::Payload::ref pl : msg->getPayloads()) {
-        if(!dynamic_cast<Swift::Body*>(pl.get()) && !dynamic_cast<Swift::XHTMLIMPayload*>(pl.get()))
-            this_msg->addPayload(pl);
+    std::vector<Swift::Payload::ref> payloads = msg->getPayloads();
+    for (size_t i=0; i<payloads.size(); i++) {
+        if(!dynamic_cast<Swift::Body*>(payloads[i].get()) && !dynamic_cast<Swift::XHTMLIMPayload*>(payloads[i].get()))
+            this_msg->addPayload(payloads[i]);
     }
     //Add new body and XHTML tags
     this_msg->setBody(body);
