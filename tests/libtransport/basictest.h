@@ -218,6 +218,20 @@ class TestingStorageBackend : public StorageBackend {
 		virtual void commitTransaction() {}
 };
 
+class TestingConfig : public Config {
+public:
+	typedef std::map<std::string, boost::program_options::variable_value> VarMap;
+
+	inline boost::program_options::variables_map& variables() { return this->m_variables; }
+
+	void setValue(const std::string& name, const boost::program_options::variable_value& value) {
+		(*(static_cast<VarMap*>(&this->m_variables)))[name] = value;
+	}
+	void setValue(const std::string& name, const boost::any& value, const bool defaulted = false) {
+		this->setValue(name, boost::program_options::variable_value(value, defaulted));
+	}
+};
+
 class BasicTest : public Swift::XMPPParserClient {
 
 	public:
@@ -269,7 +283,7 @@ class BasicTest : public Swift::XMPPParserClient {
 		Swift::XMPPParser *parser;
 		Swift::XMPPParser *parser2;
 		UserRegistry *userRegistry;
-		Config *cfg;
+		TestingConfig *cfg;
 		Swift::Server *server;
 		Swift::DummyNetworkFactories *factories;
 		Swift::DummyEventLoop *loop;

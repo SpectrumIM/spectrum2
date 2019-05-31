@@ -47,7 +47,7 @@ using namespace Transport;
 void BasicTest::setMeUp (void) {
 	streamEnded = false;
 	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost\nservice.more_resources=1\nservice.admin_jid=me@localhost\n");
-	cfg = new Config();
+	cfg = new TestingConfig();
 	cfg->load(ifs);
 
 	factory = new TestingFactory();
