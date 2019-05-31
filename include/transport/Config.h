@@ -134,11 +134,14 @@ class Config {
 	private:
 		int m_argc;
 		char **m_argv;
+		std::string m_file;
+		std::string m_jid;
+
+	protected:
 		Variables m_variables;
 		Variables m_backendConfig;
 		std::map<std::string, boost::program_options::variable_value> m_unregistered;
-		std::string m_file;
-		std::string m_jid;
+
 };
 
 }
