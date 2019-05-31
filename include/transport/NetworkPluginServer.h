@@ -160,6 +160,9 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleFTDataNeeded(Backend *b, unsigned long ftid);
 
 		void handlePIDTerminated(unsigned long pid);
+
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg);
+
 	private:
 		void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> &, const std::string &data);
 
@@ -179,8 +182,6 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element);
 #endif
 		void handleStreamEnd() {}
-
-		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > wrapIncomingImage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg, const pbnetwork::ConversationMessage& payload);
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
