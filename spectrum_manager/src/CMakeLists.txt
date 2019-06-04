@@ -31,7 +31,7 @@ install(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 
 install(CODE "
 if(NOT EXISTS \"$ENV{DESTDIR}/etc/spectrum2/spectrum_manager.cfg\")
-file(install DESTINATION \"/etc/spectrum2\" TYPE FILES \"${CMAKE_CURRENT_SOURCE_DIR}/spectrum_manager.cfg\")
+file(INSTALL DESTINATION \"/etc/spectrum2\" TYPE FILES \"${CMAKE_CURRENT_SOURCE_DIR}/spectrum_manager.cfg\")
 endif()
 ")
 
