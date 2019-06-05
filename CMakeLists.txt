@@ -47,8 +47,8 @@ macro(LIST_CONTAINS var value)
 	endforeach(value2)
 endmacro(LIST_CONTAINS)
 
-if(NOT LIB_install_DIR)
-	set(LIB_install_DIR "lib")
+if(NOT LIB_INSTALL_DIR)
+	set(LIB_INSTALL_DIR "lib")
 endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
