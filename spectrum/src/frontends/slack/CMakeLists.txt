@@ -25,4 +25,4 @@ target_link_libraries(spectrum2-slack-frontend transport ${LOG4CXX_LIBRARIES} ${
 #      VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
 #)
 
-# install(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_install_DIR} ARCHIVE DESTINATION ${LIB_install_DIR} COMPONENT libraries)
+# install(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)

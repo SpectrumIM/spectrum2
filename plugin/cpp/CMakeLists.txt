@@ -34,7 +34,7 @@ set_target_properties(transport-plugin PROPERTIES
 	VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
 )
 
-install(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_install_DIR} ARCHIVE DESTINATION ${LIB_install_DIR} COMPONENT libraries)
+install(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
 #configure_file(transport.pc.in "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc")
 #install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc" DESTINATION lib/pkgconfig)
