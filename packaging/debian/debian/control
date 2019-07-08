@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Mathias Ertl <apt-repository@fsinf.at>
 Build-Depends: debhelper (>= 10), libpurple-dev, libswiften-dev,
- libprotobuf-dev, libmysqlclient-dev | default-libmysqlclient-dev, liblog4cxx10-dev, protobuf-compiler,
+ libprotobuf-dev, libmysqlclient-dev | default-libmysqlclient-dev, liblog4cxx10-dev | liblog4cxx-dev, protobuf-compiler,
  libpopt-dev, libdbus-glib-1-dev, libpqxx-dev | libpqxx3-dev, cmake, libev-libevent-dev | libevent-dev, libboost-all-dev,
  qtbase5-dev, libidn11-dev, libxml2-dev, libavahi-client-dev, libavahi-common-dev,
  libcurl4-openssl-dev, libcommuni-dev, libsqlite3-dev, libjsoncpp-dev
