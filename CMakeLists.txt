@@ -292,7 +292,7 @@ else(MYSQL_FOUND)
 endif(MYSQL_FOUND)
 
 if(PQXX_FOUND)
-	add_definitions(-DWITH_PQXX)
+	add_definitions(-DWITH_PQXX -DPQXX_HIDE_EXP_OPTIONAL)
 	include_directories(${PQXX_INCLUDE_DIR})
 	message("PostgreSQL        : yes")
 else(PQXX_FOUND)
