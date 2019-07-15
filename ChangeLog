@@ -1,3 +1,7 @@
+Version 2.0.12 (2019-07-15):
+	libpurple backend:
+	* revert changes which causes crash on start
+
 Version 2.0.11 (2019-07-12):
 	General:
 	* Minor compatibility fixes with latest packaging tools
