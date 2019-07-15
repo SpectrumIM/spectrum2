@@ -30,7 +30,7 @@ void CarbonResponder::start() {
 
 //Call when DiscoInfoResponder is available
 void CarbonResponder::setDiscoInfoResponder(DiscoInfoResponder *discoInfoResponder) {
-	LOG4CXX_TRACE(logger, "Registering disco#info features")
+	LOG4CXX_TRACE(logger, "Registering disco#info features");
 	discoInfoResponder->addTransportFeature("urn:xmpp:carbons:2");
 }
 
