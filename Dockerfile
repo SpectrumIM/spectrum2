@@ -16,23 +16,23 @@ RUN dnf install ImageMagick protobuf swiften gcc gcc-c++ make libpqxx-devel libp
 		cd .. && \
 		rm -rf spectrum2 && \
 		rm -rf ~/rpmbuild && \
-	dnf mark install json-glib && \
+		dnf mark install json-glib
 
-	echo "---> Installing purple-instagram" && \
+RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
 		cd purple-instagram && \
 		make && \
 		make install && \
 		cd .. && \
-		rm -rf purple-instagram && \
-	echo "---> Installing icyque" && \
+		rm -rf purple-instagram
+RUN echo "---> Installing icyque" && \
 		git clone git://github.com/EionRobb/icyque.git && \
 		cd icyque && \
 		make && \
 		make install && \
 		cd .. && \
-		rm -rf icyque && \
-	echo "---> Installing purple-facebook" && \
+		rm -rf icyque
+RUN echo "---> Installing purple-facebook" && \
 		wget https://github.com/dequis/purple-facebook/releases/download/v0.9.6/purple-facebook-0.9.6.tar.gz && \
 		tar -xf purple-facebook-0.9.6.tar.gz && \
 		cd purple-facebook-0.9.6 && \
@@ -41,38 +41,38 @@ RUN dnf install ImageMagick protobuf swiften gcc gcc-c++ make libpqxx-devel libp
 		make && \
 		make install && \
 		cd .. && \
-		rm -rf purple-facebook* && \
-	echo "---> Installing skype4pidgin" && \
+		rm -rf purple-facebook*
+RUN echo "---> Installing skype4pidgin" && \
 		git clone git://github.com/EionRobb/skype4pidgin.git && \
 		cd skype4pidgin/skypeweb && \
 		make CFLAGS=-DFEDORA=1 && \
 		make install && \
 		cd ../.. && \
-		rm -rf skype4pidgin && \
-	echo "---> Installing transwhat" && \
+		rm -rf skype4pidgin
+RUN echo "---> Installing transwhat" && \
 		pip install --pre e4u six==1.10 protobuf python-dateutil yowsup Pillow==2.9.0 &&\
 		git clone git://github.com/stv0g/transwhat.git &&\
 		cd transwhat &&\
 		git checkout yowsup-3 &&\
 		python setup.py install &&\
 		cd .. &&\
-		rm -r transwhat &&\
-	echo "---> Installing Telegram" && \
+		rm -r transwhat
+RUN echo "---> Installing Telegram" && \
 		git clone --recursive https://github.com/majn/telegram-purple && \
 		cd telegram-purple && \
 		./configure && \
 		make && \
 		make install && \
 		cd .. && \
-		rm -rf telegram-purple && \
-	echo "---> Install Discord" && \
+		rm -rf telegram-purple
+RUN echo "---> Install Discord" && \
 		git clone https://github.com/EionRobb/purple-discord.git && \
 		cd purple-discord && \
 		make && \
 		make install && \
 		cd .. && \
-		rm -rf purple-discord && \
-	echo "---> Install Steam" && \
+		rm -rf purple-discord
+RUN echo "---> Install Steam" && \
 		git clone https://github.com/EionRobb/pidgin-opensteamworks.git && \
 		cd pidgin-opensteamworks/steam-mobile && \
 		make && \
