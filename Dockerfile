@@ -78,8 +78,17 @@ RUN echo "---> Install Steam" && \
 		make && \
 		make install && \
 		cd ../.. && \
-		rm -rf pidgin-opensteamworks && \
-	echo "---> cleanup" && \
+		rm -rf pidgin-opensteamworks
+RUN echo "---> purple-gowhatsapp" && \
+		dnf -y install golang && \
+		git clone https://github.com/hoehermann/purple-gowhatsapp && \
+		cd purple-gowhatsapp && \
+		make && \
+		make install && \
+		cd .. && \
+		rm -rf purple-gowhatsapp && \
+		dnf -y remove golang
+RUN echo "---> cleanup" && \
 		rm -rf /usr/share/locale/* && \
 		rm -rf /usr/share/doc/* && \
 		rm -rf /usr/share/icons/* && \
