@@ -1886,7 +1886,7 @@ NetworkPluginServer::wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
     const std::string body = msg->getBody().get();
 
     OobMode oobMode = OobWrapAll;
-    if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_split", true))
+    if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_split", false))
         //Split the message into parts so that each part only contains one media instance or one chunk of text
         oobMode = OobSplit;
     else if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false))
