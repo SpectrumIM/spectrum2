@@ -7,7 +7,7 @@
 
 #include "dumb_frotz.h"
 
-f_setup_t f_setup;
+extern f_setup_t f_setup;
 
 static bool show_line_numbers = FALSE;
 static bool show_line_types = -1;

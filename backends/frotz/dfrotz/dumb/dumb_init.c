@@ -7,7 +7,7 @@
 
 #include "dumb_frotz.h"
 
-f_setup_t f_setup;
+extern f_setup_t f_setup;
 
 #define INFORMATION "\
 An interpreter for all Infocom and other Z-Machine games.\n\
