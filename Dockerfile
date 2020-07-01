@@ -20,7 +20,7 @@ RUN echo "---> Installing Spectrum 2" && \
 		cd spectrum2/packaging/debian && \
 		./build_spectrum2.sh
 
-RUN apt-get --no-install-recommends install -y libjson-glib-dev graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev
+RUN apt-get --no-install-recommends install -y libjson-glib-dev graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev libwebp-dev libgcrypt20-dev libpng-dev
 
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
@@ -56,6 +56,13 @@ RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install golang && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp && \
 		cd purple-gowhatsapp && \
+		make && \
+		make DESTDIR=/tmp/out install
+
+RUN echo "---> purple-telegram" && \
+git clone --recursive https://github.com/majn/telegram-purple && \
+		cd telegram-purple && \
+		./configure && \
 		make && \
 		make DESTDIR=/tmp/out install
 
