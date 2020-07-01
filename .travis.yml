@@ -19,8 +19,6 @@ addons:
     sources:
     - sourceline: 'deb https://packages.spectrum.im/spectrum2/ xenial main'
       key_url: 'https://packages.spectrum.im/packages.key'
-    - sourceline: 'deb https://swift.im/packages/ubuntu/xenial release main'
-      key_url: 'https://swift.im/keys/packages.key'
     - sourceline: 'deb https://packages.prosody.im/debian xenial main'
       key_url: 'https://prosody.im/files/prosody-debian-packages.key'
     packages:
