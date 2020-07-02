@@ -47,7 +47,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "XMPPUserManager");
+DEFINE_LOGGER(xmppUserManagerLogger, "XMPPUserManager");
 
 XMPPUserManager::XMPPUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) : UserManager(component, userRegistry, storageBackend) {
 	m_component = component;

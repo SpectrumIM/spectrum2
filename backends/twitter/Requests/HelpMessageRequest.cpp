@@ -1,5 +1,5 @@
 #include "HelpMessageRequest.h"
-DEFINE_LOGGER(logger, "HelpMessageRequest")
+DEFINE_LOGGER(helpRequestLogger, "HelpMessageRequest")
 void HelpMessageRequest::run() 
 {
 	helpMsg = helpMsg

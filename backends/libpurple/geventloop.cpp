@@ -32,7 +32,7 @@
 
 #include "transport/Logging.h"
 
-DEFINE_LOGGER(logger, "EventLoop");
+DEFINE_LOGGER(eventLoopLogger, "EventLoop");
 
 typedef struct _PurpleIOClosure {
 	PurpleInputFunction function;
@@ -158,17 +158,17 @@ static void event_io_invoke(int fd, short event, void *data)
 	{
 // 		tmp |= PURPLE_INPUT_WRITE;
 // 		purple_cond = (PurpleInputCondition)tmp;
-		LOG4CXX_INFO(logger, "before timer callback " << closure->function2);
+		LOG4CXX_INFO(eventLoopLogger, "before timer callback " << closure->function2);
 		if (closure->function2(closure->data))
 			evtimer_add(&closure->evfifo, &closure->timeout);
-		LOG4CXX_INFO(logger, "after timer callback" << closure->function2);
+		LOG4CXX_INFO(eventLoopLogger, "after timer callback" << closure->function2);
 // 		else
 // 			event_io_destroy(data);
 		return;
 	}
-	LOG4CXX_INFO(logger, "before callback " << closure->function);
+	LOG4CXX_INFO(eventLoopLogger, "before callback " << closure->function);
 	closure->function(closure->data, fd, purple_cond);
-	LOG4CXX_INFO(logger, "after callback" << closure->function);
+	LOG4CXX_INFO(eventLoopLogger, "after callback" << closure->function);
 }
 
 static gboolean event_input_remove(guint handle)

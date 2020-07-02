@@ -34,7 +34,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "VCardResponder");
+DEFINE_LOGGER(vcardResponderLogger, "VCardResponder");
 
 VCardResponder::VCardResponder(Swift::IQRouter *router, Swift::NetworkFactories *factories, UserManager *userManager) : Swift::Responder<VCard>(router) {
 	m_id = 0;
@@ -49,11 +49,11 @@ VCardResponder::~VCardResponder() {
 
 void VCardResponder::sendVCard(unsigned int id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard) {
 	if (m_queries.find(id) == m_queries.end()) {
-		LOG4CXX_WARN(logger, "Unexpected VCard from legacy network with id " << id);
+		LOG4CXX_WARN(vcardResponderLogger, "Unexpected VCard from legacy network with id " << id);
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_queries[id].from.toString() << ": Forwarding VCard of " << m_queries[id].to.toString() << " from legacy network");
+	LOG4CXX_INFO(vcardResponderLogger, m_queries[id].from.toString() << ": Forwarding VCard of " << m_queries[id].to.toString() << " from legacy network");
 
 	sendResponse(m_queries[id].from, m_queries[id].to, m_queries[id].id, vcard);
 	m_queries.erase(id);
@@ -70,7 +70,7 @@ void VCardResponder::collectTimeouted() {
 	}
 
 	if (candidates.size() != 0) {
-		LOG4CXX_INFO(logger, "Removing " << candidates.size() << " timeouted VCard requests");
+		LOG4CXX_INFO(vcardResponderLogger, "Removing " << candidates.size() << " timeouted VCard requests");
 	}
 
 	BOOST_FOREACH(unsigned int id, candidates) {
@@ -82,7 +82,7 @@ void VCardResponder::collectTimeouted() {
 bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> payload) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+		LOG4CXX_WARN(vcardResponderLogger, from.toBare().toString() << ": User is not logged in");
 		return false;
 	}
 
@@ -99,7 +99,7 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		name += "/" + to.getResource();
 	}
 
-	LOG4CXX_INFO(logger, from.toBare().toString() << ": Requested VCard of " << name);
+	LOG4CXX_INFO(vcardResponderLogger, from.toBare().toString() << ": Requested VCard of " << name);
 
 	m_queries[m_id].from = from;
 	m_queries[m_id].to = to;
@@ -111,17 +111,17 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 
 bool VCardResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> payload) {
 	if (!to.getNode().empty() && from.toBare().toString() != to.toBare().toString()) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": Tried to set VCard of somebody else");
+		LOG4CXX_WARN(vcardResponderLogger, from.toBare().toString() << ": Tried to set VCard of somebody else");
 		return false;
 	}
 
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+		LOG4CXX_WARN(vcardResponderLogger, from.toBare().toString() << ": User is not logged in");
 		return false;
 	}
 
-	LOG4CXX_INFO(logger, from.toBare().toString() << ": Setting VCard");
+	LOG4CXX_INFO(vcardResponderLogger, from.toBare().toString() << ": Setting VCard");
 	onVCardUpdated(user, payload);
 
 	sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<VCard>(new VCard()));

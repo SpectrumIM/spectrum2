@@ -39,7 +39,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "AdminInterface");
+DEFINE_LOGGER(adminInterfaceLogger, "AdminInterface");
 
 // currently unused
 #if 0
@@ -1142,7 +1142,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 #else
 	std::string msg = message->getBody();
 #endif
-	LOG4CXX_INFO(logger, "Message from admin received: '" << msg << "'");
+	LOG4CXX_INFO(adminInterfaceLogger, "Message from admin received: '" << msg << "'");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
 
@@ -1228,7 +1228,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 	return;
 // 	else if (m_component->getFrontend()->handleAdminMessage(message)) {
-// 		LOG4CXX_INFO(logger, "Message handled by frontend");
+// 		LOG4CXX_INFO(adminInterfaceLogger, "Message handled by frontend");
 // 	}
 }
 
@@ -1238,7 +1238,7 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
 	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
-	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
+	    LOG4CXX_WARN(adminInterfaceLogger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
 	    return;
 
 	}

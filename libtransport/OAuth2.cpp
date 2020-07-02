@@ -36,7 +36,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "OAuth2");
+DEFINE_LOGGER(oauth2Logger, "OAuth2");
 
 OAuth2::OAuth2(const std::string &clientId, const std::string &clientSecret,
 			   const std::string &authURL, const std::string &tokenURL,
@@ -84,25 +84,25 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 	Json::Value resp;
 	HTTPRequest req(HTTPRequest::Get, url);
 	if (!req.execute(resp)) {
-		LOG4CXX_ERROR(logger, url);
-		LOG4CXX_ERROR(logger, req.getError());
+		LOG4CXX_ERROR(oauth2Logger, url);
+		LOG4CXX_ERROR(oauth2Logger, req.getError());
 		return req.getError();
 	}
 
-	LOG4CXX_ERROR(logger, req.getRawData());
+	LOG4CXX_ERROR(oauth2Logger, req.getRawData());
 	Json::Value& access_token = resp["access_token"];
 	if (!access_token.isString()) {
-		LOG4CXX_ERROR(logger, "No 'access_token' object in the reply.");
-		LOG4CXX_ERROR(logger, url);
-		LOG4CXX_ERROR(logger, req.getRawData());
+		LOG4CXX_ERROR(oauth2Logger, "No 'access_token' object in the reply.");
+		LOG4CXX_ERROR(oauth2Logger, url);
+		LOG4CXX_ERROR(oauth2Logger, req.getRawData());
 		return "No 'access_token' object in the reply.";
 	}
 
 	token = access_token.asString();
 	if (token.empty()) {
-		LOG4CXX_ERROR(logger, "Empty 'access_token' object in the reply.");
-		LOG4CXX_ERROR(logger, url);
-		LOG4CXX_ERROR(logger, req.getRawData());
+		LOG4CXX_ERROR(oauth2Logger, "Empty 'access_token' object in the reply.");
+		LOG4CXX_ERROR(oauth2Logger, url);
+		LOG4CXX_ERROR(oauth2Logger, req.getRawData());
 		return "Empty 'access_token' object in the reply.";
 	}
 

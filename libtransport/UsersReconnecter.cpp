@@ -33,7 +33,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "UserReconnecter");
+DEFINE_LOGGER(userReconnecterLogger, "UserReconnecter");
 
 UsersReconnecter::UsersReconnecter(Component *component, StorageBackend *storageBackend) {
 	m_component = component;
@@ -54,7 +54,7 @@ UsersReconnecter::~UsersReconnecter() {
 
 void UsersReconnecter::reconnectNextUser() {
 	if (m_users.empty()) {
-		LOG4CXX_INFO(logger, "All users reconnected, stopping UserReconnecter.");
+		LOG4CXX_INFO(userReconnecterLogger, "All users reconnected, stopping UserReconnecter.");
 		return;
 	}
 
@@ -69,7 +69,7 @@ void UsersReconnecter::handleConnected() {
 	if (m_started)
 		return;
 
-	LOG4CXX_INFO(logger, "Starting UserReconnecter.");
+	LOG4CXX_INFO(userReconnecterLogger, "Starting UserReconnecter.");
 	m_started = true;
 
 	if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "service.reconnect_all_users", false)) {

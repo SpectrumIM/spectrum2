@@ -42,7 +42,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "RosterManager");
+DEFINE_LOGGER(rosterManagerLogger, "RosterManager");
 
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
@@ -79,7 +79,7 @@ void RosterManager::removeBuddy(const std::string &_name) {
 	name = boost::locale::to_lower(name);
 	Buddy *buddy = getBuddy(name);
 	if (!buddy) {
-		LOG4CXX_WARN(logger, m_user->getJID().toString() << ": Tried to remove unknown buddy " << name);
+		LOG4CXX_WARN(rosterManagerLogger, m_user->getJID().toString() << ": Tried to remove unknown buddy " << name);
 		return;
 	}
 
@@ -133,7 +133,7 @@ void RosterManager::handleBuddyChanged(Buddy *buddy) {
 void RosterManager::setBuddy(Buddy *buddy) {
 	std::string name = buddy->getName();
 	name = boost::locale::to_lower(name);
-	LOG4CXX_INFO(logger, "Associating buddy " << name << " with " << m_user->getJID().toString());
+	LOG4CXX_INFO(rosterManagerLogger, "Associating buddy " << name << " with " << m_user->getJID().toString());
 	m_buddies[name] = buddy;
 	onBuddySet(buddy);
 
@@ -187,7 +187,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	bool newBuddy = (!buddy);
 	if (newBuddy) {
 		//Need a temporary buddy for most operations
-		LOG4CXX_TRACE(logger, "handleSubscription(): unknown buddy");
+		LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): unknown buddy");
 		BuddyInfo buddyInfo;
 		buddyInfo.id = -1;
 		buddyInfo.alias = "";
@@ -196,19 +196,19 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 		buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
 		buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
 	} else
-		LOG4CXX_TRACE(logger, "handleSubscription(): known buddy");
+		LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): known buddy");
 
 
 	// For server mode the subscription changes are handler in rosterresponder.cpp
 	// using roster pushes.
 	if (m_component->inServerMode()) {
 		if (buddy)
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received and buddy " << legacyName << " is already there => answering");
+			LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Subscription received and buddy " << legacyName << " is already there => answering");
 		switch (presence->getType()) {
 			case Swift::Presence::Subscribe:
 				if (newBuddy) {
 					// buddy is not in roster, so add him
-					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
+					LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
 					setBuddy(buddy);
 					newBuddy=false; //passed on, do not autodelete
 				}
@@ -245,10 +245,10 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 			case Swift::Presence::Subscribe:	// Add a friend on the backend network & send friend request.
 			case Swift::Presence::Subscribed:   // Accept friend request / Mark buddy as a friend
 				//Add buddy as Buddy::Both, confirm friend requests now and henceforth
-				LOG4CXX_TRACE(logger, "handleSubscription(): Subscribe/Subscribed");
+				LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): Subscribe/Subscribed");
 				if (newBuddy) {
 					// buddy is not in roster, so add him
-					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
+					LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
 					setBuddy(buddy);
 					newBuddy=false; //do not autodelete
 				} else if (buddy->getSubscription() != Buddy::Both) {
@@ -263,7 +263,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				break;
 
 			case Swift::Presence::Unsubscribe:   // Throw away the friend privileges that the contact has given us.
-				LOG4CXX_TRACE(logger, "handleSubscription(): Unsubscribe");
+				LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): Unsubscribe");
 				//Delete buddy and reject any friend requests
 				//If delete-protection is enabled, only delete from backend if the friend is Buddy::Ask or new.
 				if (newBuddy || (buddy->getSubscription() == Buddy::Ask) || CONFIG_BOOL(m_component->getConfig(), "service.enable_remove_buddy"))
@@ -277,7 +277,7 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 				break;
 			
 			case Swift::Presence::Unsubscribed:  // Remove contact's friend privileges / Deny friend request / Confirm UNSUBSCRIBE
-				LOG4CXX_TRACE(logger, "handleSubscription(): Unsubscribed");
+				LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): Unsubscribed");
 				//Only remove-buddy if this is a real friend request rejection
 				//XMPP may send <unsubscribed> in other cases, e.g. when the user refuses the formal <subscribe>
 				//that we've sent to inform them of existing ::Both buddies. We should not delete existing buddies then!
@@ -333,7 +333,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 	for (std::list<BuddyInfo>::const_iterator it = roster.begin(); it != roster.end(); it++) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
 		if (buddy) {
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
+			LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
 			std::string name = buddy->getName();
 			name = boost::locale::to_lower(name);
 			m_buddies[name] = buddy;

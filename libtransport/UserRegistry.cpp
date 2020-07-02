@@ -27,7 +27,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "UserRegistry");
+DEFINE_LOGGER(userRegistryLogger, "UserRegistry");
 
 UserRegistry::UserRegistry(Config *cfg, Swift::NetworkFactories *factories) {
 	config = cfg;
@@ -53,13 +53,13 @@ void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFrom
 	// Users try to connect twice
 	if (users.find(key) != users.end()) {
 		// Kill the first session
-		LOG4CXX_INFO(logger, key << ": Removing previous session and making this one active");
+		LOG4CXX_INFO(userRegistryLogger, key << ": Removing previous session and making this one active");
 		Swift::ServerFromClientSession *tmp = users[key].session;
 		users[key].session = session;
 		tmp->handlePasswordInvalid();
 	}
 
-	LOG4CXX_INFO(logger, key << ": Connecting this user to find if password is valid");
+	LOG4CXX_INFO(userRegistryLogger, key << ": Connecting this user to find if password is valid");
 
 	users[key].password = Swift::safeByteArrayToString(password);
 	users[key].session = session;
@@ -72,11 +72,11 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 	std::string key = user.toBare().toString();
 	if (users.find(key) != users.end()) {
 		if (users[key].session == session) {
-			LOG4CXX_INFO(logger, key << ": Stopping login process (user probably disconnected while logging in)");
+			LOG4CXX_INFO(userRegistryLogger, key << ": Stopping login process (user probably disconnected while logging in)");
 			users.erase(key);
 		}
 		else {
-			LOG4CXX_WARN(logger, key << ": Stopping login process (user probably disconnected while logging in), but this is not active session");
+			LOG4CXX_WARN(userRegistryLogger, key << ": Stopping login process (user probably disconnected while logging in), but this is not active session");
 		}
 	}
 
@@ -89,7 +89,7 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 void UserRegistry::onPasswordValid(const Swift::JID &user) {
 	std::string key = user.toBare().toString();
 	if (users.find(key) != users.end()) {
-		LOG4CXX_INFO(logger, key << ": Password is valid");
+		LOG4CXX_INFO(userRegistryLogger, key << ": Password is valid");
 		users[key].session->handlePasswordValid();
 		users.erase(key);
 	}
@@ -98,7 +98,7 @@ void UserRegistry::onPasswordValid(const Swift::JID &user) {
 void UserRegistry::onPasswordInvalid(const Swift::JID &user, const std::string &error) {
 	std::string key = user.toBare().toString();
 	if (users.find(key) != users.end()) {
-		LOG4CXX_INFO(logger, key << ": Password is invalid or there was an error when connecting the legacy network");
+		LOG4CXX_INFO(userRegistryLogger, key << ": Password is invalid or there was an error when connecting the legacy network");
 		users[key].session->handlePasswordInvalid(error);
 		users.erase(key);
 	}

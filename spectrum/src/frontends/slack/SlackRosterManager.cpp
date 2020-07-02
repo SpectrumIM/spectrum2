@@ -37,7 +37,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackRosterManager");
+DEFINE_LOGGER(slackRosterManagerLogger, "SlackRosterManager");
 
 SlackRosterManager::SlackRosterManager(User *user, Component *component) : RosterManager(user, component){
 	m_user = user;

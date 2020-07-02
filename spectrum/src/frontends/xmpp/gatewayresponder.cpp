@@ -34,7 +34,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "GatewayResponder");
+DEFINE_LOGGER(gatewayResponderLogger, "GatewayResponder");
 
 GatewayResponder::GatewayResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::Responder<GatewayPayload>(router) {
 	m_userManager = userManager;
@@ -63,7 +63,7 @@ bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 	// This code is here to workaround Gajim (and probably other clients bug too) bug
 	// https://trac.gajim.org/ticket/7277
 	if (prompt.find("\\40") != std::string::npos) {
-		LOG4CXX_WARN(logger, from.toString() << " Received already escaped JID " << prompt << ". Not escaping again.");
+		LOG4CXX_WARN(gatewayResponderLogger, from.toString() << " Received already escaped JID " << prompt << ". Not escaping again.");
 		escaped = prompt;
 	}
 

@@ -35,7 +35,7 @@
 
 #include "transport/Logging.h"
 
-DEFINE_LOGGER(logger, "IRCConnection");
+DEFINE_LOGGER(connectionLogger, "IRCConnection");
 
 MyIrcSession::MyIrcSession(const std::string &user, IRCNetworkPlugin *np, const std::string &suffix, QObject* parent) : IrcConnection(parent)
 {
@@ -76,7 +76,7 @@ void MyIrcSession::createBufferModel() {
 }
 
 void MyIrcSession::onBufferAdded(IrcBuffer* buffer) {
-	LOG4CXX_INFO(logger, m_user << ": Created IrcBuffer " << TO_UTF8(buffer->name()));
+	LOG4CXX_INFO(connectionLogger, m_user << ": Created IrcBuffer " << TO_UTF8(buffer->name()));
 
 	connect(buffer, SIGNAL(messageReceived(IrcMessage*)), this, SLOT(onMessageReceived(IrcMessage*)));
 
@@ -95,7 +95,7 @@ void MyIrcSession::onBufferAdded(IrcBuffer* buffer) {
 }
 
 void MyIrcSession::onBufferRemoved(IrcBuffer* buffer) {
-	LOG4CXX_INFO(logger, m_user << ": Removed IrcBuffer " << TO_UTF8(buffer->name()));
+	LOG4CXX_INFO(connectionLogger, m_user << ": Removed IrcBuffer " << TO_UTF8(buffer->name()));
 	// the buffer specific models and documents are no longer needed
 	delete m_userModels.take(buffer);
 }
@@ -108,13 +108,13 @@ bool MyIrcSession::hasIrcUser(const std::string &channel_, const std::string &na
 
 	IrcBuffer *buffer = m_bufferModel->find(FROM_UTF8(channel));
 	if (!buffer) {
-		LOG4CXX_ERROR(logger, m_user << ": Cannot find IrcBuffer '" << channel << "'");
+		LOG4CXX_ERROR(connectionLogger, m_user << ": Cannot find IrcBuffer '" << channel << "'");
 		return false;
 	}
 
 	IrcUserModel *userModel = m_userModels.value(buffer);
 	if (!userModel) {
-		LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << channel);
+		LOG4CXX_ERROR(connectionLogger, m_user << ": Cannot find UserModel for IrcBuffer " << channel);
 		return false;
 	}
 
@@ -130,14 +130,14 @@ void MyIrcSession::sendUserToFrontend(IrcUser *user, pbnetwork::StatusType statu
 			statusType = pbnetwork::STATUS_AWAY;
 		}
 		if (newNick.empty()) {
-			LOG4CXX_INFO(logger, m_user << ": IrcUser connected: " << target << "/" << TO_UTF8(user->name()));
+			LOG4CXX_INFO(connectionLogger, m_user << ": IrcUser connected: " << target << "/" << TO_UTF8(user->name()));
 		}
 		else {
-			LOG4CXX_INFO(logger, m_user << ": IrcUser changed nickname: " << target << "/" << TO_UTF8(user->name()) << ", newNick=" << newNick);
+			LOG4CXX_INFO(connectionLogger, m_user << ": IrcUser changed nickname: " << target << "/" << TO_UTF8(user->name()) << ", newNick=" << newNick);
 		}
 	}
 	else {
-		LOG4CXX_INFO(logger, m_user << ": IrcUser disconnected: " << target << "/" << TO_UTF8(user->name()));
+		LOG4CXX_INFO(connectionLogger, m_user << ": IrcUser disconnected: " << target << "/" << TO_UTF8(user->name()));
 	}
 
 	m_np->handleParticipantChanged(m_user, TO_UTF8(user->name()), target, op, statusType, statusMessage, newNick);
@@ -149,7 +149,7 @@ void MyIrcSession::onIrcUserChanged(bool dummy) {
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_user << ": IrcUser " << TO_UTF8(user->name()) << " changed.");
+	LOG4CXX_INFO(connectionLogger, m_user << ": IrcUser " << TO_UTF8(user->name()) << " changed.");
 	sendUserToFrontend(user, pbnetwork::STATUS_ONLINE);
 }
 
@@ -179,13 +179,13 @@ void MyIrcSession::on_connected() {
 	if (getIdentify().find(" ") != std::string::npos) {
 		std::string to = getIdentify().substr(0, getIdentify().find(" "));
 		std::string what = getIdentify().substr(getIdentify().find(" ") + 1);
-		LOG4CXX_INFO(logger, m_user << ": Sending IDENTIFY message to " << to);
+		LOG4CXX_INFO(connectionLogger, m_user << ": Sending IDENTIFY message to " << to);
 		sendCommand(IrcCommand::createMessage(FROM_UTF8(to), FROM_UTF8(what)));
 	}
 }
 
 void MyIrcSession::addPM(const std::string &name, const std::string &room) {
-	LOG4CXX_INFO(logger, m_user << ": Adding PM conversation " << name << " " << room);
+	LOG4CXX_INFO(connectionLogger, m_user << ": Adding PM conversation " << name << " " << room);
 	m_pms[name] = room;
 }
 
@@ -217,7 +217,7 @@ void MyIrcSession::on_socketError(QAbstractSocket::SocketError error) {
 		m_np->handleDisconnected(m_user, 0, reason);
 		m_np->tryNextServer();
 	}
-	LOG4CXX_INFO(logger, m_user << ": Disconnected from IRC network: " << reason);
+	LOG4CXX_INFO(connectionLogger, m_user << ": Disconnected from IRC network: " << reason);
 	m_connected = false;
 }
 
@@ -250,7 +250,7 @@ IrcUser *MyIrcSession::getIrcUser(IrcBuffer *buffer, std::string &nick) {
 	correctNickname(nick);
 	IrcUserModel *userModel = m_userModels.value(buffer);
 	if (!userModel) {
-		LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
+		LOG4CXX_ERROR(connectionLogger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
 		return NULL;
 	}
 
@@ -271,7 +271,7 @@ void MyIrcSession::on_parted(IrcMessage *message) {
 // 	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
 // 	IrcUser *user = getIrcUser(buffer, message);
 // 	if (!user) {
-// 		LOG4CXX_ERROR(logger, m_user << ": Part: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
+// 		LOG4CXX_ERROR(connectionLogger, m_user << ": Part: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
 // 		return;
 // 	}
 // 
@@ -287,7 +287,7 @@ void MyIrcSession::on_quit(IrcMessage *message) {
 // 	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
 // 	IrcUser *user = getIrcUser(buffer, message);
 // 	if (!user) {
-// 		LOG4CXX_ERROR(logger, m_user << ": Quit: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
+// 		LOG4CXX_ERROR(connectionLogger, m_user << ": Quit: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
 // 		return;
 // 	}
 // 
@@ -299,7 +299,7 @@ void MyIrcSession::on_nickChanged(IrcMessage *message) {
 	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
 	IrcUser *user = getIrcUser(buffer, message);
 	if (!user) {
-		LOG4CXX_ERROR(logger, m_user << ": NickChanged: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
+		LOG4CXX_ERROR(connectionLogger, m_user << ": NickChanged: IrcUser " << TO_UTF8(message->nick()) << " not in channel " << TO_UTF8(buffer->name()));
 		return;
 	}
 
@@ -312,7 +312,7 @@ void MyIrcSession::on_topicChanged(IrcMessage *message) {
 	std::string nickname = TO_UTF8(m->nick());
 	correctNickname(nickname);
 
-	LOG4CXX_INFO(logger, m_user << ": " << nickname << " topic changed to " << TO_UTF8(m->topic()));
+	LOG4CXX_INFO(connectionLogger, m_user << ": " << nickname << " topic changed to " << TO_UTF8(m->topic()));
 	m_np->handleSubject(m_user, TO_UTF8(m->channel().toLower()) + m_suffix, TO_UTF8(m->topic()), nickname);
 }
 
@@ -325,7 +325,7 @@ void MyIrcSession::on_whoisMessageReceived(IrcMessage *message) {
 	IrcWhoisMessage *m = (IrcWhoisMessage *) message;
 	std::string nickname = TO_UTF8(m->nick());
 	if (m_whois.find(nickname) == m_whois.end()) {
-		LOG4CXX_INFO(logger, "Whois response received with unexpected nickname " << nickname);
+		LOG4CXX_INFO(connectionLogger, "Whois response received with unexpected nickname " << nickname);
 		return;
 	}
 
@@ -338,11 +338,11 @@ void MyIrcSession::on_whoisMessageReceived(IrcMessage *message) {
 }
 
 void MyIrcSession::on_namesMessageReceived(IrcMessage *message) {
-	LOG4CXX_INFO(logger, m_user << ": NAMES received");
+	LOG4CXX_INFO(connectionLogger, m_user << ": NAMES received");
 	IrcBuffer *buffer = dynamic_cast<IrcBuffer *>(QObject::sender());
 	IrcUserModel *userModel = m_userModels.value(buffer);
 	if (!userModel) {
-		LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
+		LOG4CXX_ERROR(connectionLogger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
 		return;
 	}
 
@@ -350,7 +350,7 @@ void MyIrcSession::on_namesMessageReceived(IrcMessage *message) {
 		sendUserToFrontend(user, pbnetwork::STATUS_ONLINE);
 	}
 
-	LOG4CXX_INFO(logger, m_user << "Asking /who for channel " << TO_UTF8(buffer->name()));
+	LOG4CXX_INFO(connectionLogger, m_user << "Asking /who for channel " << TO_UTF8(buffer->name()));
 	sendCommand(IrcCommand::createWho(buffer->name()));
 }
 
@@ -389,7 +389,7 @@ void MyIrcSession::sendMessageToFrontend(const std::string &channel, const std::
 				std::string room = "#" + TO_UTF8(buffer->name());
 				IrcUserModel *userModel = m_userModels.value(buffer);
 				if (!userModel) {
-					LOG4CXX_ERROR(logger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
+					LOG4CXX_ERROR(connectionLogger, m_user << ": Cannot find UserModel for IrcBuffer " << TO_UTF8(buffer->name()));
 					continue;
 				}
 
@@ -414,7 +414,7 @@ void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	if (m->isRequest()) {
 		QString request = m->content().split(" ", QString::SkipEmptyParts).value(0).toUpper();
 		if (request == "PING" || request == "TIME" || request == "VERSION") {
-			LOG4CXX_INFO(logger, m_user << ": " << TO_UTF8(request) << " received and has been answered");
+			LOG4CXX_INFO(connectionLogger, m_user << ": " << TO_UTF8(request) << " received and has been answered");
 			return;
 		}
 	}
@@ -513,10 +513,10 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	}
 
 	if (m->code() >= 400 && m->code() < 500) {
-		LOG4CXX_INFO(logger, m_user << ": Error message received: " << message->toData().data());
+		LOG4CXX_INFO(connectionLogger, m_user << ": Error message received: " << message->toData().data());
 	}
 	else {
-		LOG4CXX_INFO(logger, m_user << ": Numeric message received: " << message->toData().data());
+		LOG4CXX_INFO(connectionLogger, m_user << ": Numeric message received: " << message->toData().data());
 	}
 }
 
@@ -531,7 +531,7 @@ void MyIrcSession::awayTimeout() {
 		int awayTick = userData["awayTick"].toInt();
 
 		if (awayTick == awayCycle) {
-			LOG4CXX_INFO(logger, m_user << ": The time has come. Asking /who " << TO_UTF8(buffer->title()) << " again to get current away states.");
+			LOG4CXX_INFO(connectionLogger, m_user << ": The time has come. Asking /who " << TO_UTF8(buffer->title()) << " again to get current away states.");
 			sendCommand(IrcCommand::createWho(buffer->title()));
 			awayTick = 0;
 		}
@@ -545,7 +545,7 @@ void MyIrcSession::awayTimeout() {
 
 void MyIrcSession::on_noticeMessageReceived(IrcMessage *message) {
 	IrcNoticeMessage *m = (IrcNoticeMessage *) message;
-	LOG4CXX_INFO(logger, m_user << ": NOTICE " << TO_UTF8(m->content()));
+	LOG4CXX_INFO(connectionLogger, m_user << ": NOTICE " << TO_UTF8(m->content()));
 
 	std::string msg = TO_UTF8(m->content());
 	std::string target = TO_UTF8(m->target().toLower());

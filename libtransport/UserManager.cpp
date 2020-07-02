@@ -43,7 +43,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "UserManager");
+DEFINE_LOGGER(userManagerLogger, "UserManager");
 
 UserManager::UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
 	m_cachedUser = NULL;
@@ -119,7 +119,7 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 		m_storageBackend->setUserOnline(user->getUserInfo().id, false);
 	}
 
-	LOG4CXX_INFO(logger, user->getJID().toBare().toString() << ": Disconnecting user");
+	LOG4CXX_INFO(userManagerLogger, user->getJID().toBare().toString() << ": Disconnecting user");
 	onUserDestroyed(user);
 	delete user;
 #ifndef WIN32
@@ -221,7 +221,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				if (CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", false)
 					&& CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needPassword", true)) {
 					m_userRegistry->onPasswordInvalid(presence->getFrom());
-					LOG4CXX_INFO(logger, userkey << ": Tried to login, but is not registered.");
+					LOG4CXX_INFO(userManagerLogger, userkey << ": Tried to login, but is not registered.");
 					return;
 				}
 				res.password = "";
@@ -257,7 +257,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				else {
 					res.uin = presence->getFrom().toString();
 				}
-				LOG4CXX_INFO(logger, "Auto-registering user " << userkey << " with uin=" << res.uin);
+				LOG4CXX_INFO(userManagerLogger, "Auto-registering user " << userkey << " with uin=" << res.uin);
 
 				if (m_storageBackend) {
 					// store user and getUser again to get user ID.
@@ -272,7 +272,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 		// Unregistered users are not able to login
 		if (!registered) {
-			LOG4CXX_WARN(logger, "Unregistered user " << userkey << " tried to login");
+			LOG4CXX_WARN(userManagerLogger, "Unregistered user " << userkey << " tried to login");
 			return;
 		}
 
@@ -285,7 +285,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 				m_component->getFrontend()->sendMessage(msg);
 			}
 
-			LOG4CXX_WARN(logger, "Non VIP user " << userkey << " tried to login");
+			LOG4CXX_WARN(userManagerLogger, "Non VIP user " << userkey << " tried to login");
 			if (m_component->inServerMode()) {
 				m_userRegistry->onPasswordInvalid(presence->getFrom());
 			}
@@ -301,7 +301,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 		}
 		// User can disabled the transport using adhoc commands
 		if (!transport_enabled) {
-			LOG4CXX_INFO(logger, "User " << userkey << " has disabled transport, not logging");
+			LOG4CXX_INFO(userManagerLogger, "User " << userkey << " has disabled transport, not logging");
 			return;
 		}
 
@@ -393,7 +393,7 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 }
 
 void UserManager::handleGeneralPresenceReceived(Swift::Presence::ref presence) {
-	LOG4CXX_INFO(logger, "PRESENCE2 " << presence->getTo().toString());
+	LOG4CXX_INFO(userManagerLogger, "PRESENCE2 " << presence->getTo().toString());
 	switch(presence->getType()) {
 		case Swift::Presence::Subscribe:
 		case Swift::Presence::Subscribed:

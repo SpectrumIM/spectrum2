@@ -5,7 +5,7 @@
 #include "boost/date_time/local_time/local_time.hpp"
 #include "boost/date_time/time_facet.hpp"
 
-DEFINE_LOGGER(logger, "TwitterResponseParser")
+DEFINE_LOGGER(responseParserLogger, "TwitterResponseParser")
 
 static std::string tolowercase(std::string inp)
 {
@@ -53,7 +53,7 @@ EmbeddedStatus getEmbeddedStatus(const Json::Value &element)
 {
 	EmbeddedStatus status;
 	if(!element.isObject()) {
-		LOG4CXX_ERROR(logger, "Not a status element!");
+		LOG4CXX_ERROR(responseParserLogger, "Not a status element!");
 		return status;
 	}
 	status.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
@@ -76,7 +76,7 @@ User getUser(const Json::Value &element)
 {
 	User user;
 	if(!element.isObject()) {
-		LOG4CXX_ERROR(logger, "Not a user element!");
+		LOG4CXX_ERROR(responseParserLogger, "Not a user element!");
 		return user;
 	}
 
@@ -143,14 +143,14 @@ std::vector<Status> getTimeline(std::string &json)
 	Json::Reader reader;
 
 	if(!reader.parse(json.c_str(), rootElement)){
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return statuses;
 	}
 
 	if(!rootElement.isArray()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to timeline:");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "JSON doesn't correspond to timeline:");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return statuses;
 	}
 
@@ -167,14 +167,14 @@ std::vector<DirectMessage> getDirectMessages(std::string &json)
 	Json::Reader reader;
 
 	if(!reader.parse(json.c_str(), rootElement)) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return DMs;
 	}
 
 	if(!rootElement.isArray()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to direct messages:");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "JSON doesn't correspond to direct messages:");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return DMs;
 	}
 
@@ -191,14 +191,14 @@ std::vector<User> getUsers(std::string &json)
 	Json::Reader reader;
 
 	if(!reader.parse(json.c_str(), rootElement)) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return users;
 	}
 
 	if(!rootElement.isArray()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user list:");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "JSON doesn't correspond to user list:");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return users;
 	}
 
@@ -215,14 +215,14 @@ User getUser(std::string &json)
 	Json::Reader reader;
 
 	if(!reader.parse(json.c_str(), rootElement)) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return user;
 	}
 
 	if(!rootElement.isObject()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to user object");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "JSON doesn't correspond to user object");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return user;
 	}
 
@@ -236,14 +236,14 @@ std::vector<std::string> getIDs(std::string &json)
 	Json::Reader reader;
 
 	if(!reader.parse(json.c_str(), rootElement)) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return IDs;
 	}
 
 	if(!rootElement.isObject()) {
-		LOG4CXX_ERROR(logger, "JSON doesn't correspond to id_list");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "JSON doesn't correspond to id_list");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return IDs;
 	}
 
@@ -264,8 +264,8 @@ Error getErrorMessage(std::string &json)
 	Json::Reader reader;
 
 	if(!reader.parse(json.c_str(), rootElement)) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, json);
+		LOG4CXX_ERROR(responseParserLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(responseParserLogger, json);
 		return resp;
 	}
 	if (rootElement.isObject()) {

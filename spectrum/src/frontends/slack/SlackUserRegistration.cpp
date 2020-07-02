@@ -45,7 +45,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackUserRegistration");
+DEFINE_LOGGER(slackUserRegistrationLogger, "SlackUserRegistration");
 
 SlackUserRegistration::SlackUserRegistration(Component *component, UserManager *userManager,
 								   StorageBackend *storageBackend)
@@ -75,10 +75,10 @@ std::string SlackUserRegistration::createOAuth2URL(const std::vector<std::string
 	m_authsData[oauth2->getState()] = args;
 
 	if (args.size() >= 3) {
-		LOG4CXX_INFO(logger, "Generating OAUth2 URL with slack_channel=" << args[1] << ", 3rd_party_account=" << args[2]);
+		LOG4CXX_INFO(slackUserRegistrationLogger, "Generating OAUth2 URL with slack_channel=" << args[1] << ", 3rd_party_account=" << args[2]);
 	}
 	else {
-		LOG4CXX_WARN(logger, "Generating OAUth2 URL with too few arguments");
+		LOG4CXX_WARN(slackUserRegistrationLogger, "Generating OAUth2 URL with too few arguments");
 	}
 
 	return url;
@@ -90,24 +90,24 @@ std::string SlackUserRegistration::getTeamDomain(const std::string &token) {
 	Json::Value resp;
 	HTTPRequest req(HTTPRequest::Get, url);
 	if (!req.execute(resp)) {
-		LOG4CXX_ERROR(logger, url);
-		LOG4CXX_ERROR(logger, req.getError());
+		LOG4CXX_ERROR(slackUserRegistrationLogger, url);
+		LOG4CXX_ERROR(slackUserRegistrationLogger, req.getError());
 		return "";
 	}
 
 	Json::Value &team = resp["team"];
 	if (!team.isObject()) {
-		LOG4CXX_ERROR(logger, "No 'team' object in the reply.");
-		LOG4CXX_ERROR(logger, url);
-		LOG4CXX_ERROR(logger, req.getRawData());
+		LOG4CXX_ERROR(slackUserRegistrationLogger, "No 'team' object in the reply.");
+		LOG4CXX_ERROR(slackUserRegistrationLogger, url);
+		LOG4CXX_ERROR(slackUserRegistrationLogger, req.getRawData());
 		return "";
 	}
 
 	Json::Value &domain = team["domain"];
 	if (!domain.isString()) {
-		LOG4CXX_ERROR(logger, "No 'domain' string in the reply.");
-		LOG4CXX_ERROR(logger, url);
-		LOG4CXX_ERROR(logger, req.getRawData());
+		LOG4CXX_ERROR(slackUserRegistrationLogger, "No 'domain' string in the reply.");
+		LOG4CXX_ERROR(slackUserRegistrationLogger, url);
+		LOG4CXX_ERROR(slackUserRegistrationLogger, req.getRawData());
 		return "";
 	}
 
@@ -141,7 +141,7 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 		}
 
 		if (token.empty()) {
-			LOG4CXX_INFO(logger, "Using 'token' as 'bot_access_token'");
+			LOG4CXX_INFO(slackUserRegistrationLogger, "Using 'token' as 'bot_access_token'");
 			token = access_token;
 		}
 	}
@@ -192,7 +192,7 @@ std::string SlackUserRegistration::handleOAuth2Code(const std::string &code, con
 	value = access_token;
 	m_storageBackend->getUserSetting(user.id, "access_token", type, value);
 
-	LOG4CXX_INFO(logger, "Registered Slack user " << user.jid << ", slack_channel=" << slackChannel);
+	LOG4CXX_INFO(slackUserRegistrationLogger, "Registered Slack user " << user.jid << ", slack_channel=" << slackChannel);
 
 	if (oauth2) {
 		m_auths.erase(state);

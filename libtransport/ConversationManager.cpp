@@ -31,7 +31,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "ConversationManager");
+DEFINE_LOGGER(conversationManagerLogger, "ConversationManager");
 
 ConversationManager::ConversationManager(User *user, Component *component){
 	m_user = user;
@@ -53,7 +53,7 @@ void ConversationManager::sendCachedChatMessages() {
 
 void ConversationManager::deleteAllConversations() {
 	while (!m_convs.empty()) {
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
+		LOG4CXX_INFO(conversationManagerLogger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
 		(*m_convs.begin()).second->destroyRoom();
 		delete (*m_convs.begin()).second;
 		m_convs.erase(m_convs.begin());
@@ -81,7 +81,7 @@ Conversation *ConversationManager::getConversation(const std::string &name) {
 
 void ConversationManager::addConversation(Conversation *conv) {
 	m_convs[conv->getLegacyName()] = conv;
-	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding conversation " << conv->getLegacyName());
+	LOG4CXX_INFO(conversationManagerLogger, m_user->getJID().toString() << ": Adding conversation " << conv->getLegacyName());
 }
 
 void ConversationManager::removeConversation(Conversation *conv) {
@@ -117,7 +117,7 @@ void ConversationManager::removeJID(const Swift::JID &jid) {
 
 	if (m_user->getUserSetting("stay_connected") != "1") {
 		while (!toRemove.empty()) {
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Leaving room " << toRemove.back() << ".");
+			LOG4CXX_INFO(conversationManagerLogger, m_user->getJID().toString() << ": Leaving room " << toRemove.back() << ".");
 			m_user->leaveRoom(toRemove.back());
 			toRemove.pop_back();
 		}
@@ -137,7 +137,7 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 // 	}
 	std::string name = Buddy::JIDToLegacyName(message->getTo(), m_user);
 	if (name.empty()) {
-		LOG4CXX_WARN(logger, m_user->getJID().toString() << ": Tried to create empty conversation");
+		LOG4CXX_WARN(conversationManagerLogger, m_user->getJID().toString() << ": Tried to create empty conversation");
 		return;
 	}
 

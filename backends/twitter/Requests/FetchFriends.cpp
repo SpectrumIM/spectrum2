@@ -1,7 +1,7 @@
 #include "FetchFriends.h"
 #include "../HTTPRequest.h"
 
-DEFINE_LOGGER(logger, "FetchFriends")
+DEFINE_LOGGER(fetchFriendsRequestLogger, "FetchFriends")
 
 void FetchFriends::run()
 {
@@ -28,7 +28,7 @@ void FetchFriends::run()
 		friendAvatars.push_back("");
 		if(req.GET(friends[i].getProfileImgURL(), img)) friendAvatars[i] = img;
 		else {
-			LOG4CXX_INFO(logger, "Warning: Couldn't fetch Profile Image for " << user << "'s friend " << friends[i].getScreenName());
+			LOG4CXX_INFO(fetchFriendsRequestLogger, "Warning: Couldn't fetch Profile Image for " << user << "'s friend " << friends[i].getScreenName());
 		}
 	}
 }
@@ -40,11 +40,11 @@ void FetchFriends::finalize()
 		std::string curlerror;
 		twitObj->getLastCurlError(curlerror);
 		error.setMessage(curlerror);
-		LOG4CXX_ERROR(logger,  user << " - " << curlerror);
+		LOG4CXX_ERROR(fetchFriendsRequestLogger,  user << " - " << curlerror);
 		callBack(user, friends, friendAvatars, error);
 	} else {
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger,  user << " - " << error.getMessage());
+		if(error.getMessage().length()) LOG4CXX_ERROR(fetchFriendsRequestLogger,  user << " - " << error.getMessage());
 		callBack(user, friends, friendAvatars, error);
 	}
 }
