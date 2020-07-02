@@ -415,11 +415,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			std::string protocol;
 			getProtocolAndName(legacyName, name, protocol);
 
-			if (password.empty() && protocol != "prpl-telegram" && protocol != "prpl-hangouts") {
-				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
-				np->handleDisconnected(user, 1, "Empty password.");
-				return;
-			}
 			if (protocol == "prpl-hangouts") {
 				adminLegacyName = "hangouts";
 				adminAlias = "hangouts";
@@ -2496,6 +2491,11 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 				cfg.setNeedRegistration(false);
 			}
 			else {
+				PurplePlugin *plugin = purple_find_prpl_wrapped(CONFIG_STRING(config, "service.protocol").c_str());
+				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+				bool needPassword = prpl_info->options & OPT_PROTO_NO_PASSWORD == 0;
+				LOG4CXX_INFO(logger, "backend needed password: " << needPassword);
+				cfg.setNeedPassword(needPassword);
 				cfg.setNeedRegistration(true);
 			}
 			np->sendConfig(cfg);
