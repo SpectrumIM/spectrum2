@@ -1,5 +1,5 @@
 #include "HTTPRequest.h"
-DEFINE_LOGGER(logger, "HTTPRequest")
+DEFINE_LOGGER(httpRequestLogger, "HTTPRequest")
 
 bool HTTPRequest::init()
 {
@@ -11,7 +11,7 @@ bool HTTPRequest::init()
 		curl_easy_setopt(curlhandle, CURLOPT_PROXYAUTH, (long)CURLAUTH_ANY);
 		return true;
 	}
-	LOG4CXX_ERROR(logger, "Couldn't Initialize curl!");
+	LOG4CXX_ERROR(httpRequestLogger, "Couldn't Initialize curl!");
 	return false;
 }
 
@@ -25,7 +25,7 @@ void HTTPRequest::setProxy(std::string IP, std::string port, std::string usernam
 			curl_easy_setopt(curlhandle, CURLOPT_PROXYUSERPWD, proxyUserPass.c_str());
 		}
 	} else {
-		LOG4CXX_ERROR(logger, "Trying to set proxy while CURL isn't initialized");
+		LOG4CXX_ERROR(httpRequestLogger, "Trying to set proxy while CURL isn't initialized");
 	}
 }
 
@@ -65,7 +65,7 @@ bool HTTPRequest::GET(std::string url, std::string &data)
 			return true;
 		}
 	} else {
-		LOG4CXX_ERROR(logger, "CURL not initialized!");
+		LOG4CXX_ERROR(httpRequestLogger, "CURL not initialized!");
 		strcpy(curl_errorbuffer, "CURL not initialized!");
 	}
 	return false;

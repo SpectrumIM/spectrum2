@@ -35,7 +35,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "XMPPUser");
+DEFINE_LOGGER(xmppUserLogger, "XMPPUser");
 
 XMPPUser::XMPPUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) : User(jid, userInfo, component, userManager) {
 	m_jid = jid.toBare();
@@ -56,7 +56,7 @@ XMPPUser::~XMPPUser(){
 	}
 
 	if (m_vcardRequests.size() != 0) {
-		LOG4CXX_INFO(logger, m_jid.toString() <<  ": Removing " << m_vcardRequests.size() << " unresponded IQs");
+		LOG4CXX_INFO(xmppUserLogger, m_jid.toString() <<  ": Removing " << m_vcardRequests.size() << " unresponded IQs");
 		BOOST_FOREACH(Swift::GetVCardRequest::ref request, m_vcardRequests) {
 			request->onResponse.disconnect_all_slots();
 			static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()->removeHandler(request);
@@ -89,7 +89,7 @@ void XMPPUser::handleVCardReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::V
 }
 
 void XMPPUser::requestVCard() {
-	LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard");
+	LOG4CXX_INFO(xmppUserLogger, m_jid.toString() << ": Requesting VCard");
 
 	Swift::GetVCardRequest::ref request = Swift::GetVCardRequest::create(m_jid, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter());
 	request->onResponse.connect(boost::bind(&XMPPUser::handleVCardReceived, this, _1, _2, request));

@@ -34,7 +34,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "BlockResponder");
+DEFINE_LOGGER(blockResponderLogger, "BlockResponder");
 
 BlockResponder::BlockResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::SetResponder<BlockPayload>(router) {
 	m_userManager = userManager;
@@ -47,21 +47,21 @@ BlockResponder::~BlockResponder() {
 bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Transport::BlockPayload> info) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+		LOG4CXX_WARN(blockResponderLogger, from.toBare().toString() << ": User is not logged in");
 		return true;
 	}
 
 	Buddy *buddy = Buddy::JIDToBuddy(to, user);
 	if (!buddy) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": Buddy " << Buddy::JIDToLegacyName(to, user) << " does not exist");
+		LOG4CXX_WARN(blockResponderLogger, from.toBare().toString() << ": Buddy " << Buddy::JIDToLegacyName(to, user) << " does not exist");
 		return true;
 	}
 
 	if (buddy->isBlocked()) {
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unblocking buddy " << buddy->getName());
+		LOG4CXX_INFO(blockResponderLogger, from.toBare().toString() << ": Unblocking buddy " << buddy->getName());
 	}
 	else {
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Blocking buddy " << buddy->getName());
+		LOG4CXX_INFO(blockResponderLogger, from.toBare().toString() << ": Blocking buddy " << buddy->getName());
 	}
 
 	onBlockToggled(buddy);

@@ -1,6 +1,6 @@
 #include "ProfileImageRequest.h"
 #include "../HTTPRequest.h"
-DEFINE_LOGGER(logger, "ProfileImageRequest")
+DEFINE_LOGGER(profileImageRequestLogger, "ProfileImageRequest")
 void ProfileImageRequest::run()
 {
 	HTTPRequest req;
@@ -14,12 +14,12 @@ void ProfileImageRequest::finalize()
 {
 	Error errResponse;
 	if(!success) {
-		LOG4CXX_ERROR(logger,  user << " - " << error);
+		LOG4CXX_ERROR(profileImageRequestLogger,  user << " - " << error);
 		img = "";
 		errResponse.setMessage(error);
 		callBack(user, buddy, img, reqID, errResponse);
 	} else {
-		LOG4CXX_INFO(logger, user << " - " << callbackdata);
+		LOG4CXX_INFO(profileImageRequestLogger, user << " - " << callbackdata);
 		img = callbackdata;
 		callBack(user, buddy, img, reqID, errResponse);
 	}

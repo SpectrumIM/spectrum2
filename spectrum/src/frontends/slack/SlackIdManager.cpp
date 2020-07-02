@@ -36,8 +36,6 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackIdManager");
-
 SlackIdManager::SlackIdManager() {
 
 }

@@ -51,7 +51,7 @@
 
 namespace Transport {
 	
-DEFINE_LOGGER(logger, "Conversation");
+DEFINE_LOGGER(conversationLogger, "Conversation");
 
 Conversation::Conversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) : m_conversationManager(conversationManager) {
 	m_legacyName = legacyName;
@@ -71,7 +71,7 @@ Conversation::~Conversation() {
 }
 
 void Conversation::setMUCEscaping(bool mucEscaping) {
-	LOG4CXX_INFO(logger, m_jid.toString() << ": Setting MUC escaping to " << mucEscaping);
+	LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Setting MUC escaping to " << mucEscaping);
 	m_mucEscaping = mucEscaping;
 }
 
@@ -145,11 +145,11 @@ void Conversation::handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::
 				if (!message->getSubject().empty()) {
 					m_subject = message;
 					if (m_sentInitialPresence == false) {
-						LOG4CXX_INFO(logger, m_jid.toString() << ": Caching subject message, initial presence not sent yet.");
+						LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Caching subject message, initial presence not sent yet.");
 						return;
 					}
 					else {
-						LOG4CXX_INFO(logger, m_jid.toString() << ": Forwarding subject message.");
+						LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Forwarding subject message.");
 					}
 				}
 				m_conversationManager->getComponent()->getFrontend()->sendMessage(message);
@@ -233,13 +233,13 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		}
 
 		message->setFrom(Swift::JID(legacyName, m_conversationManager->getComponent()->getJID().toBare(), n));
-		LOG4CXX_INFO(logger, "MSG FROM " << message->getFrom().toString());
+		LOG4CXX_INFO(conversationLogger, "MSG FROM " << message->getFrom().toString());
 	}
 
 
 	if (carbon) {
 #ifdef SWIFTEN_SUPPORTS_CARBONS
-		LOG4CXX_DEBUG(logger, "CARBON MSG");
+		LOG4CXX_DEBUG(conversationLogger, "CARBON MSG");
 		//Swap from and to
 		Swift::JID from = message->getTo();
 		if (from.getResource().empty()) {
@@ -256,7 +256,7 @@ void Conversation::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Mes
 		Component* transport = this->getConversationManager()->getComponent();
 		std::vector<Swift::Presence::ref> presences = transport->getPresenceOracle()->getAllPresence(this->m_jid.toBare());
 		if (presences.empty()) {
-			LOG4CXX_INFO(logger, "Carbon: No presences for JID " << this->m_jid.toString()
+			LOG4CXX_INFO(conversationLogger, "Carbon: No presences for JID " << this->m_jid.toString()
 			    << ", will send to bare JID for archival.");
 			this->forwardAsCarbonSent(message, this->m_jid.toBare());
 		} else
@@ -276,7 +276,7 @@ void Conversation::forwardAsCarbonSent(
 	const Swift::JID& to)
 {
 #ifdef SWIFTEN_SUPPORTS_CARBONS
-	LOG4CXX_INFO(logger, "Carbon <sent> to -> " << to.toString());
+	LOG4CXX_INFO(conversationLogger, "Carbon <sent> to -> " << to.toString());
 
 	//Message envelope
 	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message(new Swift::Message());
@@ -302,7 +302,7 @@ void Conversation::forwardAsCarbonSent(
 
 	Component* transport = this->getConversationManager()->getComponent();
 	if (transport->inServerMode()) {
-		LOG4CXX_DEBUG(logger, "Sending carbon as is (server mode)");
+		LOG4CXX_DEBUG(conversationLogger, "Sending carbon as is (server mode)");
 		handleRawMessage(message);
 	} else
 		this->forwardImpersonated(message, Swift::JID("", message->getFrom().getDomain()));
@@ -317,7 +317,7 @@ void Conversation::forwardImpersonated(
 	const Swift::JID& server)
 {
 #ifdef SWIFTEN_SUPPORTS_PRIVILEGE
-	LOG4CXX_DEBUG(logger, "Impersonate to -> " << server.toString());
+	LOG4CXX_DEBUG(conversationLogger, "Impersonate to -> " << server.toString());
 	Component* transport = this->getConversationManager()->getComponent();
 
 	//Message envelope
@@ -335,7 +335,7 @@ void Conversation::forwardImpersonated(
 	privilege->setForwarded(forwarded);
 
 	message->addPayload(privilege);
-	LOG4CXX_DEBUG(logger, "Impersonate: sending message");
+	LOG4CXX_DEBUG(conversationLogger, "Impersonate: sending message");
 	handleRawMessage(message);
 #else
 	//Try to send the message as is -- some servers can be configured to accept this
@@ -355,7 +355,7 @@ void Conversation::sendParticipants(const Swift::JID &to, const std::string &nic
 	// When user tries to join this room from another resource using
 	// different nickname than the original one has, we have to rename
 	// him.
-	LOG4CXX_INFO(logger, m_jid.toString() << ": Sending participants to " << to.toString() << ", Nickname:" << nickname << ", Conversation nickname:" << m_nickname);
+	LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Sending participants to " << to.toString() << ", Nickname:" << nickname << ", Conversation nickname:" << m_nickname);
 	if (m_nickname != nickname && !nickname.empty()) {
 		Swift::Presence::ref presence;
 		std::string tmp = m_nickname;
@@ -440,7 +440,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::Conflict)));
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_CONFLICT");
+			LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_CONFLICT");
 			return presence;
 		}
 		else if (flag & PARTICIPANT_FLAG_NOT_AUTHORIZED) {
@@ -448,7 +448,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::NotAuthorized, Swift::ErrorPayload::Auth, statusMessage)));
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_NOT_AUTHORIZED");
+			LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_NOT_AUTHORIZED");
 			return presence;
 		}
 		else if (flag & PARTICIPANT_FLAG_ROOM_NOT_FOUD) {
@@ -456,7 +456,7 @@ Swift::Presence::ref Conversation::generatePresence(const std::string &nick, int
 			presence->setType(Swift::Presence::Error);
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
 			presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::ErrorPayload(Swift::ErrorPayload::ItemNotFound, Swift::ErrorPayload::Cancel, statusMessage)));
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_ROOM_NOT_FOUND");
+			LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Generating error presence: PARTICIPANT_FLAG_ROOM_NOT_FOUND");
 			return presence;
 		}
 		else {
@@ -552,7 +552,7 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 	// from the room. This code must be extended in case we start sending error
 	// presences in other situations.
 	if (presence->getType() == Swift::Presence::Error) {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Leaving the conversation " << m_legacyName << " because of error.");
+		LOG4CXX_INFO(conversationLogger, m_jid.toString() << ": Leaving the conversation " << m_legacyName << " because of error.");
 		m_conversationManager->getUser()->leaveRoom(m_legacyName);
 	}
 }

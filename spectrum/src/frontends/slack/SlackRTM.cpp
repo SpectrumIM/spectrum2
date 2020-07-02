@@ -37,7 +37,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackRTM");
+DEFINE_LOGGER(slackRTMLogger, "SlackRTM");
 
 SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackIdManager *idManager, UserInfo uinfo) : m_uinfo(uinfo) {
 	m_component = component;
@@ -74,8 +74,8 @@ void SlackRTM::start() {
 
 #define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	if (!NAME##_tmp.isString()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(logger, payload); \
+		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(slackRTMLogger, payload); \
 		return; \
 	} \
 	std::string NAME = NAME##_tmp.asString();
@@ -88,14 +88,14 @@ void SlackRTM::start() {
 
 #define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
 	if (!NAME.isObject()) { \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 
 #define STORE_INT(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	if (!NAME##_tmp.isInt()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' number in the reply."); \
-		LOG4CXX_ERROR(logger, payload); \
+		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' number in the reply."); \
+		LOG4CXX_ERROR(slackRTMLogger, payload); \
 		return; \
 	} \
 	int NAME = NAME##_tmp.asInt();
@@ -105,8 +105,8 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 	Json::CharReaderBuilder rbuilder;
 	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
 	if (!reader->parse(payload.c_str(), payload.c_str() + payload.size(), &d, NULL)) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, payload);
+		LOG4CXX_ERROR(slackRTMLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(slackRTMLogger, payload);
 		return;
 	}
 
@@ -159,7 +159,7 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_INT(error, code);
 
 		if (code == 1) {
-			LOG4CXX_INFO(logger, "Reconnecting to Slack network");
+			LOG4CXX_INFO(slackRTMLogger, "Reconnecting to Slack network");
 			m_pingTimer->stop();
 			m_client->disconnectServer();
 			start();
@@ -185,14 +185,14 @@ void SlackRTM::sendPing() {
 
 void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackRTMLogger, req->getError());
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 	STORE_STRING_OPTIONAL(resp, error);
 	if (!error.empty()) {
 		if (error == "account_inactive") {
-			LOG4CXX_INFO(logger, "Account inactive, will not try connecting again");
+			LOG4CXX_INFO(slackRTMLogger, "Account inactive, will not try connecting again");
 			m_pingTimer->stop();
 			m_client->disconnectServer();
 			return;
@@ -200,22 +200,22 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, cons
 	}
 	Json::Value &url = resp["url"];
 	if (!url.isString()) {
-		LOG4CXX_ERROR(logger, "No 'url' object in the reply.");
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackRTMLogger, "No 'url' object in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
 	Json::Value &self = resp["self"];
 	if (!self.isObject()) {
-		LOG4CXX_ERROR(logger, "No 'self' object in the reply.");
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackRTMLogger, "No 'self' object in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
 	Json::Value &selfName = self["name"];
 	if (!selfName.isString()) {
-		LOG4CXX_ERROR(logger, "No 'name' string in the reply.");
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackRTMLogger, "No 'name' string in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
@@ -223,8 +223,8 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, cons
 
 	Json::Value &selfId = self["id"];
 	if (!selfId.isString()) {
-		LOG4CXX_ERROR(logger, "No 'id' string in the reply.");
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackRTMLogger, "No 'id' string in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
@@ -235,8 +235,8 @@ void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, cons
 	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_idManager->getUsers());
 
 	std::string u = url.asString();
-	LOG4CXX_INFO(logger, "Started RTM, WebSocket URL is " << u);
-	LOG4CXX_INFO(logger, data);
+	LOG4CXX_INFO(slackRTMLogger, "Started RTM, WebSocket URL is " << u);
+	LOG4CXX_INFO(slackRTMLogger, data);
 
 #ifndef LIBTRANSPORT_TEST
 	m_client->connectServer(u);

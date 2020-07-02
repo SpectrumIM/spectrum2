@@ -36,7 +36,7 @@
 // Prepare the SQL statement
 #define PREP_STMT(sql, str) \
 	if (sqlite3_prepare_v2(m_db, std::string(str).c_str(), -1, &sql, NULL)) { \
-		LOG4CXX_ERROR(logger, str<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db))); \
+		LOG4CXX_ERROR(sqlite3Logger, str<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db))); \
 		return false; \
 	}
 
@@ -58,12 +58,12 @@
 #define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
 #define GET_BLOB(STATEMENT)	(const void *) sqlite3_column_blob(STATEMENT, STATEMENT##_id_get++)
 #define EXECUTE_STATEMENT(STATEMENT, NAME) 	if (sqlite3_step(STATEMENT) != SQLITE_DONE) {\
-		LOG4CXX_ERROR(logger, NAME<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
+		LOG4CXX_ERROR(sqlite3Logger, NAME<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));\
 			}
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SQLite3Backend");
+DEFINE_LOGGER(sqlite3Logger, "SQLite3Backend");
 
 SQLite3Backend::SQLite3Backend(Config *config) {
 	m_config = config;
@@ -107,7 +107,7 @@ SQLite3Backend::~SQLite3Backend(){
 }
 
 bool SQLite3Backend::connect() {
-	LOG4CXX_INFO(logger, "Opening database " << CONFIG_STRING(m_config, "database.database"));
+	LOG4CXX_INFO(sqlite3Logger, "Opening database " << CONFIG_STRING(m_config, "database.database"));
 	if (sqlite3_open(CONFIG_STRING(m_config, "database.database").c_str(), &m_db)) {
 		sqlite3_close(m_db);
 		return false;
@@ -211,7 +211,7 @@ bool SQLite3Backend::exec(const std::string &query) {
 		// This error is OK, because we try to create buddies table every time
 		// to detect if DB is created properly.
 		if (errMsg && std::string(errMsg).find("table buddies already exists") == std::string::npos) {
-			LOG4CXX_ERROR(logger, errMsg << " during statement " << query);
+			LOG4CXX_ERROR(sqlite3Logger, errMsg << " during statement " << query);
 		}
 		sqlite3_free(errMsg);
 		return false;
@@ -230,7 +230,7 @@ void SQLite3Backend::setUser(const UserInfo &user) {
 	sqlite3_bind_int (m_setUser, 7, user.vip);
 
 	if (sqlite3_step(m_setUser) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "setUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "setUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 	}
 }
 
@@ -254,7 +254,7 @@ bool SQLite3Backend::getUser(const std::string &barejid, UserInfo &user) {
 	}
 
 	if (ret != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "getUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "getUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 	}
 
 	return false;
@@ -277,7 +277,7 @@ bool SQLite3Backend::getOnlineUsers(std::vector<std::string> &users) {
 	}
 
 	if (ret != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "getOnlineUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "getOnlineUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
@@ -294,7 +294,7 @@ bool SQLite3Backend::getUsers(std::vector<std::string> &users) {
 	}
 
 	if (ret != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "getUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "getUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
@@ -313,7 +313,7 @@ long SQLite3Backend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	BIND_INT(m_addBuddy, buddyInfo.flags);
 
 	if (sqlite3_step(m_addBuddy) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "addBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "addBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return -1;
 	}
 
@@ -417,7 +417,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		}
 
 // 		if (ret != SQLITE_DONE) {
-// 			LOG4CXX_ERROR(logger, "getBuddiesSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+// 			LOG4CXX_ERROR(sqlite3Logger, "getBuddiesSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 // 			return false;
 // 		}
 
@@ -425,13 +425,13 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 	}
 
 	if (ret != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "getBuddies query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "getBuddies query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	if (ret2 != SQLITE_DONE) {
 		if (ret2 == SQLITE_ERROR) {
-			LOG4CXX_ERROR(logger, "getBuddiesSettings query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+			LOG4CXX_ERROR(sqlite3Logger, "getBuddiesSettings query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 			return false;
 		}
 
@@ -439,7 +439,7 @@ bool SQLite3Backend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		}
 
 		if (ret2 != SQLITE_DONE) {
-			LOG4CXX_ERROR(logger, "getBuddiesSettings query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+			LOG4CXX_ERROR(sqlite3Logger, "getBuddiesSettings query "<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 			return false;
 		}
 	}
@@ -451,14 +451,14 @@ void SQLite3Backend::removeBuddy(long id) {
 	sqlite3_reset(m_removeBuddy);
 	sqlite3_bind_int(m_removeBuddy, 1, id);
 	if (sqlite3_step(m_removeBuddy) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "removeBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "removeBuddy query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return;
 	}
 
 	sqlite3_reset(m_removeBuddySettings);
 	sqlite3_bind_int(m_removeBuddySettings, 1, id);
 	if (sqlite3_step(m_removeBuddySettings) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "removeBuddySettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "removeBuddySettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return;
 	}
 }
@@ -467,28 +467,28 @@ bool SQLite3Backend::removeUser(long id) {
 	sqlite3_reset(m_removeUser);
 	sqlite3_bind_int(m_removeUser, 1, id);
 	if (sqlite3_step(m_removeUser) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "removeUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "removeUser query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	sqlite3_reset(m_removeUserSettings);
 	sqlite3_bind_int(m_removeUserSettings, 1, id);
 	if (sqlite3_step(m_removeUserSettings) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "removeUserSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "removeUserSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	sqlite3_reset(m_removeUserBuddies);
 	sqlite3_bind_int(m_removeUserBuddies, 1, id);
 	if (sqlite3_step(m_removeUserBuddies) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "removeUserBuddies query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "removeUserBuddies query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
 	sqlite3_reset(m_removeUserBuddiesSettings);
 	sqlite3_bind_int(m_removeUserBuddiesSettings, 1, id);
 	if (sqlite3_step(m_removeUserBuddiesSettings) != SQLITE_DONE) {
-		LOG4CXX_ERROR(logger, "removeUserBuddiesSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		LOG4CXX_ERROR(sqlite3Logger, "removeUserBuddiesSettings query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 

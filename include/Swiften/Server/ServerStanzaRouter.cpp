@@ -13,7 +13,7 @@
 
 namespace Swift {
 
-namespace {
+namespace StanzaRouter {
 	struct PriorityLessThan {
 		bool operator()(const ServerSession* s1, const ServerSession* s2) const {
 			return s1->getPriority() < s2->getPriority();
@@ -38,7 +38,7 @@ bool ServerStanzaRouter::routeStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza
 
 	// For a full JID, first try to route to a session with the full JID
 	if (!to.isBare()) {
-		std::vector<ServerSession*>::const_iterator i = std::find_if(clientSessions_.begin(), clientSessions_.end(), HasJID(to));
+		std::vector<ServerSession*>::const_iterator i = std::find_if(clientSessions_.begin(), clientSessions_.end(), StanzaRouter::HasJID(to));
 		if (i != clientSessions_.end()) {
 			(*i)->sendStanza(stanza);
 			return true;
@@ -58,7 +58,7 @@ bool ServerStanzaRouter::routeStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza
 	}
 
 	// Find the session with the highest priority
-	std::vector<ServerSession*>::const_iterator i = std::max_element(clientSessions_.begin(), clientSessions_.end(), PriorityLessThan());
+	std::vector<ServerSession*>::const_iterator i = std::max_element(clientSessions_.begin(), clientSessions_.end(), StanzaRouter::PriorityLessThan());
 	(*i)->sendStanza(stanza);
 	return true;
 }

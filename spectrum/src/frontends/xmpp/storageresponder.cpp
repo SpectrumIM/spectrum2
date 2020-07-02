@@ -34,7 +34,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "StorageResponder");
+DEFINE_LOGGER(storageResponderLogger, "StorageResponder");
 
 StorageResponder::StorageResponder(Swift::IQRouter *router, StorageBackend *storageBackend, UserManager *userManager) : Swift::Responder<PrivateStorage>(router) {
 	m_storageBackend = storageBackend;
@@ -47,7 +47,7 @@ StorageResponder::~StorageResponder() {
 bool StorageResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::PrivateStorage> payload) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+		LOG4CXX_WARN(storageResponderLogger, from.toBare().toString() << ": User is not logged in");
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
 		return true;
 	}
@@ -55,7 +55,7 @@ bool StorageResponder::handleGetRequest(const Swift::JID& from, const Swift::JID
 	int type = 0;
 	std::string value = "";
 	m_storageBackend->getUserSetting(user->getUserInfo().id, "storage", type, value);
-	LOG4CXX_INFO(logger, from.toBare().toString() << ": Sending jabber:iq:storage");
+	LOG4CXX_INFO(storageResponderLogger, from.toBare().toString() << ": Sending jabber:iq:storage");
 
 	sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PrivateStorage>(new PrivateStorage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<RawXMLPayload>(new RawXMLPayload(value)))));
 	return true;
@@ -65,7 +65,7 @@ bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
-		LOG4CXX_WARN(logger, from.toBare().toString() << ": User is not logged in");
+		LOG4CXX_WARN(storageResponderLogger, from.toBare().toString() << ": User is not logged in");
 		return true;
 	}
 
@@ -75,11 +75,11 @@ bool StorageResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 		StorageSerializer serializer;
 		std::string value = serializer.serializePayload(SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Storage>(payload->getPayload()));
 		m_storageBackend->updateUserSetting(user->getUserInfo().id, "storage", value);
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Storing jabber:iq:storage");
+		LOG4CXX_INFO(storageResponderLogger, from.toBare().toString() << ": Storing jabber:iq:storage");
 		sendResponse(from, id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PrivateStorage>());
 	}
 	else {
-		LOG4CXX_INFO(logger, from.toBare().toString() << ": Unknown element. Libtransport does not support serialization of this.");
+		LOG4CXX_INFO(storageResponderLogger, from.toBare().toString() << ": Unknown element. Libtransport does not support serialization of this.");
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Cancel);
 	}
 	return true;

@@ -222,4 +222,5 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 
 };
 
+// magic line to support unity build, do not remove me
 CPPUNIT_TEST_SUITE_REGISTRATION (UserRegistryTest);

@@ -34,7 +34,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "UserRegistration");
+DEFINE_LOGGER(userRegistrationLogger, "UserRegistration");
 
 UserRegistration::UserRegistration(Component *component, UserManager *userManager,
 								   StorageBackend *storageBackend) {
@@ -66,18 +66,18 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 
 	// This user is not registered, nothing to do
 	if (!registered) {
-		LOG4CXX_WARN(logger, "Tried to unregister already unregistered user " << barejid);
+		LOG4CXX_WARN(userRegistrationLogger, "Tried to unregister already unregistered user " << barejid);
 		return false;
 	}
 
-	LOG4CXX_INFO(logger, "Unregistering user " << barejid);
+	LOG4CXX_INFO(userRegistrationLogger, "Unregistering user " << barejid);
 	// Remove user from database
 	m_storageBackend->removeUser(userInfo.id);
 
 	// Disconnect the user
 	User *user = m_userManager->getUser(barejid);
 	if (user) {
-		LOG4CXX_INFO(logger, "Disconnecting user " << barejid);
+		LOG4CXX_INFO(userRegistrationLogger, "Disconnecting user " << barejid);
 		m_userManager->removeUser(user);
 	}
 

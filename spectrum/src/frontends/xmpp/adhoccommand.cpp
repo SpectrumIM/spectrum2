@@ -26,7 +26,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "AdHocCommand");
+DEFINE_LOGGER(adHocCommandLogger, "AdHocCommand");
 
 AdHocCommand::AdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) {
 	m_component = component;

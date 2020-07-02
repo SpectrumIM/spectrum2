@@ -41,7 +41,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "XMPPRosterManager");
+DEFINE_LOGGER(xmppRosterManagerLogger, "XMPPRosterManager");
 
 XMPPRosterManager::XMPPRosterManager(User *user, Component *component) : RosterManager(user, component){
 	m_user = user;
@@ -66,7 +66,7 @@ XMPPRosterManager::~XMPPRosterManager() {
 	}
 
 	if (m_requests.size() != 0) {
-		LOG4CXX_INFO(logger, m_user->getJID().toString() <<  ": Removing " << m_requests.size() << " unresponded IQs");
+		LOG4CXX_INFO(xmppRosterManagerLogger, m_user->getJID().toString() <<  ": Removing " << m_requests.size() << " unresponded IQs");
 		BOOST_FOREACH(Swift::SetRosterRequest::ref request, m_requests) {
 			request->onResponse.disconnect_all_slots();
 			static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()->removeHandler(request);
@@ -156,7 +156,7 @@ void XMPPRosterManager::doAddBuddy(Buddy *buddy) {
 	}
 	else {
 		if (buddy->getSubscription() == Buddy::Both) {
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Not forwarding this buddy, because subscription=both");
+			LOG4CXX_INFO(xmppRosterManagerLogger, m_user->getJID().toString() << ": Not forwarding this buddy, because subscription=both");
 			return;
 		}
 
@@ -176,7 +176,7 @@ void XMPPRosterManager::doUpdateBuddy(Buddy *buddy) {
 }
 
 void XMPPRosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key) {
-	LOG4CXX_INFO(logger, "handleBuddyRosterPushResponse called for buddy " << key);
+	LOG4CXX_INFO(xmppRosterManagerLogger, "handleBuddyRosterPushResponse called for buddy " << key);
 	Buddy *b = getBuddy(key);
 	if (b) {
 		if (b->isAvailable()) {
@@ -187,7 +187,7 @@ void XMPPRosterManager::handleBuddyRosterPushResponse(Swift::ErrorPayload::ref e
 		}
 	}
 	else {
-		LOG4CXX_WARN(logger, "handleBuddyRosterPushResponse called for unknown buddy " << key);
+		LOG4CXX_WARN(xmppRosterManagerLogger, "handleBuddyRosterPushResponse called for unknown buddy " << key);
 	}
 
 	m_requests.remove(request);
@@ -198,16 +198,16 @@ void XMPPRosterManager::handleRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::sha
 	m_remoteRosterRequest.reset();
 	if (error) {
 		m_supportRemoteRoster = false;
-		LOG4CXX_INFO(logger, m_user->getJID().toString() << ": This server does not allow us to modify your roster, consider enabling XEP-0321 or XEP-0356 support");
+		LOG4CXX_INFO(xmppRosterManagerLogger, m_user->getJID().toString() << ": This server does not allow us to modify your roster, consider enabling XEP-0321 or XEP-0356 support");
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Roster modification is allowed");
+	LOG4CXX_INFO(xmppRosterManagerLogger, m_user->getJID().toString() << ": Roster modification is allowed");
 	m_supportRemoteRoster = true;
 
 	//If we receive empty RosterPayload on login (not register) initiate full RosterPush
 	if (!m_buddies.empty() && payload->getItems().empty()){
-			LOG4CXX_INFO(logger, "Received empty Roster upon login. Pushing full Roster.");
+			LOG4CXX_INFO(xmppRosterManagerLogger, "Received empty Roster upon login. Pushing full Roster.");
 			for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::const_iterator c_it = m_buddies.begin();
 					c_it != m_buddies.end(); c_it++) {
 				sendBuddyRosterPush(c_it->second);
@@ -276,7 +276,7 @@ void XMPPRosterManager::sendRIE() {
 	}
 
 	BOOST_FOREACH(Swift::JID &jid, jidWithRIE) {
-		LOG4CXX_INFO(logger, "Sending RIE stanza to " << jid.toString());
+		LOG4CXX_INFO(xmppRosterManagerLogger, "Sending RIE stanza to " << jid.toString());
 		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GenericRequest<Swift::RosterItemExchangePayload> > request(new Swift::GenericRequest<Swift::RosterItemExchangePayload>(Swift::IQ::Set, jid, payload, static_cast<XMPPFrontend *>(m_component->getFrontend())->getIQRouter()));
 		request->send();
 	}

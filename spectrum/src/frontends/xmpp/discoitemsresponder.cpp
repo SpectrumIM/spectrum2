@@ -36,7 +36,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "DiscoItemsResponder");
+DEFINE_LOGGER(discoItemsResponderLogger, "DiscoItemsResponder");
 
 DiscoItemsResponder::DiscoItemsResponder(Component *component, UserManager *userManager) : Swift::GetResponder<DiscoItems>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()) {
 	m_component = component;
@@ -78,7 +78,7 @@ Swift::CapsInfo &DiscoItemsResponder::getBuddyCapsInfo() {
 
 
 bool DiscoItemsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> info) {
-	LOG4CXX_INFO(logger, "get request received with node " << info->getNode());
+	LOG4CXX_INFO(discoItemsResponderLogger, "get request received with node " << info->getNode());
 	if (info->getNode() == "http://jabber.org/protocol/commands") {
 		sendResponse(from, id, m_commands);
 	}

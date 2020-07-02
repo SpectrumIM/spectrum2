@@ -19,6 +19,8 @@ DEFINE_LOGGER(logger, "Server");
 
 static struct mg_serve_http_opts s_http_server_opts;
 
+namespace ServerUtils {
+
 static int has_prefix(const struct mg_str *uri, const char *prefix) {
 	size_t prefix_len = strlen(prefix);
 	return uri->len >= prefix_len && memcmp(uri->p, prefix, prefix_len) == 0;
@@ -39,6 +41,8 @@ static std::string get_http_var(const struct http_message *hm, const char *name)
 	}
 
 	return "";
+}
+
 }
 
 static void my_strlcpy(char *dst, const char *src, size_t len) {
@@ -199,8 +203,8 @@ Server::session *Server::get_session(struct http_message *hm) {
 
 void Server::authorize(struct mg_connection *conn, struct http_message *hm) {
 	Server::session *session;
-	std::string user = get_http_var(hm, "user");
-	std::string password = get_http_var(hm, "password");
+	std::string user = ServerUtils::get_http_var(hm, "user");
+	std::string password = ServerUtils::get_http_var(hm, "password");
 
 	std::string host;
 	mg_str *host_hdr = mg_get_http_header(hm, "Host");
@@ -414,8 +418,8 @@ void Server::serve_oauth2(struct mg_connection *conn, struct http_message *hm) {
 // 	http://slack.spectrum.im/oauth2/localhostxmpp?code=14830663267.19140123492.e7f78a836d&state=534ab3b6-8bf1-4974-8274-847df8490bc5
 	std::string uri(hm->uri.p, hm->uri.len);
 	std::string instance = uri.substr(uri.rfind("/") + 1);
-	std::string code = get_http_var(hm, "code");
-	std::string state = get_http_var(hm, "state");
+	std::string code = ServerUtils::get_http_var(hm, "code");
+	std::string state = ServerUtils::get_http_var(hm, "state");
 
 	std::string response = send_command(instance, "set_oauth2_code " + code + " " + state, 30);
 	std::cerr << "set_oauth2_code response: '" << response << "'\n";
@@ -470,9 +474,9 @@ void Server::event_handler(struct mg_connection *conn, int ev, void *p) {
 // 		serve_users_add(conn, hm);
 // 	} else if (mg_vcmp(&hm->uri, "/users/remove") == 0) {
 // 		serve_users_remove(conn, hm);
-	} else if (has_prefix(&hm->uri, "/oauth2")) {
+	} else if (ServerUtils::has_prefix(&hm->uri, "/oauth2")) {
 		serve_oauth2(conn, hm);
-	} else if (has_prefix(&hm->uri, "/api/v1/")) {
+	} else if (ServerUtils::has_prefix(&hm->uri, "/api/v1/")) {
 		m_apiServer->handleRequest(this, get_session(hm), conn, hm);
 	} else {
 		if (hm->uri.p[hm->uri.len - 1] != '/') {

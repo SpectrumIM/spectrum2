@@ -47,7 +47,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackSession");
+DEFINE_LOGGER(slackSessionLogger, "SlackSession");
 
 SlackSession::SlackSession(Component *component, StorageBackend *storageBackend, UserInfo uinfo) : m_uinfo(uinfo), m_user(NULL), m_disconnected(false) {
 	m_component = component;
@@ -68,7 +68,7 @@ SlackSession::SlackSession(Component *component, StorageBackend *storageBackend,
 	m_storageBackend->getUserSetting(m_uinfo.id, "access_token", type, token);
 	m_api = new SlackAPI(m_component, m_idManager, token, m_uinfo.jid);
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": SlackSession created.");
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": SlackSession created.");
 }
 
 SlackSession::~SlackSession() {
@@ -77,7 +77,7 @@ SlackSession::~SlackSession() {
 	delete m_idManager;
 	m_onlineBuddiesTimer->stop();
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": SlackSession destroyed.");
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": SlackSession destroyed.");
 }
 
 void SlackSession::sendOnlineBuddies() {
@@ -137,7 +137,7 @@ void SlackSession::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Messa
 	std::string channel = m_jid2channel[message->getFrom().toBare().toString()];
 	if (channel.empty()) {
 		if (m_slackChannel.empty()) {
-			LOG4CXX_ERROR(logger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());
+			LOG4CXX_ERROR(slackSessionLogger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());
 			return;
 		}
 		channel = m_slackChannel;
@@ -149,7 +149,7 @@ void SlackSession::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Messa
 		}
 	}
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << "Sending message to Slack channel " << channel << " from " << from);
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << "Sending message to Slack channel " << channel << " from " << from);
 #if HAVE_SWIFTEN_3
 	std::string body = message->getBody().get_value_or("");
 #else
@@ -167,7 +167,7 @@ void SlackSession::setPurpose(const std::string &purpose, const std::string &cha
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": Setting channel purppose: " << ch << " " << purpose);
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Setting channel purppose: " << ch << " " << purpose);
 	m_api->setPurpose(ch, purpose);
 }
 
@@ -184,7 +184,7 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 // 		m_storageBackend->setUser(m_uinfo);
 // 	}
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": Channel " << args[5] << " is created. Joining the room on legacy network.");
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Channel " << args[5] << " is created. Joining the room on legacy network.");
 
 	m_jid2channel[to] = slackChannel;
 	m_channel2jid[slackChannel] = to;
@@ -205,14 +205,14 @@ void SlackSession::handleJoinMessage(const std::string &message, std::vector<std
 	}
 	boost::algorithm::to_lower(args[3]);
 	boost::algorithm::to_lower(args[4]);
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": Going to join the room " << args[3] << "@" << args[4] << ", transporting it to channel " << args[5]);
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Going to join the room " << args[3] << "@" << args[4] << ", transporting it to channel " << args[5]);
 	m_api->createChannel(args[5], m_idManager->getSelfId(), boost::bind(&SlackSession::handleJoinRoomCreated, this, _1, args));
 }
 
 void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
 	m_slackChannel = channelId;
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": Main Slack Channel created, connecting the legacy network");
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Main Slack Channel created, connecting the legacy network");
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
 	presence->setTo(m_component->getJID());
@@ -229,11 +229,11 @@ void SlackSession::leaveRoom(const std::string &channel_) {
 	std::string channelId = m_idManager->getId(channel);
 	std::string to = m_channel2jid[channelId];
 	if (to.empty()) {
-		LOG4CXX_ERROR(logger, "Spectrum 2 is not configured to transport this Slack channel.");
+		LOG4CXX_ERROR(slackSessionLogger, "Spectrum 2 is not configured to transport this Slack channel.");
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_uinfo.jid << ": Leaving the legacy network room " << to);
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Leaving the legacy network room " << to);
 
 	Swift::Presence::ref presence = Swift::Presence::create();
 	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
@@ -322,7 +322,7 @@ void SlackSession::handleRTMStarted() {
 		m_api->createChannel(m_slackChannel, m_idManager->getSelfId(), boost::bind(&SlackSession::handleSlackChannelCreated, this, _1));
 	}
 	else {
-		LOG4CXX_WARN(logger, m_uinfo.jid << ": There is no Main Slack Channel set for this user.");
+		LOG4CXX_WARN(slackSessionLogger, m_uinfo.jid << ": There is no Main Slack Channel set for this user.");
 	}
 
 	// Auto-join the rooms configured by the Slack channel owner.

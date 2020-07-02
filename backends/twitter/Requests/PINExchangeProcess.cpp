@@ -1,9 +1,9 @@
 #include "PINExchangeProcess.h"
-DEFINE_LOGGER(logger, "PINExchangeProcess")
+DEFINE_LOGGER(pinExchangeProcessRequestLogger, "PINExchangeProcess")
 void PINExchangeProcess::run()
 {
-	LOG4CXX_INFO(logger, user << ": Sending PIN " << data);
-	LOG4CXX_INFO(logger, user << " " << twitObj->getProxyServerIp() << " " << twitObj->getProxyServerPort());
+	LOG4CXX_INFO(pinExchangeProcessRequestLogger, user << ": Sending PIN " << data);
+	LOG4CXX_INFO(pinExchangeProcessRequestLogger, user << " " << twitObj->getProxyServerIp() << " " << twitObj->getProxyServerPort());
 	twitObj->getOAuth().setOAuthPin( data );
 	success = twitObj->oAuthAccessToken();
 }
@@ -11,7 +11,7 @@ void PINExchangeProcess::run()
 void PINExchangeProcess::finalize()
 {
 	if(!success) {
-		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!");
+		LOG4CXX_ERROR(pinExchangeProcessRequestLogger, user << ": Error while exchanging PIN for Access Token!");
 		np->handleMessage(user, "twitter.com", "Error while exchanging PIN for Access Token!");
 		np->handleLogoutRequest(user, "");
 	} else {
@@ -22,7 +22,7 @@ void PINExchangeProcess::finalize()
 
 		Error error = getErrorMessage(replyMsg);
 		if(error.getMessage().length()) {
-			LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token! " << error.getMessage());
+			LOG4CXX_ERROR(pinExchangeProcessRequestLogger, user << ": Error while exchanging PIN for Access Token! " << error.getMessage());
 			np->handleMessage(user, "twitter.com", error.getMessage());
 			np->handleLogoutRequest(user, "");
 			return;
@@ -40,14 +40,14 @@ void PINExchangeProcess::finalize()
 		np->pinExchangeComplete(user, OAuthAccessTokenKey, OAuthAccessTokenSecret);
 		np->handleMessage(user, "twitter.com", "PIN is OK. You are now authorized.");
 		np->handleMessage(user, "twitter.com", "Send '#help' (without the quotes) to see how to use this transport.");
-		LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
+		LOG4CXX_INFO(pinExchangeProcessRequestLogger, user << ": Sent PIN " << data << " and obtained Access Token");
 	}
 }
 
 /*void handlePINExchange(const std::string &user, std::string &data) {
 	sessions[user]->getOAuth().setOAuthPin( data );
 	if (sessions[user]->oAuthAccessToken() == false) {
-		LOG4CXX_ERROR(logger, user << ": Error while exchanging PIN for Access Token!");
+		LOG4CXX_ERROR(pinExchangeProcessRequestLogger, user << ": Error while exchanging PIN for Access Token!");
 		handleLogoutRequest(user, "");
 		return;
 	}
@@ -58,7 +58,7 @@ void PINExchangeProcess::finalize()
 
 	UserInfo info;
 	if(storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		LOG4CXX_ERROR(pinExchangeProcessRequestLogger, "Didn't find entry for " << user << " in the database!");
 		handleLogoutRequest(user, "");
 		return;
 	}
@@ -67,5 +67,5 @@ void PINExchangeProcess::finalize()
 	storagebackend->updateUserSetting((long)info.id, OAUTH_SECRET, OAuthAccessTokenSecret);
 
 	connectionState[user] = CONNECTED;
-	LOG4CXX_INFO(logger, user << ": Sent PIN " << data << " and obtained Access Token");
+	LOG4CXX_INFO(pinExchangeProcessRequestLogger, user << ": Sent PIN " << data << " and obtained Access Token");
 }*/

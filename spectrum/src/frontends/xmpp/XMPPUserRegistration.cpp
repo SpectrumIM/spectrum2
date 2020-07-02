@@ -46,7 +46,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "XMPPUserRegistration");
+DEFINE_LOGGER(xmppUserRegistrationLogger, "XMPPUserRegistration");
 
 XMPPUserRegistration::XMPPUserRegistration(Component *component, UserManager *userManager,
 								   StorageBackend *storageBackend)
@@ -267,7 +267,7 @@ bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, from.toBare().toString() << ": This user has no permissions to register an account");
+			LOG4CXX_INFO(xmppUserRegistrationLogger, from.toBare().toString() << ": This user has no permissions to register an account");
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -291,7 +291,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account");
+			LOG4CXX_INFO(xmppUserRegistrationLogger, barejid << ": This user has no permissions to register an account");
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -428,7 +428,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_STRING(m_config, "registration.allowed_usernames").empty()) {
 		boost::regex expression(CONFIG_STRING(m_config, "registration.allowed_usernames"));
 		if (!regex_match(newUsername, expression)) {
-			LOG4CXX_INFO(logger, "This is not valid username: " << newUsername);
+			LOG4CXX_INFO(xmppUserRegistrationLogger, "This is not valid username: " << newUsername);
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}

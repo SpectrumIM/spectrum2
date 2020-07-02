@@ -35,33 +35,33 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackAPI");
+DEFINE_LOGGER(slackAPILogger, "SlackAPI");
 
 #define GET_ARRAY(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
 	if (!NAME.isArray()) { \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 	
 #define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	if (!NAME##_tmp.isString()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(logger, data); \
+		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(slackAPILogger, data); \
 		return; \
 	} \
 	std::string NAME = NAME##_tmp.asString();
 
 #define STORE_BOOL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	if (!NAME##_tmp.isBool()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(logger, data); \
+		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(slackAPILogger, data); \
 		return; \
 	} \
 	bool NAME = NAME##_tmp.asBool();
 
 #define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
 	if (!NAME.isObject()) { \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 
@@ -82,7 +82,7 @@ SlackAPI::~SlackAPI() {
 }
 
 void SlackAPI::handleSendMessage(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
-	LOG4CXX_INFO(logger, data);
+	LOG4CXX_INFO(slackAPILogger, data);
 }
 
 void SlackAPI::sendMessage(const std::string &from, const std::string &to, const std::string &text) {
@@ -98,7 +98,7 @@ void SlackAPI::sendMessage(const std::string &from, const std::string &to, const
 }
 
 void SlackAPI::deleteMessage(const std::string &channel, const std::string &ts) {
-	LOG4CXX_INFO(logger, "Deleting message " << channel << " " << ts);
+	LOG4CXX_INFO(slackAPILogger, "Deleting message " << channel << " " << ts);
 	std::string url = "https://slack.com/api/chat.delete?";
 	url += "&channel=" + Util::urlencode(channel);
 	url += "&ts=" + Util::urlencode(ts);
@@ -122,22 +122,22 @@ void SlackAPI::setPurpose(const std::string &channel, const std::string &purpose
 
 std::string SlackAPI::getChannelId(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackAPILogger, req->getError());
+		LOG4CXX_ERROR(slackAPILogger, data);
 		return "";
 	}
 
 	Json::Value &channel = resp["channel"];
 	if (!channel.isObject()) {
-		LOG4CXX_ERROR(logger, "No 'channel' object in the reply.");
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackAPILogger, "No 'channel' object in the reply.");
+		LOG4CXX_ERROR(slackAPILogger, data);
 		return "";
 	}
 
 	Json::Value &id = channel["id"];
 	if (!id.isString()) {
-		LOG4CXX_ERROR(logger, "No 'id' string in the reply.");
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackAPILogger, "No 'id' string in the reply.");
+		LOG4CXX_ERROR(slackAPILogger, data);
 		return "";
 	}
 
@@ -173,13 +173,13 @@ void SlackAPI::imOpen(const std::string &uid, HTTPRequest::Callback callback) {
 
 std::string SlackAPI::getOwnerId(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
+		LOG4CXX_ERROR(slackAPILogger, req->getError());
 		return "";
 	}
 
 	Json::Value &members = resp["members"];
 	if (!members.isArray()) {
-		LOG4CXX_ERROR(logger, "No 'members' object in the reply.");
+		LOG4CXX_ERROR(slackAPILogger, "No 'members' object in the reply.");
 		return "";
 	}
 
@@ -196,7 +196,7 @@ std::string SlackAPI::getOwnerId(HTTPRequest *req, bool ok, Json::Value &resp, c
 		if (is_primary_owner.asBool()) {
 			Json::Value &name = members[i]["id"];
 			if (!name.isString()) {
-				LOG4CXX_ERROR(logger, "No 'name' string in the reply.");
+				LOG4CXX_ERROR(slackAPILogger, "No 'name' string in the reply.");
 				return "";
 			}
 			return name.asString();
@@ -214,7 +214,7 @@ void SlackAPI::usersList(HTTPRequest::Callback callback) {
 
 void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackChannelInfo> &ret) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
+		LOG4CXX_ERROR(slackAPILogger, req->getError());
 		return;
 	}
 
@@ -274,7 +274,7 @@ void SlackAPI::getSlackChannelInfo(HTTPRequest *req, bool ok, Json::Value &resp,
 
 void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackImInfo> &ret) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
+		LOG4CXX_ERROR(slackAPILogger, req->getError());
 		return;
 	}
 
@@ -294,7 +294,7 @@ void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, Json::Value &resp, cons
 		info.user = user;
 
 		ret[info.id] = info;
-		LOG4CXX_INFO(logger, info.id << " " << info.user);
+		LOG4CXX_INFO(slackAPILogger, info.id << " " << info.user);
 	}
 
 	return;
@@ -302,7 +302,7 @@ void SlackAPI::getSlackImInfo(HTTPRequest *req, bool ok, Json::Value &resp, cons
 
 void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data, std::map<std::string, SlackUserInfo> &ret) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
+		LOG4CXX_ERROR(slackAPILogger, req->getError());
 		return;
 	}
 
@@ -325,13 +325,13 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, Json::Value &resp, co
 		info.isPrimaryOwner = false;
 
 		ret[info.id] = info;
-		LOG4CXX_INFO(logger, info.id << " " << info.name);
+		LOG4CXX_INFO(slackAPILogger, info.id << " " << info.name);
 
 		GET_OBJECT(users[i], profile);
 		STORE_STRING_OPTIONAL(profile, bot_id);
 		if (!bot_id.empty()) {
 			ret[bot_id] = info;
-			LOG4CXX_INFO(logger, bot_id << " " << info.name);
+			LOG4CXX_INFO(slackAPILogger, bot_id << " " << info.name);
 		}
 	}
 
@@ -353,7 +353,7 @@ void SlackAPI::getSlackUserInfo(HTTPRequest *req, bool ok, Json::Value &resp, co
 		info.isPrimaryOwner = 0;
 
 		ret[info.id] = info;
-		LOG4CXX_INFO(logger, info.id << " " << info.name);
+		LOG4CXX_INFO(slackAPILogger, info.id << " " << info.name);
 	}
 
 	return;
@@ -390,11 +390,11 @@ void SlackAPI::handleSlackChannelCreate(HTTPRequest *req, bool ok, Json::Value &
 
 	std::string channelId = m_idManager->getId(channel);
 	if (channelId == channel) {
-		LOG4CXX_INFO(logger, "Error creating channel " << channel << ".");
+		LOG4CXX_INFO(slackAPILogger, "Error creating channel " << channel << ".");
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " created, going to invite " << userId << " there.");
+	LOG4CXX_INFO(slackAPILogger, m_domain << ": createChannel: Channel " << channel << " created, going to invite " << userId << " there.");
 	channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 }
 
@@ -404,11 +404,11 @@ void SlackAPI::handleSlackChannelList(HTTPRequest *req, bool ok, Json::Value &re
 
 	std::string channelId = m_idManager->getId(channel);
 	if (channelId != channel) {
-		LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " already exists, will just invite " << userId << " there.");
+		LOG4CXX_INFO(slackAPILogger, m_domain << ": createChannel: Channel " << channel << " already exists, will just invite " << userId << " there.");
 		channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 	}
 	else {
-		LOG4CXX_INFO(logger, m_domain << ": createChannel: Going to create channel " << channel << ".");
+		LOG4CXX_INFO(slackAPILogger, m_domain << ": createChannel: Going to create channel " << channel << ".");
 		channelsCreate(channel, boost::bind(&SlackAPI::handleSlackChannelCreate, this, _1, _2, _3, _4, channel, userId, callback));
 	}
 }
@@ -417,16 +417,16 @@ void SlackAPI::createChannel(const std::string &channel, const std::string &user
 	std::string channelId = m_idManager->getId(channel);
 	if (channelId != channel) {
 		if (m_idManager->hasMember(channelId, userId)) {
-			LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " already exists and " << userId << " is already there.");
+			LOG4CXX_INFO(slackAPILogger, m_domain << ": createChannel: Channel " << channel << " already exists and " << userId << " is already there.");
 			callback(channelId);
 		}
 		else {
-			LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " already exists, will just invite " << userId << " there.");
+			LOG4CXX_INFO(slackAPILogger, m_domain << ": createChannel: Channel " << channel << " already exists, will just invite " << userId << " there.");
 			channelsInvite(channelId, userId, boost::bind(&SlackAPI::handleSlackChannelInvite, this, _1, _2, _3, _4, channelId, userId, callback));
 		}
 	}
 	else {
-		LOG4CXX_INFO(logger, m_domain << ": createChannel: Channel " << channel << " not found in the cache, will refresh the channels list.");
+		LOG4CXX_INFO(slackAPILogger, m_domain << ": createChannel: Channel " << channel << " not found in the cache, will refresh the channels list.");
 		channelsList(boost::bind(&SlackAPI::handleSlackChannelList, this, _1, _2, _3, _4, channel, userId, callback));
 	}
 }

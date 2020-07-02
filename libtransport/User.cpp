@@ -43,7 +43,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "User");
+DEFINE_LOGGER(userLogger, "User");
 
 User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
 	m_jid = jid.toBare();
@@ -68,12 +68,12 @@ User::User(const Swift::JID &jid, UserInfo &userInfo, Component *component, User
 	m_rosterManager = component->getFrontend()->createRosterManager(this, m_component);
 	m_conversationManager = new ConversationManager(this, m_component);
 
-	LOG4CXX_INFO(logger, m_jid.toString() << ": Created");
+	LOG4CXX_INFO(userLogger, m_jid.toString() << ": Created");
 	updateLastActivity();
 }
 
 User::~User(){
-	LOG4CXX_INFO(logger, m_jid.toString() << ": Destroying");
+	LOG4CXX_INFO(userLogger, m_jid.toString() << ": Destroying");
 // 	if (m_component->inServerMode()) {
 // #if HAVE_SWIFTEN_3
 // 		dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>());
@@ -170,7 +170,7 @@ void User::leaveRoom(const std::string &room) {
 }
 
 void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
-	LOG4CXX_INFO(logger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
+	LOG4CXX_INFO(userLogger, "PRESENCE " << presence->getFrom().toString() << " " << presence->getTo().toString());
 
 	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCardUpdate> vcardUpdate = presence->getPayload<Swift::VCardUpdate>();
 	if (vcardUpdate) {
@@ -180,7 +180,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			m_storageBackend->getUserSetting(m_userInfo.id, "photohash", type, value);
 		}
 		if (value != vcardUpdate->getPhotoHash()) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Requesting VCard");
+			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Requesting VCard");
 			if (m_storageBackend) {
 				m_storageBackend->updateUserSetting(m_userInfo.id, "photohash", vcardUpdate->getPhotoHash());
 			}
@@ -194,7 +194,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CapsInfo> capsInfo = presence->getPayload<Swift::CapsInfo>();
 			if (capsInfo && capsInfo->getHash() == "sha-1") {
 				if (m_component->getFrontend()->sendCapabilitiesRequest(presence->getFrom()) != Swift::DiscoInfo::ref()) {
-					LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
+					LOG4CXX_INFO(userLogger, m_jid.toString() << ": Ready to be connected to legacy network");
 					m_readyForConnect = true;
 					onReadyToConnect();
 				}
@@ -203,7 +203,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 			}
 			else if (m_component->inServerMode()) {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
+				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Ready to be connected to legacy network");
 				m_readyForConnect = true;
 				onReadyToConnect();
 			}
@@ -229,7 +229,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			}
 
 			if (getUserSetting("stay_connected") != "1") {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": Going to left room " << room);
+				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Going to left room " << room);
 				onRawPresenceReceived(presence);
 				leaveRoom(room);
 			}
@@ -239,7 +239,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 		else if (isMUC) {
 			// force connection to legacy network to let backend to handle auto-join on connect.
 			if (!m_readyForConnect) {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": Ready to be connected to legacy network");
+				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Ready to be connected to legacy network");
 				m_readyForConnect = true;
 				onReadyToConnect();
 			}
@@ -253,7 +253,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			Conversation *conv = m_conversationManager->getConversation(room);
 			if (conv != NULL) {
 				if (std::find(conv->getJIDs().begin(), conv->getJIDs().end(), presence->getFrom()) != conv->getJIDs().end()) {
-					LOG4CXX_INFO(logger, m_jid.toString() << ": User has already tried to join room " << room << " as " << presence->getTo().getResource());
+					LOG4CXX_INFO(userLogger, m_jid.toString() << ": User has already tried to join room " << room << " as " << presence->getTo().getResource());
 				}
 				else {
 					conv->addJID(presence->getFrom());
@@ -279,11 +279,11 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			}
 
 			if (!m_connected) {
-				LOG4CXX_INFO(logger, m_jid.toString() << ": Joining room " << room << " postponed, because use is not connected to legacy network yet.");
+				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Joining room " << room << " postponed, because use is not connected to legacy network yet.");
 				return;
 			}
 
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
+			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Going to join room " << room << " as " << presence->getTo().getResource());
 
 			conv = m_component->getFactory()->createConversation(m_conversationManager, room, true);
 			m_conversationManager->addConversation(conv);
@@ -320,10 +320,10 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 		};
 
 		if (!presences.empty()) {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": User is still connected from following clients: " << presences);
+			LOG4CXX_INFO(userLogger, m_jid.toString() << ": User is still connected from following clients: " << presences);
 		}
 		else {
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Last client disconnected");
+			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Last client disconnected");
 		}
 	}
 
@@ -366,7 +366,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			Swift::Presence::ref response = Swift::Presence::create(highest);
 			response->setTo(m_jid);
 			response->setFrom(m_component->getJID());
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
+			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
 			onPresenceChanged(highest);
 			setCacheMessages(false);
 		}
@@ -391,7 +391,7 @@ void User::handleSubscription(Swift::Presence::ref presence) {
 }
 
 void User::handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info) {
-	LOG4CXX_INFO(logger, jid.toString() << ": got disco#info");
+	LOG4CXX_INFO(userLogger, jid.toString() << ": got disco#info");
 #ifdef SUPPORT_LEGACY_CAPS
 	m_legacyCaps[jid] = info;
 #endif
@@ -408,26 +408,26 @@ void User::onConnectingTimeout() {
 
 	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
 	if (highest) {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Changing legacy network presence to " << highest->getType());
+		LOG4CXX_INFO(userLogger, m_jid.toString() << ": Changing legacy network presence to " << highest->getType());
 		onPresenceChanged(highest);
 	}
 }
 
 void User::setIgnoreDisconnect(bool ignoreDisconnect) {
 	m_ignoreDisconnect = ignoreDisconnect;
-	LOG4CXX_INFO(logger, m_jid.toString() << ": Setting ignoreDisconnect=" << m_ignoreDisconnect);
+	LOG4CXX_INFO(userLogger, m_jid.toString() << ": Setting ignoreDisconnect=" << m_ignoreDisconnect);
 }
 
 void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayload::Error e) {
 	if (m_ignoreDisconnect) {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network ignored (probably moving between backends)");
+		LOG4CXX_INFO(userLogger, m_jid.toString() << ": Disconnecting from legacy network ignored (probably moving between backends)");
 		return;
 	}
 
 	if (e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR || e == Swift::SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR) {
 		if (m_reconnectLimit < 0 || m_reconnectCounter < m_reconnectLimit) {
 			m_reconnectCounter++;
-			LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnecting from legacy network " << error << ", trying to reconnect automatically.");
+			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Disconnecting from legacy network " << error << ", trying to reconnect automatically.");
 			// Simulate destruction/resurrection :)
 			// TODO: If this stops working, create onReconnect signal
 			m_userManager->onUserDestroyed(this);
@@ -438,10 +438,10 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	}
 
 	if (error.empty()) {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network");
+		LOG4CXX_INFO(userLogger, m_jid.toString() << ": Disconnected from legacy network");
 	}
 	else {
-		LOG4CXX_INFO(logger, m_jid.toString() << ": Disconnected from legacy network with error " << error);
+		LOG4CXX_INFO(userLogger, m_jid.toString() << ": Disconnected from legacy network with error " << error);
 	}
 	onDisconnected();
 
@@ -487,13 +487,13 @@ std::vector<Swift::JID> User::getJIDWithFeature(const std::string &feature) {
                }
 
                if (discoInfo->hasFeature(feature)) {
-                       LOG4CXX_INFO(logger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
+                       LOG4CXX_INFO(userLogger, m_jid.toString() << ": Found JID with " << feature << " feature: " << presence->getFrom().toString());
                        jid.push_back(presence->getFrom());
                }
        }
 
        if (jid.empty()) {
-               LOG4CXX_INFO(logger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
+               LOG4CXX_INFO(userLogger, m_jid.toString() << ": No JID with " << feature << " feature " << m_legacyCaps.size());
        }
        return jid;
 }
