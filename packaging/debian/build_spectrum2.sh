@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -xe
 
 #Check functions required
 hash debuild 2>/dev/null || ( echo >&2 "apt-get install  devscripts"; exit 1; )
