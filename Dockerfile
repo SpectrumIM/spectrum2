@@ -26,7 +26,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR spectrum2
 
-RUN apt-get install --no-install-recommends -y prosody ngircd python-sleekxmpp python-dateutil python-dnspython python-pil libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev libprotobuf-c-dev protobuf-c-compiler
+RUN apt-get install --no-install-recommends -y prosody ngircd python-sleekxmpp python-dateutil python-dnspython python-pil libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev
 
 RUN apt-get install -t buster-backports --no-install-recommends -y cmake
 
@@ -93,12 +93,6 @@ git clone --recursive https://github.com/majn/telegram-purple && \
 		make && \
 		make DESTDIR=/tmp/out install
 		
-RUN echo "---> purple-battlenet" && \
-git clone --recursive https://github.com/EionRobb/purple-battlenet && \
-		cd purple-battlenet && \
-		make && \
-		make DESTDIR=/tmp/out install
-
 FROM debian:10.4-slim as production
 
 EXPOSE 5222
