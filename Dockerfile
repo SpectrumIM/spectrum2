@@ -96,7 +96,6 @@ git clone --recursive https://github.com/majn/telegram-purple && \
 RUN echo "---> purple-battlenet" && \
 git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		cd purple-battlenet && \
-		./configure && \
 		make && \
 		make DESTDIR=/tmp/out install
 
