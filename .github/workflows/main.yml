@@ -1,0 +1,58 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build tests
+      run: docker build . --target test -t spectrum:tests
+      env:
+        DOCKER_BUILDKIT: 1
+    - name: Run tests
+      run: docker run -tt spectrum:tests
+
+  macos:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: brew install cppunit log4cxx popt jsoncpp libswiften protobuf pkg-config
+    - name: Configure build
+      run: |
+        rm /usr/local/include/Swiften/Network/DummyConnectionServer.h
+        rm /usr/local/include/Swiften/Network/DummyConnectionServerFactory.h
+        cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON .
+    - name: Build tests
+      run:  make -j4
+    - name: Run tests
+      run:  make test
+
+#  windows:
+#    runs-on: windows-latest
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Install dependencies
+#      run: |
+#        curl -L -O https://packages.spectrum.im/deps32.zip
+#        7z x deps32.zip
+#      shell: cmd
+#    - uses: ilammy/msvc-dev-cmd@v1
+#      with:
+#        toolset: 14.0
+#        arch: x86
+#    - name: Configure build
+#      run: |
+#        set CMAKE_PREFIX_PATH=%~dp0deps32
+#        set BOOST_ROOT=%~dp0deps32
+#        set PATH=%PATH%;%~dp0deps32\bin
+#        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_FROTZ=OFF -DENABLE_PURPLE=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_INSTALL_PREFIX=dist .
+#      shell: cmd
+#    - name: Build solution
+#      run:  nmake
+#    - name: Run tests
+#      run:  nmake test
