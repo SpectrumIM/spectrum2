@@ -47,7 +47,7 @@ RUN /bin/bash ./build_spectrum2.sh
 
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
-		libwebp-dev libgcrypt20-dev libpng-dev
+		libwebp-dev libgcrypt20-dev libpng-dev hg protobuf-c-compiler
 
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
