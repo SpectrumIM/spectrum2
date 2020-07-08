@@ -89,6 +89,7 @@ if(WIN32)
 	set(Boost_USE_STATIC_RUNTIME    OFF)
 	add_definitions(-DBOOST_ALL_DYN_LINK)
 	add_definitions(-DBOOST_ALL_NO_LIB)
+	link_directories("$ENV{CMAKE_PREFIX_PATH}/lib")
 endif(WIN32)
 
 set(Boost_FIND_QUIETLY ON)
