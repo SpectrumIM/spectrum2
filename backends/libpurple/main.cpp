@@ -1859,9 +1859,9 @@ void * requestInput(const char *title, const char *primary,const char *secondary
 			np->m_inputRequests[req->mainJID] = req;
 			return NULL;
 		}
-		else if (boost::starts_with(primaryString, "Enter authorization code")) {
+		else if (boost::starts_with(primaryString, "Enter authentication code")) {
 			LOG4CXX_INFO(logger, "telegram-tdlib 2FA request");
-			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Authorization code: "));
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Authentication code: "));
 			inputRequest *req = new inputRequest;
 			req->ok_cb = (PurpleRequestInputCb)ok_cb;
 			req->user_data = user_data;
