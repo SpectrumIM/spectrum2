@@ -877,7 +877,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			LOG4CXX_INFO(logger, user << ": Joining the room " << roomName);
 			if (comps) {
 				serv_join_chat_wrapped(gc, comps);
-				g_hash_table_destroy(comps);
 			}
 		}
 
