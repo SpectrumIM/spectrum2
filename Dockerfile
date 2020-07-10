@@ -93,6 +93,12 @@ git clone --recursive https://github.com/majn/telegram-purple && \
 		make && \
 		make DESTDIR=/tmp/out install
 		
+RUN echo "---> purple-battlenet" && \
+git clone --recursive https://github.com/EionRobb/purple-battlenet && \
+		cd purple-battlenet && \
+		make && \
+		make DESTDIR=/tmp/out install		
+		
 FROM debian:10.4-slim as production
 
 EXPOSE 5222
