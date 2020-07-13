@@ -5,7 +5,7 @@ import subprocess
 import os
 import traceback
 
-import sleekxmpp
+import slixmpp
 from importlib.machinery import SourceFileLoader
 import logging
 
@@ -13,7 +13,7 @@ import logging
                         #format='%(levelname)-8s %(message)s')
 
 def registerXMPPAccount(user, password):
-	responder = sleekxmpp.ClientXMPP(user, password)
+	responder = slixmpp.ClientXMPP(user, password)
 	responder.register_plugin('xep_0030')  # Service Discovery
 	responder.register_plugin('xep_0077')
 	responder['feature_mechanisms'].unencrypted_plain = True
@@ -62,7 +62,7 @@ class ClientResponderTestCase(BaseTestCase):
 			to = () # auto detect from jid
 				# used by some tests to connect responder to legacy network
 		if self.responder.connect(to):
-			self.responder.process(block=False)
+			self.responder.process()
 		else:
 			raise Exception("connect() failed")
 

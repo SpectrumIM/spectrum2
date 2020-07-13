@@ -4,12 +4,12 @@ import time
 import subprocess
 import os
 
-import sleekxmpp
+import slixmpp
 
 
-class Responder(sleekxmpp.ClientXMPP):
+class Responder(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, room, room_password, nick):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.room_password = room_password
 		self.nick = nick
@@ -29,9 +29,9 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.plugin['xep_0045'].joinMUC(self.room, self.nick, password=self.room_password, wait=True)
 		self.send_message(mto=self.room, mbody=None, msubject="New subject", mtype='groupchat')
 
-class Client(sleekxmpp.ClientXMPP):
+class Client(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.add_event_handler("session_start", self.start)
