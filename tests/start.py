@@ -5,7 +5,7 @@ import subprocess
 import os
 import traceback
 
-import sleekxmpp
+import slixmpp
 import imp
 import logging
 
@@ -13,7 +13,7 @@ import logging
                         #format='%(levelname)-8s %(message)s')
 
 def registerXMPPAccount(user, password):
-	responder = sleekxmpp.ClientXMPP(user, password)
+	responder = slixmpp.ClientXMPP(user, password)
 	responder.register_plugin('xep_0030')  # Service Discovery
 	responder.register_plugin('xep_0077')
 	responder['feature_mechanisms'].unencrypted_plain = True
@@ -21,7 +21,7 @@ def registerXMPPAccount(user, password):
 	if responder.connect(("127.0.0.1", 5222)):
 		responder.process(block=False)
 	else:
-		print "connect() failed"
+		print("connect() failed")
 		sys.exit(1)
 
 
@@ -62,7 +62,7 @@ class ClientResponderTestCase(BaseTestCase):
 			to = () # auto detect from jid
 				# used by some tests to connect responder to legacy network
 		if self.responder.connect(to):
-			self.responder.process(block=False)
+			self.responder.process()
 		else:
 			raise Exception("connect() failed")
 
@@ -145,7 +145,7 @@ class BaseTest:
 
 		# Let the test self-disqualify
 		if hasattr(testCase, 'enabled') and not testCase.enabled:
-			print "Skipped (self-disqualified)."
+			print("Skipped (self-disqualified).")
 			return True
 
 		self.pre_test()
@@ -165,9 +165,9 @@ class BaseTest:
 		ret = True
 		for v in testCase.tests:
 			if v[1]:
-				print v[0] + ": PASSED"
+				print(v[0] + ": PASSED")
 			else:
-				print v[0] + ": FAILED"
+				print(v[0] + ": FAILED")
 				ret = False
 
 		if not ret:
@@ -260,7 +260,7 @@ class JabberSlackServerModeConf(BaseTest):
 	def skip_test(self, test):
 		os.system("cp ../slack_jabber/slack.sql .")
 		if test.find("bad_password") != -1:
-			print "Changing password to 'badpassword'"
+			print("Changing password to 'badpassword'")
 			os.system("sqlite3 slack.sql \"UPDATE users SET password='badpassword' WHERE id=1\"")
 		return False
 
@@ -311,13 +311,13 @@ for conf in configurations:
 		if len(sys.argv) == 2 and sys.argv[1] != f:
 			continue
 
-		print conf.__class__.__name__ + ": Starting " + f + " test ..."
+		print(conf.__class__.__name__ + ": Starting " + f + " test ...")
 		# Modules must have distinct module names or their clases will be merged by loader!
 		modulename = (conf.directory+f).replace("/","_").replace("\\","_").replace(".","_")
 		test = imp.load_source(modulename, conf.directory + f)
 
 		if conf.skip_test(f):
-			print "Skipped."
+			print("Skipped.")
 			continue
 		try:
 			ret = conf.start(test)
