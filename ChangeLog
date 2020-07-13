@@ -1,3 +1,10 @@
+Version 2.0.13 (2020-07-13):
+	General:
+	* improve compatibility with latest build tools
+	libpurple backend:
+	* fix random crashes
+	* telegram-tdlib support
+
 Version 2.0.12 (2019-07-15):
 	libpurple backend:
 	* revert changes which causes crash on start
