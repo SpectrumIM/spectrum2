@@ -68,12 +68,6 @@ RUN echo "---> Installing skype4pidgin" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-RUN echo "---> Install Discord" && \
-		git clone https://github.com/EionRobb/purple-discord.git && \
-		cd purple-discord && \
-		make && \
-		make DESTDIR=/tmp/out install
-
 RUN echo "---> Install Steam" && \
 		git clone https://github.com/EionRobb/pidgin-opensteamworks.git && \
 		cd pidgin-opensteamworks/steam-mobile && \
@@ -108,6 +102,7 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
+RUN echo 'deb http://deb.debian.org/debian stable-backports main' > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1
 
@@ -123,7 +118,8 @@ RUN echo "---> Installing purple-facebook" && \
 		apt-get install --no-install-recommends -y purple-facebook
 RUN echo "---> Installing purple-telegram" && \
 		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.6.0
-
+RUN echo "---> Installing purple-discord" && \
+                apt-get install --no-install-recommends -y -t buster-backports purple-discord
 
 COPY --from=staging /tmp/out/* /usr/
 
