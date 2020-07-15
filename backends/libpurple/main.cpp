@@ -1962,7 +1962,7 @@ static void XferCreated(PurpleXfer *xfer) {
 	}
 
  	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
- 	np->handleFTStart(np->m_accounts[account], xfer->who, xfer, "", xhtml_);
+ 	np->handleFTStart(np->m_accounts[account], xfer->who, purple_xfer_get_filename_wrapped(xfer), purple_xfer_get_size_wrapped(xfer));
 }
 
 static void XferDestroyed(PurpleXfer *xfer) {
