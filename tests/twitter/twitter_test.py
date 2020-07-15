@@ -4,14 +4,14 @@ import time
 import subprocess
 import os
 
-import slixmpp
-from slixmpp.xmlstream.matcher import StanzaPath, MatchXPath
-from slixmpp.xmlstream.handler import Callback
+import sleekxmpp
+from sleekxmpp.xmlstream.matcher import StanzaPath, MatchXPath
+from sleekxmpp.xmlstream.handler import Callback
 
 
-class Responder(slixmpp.ClientXMPP):
+class Responder(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, room_password, nick):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.room_password = room_password
 		self.nick = nick
@@ -20,9 +20,9 @@ class Responder(slixmpp.ClientXMPP):
 		self.tests = {}
 
 
-class Client(slixmpp.ClientXMPP):
+class Client(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.add_event_handler("session_start", self.start)

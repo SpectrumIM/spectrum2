@@ -4,7 +4,7 @@ import time
 import subprocess
 import os
 
-import slixmpp
+import sleekxmpp
 
 import struct
 import zlib
@@ -14,9 +14,9 @@ def chunk(t, data):
 png = b'\x89PNG\r\n\x1A\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 1, 0, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(struct.pack('>BB', 0, 0))) + chunk(b'IEND', b'')
 
 
-class Responder(slixmpp.ClientXMPP):
+class Responder(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, room_password, nick):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.room_password = room_password
 		self.nick = nick
@@ -36,9 +36,9 @@ class Responder(slixmpp.ClientXMPP):
 		self.getRoster()
 		self.sendPresence()
 
-class Client(slixmpp.ClientXMPP):
+class Client(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.register_plugin('xep_0153') # vCard-based avatars

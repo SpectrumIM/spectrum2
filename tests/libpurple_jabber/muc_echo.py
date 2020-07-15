@@ -4,12 +4,12 @@ import time
 import subprocess
 import os
 
-import slixmpp
+import sleekxmpp
 
 
-class Responder(slixmpp.ClientXMPP):
+class Responder(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, room_password, nick):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.room_password = room_password
@@ -35,9 +35,9 @@ class Responder(slixmpp.ClientXMPP):
 		#self.plugin['xep_0045'].setRoomConfig(self.room, form)
 		self.finished = True # Just reply to requests
 
-class Client(slixmpp.ClientXMPP):
+class Client(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.register_plugin("xep_0045") # MUC

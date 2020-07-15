@@ -4,8 +4,8 @@ import time
 import subprocess
 import os
 
-import slixmpp
-from slixmpp.jid import JID
+import sleekxmpp
+from sleekxmpp.jid import JID
 
 # Verifies that our own messages sent elsewhere are delivered as carbons, and that our local
 # messages are not.
@@ -19,9 +19,9 @@ from slixmpp.jid import JID
 # What we cannot test:
 # - Spectrum passes through carbons of outside client messages
 
-class Client(slixmpp.ClientXMPP):
+class Client(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, alt_jid, responder_jid):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.full_jid = jid
 		self.alt_jid = JID(alt_jid) # our own alternative jid (backend/spectrum)
 		self.responder_jid = JID(responder_jid)
@@ -120,9 +120,9 @@ class Client(slixmpp.ClientXMPP):
 		print str(self)+": msg1="+str(self.cs_m1_cnt)+", msg2="+str(self.cs_m2_cnt)+", msg3="+str(self.cs_m3_cnt)+", weird="+str(self.weird_cnt)
 
 
-class Responder(slixmpp.ClientXMPP):
+class Responder(sleekxmpp.ClientXMPP):
 	def __init__(self, jid, password, client1_jid, client2_jid):
-		slixmpp.ClientXMPP.__init__(self, jid, password)
+		sleekxmpp.ClientXMPP.__init__(self, jid, password)
 		self.add_event_handler("session_start", self.start)
 		self.add_event_handler("message", self.message)
 		self.client1_jid = JID(client1_jid)
