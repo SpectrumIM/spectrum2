@@ -28,7 +28,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR spectrum2
 
-RUN apt-get install --no-install-recommends -y prosody ngircd python-sleekxmpp python-dateutil python-dnspython python-pil libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev
+RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev
 
 
 RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make
