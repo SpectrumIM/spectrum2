@@ -38,6 +38,9 @@ class Factory {
 		virtual Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc = false) = 0;
 
 		virtual Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) = 0;
+
+		virtual ~Factory()
+		{ }
 };
 
 }

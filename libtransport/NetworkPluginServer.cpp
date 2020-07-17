@@ -46,9 +46,11 @@
 #include "Swiften/Elements/DeliveryReceiptRequest.h"
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
+#include "Swiften/Elements/RawXMLPayload.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include "boost/signal.hpp"
+#include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "transport/utf8.h"
 
@@ -87,7 +89,7 @@ class NetworkConversation : public Conversation {
 			onMessageToSend(this, message);
 		}
 
-		boost::signal<void (NetworkConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (NetworkConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class NetworkFactory : public Factory {
@@ -193,7 +195,7 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 		setsid();
 		// close all files
 		int maxfd=sysconf(_SC_OPEN_MAX);
-		for(int fd=3; fd<maxfd; fd++) {
+		for (int fd=3; fd<maxfd; fd++) {
 			close(fd);
 		}
 		// child process
@@ -306,7 +308,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 // // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
 // // 	m_blockResponder->start();
 
-	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(Swift::HostAddress(CONFIG_STRING(m_config, "service.backend_host")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
+	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(SWIFT_HOSTADDRESS(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 }
 
@@ -663,9 +665,10 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool subject) {
 	pbnetwork::ConversationMessage payload;
+	LOG4CXX_TRACE(logger, "handleConvMessagePayload");
 
 	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
+		LOG4CXX_ERROR(logger, "handleConvMessagePayload: cannot parse payload");
 		return;
 	}
 
@@ -677,31 +680,6 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 	// Message from legacy network triggers network acticity
 	user->updateLastActivity();
-
-	// Set proper body.
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
-	if (subject) {
-		msg->setSubject(payload.message());
-	}
-	else {
-		msg->setBody(payload.message());
-	}
-
-	if (payload.headline()) {
-		msg->setType(Swift::Message::Headline);
-	}
-
-	// Add xhtml-im payload.
-	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
-		msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
-	}
-
-	if (!payload.timestamp().empty()) {
-		boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Delay> delay(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::Delay>());
-		delay->setStamp(timestamp);
-		msg->addPayload(delay);
-	}
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 
@@ -732,8 +710,44 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
 	}
 
-	// Forward it
-	conv->handleMessage(msg, payload.nickname());
+
+	// Convert payload to Swift::Message
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+	if (subject) {
+		msg->setSubject(payload.message());
+	}
+	else {
+		msg->setBody(payload.message());
+	}
+
+	// Add xhtml-im payload.
+	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
+		msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
+	}
+
+	// Split the message if configured, or just preprocess
+	LOG4CXX_TRACE(logger, "handleConvMessagePayload: wrapping media");
+	typedef std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > MsgList;
+	MsgList msgs = wrapIncomingMedia(msg);
+
+	// Forward all parts
+	for (MsgList::iterator it=msgs.begin(); it!=msgs.end(); it++) {
+		if (payload.headline()) {
+			(*it)->setType(Swift::Message::Headline);
+		}
+
+		(*it)->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(Swift::ChatState::Active));
+
+		if (!payload.timestamp().empty()) {
+			boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
+			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Delay> delay(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::Delay>());
+			delay->setStamp(timestamp);
+			(*it)->addPayload(delay);
+		}
+
+		conv->handleMessage((*it), payload.nickname(), payload.carbon());
+	}
+
 	m_userManager->messageToXMPPSent();
 }
 
@@ -916,7 +930,7 @@ void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
 
 void NetworkPluginServer::connectWaitingUsers() {
 	// some users are in queue waiting for this backend
-	while(!m_waitingUsers.empty()) {
+	while (!m_waitingUsers.empty()) {
 		// There's no new backend, so stop associating users and wait for new backend,
 		// which has been already spawned in getFreeClient() call.
 		if (getFreeClient(true, false, true) == NULL)
@@ -1317,7 +1331,7 @@ void NetworkPluginServer::pingTimeout() {
 	// reconnect them to long-running backend, where they can idle hapilly till the end of ages.
 	time_t now = time(NULL);
 	std::vector<User *> usersToMove;
-	unsigned long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
+	long diff = CONFIG_INT(m_config, "service.idle_reconnect_time");
 	if (diff != 0) {
 		for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
 			// Users from long-running backends can't be moved
@@ -1499,7 +1513,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 		pbnetwork::Buddies buddies;
 
 		const RosterManager::BuddiesMap &roster = user->getRosterManager()->getBuddies();
-		for(RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
+		for (RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
 			Buddy *b = (*bt).second;
 			if (!b) {
 				continue;
@@ -1790,6 +1804,195 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	send(c->connection, message);
 }
 
+
+// Trims linebreaks and spaces from XHTML chunk of text
+inline std::string xhtml_trim(std::string &s) {
+	static const std::string t[] = {" ", "\n", "\t", "<br>", "<br/>"};
+	bool match = true;
+	while (match) {
+		match = false;
+		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
+			if (boost::algorithm::istarts_with(s, t[i])) {
+				s.erase(0, t[i].size());
+				match = true;
+			}
+	}
+	match = true;
+	while (match) {
+		match = false;
+		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
+			if (boost::algorithm::iends_with(s, t[i])) {
+				s.erase(s.size() - t[i].size());
+				match = true;
+			}
+	}
+	return s;
+}
+//Same for plaintext
+std::string plaintext_trim(std::string &text) {
+	static std::string t = " \n\t";
+	text.erase(text.find_last_not_of(t) + 1);
+	text.erase(0, text.find_first_not_of(t));
+	return text;
+}
+
+//Duplicates a Swift::Message and replaces its body and XHTML parts
+Swift::Message::ref copySwiftMessage(const Swift::Message* msg, const std::string& xhtml, const std::string& body) {
+    Swift::Message::ref this_msg(new Swift::Message());
+    //Copy all payloads by reference, except for body and XHTML
+    std::vector<Swift::Payload::ref> payloads = msg->getPayloads();
+    for (size_t i=0; i<payloads.size(); i++) {
+        if(!dynamic_cast<Swift::Body*>(payloads[i].get()) && !dynamic_cast<Swift::XHTMLIMPayload*>(payloads[i].get()))
+            this_msg->addPayload(payloads[i]);
+    }
+    //Add new body and XHTML tags
+    this_msg->setBody(body);
+    this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(xhtml));
+    LOG4CXX_TRACE(logger, "Adding partial message: '" << xhtml << "', '" << body << "'");
+    return this_msg;
+}
+
+/*
+Process all media links (<img>, ..) in the message XHTML and apply required wrappers
+and mitigations to ensure broader support for inplace display.
+Returns a list of messages to deliver.
+
+Copies any additional payloads into each of messages by reference (modify one == modify all).
+
+Possible modes:
+*/
+enum OobMode {
+	OobWrapAll	= 1,	//1. Wrap all media as OOB tags. (Standards-compliant)
+	OobExclusive	= 2,	//2. Make the first media the only content of the message.
+	OobSplit	= 3,	//3. Split into multiple text-only/media-only messages.
+};
+
+std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >
+NetworkPluginServer::wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg) {
+    std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > result;
+
+    SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload =
+        msg->getPayload<Swift::XHTMLIMPayload>();
+    if (!xhtmlPayload) { //XHTML not available or disabled
+        result.push_back(msg);
+        return result;
+    }
+
+    const std::string& xhtml = xhtmlPayload->getBody();
+    if (xhtml.find("<img") == std::string::npos) { //Clearly no media
+        result.push_back(msg);
+        return result;
+    }
+    const std::string body = msg->getBody().get();
+
+    OobMode oobMode = OobWrapAll;
+    if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_split", false))
+        //Split the message into parts so that each part only contains one media instance or one chunk of text
+        oobMode = OobSplit;
+    else if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false))
+        // Some clients require plaintext to contain only the OOB URL to be displayed
+        // This is not required by XEP and we lose parts of plaintext (e.g. captions).
+        oobMode = OobExclusive;
+
+    LOG4CXX_TRACE(logger, "wrapIncomingMedia: mode=" << (int) oobMode);
+    LOG4CXX_TRACE(logger, "xhtml = " << xhtml);
+    LOG4CXX_TRACE(logger, "body = " << body);
+
+
+    //Find all <img...> entries
+    //Handles: spaces, unrelated tags
+    //Doesn't handle: unquoted src, escaped "'>s, quotes in quotes ("quote: 'text' end quote")
+    static boost::regex image_expr("<img\\s+[^>]*src\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>");
+
+    bool matchCount = 0;
+    std::string firstUrl;
+
+    std::string::const_iterator xhtml_pos = xhtml.begin();
+    std::string::size_type body_pos = 0;
+
+    boost::smatch match;
+    while(boost::regex_search(xhtml_pos, xhtml.end(), match, image_expr)) {
+        matchCount++;
+        const std::string& image_tag = match[0];
+        const std::string& image_url = match[1];
+        if (firstUrl.empty())
+            firstUrl = image_url;
+        LOG4CXX_TRACE(logger, "match: image_tag=" << image_tag << ", image_url="<< image_url);
+
+        //Process the part before the match
+        if ((oobMode == OobSplit) && (match[0].first != xhtml_pos)) {
+            std::string xhtml_prev(xhtml_pos, match[0].first);
+            xhtml_trim(xhtml_prev);
+
+            //Find the same URI in the plaintext body
+            std::string body_prev = "";
+            std::string::size_type body_match = body.find(image_url, body_pos);
+            if (body_match != std::string::npos) {
+                body_prev = body.substr(body_pos, body_match-body_pos);
+                plaintext_trim(body_prev);
+                body_pos = body_match + image_url.size();
+            }
+
+            //If anything of that is not empty, post as a message
+            if (!xhtml_prev.empty() || !body_prev.empty())
+                result.push_back(copySwiftMessage(msg.get(), xhtml_prev, body_prev));
+        }
+
+        //Now the match
+        SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> this_msg;
+        if (oobMode == OobSplit) {
+            this_msg = copySwiftMessage(msg.get(), image_tag, image_url);
+            result.push_back(this_msg);
+        } else {
+            this_msg = msg;
+        }
+
+        //Add OOB tag
+        SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
+            oob_payload(new Swift::RawXMLPayload(
+                "<x xmlns='jabber:x:oob'><url>"
+                + image_url
+                + "</url>"
+                + "</x>"
+            ));
+            // todo: add the payload itself as a caption
+        this_msg->addPayload(oob_payload);
+
+        //In single-OOB mode there's no point to process further media
+        if (oobMode == OobExclusive)
+            break;
+
+        xhtml_pos = match[0].second;
+    }
+
+    //Post the text remainder
+    if ((oobMode == OobSplit) && (xhtml_pos != xhtml.end())) {
+        std::string xhtml_prev(xhtml_pos, xhtml.end());
+        xhtml_trim(xhtml_prev);
+
+        std::string body_prev = body.substr(body_pos, body.size()-body_pos);
+        plaintext_trim(body_prev);
+
+        if (!xhtml_prev.empty() || !body_prev.empty())
+            result.push_back(copySwiftMessage(msg.get(), xhtml_prev, body_prev));
+    }
+
+    LOG4CXX_DEBUG(logger, "wrapIncomingMedia: matchCount==" << matchCount);
+
+    if (oobMode != OobSplit)
+        result.push_back(msg); //Push the non-split message only
+
+    if (matchCount==0) {
+        LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + xhtml);
+    } else {
+        // Replace the plaintext.
+        // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
+        if (oobMode == OobExclusive)
+            msg->setBody(firstUrl);
+    }
+    return result;
+}
+
 void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
 	User *user = b->getRosterManager()->getUser();
 
@@ -2060,7 +2263,7 @@ static void __unblock_signals ( void )
 NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUsers, bool longRun, bool check) {
 	NetworkPluginServer::Backend *c = NULL;
 
-	unsigned long diff = CONFIG_INT(m_config, "service.login_delay");
+	long diff = CONFIG_INT(m_config, "service.login_delay");
 	time_t now = time(NULL);
 	if (diff && (now - m_lastLogin < diff)) {
 		m_loginTimer->stop();
@@ -2077,11 +2280,11 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 
 	// Check all backends and find free one
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		if ((*it)->willDie == false && (*it)->acceptUsers == acceptUsers && (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
+		if ((*it)->willDie == false && (*it)->acceptUsers == acceptUsers && (int) (*it)->users.size() < CONFIG_INT(m_config, "service.users_per_backend") && (*it)->connection && (*it)->longRun == longRun) {
 			c = *it;
 			// if we're not reusing all backends and backend is full, stop accepting new users on this backend
 			if (!CONFIG_BOOL(m_config, "service.reuse_old_backends")) {
-				if (!check && c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
+				if (!check && (int) c->users.size() + 1 >= CONFIG_INT(m_config, "service.users_per_backend")) {
 					c->acceptUsers = false;
 				}
 			}

@@ -43,7 +43,7 @@ std::string searchForBinary(const std::string &binary) {
 
 	if (env_path != NULL) {
 		std::string buffer = "";
-		for (int s = 0; s < strlen(env_path); s++) {
+		for (unsigned s = 0; s < strlen(env_path); s++) {
 			if (env_path[s] == ':') {
 				path_list.insert(path_list.end(), std::string(buffer));
 				buffer = "";
@@ -591,7 +591,7 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 				m_conn = networkFactories.getConnectionFactory()->createConnection();
 				m_conn->onDataRead.connect(boost::bind(&handleDataRead, m_conn, _1));
 				m_conn->onConnectFinished.connect(boost::bind(&handleConnected, m_conn, message, _1));
-				m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(CONFIG_STRING(&cfg, "service.backend_host")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
+				m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(CONFIG_STRING_DEFAULTED(&cfg, "service.backend_host", "127.0.0.1")), getPort(CONFIG_STRING(&cfg, "service.portfile"))));
 			}
 		}
 
@@ -619,7 +619,6 @@ std::vector<std::string> show_list(ManagerConfig *config, bool show) {
 			return list;
 		}
 
-		bool found = false;
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
 			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {

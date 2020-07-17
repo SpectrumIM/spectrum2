@@ -30,7 +30,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SettingsAdHocCommand");
+DEFINE_LOGGER(settingsAdHocCommandLogger, "SettingsAdHocCommand");
 
 SettingsAdHocCommand::SettingsAdHocCommand(Component *component, UserManager *userManager, StorageBackend *storageBackend, const Swift::JID &initiator, const Swift::JID &to) : AdHocCommand(component, userManager, storageBackend, initiator, to) {
 	m_state = Init;

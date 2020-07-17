@@ -22,7 +22,6 @@
 
 #include <string>
 #include <map>
-#include <boost/signal.hpp>
 
 #include "Swiften/FileTransfer/ReadBytestream.h"
 #include "Swiften/SwiftenCompat.h"
@@ -41,7 +40,7 @@ class MemoryReadBytestream : public Swift::ReadBytestream {
 		void setFinished() { m_finished = true; }
 		bool isFinished() const;
 
-		boost::signal<void ()> onDataNeeded;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onDataNeeded;
 
 	private:
 		bool m_finished;

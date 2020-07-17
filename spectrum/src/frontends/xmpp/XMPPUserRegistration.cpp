@@ -36,7 +36,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/regex.hpp> 
+#include <boost/regex.hpp>
 #if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>
 #endif
@@ -46,7 +46,7 @@ using namespace Swift;
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "XMPPUserRegistration");
+DEFINE_LOGGER(xmppUserRegistrationLogger, "XMPPUserRegistration");
 
 XMPPUserRegistration::XMPPUserRegistration(Component *component, UserManager *userManager,
 								   StorageBackend *storageBackend)
@@ -117,7 +117,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_N
 		// and send Unsubsribe and Unsubscribed presence to them.
 		std::list<BuddyInfo> roster;
 		m_storageBackend->getBuddies(userInfo.id, roster);
-		for(std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
+		for (std::list<BuddyInfo>::iterator u = roster.begin(); u != roster.end() ; u++){
 			std::string name = (*u).legacyName;
 			if ((*u).flags & BUDDY_JID_ESCAPING) {
 				name = Swift::JID::getEscapedNode((*u).legacyName);
@@ -146,6 +146,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_N
 		// Remote roster is support, so iterate over all buddies we received
 		// from the XMPP server and remove them using remote roster.
 		BOOST_FOREACH(Swift::RosterItemPayload it, payload->getItems()) {
+			if (it.getJID().getDomain() != m_component->getJID().getDomain()) continue;
 			Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
 			Swift::RosterItemPayload item;
 			item.setJID(it.getJID());
@@ -266,7 +267,7 @@ bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, from.toBare().toString() << ": This user has no permissions to register an account")
+			LOG4CXX_INFO(xmppUserRegistrationLogger, from.toBare().toString() << ": This user has no permissions to register an account");
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -290,7 +291,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_BOOL(m_config,"registration.enable_public_registration")) {
 		std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.allowed_servers");
 		if (std::find(x.begin(), x.end(), from.getDomain()) == x.end()) {
-			LOG4CXX_INFO(logger, barejid << ": This user has no permissions to register an account")
+			LOG4CXX_INFO(xmppUserRegistrationLogger, barejid << ": This user has no permissions to register an account");
 			sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
 			return true;
 		}
@@ -342,7 +343,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		} else */ if (local_username == "" || local_password == "") {
 			sendResponse(from, id, InBandRegistrationPayload::ref());
 			return true;
-		} 
+		}
 //		Swift::logging = true;
 		bool validLocal = false;
 		std::string localLookupServer = CONFIG_STRING(m_config, "registration.local_account_server");
@@ -350,7 +351,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		SimpleEventLoop localLookupEventLoop;
 		BoostNetworkFactories localLookupNetworkFactories(&localLookupEventLoop);
 		Client localLookupClient(localLookupJID, local_password, &localLookupNetworkFactories);
-		
+
 		// TODO: this is neccessary on my server ... but should maybe omitted
 		localLookupClient.setAlwaysTrustCertificates();
 		localLookupClient.connect();
@@ -427,7 +428,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 	if (!CONFIG_STRING(m_config, "registration.allowed_usernames").empty()) {
 		boost::regex expression(CONFIG_STRING(m_config, "registration.allowed_usernames"));
 		if (!regex_match(newUsername, expression)) {
-			LOG4CXX_INFO(logger, "This is not valid username: " << newUsername);
+			LOG4CXX_INFO(xmppUserRegistrationLogger, "This is not valid username: " << newUsername);
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}

@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/hanzz/spectrum2.svg?branch=master)](https://travis-ci.org/hanzz/spectrum2)
-
 ![](http://spectrum.im/animation.gif)
 
 Spectrum 2 is an open source instant messaging transport.

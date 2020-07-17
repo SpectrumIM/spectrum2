@@ -39,11 +39,12 @@ modules_enabled = {
 -- 		"tls"; -- Add support for secure TLS on c2s/s2s connections
 		"dialback"; -- s2s dialback support
 		"disco"; -- Service discovery
-		"muc";
+--		"muc"; -- Need to be enabled as a component
 
 	-- Not essential, but recommended
 		"private"; -- Private XML storage (for room bookmarks, etc.)
 		"vcard"; -- Allow users to set vCards
+		"carbons"; -- Needed for carbon testing
 	
 	-- These are commented by default as they have a performance impact
 		--"privacy"; -- Support privacy lists
@@ -98,6 +99,7 @@ allow_registration = true
 -- prevent clients from authenticating unless they are using encryption.
 
 c2s_require_encryption = false
+allow_unencrypted_plain_auth = true
 
 -- Force certificate authentication for server-to-server connections?
 -- This provides ideal security, but requires servers you communicate
@@ -155,6 +157,8 @@ log = "*console"
 -- POSIX configuration, see also http://prosody.im/doc/modules/mod_posix
 -- pidfile = "/run/prosody/prosody.pid";
 daemonize = false -- Default is "true"
+
+run_as_root = true
 
 ------ Additional config files ------
 -- For organizational purposes you may prefer to add VirtualHost and

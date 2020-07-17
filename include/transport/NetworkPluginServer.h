@@ -23,6 +23,7 @@
 #include "transport/FileTransferManager.h"
 
 #include <time.h>
+#include <vector>
 #include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Network/BoostConnectionServer.h"
@@ -42,6 +43,7 @@
 #include "Swiften/SwiftenCompat.h"
 #include <Swiften/Version.h>
 #include <Swiften/FileTransfer/FileTransfer.h>
+#include "transport/protocol.pb.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #define NETWORK_PLUGIN_API_VERSION (1)
@@ -158,6 +160,9 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleFTDataNeeded(Backend *b, unsigned long ftid);
 
 		void handlePIDTerminated(unsigned long pid);
+
+		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg);
+
 	private:
 		void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> &, const std::string &data);
 

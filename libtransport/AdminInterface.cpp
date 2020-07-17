@@ -39,8 +39,10 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "AdminInterface");
+DEFINE_LOGGER(adminInterfaceLogger, "AdminInterface");
 
+// currently unused
+#if 0
 static std::string getArg(const std::string &body) {
 	std::string ret;
 	if (body.find(" ") == std::string::npos)
@@ -48,10 +50,11 @@ static std::string getArg(const std::string &body) {
 
 	return body.substr(body.find(" ") + 1);
 }
+#endif
 
 class StatusCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		StatusCommand(NetworkPluginServer *server, UserManager *userManager) :
 												AdminInterfaceCommand("status",
 												AdminInterfaceCommand::General,
@@ -82,7 +85,7 @@ class StatusCommand : public AdminInterfaceCommand {
 
 class UptimeCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		UptimeCommand() : AdminInterfaceCommand("uptime",
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
@@ -107,7 +110,7 @@ class UptimeCommand : public AdminInterfaceCommand {
 
 class OnlineUsersCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		OnlineUsersCommand(UserManager *userManager) : AdminInterfaceCommand("online_users",
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::GlobalContext,
@@ -141,7 +144,7 @@ class OnlineUsersCommand : public AdminInterfaceCommand {
 
 class OnlineUsersCountCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		OnlineUsersCountCommand(UserManager *userManager) : AdminInterfaceCommand("online_users_count",
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::GlobalContext,
@@ -167,7 +170,7 @@ class OnlineUsersCountCommand : public AdminInterfaceCommand {
 
 class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		OnlineUsersPerBackendCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("online_users_per_backend",
 												AdminInterfaceCommand::General,
@@ -208,6 +211,8 @@ class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
 				}
 				id++;
 			}
+
+			return lst;
 		}
 
 	private:
@@ -216,7 +221,7 @@ class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
 
 class BackendsCountCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		BackendsCountCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("backends_count",
 												AdminInterfaceCommand::Backends,
@@ -243,7 +248,7 @@ class BackendsCountCommand : public AdminInterfaceCommand {
 
 class ReloadCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		ReloadCommand(Component *component) : AdminInterfaceCommand("reload",
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
@@ -275,7 +280,7 @@ class ReloadCommand : public AdminInterfaceCommand {
 
 class HasOnlineUserCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		HasOnlineUserCommand(UserManager *userManager) : AdminInterfaceCommand("has_online_user",
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::GlobalContext,
@@ -306,7 +311,7 @@ class HasOnlineUserCommand : public AdminInterfaceCommand {
 
 class ResMemoryCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		ResMemoryCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("res_memory",
 												AdminInterfaceCommand::Memory,
@@ -340,7 +345,7 @@ class ResMemoryCommand : public AdminInterfaceCommand {
 
 class ShrMemoryCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		ShrMemoryCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("shr_memory",
 												AdminInterfaceCommand::Memory,
@@ -374,7 +379,7 @@ class ShrMemoryCommand : public AdminInterfaceCommand {
 
 class UsedMemoryCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		UsedMemoryCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("used_memory",
 												AdminInterfaceCommand::Memory,
@@ -410,7 +415,7 @@ class UsedMemoryCommand : public AdminInterfaceCommand {
 
 class AverageMemoryPerUserCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		AverageMemoryPerUserCommand(NetworkPluginServer *server, UserManager *userManager) :
 												AdminInterfaceCommand("average_memory_per_user",
 												AdminInterfaceCommand::Memory,
@@ -451,7 +456,7 @@ class AverageMemoryPerUserCommand : public AdminInterfaceCommand {
 
 class ResMemoryPerBackendCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		ResMemoryPerBackendCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("res_memory_per_backend",
 												AdminInterfaceCommand::Memory,
@@ -485,7 +490,7 @@ class ResMemoryPerBackendCommand : public AdminInterfaceCommand {
 
 class ShrMemoryPerBackendCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		ShrMemoryPerBackendCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("shr_memory_per_backend",
 												AdminInterfaceCommand::Memory,
@@ -519,7 +524,7 @@ class ShrMemoryPerBackendCommand : public AdminInterfaceCommand {
 
 class UsedMemoryPerBackendCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		UsedMemoryPerBackendCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("used_memory_per_backend",
 												AdminInterfaceCommand::Memory,
@@ -553,7 +558,7 @@ class UsedMemoryPerBackendCommand : public AdminInterfaceCommand {
 
 class AverageMemoryPerUserPerBackendCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		AverageMemoryPerUserPerBackendCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("average_memory_per_user_per_backend",
 												AdminInterfaceCommand::Memory,
@@ -592,7 +597,7 @@ class AverageMemoryPerUserPerBackendCommand : public AdminInterfaceCommand {
 
 class CrashedBackendsCountCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		CrashedBackendsCountCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("crashed_backends_count",
 												AdminInterfaceCommand::Backends,
@@ -618,7 +623,7 @@ class CrashedBackendsCountCommand : public AdminInterfaceCommand {
 
 class CrashedBackendsCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		CrashedBackendsCommand(NetworkPluginServer *server) :
 												AdminInterfaceCommand("crashed_backends",
 												AdminInterfaceCommand::Backends,
@@ -649,7 +654,7 @@ class CrashedBackendsCommand : public AdminInterfaceCommand {
 
 class MessagesFromXMPPCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		MessagesFromXMPPCommand(UserManager *userManager) : AdminInterfaceCommand("messages_from_xmpp",
 							AdminInterfaceCommand::Messages,
 							AdminInterfaceCommand::GlobalContext,
@@ -675,7 +680,7 @@ class MessagesFromXMPPCommand : public AdminInterfaceCommand {
 
 class MessagesToXMPPCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		MessagesToXMPPCommand(UserManager *userManager) : AdminInterfaceCommand("messages_to_xmpp",
 							AdminInterfaceCommand::Messages,
 							AdminInterfaceCommand::GlobalContext,
@@ -759,7 +764,7 @@ class RegisterCommand : public AdminInterfaceCommand {
 
 class UnregisterCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		UnregisterCommand(UserRegistration *userRegistration, Component *component) : AdminInterfaceCommand("unregister",
 							AdminInterfaceCommand::Users,
 							AdminInterfaceCommand::UserContext,
@@ -795,7 +800,7 @@ class UnregisterCommand : public AdminInterfaceCommand {
 
 class SetOAuth2CodeCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		SetOAuth2CodeCommand(Component *component) : AdminInterfaceCommand("set_oauth2_code",
 							AdminInterfaceCommand::Frontend,
 							AdminInterfaceCommand::GlobalContext,
@@ -818,7 +823,7 @@ class SetOAuth2CodeCommand : public AdminInterfaceCommand {
 			ret = m_component->getFrontend()->setOAuth2Code(args[0], args[1]);
 			if (ret.empty()) {
 				return ret;
-				
+
 			}
 			return "OAuth2 code and state set.";
 		}
@@ -829,7 +834,7 @@ class SetOAuth2CodeCommand : public AdminInterfaceCommand {
 
 class GetOAuth2URLCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		GetOAuth2URLCommand(Component *component) : AdminInterfaceCommand("get_oauth2_url",
 							AdminInterfaceCommand::Frontend,
 							AdminInterfaceCommand::GlobalContext,
@@ -865,7 +870,7 @@ class GetOAuth2URLCommand : public AdminInterfaceCommand {
 
 class HelpCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		HelpCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("help",
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
@@ -920,7 +925,7 @@ class HelpCommand : public AdminInterfaceCommand {
 
 class CommandsCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		CommandsCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("commands",
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
@@ -979,7 +984,7 @@ class CommandsCommand : public AdminInterfaceCommand {
 
 class VariablesCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		VariablesCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("variables",
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
@@ -1044,7 +1049,7 @@ class VariablesCommand : public AdminInterfaceCommand {
 
 class ArgsCommand : public AdminInterfaceCommand {
 	public:
-		
+
 		ArgsCommand(std::map<std::string, AdminInterfaceCommand *> *commands) : AdminInterfaceCommand("args",
 							AdminInterfaceCommand::General,
 							AdminInterfaceCommand::GlobalContext,
@@ -1137,7 +1142,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 #else
 	std::string msg = message->getBody();
 #endif
-	LOG4CXX_INFO(logger, "Message from admin received: '" << msg << "'");
+	LOG4CXX_INFO(adminInterfaceLogger, "Message from admin received: '" << msg << "'");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
 
@@ -1223,7 +1228,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 	return;
 // 	else if (m_component->getFrontend()->handleAdminMessage(message)) {
-// 		LOG4CXX_INFO(logger, "Message handled by frontend");
+// 		LOG4CXX_INFO(adminInterfaceLogger, "Message handled by frontend");
 // 	}
 }
 
@@ -1233,11 +1238,11 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
 	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
-	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
+	    LOG4CXX_WARN(adminInterfaceLogger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
 	    return;
-	
+
 	}
-	
+
 	// Ignore empty messages
 #if HAVE_SWIFTEN_3
 	if (message->getBody().get_value_or("").empty()) {

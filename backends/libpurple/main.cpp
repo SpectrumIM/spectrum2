@@ -9,7 +9,9 @@
 #include "purple.h"
 #include <algorithm>
 #include <iostream>
-#include <fstream> 
+#include <fstream>
+#include <sys/stat.h>
+#include <utime.h>
 
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
@@ -45,6 +47,11 @@
 DEFINE_LOGGER(logger_libpurple, "libpurple");
 DEFINE_LOGGER(logger, "backend");
 
+/* Additional PURPLE_MESSAGE_* flags as a hack to track the origin of the message. */
+typedef enum {
+    PURPLE_MESSAGE_SPECTRUM2_ORIGINATED = 0x80000000,
+} PurpleMessageSpectrum2Flags;
+
 int main_socket;
 static int writeInput;
 bool firstPing = true;
@@ -67,7 +74,7 @@ template <class T> std::string stringOf(T object) {
 static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
-    while(std::getline(ss, item, delim)) {
+    while (std::getline(ss, item, delim)) {
         elems.push_back(item);
     }
     return elems;
@@ -114,6 +121,10 @@ static gboolean ft_ui_ready(void *data) {
 	return FALSE;
 }
 
+/*
+Authorization requests from buddies are cached for the duration of the session.
+To authorize or deny, call the cached callbacks.
+*/
 struct authRequest {
 	PurpleAccountRequestAuthorizationCb authorize_cb;
 	PurpleAccountRequestAuthorizationCb deny_cb;
@@ -122,6 +133,34 @@ struct authRequest {
 	PurpleAccount *account;
 	std::string mainJID;	// JID of user connected with this request
 };
+class AuthRequestList : public std::map<std::string, authRequest*> {
+	public:
+		bool accept(const std::string &user, const std::string &buddyName) {
+			iterator it = this->find(user + buddyName);
+			if (it == this->end()) {
+				LOG4CXX_TRACE(logger, "AuthRequestList::accept(" << user << ", " << buddyName << ")"
+					<< ": No such request.");
+				return false;
+			}
+			LOG4CXX_TRACE(logger, "AuthRequestList::accept(" << user << ", " << buddyName << ")");
+			it->second->authorize_cb(it->second->user_data);
+			this->erase(user + buddyName);
+		}
+		
+
+		bool deny(const std::string &user, const std::string &buddyName) {
+			iterator it = this->find(user + buddyName);
+			if (it == this->end()) {
+				LOG4CXX_TRACE(logger, "AuthRequestList::deny(" << user << ", " << buddyName << ")"
+					<< ": No such request.");
+				return false;
+			}
+			LOG4CXX_TRACE(logger, "AuthRequestList::deny(" << user << ", " << buddyName << ")");
+			it->second->deny_cb(it->second->user_data);
+			this->erase(user + buddyName);
+		}
+};
+
 
 struct inputRequest {
     PurpleRequestInputCb ok_cb;
@@ -165,6 +204,20 @@ static void *requestAction(const char *title, const char *primary, const char *s
 			}
 		}
 	}
+	
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-jabber") {
+		//prpl-jabber newly created MUCs need to be configured before they can work
+		if ((t == "Create New Room") && (action_count == 2)) {
+			va_arg(actions, char*);
+			va_arg(actions, GCallback);
+			if (std::string(va_arg(actions, char*)) != "Accept Defaults") {
+				LOG4CXX_DEBUG(logger, "New room: Accepting default room settings");
+				((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
+			} else
+				LOG4CXX_ERROR(logger, "New room: Unexpected prpl-jabber request format, cannot configure new room");
+		}
+	}
+	
 	return NULL;
 }
 
@@ -185,37 +238,39 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 
 static boost::mutex dblock;
 static std::string OAUTH_TOKEN = "hangouts_oauth_token";
+static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
+static std::string DISCORD_ACCESS_TOKEN = "discord_access_token";
 
-static bool getUserOAuthToken(const std::string user, std::string &token)
+static bool getUserToken(const std::string user, const std::string token_name, std::string &token_value)
 {
-  boost::mutex::scoped_lock lock(dblock);
-  UserInfo info;
-  if(storagebackend->getUser(user, info) == false) {
-    LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
-      return false;
-  }
-  token = "";
-  int type = TYPE_STRING;
-  storagebackend->getUserSetting((long)info.id, OAUTH_TOKEN, type, token);
-  return true;
+	boost::mutex::scoped_lock lock(dblock);
+	UserInfo info;
+	if (storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		return false;
+	}
+	token_value = "";
+	int type = TYPE_STRING;
+	storagebackend->getUserSetting((long)info.id, token_name, type, token_value);
+	return true;
 }
 
-static bool storeUserOAuthToken(const std::string user, const std::string OAuthToken)
+static bool storeUserToken(const std::string user, const std::string token_name, const std::string token_value)
 {
-  boost::mutex::scoped_lock lock(dblock);
-  UserInfo info;
-  if(storagebackend->getUser(user, info) == false) {
-    LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!")
-      return false;
-  }
-  storagebackend->updateUserSetting((long)info.id, OAUTH_TOKEN, OAuthToken);
-  return true;
-}     
+	boost::mutex::scoped_lock lock(dblock);
+	UserInfo info;
+	if (storagebackend->getUser(user, info) == false) {
+		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
+		return false;
+	}
+	storagebackend->updateUserSetting((long)info.id, token_name, token_value);
+	return true;
+}
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
 	public:
 		SpectrumNetworkPlugin() : NetworkPlugin() {
-
+			LOG4CXX_INFO(logger, "Starting libpurple backend " << SPECTRUM_VERSION);
 		}
 
 		void handleExitRequest() {
@@ -274,11 +329,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					if (strippedKey != key2) {
 						continue;
 					}
-					
+
 					found = true;
 					switch (type) {
 						case PURPLE_PREF_BOOLEAN:
-							purple_account_set_bool_wrapped(account, strippedKey.c_str(), fromString<bool>(keyItem.second.as<std::string>()));
+							purple_account_set_bool_wrapped(account, strippedKey.c_str(), keyItem.second.as<bool>());
 							break;
 
 						case PURPLE_PREF_INT:
@@ -313,9 +368,9 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				std::string username(purple_account_get_username_wrapped(account));
 				std::vector <std::string> u = split(username, '@');
 				purple_account_set_username_wrapped(account, (const char*) u.front().c_str());
-				std::vector <std::string> s = split(u.back(), ':'); 
+				std::vector <std::string> s = split(u.back(), ':');
 				purple_account_set_string_wrapped(account, "server", s.front().c_str());
-				purple_account_set_int_wrapped(account, "port", atoi(s.back().c_str()));  
+				purple_account_set_int_wrapped(account, "port", atoi(s.back().c_str()));
 			}
 
 			if (!CONFIG_STRING_DEFAULTED(config, "proxy.type", "").empty()) {
@@ -360,16 +415,22 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			std::string protocol;
 			getProtocolAndName(legacyName, name, protocol);
 
-			if (password.empty() && protocol != "prpl-telegram" && protocol != "prpl-hangouts") {
-				LOG4CXX_INFO(logger,  name.c_str() << ": Empty password");
-				np->handleDisconnected(user, 1, "Empty password.");
-				return;
-			}
 			if (protocol == "prpl-hangouts") {
-			        adminLegacyName = "hangouts";
-			        adminAlias = "hangouts";
+				adminLegacyName = "hangouts";
+				adminAlias = "hangouts";
 			}
-
+			else if (protocol == "prpl-steam-mobile") {
+				adminLegacyName = "steam-mobile";
+				adminAlias = "steam-mobile";
+			}
+			else if (protocol == "prpl-eionrobb-discord") {
+				adminLegacyName = "discord";
+				adminAlias = "discord";
+			}
+			else if (protocol == "telegram-tdlib") {
+				adminLegacyName = "telegram";
+				adminAlias = "telegram";
+			}
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
 				np->handleDisconnected(user, 1, "Invalid protocol " + protocol);
@@ -403,8 +464,22 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
 			if (protocol == "prpl-hangouts") {
 				std::string token;
-				if (getUserOAuthToken(user, token)) {
+				if (getUserToken(user, OAUTH_TOKEN, token)) {
 					purple_account_set_password_wrapped(account, token.c_str());
+				}
+			}
+			else if (protocol == "prpl-steam-mobile") {
+				std::string token;
+				getUserToken(user, STEAM_ACCESS_TOKEN, token);
+				if (!token.empty()) {
+					purple_account_set_string_wrapped(account, "access_token", token.c_str());
+				}
+			}
+			else if (protocol == "prpl-eionrobb-discord") {
+				std::string token;
+				getUserToken(user, DISCORD_ACCESS_TOKEN, token);
+				if (!token.empty()) {
+					purple_account_set_string_wrapped(account, "token", token.c_str());
 				}
 			}
 
@@ -425,8 +500,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_set_status_wrapped(account, purple_status_type_get_id_wrapped(status_type), TRUE, NULL);
 			}
 			// OAuth helper
-			if (protocol == "prpl-hangouts") {
-				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias)
+			if (protocol == "prpl-hangouts" || protocol == "prpl-steam-mobile" || protocol == "prpl-eionrobb-discord") {
+				LOG4CXX_INFO(logger, user << ": Adding Buddy " << adminLegacyName << " " << adminAlias);
 				handleBuddyChanged(user, adminLegacyName, adminAlias, std::vector<std::string>(), pbnetwork::STATUS_ONLINE);
 			}
 		}
@@ -519,7 +594,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (account) {
 				LOG4CXX_INFO(logger, "Sending message to '" << legacyName << "'");
 				PurpleConversation *conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_CHAT, LegacyNameToName(account, legacyName).c_str(), account);
-	                	if (legacyName == adminLegacyName) {
+				if (legacyName == adminLegacyName) {
 					// expect OAuth code
 					if (m_inputRequests.find(user) != m_inputRequests.end()) {
 						LOG4CXX_INFO(logger, "Updating token for '" << user << "'");
@@ -528,7 +603,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					}
 					return;
 				}
-                
+
 				if (!conv) {
 					conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, LegacyNameToName(account, legacyName).c_str(), account);
 					if (!conv) {
@@ -538,19 +613,19 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				if (xhtml.empty()) {
 					gchar *_markup = purple_markup_escape_text_wrapped(message.c_str(), -1);
 					if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
-						purple_conv_im_send_wrapped(PURPLE_CONV_IM_WRAPPED(conv), _markup);
+						purple_conv_im_send_with_flags_wrapped(PURPLE_CONV_IM_WRAPPED(conv), _markup, static_cast<PurpleMessageFlags>(PURPLE_MESSAGE_SPECTRUM2_ORIGINATED));
 					}
 					else if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_CHAT) {
-						purple_conv_chat_send_wrapped(PURPLE_CONV_CHAT_WRAPPED(conv), _markup);
+						purple_conv_chat_send_with_flags_wrapped(PURPLE_CONV_CHAT_WRAPPED(conv), _markup, static_cast<PurpleMessageFlags>(PURPLE_MESSAGE_SPECTRUM2_ORIGINATED));
 					}
 					g_free(_markup);
 				}
 				else {
 					if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
-						purple_conv_im_send_wrapped(PURPLE_CONV_IM_WRAPPED(conv), xhtml.c_str());
+						purple_conv_im_send_with_flags_wrapped(PURPLE_CONV_IM_WRAPPED(conv), xhtml.c_str(), static_cast<PurpleMessageFlags>(PURPLE_MESSAGE_SPECTRUM2_ORIGINATED));
 					}
 					else if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_CHAT) {
-						purple_conv_chat_send_wrapped(PURPLE_CONV_CHAT_WRAPPED(conv), xhtml.c_str());
+						purple_conv_chat_send_with_flags_wrapped(PURPLE_CONV_CHAT_WRAPPED(conv), xhtml.c_str(), static_cast<PurpleMessageFlags>(PURPLE_MESSAGE_SPECTRUM2_ORIGINATED));
 					}
 				}
 			}
@@ -621,28 +696,32 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
 			PurpleAccount *account = m_sessions[user];
-			if (account) {
-				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
-					m_authRequests[user + buddyName]->deny_cb(m_authRequests[user + buddyName]->user_data);
-					m_authRequests.erase(user + buddyName);
-				}
-				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
-				if (buddy) {
+			if (!account)
+				return;
+			LOG4CXX_DEBUG(logger, "handleBuddyRemovedRequest(): removing buddy from authRequests");
+			m_authRequests.deny(user, buddyName); //deny any outstanding friend requests
+			PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
+			if (buddy) {
+				if (CONFIG_BOOL(config, "service.enable_remove_buddy")) {
+					LOG4CXX_INFO(logger, "handleBuddyRemovedRequest(): removing buddy from the legacy contact list");
 					purple_account_remove_buddy_wrapped(account, buddy, purple_buddy_get_group_wrapped(buddy));
 					purple_blist_remove_buddy_wrapped(buddy);
-				}
+				} else
+					LOG4CXX_INFO(logger, "handleBuddyRemovedRequest(): service.enable_remove_buddy is off, leaving buddy in the legacy contact list");
 			}
 		}
 
+		//Called when the frontend wants to:
+		// 1. Update buddy params
+		// 2. Accept their friend request (=> add to legacy contact list)
+		// 3. Add them to legacy contact list
 		void handleBuddyUpdatedRequest(const std::string &user, const std::string &buddyName, const std::string &alias, const std::vector<std::string> &groups_) {
+			LOG4CXX_DEBUG(logger, "handleBuddyUpdatedRequest(): user= " << user << ", buddyName=" << buddyName);
 			PurpleAccount *account = m_sessions[user];
 			if (account) {
 				std::string groups = groups_.empty() ? "" : groups_[0];
 
-				if (m_authRequests.find(user + buddyName) != m_authRequests.end()) {
-					m_authRequests[user + buddyName]->authorize_cb(m_authRequests[user + buddyName]->user_data);
-					m_authRequests.erase(user + buddyName);
-				}
+				m_authRequests.accept(user, buddyName);
 
 				PurpleBuddy *buddy = purple_find_buddy_wrapped(account, buddyName.c_str());
 				if (buddy) {
@@ -776,23 +855,23 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 
 			if (CONFIG_STRING(config, "service.protocol") != "prpl-jabber") {
-				np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
-				const char *disp;
-				if ((disp = purple_connection_get_display_name(account->gc)) == NULL) {
-					disp = purple_account_get_username(account);
-				}
-
-				LOG4CXX_INFO(logger, user << ": Display name is " << disp << ", nickname is " << nickname);
-				if (nickname != disp) {
-					handleRoomNicknameChanged(np->m_accounts[account], room, disp);
-					np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
-				}
+                               np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE);
+                               const char *disp;
+                               if ((disp = purple_account_get_name_for_display(account)) == NULL) {
+                                       if ((disp = purple_connection_get_display_name(account->gc)) == NULL) {
+                                               disp = purple_account_get_username(account);
+                                       }
+                               }
+                               LOG4CXX_INFO(logger, user << ": Display name is " << disp << ", nickname is " << nickname);
+                               if (nickname != disp) {
+                                       handleRoomNicknameChanged(np->m_accounts[account], room, disp);
+                                       np->handleParticipantChanged(np->m_accounts[account], nickname, room, 0, pbnetwork::STATUS_ONLINE, "", disp);
+                               }
 			}
 
 			LOG4CXX_INFO(logger, user << ": Joining the room " << roomName);
 			if (comps) {
 				serv_join_chat_wrapped(gc, comps);
-				g_hash_table_destroy(comps);
 			}
 		}
 
@@ -811,7 +890,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			if (xfer) {
 				m_unhandledXfers.erase(user + fileName + buddyName);
 				FTData *ftData = (FTData *) xfer->ui_data;
-				
+
 				ftData->id = ftID;
 				m_xfers[ftID] = xfer;
 				purple_xfer_request_accepted_wrapped(xfer, fileName.c_str());
@@ -872,14 +951,14 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
-		std::map<std::string, authRequest *> m_authRequests;
-	        std::map<std::string, inputRequest *> m_inputRequests;
+		AuthRequestList m_authRequests;
+		std::map<std::string, inputRequest *> m_inputRequests;
 		std::map<std::string, std::list<std::string> > m_rooms;
 		std::map<unsigned long, PurpleXfer *> m_xfers;
 		std::map<std::string, PurpleXfer *> m_unhandledXfers;
 		std::vector<PurpleXfer *> m_waitingXfers;
-	        std::string adminLegacyName;
-        	std::string adminAlias;
+		std::string adminLegacyName;
+		std::string adminAlias;
 };
 
 static bool getStatus(PurpleBuddy *m_buddy, pbnetwork::StatusType &status, std::string &statusMessage) {
@@ -966,11 +1045,11 @@ static std::vector<std::string> getGroups(PurpleBuddy *m_buddy) {
 	std::vector<std::string> groups;
 	if (purple_buddy_get_name_wrapped(m_buddy)) {
 		GSList *buddies = purple_find_buddies_wrapped(purple_buddy_get_account_wrapped(m_buddy), purple_buddy_get_name_wrapped(m_buddy));
-		while(buddies) {
+		while (buddies) {
 			PurpleGroup *g = purple_buddy_get_group_wrapped((PurpleBuddy *) buddies->data);
 			buddies = g_slist_delete_link(buddies, buddies);
 
-			if(g && purple_group_get_name_wrapped(g)) {
+			if (g && purple_group_get_name_wrapped(g)) {
 				groups.push_back(purple_group_get_name_wrapped(g));
 			}
 		}
@@ -1031,7 +1110,7 @@ void buddyListNewNode(PurpleBlistNode *node) {
 		cache->nodes[node] = 1;
 		return;
 	}
-	
+
 
 	std::vector<std::string> groups = getGroups(buddy);
 	LOG4CXX_INFO(logger, "Buddy updated " << np->m_accounts[account] << " " << purple_buddy_get_name_wrapped(buddy) << " " << getAlias(buddy) << " group (" << groups.size() << ")=" << groups[0]);
@@ -1133,7 +1212,11 @@ static PurpleBlistUiOps blistUiOps =
 	NULL
 };
 
+static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime);
+
 static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
+	LOG4CXX_INFO(logger, "conv_write()");
+
 	if (flags & PURPLE_MESSAGE_SYSTEM && CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 		PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
@@ -1174,20 +1257,23 @@ static void conv_write(PurpleConversation *conv, const char *who, const char *al
 			timestamp = buf;
 		}
 
-	// 	LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "'");
-
 		if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
 			std::string w = purple_normalize_wrapped(account, who);
 			size_t pos = w.find("/");
 			if (pos != std::string::npos)
 				w.erase((int) pos, w.length() - (int) pos);
+			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
 			np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
 		}
 		else {
 			std::string conversationName = purple_conversation_get_name_wrapped(conv);
-			LOG4CXX_INFO(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
+			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
 			np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
-		}	
+		}
+	}
+	else {
+	    //Handle all non-special cases by just passing them to conv_write_im
+	    conv_write_im(conv, who, msg, flags, mtime);
 	}
 }
 
@@ -1217,90 +1303,217 @@ static char *calculate_data_hash(guchar *data, size_t len,
 	return g_strdup(digest);
 }
 
+
+/*
+Downloads an image by its purple_imgstore's ID and rehosts it locally
+in the web_* image store.
+Returns the rehosted image URI, or empty string if rehosting is disabled,
+the image could not be downloaded or is subject to restrictions.
+*/
+std::string web_rehost_image_by_id(int id)
+{
+	std::string web_dir = CONFIG_STRING(config, "service.web_directory");
+	std::string web_url = CONFIG_STRING(config, "service.web_url");
+	if (web_dir.empty() || web_url.empty()) {
+		LOG4CXX_DEBUG(logger, "Won't rehost image, web_directory is disabled.");
+		return std::string();
+	}
+
+	PurpleStoredImage *image = purple_imgstore_find_by_id(id);
+	if (!image) {
+		LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
+		return std::string();
+	}
+
+	std::string ext = "icon";
+	std::string name;
+	guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
+	size_t len = purple_imgstore_get_size_wrapped(image);
+	if (len < CONFIG_INT(config, "service.web_maximgsize") && data) {
+		ext = purple_imgstore_get_extension(image);
+		char *hash = calculate_data_hash(data, len, "sha1");
+		if (!hash) {
+			LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
+			return std::string();
+		}
+		name = hash;
+		g_free(hash);
+
+		std::ofstream output;
+		std::string fpath (web_dir + "/" + name + "." + ext);
+		LOG4CXX_DEBUG(logger, "Storing image to " << fpath);
+		struct stat buffer;
+		if (stat(fpath.c_str(), &buffer) == 0) {
+			LOG4CXX_DEBUG(logger, "File already exists, skipping.");
+			//If the file exists, skip writing but make sure to update mtime:
+			//otherwise people can't rely on it to trim cache (newer messages may reference older images)
+			utime(fpath.c_str(), NULL);
+		} else {
+			output.open(fpath.c_str(), std::ios::out | std::ios::binary);
+			if (output.fail()) {
+				LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
+				return std::string();
+			}
+			output.write((char *)data, len);
+			output.close();
+		}
+	}
+	else {
+		LOG4CXX_WARN(logger, "Image bigger than the allowed size (web_maximgsize).");
+		purple_imgstore_unref_wrapped(image);
+		return std::string();
+	}
+	purple_imgstore_unref_wrapped(image);
+	return web_url + "/" + name + "." + ext;
+}
+
+
+/*
+Converts HTML message body to XHTML and plain text representations.
+Requires and populates:
+  xhtml_
+  plain_
+May return empty strings if nothing is left after filtering out invalid contents.
+*/
+static void conv_msg_to_plain(const char* msg, std::string* xhtml_, std::string* plain_)
+{
+	//LOG4CXX_TRACE(logger, "conv_message_to_plain(): msg='" << msg << "'");
+	char *newline = purple_strdup_withhtml_wrapped(msg); //Escape HTML characters.
+	char *strip, *xhtml;
+	purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
+	*plain_ = strip;
+	*xhtml_ = xhtml;
+	g_free(newline);
+	g_free(xhtml);
+	g_free(strip);
+	//LOG4CXX_TRACE(logger, "conv_message_to_plain(): plain='" << plain_ << "' xhtml='" << xhtml_ << "'");
+}
+
+/*
+Converts a PURPLE_MESSAGE_IMAGE by storing the image in the image store and adjusting
+the message text to point to the new image URI / replacement text.
+Requires and populates:
+  xhtml_
+  plain_
+Returns false if the adjustment for this image cannot be done.
+*/
+static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string* plain_)
+{
+	/*
+	There could be one or more <img id=> instances. We need to parse each separately.
+	If web_directory is disabled, we still need to replace each with a replacement text 
+	*/
+
+	LOG4CXX_DEBUG(logger, "Received image body='" << msg << "'");
+	std::string body = msg;
+	std::string plain = msg;
+
+	size_t tag_from = -1;
+	while ((tag_from = body.find("<img id=", tag_from+1)) != std::string::npos) {
+		//Different plugins use different quote marks, or maybe none
+		int id_from = tag_from + strlen("<img id=");
+		char quoteMark = 0x00;
+		if ((body[id_from] == '"') || (body[id_from] == '\'') || (body[id_from] == '`')) {
+			quoteMark = body[id_from];
+			id_from++;
+		}
+
+		int id_to = 0; //last char + 1
+		int attr_to = 0; //last char incl. quotes + 1
+		if (quoteMark != 0x00) {
+			id_to = body.find(quoteMark, id_from + 1);
+			attr_to = id_to + 1;
+		} else { //without quotes the id ends on tag end or a space
+			id_to = body.find_first_of(" >/", id_from + 1);
+			attr_to = id_to;
+		}
+		int tag_to = body.find('>', attr_to);
+		if ((id_to == std::string::npos) || (tag_to == std::string::npos)) {
+			LOG4CXX_ERROR(logger, "Malformed image tag, cannot find attribute/tag end.");
+			continue; //maybe there are other tags
+		}
+		tag_to++;
+
+		std::string id = body.substr(id_from, id_to - id_from);
+		std::string attr = body.substr(tag_from, attr_to - tag_from); //without tag end
+		std::string tag = body.substr(tag_from, tag_to - tag_from);
+		LOG4CXX_DEBUG(logger, "Image ID = '" << id << "' " << id_from << " " << id_to);
+
+		std::string new_uri = web_rehost_image_by_id(atoi(id.c_str()));
+		if (!new_uri.empty()) {
+			std::string img = "<img src=\"" + new_uri + "\""; //keep the rest of the tag
+			boost::replace_all(body, attr, img);
+			boost::replace_all(plain, tag, new_uri); //the entire tag
+		} else {
+			//Replace with placeholder text
+			std::string img_text = "[The user has sent you an image]";
+			boost::replace_all(body, tag, img_text);
+			boost::replace_all(plain, tag, img_text);
+		}
+	}
+	LOG4CXX_TRACE(logger, "New body='" << body << "', plain='" << plain << "'");
+
+	//We've processed <img> tags but still need to sanitize the rest of the markup
+	//Convert this adjusted HTML to XHTML
+	char *strip, *xhtml;
+	purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
+	*xhtml_ = xhtml;
+	g_free(xhtml);
+	g_free(strip);
+	LOG4CXX_TRACE(logger, "New xhtml='" << xhtml_ << "'");
+
+	//For plaintext use our version with plain URIs or they'll be stripped
+	purple_markup_html_to_xhtml_wrapped(plain.c_str(), &xhtml, &strip);
+	*plain_ = strip;
+	g_free(xhtml);
+	g_free(strip);
+	LOG4CXX_TRACE(logger, "New plaintext='" << plain_ << "'");
+
+	return true;
+}
+
+
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
-	// Don't forwards our own messages.
-	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM && (flags & PURPLE_MESSAGE_SEND || flags & PURPLE_MESSAGE_SYSTEM)) {
-		return;
+	LOG4CXX_INFO(logger, "conv_write_im()");
+	bool isCarbon = false;
+
+	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
+		//Don't forwards our own messages, but do forward messages "from=us" which originated elsewhere
+		//(such as carbons of our messages from other legacy network clients)
+		if (flags & PURPLE_MESSAGE_SPECTRUM2_ORIGINATED) {
+			LOG4CXX_INFO(logger, "conv_write_im(): ignoring a message generated by us");
+			return;
+		}
+
+		//If this is a carbon of a message from us, mark it as such
+		if (flags & PURPLE_MESSAGE_SEND)
+			isCarbon = true;
+
+		//Ignore system messages as those are normally not true messages in the XMPP sense
+		if (flags & PURPLE_MESSAGE_SYSTEM) {
+			LOG4CXX_INFO(logger, "conv_write_im(): ignoring a system message");
+			return;
+		}
 	}
 	PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
 
-	std::string message_;
-	std::string xhtml_;
+	std::string message_; //plain text
+	std::string xhtml_;   //enhanced xhtml, if available
 
-	if (flags & PURPLE_MESSAGE_IMAGES && !CONFIG_STRING(config, "service.web_directory").empty() && !CONFIG_STRING(config, "service.web_url").empty() ) {
-		LOG4CXX_INFO(logger, "Received image body='" << msg << "'");
-		std::string body = msg;
-		std::string plain = msg;
-		size_t i;
-		while ((i = body.find("<img id=\"")) != std::string::npos) {
-			int from = i + strlen("<img id=\"");
-			int to = body.find("\"", from + 1);
-			std::string id = body.substr(from, to - from);
-			LOG4CXX_INFO(logger, "Image ID = '" << id << "' " << from << " " << to);
+	LOG4CXX_DEBUG(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 
-			PurpleStoredImage *image = purple_imgstore_find_by_id(atoi(id.c_str()));
-			if (!image) {
-				LOG4CXX_ERROR(logger, "Cannot find image with id " << id << ".");
-				return;
-			}
-
-			std::string ext = "icon";
-			std::string name;
-			guchar * data = (guchar *) purple_imgstore_get_data_wrapped(image);
-			size_t len = purple_imgstore_get_size_wrapped(image);
-			if (len < 1000000 && data) {
-				ext = purple_imgstore_get_extension(image);
-				char *hash = calculate_data_hash(data, len, "sha1");
-				if (!hash) {
-					LOG4CXX_WARN(logger, "Cannot compute hash for the image.");
-					return;
-				}
-				name = hash;
-				g_free(hash);
-
-				std::ofstream output;
-				LOG4CXX_INFO(logger, "Storing image to " << std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext));
-				output.open(std::string(CONFIG_STRING(config, "service.web_directory") + "/" + name + "." + ext).c_str(), std::ios::out | std::ios::binary);
-				if (output.fail()) {
-					LOG4CXX_ERROR(logger, "Open file failure: " << strerror(errno));
-					return;
-				}
-				output.write((char *)data, len);
-				output.close();
-			}
-			else {
-				LOG4CXX_WARN(logger, "Image bigger than 1MB.");
-				purple_imgstore_unref_wrapped(image);
-				return;
-			}
-			purple_imgstore_unref_wrapped(image);
-			
-			std::string src = CONFIG_STRING(config, "service.web_url") + "/" + name + "." + ext;
-			std::string img = "<img src=\"" + src + "\"/>";
-			boost::replace_all(body, "<img id=\"" + id + "\">", img);
-			boost::replace_all(plain, "<img id=\"" + id + "\">", src);
+	if (flags & PURPLE_MESSAGE_IMAGES) {
+		//Store image locally and adjust the message
+		if (!conv_msg_to_image(msg, &xhtml_, &message_))
+		{
+			//Fallback to plaintext treatment which is likely to be empty
+			conv_msg_to_plain(msg, &xhtml_, &message_);
+			if (message_.empty())
+				message_ = "[The user has sent you an image]";
 		}
-		LOG4CXX_INFO(logger, "New image body='" << body << "'");
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(body.c_str(), &xhtml, &strip);
-		message_ = strip;
-		if (message_.empty()) {
-			message_ = plain;
-		}
-		xhtml_ = xhtml;
-		g_free(xhtml);
-		g_free(strip);
 	}
 	else {
-		// Escape HTML characters.
-		char *newline = purple_strdup_withhtml_wrapped(msg);
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
-		message_ = strip;
-		xhtml_ = xhtml;
-		g_free(newline);
-		g_free(xhtml);
-		g_free(strip);
+		conv_msg_to_plain(msg, &xhtml_, &message_);
 	}
 
 	// AIM and XMPP adds <body>...</body> here...
@@ -1330,13 +1543,13 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 			n = w.substr((int) pos + 1, w.length() - (int) pos);
 			w.erase((int) pos, w.length() - (int) pos);
 		}
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
-		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp);
+		LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
+		np->handleMessage(np->m_accounts[account], w, message_, n, xhtml_, timestamp, false, false, isCarbon);
 	}
 	else {
 		std::string conversationName = purple_conversation_get_name_wrapped(conv);
-		LOG4CXX_INFO(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
-		np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
+		LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
+		np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp, false, false, isCarbon);
 	}
 }
 
@@ -1436,6 +1649,8 @@ struct Dis {
 	std::string protocol;
 };
 
+// currently unused
+#if 0
 static gboolean disconnectMe(void *data) {
 	Dis *d = (Dis *) data;
 	PurpleAccount *account = purple_accounts_find_wrapped(d->name.c_str(), d->protocol.c_str());
@@ -1446,6 +1661,7 @@ static gboolean disconnectMe(void *data) {
 	}
 	return FALSE;
 }
+#endif
 
 static gboolean pingTimeout(void *data) {
 	np->checkPing();
@@ -1484,7 +1700,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	if (pos != std::string::npos)
 		name.erase((int) pos, name.length() - (int) pos);
 
-	
+
 	GList *vcardEntries = purple_notify_user_info_get_entries_wrapped(user_info);
 	PurpleNotifyUserInfoEntry *vcardEntry;
 	std::string firstName;
@@ -1498,17 +1714,17 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	while (vcardEntries) {
 		vcardEntry = (PurpleNotifyUserInfoEntry *)(vcardEntries->data);
 		if (purple_notify_user_info_entry_get_label_wrapped(vcardEntry) && purple_notify_user_info_entry_get_value_wrapped(vcardEntry)){
-			label = purple_notify_user_info_entry_get_label_wrapped(vcardEntry);
-			if (label == "Given Name" || label == "First Name") {
+			label = boost::locale::to_lower(purple_notify_user_info_entry_get_label_wrapped(vcardEntry));
+			if (label == "given name" || label == "first name") {
 				firstName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label == "Family Name" || label == "Last Name") {
+			else if (label == "family name" || label == "last name") {
 				lastName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label=="Nickname" || label == "Nick") {
+			else if (label=="nickname" || label == "nick") {
 				nickname = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
-			else if (label=="Full Name" || label == "Display name") {
+			else if (label=="full name" || label == "display name") {
 				fullName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
 			else {
@@ -1577,7 +1793,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 			purple_buddy_icon_unref_wrapped(icon);
 		}
 	}
-    
+
 	np->handleVCard(np->m_accounts[account], np->m_vcards[np->m_accounts[account] + name], name, fullName, nickname, photo);
 	np->m_vcards.erase(np->m_accounts[account] + name);
 
@@ -1585,39 +1801,73 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 }
 
 void * requestInput(const char *title, const char *primary,const char *secondary, const char *default_value, gboolean multiline, gboolean masked, gchar *hint,const char *ok_text, GCallback ok_cb,const char *cancel_text, GCallback cancel_cb, PurpleAccount *account, const char *who,PurpleConversation *conv, void *user_data) {
-    if (primary) {
-        std::string primaryString(primary);
-        if (primaryString == "Authorization Request Message:") {
-            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-            return NULL;
-        }
-        else if (primaryString == "Authorization Request Message:") {
-            LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
-            ((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
-            return NULL;
-        }
-        else if (primaryString == "Authorization Denied Message:") {
-            LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
-            ((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
-            return NULL;
-        }
-        else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth")) {
-            LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
-            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
-            np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: "));
-            inputRequest *req = new inputRequest;
-            req->ok_cb = (PurpleRequestInputCb)ok_cb;
-            req->user_data = user_data;
-            req->account = account;
-            req->mainJID = np->m_accounts[account];
-            np->m_inputRequests[req->mainJID] = req;
-            return NULL;
-        }
-        else {
-            LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
-        }
-    }
+	if (primary) {
+		std::string primaryString(primary);
+		if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Request Message:") {
+			LOG4CXX_INFO(logger, "Authorization Request Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Please authorize me.");
+			return NULL;
+		}
+		else if (primaryString == "Authorization Denied Message:") {
+			LOG4CXX_INFO(logger, "Authorization Deined Message: calling ok_cb(...)");
+			((PurpleRequestInputCb) ok_cb)(user_data, "Authorization denied.");
+			return NULL;
+		}
+		else if (boost::starts_with(primaryString, "https://accounts.google.com/o/oauth2/auth") ||
+                                boost::starts_with(primaryString, "https://www.youtube.com/watch?v=hlDhp-eNLMU")) {
+			LOG4CXX_INFO(logger, "prpl-hangouts oauth request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Please visit the following link and authorize this application: ") + primaryString, "");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Reply with code provided by Google: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else if (primaryString == "Set your Steam Guard Code" || primaryString == "Steam two-factor authentication") {
+			LOG4CXX_INFO(logger, "prpl-steam-mobile steam guard request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Steam Guard code: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else if (primaryString == "Enter Discord auth code") {
+			LOG4CXX_INFO(logger, "prpl-discord 2FA request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("2FA code: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else if (boost::starts_with(primaryString, "Enter authentication code")) {
+			LOG4CXX_INFO(logger, "telegram-tdlib 2FA request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Authentication code: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else {
+			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
+		}
+	}
     else if (title) {
         std::string titleString(title);
         if (titleString == "Xfire Invitation Message") {
@@ -1706,8 +1956,8 @@ static void XferCreated(PurpleXfer *xfer) {
 		return;
 	}
 
-// 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-// 	np->handleFTStart(np->m_accounts[account], xfer->who, xfer, "", xhtml_);
+ 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
+ 	np->handleFTStart(np->m_accounts[account], xfer->who, purple_xfer_get_filename_wrapped(xfer), purple_xfer_get_size_wrapped(xfer));
 }
 
 static void XferDestroyed(PurpleXfer *xfer) {
@@ -1818,7 +2068,7 @@ static gssize XferRead(PurpleXfer *xfer, guchar **buffer, gssize size) {
 // 	int data_size = repeater->getDataToSend(buffer, size);
 // 	if (data_size == 0)
 // 		return 0;
-// 	
+//
 // 	return data_size;
 	return 0;
 }
@@ -1847,26 +2097,39 @@ static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 		int id = 0;
 		for (field = fields; field != NULL; field = field->next, id++) {
 			PurpleRoomlistField *f = (PurpleRoomlistField *) field->data;
+
+			// Use the first visible string field as a fallback topic
+			if (topicId == -1 && id != 0 && !f->hidden &&
+				f->type == PURPLE_ROOMLIST_FIELD_STRING) {
+				topicId = id;
+			}
+
 			if (!f || !f->name) {
 				continue;
 			}
 			std::string fstring = f->name;
-			if (fstring == "topic") {
+			if (fstring == "topic" || fstring == "description") {
 				topicId = id;
 			}
 			else if (fstring == "users") {
 				usersId = id;
 			}
 			else {
-				LOG4CXX_INFO(logger, "Uknown RoomList field " << fstring);
+				LOG4CXX_INFO(logger, "Unknown RoomList field " << fstring);
 			}
 		}
 
 		GList *rooms;
 		std::list<std::string> m_topics;
+		PurplePlugin *plugin = purple_find_prpl_wrapped(purple_account_get_protocol_id_wrapped(list->account));
+		PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
 		for (rooms = list->rooms; rooms != NULL; rooms = rooms->next) {
-			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;	
-			np->m_rooms[np->m_accounts[list->account]].push_back(room->name);
+			PurpleRoomlistRoom *room = (PurpleRoomlistRoom *)rooms->data;
+			if (room->type == PURPLE_ROOMLIST_ROOMTYPE_CATEGORY) continue;
+			std::string roomId = prpl_info && prpl_info->roomlist_room_serialize ?
+				prpl_info->roomlist_room_serialize(room)
+				: room->name;
+			np->m_rooms[np->m_accounts[list->account]].push_back(roomId);
 
 			if (topicId == -1) {
 				m_topics.push_back(room->name);
@@ -1932,7 +2195,7 @@ static void transport_core_ui_init(void)
 	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
 	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
 	purple_roomlist_set_ui_ops_wrapped(&roomlist_ui_ops);
-	
+
 // #ifndef WIN32
 // 	purple_dnsquery_set_ui_ops_wrapped(getDNSUiOps());
 // #endif
@@ -2003,7 +2266,7 @@ debug_init(void)
 	REGISTER_G_LOG_HANDLER("GLib-GObject");
 	REGISTER_G_LOG_HANDLER("GThread");
 	REGISTER_G_LOG_HANDLER("GConf");
-	
+
 
 #undef REGISTER_G_LOD_HANDLER
 }
@@ -2030,12 +2293,18 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 #endif
 #endif
 	purple_roomlist_get_list_wrapped(gc);
-	
+
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
 	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
-		storeUserOAuthToken(np->m_accounts[account], purple_account_get_password_wrapped(account));
+		storeUserToken(np->m_accounts[account], OAUTH_TOKEN, purple_account_get_password_wrapped(account));
 	}
+	else if (CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile") {
+		storeUserToken(np->m_accounts[account], STEAM_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "access_token", NULL));
+	}
+    else if (CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
+        storeUserToken(np->m_accounts[account], DISCORD_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "token", NULL));
+    }
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -2114,7 +2383,7 @@ static bool initPurple() {
 	std::string cacertsDir = CONFIG_STRING_DEFAULTED(config, "purple.cacerts_dir", "./ca-certs");
 	LOG4CXX_INFO(logger, "Setting libpurple cacerts directory to: " << cacertsDir);
 	purple_certificate_add_ca_search_path_wrapped(cacertsDir.c_str());
- 
+
 	std::string userDir = CONFIG_STRING_DEFAULTED(config, "service.working_dir", "./");
 	LOG4CXX_INFO(logger, "Setting libpurple user directory to: " << userDir);
 
@@ -2161,6 +2430,7 @@ static bool initPurple() {
 		purple_prefs_set_bool_wrapped("/purple/logging/log_chats", false);
 		purple_prefs_set_bool_wrapped("/purple/logging/log_system", false);
 
+        purple_plugins_load_saved_wrapped("/spectrum/plugins/loaded");
 
 // 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "received-im-msg", &conversation_handle, PURPLE_CALLBACK(newMessageReceived), NULL);
 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "buddy-typing", &conversation_handle, PURPLE_CALLBACK(buddyTyping), NULL);
@@ -2181,7 +2451,7 @@ static bool initPurple() {
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
 		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
-// 
+//
 // 		purple_commands_init();
 
 	}
@@ -2209,7 +2479,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 		if (firstPing) {
 			firstPing = false;
-			NetworkPlugin::PluginConfig cfg;			
+			NetworkPlugin::PluginConfig cfg;
 			cfg.setSupportMUC(true);
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
 				cfg.setNeedPassword(false);
@@ -2217,10 +2487,15 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
 				cfg.setNeedPassword(false);
 			}
-			if (CONFIG_STRING(config, "service.protocol") == "prpl-irc") {
+			if (CONFIG_BOOL(config, "service.server_mode") || CONFIG_STRING(config, "service.protocol") == "prpl-irc") {
 				cfg.setNeedRegistration(false);
 			}
 			else {
+				PurplePlugin *plugin = purple_find_prpl_wrapped(CONFIG_STRING(config, "service.protocol").c_str());
+				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+				bool needPassword = prpl_info->options & OPT_PROTO_NO_PASSWORD == 0;
+				LOG4CXX_INFO(logger, "backend needed password: " << needPassword);
+				cfg.setNeedPassword(needPassword);
 				cfg.setNeedRegistration(true);
 			}
 			np->sendConfig(cfg);
@@ -2239,7 +2514,7 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 int main(int argc, char **argv) {
 	boost::locale::generator gen;
-	std::locale::global(gen("en_GB.UTF-8"));
+	std::locale::global(gen(""));
 #ifndef WIN32
 #if !defined(__FreeBSD__) && !defined(__APPLE__)
 		mallopt(M_CHECK_ACTION, 2);
@@ -2262,32 +2537,32 @@ int main(int argc, char **argv) {
 	}
 
 	config = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config>(cfg);
- 
+
 	Logging::initBackendLogging(config.get());
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile" || CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
 		storagebackend = StorageBackend::createBackend(config.get(), error);
 		if (storagebackend == NULL) {
 			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
-			LOG4CXX_ERROR(logger, "Hangouts backend needs storage backend configured to work! " << error);
+			LOG4CXX_ERROR(logger, "Selected libpurple protocol need storage backend configured to work! " << error);
 			return NetworkPlugin::StorageBackendNeeded;
 		}
 		else if (!storagebackend->connect()) {
-			LOG4CXX_ERROR(logger, "Can't connect to database!")
-				return -1;
+			LOG4CXX_ERROR(logger, "Can't connect to database!");
+			return -1;
 		}
 	}
 
 	initPurple();
- 
+
 	main_socket = create_socket(host.c_str(), port);
 	purple_input_add_wrapped(main_socket, PURPLE_INPUT_READ, &transportDataReceived, NULL);
 	purple_timeout_add_seconds_wrapped(30, pingTimeout, NULL);
- 
+
 	np = new SpectrumNetworkPlugin();
-	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
 
 	GMainLoop *m_loop;
 #ifdef WITH_LIBEVENT
+	bool libev = CONFIG_STRING_DEFAULTED(config, "service.eventloop", "") == "libev";
 	if (!libev) {
 		m_loop = g_main_loop_new(NULL, FALSE);
 	}

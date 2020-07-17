@@ -4,6 +4,7 @@
 #include "XMPPUserManager.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
+#include <Swiften/Version.h>
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
 #include <Swiften/Server/Server.h>
@@ -14,6 +15,10 @@
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 
 #include "Swiften/Serializer/GenericPayloadSerializer.h"
+#include "Swiften/Parser/GenericPayloadParserFactory.h"
+#if SWIFTEN_VERSION >= 0x030000
+#include "Swiften/Parser/GenericPayloadParserFactory2.h"
+#endif
 
 #include "storageparser.h"
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
@@ -30,13 +35,19 @@
 #include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
+#include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
+#include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+#include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
+#include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
+#endif
 
 using namespace Transport;
 
 void BasicTest::setMeUp (void) {
 	streamEnded = false;
 	std::istringstream ifs("service.server_mode = 1\nservice.jid=localhost\nservice.more_resources=1\nservice.admin_jid=me@localhost\n");
-	cfg = new Config();
+	cfg = new TestingConfig();
 	cfg->load(ifs);
 
 	factory = new TestingFactory();
@@ -68,6 +79,13 @@ void BasicTest::setMeUp (void) {
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-permanent-store", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", payloadParserFactories));
+#endif
 
 	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
 		payloadParserFactories->addFactory(factory);
@@ -80,6 +98,10 @@ void BasicTest::setMeUp (void) {
 	_payloadSerializers.push_back(new Swift::StatsSerializer());
 	_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
+	_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+	_payloadSerializers.push_back(new Swift::PrivilegeSerializer(payloadSerializers));
+#endif
 
 	BOOST_FOREACH(Swift::PayloadSerializer *serializer, _payloadSerializers) {
 		payloadSerializers->addSerializer(serializer);

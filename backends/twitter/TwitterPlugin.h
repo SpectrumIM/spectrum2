@@ -19,7 +19,6 @@
 #include "sys/signal.h"
 #endif
 #include <boost/algorithm/string.hpp>
-#include <boost/signal.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 

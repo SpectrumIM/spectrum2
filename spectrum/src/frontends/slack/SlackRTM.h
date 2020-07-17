@@ -23,7 +23,7 @@
 #include "SlackAPI.h"
 
 #include "transport/StorageBackend.h"
-#include "rapidjson/document.h"
+#include <json/json.h>
 
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
@@ -47,8 +47,6 @@
 #include <algorithm>
 #include <map>
 
-#include <boost/signal.hpp>
-
 namespace Transport {
 
 class Component;
@@ -70,19 +68,19 @@ class SlackRTM {
 
 		void sendMessage(const std::string &channel, const std::string &message);
 
-		boost::signal<void ()> onRTMStarted;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onRTMStarted;
 
 		SlackAPI *getAPI() {
 			return m_api;
 		}
 
-		boost::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
 
 #ifndef LIBTRANSPORT_TEST
 	private:
 #endif
 		void handlePayloadReceived(const std::string &payload);
-		void handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data);
+		void handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data);
 		void handleWebSocketConnected();
 		void handleWebSocketDisconnected(const boost::optional<Swift::Connection::Error> &error);
 

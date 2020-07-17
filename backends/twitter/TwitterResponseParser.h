@@ -1,7 +1,8 @@
 #ifndef TWITTERRESPOSNSEPARSER_H
 #define TWITTERRESPOSNSEPARSER_H
 
-#include "rapidjson/document.h"
+#include <json/json.h>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -16,7 +17,7 @@ namespace TwitterReponseTypes
 	const std::string screen_name = "screen_name";
 	const std::string statuses_count = "statuses_count";
 	const std::string created_at = "created_at";
-	const std::string text = "text";
+	const std::string text = "full_text";
 	const std::string truncated = "truncated";
 	const std::string in_reply_to_status_id = "in_reply_to_user_id";
 	const std::string in_reply_to_user_id = "in_reply_to_user_id";
@@ -234,8 +235,8 @@ std::vector<User> getUsers(std::string &xml);
 User getUser(std::string &xml);
 Error getErrorMessage(std::string &xml);
 
-std::vector<UrlEntity> getUrlEntities(const rapidjson::Value &element);
-Status getStatus(const rapidjson::Value &element);
-DirectMessage getDirectMessage(const rapidjson::Value &element);
-User getUser(const rapidjson::Value &element);
+std::vector<UrlEntity> getUrlEntities(const Json::Value &element);
+Status getStatus(const Json::Value &element);
+DirectMessage getDirectMessage(const Json::Value &element);
+User getUser(const Json::Value &element);
 #endif

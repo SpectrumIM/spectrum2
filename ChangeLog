@@ -1,3 +1,81 @@
+Version 2.0.13 (2020-07-13):
+	General:
+	* improve compatibility with latest build tools
+	libpurple backend:
+	* fix random crashes
+	* telegram-tdlib support
+
+Version 2.0.12 (2019-07-15):
+	libpurple backend:
+	* revert changes which causes crash on start
+
+Version 2.0.11 (2019-07-12):
+	General:
+	* Minor compatibility fixes with latest packaging tools
+	* 2FA support for Steam libpurple plugin
+	* Improved image and carbons forwarding
+
+Version 2.0.10 (2019-01-25):
+	General:
+	* Compatibility with latest compilers and libraries Libpurple backend:
+	* 2FA support for Discord plugin
+	* Compatibility with non-protocol plugins (nss-prefs)
+	* Improved room list forwarding
+	* Improved image forwarding
+
+Version 2.0.9 (2018-09-22):
+	General:
+	* Finally fix MySQL storage backend issues
+
+Version 2.0.8 (2018-09-17):
+	General:
+	* Fix some MySQL storage backend issues
+	* Appveyor build integration
+	Libpurple backend:
+	* Fix Steam Guard compatibility in Steam Mobile plugin
+	* Fix VCard forwarding and room joining issues
+	Twitter backend:
+	* 280 characters support
+	* Support for Direct Messages is disabled until switching to new
+	Direct Message API
+	Libcommuni backend:
+	* split multiline messages into series of PRIVMSG commands
+
+Version 2.0.7 (2018-04-27):
+	General:
+	* Fix Web interface and Twitter backend compatibilty with Swiften 4 by switching to C++11-compatible JSON library
+	* Minor changes in packaging and build environment
+	XMPP:
+	* Fix XEP-0085 compatibility with some clients
+
+Version 2.0.6 (2018-02-07):
+	General:
+	* Add support for forwading own messages sent from different legacy network client.
+	XMPP frontend:
+	* Forward own messages as XEP-280 Carbons. Requires XEP-0356 capable server
+	  and transport should be configured as privileged entity for outgoing messages.
+	* Fixed compatibility with XEP-0356: now it can be used to provide remote
+	  roster management support.
+	* Forward images using XEP-0066 attachments. May not be compatible with all backends.
+	Libpurple backend:
+	* Forward own messages to frontend. Tested with prpl-skypeweb.
+	* Fixed compatibility with latest prpl-steam-mobile
+	Minor bugfixes:
+	* packaging updates and improvements
+	* better compatibility with newest compilers and libraries
+
+Version 2.0.5 (2017-08-09):
+	Minor bugfixes:
+	* fix purple-hangouts login
+	* fix Debian packages dependencies
+
+Version 2.0.4 (2017-08-03):
+	General:
+	* Add support for Swiften 4.0rc2. Swiften 3.x and 2.x are still supported.
+	* Add support for passwordless libpurple backends (e.g. purple-hangouts).
+	* Partial support for groupchats with case-sensitive names (e.g. purple-telegram).
+	* Various small bugfixes, see Git commit descriptions for the full list of changes.
+	
 Version 2.0.3 (2016-02-29):
 	General:
 	* Swift 3.0rc2 is now minimum Swift 3.x version needed to compile Spectrum2,

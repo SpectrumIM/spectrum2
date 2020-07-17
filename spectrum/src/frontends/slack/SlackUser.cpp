@@ -33,7 +33,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackUser");
+DEFINE_LOGGER(slackUserLogger, "SlackUser");
 
 SlackUser::SlackUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) : User(jid, userInfo, component, userManager) {
 	m_jid = jid.toBare();

@@ -23,7 +23,6 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include <boost/signal.hpp>
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/pool/object_pool.hpp>
 // #include "rosterstorage.h"
@@ -32,6 +31,7 @@
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Network/Timer.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -44,7 +44,7 @@ class RosterStorage;
 /// Manages roster of one XMPP user.
 class RosterManager {
 	public:
-		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > BuddiesMap;
+		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > > BuddiesMap;
 		/// Creates new RosterManager.
 		/// \param user User associated with this RosterManager.
 		/// \param component Transport instance associated with this roster.
@@ -60,7 +60,7 @@ class RosterManager {
 		/// Associates the buddy with this roster,
 		/// and if the buddy is not already in XMPP user's server-side roster, the proper requests
 		/// are sent to XMPP user (subscribe presences, Roster Item Exchange stanza or
-		/// the buddy is added to server-side roster using remote-roster protoXEP).
+		/// the buddy is added to server-side roster using XEP-0321 or XEP-0356).
 		/// \param buddy Buddy
 		void setBuddy(Buddy *buddy);
 
@@ -94,15 +94,15 @@ class RosterManager {
 
 		/// Called when new Buddy is added to this roster.
 		/// \param buddy newly added Buddy
-		boost::signal<void (Buddy *buddy)> onBuddySet;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddySet;
 
 		/// Called when Buddy has been removed from this roster.
 		/// \param buddy removed Buddy
-		boost::signal<void (Buddy *buddy)> onBuddyUnset;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddyUnset;
 
-		boost::signal<void (Buddy *buddy)> onBuddyAdded;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddyAdded;
 		
-		boost::signal<void (Buddy *buddy)> onBuddyRemoved;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *buddy)> onBuddyRemoved;
 
 		void handleBuddyChanged(Buddy *buddy);
 
@@ -113,6 +113,8 @@ class RosterManager {
 		void sendBuddySubscribePresence(Buddy *buddy);
 		
 		void sendBuddyUnsubscribePresence(Buddy *buddy);
+		
+		void sendBuddyPresences(Buddy *buddy, const Swift::JID &to);
 
 		void sendCurrentPresences(const Swift::JID &to);
 
@@ -121,7 +123,7 @@ class RosterManager {
 		void sendUnavailablePresences(const Swift::JID &to);
 
 	protected:
-		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > m_buddies;
+		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > > m_buddies;
 
 	private:
 		Component *m_component;

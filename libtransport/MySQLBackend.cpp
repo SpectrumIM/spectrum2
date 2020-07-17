@@ -25,59 +25,13 @@
 #include "transport/Logging.h"
 #include <boost/bind.hpp>
 
-#define MYSQL_DB_VERSION 2
-#define CHECK_DB_RESPONSE(stmt) \
-	if(stmt) { \
-		sqlite3_EXEC(m_db, "ROLLBACK;", NULL, NULL, NULL); \
-		return 0; \
-	}
-
-// Prepare the SQL statement
-#define PREP_STMT(sql, str) \
-	sql = mysql_stmt_init(&m_conn);\
-	if (mysql_stmt_prepare(sql, std::string(str).c_str(), std::string(str).size())) {\
-		LOG4CXX_ERROR(logger, str << " " << mysql_error(&m_conn)); \
-		return false; \
-	}
-
-// Finalize the prepared statement
-#define FINALIZE_STMT(prep) \
-	if(prep != NULL) { \
-		mysql_stmt_close(prep); \
-	}
-	
-#define BEGIN(STATEMENT, SIZE) 	MYSQL_BIND STATEMENT##_bind[SIZE]; \
-							memset(STATEMENT##_bind, 0, sizeof(STATEMENT##_bind)); \
-							int STATEMENT##_id = 1;\
-							int STATEMENT##_id_get = 0;\
-							(void)STATEMENT##_id_get;
-
-#define BIND_INT(STATEMENT, VARIABLE) STATEMENT##_bind[STATEMENT##_id].buffer_type= MYSQL_TYPE_LONG;\
-							STATEMENT##_bind[STATEMENT##_id].buffer= (char *)&VARIABLE;\
-							STATEMENT##_bind[STATEMENT##_id].is_null= 0;\
-							STATEMENT##_bind[STATEMENT##_id++].length= 0;
-#define BIND_STR(STATEMENT, VARIABLE) STATEMENT##_bind[STATEMENT##_id].buffer_type= MYSQL_TYPE_STRING;\
-							STATEMENT##_bind[STATEMENT##_id].buffer= VARIABLE.c_str();\
-							STATEMENT##_bind[STATEMENT##_id].buffer_length= STRING_SIZE;\
-							STATEMENT##_bind[STATEMENT##_id].is_null= 0;\
-							STATEMENT##_bind[STATEMENT##_id++].length= VARIABLE.size();
-#define RESET_GET_COUNTER(STATEMENT)	STATEMENT##_id_get = 0;
-#define GET_INT(STATEMENT)	sqlite3_column_int(STATEMENT, STATEMENT##_id_get++)
-#define GET_STR(STATEMENT)	(const char *) sqlite3_column_text(STATEMENT, STATEMENT##_id_get++)
-#define EXECUTE_STATEMENT(STATEMENT, NAME) if (mysql_stmt_bind_param(STATEMENT, STATEMENT##_bind)) { \
-		LOG4CXX_ERROR(logger, NAME << " " << mysql_error(&m_conn)); \
-	} \
-	if (mysql_stmt_execute(STATEMENT)) { \
-		LOG4CXX_ERROR(logger, NAME << " " << mysql_error(&m_conn)); \
-	}
-
 #define EXEC(STMT, METHOD) \
 	{\
 	int ret = STMT->execute(); \
 	if (ret == 0) \
 		exec_ok = true; \
-	else if (ret == 2013) { \
-		LOG4CXX_INFO(logger, "MySQL connection lost. Reconnecting...");\
+	else if (ret == CR_SERVER_LOST || ret == CR_SERVER_GONE_ERROR) { \
+		LOG4CXX_INFO(mySqlLogger, "MySQL connection lost. Reconnecting...");\
 		disconnect(); \
 		connect(); \
 		return METHOD; \
@@ -88,7 +42,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "MySQLBackend");
+DEFINE_LOGGER(mySqlLogger, "MySQLBackend");
 static bool exec_ok;
 
 MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const std::string &statement) {
@@ -98,11 +52,11 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 	m_string = statement;
 	m_stmt = mysql_stmt_init(conn);
 	if (mysql_stmt_prepare(m_stmt, statement.c_str(), statement.size())) {
-		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+		LOG4CXX_ERROR(mySqlLogger, statement << " " << mysql_stmt_error(m_stmt));
 		return;
 	}
 
-	for (int i = 0; i < format.length() && m_resultOffset == -1; i++) {
+	for (unsigned i = 0; i < format.length() && m_resultOffset == -1; i++) {
 		switch (format.at(i)) {
 			case 's':
 				m_params.resize(m_params.size() + 1);
@@ -138,7 +92,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 		}
 	}
 
-	for (int i = m_resultOffset; i >= 0 && i < format.length(); i++) {
+	for (unsigned i = m_resultOffset; i >= 0 && i < format.length(); i++) {
 		switch (format.at(i)) {
 			case 's':
 				m_results.resize(m_results.size() + 1);
@@ -172,29 +126,31 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 	}
 
 	if (mysql_stmt_bind_param(m_stmt, &m_params.front())) {
-		LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+		LOG4CXX_ERROR(mySqlLogger, statement << " " << mysql_stmt_error(m_stmt));
 	}
 
 	if (m_resultOffset < 0)
 		m_resultOffset = format.size();
 	else {
 		if (mysql_stmt_bind_result(m_stmt, &m_results.front())) {
-			LOG4CXX_ERROR(logger, statement << " " << mysql_error(conn));
+			LOG4CXX_ERROR(mySqlLogger, statement << " " << mysql_stmt_error(m_stmt));
 		}
 	}
 	m_resultOffset = 0;
 }
 
 MySQLBackend::Statement::~Statement() {
-	for (int i = 0; i < m_params.size(); i++) {
+	for (unsigned i = 0; i < m_params.size(); i++) {
 		free(m_params[i].buffer);
 		free(m_params[i].length);
 	}
-	for (int i = 0; i < m_results.size(); i++) {
+	for (unsigned i = 0; i < m_results.size(); i++) {
 		free(m_results[i].buffer);
 		free(m_results[i].length);
 	}
-	FINALIZE_STMT(m_stmt);
+	if (m_stmt != NULL) {
+		mysql_stmt_close(m_stmt);
+	}
 }
 
 int MySQLBackend::Statement::execute() {
@@ -204,9 +160,10 @@ int MySQLBackend::Statement::execute() {
 	m_resultOffset = 0;
 	int ret;
 	if ((ret = mysql_stmt_execute(m_stmt)) != 0) {
-		LOG4CXX_ERROR(logger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
+		LOG4CXX_ERROR(mySqlLogger, m_string << " " << mysql_stmt_error(m_stmt) << "; " << mysql_error(m_conn));
 		return mysql_stmt_errno(m_stmt);
 	}
+	mysql_stmt_store_result(m_stmt);
 	return 0;
 }
 
@@ -221,7 +178,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 	int *data = (int *) m_params[m_offset].buffer;
 	*data = (int) t;
 
-// 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << (int) t);
+// 	LOG4CXX_INFO(mySqlLogger, "adding " << m_offset << ":" << (int) t);
 	m_offset++;
 	return *this;
 }
@@ -229,7 +186,7 @@ MySQLBackend::Statement& MySQLBackend::Statement::operator << (const T& t) {
 MySQLBackend::Statement& MySQLBackend::Statement::operator << (const std::string& str) {
 	if (m_offset >= m_params.size())
 		return *this;
-// 	LOG4CXX_INFO(logger, "adding " << m_offset << ":" << str << "(" << str.size() << ")");
+// 	LOG4CXX_INFO(mySqlLogger, "adding " << m_offset << ":" << str << "(" << str.size() << ")");
 	strncpy((char*) m_params[m_offset].buffer, str.c_str(), 4096);
 	*m_params[m_offset].length = str.size();
 	m_offset++;
@@ -270,16 +227,15 @@ MySQLBackend::MySQLBackend(Config *config) {
 	m_config = config;
 	m_prefix = CONFIG_STRING(m_config, "database.prefix");
 	mysql_init(&m_conn);
-	my_bool my_true = 1;
-	mysql_options(&m_conn, MYSQL_OPT_RECONNECT, &my_true);
 }
 
 MySQLBackend::~MySQLBackend(){
 	disconnect();
+	mysql_close(&m_conn);
 }
 
 void MySQLBackend::disconnect() {
-	LOG4CXX_INFO(logger, "Disconnecting");
+	LOG4CXX_INFO(mySqlLogger, "Disconnecting");
 	delete m_setUser;
 	delete m_getUser;
 	delete m_removeUser;
@@ -300,11 +256,10 @@ void MySQLBackend::disconnect() {
 	delete m_setUserOnline;
 	delete m_getOnlineUsers;
 	delete m_getUsers;
-	mysql_close(&m_conn);
 }
 
 bool MySQLBackend::connect() {
-	LOG4CXX_INFO(logger, "Connecting MySQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
+	LOG4CXX_INFO(mySqlLogger, "Connecting MySQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
 		CONFIG_STRING(m_config, "database.user") << ", database " << CONFIG_STRING(m_config, "database.database") <<
 		", port " << CONFIG_INT(m_config, "database.port")
 	);
@@ -314,12 +269,12 @@ bool MySQLBackend::connect() {
 					   CONFIG_STRING(m_config, "database.password").c_str(),
 					   CONFIG_STRING(m_config, "database.database").c_str(),
 					   CONFIG_INT(m_config, "database.port"), NULL, 0)) {
-		LOG4CXX_ERROR(logger, "Can't connect database: " << mysql_error(&m_conn));
+		LOG4CXX_ERROR(mySqlLogger, "Can't connect database: " << mysql_error(&m_conn));
 		return false;
 	}
 
 	if (!mysql_set_character_set(&m_conn, "utf8")) {
-		LOG4CXX_INFO(logger, "New client character set: " << mysql_character_set_name(&m_conn));
+		LOG4CXX_INFO(mySqlLogger, "New client character set: " << mysql_character_set_name(&m_conn));
 	}
 
 	createDatabase();
@@ -412,7 +367,7 @@ bool MySQLBackend::createDatabase() {
 
 bool MySQLBackend::exec(const std::string &query) {
 	if (mysql_query(&m_conn, query.c_str())) {
-		LOG4CXX_ERROR(logger, query << " " << mysql_error(&m_conn));
+		LOG4CXX_ERROR(mySqlLogger, query << " " << mysql_error(&m_conn));
 		return false;
 	}
 	return true;
@@ -446,15 +401,15 @@ bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {
 	if (!CONFIG_STRING(m_config, "database.vip_statement").empty()) {
 		std::string query = CONFIG_STRING(m_config, "database.vip_statement");
 		boost::replace_all(query, "$barejid", barejid);
-		LOG4CXX_INFO(logger, "Executing '" << query << "' to find out if user " << barejid << " is VIP");
+		LOG4CXX_INFO(mySqlLogger, "Executing '" << query << "' to find out if user " << barejid << " is VIP");
 		if (exec(query)) {
 			MYSQL_RES *result = mysql_store_result(&m_conn);
 			if (result && mysql_num_rows(result) > 0) {
-				LOG4CXX_INFO(logger, "User " << barejid << " is VIP");
+				LOG4CXX_INFO(mySqlLogger, "User " << barejid << " is VIP");
 				user.vip = 1;
 			}
 			else {
-				LOG4CXX_INFO(logger, "User " << barejid << " is not VIP");
+				LOG4CXX_INFO(mySqlLogger, "User " << barejid << " is not VIP");
 				user.vip = 0;
 			}
 		}
@@ -595,7 +550,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 			buddy_id = -1;
 		}
 
-		while(buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
+		while (buddy_id == -1 && m_getBuddiesSettings->fetch() == 0) {
 			std::string val;
 			*m_getBuddiesSettings >> buddy_id >> var.type >> key >> val;
 
@@ -621,7 +576,7 @@ bool MySQLBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		}
 	}
 
-	while(m_getBuddiesSettings->fetch() == 0) {
+	while (m_getBuddiesSettings->fetch() == 0) {
 		// TODO: probably remove those settings, because there's no buddy for them.
 		// It should not happend, but one never know...
 	}

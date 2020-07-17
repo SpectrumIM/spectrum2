@@ -1,31 +1,32 @@
 cmake_minimum_required(VERSION 2.6)
-FILE(GLOB SRC *.cpp *.h)
-FILE(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
+
+file(GLOB SRC *.cpp *.h)
+file(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 
 # Build without openssl on msvc
-if (NOT MSVC)
-if (APPLE)
-	string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
-	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
-else()
-	string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
-	string(REGEX REPLACE "[^;]+;?/SecureTransport/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
-endif()
+if(NOT MSVC)
+	if(APPLE)
+		string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
+		string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
+	else()
+		string(REGEX REPLACE "[^;]+;?/Schannel/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
+		string(REGEX REPLACE "[^;]+;?/SecureTransport/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
+	endif()
 else()
 	string(REGEX REPLACE "[^;]+;?/OpenSSL/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}") 
 	string(REGEX REPLACE "[^;]+;?/SecureTransport/[^;]+;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
 endif()
 
-FILE(GLOB HEADERS ../../include/transport/*.h)
+file(GLOB HEADERS ../../include/transport/*.h)
 include_directories(../../spectrum/src/frontends/xmpp/)
 include_directories(../../spectrum/src/frontends/slack/)
 
-if (CPPUNIT_FOUND)
-	FILE(GLOB SRC_TEST *.cpp)
-	FILE(GLOB SRC_TEST_FRONTEND_XMPP ../../spectrum/src/frontends/xmpp/*.cpp)
-	FILE(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
+if(CPPUNIT_FOUND)
+	file(GLOB SRC_TEST *.cpp)
+	file(GLOB SRC_TEST_FRONTEND_XMPP ../../spectrum/src/frontends/xmpp/*.cpp)
+	file(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
 
-	ADD_EXECUTABLE(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
+	add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
 	set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
 	
 

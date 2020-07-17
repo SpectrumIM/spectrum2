@@ -1,5 +1,5 @@
 #include "OAuthFlow.h"
-DEFINE_LOGGER(logger, "OAuthFlow")
+DEFINE_LOGGER(oauthFlowRequestLogger, "OAuthFlow")
 void OAuthFlow::run()
 {
 	success = twitObj->oAuthRequestToken( authUrl );
@@ -8,7 +8,7 @@ void OAuthFlow::run()
 void OAuthFlow::finalize()
 {
 	if (!success) {
-		LOG4CXX_ERROR(logger, "Error creating twitter authorization url!");
+		LOG4CXX_ERROR(oauthFlowRequestLogger, "Error creating twitter authorization url!");
 		np->handleMessage(user, "twitter.com", "Error creating twitter authorization url!");
 		np->handleLogoutRequest(user, username);
 	} else {

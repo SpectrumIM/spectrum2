@@ -45,6 +45,9 @@ class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 		void addRoom(const std::string &node, const std::string &name);
 		void clearRooms();
 
+		DiscoInfoResponder *getDiscoInfoResponder() {
+			return m_discoInfoResponder;
+		}
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> payload);

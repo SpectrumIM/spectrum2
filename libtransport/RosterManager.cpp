@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
+#include "transport/Config.h"
 #include "transport/RosterManager.h"
 #include "transport/RosterStorage.h"
 #include "transport/StorageBackend.h"
@@ -41,7 +42,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "RosterManager");
+DEFINE_LOGGER(rosterManagerLogger, "RosterManager");
 
 RosterManager::RosterManager(User *user, Component *component){
 	m_rosterStorage = NULL;
@@ -49,7 +50,7 @@ RosterManager::RosterManager(User *user, Component *component){
 	m_component = component;
 
 	boost::locale::generator gen;
-	std::locale::global(gen("en_GB.UTF8"));
+	std::locale::global(gen(""));
 }
 
 RosterManager::~RosterManager() {
@@ -59,7 +60,7 @@ RosterManager::~RosterManager() {
 
 	sendUnavailablePresences(m_user->getJID().toBare());
 
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -78,7 +79,7 @@ void RosterManager::removeBuddy(const std::string &_name) {
 	name = boost::locale::to_lower(name);
 	Buddy *buddy = getBuddy(name);
 	if (!buddy) {
-		LOG4CXX_WARN(logger, m_user->getJID().toString() << ": Tried to remove unknown buddy " << name);
+		LOG4CXX_WARN(rosterManagerLogger, m_user->getJID().toString() << ": Tried to remove unknown buddy " << name);
 		return;
 	}
 
@@ -117,13 +118,22 @@ void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	m_component->getFrontend()->sendPresence(response);
 }
 
+void RosterManager::sendBuddyPresences(Buddy *buddy, const Swift::JID &to) {
+	Swift::Presence::ref currentPresence;	
+	std::vector<Swift::Presence::ref> presences = buddy->generatePresenceStanzas(255);
+	BOOST_FOREACH(Swift::Presence::ref &currentPresence, presences) {
+		currentPresence->setTo(to);
+		m_component->getFrontend()->sendPresence(currentPresence);
+	}
+}
+
 void RosterManager::handleBuddyChanged(Buddy *buddy) {
 }
 
 void RosterManager::setBuddy(Buddy *buddy) {
 	std::string name = buddy->getName();
 	name = boost::locale::to_lower(name);
-	LOG4CXX_INFO(logger, "Associating buddy " << name << " with " << m_user->getJID().toString());
+	LOG4CXX_INFO(rosterManagerLogger, "Associating buddy " << name << " with " << m_user->getJID().toString());
 	m_buddies[name] = buddy;
 	onBuddySet(buddy);
 
@@ -155,174 +165,143 @@ Buddy *RosterManager::getBuddy(const std::string &_name) {
 }
 
 
+/*
+Buddy handling is similar to Pidgin. A buddy can only be:
+  Buddy::Both == mutual
+  Buddy::Ask  == friend request from them
+  no entry    == not a buddy/rejected by user
+In gateway mode, anyone the user approves is automatically a Buddy::Both as far as we are concerned.
+Forward all friend requests to the backend but ignore the results.
+*/
 void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 	std::string legacyName = Buddy::JIDToLegacyName(presence->getTo(), m_user);
-	if (legacyName.empty()) {
+	if (legacyName.empty())
 		return;
-	}
 	
+	Swift::Presence::ref response = Swift::Presence::create();
+	response->setTo(presence->getFrom().toBare());
+	response->setFrom(presence->getTo().toBare());
+	response->setType(Swift::Presence::Unavailable); //== do not send
+	
+	Buddy *buddy = getBuddy(legacyName);
+	bool newBuddy = (!buddy);
+	if (newBuddy) {
+		//Need a temporary buddy for most operations
+		LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): unknown buddy");
+		BuddyInfo buddyInfo;
+		buddyInfo.id = -1;
+		buddyInfo.alias = "";
+		buddyInfo.legacyName = legacyName;
+		buddyInfo.subscription = "both";
+		buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
+		buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
+	} else
+		LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): known buddy");
+
+
 	// For server mode the subscription changes are handler in rosterresponder.cpp
 	// using roster pushes.
 	if (m_component->inServerMode()) {
-		Swift::Presence::ref response = Swift::Presence::create();
-		response->setTo(presence->getFrom().toBare());
-		response->setFrom(presence->getTo().toBare());
-		Buddy *buddy = getBuddy(legacyName);
-		if (buddy) {
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received and buddy " << legacyName << " is already there => answering");
-			switch (presence->getType()) {
-				case Swift::Presence::Subscribe:
+		if (buddy)
+			LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Subscription received and buddy " << legacyName << " is already there => answering");
+		switch (presence->getType()) {
+			case Swift::Presence::Subscribe:
+				if (newBuddy) {
+					// buddy is not in roster, so add him
+					LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
+					setBuddy(buddy);
+					newBuddy=false; //passed on, do not autodelete
+				}
+				onBuddyAdded(buddy);
+				response->setType(Swift::Presence::Subscribed);
+				break;
+
+			case Swift::Presence::Subscribed:
+				if (!newBuddy)
 					onBuddyAdded(buddy);
-					response->setType(Swift::Presence::Subscribed);
-					break;
-				case Swift::Presence::Unsubscribe:
-					onBuddyRemoved(buddy);
+//				else
+// 					onBuddyAdded(buddy);
+				break;
+
+			case Swift::Presence::Unsubscribe:
+				onBuddyRemoved(buddy);
+				if (!newBuddy) {
 					removeBuddy(buddy->getName());
 					buddy = NULL;
-					response->setType(Swift::Presence::Unsubscribed);
-					break;
-				case Swift::Presence::Subscribed:
-					onBuddyAdded(buddy);
-					break;
-				default:
-					return;
-			}
-			m_component->getFrontend()->sendPresence(response);
-			
-		}
-		else {
-			BuddyInfo buddyInfo;
-			switch (presence->getType()) {
-				// buddy is not in roster, so add him
-				case Swift::Presence::Subscribe:
-					buddyInfo.id = -1;
-					buddyInfo.alias = "";
-					buddyInfo.legacyName = legacyName;
-					buddyInfo.subscription = "both";
-					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
-					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
+				}
+				response->setType(Swift::Presence::Unsubscribed);
+				break;
 
-					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-					setBuddy(buddy);
-					onBuddyAdded(buddy);
-					response->setType(Swift::Presence::Subscribed);
-					break;
-				case Swift::Presence::Subscribed:
-// 					onBuddyAdded(buddy);
-					return;
-				// buddy is not there, so nothing to do, just answer
-				case Swift::Presence::Unsubscribe:
-					buddyInfo.id = -1;
-					buddyInfo.alias = "";
-					buddyInfo.legacyName = legacyName;
-					buddyInfo.subscription = "both";
-					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
-
-					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-					onBuddyRemoved(buddy);
-					delete buddy;
-					response->setType(Swift::Presence::Unsubscribed);
-					break;
-				default:
-					return;
-			}
-			m_component->getFrontend()->sendPresence(response);
+			case Swift::Presence::Available:
+			case Swift::Presence::Error:
+			case Swift::Presence::Probe:
+			case Swift::Presence::Unavailable:
+			case Swift::Presence::Unsubscribed:
+				break;
 		}
 	}
 	else {
-		Swift::Presence::ref response = Swift::Presence::create();
-		Swift::Presence::ref currentPresence;
-		response->setTo(presence->getFrom().toBare());
-		response->setFrom(presence->getTo().toBare());
-
-		Buddy *buddy = getBuddy(legacyName);
-		if (buddy) {
-			std::vector<Swift::Presence::ref> &presences = buddy->generatePresenceStanzas(255);
-			switch (presence->getType()) {
-				// buddy is already there, so nothing to do, just answer
-				case Swift::Presence::Subscribe:
-					onBuddyAdded(buddy);
+		switch (presence->getType()) {
+			case Swift::Presence::Subscribe:	// Add a friend on the backend network & send friend request.
+			case Swift::Presence::Subscribed:   // Accept friend request / Mark buddy as a friend
+				//Add buddy as Buddy::Both, confirm friend requests now and henceforth
+				LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): Subscribe/Subscribed");
+				if (newBuddy) {
+					// buddy is not in roster, so add him
+					LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Subscription received for new buddy " << legacyName << " => adding to legacy network");
+					setBuddy(buddy);
+					newBuddy=false; //do not autodelete
+				} else if (buddy->getSubscription() != Buddy::Both) {
+					buddy->setSubscription(Buddy::Both);
+					storeBuddy(buddy);
+				}
+				onBuddyAdded(buddy); //re-confirm, even if the buddy has already been Buddy::Both - it won't hurt
+				sendBuddyPresences(buddy, presence->getFrom());
+				//Auto-accept, as far as XMPP is concerned
+				if (presence->getType() == Swift::Presence::Subscribe)
 					response->setType(Swift::Presence::Subscribed);
-					BOOST_FOREACH(Swift::Presence::ref &currentPresence, presences) {
-						currentPresence->setTo(presence->getFrom());
-						m_component->getFrontend()->sendPresence(currentPresence);
-					}
-					if (buddy->getSubscription() != Buddy::Both) {
-						buddy->setSubscription(Buddy::Both);
-						storeBuddy(buddy);
-					}
-					break;
-				// remove buddy
-				case Swift::Presence::Unsubscribe:
-					response->setType(Swift::Presence::Unsubscribed);
+				break;
+
+			case Swift::Presence::Unsubscribe:   // Throw away the friend privileges that the contact has given us.
+				LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): Unsubscribe");
+				//Delete buddy and reject any friend requests
+				//If delete-protection is enabled, only delete from backend if the friend is Buddy::Ask or new.
+				if (newBuddy || (buddy->getSubscription() == Buddy::Ask) || CONFIG_BOOL(m_component->getConfig(), "service.enable_remove_buddy"))
+					onBuddyRemoved(buddy);
+				if (!newBuddy) {
+					removeBuddy(buddy->getName());
+					buddy = NULL;
+				}
+				//XEP says the buddy should send "unsubscribed" to this request
+				response->setType(Swift::Presence::Unsubscribed);
+				break;
+			
+			case Swift::Presence::Unsubscribed:  // Remove contact's friend privileges / Deny friend request / Confirm UNSUBSCRIBE
+				LOG4CXX_TRACE(rosterManagerLogger, "handleSubscription(): Unsubscribed");
+				//Only remove-buddy if this is a real friend request rejection
+				//XMPP may send <unsubscribed> in other cases, e.g. when the user refuses the formal <subscribe>
+				//that we've sent to inform them of existing ::Both buddies. We should not delete existing buddies then!
+				if (buddy->getSubscription() == Buddy::Ask) {
 					onBuddyRemoved(buddy);
 					removeBuddy(buddy->getName());
 					buddy = NULL;
-					break;
-				// just send response
-				case Swift::Presence::Unsubscribed:
+					//XEP says the buddy should send "unsubscribe" if his attempt to "subscribe" had been rejected
 					response->setType(Swift::Presence::Unsubscribe);
-					// We set both here, because this Unsubscribed can be response to
-					// subscribe presence and we don't want that unsubscribe presence
-					// to be send later again
-					if (buddy->getSubscription() != Buddy::Both) {
-						buddy->setSubscription(Buddy::Both);
-						storeBuddy(buddy);
-					}
-					break;
-				case Swift::Presence::Subscribed:
-					if (buddy->getSubscription() != Buddy::Both) {
-						buddy->setSubscription(Buddy::Both);
-						storeBuddy(buddy);
-					}
-					return;
-				default:
-					return;
-			}
+				}
+				break;
+
+			case Swift::Presence::Available:
+			case Swift::Presence::Error:
+			case Swift::Presence::Probe:
+			case Swift::Presence::Unavailable:
+				break;
 		}
-		else {
-			BuddyInfo buddyInfo;
-			switch (presence->getType()) {
-				// buddy is not in roster, so add him
-				case Swift::Presence::Subscribe:
-					buddyInfo.id = -1;
-					buddyInfo.alias = "";
-					buddyInfo.legacyName = legacyName;
-					buddyInfo.subscription = "both";
-					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
+	}
 
-					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-					setBuddy(buddy);
-					onBuddyAdded(buddy);
-					LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Subscription received for new buddy " << buddyInfo.legacyName << " => adding to legacy network");
-					response->setType(Swift::Presence::Subscribed);
-					break;
-				case Swift::Presence::Unsubscribe:
-					buddyInfo.id = -1;
-					buddyInfo.alias = "";
-					buddyInfo.legacyName = legacyName;
-					buddyInfo.subscription = "both";
-					buddyInfo.flags = Buddy::buddyFlagsFromJID(presence->getTo());
-
-					response->setType(Swift::Presence::Unsubscribed);
-					
-					buddy = m_component->getFactory()->createBuddy(this, buddyInfo);
-					onBuddyRemoved(buddy);
-					delete buddy;
-					buddy = NULL;
-					break;
-				// just send response
-				case Swift::Presence::Unsubscribed:
-					response->setType(Swift::Presence::Unsubscribe);
-					break;
-				// just send response
-				default:
-					return;
-			}
-		}
-
+	if (response->getType() != Swift::Presence::Unavailable)
 		m_component->getFrontend()->sendPresence(response);
 
+	if (!m_component->inServerMode())
 		// We have to act as buddy and send its subscribe/unsubscribe just to be sure...
 		switch (response->getType()) {
 			case Swift::Presence::Unsubscribed:
@@ -336,7 +315,10 @@ void RosterManager::handleSubscription(Swift::Presence::ref presence) {
 			default:
 				break;
 		}
-	}
+
+	//Delete the temporary buddy
+	if (newBuddy && buddy)
+		delete buddy;
 }
 
 void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
@@ -351,7 +333,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 	for (std::list<BuddyInfo>::const_iterator it = roster.begin(); it != roster.end(); it++) {
 		Buddy *buddy = m_component->getFactory()->createBuddy(this, *it);
 		if (buddy) {
-			LOG4CXX_INFO(logger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
+			LOG4CXX_INFO(rosterManagerLogger, m_user->getJID().toString() << ": Adding cached buddy " << buddy->getName() << " fom database");
 			std::string name = buddy->getName();
 			name = boost::locale::to_lower(name);
 			m_buddies[name] = buddy;
@@ -365,7 +347,7 @@ void RosterManager::setStorageBackend(StorageBackend *storageBackend) {
 Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 	Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
 
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -381,7 +363,7 @@ Swift::RosterPayload::ref RosterManager::generateRosterPayload() {
 }
 
 void RosterManager::sendCurrentPresences(const Swift::JID &to) {
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;
@@ -416,7 +398,7 @@ void RosterManager::sendCurrentPresence(const Swift::JID &from, const Swift::JID
 }
 
 void RosterManager::sendUnavailablePresences(const Swift::JID &to) {
-	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
+	for (std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > >::iterator it = m_buddies.begin(); it != m_buddies.end(); it++) {
 		Buddy *buddy = (*it).second;
 		if (!buddy) {
 			continue;

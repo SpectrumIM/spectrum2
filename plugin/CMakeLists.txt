@@ -1,2 +1,2 @@
-ADD_SUBDIRECTORY(cpp)
-ADD_SUBDIRECTORY(python)
+add_subdirectory(cpp)
+add_subdirectory(python)

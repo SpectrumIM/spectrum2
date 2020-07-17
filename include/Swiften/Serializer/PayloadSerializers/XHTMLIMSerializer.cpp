@@ -5,7 +5,6 @@
  */
 
 #include <Swiften/Serializer/PayloadSerializers/XHTMLIMSerializer.h>
-#include <Swiften/Base/foreach.h>
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>

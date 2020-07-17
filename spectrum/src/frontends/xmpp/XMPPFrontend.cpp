@@ -32,6 +32,7 @@
 #include "transport/Config.h"
 #include "transport/Transport.h"
 #include "storageparser.h"
+#include "Swiften/SwiftenCompat.h"
 #ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
 #include "Swiften/TLS/Schannel/SchannelServerContext.h"
@@ -59,11 +60,21 @@
 #include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
+#include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
+#include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+#include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
+#include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
+#endif
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
+#if SWIFTEN_VERSION >= 0x030000
+#include "Swiften/Parser/GenericPayloadParserFactory2.h"
+#endif
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "discoitemsresponder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
+#include "carbonresponder.h"
 
 using namespace Swift;
 
@@ -73,6 +84,20 @@ DEFINE_LOGGER(logger, "XMPPFrontend");
 
 XMPPFrontend::XMPPFrontend() {
 }
+
+class SwiftServerExposed: public Swift::Server
+{
+public:
+	PayloadParserFactoryCollection* getPayloadParserFactories() { return Swift::Server::getPayloadParserFactories(); }
+	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Server::getPayloadSerializers(); }
+};
+
+class SwiftComponentExposed: public Swift::Component
+{
+public:
+	PayloadParserFactoryCollection* getPayloadParserFactories() { return Swift::Component::getPayloadParserFactories(); }
+	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Component::getPayloadSerializers(); }
+};
 
 void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Transport::UserRegistry *userRegistry) {
 	m_transport = transport;
@@ -93,6 +118,10 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::MUCPayloadParser>("x", "http://jabber.org/protocol/muc"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-permanent-store", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
 
 	m_payloadSerializers.push_back(new Swift::AttentionSerializer());
 	m_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
@@ -101,6 +130,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_payloadSerializers.push_back(new Swift::StatsSerializer());
 	m_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	m_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
+	m_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
@@ -124,6 +154,12 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 // 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();
 		m_iqRouter = m_server->getIQRouter();
+
+		SwiftServerExposed* entity(reinterpret_cast<SwiftServerExposed*>(m_server));
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
+		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
+#endif
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_server->addPayloadParserFactory(factory);
@@ -149,6 +185,12 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_component->onDataRead.connect(boost::bind(&XMPPFrontend::handleDataRead, this, _1));
 		m_component->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
 
+		SwiftComponentExposed* entity(reinterpret_cast<SwiftComponentExposed*>(m_component));
+#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
+		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
+		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
+#endif
+
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_component->addPayloadParserFactory(factory);
 		}
@@ -161,6 +203,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_iqRouter = m_component->getIQRouter();
 	}
 
+
 	m_capsMemoryStorage = new CapsMemoryStorage();
 #if HAVE_SWIFTEN_3
 	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter, factories->getCryptoProvider());
@@ -172,9 +215,13 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 	m_stanzaChannel->onPresenceReceived.connect(bind(&XMPPFrontend::handleGeneralPresence, this, _1));
 	m_stanzaChannel->onMessageReceived.connect(bind(&XMPPFrontend::handleMessage, this, _1));
+	
+	m_carbonResponder = new CarbonResponder(m_iqRouter);
+	m_carbonResponder->start();
 }
 
 XMPPFrontend::~XMPPFrontend() {
+	delete m_carbonResponder;
 	delete m_entityCapsManager;
 	delete m_capsManager;
 	delete m_capsMemoryStorage;
@@ -286,7 +333,9 @@ UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry 
 	if (m_userManager) {
 		delete m_userManager;
 	}
-	m_userManager = new XMPPUserManager(component, userRegistry, storageBackend);
+	XMPPUserManager *xmppUserManager = new XMPPUserManager(component, userRegistry, storageBackend);
+	m_userManager = xmppUserManager;
+	m_carbonResponder->setDiscoInfoResponder(xmppUserManager->getDiscoItemsResponder()->getDiscoInfoResponder());
 	return m_userManager;
 }
 
@@ -358,14 +407,14 @@ void XMPPFrontend::handleConnected() {
 }
 
 void XMPPFrontend::handleServerStopped(boost::optional<Swift::BoostConnectionServer::Error> e) {
-	if(e) {
-		if(*e == Swift::BoostConnectionServer::Conflict) {
+	if (e) {
+		if (*e == Swift::BoostConnectionServer::Conflict) {
 			LOG4CXX_INFO(logger, "Port "<< CONFIG_INT(m_config, "service.port") << " already in use! Stopping server..");
 			if (CONFIG_INT(m_config, "service.port") == 5347) {
 				LOG4CXX_INFO(logger, "Port 5347 is usually used for components. You are using server_mode=1. Are you sure you don't want to use server_mode=0 and run spectrum as component?");
 			}
 		}
-		if(*e == Swift::BoostConnectionServer::UnknownError)
+		if (*e == Swift::BoostConnectionServer::UnknownError)
 			LOG4CXX_INFO(logger, "Unknown error occured! Stopping server..");
 		exit(1);
 	}

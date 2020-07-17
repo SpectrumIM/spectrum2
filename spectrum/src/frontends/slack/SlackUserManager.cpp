@@ -40,7 +40,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackUserManager");
+DEFINE_LOGGER(slackUserManagerLogger, "SlackUserManager");
 
 class ListRoomsCommand : public AdminInterfaceCommand {
 	public:
@@ -220,11 +220,11 @@ void SlackUserManager::handleAdminInterfaceSet() {
 void SlackUserManager::reconnectUser(const std::string &user) {
 	UserInfo uinfo;
 	if (!m_storageBackend->getUser(user, uinfo)) {
-		LOG4CXX_ERROR(logger, "User " << user << " tried to reconnect, but he's not registered.");
+		LOG4CXX_ERROR(slackUserManagerLogger, "User " << user << " tried to reconnect, but he's not registered.");
 		return;
 	}
 
-	LOG4CXX_INFO(logger, "Connecting user " << user << " to Slack network.");
+	LOG4CXX_INFO(slackUserManagerLogger, "Connecting user " << user << " to Slack network.");
 	m_tempSessions[user] = new SlackSession(m_component, m_storageBackend, uinfo);
 }
 
@@ -235,7 +235,7 @@ void SlackUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {
 void SlackUserManager::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
 	User *user = getUser(message->getTo().toBare().toString());
 	if (!user) {
-		LOG4CXX_ERROR(logger, "Received message for unknown user " << message->getTo().toBare().toString());
+		LOG4CXX_ERROR(slackUserManagerLogger, "Received message for unknown user " << message->getTo().toBare().toString());
 		return;
 	}
 
@@ -270,7 +270,7 @@ std::string SlackUserManager::getOAuth2URL(const std::vector<std::string> &args)
 }
 
 void SlackUserManager::handleUserCreated(User *user) {
-	LOG4CXX_INFO(logger, "handleUserCreated");
+	LOG4CXX_INFO(slackUserManagerLogger, "handleUserCreated");
 	static_cast<SlackUser *>(user)->getSession()->handleConnected();
 }
 

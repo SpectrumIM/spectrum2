@@ -21,7 +21,6 @@
 #pragma once
 
 #include "transport/StorageBackend.h"
-#include "rapidjson/document.h"
 
 #include <string>
 #include <algorithm>
@@ -30,8 +29,6 @@
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/SwiftenCompat.h"
-
-#include <boost/signal.hpp>
 
 namespace Transport {
 
@@ -49,7 +46,7 @@ class SlackSession {
 
 		virtual ~SlackSession();
 
-		boost::signal<void (const std::string &user)> onInstallationDone;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &user)> onInstallationDone;
 
 		void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
 

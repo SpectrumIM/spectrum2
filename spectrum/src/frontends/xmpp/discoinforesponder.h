@@ -22,7 +22,6 @@
 
 #include <vector>
 #include <list>
-#include <boost/signal.hpp>
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
@@ -45,15 +44,16 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		DiscoInfoResponder(Swift::IQRouter *router, Config *config, UserManager *userManager);
 		~DiscoInfoResponder();
 
-		void setTransportFeatures(std::list<std::string> &features);
-		void setBuddyFeatures(std::list<std::string> &features);
+		//Adds an advertised transport feature for the duration of this session
+		void addTransportFeature(const std::string &feature);
+		void removeTransportFeature(const std::string &feature);
 
 		void addRoom(const std::string &jid, const std::string &name);
 		void clearRooms();
 
 		void addAdHocCommand(const std::string &node, const std::string &name);
 
-		boost::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
 
 		Swift::CapsInfo &getBuddyCapsInfo() {
 				return m_capsInfo;
@@ -61,7 +61,14 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 	private:
 		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> payload);
+
+		//Custom transport features added by external callers
+		std::vector<std::string> m_transportFeatures;
+
+		//Compiles and re-sets the resulting list of transport and buddy features
 		void updateFeatures();
+		void setTransportFeatures(std::list<std::string> &features);
+		void setBuddyFeatures(std::list<std::string> &features);
 
 		Swift::DiscoInfo m_transportInfo;
 		Swift::DiscoInfo *m_buddyInfo;

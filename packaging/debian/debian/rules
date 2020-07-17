@@ -6,14 +6,8 @@ DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog -ldebian/changelog \
 	| grep '^Version' \
 	| sed  -e 's/Version: *//;s/^[^:]*://;s/-[^-]*$$//')
 
-build:
-	dh_testdir
-	cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/usr -DSPECTRUM_VERSION=${DEB_UPSTREAM_VERSION} .
-	export VERBOSE=1
-	VERBOSE=1 make VERBOSE=1
-
-#override_dh_auto_configure:
-
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr -DENABLE_QT4=OFF -DSPECTRUM_VERSION=${DEB_UPSTREAM_VERSION} -DCMAKE_UNITY_BUILD=ON
 
 override_dh_strip:
 	dh_strip -pspectrum2 --dbg-package=spectrum2-dbg
@@ -27,4 +21,4 @@ override_dh_strip:
 	dh_strip -plibtransport-plugin2.0 --dbg-package=libtransport-plugin-dbg
 
 %:
-	dh $@
+	dh $@ --buildsystem=cmake

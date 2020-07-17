@@ -23,7 +23,6 @@
 #include "SlackAPI.h"
 
 #include "transport/StorageBackend.h"
-#include "rapidjson/document.h"
 
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
@@ -46,8 +45,6 @@
 #include <string>
 #include <algorithm>
 #include <map>
-
-#include <boost/signal.hpp>
 
 namespace Transport {
 

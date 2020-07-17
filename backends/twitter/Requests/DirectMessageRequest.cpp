@@ -1,8 +1,8 @@
 #include "DirectMessageRequest.h"
 
-DEFINE_LOGGER(logger, "DirectMessageRequest")
+DEFINE_LOGGER(directMessageRequestLogger, "DirectMessageRequest")
 
-void DirectMessageRequest::run() 
+void DirectMessageRequest::run()
 {
 	replyMsg = "";
 	if(username != "") success = twitObj->directMessageSend(username, data, false);
@@ -20,13 +20,16 @@ void DirectMessageRequest::finalize()
 	if(!success) {
 		std::string curlerror;
 		twitObj->getLastCurlError(curlerror);
-		error.setMessage(curlerror);	
-		LOG4CXX_ERROR(logger, user << " Curl error: " << curlerror);
+		error.setMessage(curlerror);
+		LOG4CXX_ERROR(directMessageRequestLogger, user << " Curl error: " << curlerror);
 		callBack(user, username, messages, error);
 	} else {
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger,  user << " - " << error.getMessage())
-		else LOG4CXX_INFO(logger, user << " - " << replyMsg)
-		callBack(user, username, messages, error);	
+		if(error.getMessage().length()) {
+			LOG4CXX_ERROR(directMessageRequestLogger,  user << " - " << error.getMessage());
+		} else {
+			LOG4CXX_INFO(directMessageRequestLogger, user << " - " << replyMsg);
+		}
+		callBack(user, username, messages, error);
 	}
 }

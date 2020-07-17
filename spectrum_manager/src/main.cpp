@@ -50,7 +50,7 @@ int main(int argc, char **argv)
           options(desc).positional(p).run(), vm);
 		boost::program_options::notify(vm);
 
-		if(vm.count("help"))
+		if (vm.count("help"))
 		{
 			std::cout << desc << "\n";
 			return 1;
@@ -156,8 +156,7 @@ int main(int argc, char **argv)
 		float elapsed = 0; 
 		gettimeofday(&td_start, NULL);
 	
-		time_t started = time(NULL);
-		while(get_response().empty()) {
+		while (get_response().empty()) {
 			eventLoop.runUntilEvents();
 		}
 		if (!get_response().empty()) {

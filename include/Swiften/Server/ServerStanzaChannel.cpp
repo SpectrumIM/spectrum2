@@ -12,7 +12,7 @@
 
 namespace Swift {
 
-namespace {
+namespace StanzaChannelUtils {
 // 	struct PriorityLessThan {
 // 		bool operator()(const ServerSession* s1, const ServerSession* s2) const {
 // 			return s1->getPriority() < s2->getPriority();
@@ -108,7 +108,7 @@ void ServerStanzaChannel::send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Stanza> stan
 
 	// For a full JID, first try to route to a session with the full JID
 	if (!to.isBare()) {
-		std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions[stanza->getTo().toBare().toString()].begin(), sessions[stanza->getTo().toBare().toString()].end(), HasJID(to));
+		std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> >::const_iterator i = std::find_if(sessions[stanza->getTo().toBare().toString()].begin(), sessions[stanza->getTo().toBare().toString()].end(), StanzaChannelUtils::HasJID(to));
 		if (i != sessions[stanza->getTo().toBare().toString()].end()) {
 			(*i)->sendElement(stanza);
 			return;

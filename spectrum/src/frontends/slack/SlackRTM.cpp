@@ -37,7 +37,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "SlackRTM");
+DEFINE_LOGGER(slackRTMLogger, "SlackRTM");
 
 SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackIdManager *idManager, UserInfo uinfo) : m_uinfo(uinfo) {
 	m_component = component;
@@ -72,39 +72,41 @@ void SlackRTM::start() {
 	req->execute();
 }
 
-#define STORE_STRING(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsString()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(logger, payload); \
+#define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.isString()) {  \
+		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' string in the reply."); \
+		LOG4CXX_ERROR(slackRTMLogger, payload); \
 		return; \
 	} \
-	std::string NAME = NAME##_tmp.GetString();
+	std::string NAME = NAME##_tmp.asString();
 
-#define STORE_STRING_OPTIONAL(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
+#define STORE_STRING_OPTIONAL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
 	std::string NAME; \
-	if (NAME##_tmp.IsString()) {  \
-		 NAME = NAME##_tmp.GetString(); \
+	if (NAME##_tmp.isString()) {  \
+		 NAME = NAME##_tmp.asString(); \
 	}
 
-#define GET_OBJECT(FROM, NAME) rapidjson::Value &NAME = FROM[#NAME]; \
-	if (!NAME.IsObject()) { \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' object in the reply."); \
+#define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
+	if (!NAME.isObject()) { \
+		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' object in the reply."); \
 		return; \
 	}
 
-#define STORE_INT(FROM, NAME) rapidjson::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.IsInt()) {  \
-		LOG4CXX_ERROR(logger, "No '" << #NAME << "' number in the reply."); \
-		LOG4CXX_ERROR(logger, payload); \
+#define STORE_INT(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
+	if (!NAME##_tmp.isInt()) {  \
+		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' number in the reply."); \
+		LOG4CXX_ERROR(slackRTMLogger, payload); \
 		return; \
 	} \
-	int NAME = NAME##_tmp.GetInt();
+	int NAME = NAME##_tmp.asInt();
 
 void SlackRTM::handlePayloadReceived(const std::string &payload) {
-	rapidjson::Document d;
-	if (d.Parse<0>(payload.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-		LOG4CXX_ERROR(logger, payload);
+	Json::Value d;
+	Json::CharReaderBuilder rbuilder;
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
+	if (!reader->parse(payload.c_str(), payload.c_str() + payload.size(), &d, NULL)) {
+		LOG4CXX_ERROR(slackRTMLogger, "Error while parsing JSON");
+		LOG4CXX_ERROR(slackRTMLogger, payload);
 		return;
 	}
 
@@ -117,9 +119,9 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_STRING_OPTIONAL(d, subtype);
 		STORE_STRING_OPTIONAL(d, purpose);
 
-		rapidjson::Value &attachments = d["attachments"];
-		if (attachments.IsArray()) {
-			for (int i = 0; i < attachments.Size(); i++) {
+		Json::Value &attachments = d["attachments"];
+		if (attachments.isArray()) {
+			for (unsigned i = 0; i < attachments.size(); i++) {
 				STORE_STRING_OPTIONAL(attachments[i], fallback);
 				if (!fallback.empty()) {
 					text += fallback;
@@ -157,7 +159,7 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 		STORE_INT(error, code);
 
 		if (code == 1) {
-			LOG4CXX_INFO(logger, "Reconnecting to Slack network");
+			LOG4CXX_INFO(slackRTMLogger, "Reconnecting to Slack network");
 			m_pingTimer->stop();
 			m_client->disconnectServer();
 			start();
@@ -181,62 +183,60 @@ void SlackRTM::sendPing() {
 	m_pingTimer->start();
 }
 
-void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+void SlackRTM::handleRTMStart(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 	if (!ok) {
-		LOG4CXX_ERROR(logger, req->getError());
-		LOG4CXX_ERROR(logger, data);
+		LOG4CXX_ERROR(slackRTMLogger, req->getError());
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
-
 	STORE_STRING_OPTIONAL(resp, error);
 	if (!error.empty()) {
 		if (error == "account_inactive") {
-			LOG4CXX_INFO(logger, "Account inactive, will not try connecting again");
+			LOG4CXX_INFO(slackRTMLogger, "Account inactive, will not try connecting again");
 			m_pingTimer->stop();
 			m_client->disconnectServer();
 			return;
 		}
 	}
-
-	rapidjson::Value &url = resp["url"];
-	if (!url.IsString()) {
-		LOG4CXX_ERROR(logger, "No 'url' object in the reply.");
-		LOG4CXX_ERROR(logger, data);
+	Json::Value &url = resp["url"];
+	if (!url.isString()) {
+		LOG4CXX_ERROR(slackRTMLogger, "No 'url' object in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
-	rapidjson::Value &self = resp["self"];
-	if (!self.IsObject()) {
-		LOG4CXX_ERROR(logger, "No 'self' object in the reply.");
-		LOG4CXX_ERROR(logger, data);
+	Json::Value &self = resp["self"];
+	if (!self.isObject()) {
+		LOG4CXX_ERROR(slackRTMLogger, "No 'self' object in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
-	rapidjson::Value &selfName = self["name"];
-	if (!selfName.IsString()) {
-		LOG4CXX_ERROR(logger, "No 'name' string in the reply.");
-		LOG4CXX_ERROR(logger, data);
+	Json::Value &selfName = self["name"];
+	if (!selfName.isString()) {
+		LOG4CXX_ERROR(slackRTMLogger, "No 'name' string in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
-	m_idManager->setSelfName(selfName.GetString());
+	m_idManager->setSelfName(selfName.asString());
 
-	rapidjson::Value &selfId = self["id"];
-	if (!selfId.IsString()) {
-		LOG4CXX_ERROR(logger, "No 'id' string in the reply.");
-		LOG4CXX_ERROR(logger, data);
+	Json::Value &selfId = self["id"];
+	if (!selfId.isString()) {
+		LOG4CXX_ERROR(slackRTMLogger, "No 'id' string in the reply.");
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
-	m_idManager->setSelfId(selfId.GetString());
+	m_idManager->setSelfId(selfId.asString());
 
 	SlackAPI::getSlackChannelInfo(req, ok, resp, data, m_idManager->getChannels());
 	SlackAPI::getSlackImInfo(req, ok, resp, data, m_idManager->getIMs());
 	SlackAPI::getSlackUserInfo(req, ok, resp, data, m_idManager->getUsers());
 
-	std::string u = url.GetString();
-	LOG4CXX_INFO(logger, "Started RTM, WebSocket URL is " << u);
-	LOG4CXX_INFO(logger, data);
+	std::string u = url.asString();
+	LOG4CXX_INFO(slackRTMLogger, "Started RTM, WebSocket URL is " << u);
+	LOG4CXX_INFO(slackRTMLogger, data);
 
 #ifndef LIBTRANSPORT_TEST
 	m_client->connectServer(u);

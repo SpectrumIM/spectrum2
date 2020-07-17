@@ -29,7 +29,7 @@ using namespace log4cxx;
 
 namespace Transport {
 
-static LoggerPtr logger = Logger::getLogger("PQXXBackend");
+static LoggerPtr pxxLogger = Logger::getLogger("PQXXBackend");
 
 PQXXBackend::PQXXBackend(Config *config) {
 	m_config = config;
@@ -41,7 +41,7 @@ PQXXBackend::~PQXXBackend(){
 }
 
 void PQXXBackend::disconnect() {
-	LOG4CXX_INFO(logger, "Disconnecting");
+	LOG4CXX_INFO(pxxLogger, "Disconnecting");
 
 	delete m_conn;
 }
@@ -50,7 +50,7 @@ bool PQXXBackend::connect() {
 	std::string connection_str;
 	connection_str = CONFIG_STRING_DEFAULTED(m_config, "database.connectionstring", "");
 	if (connection_str.empty()) {
-		LOG4CXX_INFO(logger, "Connecting PostgreSQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
+		LOG4CXX_INFO(pxxLogger, "Connecting PostgreSQL server " << CONFIG_STRING(m_config, "database.server") << ", user " <<
 			CONFIG_STRING(m_config, "database.user") << ", dbname " << CONFIG_STRING(m_config, "database.database") <<
 			", port " << CONFIG_INT(m_config, "database.port")
 		);
@@ -70,14 +70,14 @@ bool PQXXBackend::connect() {
 		}
 	}
 	else {
-		LOG4CXX_INFO(logger, "Connecting PostgreSQL server via provided connection string.");
+		LOG4CXX_INFO(pxxLogger, "Connecting PostgreSQL server via provided connection string.");
 	}
 
 	try {
 		m_conn = new pqxx::connection(connection_str);
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 		return false;
 	}
 
@@ -163,7 +163,7 @@ bool PQXXBackend::exec(pqxx::nontransaction &txn, const std::string &query, bool
 	}
 	catch (std::exception& e) {
 		if (show_error)
-			LOG4CXX_ERROR(logger, e.what());
+			LOG4CXX_ERROR(pxxLogger, e.what());
 		return false;
 	}
 	return true;
@@ -186,7 +186,7 @@ void PQXXBackend::setUser(const UserInfo &user) {
 			+ (user.vip ? "'true'" : "'false'") +")");
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 }
 
@@ -210,7 +210,7 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 		user.vip = r[0][6].as<bool>();
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 		return false;
 	}
 
@@ -223,7 +223,7 @@ void PQXXBackend::setUserOnline(long id, bool online) {
 		txn.exec("UPDATE " + m_prefix + "users SET online=" + (online ? "'true'" : "'false'") + ", last_login=NOW() WHERE id=" + pqxx::to_string(id));
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 }
 
@@ -237,7 +237,7 @@ bool PQXXBackend::getOnlineUsers(std::vector<std::string> &users) {
 		}
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 		return false;
 	}
 
@@ -254,7 +254,7 @@ bool PQXXBackend::getUsers(std::vector<std::string> &users) {
 		}
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 		return false;
 	}
 
@@ -287,7 +287,7 @@ long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 		return id;
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 		return -1;
 	}
 }
@@ -298,7 +298,7 @@ void PQXXBackend::updateBuddy(long userId, const BuddyInfo &buddyInfo) {
 		txn.exec("UPDATE " + m_prefix + "buddies SET groups=" + quote(txn, StorageBackend::serializeGroups(buddyInfo.groups)) + ", nickname=" + quote(txn, buddyInfo.alias) + ", flags=" + pqxx::to_string(buddyInfo.flags) + ", subscription=" + quote(txn, buddyInfo.subscription) + " WHERE user_id=" + pqxx::to_string(userId) + " AND uin=" + quote(txn, buddyInfo.legacyName));
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 }
 
@@ -360,7 +360,7 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 		return true;
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 
 	return false;
@@ -377,7 +377,7 @@ bool PQXXBackend::removeUser(long id) {
 		return true;
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 	return false;
 }
@@ -396,7 +396,7 @@ void PQXXBackend::getUserSetting(long id, const std::string &variable, int &type
 		}
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 }
 
@@ -406,7 +406,7 @@ void PQXXBackend::updateUserSetting(long id, const std::string &variable, const 
 		txn.exec("UPDATE " + m_prefix + "users_settings SET value=" + quote(txn, value) + " WHERE user_id=" + pqxx::to_string(id) + " AND var=" + quote(txn, variable));
 	}
 	catch (std::exception& e) {
-		LOG4CXX_ERROR(logger, e.what());
+		LOG4CXX_ERROR(pxxLogger, e.what());
 	}
 }
 

@@ -1,3 +1,4 @@
+#include <boost/thread/thread.hpp>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
@@ -40,12 +41,12 @@ class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			delete tp;
 		}
 
-	void handleResult(HTTPRequest *req, bool ok, rapidjson::Document &resp, const std::string &data) {
+	void handleResult(HTTPRequest *req, bool ok, Json::Value &resp, const std::string &data) {
 		result = true;
 	}
 
 	void GET() {
-		rapidjson::Document resp;
+		Json::Value resp;
 		HTTPRequest *req = new HTTPRequest(tp, HTTPRequest::Get, "http://spectrum.im/params.json", boost::bind(&HTTPRequestTest::handleResult, this, _1, _2, _3, _4));
 		req->execute(resp);
 		delete req;
@@ -57,7 +58,9 @@ class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		int i = 0;
 		while (result == false && i < 5) {
-			sleep(1);
+			boost::system_time time = boost::get_system_time();
+			time += boost::posix_time::seconds(1);
+			boost::thread::sleep(time);
 			loop->processEvents();
 			i++;
 		}

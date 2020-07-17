@@ -1,11 +1,12 @@
 #pragma once 
 
+#include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/signals2/signal.hpp>
 #include <queue>
 #include <iostream>
 #include "Swiften/EventLoop/EventLoop.h"
+#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -56,7 +57,7 @@ class ThreadPool
 	boost::mutex criticalregion;
 	Swift::EventLoop *loop;
 
-	boost::signals2::signal < void () > onWorkerAvailable;
+	SWIFTEN_SIGNAL_NAMESPACE::signal < void () > onWorkerAvailable;
 	
 	public:
 	ThreadPool(Swift::EventLoop *loop, int maxthreads);

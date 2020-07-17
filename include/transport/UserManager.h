@@ -20,7 +20,6 @@
 
 #pragma once
 
-#include <boost/signal.hpp>
 #include <string>
 #include <map>
 #include "Swiften/Elements/Message.h"
@@ -99,11 +98,11 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 
 		/// Called when new User class is created.
 		/// \param user newly created User class
-		boost::signal<void (User *user)> onUserCreated;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (User *user)> onUserCreated;
 
 		/// Called when User class is going to be removed
 		/// \param user removed User class
-		boost::signal<void (User *user)> onUserDestroyed;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (User *user)> onUserDestroyed;
 
 		/// Returns true if user is connected.
 		/// \return True if user is connected.

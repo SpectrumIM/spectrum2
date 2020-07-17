@@ -32,7 +32,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "AdHocManager");
+DEFINE_LOGGER(adHocManagerLogger, "AdHocManager");
 
 AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItemsResponder, UserManager *userManager, StorageBackend *storageBackend) : Swift::Responder<Swift::Command>(static_cast<XMPPFrontend *>(component->getFrontend())->getIQRouter()){
 	m_component = component;
@@ -87,7 +87,7 @@ void AdHocManager::handleUserCreated(User *user) {
 
 void AdHocManager::addAdHocCommand(AdHocCommandFactory *factory) {
 	if (m_factories.find(factory->getNode()) != m_factories.end()) {
-		LOG4CXX_ERROR(logger, "Command with node " << factory->getNode() << " is already registered. Ignoring this attempt.");
+		LOG4CXX_ERROR(adHocManagerLogger, "Command with node " << factory->getNode() << " is already registered. Ignoring this attempt.");
 		return;
 	}
 
@@ -124,7 +124,7 @@ void AdHocManager::removeOldSessions() {
 	}
 
 	if (removedCommands > 0) {
-		LOG4CXX_INFO(logger, "Removed " << removedCommands << " old commands sessions.");
+		LOG4CXX_INFO(adHocManagerLogger, "Removed " << removedCommands << " old commands sessions.");
 	}
 }
 
@@ -140,7 +140,7 @@ bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to
 			command = m_sessions[from][payload->getSessionID()];
 		}
 		else {
-			LOG4CXX_ERROR(logger, from.toString() << ": Unknown session id " << payload->getSessionID() << " - ignoring");
+			LOG4CXX_ERROR(adHocManagerLogger, from.toString() << ": Unknown session id " << payload->getSessionID() << " - ignoring");
 			sendError(from, id, Swift::ErrorPayload::BadRequest, Swift::ErrorPayload::Modify);
 			return true;
 		}
@@ -149,23 +149,23 @@ bool AdHocManager::handleSetRequest(const Swift::JID& from, const Swift::JID& to
 	else if (m_factories.find(payload->getNode()) != m_factories.end()) {
 		command = m_factories[payload->getNode()]->createAdHocCommand(m_component, m_userManager, m_storageBackend, from, to);
 		m_sessions[from][command->getId()] = command;
-		LOG4CXX_INFO(logger, from.toString() << ": Started new AdHoc command session with node " << payload->getNode());
+		LOG4CXX_INFO(adHocManagerLogger, from.toString() << ": Started new AdHoc command session with node " << payload->getNode());
 	}
 	else {
-		LOG4CXX_INFO(logger, from.toString() << ": Unknown node " << payload->getNode() << ". Can't start AdHoc command session.");
+		LOG4CXX_INFO(adHocManagerLogger, from.toString() << ": Unknown node " << payload->getNode() << ". Can't start AdHoc command session.");
 		sendError(from, id, Swift::ErrorPayload::BadRequest, Swift::ErrorPayload::Modify);
 		return true;
 	}
 
 	if (!command) {
-		LOG4CXX_ERROR(logger, from.toString() << ": createAdHocCommand for node " << payload->getNode() << " returned NULL pointer");
+		LOG4CXX_ERROR(adHocManagerLogger, from.toString() << ": createAdHocCommand for node " << payload->getNode() << " returned NULL pointer");
 		sendError(from, id, Swift::ErrorPayload::BadRequest, Swift::ErrorPayload::Modify);
 		return true;
 	}
 
 	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> response = command->handleRequest(payload);
 	if (!response) {
-		LOG4CXX_ERROR(logger, from.toString() << ": handleRequest for node " << payload->getNode() << " returned NULL pointer");
+		LOG4CXX_ERROR(adHocManagerLogger, from.toString() << ": handleRequest for node " << payload->getNode() << " returned NULL pointer");
 		sendError(from, id, Swift::ErrorPayload::BadRequest, Swift::ErrorPayload::Modify);
 		return true;
 	}

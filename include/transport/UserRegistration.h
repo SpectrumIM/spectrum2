@@ -23,8 +23,8 @@
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 #include "Swiften/Elements/RosterPayload.h"
-#include <boost/signal.hpp>
 #include <Swiften/Version.h>
+#include "Swiften/SwiftenCompat.h"
 #define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Transport {
@@ -71,15 +71,15 @@ class UserRegistration {
 
 		/// Called when new user has been registered.
 		/// \param userInfo UserInfo struct with informations about user
-		boost::signal<void (const UserInfo &userInfo)> onUserRegistered;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const UserInfo &userInfo)> onUserRegistered;
 
 		/// Called when user has been unregistered.
 		/// \param userInfo UserInfo struct with informations about user
-		boost::signal<void (const UserInfo &userInfo)> onUserUnregistered;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const UserInfo &userInfo)> onUserUnregistered;
 
 		/// Called when user's registration has been updated.
 		/// \param userInfo UserInfo struct with informations about user
-		boost::signal<void (const UserInfo &userInfo)> onUserUpdated;
+		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const UserInfo &userInfo)> onUserUpdated;
 
 	private:
 		Component *m_component;

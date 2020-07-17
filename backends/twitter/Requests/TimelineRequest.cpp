@@ -1,17 +1,17 @@
 #include "TimelineRequest.h"
-DEFINE_LOGGER(logger, "TimelineRequest")
+DEFINE_LOGGER(timelineRequestLogger, "TimelineRequest")
 void TimelineRequest::run()
-{	
-	LOG4CXX_INFO(logger, "Sending timeline request for user " << userRequested)
-	
+{
+	LOG4CXX_INFO(timelineRequestLogger, "Sending timeline request for user " << userRequested);
+
 	if(userRequested != "") success = twitObj->timelineUserGet(false, false, 20, userRequested, false);
 	else success = twitObj->timelineHomeGet(since_id);
-	
+
 	if(!success) return;
-	
-	replyMsg = ""; 
+
+	replyMsg = "";
 	twitObj->getLastWebResponse( replyMsg );
-	//LOG4CXX_INFO(logger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
+	//LOG4CXX_INFO(timelineRequestLogger, user << " - " << replyMsg.length() << " " << replyMsg << "\n" );
 	tweets = getTimeline(replyMsg);
 }
 
@@ -21,12 +21,12 @@ void TimelineRequest::finalize()
 	if(!success) {
 		std::string curlerror;
 		twitObj->getLastCurlError(curlerror);
-		error.setMessage(curlerror);	
-		LOG4CXX_ERROR(logger,  user << " - Curl error: " << curlerror)
+		error.setMessage(curlerror);
+		LOG4CXX_ERROR(timelineRequestLogger,  user << " - Curl error: " << curlerror);
 		callBack(user, userRequested, tweets, error);
 	} else {
 		error = getErrorMessage(replyMsg);
-		if(error.getMessage().length()) LOG4CXX_ERROR(logger,  user << " - " << error.getMessage())
+		if(error.getMessage().length()) LOG4CXX_ERROR(timelineRequestLogger,  user << " - " << error.getMessage());
 		callBack(user, userRequested, tweets, error);
-	} 
+	}
 }

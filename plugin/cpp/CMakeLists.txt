@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.6)
-FILE(GLOB SRC *.cpp *.h)
-FILE(GLOB HEADERS ../include/transport/*.h)
+
+file(GLOB SRC *.cpp *.h)
+file(GLOB HEADERS ../include/transport/*.h)
 
 set(EXTRA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/MemoryUsage.cpp)
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/Logging.cpp)
@@ -8,31 +9,32 @@ set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../libtranspor
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/Util.cpp)
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc)
 
-if (NOT WIN32)
-	ADD_LIBRARY(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ${EXTRA_SOURCES})
+if(NOT WIN32)
+	add_library(transport-plugin SHARED ${HEADERS} ${SRC} ${PROTOBUF_SRC} ${PROTOBUF_HDRS} ${EXTRA_SOURCES})
 else()
-	ADD_LIBRARY(transport-plugin STATIC ${HEADERS} ${SRC} ${EXTRA_SOURCES} )
+	add_library(transport-plugin STATIC ${HEADERS} ${SRC} ${EXTRA_SOURCES} )
 endif()
-ADD_DEPENDENCIES(transport-plugin pb)
-SET_SOURCE_FILES_PROPERTIES(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 
-if (CMAKE_COMPILER_IS_GNUCXX)
-	if (NOT WIN32)
-	ADD_DEFINITIONS(-fPIC)
+add_dependencies(transport-plugin pb)
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+	if(NOT WIN32)
+		add_definitions(-fPIC)
 	endif()
 endif()
 
-if (NOT WIN32)
-	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
+if(NOT WIN32)
+	target_link_libraries(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
 else()
-	TARGET_LINK_LIBRARIES(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ws2_32.lib)
+	target_link_libraries(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ws2_32.lib)
 endif() 
 
-SET_TARGET_PROPERTIES(transport-plugin PROPERTIES
-      VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
+set_target_properties(transport-plugin PROPERTIES
+	VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
 )
 
-INSTALL(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+install(TARGETS transport-plugin LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 
-#CONFIGURE_FILE(transport.pc.in "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc")
-#INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc" DESTINATION lib/pkgconfig)
+#configure_file(transport.pc.in "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc")
+#install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/transport.pc" DESTINATION lib/pkgconfig)

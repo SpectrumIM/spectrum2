@@ -73,7 +73,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	m_unregistered.clear();
 	opts.add_options()
 		("service.jid", value<std::string>()->default_value(""), "Transport Jabber ID")
-		("service.server", value<std::string>()->default_value(""), "Server to connect to")
+		("service.server", value<std::string>()->default_value("127.0.0.1"), "Server to connect to")
 		("service.password", value<std::string>()->default_value(""), "Password used to auth the server")
 		("service.port", value<int>()->default_value(0), "Port the server is listening on")
 		("service.user", value<std::string>()->default_value(""), "The name of user Spectrum runs as.")
@@ -86,7 +86,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.allowed_servers", value<std::vector<std::string> >()->multitoken(), "Only users from these servers can connect")
 		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
 		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
-		("service.backend_host", value<std::string>()->default_value("localhost"), "Host to bind backend server to")
+		("service.backend_host", value<std::string>()->default_value("127.0.0.1"), "Host to bind backend server to")
 		("service.backend_port", value<std::string>()->default_value("0"), "Port to bind backend server to")
 		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
 		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
@@ -98,6 +98,9 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
 		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
 		("service.enable_xhtml", value<bool>()->default_value(true), "")
+		("service.enable_remove_buddy", value<bool>()->default_value(false), "Remove your legacy network buddies when you unsubscribe from them. If disabled, you can still remove them in Spectrum but they'll remain on the legacy network roster.")
+		("service.oob_replace_body", value<bool>()->default_value(true), "Media messages: replace plaintext with a single media URL. Loses any plaintext captions and formatting but has better support in XMPP clients.")
+		("service.oob_split", value<bool>()->default_value(false), "Split mixed media/text or multiple media attachments into several messages. Ensures better compatibility with poorly implemented XMPP clients.")
 		("service.max_room_list_size", value<int>()->default_value(100), "")
 		("service.login_delay", value<int>()->default_value(0), "")
 		("service.jid_escaping", value<bool>()->default_value(true), "")
@@ -107,6 +110,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.frontend", value<std::string>()->default_value("xmpp"), "")
 		("service.web_directory", value<std::string>()->default_value(""), "Full path to directory used to save files to which the links are sent to users.")
 		("service.web_url", value<std::string>()->default_value(""), "URL on which files in web_directory are accessible.")
+		("service.web_maximgsize", value<int>()->default_value(1000000), "Maximum image size in bytes allowed to be downloaded and stored locally.")
 		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
 		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
 		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
@@ -222,7 +226,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 				if (opt.value[0] == "true" || opt.value[0] == "1") {
 					m_unregistered[opt.string_key] = variable_value(true, false);
 				}
-				else if (opt.value[0] == "true" || opt.value[0] == "1") {
+				else if (opt.value[0] == "false" || opt.value[0] == "0") {
 					m_unregistered[opt.string_key] = variable_value(false, false);
 				}
 				else {
@@ -375,13 +379,13 @@ Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::s
 			options(desc).positional(p).allow_unregistered().run(), vm);
 		boost::program_options::notify(vm);
 			
-		if(vm.count("help"))
+		if (vm.count("help"))
 		{
 			error = os.str();
 			return NULL;
 		}
 
-		if(vm.count("config") == 0) {
+		if (vm.count("config") == 0) {
 			error = os.str();
 			return NULL;
 		}

@@ -2,7 +2,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "HTTPRequest")
+DEFINE_LOGGER(httpRequestLogger, "HTTPRequest")
 
 HTTPRequest::HTTPRequest(ThreadPool *tp, Type type, const std::string &url, Callback callback) {
 	m_type = type;
@@ -21,7 +21,7 @@ HTTPRequest::HTTPRequest(Type type, const std::string &url) {
 
 HTTPRequest::~HTTPRequest() {
 	if (curlhandle) {
-		LOG4CXX_INFO(logger, "Cleaning up CURL handle");
+		LOG4CXX_INFO(httpRequestLogger, "Cleaning up CURL handle");
 		curl_easy_cleanup(curlhandle);
 		curlhandle = NULL;
 	}
@@ -40,7 +40,7 @@ bool HTTPRequest::init() {
 		return true;
 	}
 
-	LOG4CXX_ERROR(logger, "Couldn't Initialize curl!")
+	LOG4CXX_ERROR(httpRequestLogger, "Couldn't Initialize curl!");
 	return false;
 }
 
@@ -48,12 +48,12 @@ void HTTPRequest::setProxy(std::string IP, std::string port, std::string usernam
 	if (curlhandle) {
 		std::string proxyIpPort = IP + ":" + port;
 		curl_easy_setopt(curlhandle, CURLOPT_PROXY, proxyIpPort.c_str());
-		if(username.length() && password.length()) {
+		if (username.length() && password.length()) {
 			std::string proxyUserPass = username + ":" + password;
 			curl_easy_setopt(curlhandle, CURLOPT_PROXYUSERPWD, proxyUserPass.c_str());
 		}
 	} else {
-		LOG4CXX_ERROR(logger, "Trying to set proxy while CURL isn't initialized")
+		LOG4CXX_ERROR(httpRequestLogger, "Trying to set proxy while CURL isn't initialized");
 	}
 }
 
@@ -71,41 +71,43 @@ bool HTTPRequest::GET(std::string url, 	std::string &data) {
 	if (curlhandle) {
 		curl_easy_setopt(curlhandle, CURLOPT_CUSTOMREQUEST, NULL);
 		curl_easy_setopt(curlhandle, CURLOPT_ENCODING, "");
-		
+
 		data = "";
 		callbackdata = "";
 		memset(curl_errorbuffer, 0, 1024);
-		
+
 		curl_easy_setopt(curlhandle, CURLOPT_ERRORBUFFER, curl_errorbuffer);
 		curl_easy_setopt(curlhandle, CURLOPT_WRITEFUNCTION, curlCallBack);
 		curl_easy_setopt(curlhandle, CURLOPT_WRITEDATA, this);
-			
+
 		/* Set http request and url */
 		curl_easy_setopt(curlhandle, CURLOPT_HTTPGET, 1);
 		curl_easy_setopt(curlhandle, CURLOPT_VERBOSE, 0);
 		curl_easy_setopt(curlhandle, CURLOPT_URL, url.c_str());
-		
+
 		/* Send http request and return status*/
-		if(CURLE_OK == curl_easy_perform(curlhandle)) {
+		if (CURLE_OK == curl_easy_perform(curlhandle)) {
 			data = callbackdata;
 			return true;
 		}
 	} else {
-		LOG4CXX_ERROR(logger, "CURL not initialized!")
+		LOG4CXX_ERROR(httpRequestLogger, "CURL not initialized!");
 		strcpy(curl_errorbuffer, "CURL not initialized!");
 	}
-	LOG4CXX_ERROR(logger, "Error fetching " << url);
+	LOG4CXX_ERROR(httpRequestLogger, "Error fetching " << url);
 	return false;
 }
 
-bool HTTPRequest::GET(std::string url, rapidjson::Document &json) {
+bool HTTPRequest::GET(std::string url, Json::Value &json) {
 	if (!GET(url, m_data)) {
 		return false;
 	}
 
-	if(json.Parse<0>(m_data.c_str()).HasParseError()) {
-		LOG4CXX_ERROR(logger, "Error while parsing JSON");
-        LOG4CXX_ERROR(logger, m_data);
+	Json::CharReaderBuilder rbuilder;
+	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
+	if (!reader->parse(m_data.c_str(), m_data.c_str() + m_data.size(), &json, NULL)) {
+		LOG4CXX_ERROR(httpRequestLogger, "Error while parsing JSON");
+	        LOG4CXX_ERROR(httpRequestLogger, m_data);
 		strcpy(curl_errorbuffer, "Error while parsing JSON");
 		return false;
 	}
@@ -143,7 +145,7 @@ bool HTTPRequest::execute() {
 	return true;
 }
 
-bool HTTPRequest::execute(rapidjson::Document &json) {
+bool HTTPRequest::execute(Json::Value &json) {
 	init();
 	switch (m_type) {
 		case Get:

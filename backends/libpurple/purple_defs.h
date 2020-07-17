@@ -23,6 +23,9 @@ extern purple_account_get_protocol_id_wrapped_fnc purple_account_get_protocol_id
 typedef void  (_cdecl * purple_account_set_int_wrapped_fnc)(PurpleAccount *account, const char *name, int value);
 extern purple_account_set_int_wrapped_fnc purple_account_set_int_wrapped;
 
+typedef const char * (_cdecl * purple_account_get_string_wrapped_fnc)(PurpleAccount *account, const char *name, const char *default_value);
+extern purple_account_get_string_wrapped_fnc purple_account_get_string_wrapped;
+
 typedef void  (_cdecl * purple_account_set_string_wrapped_fnc)(PurpleAccount *account, const char *name, const char *value);
 extern purple_account_set_string_wrapped_fnc purple_account_set_string_wrapped;
 
@@ -236,8 +239,14 @@ extern purple_conversation_update_wrapped_func purple_conversation_update_wrappe
 typedef void  (_cdecl * purple_conv_im_send_wrapped_fnc)(PurpleConvIm *im, const char *message);
 extern purple_conv_im_send_wrapped_fnc purple_conv_im_send_wrapped;
 
+typedef void  (_cdecl * purple_conv_im_send_with_flags_wrapped_fnc)(PurpleConvIm *im, const char *message, PurpleMessageFlags flags);
+extern purple_conv_im_send_with_flags_wrapped_fnc purple_conv_im_send_with_flags_wrapped;
+
 typedef void  (_cdecl * purple_conv_chat_send_wrapped_fnc)(PurpleConvChat *chat, const char *message);
 extern purple_conv_chat_send_wrapped_fnc purple_conv_chat_send_wrapped;
+
+typedef void  (_cdecl * purple_conv_chat_send_with_flags_wrapped_fnc)(PurpleConvChat *chat, const char *message, PurpleMessageFlags flags);
+extern purple_conv_chat_send_with_flags_wrapped_fnc purple_conv_chat_send_with_flags_wrapped;
 
 typedef void  (_cdecl * purple_conversation_destroy_wrapped_fnc)(PurpleConversation *conv);
 extern purple_conversation_destroy_wrapped_fnc purple_conversation_destroy_wrapped;
@@ -352,6 +361,9 @@ extern purple_notify_set_ui_ops_wrapped_fnc purple_notify_set_ui_ops_wrapped;
 
 typedef void  (_cdecl * purple_plugins_add_search_path_wrapped_fnc)(const char *path);
 extern purple_plugins_add_search_path_wrapped_fnc purple_plugins_add_search_path_wrapped;
+
+typedef void  (_cdecl * purple_plugins_load_saved_wrapped_fnc)(const char *key);
+extern purple_plugins_load_saved_wrapped_fnc purple_plugins_load_saved_wrapped;
 
 typedef void  (_cdecl * purple_plugin_action_free_wrapped_fnc)(PurplePluginAction *action);
 extern purple_plugin_action_free_wrapped_fnc purple_plugin_action_free_wrapped;
@@ -472,6 +484,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_account_set_bool_wrapped purple_account_set_bool
 #define purple_account_get_protocol_id_wrapped purple_account_get_protocol_id
 #define purple_account_set_int_wrapped purple_account_set_int
+#define purple_account_get_string_wrapped purple_account_get_string
 #define purple_account_set_string_wrapped purple_account_set_string
 #define purple_account_get_username_wrapped purple_account_get_username
 #define purple_account_set_username_wrapped purple_account_set_username
@@ -543,7 +556,9 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_conversation_set_data_wrapped purple_conversation_set_data
 #define purple_conversation_update_wrapped purple_conversation_update
 #define purple_conv_im_send_wrapped purple_conv_im_send
+#define purple_conv_im_send_with_flags_wrapped purple_conv_im_send_with_flags
 #define purple_conv_chat_send_wrapped purple_conv_chat_send
+#define purple_conv_chat_send_with_flags_wrapped purple_conv_chat_send_with_flags
 #define purple_conversation_destroy_wrapped purple_conversation_destroy
 #define purple_conversation_get_account_wrapped purple_conversation_get_account
 #define purple_conversation_get_name_wrapped purple_conversation_get_name
@@ -582,6 +597,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_notify_user_info_entry_get_value_wrapped purple_notify_user_info_entry_get_value
 #define purple_notify_set_ui_ops_wrapped purple_notify_set_ui_ops
 #define purple_plugins_add_search_path_wrapped purple_plugins_add_search_path
+#define purple_plugins_load_saved_wrapped purple_plugins_load_saved
 #define purple_plugin_action_free_wrapped purple_plugin_action_free
 #define purple_prefs_load_wrapped purple_prefs_load
 #define purple_prefs_set_bool_wrapped purple_prefs_set_bool

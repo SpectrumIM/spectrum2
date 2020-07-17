@@ -86,7 +86,7 @@ void execute_purple_plugin_action(PurpleConnection *gc, const std::string &name)
 
 GHashTable *spectrum_ui_get_info(void)
 {
-	if(NULL == ui_info) {
+	if (NULL == ui_info) {
 		ui_info = g_hash_table_new(g_str_hash, g_str_equal);
 
 		g_hash_table_insert(ui_info, g_strdup("name"), g_strdup("Spectrum"));

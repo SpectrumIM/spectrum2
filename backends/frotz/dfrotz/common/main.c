@@ -32,9 +32,12 @@
 #define cdecl
 #endif
 
-extern void interpret (void);
 extern void init_memory (void);
 extern void init_undo (void);
+extern void init_sound (void);
+extern void init_buffer (void);
+extern void init_process (void);
+extern void interpret (void);
 extern void reset_memory (void);
 
 /* Story file name, id number and size */

@@ -7,7 +7,6 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <boost/signals.hpp>
 
 #include "Swiften/SwiftenCompat.h"
 
@@ -36,7 +35,7 @@ namespace Swift {
 			virtual void stop();
 			virtual void cancel();
 
-			boost::signal<void (const boost::optional<FileTransferError>&)> onFinished;
+			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const boost::optional<FileTransferError>&)> onFinished;
 
 		private:
 			void handleStreamInitiationRequestResponse(StreamInitiation::ref, ErrorPayload::ref);

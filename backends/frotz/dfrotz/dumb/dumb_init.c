@@ -7,7 +7,7 @@
 
 #include "dumb_frotz.h"
 
-f_setup_t f_setup;
+extern f_setup_t f_setup;
 
 #define INFORMATION "\
 An interpreter for all Infocom and other Z-Machine games.\n\
@@ -64,7 +64,7 @@ static int zoptopt = 0;
 static char *zoptarg = NULL;
 static int zgetopt (int argc, char *argv[], const char *options)
 {
-    static pos = 1;
+    static int pos = 1;
     const char *p;
     if (zoptind >= argc || argv[zoptind][0] != '-' || argv[zoptind][1] == 0)
 	return EOF;
@@ -76,7 +76,7 @@ static int zgetopt (int argc, char *argv[], const char *options)
     if (zoptopt == ':' || p == NULL) {
 	fputs ("illegal option -- ", stderr);
 	goto error;
-    } else if (p[1] == ':')
+    } else if (p[1] == ':') {
 	if (zoptind >= argc) {
 	    fputs ("option requires an argument -- ", stderr);
 	    goto error;
@@ -86,6 +86,7 @@ static int zgetopt (int argc, char *argv[], const char *options)
 		zoptarg += pos;
 	    pos = 1; zoptind++;
 	}
+    }
     return zoptopt;
 error:
     fputc (zoptopt, stderr);
@@ -201,8 +202,6 @@ void os_fatal (const char *s)
 FILE *os_path_open(const char *name, const char *mode)
 {
 	FILE *fp;
-	char buf[FILENAME_MAX + 1];
-	char *p;
 
 	/* Let's see if the file is in the currect directory */
 	/* or if the user gave us a full path. */

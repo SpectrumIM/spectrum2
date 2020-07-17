@@ -21,11 +21,11 @@
 #pragma once
 
 #ifndef Q_MOC_RUN
-#include "transport/Config.h"
-#include "transport/NetworkPlugin.h"
 #include "session.h"
 #include <QtCore>
 #include <QtNetwork>
+#include "transport/Config.h"
+#include "transport/NetworkPlugin.h"
 #include "Swiften/EventLoop/Qt/QtEventLoop.h"
 #endif
 
@@ -57,7 +57,7 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 			return m_config;
 		}
 
-	public slots:
+	public Q_SLOTS:
 		void readData();
 		void sendData(const std::string &string);
 

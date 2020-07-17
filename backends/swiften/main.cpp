@@ -69,7 +69,7 @@ class ForwardIQHandler : public Swift::IQHandler {
 	private:
 		NetworkPlugin *m_np;
 		std::string m_user;
-		
+
 };
 
 class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
@@ -78,7 +78,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
 		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
 		bool m_firstPing;
-		
+
 		Swift::FullPayloadSerializerCollection collection;
 		Swift::XMPPParser *m_xmppParser;
 		Swift::FullPayloadParserFactoryCollection m_collection2;
@@ -89,7 +89,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&SwiftenPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
+			m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(host), port));
 #if HAVE_SWIFTEN_3
 			serializer = new Swift::XMPPSerializer(&collection, Swift::ClientStreamType, false);
 #else
@@ -155,11 +155,11 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 				if (m_handlers[user]->m_id2resource.find(stanza->getID()) != m_handlers[user]->m_id2resource.end()) {
 					std::string resource = m_handlers[user]->m_id2resource[stanza->getID()];
 					if (resource.empty()) {
-						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain()));					
+						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain()));
 					} else {
-						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), resource));					
+						iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), resource));
 					}
-					
+
 					m_handlers[user]->m_id2resource.erase(stanza->getID());
 				}
 				client->getIQRouter()->sendIQ(iq);
@@ -207,6 +207,9 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					case Swift::ClientError::InvalidCertificateSignatureError: message = ("Invalid certificate signature"); break;
 					case Swift::ClientError::InvalidCAError: message = ("Invalid Certificate Authority"); break;
 					case Swift::ClientError::InvalidServerIdentityError: message = ("Certificate does not match the host identity"); break;
+					case Swift::ClientError::CertificateCardRemoved: message = ("Certificate card has been removed"); break;
+					case Swift::ClientError::RevokedError: message = ("Certificate has been revoked"); break;
+					case Swift::ClientError::RevocationCheckFailedError: message = ("Certificate revocation check has failed"); break;
 				}
 			}
 			LOG4CXX_INFO(logger, user << ": Disconnected " << message);
@@ -246,38 +249,38 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 				Swift::Presence::ref lastPresence = oracle->getLastPresence(item.getJID());
 				pbnetwork::StatusType status = lastPresence ? ((pbnetwork::StatusType) lastPresence->getShow()) : pbnetwork::STATUS_NONE;
 				handleBuddyChanged(user, item.getJID().toBare().toString(),
-								   item.getName(), item.getGroups(), status);
+					item.getName(), item.getGroups(), status);
 			}
 		}
 
 		void handleSwiftPresenceChanged(const std::string &user, Swift::Presence::ref presence) {
-// 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
-// 			if (client->getMUCRegistry()->isMUC(presence->getFrom().toBare())) {
-// 				return;
-// 			}
-// 
-// 			if (presence->getPayload<Swift::MUCUserPayload>() != NULL || presence->getPayload<Swift::MUCPayload>() != NULL) {
-// 				return;
-// 			}
-// 
-// 			LOG4CXX_INFO(logger, user << ": " << presence->getFrom().toBare().toString() << " presence changed");
-// 
-// 			std::string message = presence->getStatus();
-// 			std::string photo = "";
-// 
-// 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCardUpdate> update = presence->getPayload<Swift::VCardUpdate>();
-// 			if (update) {
-// 				photo = update->getPhotoHash();
-// 			}
-// 
-// 			boost::optional<Swift::XMPPRosterItem> item = m_users[user]->getRoster()->getItem(presence->getFrom());
-// 			if (item) {
-// 				handleBuddyChanged(user, presence->getFrom().toBare().toString(), item->getName(), item->getGroups(), (pbnetwork::StatusType) presence->getShow(), message, photo);
-// 			}
-// 			else {
-// 				std::vector<std::string> groups;
-// 				handleBuddyChanged(user, presence->getFrom().toBare().toString(), presence->getFrom().toBare(), groups, (pbnetwork::StatusType) presence->getShow(), message, photo);
-// 			}
+//			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
+//			if (client->getMUCRegistry()->isMUC(presence->getFrom().toBare())) {
+//				return;
+//			}
+//
+//			if (presence->getPayload<Swift::MUCUserPayload>() != NULL || presence->getPayload<Swift::MUCPayload>() != NULL) {
+//				return;
+//			}
+//
+//			LOG4CXX_INFO(logger, user << ": " << presence->getFrom().toBare().toString() << " presence changed");
+//
+//			std::string message = presence->getStatus();
+//			std::string photo = "";
+//
+//			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCardUpdate> update = presence->getPayload<Swift::VCardUpdate>();
+//			if (update) {
+//				photo = update->getPhotoHash();
+//			}
+//
+//			boost::optional<Swift::XMPPRosterItem> item = m_users[user]->getRoster()->getItem(presence->getFrom());
+//			if (item) {
+//				handleBuddyChanged(user, presence->getFrom().toBare().toString(), item->getName(), item->getGroups(), (pbnetwork::StatusType) presence->getShow(), message, photo);
+//			}
+//			else {
+//				std::vector<std::string> groups;
+//				handleBuddyChanged(user, presence->getFrom().toBare().toString(), presence->getFrom().toBare(), groups, (pbnetwork::StatusType) presence->getShow(), message, photo);
+//			}
 			presence->setTo(user);
 			std::string xml = safeByteArrayToString(serializer->serializeElement(presence));
 			sendRawXML(xml);
@@ -343,7 +346,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Client> client = m_users[user];
 			if (client) {
 				client->onConnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftConnected, this, user));
-// 				client->onDisconnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftDisconnected, this, user, _1));
+//				client->onDisconnected.disconnect(boost::bind(&SwiftenPlugin::handleSwiftDisconnected, this, user, _1));
 				client->onMessageReceived.disconnect(boost::bind(&SwiftenPlugin::handleSwiftMessageReceived, this, user, _1));
 				client->getRoster()->onInitialRosterPopulated.disconnect(boost::bind(&SwiftenPlugin::handleSwiftRosterReceived, this, user));
 				client->getPresenceOracle()->onPresenceChange.disconnect(boost::bind(&SwiftenPlugin::handleSwiftPresenceChanged, this, user, _1));
@@ -369,7 +372,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
 					roster->addItem(item);
 					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
-// 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+//					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
 					request->send();
 					client->getSubscriptionManager()->requestSubscription(buddyName);
 				}
@@ -380,7 +383,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
 					roster->addItem(item);
 					Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
-// 					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+//					request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
 					request->send();
 				}
 
@@ -394,7 +397,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster(new Swift::RosterPayload());
 				roster->addItem(item);
 				Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(roster, client->getIQRouter());
-// 				request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
+//				request->onResponse.connect(boost::bind(&RosterController::handleRosterSetError, this, _1, roster));
 				request->send();
 			}
 		}

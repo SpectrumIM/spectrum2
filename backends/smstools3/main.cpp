@@ -57,7 +57,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&SMSNetworkPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(Swift::HostAddress(host), port));
+			m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(host), port));
 // 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
 // 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
 
@@ -82,7 +82,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 
 		void handleSMS(const std::string &sms) {
-			LOG4CXX_INFO(logger, "Handling SMS " << sms << ".")
+			LOG4CXX_INFO(logger, "Handling SMS " << sms << ".");
 			std::ifstream t(sms.c_str());
 			std::string str;
 
@@ -94,7 +94,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 			std::string from = "";
 			std::string msg = "";
-			while(str.find("\n") != std::string::npos) {
+			while (str.find("\n") != std::string::npos) {
 				std::string line = str.substr(0, str.find("\n"));
 				if (line.find("From: ") == 0) {
 					from = line.substr(strlen("From: "));
@@ -149,7 +149,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		}
 
 		void sendSMS(const std::string &to, const std::string &msg) {
-			// TODO: Probably 
+			// TODO: Probably
 			std::string data = "To: " + to + "\n";
 			data += "\n";
 			data += msg;
@@ -232,7 +232,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 
 
 	private:
-		
+
 		Config *config;
 };
 

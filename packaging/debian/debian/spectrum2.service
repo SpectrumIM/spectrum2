@@ -1,7 +1,8 @@
 [Unit]
 Description=An open source instant messaging transport
-Documentation=http://spectrum.im/documentation/
-After=network.target
+Documentation=https://spectrum.im/documentation/
+Wants=network-online.target
+After=network.target network-online.target
 
 [Service]
 Type=forking
