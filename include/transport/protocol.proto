@@ -1,7 +1,7 @@
-package pbnetwork;
-
 // define protobuf syntax version
 syntax = "proto2";
+
+package pbnetwork;
 
 enum ConnectionError {
 	CONNECTION_ERROR_NETWORK_ERROR = 0;
