@@ -28,7 +28,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR spectrum2
 
-RUN apt-get install --no-install-recommends -y prosody ngircd python-sleekxmpp python-dateutil python-dnspython python-pil libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev
+RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev
 
 
 RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make
@@ -95,7 +95,10 @@ git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		make && \
 		make DESTDIR=/tmp/out install		
 		
-FROM debian:10.4-slim as staging2
+FROM debian:10.4-slim as production
+
+EXPOSE 8080
+VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
@@ -129,13 +132,5 @@ RUN apt install --no-install-recommends -y /tmp/*.deb
 RUN rm -rf /tmp/*.deb
 
 RUN apt-get autoremove && apt-get clean
-
-
-FROM scratch as production
-
-EXPOSE 8080
-VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
-
-COPY --from=staging2 / /
 
 ENTRYPOINT ["/run.sh"]
