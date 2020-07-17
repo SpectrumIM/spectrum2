@@ -7,6 +7,6 @@ add_custom_target(test
 
 add_custom_target(extended_test
   COMMAND ${CMAKE_CURRENT_BINARY_DIR}/libtransport/libtransport_test
-  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/start.py
+  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/start.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests_output
 )
