@@ -74,7 +74,7 @@ class Client(sleekxmpp.ClientXMPP):
 		self.send_message(mto=self.responder_jid, mbody="Message 3 from "+str(self.full_jid))
 
 	def message(self, msg):
-		print str(self)+": Weird unexpected message: "+str(msg)
+		print(str(self)+": Weird unexpected message: "+str(msg))
 		self.weird_cnt += 1
 
 	def carbon_sent(self, msg):
@@ -84,13 +84,13 @@ class Client(sleekxmpp.ClientXMPP):
 
 		if mfrom == self.jid:
 			# Carbons are delivered with from==JID/other_resource, or with Spectrum, "/bot"
-			print str(self)+": Weird carbon_sent: from == own exact JID"
+			print(str(self)+": Weird carbon_sent: from == own exact JID")
 			self.weird_cnt += 1
 			return
 
 		if (mfrom.bare != JID(self.jid).bare) and (mfrom.bare != self.alt_jid.bare):
 			# Carbons should be from our other resources
-			print str(self)+": Weird carbon_sent: from.bare != our JID"
+			print(str(self)+": Weird carbon_sent: from.bare != our JID")
 			self.weird_cnt += 1
 			return
 
@@ -109,15 +109,15 @@ class Client(sleekxmpp.ClientXMPP):
 			self.cs_m3_cnt += 1
 			return
 
-		print str(self)+": Weird unexpected carbon_sent: "+str(msg)
+		print(str(self)+": Weird unexpected carbon_sent: "+str(msg))
 		self.weird_cnt += 1
 
 	def carbon_received(self, msg):
-		print str(self)+": Weird unexpected carbon_received: "+str(msg)
+		print(str(self)+": Weird unexpected carbon_received: "+str(msg))
 		self.weird_cnt += 1
 
 	def print_stats(self):
-		print str(self)+": msg1="+str(self.cs_m1_cnt)+", msg2="+str(self.cs_m2_cnt)+", msg3="+str(self.cs_m3_cnt)+", weird="+str(self.weird_cnt)
+		print(str(self)+": msg1="+str(self.cs_m1_cnt)+", msg2="+str(self.cs_m2_cnt)+", msg3="+str(self.cs_m3_cnt)+", weird="+str(self.weird_cnt))
 
 
 class Responder(sleekxmpp.ClientXMPP):
@@ -150,7 +150,7 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.incoming_cnt += 1
 
 	def print_stats(self):
-		print str(self)+": incoming_cnt="+str(self.incoming_cnt)
+		print(str(self)+": incoming_cnt="+str(self.incoming_cnt))
 
 
 class TestCase():
