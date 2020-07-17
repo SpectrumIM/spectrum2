@@ -1,0 +1,42 @@
+version: '3.4'
+services:
+  spectrum:
+    image: spectrum2/spectrum:master
+    restart: unless-stopped
+    container_name: spectrum
+    ports:
+      - 8080:8080
+    volumes:
+      - ./tests/xmpp/configuration:/etc/spectrum2:ro
+      - ./tests/xmpp/configuration/transports:/etc/spectrum2/transports:ro
+      - ./tests/xmpp/data:/var/lib/spectrum2
+      - media:/var/lib/spectrum2/media
+    depends_on:
+      prosody:
+        condition: service_started
+      nginx:
+        condition: service_started
+  prosody:
+    image: spectrum2/prosody:latest
+    restart: unless-stopped
+    container_name: prosody
+    ports:
+      - 5222:5222
+      - 5347:5347
+    environment:
+      - LOCAL=admin
+      - DOMAIN=localhost
+      - PASSWORD=secret
+    volumes:
+      - ./tests/prosody/configuration:/etc/prosody:ro
+      - ./tests/prosody/data:/var/lib/prosody
+  nginx:
+    image: spectrum2/nginx:latest
+    restart: unless-stopped
+    container_name: nginx
+    ports:
+      - 8081:80
+    volumes:
+      - media:/var/www/html:ro
+volumes:
+  media:
