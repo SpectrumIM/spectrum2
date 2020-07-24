@@ -37,6 +37,16 @@ RUN apt-get install --no-install-recommends -y psmisc
 
 ENTRYPOINT ["make", "extended_test"]
 
+FROM spectrum2/alpine-build-environment:latest as test-musl
+
+COPY . spectrum2/
+
+WORKDIR spectrum2
+
+RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DENABLE_PQXX=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
+
+ENTRYPOINT ["make", "test"]
+
 FROM base as staging
 
 ARG DEBIAN_FRONTEND=noninteractive
