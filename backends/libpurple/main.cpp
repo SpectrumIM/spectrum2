@@ -528,7 +528,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 				malloc_trim(0);
 #endif
 #endif
@@ -2287,7 +2287,7 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleConnected(np->m_accounts[account]);
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 	// force returning of memory chunks allocated by libxml2 to kernel
 	malloc_trim(0);
 #endif
@@ -2516,7 +2516,7 @@ int main(int argc, char **argv) {
 	boost::locale::generator gen;
 	std::locale::global(gen(""));
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 		mallopt(M_CHECK_ACTION, 2);
 		mallopt(M_PERTURB, 0xb);
 #endif

@@ -227,8 +227,10 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 #ifndef WIN32
 #ifndef __FreeBSD__
 #ifndef __MACH__
+#if defined (__GLIBC__)
 			// force returning of memory chunks allocated by libxml2 to kernel
 			malloc_trim(0);
+#endif
 #endif
 #endif
 #endif
