@@ -320,8 +320,10 @@ int main(int argc, char **argv)
 #ifndef WIN32
 #ifndef __FreeBSD__
 #ifndef __MACH__
+#if defined (__GLIBC__)
 	mallopt(M_CHECK_ACTION, 2);
 	mallopt(M_PERTURB, 0xb);
+#endif
 #endif
 #endif
 #endif
