@@ -59,7 +59,7 @@ RUN /bin/bash ./build_spectrum2.sh
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
-		libprotobuf-c-dev protobuf-c-compiler
+		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev
 
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
@@ -98,12 +98,25 @@ git clone --recursive https://github.com/majn/telegram-purple && \
 		./configure && \
 		make && \
 		make DESTDIR=/tmp/out install
-		
+
 RUN echo "---> purple-battlenet" && \
 git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		cd purple-battlenet && \
 		make && \
-		make DESTDIR=/tmp/out install		
+		make DESTDIR=/tmp/out install
+
+RUN echo "---> purple-hangouts" && \
+git clone --recursive https://github.com/EionRobb/purple-hangouts && \
+		cd purple-hangouts && \
+		make && \
+		make DESTDIR=/tmp/out install
+
+RUN echo "---> purple-mattermost" && \
+git clone --recursive https://github.com/EionRobb/purple-mattermost && \
+		cd purple-mattermost && \
+		make && \
+		make DESTDIR=/tmp/out install
+
 		
 FROM debian:10.4-slim as production
 
@@ -115,7 +128,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN echo 'deb http://deb.debian.org/debian stable-backports main' > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
-RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1
+RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libmarkdown2
 
 RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
@@ -125,6 +138,8 @@ RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_10/
 RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_10/Release.key | apt-key add
 RUN apt-get update -qq
 
+RUN echo "---> Installing pidgin-sipe" && \
+		apt-get install --no-install-recommends -y pidgin-sipe
 RUN echo "---> Installing purple-facebook" && \
 		apt-get install --no-install-recommends -y purple-facebook
 RUN echo "---> Installing purple-telegram" && \
