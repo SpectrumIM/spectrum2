@@ -128,7 +128,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN echo 'deb http://deb.debian.org/debian stable-backports main' > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
-RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1
+RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libmarkdown2
 
 RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
