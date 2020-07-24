@@ -21,6 +21,8 @@ transport_config.h
 Doxyfile
 moc_*
 CMakeCache.txt
+CPackConfig.cmake
+CPackSourceConfig.cmake
 *.patch
 *.orig
 spectrum2_manager
@@ -40,4 +42,3 @@ localhost.port
 *.a
 core.*
 *.pyc
-
