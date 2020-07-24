@@ -2493,9 +2493,11 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			else {
 				PurplePlugin *plugin = purple_find_prpl_wrapped(CONFIG_STRING(config, "service.protocol").c_str());
 				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
-				bool isPasswordlessPlugin = prpl_info->options & OPT_PROTO_NO_PASSWORD;
-				LOG4CXX_INFO(logger, "passwordless backend: " << isPasswordlessPlugin);
-				cfg.setNeedPassword(!isPasswordlessPlugin);
+				if (prpl_info) {
+					bool isPasswordlessPlugin = prpl_info->options & OPT_PROTO_NO_PASSWORD;
+					LOG4CXX_INFO(logger, "passwordless backend: " << isPasswordlessPlugin);
+					cfg.setNeedPassword(!isPasswordlessPlugin);
+				}
 				cfg.setNeedRegistration(true);
 			}
 			np->sendConfig(cfg);
