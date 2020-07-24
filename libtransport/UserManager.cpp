@@ -125,7 +125,9 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 #ifndef WIN32
 #ifndef __FreeBSD__
 #ifndef __MACH__
+#if defined (__GLIBC__)
 	malloc_trim(0);
+#endif
 #endif
 #endif
 #endif
