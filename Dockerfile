@@ -33,9 +33,25 @@ RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp 
 
 RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make
 
-RUN apt-get install --no-install-recommends -y psmisc
-
 ENTRYPOINT ["make", "extended_test"]
+
+FROM base as test-clang
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG APT_LISTCHANGES_FRONTEND=none
+
+RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+
+RUN echo 'deb http://apt.llvm.org/buster/ llvm-toolchain-buster-10 main' > /etc/apt/sources.list.d/llvm.list
+RUN apt-get update -qq
+
+RUN apt-get install --no-install-recommends -y libcppunit-dev clang-10 lld-10
+
+WORKDIR spectrum2
+
+RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-10 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-10 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
+
+ENTRYPOINT ["make", "test"]
 
 FROM spectrum2/alpine-build-environment:latest as test-musl
 

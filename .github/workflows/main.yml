@@ -15,6 +15,18 @@ jobs:
         DOCKER_BUILDKIT: 1
     - name: Run tests
       run: docker run -tt spectrum:tests
+  linux-clang:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build tests
+      run: docker build . --target test-clang -t spectrum:tests-clang
+      env:
+        DOCKER_BUILDKIT: 1
+    - name: Run tests
+      run: docker run -tt spectrum:tests-clang
   linux-musl:
     runs-on: ubuntu-latest
 
