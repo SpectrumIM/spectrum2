@@ -12,10 +12,6 @@
 
 using namespace Transport;
 
-#if !HAVE_SWIFTEN_3
-#define get_value_or(X) substr()
-#endif
-
 class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(UserManagerTest);
 // 	CPPUNIT_TEST(connectUser); // executed as part of other tests
@@ -142,7 +138,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setTo("localhost");
 		response->setFrom("user@localhost");
 		response->setType(Swift::Presence::Error);
-		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
+		response->addPayload(std::shared_ptr<Swift::ErrorPayload>(new Swift::ErrorPayload(Swift::ErrorPayload::SubscriptionRequired)));
 		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 		loop->processEvents();
 

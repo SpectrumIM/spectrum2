@@ -23,8 +23,6 @@ message(STATUS "           : -DPURPLE_NOT_RUNTIME - enables compilation with lib
 message(STATUS "|- pgxx    : -DPQXX_INCLUDE_DIR,     -DPQXX_LIBRARY")
 message(STATUS "|- irc     : -DIRC_INCLUDE_DIR,      -DIRC_LIBRARY")
 
-option(ENABLE_QT4 "Build with Qt4 instead of Qt5" ON)
-
 option(ENABLE_SQLITE3 "Build with SQLite3 support" ON)
 option(ENABLE_MYSQL "Build with MySQL support" ON)
 option(ENABLE_PQXX "Build with Postgres supoort" ON)
@@ -80,8 +78,7 @@ if(NOT SWIFTEN_FOUND)
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Secur32")
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Iphlpapi")
 	set(SWIFTEN_LIBRARY ${SWIFTEN_LIBRARY} "Winscard")
-	message(STATUS "Using swiften: ${SWIFTEN_INCLUDE_DIR} ${SWIFTEN_LIBRARY}
-	Version: ${SWIFTEN_VERSION}")
+	message(STATUS "Using swiften: ${SWIFTEN_INCLUDE_DIR} ${SWIFTEN_LIBRARY}")
 endif()
 
 # FIND BOOST
@@ -95,11 +92,7 @@ if(WIN32)
 endif(WIN32)
 
 set(Boost_FIND_QUIETLY ON)
-if("${SWIFTEN_VERSION}" STRGREATER "4")
-	find_package(Boost COMPONENTS program_options date_time system filesystem regex thread locale REQUIRED)
-else()
-  find_package(Boost COMPONENTS program_options date_time system filesystem regex thread signals locale REQUIRED)
-endif()
+find_package(Boost COMPONENTS program_options date_time system filesystem regex thread locale REQUIRED)
 
 message( STATUS "Found Boost: ${Boost_VERSION}, ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
@@ -194,19 +187,11 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	find_package(openssl)
 endif()
 
+add_definitions(-DSUPPORT_LEGACY_CAPS)
+
 if(ENABLE_IRC)
 	find_package(Communi)
-
-	if(ENABLE_QT4)
-		include(FindQt4)
-		find_package(Qt4 COMPONENTS QtCore QtNetwork)
-	else()
 	find_package(Qt5 COMPONENTS Core Network)
-	endif()
-
-	# add_definitions(${SWIFTEN_CFLAGS})
-	add_definitions(-DSUPPORT_LEGACY_CAPS)
-	# add_definitions(-DBOOST_FILESYSTEM_VERSION=2)
 endif()
 
 find_package(event)
@@ -332,10 +317,6 @@ if(PROTOBUF_FOUND)
 		message("IRC plugin        : yes")
 		include_directories(${QT_QTNETWORK_INCLUDE_DIR})
 		include_directories(${IRC_INCLUDE_DIR})
-	
-		if(ENABLE_QT4)
-			include(${QT_USE_FILE})
-		endif()
 	else()
 		if(ENABLE_IRC)
 			message("IRC plugin        : no (install libCommuni and libprotobuf-dev)")

@@ -6,17 +6,15 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/signals2.hpp>
 
 #include <Swiften/Network/DummyConnection.h>
 #include <Swiften/Network/ConnectionServer.h>
 #include <Swiften/EventLoop/EventOwner.h>
 #include <Swiften/Version.h>
-
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class DummyConnectionServer : public ConnectionServer {
@@ -26,17 +24,15 @@ namespace Swift {
 				UnknownError
 			};
 
-			static SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DummyConnectionServer> create(EventLoop* eventLoop) {
-				return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DummyConnectionServer>(new DummyConnectionServer(eventLoop));
+			static std::shared_ptr<Swift::DummyConnectionServer> create(EventLoop* eventLoop) {
+				return std::shared_ptr<Swift::DummyConnectionServer>(new DummyConnectionServer(eventLoop));
 			}
 
-			void acceptConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection);
+			void acceptConnection(std::shared_ptr<Swift::Connection> connection);
 
-#if (SWIFTEN_VERSION >= 0x030000)
 			virtual boost::optional<ConnectionServer::Error> tryStart() {
 				return boost::optional<ConnectionServer::Error>();
 			}
-#endif
 
 			virtual void start();
 			virtual void stop();

@@ -8,16 +8,13 @@
 
 #include <vector>
 #include <string>
-#include <boost/shared_ptr.hpp>
 
 #include <Swiften/Elements/Payload.h>
-
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class HintPayload : public Payload {
 	public:
-		typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<HintPayload> ref;
+		typedef std::shared_ptr<HintPayload> ref;
 
 		enum Type { NoPermanentStore, NoStore, NoCopy, Store };
 

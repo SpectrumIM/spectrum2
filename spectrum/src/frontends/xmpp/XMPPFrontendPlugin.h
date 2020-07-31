@@ -36,7 +36,7 @@ class XMPPFrontendPlugin : public FrontendPlugin {
 		Frontend *createFrontend();
 };
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<FrontendPlugin> get_xmpp_frontend_plugin();
+std::shared_ptr<FrontendPlugin> get_xmpp_frontend_plugin();
 
 
 }

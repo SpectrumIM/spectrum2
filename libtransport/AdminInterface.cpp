@@ -34,9 +34,6 @@
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
 namespace Transport {
 
 DEFINE_LOGGER(adminInterfaceLogger, "AdminInterface");
@@ -1137,11 +1134,7 @@ void AdminInterface::addCommand(AdminInterfaceCommand *command) {
 }
 
 void AdminInterface::handleQuery(Swift::Message::ref message) {
-#if HAVE_SWIFTEN_3
 	std::string msg = message->getBody().get_value_or("");
-#else
-	std::string msg = message->getBody();
-#endif
 	LOG4CXX_INFO(adminInterfaceLogger, "Message from admin received: '" << msg << "'");
 	message->setTo(message->getFrom());
 	message->setFrom(m_component->getJID());
@@ -1244,15 +1237,9 @@ void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	// Ignore empty messages
-#if HAVE_SWIFTEN_3
 	if (message->getBody().get_value_or("").empty()) {
 		return;
 	}
-#else
-	if (message->getBody().empty()) {
-		return;
-	}
-#endif
 
 	handleQuery(message);
 

@@ -10,7 +10,6 @@
 #include "Swiften/TLS/Schannel/SchannelUtil.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/Base/ByteArray.h"
-#include "Swiften/SwiftenCompat.h"
 
 #define SECURITY_WIN32
 #include <Windows.h>
@@ -25,7 +24,7 @@ namespace Swift
 	class SchannelServerContext : public TLSServerContext, boost::noncopyable 
 	{
 	public:
-		typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<SchannelServerContext> sp_t;
+		typedef std::shared_ptr<SchannelServerContext> sp_t;
 
 	public:
 		SchannelServerContext();

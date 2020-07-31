@@ -113,7 +113,7 @@ void RosterManager::sendBuddySubscribePresence(Buddy *buddy) {
 	response->setFrom(buddy->getJID().toBare());
 	response->setType(Swift::Presence::Subscribe);
 	if (!buddy->getAlias().empty()) {
-		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::Nickname>(buddy->getAlias()));
+		response->addPayload(std::make_shared<Swift::Nickname>(buddy->getAlias()));
 	}
 	m_component->getFrontend()->sendPresence(response);
 }

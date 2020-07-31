@@ -75,7 +75,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
 			user->setData(&backend);
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> client1 = factories->getConnectionFactory()->createConnection();
+			std::shared_ptr<Swift::Connection> client1 = factories->getConnectionFactory()->createConnection();
 			dynamic_cast<Swift::DummyConnection *>(client1.get())->onDataSent.connect(boost::bind(&NetworkPluginServerTest::handleDataSent, this, _1));
 			backend.connection = client1;
 
@@ -371,7 +371,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 			Swift::Message::ref msg (new Swift::Message());
 			msg->setBody(OOB_TEST_BODY);
-			msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
+			msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
 
 			std::vector<Swift::Message::ref> parts = serv->wrapIncomingMedia(msg);
 			CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(parts.size()));
@@ -381,7 +381,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(OOB_TEST_XHTML, parts[0]->getPayload<Swift::XHTMLIMPayload>()->getBody());
 
 			//There must be OOB tags for each link
-			const std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload> > payloads =
+			const std::vector<std::shared_ptr<Swift::RawXMLPayload> > payloads =
 				parts[0]->getPayloads<Swift::RawXMLPayload>();
 			CPPUNIT_ASSERT_EQUAL(2, (int)payloads.size());
 			CPPUNIT_ASSERT_EQUAL(OOB_XML_START+"http://example.org/example1.png"+OOB_XML_END, payloads[0]->getRawXML());
@@ -397,7 +397,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 			Swift::Message::ref msg (new Swift::Message());
 			msg->setBody(OOB_TEST_BODY);
-			msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
+			msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
 
 			std::vector<Swift::Message::ref> parts = serv->wrapIncomingMedia(msg);
 			CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(parts.size()));
@@ -407,7 +407,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(OOB_TEST_XHTML, parts[0]->getPayload<Swift::XHTMLIMPayload>()->getBody());
 
 			//There must be OOB tag for the first link
-			const std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload> > payloads
+			const std::vector<std::shared_ptr<Swift::RawXMLPayload> > payloads
 				= parts[0]->getPayloads<Swift::RawXMLPayload>();
 			CPPUNIT_ASSERT_EQUAL(1, (int)payloads.size());
 			CPPUNIT_ASSERT_EQUAL(OOB_XML_START+"http://example.org/example1.png"+OOB_XML_END, payloads[0]->getRawXML());
@@ -422,7 +422,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 			Swift::Message::ref msg (new Swift::Message());
 			msg->setBody(OOB_TEST_BODY);
-			msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
+			msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
 
 			std::vector<Swift::Message::ref> parts = serv->wrapIncomingMedia(msg);
 			CPPUNIT_ASSERT_EQUAL(5, static_cast<int>(parts.size()));
@@ -432,7 +432,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			//	LOG4CXX_DEBUG(logger, "part " << i << ": plcount = " << parts[i]->getPayloads<Swift::XHTMLIMPayload>().size());
 			//}
 
-			std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload> > payloads;
+			std::vector<std::shared_ptr<Swift::RawXMLPayload> > payloads;
 
 			//Verify all parts of the split
 

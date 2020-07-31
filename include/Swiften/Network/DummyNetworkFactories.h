@@ -7,16 +7,10 @@
 #pragma once
 
 #include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
 #include <Swiften/Network/NetworkFactories.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
-#if HAVE_SWIFTEN_3
 #include <Swiften/IDN/IDNConverter.h>
 #include <Swiften/IDN/PlatformIDNConverter.h>
-#endif
-
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class EventLoop;
@@ -34,7 +28,6 @@ namespace Swift {
 				return connectionFactory;
 			}
 
-#if HAVE_SWIFTEN_3
 			IDNConverter* getIDNConverter() const {
 				return idnConverter.get();
 			}
@@ -44,8 +37,6 @@ namespace Swift {
 			Swift::NetworkEnvironment* getNetworkEnvironment() const {
 				return networkEnvironment;
 			}
-
-#endif
 
 			DomainNameResolver* getDomainNameResolver() const {
 				return domainNameResolver;
@@ -78,11 +69,9 @@ namespace Swift {
 			PlatformXMLParserFactory *m_platformXMLParserFactory;
 			TimerFactory* timerFactory;
 			ConnectionFactory* connectionFactory;
-#if HAVE_SWIFTEN_3
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IDNConverter> idnConverter;
+			std::shared_ptr<IDNConverter> idnConverter;
 			CryptoProvider* cryptoProvider;
 			NetworkEnvironment* networkEnvironment;
-#endif
 			DomainNameResolver* domainNameResolver;
 			ConnectionServerFactory* connectionServerFactory;
 			EventLoop *eventLoop;

@@ -14,11 +14,9 @@
 #include <Swiften/FileTransfer/SOCKS5BytestreamRegistry.h>
 #include <Swiften/FileTransfer/IBBSendSession.h>
 
-#include "Swiften/SwiftenCompat.h"
-
 namespace Swift {
 
-MyOutgoingSIFileTransfer::MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry) : id(id), from(from), to(to), name(name), size(size), description(description), bytestream(bytestream), iqRouter(iqRouter), socksServer(socksServer), registry(registry) {
+MyOutgoingSIFileTransfer::MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, std::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry) : id(id), from(from), to(to), name(name), size(size), description(description), bytestream(bytestream), iqRouter(iqRouter), socksServer(socksServer), registry(registry) {
 }
 
 void MyOutgoingSIFileTransfer::start() {
@@ -42,14 +40,6 @@ void MyOutgoingSIFileTransfer::cancel() {
 	if (ibbSession) {
 		ibbSession->stop();
 	}
-#if !HAVE_SWIFTEN_3
-	SOCKS5BytestreamServerSession *serverSession = registry->getConnectedSession(SOCKS5BytestreamRegistry::getHostname(id, from, to));
-	if (serverSession) {
-		serverSession->stop();
-	}
-
-	onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
-#endif
 }
 
 void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamInitiation::ref response, ErrorPayload::ref error) {
@@ -58,10 +48,6 @@ void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamIniti
 	}
 	else {
 		if (response->getRequestedMethod() == "http://jabber.org/protocol/bytestreams") {
-#if !HAVE_SWIFTEN_3
-			registry->addReadBytestream(SOCKS5BytestreamRegistry::getHostname(id, from, to), bytestream);
-			socksServer->addReadBytestream(id, from, to, bytestream);
-#endif
 			Bytestreams::ref bytestreams(new Bytestreams());
 			bytestreams->setStreamID(id);
 			HostAddressPort addressPort = socksServer->getAddressPort();
@@ -71,12 +57,9 @@ void MyOutgoingSIFileTransfer::handleStreamInitiationRequestResponse(StreamIniti
 			request->send();
 		}
 		else if (response->getRequestedMethod() == "http://jabber.org/protocol/ibb") {
-			ibbSession = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IBBSendSession>(new IBBSendSession(id, from, to, bytestream, iqRouter));
+			ibbSession = std::shared_ptr<IBBSendSession>(new IBBSendSession(id, from, to, bytestream, iqRouter));
 			ibbSession->onFinished.connect(boost::bind(&MyOutgoingSIFileTransfer::handleIBBSessionFinished, this, _1));
 			ibbSession->start();
-#if !HAVE_SWIFTEN_3
-			onStateChange(FileTransfer::State(FileTransfer::State::Transferring));
-#endif
 		}
 	}
 }
@@ -86,13 +69,6 @@ void MyOutgoingSIFileTransfer::handleBytestreamsRequestResponse(Bytestreams::ref
 		finish(FileTransferError());
 		return;
 	}
-#if !HAVE_SWIFTEN_3
-	SOCKS5BytestreamServerSession *serverSession = registry->getConnectedSession(SOCKS5BytestreamRegistry::getHostname(id, from, to));
-// 	serverSession->onBytesSent.connect(boost::bind(boost::ref(onProcessedBytes), _1));
-// 	serverSession->onFinished.connect(boost::bind(&OutgoingJingleFileTransfer::handleTransferFinished, this, _1));
-	serverSession->startTransfer();
-	onStateChange(FileTransfer::State(FileTransfer::State::Transferring));
-#endif	
 	//socksServer->onTransferFinished.connect();
 }
 
@@ -101,15 +77,6 @@ void MyOutgoingSIFileTransfer::finish(boost::optional<FileTransferError> error) 
 		ibbSession->onFinished.disconnect(boost::bind(&MyOutgoingSIFileTransfer::handleIBBSessionFinished, this, _1));
 		ibbSession.reset();
 	}
-#if !HAVE_SWIFTEN_3
-	socksServer->removeReadBytestream(id, from, to);
-	if(error) {
-		onStateChange(FileTransfer::State(FileTransfer::State::Canceled));
-	}
-	else {
-		onStateChange(FileTransfer::State(FileTransfer::State::Finished));
-	}
-#endif
 	onFinished(error);
 }
 

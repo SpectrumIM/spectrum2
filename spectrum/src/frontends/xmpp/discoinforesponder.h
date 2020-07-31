@@ -22,16 +22,14 @@
 
 #include <vector>
 #include <list>
+
+#include <boost/signals2.hpp>
+
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/CapsInfo.h"
-#include "Swiften/SwiftenCompat.h"
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-#if HAVE_SWIFTEN_3
 #include <Swiften/Crypto/CryptoProvider.h>
 #include <Swiften/Crypto/PlatformCryptoProvider.h>
-#endif
 
 
 namespace Transport {
@@ -53,14 +51,14 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 
 		void addAdHocCommand(const std::string &node, const std::string &name);
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
+		boost::signals2::signal<void (const Swift::CapsInfo &capsInfo)> onBuddyCapsInfoChanged;
 
 		Swift::CapsInfo &getBuddyCapsInfo() {
 				return m_capsInfo;
 		}
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::DiscoInfo> payload);
 
 		//Custom transport features added by external callers
 		std::vector<std::string> m_transportFeatures;
@@ -76,9 +74,7 @@ class DiscoInfoResponder : public Swift::GetResponder<Swift::DiscoInfo> {
 		Swift::CapsInfo m_capsInfo;
 		std::map<std::string, std::string> m_rooms;
 		std::map<std::string, std::string> m_commands;
-#if HAVE_SWIFTEN_3
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider> crypto;
-#endif
+		std::shared_ptr<Swift::CryptoProvider> crypto;
 		UserManager *m_userManager;
 };
 

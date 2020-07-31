@@ -25,7 +25,6 @@
 #include <list>
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/Presence.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -64,19 +63,19 @@ class Conversation {
 
 		/// \param message Message received from legacy network.
 		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
-		void handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message, const std::string &nickname = "", const bool carbon = false);
+		void handleMessage(std::shared_ptr<Swift::Message> &message, const std::string &nickname = "", const bool carbon = false);
 
 		//Generates a carbon <sent> wrapper <message> around the given payload and delivers it
 		void forwardAsCarbonSent(
-			const SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &payload,
+			const std::shared_ptr<Swift::Message> &payload,
 			const Swift::JID& to);
 
 		//Generates a impersonation request <message> arount the given payload and delivers it
 		void forwardImpersonated(
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> payload,
+			std::shared_ptr<Swift::Message> payload,
 			const Swift::JID& server);
 
-		void handleRawMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message);
+		void handleRawMessage(std::shared_ptr<Swift::Message> &message);
 		void handleRawPresence(Swift::Presence::ref presence);
 
 		/// Handles participant change in MUC.
@@ -118,7 +117,7 @@ class Conversation {
 		/// Sends message to Legacy network.
 
 		/// \param message Message.
-		virtual void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message) = 0;
+		virtual void sendMessage(std::shared_ptr<Swift::Message> &message) = 0;
 
 		/// Returns ConversationManager associated with this Conversation.
 
@@ -158,7 +157,7 @@ class Conversation {
 
 	private:
 		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "", const std::string &iconhash = "");
-		void cacheMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message);
+		void cacheMessage(std::shared_ptr<Swift::Message> &message);
 
 	private:
 		ConversationManager *m_conversationManager;
@@ -178,8 +177,8 @@ class Conversation {
 		// connected to single room, we store all those things 10 times.
 		// It would be also great to store last 100 messages per room
 		// every time, so we can get history messages for IRC for example.
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> m_subject;
-		std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > m_cachedMessages;
+		std::shared_ptr<Swift::Message> m_subject;
+		std::list<std::shared_ptr<Swift::Message> > m_cachedMessages;
 
 		typedef struct {
 			Swift::Presence::ref presence;

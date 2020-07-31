@@ -6,13 +6,12 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
+#include <boost/signals2.hpp>
 
 #include "Swiften/Base/SafeByteArray.h"
 #include "Swiften/TLS/Certificate.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/TLS/CertificateVerificationError.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class PKCS12Certificate;
@@ -34,9 +33,9 @@ namespace Swift {
 			virtual ByteArray getFinishMessage() const = 0;
 
 		public:
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const SafeByteArray&)> onDataForNetwork;
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const SafeByteArray&)> onDataForApplication;
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onError;
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onConnected;
+			boost::signals2::signal<void (const SafeByteArray&)> onDataForNetwork;
+			boost::signals2::signal<void (const SafeByteArray&)> onDataForApplication;
+			boost::signals2::signal<void ()> onError;
+			boost::signals2::signal<void ()> onConnected;
 	};
 }

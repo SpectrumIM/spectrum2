@@ -28,19 +28,13 @@
 #include <Swiften/Elements/TLSProceed.h>
 #include <iostream>
 #include <Swiften/TLS/CertificateWithKey.h>
-
-#include "Swiften/SwiftenCompat.h"
-
-#include <Swiften/Version.h>
-#if (SWIFTEN_VERSION >= 0x030000)
 #include <Swiften/Elements/ToplevelElement.h>
-#endif
 
 namespace Swift {
 
 ServerFromClientSession::ServerFromClientSession(
 		const std::string& id,
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection,
+		std::shared_ptr<Connection> connection,
 		PayloadParserFactoryCollection* payloadParserFactories, 
 		PayloadSerializerCollection* payloadSerializers,
 		UserRegistry* userRegistry,
@@ -65,7 +59,7 @@ ServerFromClientSession::~ServerFromClientSession() {
 
 void ServerFromClientSession::handlePasswordValid() {
 	if (!isInitialized()) {
-		getXMPPLayer()->writeElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AuthSuccess>(new AuthSuccess()));
+		getXMPPLayer()->writeElement(std::make_shared<AuthSuccess>());
 		authenticated_ = true;
 		getXMPPLayer()->resetParser();
 	}
@@ -73,9 +67,9 @@ void ServerFromClientSession::handlePasswordValid() {
 
 void ServerFromClientSession::handlePasswordInvalid(const std::string &error) {
 	if (!isInitialized()) {
-		getXMPPLayer()->writeElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AuthFailure>(new AuthFailure));
+		getXMPPLayer()->writeElement(std::make_shared<AuthFailure>());
 		if (!error.empty()) {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StreamError> msg(new StreamError(StreamError::UndefinedCondition, error));
+            std::shared_ptr<StreamError> msg = std::make_shared<StreamError>(StreamError::UndefinedCondition, error);
 			getXMPPLayer()->writeElement(msg);
 		}
 		
@@ -83,11 +77,7 @@ void ServerFromClientSession::handlePasswordInvalid(const std::string &error) {
 	}
 }
 
-#if (SWIFTEN_VERSION >= 0x030000)
-void ServerFromClientSession::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement> element) {
-#else
-void ServerFromClientSession::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element) {
-#endif
+void ServerFromClientSession::handleElement(std::shared_ptr<ToplevelElement> element) {
 	if (isInitialized()) {
 		onElementReceived(element);
 	}
@@ -95,7 +85,7 @@ void ServerFromClientSession::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr
 		if (AuthRequest* authRequest = dynamic_cast<AuthRequest*>(element.get())) {
 			if (authRequest->getMechanism() == "PLAIN" || (allowSASLEXTERNAL && authRequest->getMechanism() == "EXTERNAL")) {
 				if (authRequest->getMechanism() == "EXTERNAL") {
-						getXMPPLayer()->writeElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AuthSuccess>(new AuthSuccess()));
+						getXMPPLayer()->writeElement(std::make_shared<AuthSuccess>());
 						authenticated_ = true;
 						getXMPPLayer()->resetParser();
 				}
@@ -106,25 +96,25 @@ void ServerFromClientSession::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr
 				}
 			}
 			else {
-				getXMPPLayer()->writeElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AuthFailure>(new AuthFailure));
+				getXMPPLayer()->writeElement(std::shared_ptr<AuthFailure>(new AuthFailure));
 				finishSession(NoSupportedAuthMechanismsError);
 			}
 		}
 		else if (dynamic_cast<StartTLSRequest*>(element.get()) != NULL) {
-			getXMPPLayer()->writeElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<TLSProceed>(new TLSProceed));
+			getXMPPLayer()->writeElement(std::shared_ptr<TLSProceed>(new TLSProceed));
 			getStreamStack()->addLayer(tlsLayer);
 			tlsLayer->connect();
 			getXMPPLayer()->resetParser();
 		}
 		else if (IQ* iq = dynamic_cast<IQ*>(element.get())) {
-			if (SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ResourceBind> resourceBind = iq->getPayload<ResourceBind>()) {
+			if (std::shared_ptr<ResourceBind> resourceBind = iq->getPayload<ResourceBind>()) {
 				std::string bucket = "abcdefghijklmnopqrstuvwxyz";
 				std::string uuid;
 				for (int i = 0; i < 10; i++) {
 					uuid += bucket[rand() % bucket.size()];
 				}
 				setRemoteJID(JID(user_, getLocalJID().getDomain(), uuid));
-				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ResourceBind> resultResourceBind(new ResourceBind());
+				std::shared_ptr<ResourceBind> resultResourceBind(new ResourceBind());
 				resultResourceBind->setJID(getRemoteJID());
 				getXMPPLayer()->writeElement(IQ::createResult(JID(), iq->getID(), resultResourceBind));
 			}
@@ -143,7 +133,7 @@ void ServerFromClientSession::handleStreamStart(const ProtocolHeader& incomingHe
 	header.setID(id_);
 	getXMPPLayer()->writeHeader(header);
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StreamFeatures> features(new StreamFeatures());
+	std::shared_ptr<StreamFeatures> features(new StreamFeatures());
 
 	if (!authenticated_) {
 		if (tlsLayer && !tlsConnected) {
@@ -179,7 +169,7 @@ void ServerFromClientSession::addTLSEncryption(TLSServerContextFactory* tlsConte
 	if (!tlsLayer->setServerCertificate(cert)) {
 // 		std::cout << "error\n";
 		// TODO:
-// 		onClosed(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Error>(new Error(Error::InvalidTLSCertificateError)));
+// 		onClosed(std::shared_ptr<Error>(new Error(Error::InvalidTLSCertificateError)));
 	}
 	else {
 		tlsLayer->onError.connect(boost::bind(&ServerFromClientSession::handleTLSError, this));

@@ -8,18 +8,15 @@
 
 #include <vector>
 #include <string>
-#include <boost/shared_ptr.hpp>
 
 #include <Swiften/Elements/Payload.h>
-
-#include "Swiften/SwiftenCompat.h"
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
 namespace Transport {
 	class BlockPayload : public Swift::Payload {
 		public:
-			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<BlockPayload> ref;
+			typedef std::shared_ptr<BlockPayload> ref;
 
 		public:
 			BlockPayload();

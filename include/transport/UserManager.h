@@ -22,6 +22,7 @@
 
 #include <string>
 #include <map>
+#include <boost/signals2.hpp>
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/JID/JID.h"
@@ -29,7 +30,6 @@
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/VCard.h"
 #include "Swiften/Network/Timer.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -98,11 +98,11 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 
 		/// Called when new User class is created.
 		/// \param user newly created User class
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (User *user)> onUserCreated;
+		boost::signals2::signal<void (User *user)> onUserCreated;
 
 		/// Called when User class is going to be removed
 		/// \param user removed User class
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (User *user)> onUserDestroyed;
+		boost::signals2::signal<void (User *user)> onUserDestroyed;
 
 		/// Returns true if user is connected.
 		/// \return True if user is connected.
@@ -144,7 +144,7 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 		void handleSubscription(Swift::Presence::ref presence);
 		void handleMUCPresence(Swift::Presence::ref presence);
 		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
-		void handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info);
+		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
 		void addUser(User *user);
 
 		long m_onlineBuddies;

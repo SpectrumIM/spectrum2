@@ -24,7 +24,6 @@
 #include <map>
 
 #include "Swiften/FileTransfer/ReadBytestream.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -35,12 +34,12 @@ class MemoryReadBytestream : public Swift::ReadBytestream {
 
 		unsigned long appendData(const std::string &data);
 
-		virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<std::vector<unsigned char> > read(size_t size);
+		virtual std::shared_ptr<std::vector<unsigned char> > read(size_t size);
 
 		void setFinished() { m_finished = true; }
 		bool isFinished() const;
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onDataNeeded;
+		boost::signals2::signal<void ()> onDataNeeded;
 
 	private:
 		bool m_finished;

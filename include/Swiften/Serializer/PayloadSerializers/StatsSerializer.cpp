@@ -12,17 +12,15 @@
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
 
-#include "Swiften/SwiftenCompat.h"
-
 namespace Swift {
 
 StatsSerializer::StatsSerializer() : GenericPayloadSerializer<StatsPayload>() {
 }
 
-std::string StatsSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<StatsPayload> stats)  const {
+std::string StatsSerializer::serializePayload(std::shared_ptr<StatsPayload> stats)  const {
 	XMLElement queryElement("query", "http://jabber.org/protocol/stats");
 	BOOST_FOREACH(const StatsPayload::Item& item, stats->getItems()) {
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XMLElement> statElement(new XMLElement("stat"));
+		std::shared_ptr<XMLElement> statElement = std::make_shared<XMLElement>("stat");
 		statElement->setAttribute("name", item.getName());
 		if (!item.getUnits().empty()) {
 			statElement->setAttribute("units", item.getUnits());

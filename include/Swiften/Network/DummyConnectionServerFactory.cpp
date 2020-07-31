@@ -12,11 +12,11 @@ namespace Swift {
 DummyConnectionServerFactory::DummyConnectionServerFactory(EventLoop* eventLoop) : eventLoop(eventLoop) {
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(int port) {
+std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(int port) {
 	return DummyConnectionServer::create(eventLoop);
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(const Swift::HostAddress &hostAddress, int port) {
+std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(const Swift::HostAddress &hostAddress, int port) {
 	return DummyConnectionServer::create(eventLoop);
 }
 

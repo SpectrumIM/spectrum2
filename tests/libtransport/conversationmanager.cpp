@@ -13,10 +13,6 @@
 
 using namespace Transport;
 
-#if !HAVE_SWIFTEN_3
-#define get_value_or(X) substr()
-#endif
-
 class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE(ConversationManagerTest);
 	CPPUNIT_TEST(conversationSize);
@@ -44,7 +40,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	public:
 		TestingConversation *m_conv;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> m_msg;
+		std::shared_ptr<Swift::Message> m_msg;
 
 		void setUp (void) {
 			m_conv = NULL;
@@ -67,7 +63,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		std::cout << " = " << sizeof(Conversation) << " B";
 	}
 
-	void handleMessageReceived(TestingConversation *_conv, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &_msg) {
+	void handleMessageReceived(TestingConversation *_conv, std::shared_ptr<Swift::Message> &_msg) {
 		m_conv = _conv;
 		m_msg = _msg;
 	}
@@ -79,8 +75,8 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
-		msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(Swift::ChatState::Composing));
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
+		msg->addPayload(std::make_shared<Swift::ChatState>(Swift::ChatState::Composing));
 
 		// Forward it
 		conv->handleMessage(msg);
@@ -112,7 +108,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setSubject("subject");
 		msg->setType(Swift::Message::Groupchat);
 
@@ -153,7 +149,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there<>!");
 
 		// Forward it
@@ -180,7 +176,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg->getBody().get_value_or(""));
 
 		// send another message from legacy network, should be sent to user@localhost/resource now
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg2(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg2(new Swift::Message());
 		msg2->setBody("hi there!");
 
 		// Forward it
@@ -220,7 +216,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleNormalMessagesInitiatedFromXMPP() {
 		User *user = userManager->getUser("user@localhost");
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setFrom("user@localhost/resource");
 		msg->setTo("buddy1@localhost/bot");
 		msg->setBody("hi there<>!");
@@ -247,7 +243,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		user->getConversationManager()->addConversation(conv);
 		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there<>!");
 		msg->setType(Swift::Message::Headline);
 
@@ -301,7 +297,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// reset resources should not touch this resource
 		user->getConversationManager()->resetResources();
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
 
 		// Forward it
@@ -351,7 +347,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// reset resources should not touch this resource
 		user->getConversationManager()->resetResources();
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
 
 		// Forward it
@@ -374,7 +370,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg0(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg0(new Swift::Message());
 		msg0->setSubject("subject");
 		conv->handleMessage(msg0, "anotheruser");
 
@@ -390,11 +386,11 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// reset resources should not touch this resource
 		user->getConversationManager()->resetResources();
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
 		conv->handleMessage(msg, "anotheruser");
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg2(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg2(new Swift::Message());
 		msg2->setBody("hi there2!");
 		conv->handleMessage(msg2, "anotheruser");
 
@@ -413,7 +409,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -460,7 +456,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		Swift::MUCPayload *payload3 = new Swift::MUCPayload();
 		payload3->setPassword("password");
-		response3->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload3));
+		response3->addPayload(std::shared_ptr<Swift::Payload>(payload3));
 		injectPresence(response3);
 		loop->processEvents();
 
@@ -469,11 +465,11 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// reset resources should not touch this resource
 		user->getConversationManager()->resetResources();
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
 		conv->handleMessage(msg, "anotheruser");
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg2(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg2(new Swift::Message());
 		msg2->setBody("hi there2!");
 		conv->handleMessage(msg2, "anotheruser");
 
@@ -492,7 +488,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		Swift::MUCPayload *payload = new Swift::MUCPayload();
 		payload->setPassword("password");
-		response->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(payload));
+		response->addPayload(std::shared_ptr<Swift::Payload>(payload));
 		injectPresence(response);
 		loop->processEvents();
 
@@ -531,7 +527,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// reset resources should not touch this resource
 		user->getConversationManager()->resetResources();
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
 
 		// Forward it
@@ -727,7 +723,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		loop->processEvents();
 
 		received.clear();
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
 		msg->setFrom("user@localhost/resource");
 		msg->setTo("#room@localhost/anotheruser");
@@ -742,7 +738,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		Conversation *pmconv = user->getConversationManager()->getConversation("#room/anotheruser");
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg2(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg2(new Swift::Message());
 		msg2->setBody("response!");
 
 		pmconv->handleMessage(msg2);

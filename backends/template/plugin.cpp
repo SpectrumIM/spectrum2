@@ -20,7 +20,7 @@ Plugin::Plugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &
 	m_factories = new Swift::BoostNetworkFactories(loop);
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&Plugin::_handleDataRead, this, _1));
-	m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(host), port));
+	m_conn->connect(Swift::HostAddressPort(*(Swift::HostAddress::fromString(host)), port));
 
 	LOG4CXX_INFO(logger, "Starting the plugin.");
 }
@@ -31,7 +31,7 @@ void Plugin::sendData(const std::string &string) {
 }
 
 // This method has to call handleDataRead with all received data from network plugin server
-void Plugin::_handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
+void Plugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
 	std::string d(data->begin(), data->end());
 	handleDataRead(d);
 }

@@ -32,7 +32,6 @@
 #include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Network/Timer.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -45,10 +44,10 @@ class RosterStorage;
 // TODO: Once Swiften GetRosterRequest will support setting to="", this can be removed
 class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload> {
 	public:
-		typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<AddressedRosterRequest> ref;
+		typedef std::shared_ptr<AddressedRosterRequest> ref;
 
 		AddressedRosterRequest(Swift::IQRouter* router, Swift::JID to) :
-				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
+				Swift::GenericRequest<Swift::RosterPayload>(Swift::IQ::Get, to, std::shared_ptr<Swift::Payload>(new Swift::RosterPayload()), router) {
 		}
 };
 
@@ -83,7 +82,7 @@ class XMPPRosterManager : public RosterManager {
 	private:
 		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key);
-		void handleRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> roster, Swift::ErrorPayload::ref error);
+		void handleRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> roster, Swift::ErrorPayload::ref error);
 
 		Component *m_component;
 		RosterStorage *m_rosterStorage;

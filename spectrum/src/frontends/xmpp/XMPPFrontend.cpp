@@ -32,12 +32,11 @@
 #include "transport/Config.h"
 #include "transport/Transport.h"
 #include "storageparser.h"
-#include "Swiften/SwiftenCompat.h"
 #ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
 #include "Swiften/TLS/Schannel/SchannelServerContext.h"
 #include "Swiften/TLS/Schannel/SchannelServerContextFactory.h"
-#elif defined(__APPLE__) && HAVE_SWIFTEN_3
+#elif defined(__APPLE__)
 #include <Swiften/TLS/SecureTransport/SecureTransportCertificate.h>
 #include <Swiften/TLS/SecureTransport/SecureTransportServerContext.h>
 #else
@@ -62,14 +61,10 @@
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 #include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
 #include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
-#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 #include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
 #include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
-#endif
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
-#if SWIFTEN_VERSION >= 0x030000
 #include "Swiften/Parser/GenericPayloadParserFactory2.h"
-#endif
 #include "Swiften/Queries/IQRouter.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "discoitemsresponder.h"
@@ -142,7 +137,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 			LOG4CXX_INFO(logger, "Using PKCS#12 certificate " << CONFIG_STRING(m_config, "service.cert"));
 			LOG4CXX_INFO(logger, "SSLv23_server_method used.");
 			TLSServerContextFactory *f = new OpenSSLServerContextFactory();
-			CertificateWithKey::ref certificate = SWIFTEN_SHRPTR_NAMESPACE::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password")));
+			CertificateWithKey::ref certificate = std::make_shared<PKCS12Certificate>(CONFIG_STRING(m_config, "service.cert"), createSafeByteArray(CONFIG_STRING(m_config, "service.cert_password")));
 			m_server->addTLSEncryption(f, certificate);
 #endif
 #endif
@@ -156,10 +151,8 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_iqRouter = m_server->getIQRouter();
 
 		SwiftServerExposed* entity(reinterpret_cast<SwiftServerExposed*>(m_server));
-#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
-#endif
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_server->addPayloadParserFactory(factory);
@@ -174,11 +167,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	}
 	else {
 		LOG4CXX_INFO(logger, "Creating component in gateway mode");
-#if HAVE_SWIFTEN_3
 		m_component = new Swift::Component(m_jid, CONFIG_STRING(m_config, "service.password"), factories);
-#else
-		m_component = new Swift::Component(loop, factories, m_jid, CONFIG_STRING(m_config, "service.password"));
-#endif
 		m_component->setSoftwareVersion("Spectrum", SPECTRUM_VERSION);
 		m_component->onConnected.connect(boost::bind(&XMPPFrontend::handleConnected, this));
 		m_component->onError.connect(boost::bind(&XMPPFrontend::handleConnectionError, this, _1));
@@ -186,10 +175,8 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 		m_component->onDataWritten.connect(boost::bind(&XMPPFrontend::handleDataWritten, this, _1));
 
 		SwiftComponentExposed* entity(reinterpret_cast<SwiftComponentExposed*>(m_component));
-#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
-#endif
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
 			m_component->addPayloadParserFactory(factory);
@@ -205,11 +192,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 
 	m_capsMemoryStorage = new CapsMemoryStorage();
-#if HAVE_SWIFTEN_3
 	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter, factories->getCryptoProvider());
-#else
-	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter);
-#endif
 	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_stanzaChannel);
 	m_entityCapsManager->onCapsChanged.connect(boost::bind(&XMPPFrontend::handleCapsChanged, this, _1));
 
@@ -247,7 +230,7 @@ void XMPPFrontend::handleGeneralPresence(Swift::Presence::ref presence) {
 	onPresenceReceived(presence);
 }
 
-void XMPPFrontend::handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
+void XMPPFrontend::handleMessage(std::shared_ptr<Swift::Message> message) {
 	onMessageReceived(message);
 }
 
@@ -262,14 +245,14 @@ void XMPPFrontend::addRoomToRoomList(const std::string &handle, const std::strin
 
 void XMPPFrontend::sendPresence(Swift::Presence::ref presence) {
 	if (!presence->getFrom().getNode().empty()) {
-		presence->addPayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Payload>(new Swift::CapsInfo(static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->getBuddyCapsInfo())));
+		presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::CapsInfo(static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->getBuddyCapsInfo())));
 	}
 
 	m_stanzaChannel->sendPresence(presence);
 }
 
 void XMPPFrontend::sendVCard(Swift::VCard::ref vcard, Swift::JID to) {
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GenericRequest<Swift::VCard> > request(new Swift::GenericRequest<Swift::VCard>(Swift::IQ::Result, to, vcard, m_iqRouter));
+	std::shared_ptr<Swift::GenericRequest<Swift::VCard> > request(new Swift::GenericRequest<Swift::VCard>(Swift::IQ::Result, to, vcard, m_iqRouter));
 	request->send();
 }
 
@@ -278,15 +261,15 @@ void XMPPFrontend::sendRosterRequest(Swift::RosterPayload::ref payload, Swift::J
 	request->send();
 }
 
-void XMPPFrontend::sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message) {
+void XMPPFrontend::sendMessage(std::shared_ptr<Swift::Message> message) {
 	m_stanzaChannel->sendMessage(message);
 }
 
-void XMPPFrontend::sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
+void XMPPFrontend::sendIQ(std::shared_ptr<Swift::IQ> iq) {
 	m_iqRouter->sendIQ(iq);
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> XMPPFrontend::sendCapabilitiesRequest(Swift::JID to) {
+std::shared_ptr<Swift::DiscoInfo> XMPPFrontend::sendCapabilitiesRequest(Swift::JID to) {
 	Swift::DiscoInfo::ref caps = m_entityCapsManager->getCaps(to);
 	if (caps != Swift::DiscoInfo::ref()) {
 		onCapabilitiesReceived(to, caps);
@@ -339,7 +322,7 @@ UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry 
 	return m_userManager;
 }
 
-bool XMPPFrontend::handleIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
+bool XMPPFrontend::handleIQ(std::shared_ptr<Swift::IQ> iq) {
 	if (!m_rawXML) {
 		return false;
 	}
@@ -382,8 +365,8 @@ void XMPPFrontend::connectToServer() {
 
 		//Type casting to BoostConnectionServer since onStopped signal is not defined in ConnectionServer
 		//Ideally, onStopped must be defined in ConnectionServer
-		if (SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&XMPPFrontend::handleServerStopped, this, _1));
+		if (std::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
+			std::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&XMPPFrontend::handleServerStopped, this, _1));
 		}
 		
 		// We're connected right here, because we're in server mode...
@@ -446,7 +429,7 @@ void XMPPFrontend::handleDataWritten(const Swift::SafeByteArray &data) {
 	m_transport->handleDataWritten(d);
 }
 
-void XMPPFrontend::handleDiscoInfoResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
+void XMPPFrontend::handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
 #ifdef SUPPORT_LEGACY_CAPS
 	onCapabilitiesReceived(jid, info);
 #endif

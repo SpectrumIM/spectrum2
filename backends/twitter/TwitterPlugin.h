@@ -1,5 +1,4 @@
-#ifndef TWITTER_PLUGIN
-#define TWITTER_PLUGIN
+#pragma once
 
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
@@ -10,8 +9,7 @@
 #include "transport/StorageBackend.h"
 #include "transport/ThreadPool.h"
 
-#include "Swiften/Swiften.h"
-#include "Swiften/SwiftenCompat.h"
+#include <Swiften/Swiften.h>
 #ifndef _WIN32
 #include "unistd.h"
 #include "signal.h"
@@ -32,14 +30,8 @@
 #include <queue>
 #include <set>
 #include <cstdio>
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-#if HAVE_SWIFTEN_3
 #include <Swiften/Crypto/CryptoProvider.h>
 #include <Swiften/Crypto/PlatformCryptoProvider.h>
-#else
-#include "Swiften/StringCodecs/SHA1.h"
-#endif
 using namespace boost::filesystem;
 using namespace boost::program_options;
 using namespace Transport;
@@ -55,10 +47,8 @@ class TwitterPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
-#if HAVE_SWIFTEN_3
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider> cryptoProvider;
-#endif
+		std::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::CryptoProvider> cryptoProvider;
 		Swift::Timer::ref tweet_timer;
 		Swift::Timer::ref message_timer;
 		StorageBackend *storagebackend;
@@ -70,7 +60,7 @@ class TwitterPlugin : public NetworkPlugin {
 		void sendData(const std::string &string);
 
 		// Receive date from the NetworkPlugin server and invoke the appropirate payload handler (implement in the NetworkPlugin class)
-		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
+		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data);
 	
 		// User trying to login into his twitter account
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password);
@@ -186,4 +176,3 @@ class TwitterPlugin : public NetworkPlugin {
 		std::map<std::string, UserData> userdb;
 		bool m_firstPing;
 };
-#endif

@@ -10,8 +10,7 @@
 
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
-#include "Swiften/Swiften.h"
-#include "Swiften/SwiftenCompat.h"
+#include <Swiften/Swiften.h>
 #include <boost/filesystem.hpp>
 #include "unistd.h"
 #include "signal.h"
@@ -149,14 +148,14 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 	public:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::Connection> m_conn;
 
 		FrotzNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
 			this->config = config;
 			m_factories = new Swift::BoostNetworkFactories(loop);
 			m_conn = m_factories->getConnectionFactory()->createConnection();
 			m_conn->onDataRead.connect(boost::bind(&FrotzNetworkPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(host), port));
+			m_conn->connect(Swift::HostAddressPort(*(Swift::HostAddress::fromString(host)), port));
 // 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
 // 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
 		}
@@ -165,7 +164,7 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			m_conn->write(Swift::createSafeByteArray(string));
 		}
 
-		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
+		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
 			std::string d(data->begin(), data->end());
 			handleDataRead(d);
 		}
