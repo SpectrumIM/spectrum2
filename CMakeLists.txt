@@ -1,9 +1,13 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 
 project(libtransport)
 
-if(${CMAKE_MAJOR_VERSION} GREATER 2)
-	cmake_policy(SET CMP0037 OLD)
+if(POLICY CMP0037)
+	cmake_policy(SET CMP0037 NEW)
+endif()
+
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
 endif()
 
 include(CPack)
@@ -145,18 +149,14 @@ endif()
 
 # FIND GLIB
 if(ENABLE_PURPLE)
-#	if(GLIB2_INCLUDE_DIR AND GLIB2_LIBRARIES)
-#		set(GLIB2_FOUND TRUE)
-#	else()
-		find_package(glib)
-#	endif()
+		find_package(GLIB2)
 endif()
 
 # FIND LIBXML2
 # find_package(libxml2)
 
 # FIND PROTOBUF
-find_package(Protobuf REQUIRED)
+find_package(PROTOBUF REQUIRED)
 
 if(NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
 	set(PROTOBUF_FOUND 1)
@@ -168,7 +168,7 @@ if(NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
 	message(STATUS "Using protobuf: ${PROTOBUF_INCLUDE_DIRS} ${PROTOBUF_LIBRARY}")
 endif()
 
-find_package(jsoncpp REQUIRED)
+find_package(JsonCpp REQUIRED)
 if(JSONCPP_FOUND)
 	include_directories(${JSONCPP_INCLUDE_DIRS})
 	message(STATUS "Found jsoncpp: ${JSONCPP_INCLUDE_DIRS} ${JSONCPP_LIBRARY}, shared: ${JSONCPP_LIBRARY_IS_SHARED}")
@@ -207,7 +207,7 @@ find_package(log4cxx)
 
 # FIND CPPUNIT
 if(ENABLE_TESTS)
-	find_package(cppunit)
+	find_package(CppUnit)
 
 	if(NOT CPPUNIT_FOUND AND CPPUNIT_INCLUDE_DIR AND CPPUNIT_LIBRARY)
 		set(CCPUNIT_LIBRARIES ${CPPUNIT_LIBRARY})

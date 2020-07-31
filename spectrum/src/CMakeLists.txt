@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp)
 #include_directories(frontends/xmpp)
 
@@ -14,7 +12,9 @@ else()
 	add_executable(spectrum2 ${SRC})
 endif()
 
+if (ENABLE_PURPLE AND PURPLE_FOUND)
 add_dependencies(spectrum2 spectrum2_libpurple_backend)
+endif()
 
 target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
 

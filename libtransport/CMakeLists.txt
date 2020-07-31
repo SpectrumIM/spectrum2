@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp *.h)
 file(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 
