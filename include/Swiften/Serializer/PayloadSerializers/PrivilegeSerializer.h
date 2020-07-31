@@ -9,8 +9,6 @@
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
 #include <Swiften/Elements/Privilege.h>
 
-#include "Swiften/SwiftenCompat.h"
-
 namespace Swift {
 	class PayloadSerializerCollection;
 
@@ -19,7 +17,7 @@ namespace Swift {
 		PrivilegeSerializer(PayloadSerializerCollection* serializers);
 		virtual ~PrivilegeSerializer();
 
-		virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege>) const;
+		virtual std::string serializePayload(std::shared_ptr<Privilege>) const;
 
 	private:
 		PayloadSerializerCollection* serializers_;

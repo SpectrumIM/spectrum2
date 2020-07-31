@@ -50,7 +50,6 @@
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #include "basictest.h"
 

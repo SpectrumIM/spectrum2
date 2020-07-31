@@ -104,7 +104,7 @@ bool HTTPRequest::GET(std::string url, Json::Value &json) {
 	}
 
 	Json::CharReaderBuilder rbuilder;
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
+	std::shared_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
 	if (!reader->parse(m_data.c_str(), m_data.c_str() + m_data.size(), &json, NULL)) {
 		LOG4CXX_ERROR(httpRequestLogger, "Error while parsing JSON");
 	        LOG4CXX_ERROR(httpRequestLogger, m_data);

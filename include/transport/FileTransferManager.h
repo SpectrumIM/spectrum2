@@ -19,8 +19,6 @@
  */
 
 #pragma once
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 #include <Swiften/Elements/StreamInitiationFileInfo.h>
 #include <Swiften/FileTransfer/CombinedOutgoingFileTransferManager.h>
@@ -29,15 +27,8 @@
 #include <Swiften/FileTransfer/SOCKS5BytestreamServer.h>
 
 
-#if HAVE_SWIFTEN_3
 #include <Swiften/FileTransfer/SOCKS5BytestreamProxiesManager.h>
 #include <Swiften/FileTransfer/SOCKS5BytestreamServerManager.h>
-#else
-#include <Swiften/FileTransfer/ConnectivityManager.h>
-#include <Swiften/FileTransfer/DefaultLocalJingleTransportCandidateGeneratorFactory.h>
-#include <Swiften/FileTransfer/DefaultRemoteJingleTransportCandidateSelectorFactory.h>
-#include <Swiften/FileTransfer/SOCKS5BytestreamProxy.h>
-#endif
 
 namespace Transport {
 
@@ -49,16 +40,16 @@ class Buddy;
 class FileTransferManager {
 	public:
 		typedef struct Transfer {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::OutgoingFileTransfer> ft;
+			std::shared_ptr<Swift::OutgoingFileTransfer> ft;
 			Swift::JID from;
 			Swift::JID to;
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ReadBytestream> readByteStream;
+			std::shared_ptr<Swift::ReadBytestream> readByteStream;
 		} Transfer;
 
 		FileTransferManager(Component *component, UserManager *userManager);
 		virtual ~FileTransferManager();
 		
-		FileTransferManager::Transfer sendFile(User *user, Buddy *buddy, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info);
+		FileTransferManager::Transfer sendFile(User *user, Buddy *buddy, std::shared_ptr<Swift::ReadBytestream> byteStream, const Swift::StreamInitiationFileInfo &info);
 
 	private:
 		Component *m_component;
@@ -68,15 +59,8 @@ class FileTransferManager {
 		Swift::LocalJingleTransportCandidateGeneratorFactory* m_localCandidateGeneratorFactory;
 		Swift::JingleSessionManager *m_jingleSessionManager;
 		Swift::SOCKS5BytestreamRegistry* m_bytestreamRegistry;
-#if HAVE_SWIFTEN_3
 		Swift::SOCKS5BytestreamServerManager* m_proxyServerManager;
 		Swift::SOCKS5BytestreamProxiesManager *m_proxyManager;
-#else
-		Swift::SOCKS5BytestreamServer* m_bytestreamServer;
-		Swift::SOCKS5BytestreamProxy* m_bytestreamProxy;
-		Swift::SOCKS5BytestreamServer *bytestreamServer;
-		Swift::ConnectivityManager* m_connectivityManager;
-#endif
 };
 
 }

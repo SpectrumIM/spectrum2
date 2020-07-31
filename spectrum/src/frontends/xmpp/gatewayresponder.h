@@ -23,7 +23,6 @@
 #include <vector>
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/GatewayPayload.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -35,8 +34,8 @@ class GatewayResponder : public Swift::Responder<Swift::GatewayPayload> {
 		~GatewayResponder();
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GatewayPayload> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::GatewayPayload> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::GatewayPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::GatewayPayload> payload);
 		UserManager *m_userManager;
 };
 

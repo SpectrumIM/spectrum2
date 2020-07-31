@@ -39,15 +39,9 @@ WebSocketClient::WebSocketClient(Component *component, const std::string &user) 
 	m_upgraded = false;
 	m_user = user;
 
-#if HAVE_SWIFTEN_3
 	Swift::TLSOptions o;
-#endif
 	m_tlsFactory = new Swift::PlatformTLSFactories();
-#if HAVE_SWIFTEN_3
 	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory(), o);
-#else
-	m_tlsConnectionFactory = new Swift::TLSConnectionFactory(m_tlsFactory->getTLSContextFactory(), component->getNetworkFactories()->getConnectionFactory());
-#endif
 
 	m_reconnectTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1000);
 	m_reconnectTimer->onTick.connect(boost::bind(&WebSocketClient::connectServer, this));
@@ -129,7 +123,7 @@ void WebSocketClient::write(const std::string &data) {
 	LOG4CXX_INFO(logger, m_user << ": > " << data);
 }
 
-void WebSocketClient::handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
+void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
 	std::string d = Swift::safeByteArrayToString(*data);
 	m_buffer += d;
 

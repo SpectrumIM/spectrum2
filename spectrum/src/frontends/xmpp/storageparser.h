@@ -2,7 +2,6 @@
 
 #include <boost/optional.hpp>
 
-#include "Swiften/SwiftenCompat.h"
 #include "Swiften/Elements/PrivateStorage.h"
 #include "Swiften/Parser/GenericPayloadParser.h"
 
@@ -19,6 +18,6 @@ namespace Transport {
 
 		private:
 			int level;
-			SWIFTEN_UNIQUE_PTR<Swift::PayloadParser> currentPayloadParser;
+            std::unique_ptr<Swift::PayloadParser> currentPayloadParser;
 	};
 }

@@ -41,14 +41,14 @@ unsigned long MemoryReadBytestream::appendData(const std::string &data) {
 	return m_data.size();
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<std::vector<unsigned char> > MemoryReadBytestream::read(size_t size) {
+std::shared_ptr<std::vector<unsigned char> > MemoryReadBytestream::read(size_t size) {
 	if (m_data.empty()) {
 		onDataNeeded();
-		return SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>());
+		return std::shared_ptr<std::vector<unsigned char> >(new std::vector<unsigned char>());
 	}
 
 	if (m_data.size() < size) {
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.end()));
+		std::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.end()));
 		m_sent += m_data.size();
 		m_data.clear();
 		if (m_sent == m_size)
@@ -56,7 +56,7 @@ SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<std::vector<unsigned char> > MemoryReadByte
 		onDataNeeded();
 		return ptr;
 	}
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.begin() + size));
+	std::shared_ptr<std::vector<unsigned char> > ptr(new std::vector<unsigned char>(m_data.begin(), m_data.begin() + size));
 	m_data.erase(m_data.begin(), m_data.begin() + size);
 	m_sent += size;
 	if (m_sent == m_size)

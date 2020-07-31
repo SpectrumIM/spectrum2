@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-
-#include "Swiften/SwiftenCompat.h"
+#include <boost/signals2.hpp>
 
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include <Swiften/FileTransfer/ReadBytestream.h>
@@ -20,7 +18,6 @@
 #include <Swiften/Elements/ErrorPayload.h>
 #include <Swiften/FileTransfer/IBBSendSession.h>
 #include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Swift {
 	class IQRouter;
@@ -29,13 +26,13 @@ namespace Swift {
 
 	class MyOutgoingSIFileTransfer : public OutgoingFileTransfer {
 		public:
-			MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry);
+			MyOutgoingSIFileTransfer(const std::string& id, const JID& from, const JID& to, const std::string& name, int size, const std::string& description, std::shared_ptr<ReadBytestream> bytestream, IQRouter* iqRouter, SOCKS5BytestreamServer* socksServer, SOCKS5BytestreamRegistry* registry);
 
 			virtual void start();
 			virtual void stop();
 			virtual void cancel();
 
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const boost::optional<FileTransferError>&)> onFinished;
+			boost::signals2::signal<void (const boost::optional<FileTransferError>&)> onFinished;
 
 		private:
 			void handleStreamInitiationRequestResponse(StreamInitiation::ref, ErrorPayload::ref);
@@ -50,10 +47,10 @@ namespace Swift {
 			std::string name;
 			int size;
 			std::string description;
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ReadBytestream> bytestream;
+			std::shared_ptr<ReadBytestream> bytestream;
 			IQRouter* iqRouter;
 			SOCKS5BytestreamServer* socksServer;
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<IBBSendSession> ibbSession;
+			std::shared_ptr<IBBSendSession> ibbSession;
 			SOCKS5BytestreamRegistry *registry;
 	};
 }

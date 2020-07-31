@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Swiften/Swiften.h"
-#include "Swiften/SwiftenCompat.h"
 
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
@@ -25,11 +24,11 @@ class Plugin : public Transport::NetworkPlugin {
 
 	private:
 		// This method has to call handleDataRead with all received data from network plugin server
-		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
+		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data);
 
 	private:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::Connection> m_conn;
 		Transport::Config *config;
 };

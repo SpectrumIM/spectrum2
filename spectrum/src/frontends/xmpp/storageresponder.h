@@ -24,7 +24,6 @@
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Elements/PrivateStorage.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -37,8 +36,8 @@ class StorageResponder : public Swift::Responder<Swift::PrivateStorage> {
 		~StorageResponder();
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::PrivateStorage> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::PrivateStorage> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::PrivateStorage> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::PrivateStorage> payload);
 		StorageBackend *m_storageBackend;
 		UserManager *m_userManager;
 };

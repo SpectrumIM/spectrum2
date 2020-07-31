@@ -41,9 +41,9 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 		}
 
 		void getItems() {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
+			std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
 			payload->setNode("http://jabber.org/protocol/commands");
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -57,9 +57,9 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 		}
 
 		void getInfo() {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+			std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
 			payload->setNode("settings");
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -73,9 +73,9 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 		}
 
 		void getInfoBare() {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
+			std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
 			payload->setNode("http://jabber.org/protocol/commands");
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -89,8 +89,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 		}
 
 		void executeNotRegistered() {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -107,8 +107,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 		void execute() {
 			addUser();
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -128,11 +128,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			// set enabled_transport = 0
 			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("enable_transport");
-#if (SWIFTEN_VERSION >= 0x030000)
 			f->setBoolValue(false);
-#else
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(false);
-#endif
 
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
 
@@ -144,7 +140,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			}
 
 			// finish the command
-			payload = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload = std::shared_ptr<Swift::Command>(new Swift::Command("settings"));
 			payload->setSessionID(sessionId);
 			payload->setForm(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
 			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
@@ -171,7 +167,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			received.clear();
 
-			payload = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload = std::shared_ptr<Swift::Command>(new Swift::Command("settings"));
 			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
@@ -192,17 +188,13 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			// set enabled_transport = 0
 			f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("enable_transport");
-#if (SWIFTEN_VERSION >= 0x030000)
 			CPPUNIT_ASSERT_EQUAL(false, f->getBoolValue());
-#else
-			CPPUNIT_ASSERT_EQUAL(false, SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
-#endif
 		}
 
 		void executeTwoCommands() {
 			addUser();
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -221,7 +213,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm()->getField("enable_transport"));
 
 			received.clear();
-			payload = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload = std::shared_ptr<Swift::Command>(new Swift::Command("settings"));
 			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
@@ -243,8 +235,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 		void executeBadSessionID() {
 			addUser();
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -263,7 +255,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			std::string sessionId = "somethingwrong";
 
 			// finish the command
-			payload = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload = std::shared_ptr<Swift::Command>(new Swift::Command("settings"));
 			payload->setSessionID(sessionId);
 			payload->setForm(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
 			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
@@ -279,8 +271,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 		void cancel() {
 			addUser();
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -299,7 +291,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
 
 			// cancel the command
-			payload = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload = std::shared_ptr<Swift::Command>(new Swift::Command("settings"));
 			payload->setSessionID(sessionId);
 			payload->setAction(Swift::Command::Cancel);
 			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
@@ -323,8 +315,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			User *user = userManager->getUser("user@localhost");
 			CPPUNIT_ASSERT_EQUAL(std::string("0"), user->getUserSetting("send_headlines"));
 
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -344,16 +336,12 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 
 			// set enabled_transport = 0
 			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("send_headlines");
-#if (SWIFTEN_VERSION >= 0x030000)
 			f->setBoolValue(true);
-#else
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->setValue(true);
-#endif
 
 			std::string sessionId = getStanza(received[0])->getPayload<Swift::Command>()->getSessionID();
 
 			// finish the command
-			payload = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command>(new Swift::Command("settings"));
+			payload = std::shared_ptr<Swift::Command>(new Swift::Command("settings"));
 			payload->setSessionID(sessionId);
 			payload->setForm(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
 			iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
@@ -371,8 +359,8 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
 			CPPUNIT_ASSERT_EQUAL(std::string("1"), user->getUserSetting("send_headlines"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
+			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
+			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");
 			injectIQ(iq);
 			loop->processEvents();
@@ -390,11 +378,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm());
 			CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Command>()->getForm()->getField("send_headlines"));
 			Swift::FormField::ref f = getStanza(received[0])->getPayload<Swift:: Command>()->getForm()->getField("send_headlines");
-#if (SWIFTEN_VERSION >= 0x030000)
 			CPPUNIT_ASSERT_EQUAL(true, f->getBoolValue());
-#else
-			CPPUNIT_ASSERT_EQUAL(true, SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::BooleanFormField>(f)->getValue());
-#endif
 		}
 
 };

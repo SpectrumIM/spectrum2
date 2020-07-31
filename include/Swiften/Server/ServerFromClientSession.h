@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <boost/signals2.hpp>
 
 #include <string>
 #include <Swiften/Session/Session.h>
@@ -15,10 +14,6 @@
 #include <Swiften/Network/Connection.h>
 #include <Swiften/Base/ByteArray.h>
 #include <Swiften/TLS/CertificateWithKey.h>
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class ProtocolHeader;
@@ -39,7 +34,7 @@ namespace Swift {
 		public:
 			ServerFromClientSession(
 					const std::string& id,
-					SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection,
+					std::shared_ptr<Connection> connection,
 					PayloadParserFactoryCollection* payloadParserFactories, 
 					PayloadSerializerCollection* payloadSerializers,
 					UserRegistry* userRegistry,
@@ -47,7 +42,7 @@ namespace Swift {
 					Swift::JID remoteJID = Swift::JID());
 			~ServerFromClientSession();
 
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onSessionStarted;
+			boost::signals2::signal<void ()> onSessionStarted;
 			void setAllowSASLEXTERNAL();
 			const std::string &getUser() {
 				return user_;
@@ -63,11 +58,7 @@ namespace Swift {
 			void handlePasswordInvalid(const std::string &error = "");
 
 		private:
-#if HAVE_SWIFTEN_3
-			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ToplevelElement>);
-#else		
-			void handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element>);
-#endif
+			void handleElement(std::shared_ptr<ToplevelElement>);
 			void handleStreamStart(const ProtocolHeader& header);
 			void handleSessionFinished(const boost::optional<SessionError>&);
 

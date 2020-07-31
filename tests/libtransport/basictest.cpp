@@ -4,7 +4,6 @@
 #include "XMPPUserManager.h"
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
-#include <Swiften/Version.h>
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
 #include <Swiften/Server/Server.h>
@@ -16,9 +15,7 @@
 
 #include "Swiften/Serializer/GenericPayloadSerializer.h"
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
-#if SWIFTEN_VERSION >= 0x030000
 #include "Swiften/Parser/GenericPayloadParserFactory2.h"
-#endif
 
 #include "storageparser.h"
 #include "Swiften/Parser/PayloadParsers/AttentionParser.h"
@@ -37,10 +34,8 @@
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 #include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
 #include "Swiften/Serializer/PayloadSerializers/HintPayloadSerializer.h"
-#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 #include "Swiften/Parser/PayloadParsers/PrivilegeParser.h"
 #include "Swiften/Serializer/PayloadSerializers/PrivilegeSerializer.h"
-#endif
 
 using namespace Transport;
 
@@ -83,9 +78,7 @@ void BasicTest::setMeUp (void) {
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
-#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", payloadParserFactories));
-#endif
 
 	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
 		payloadParserFactories->addFactory(factory);
@@ -99,9 +92,7 @@ void BasicTest::setMeUp (void) {
 	_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());
 	_payloadSerializers.push_back(new Swift::GatewayPayloadSerializer());
 	_payloadSerializers.push_back(new Swift::HintPayloadSerializer());
-#ifdef SWIFTEN_SUPPORTS_PRIVILEGE
 	_payloadSerializers.push_back(new Swift::PrivilegeSerializer(payloadSerializers));
-#endif
 
 	BOOST_FOREACH(Swift::PayloadSerializer *serializer, _payloadSerializers) {
 		payloadSerializers->addSerializer(serializer);
@@ -110,7 +101,7 @@ void BasicTest::setMeUp (void) {
 	parser = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
 	parser2 = new Swift::XMPPParser(this, payloadParserFactories, factories->getXMLParserFactory());
 
-	serverFromClientSession = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
+	serverFromClientSession = std::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
 			payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource")));
 	serverFromClientSession->startSession();
 
@@ -187,11 +178,7 @@ void BasicTest::dumpReceived() {
 	std::cout << "Stream2:\n";
 	std::cout << receivedData2 << "\n";
 }
-#if HAVE_SWIFTEN_3
-void BasicTest::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element) {
-#else
-void BasicTest::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element) {
-#endif
+void BasicTest::handleElement(std::shared_ptr<Swift::ToplevelElement> element) {
 	if (stream1_active) {
 		received.push_back(element);
 	}
@@ -204,19 +191,19 @@ void BasicTest::handleStreamEnd() {
 	streamEnded = true;
 }
 
-void BasicTest::injectPresence(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> &response) {
+void BasicTest::injectPresence(std::shared_ptr<Swift::Presence> &response) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onPresenceReceived(response);
 }
 
-void BasicTest::injectIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
+void BasicTest::injectIQ(std::shared_ptr<Swift::IQ> iq) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onIQReceived(iq);
 }
 
-void BasicTest::injectMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg) {
+void BasicTest::injectMessage(std::shared_ptr<Swift::Message> msg) {
 	dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend *>(component->getFrontend())->getStanzaChannel())->onMessageReceived(msg);
 }
 
-Swift::Stanza *BasicTest::getStanza(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element) {
+Swift::Stanza *BasicTest::getStanza(std::shared_ptr<Swift::Element> element) {
 	Swift::Stanza *stanza = dynamic_cast<Swift::Stanza *>(element.get());
 	CPPUNIT_ASSERT(stanza);
 	return stanza;
@@ -248,7 +235,7 @@ void BasicTest::connectUser() {
 }
 
 void BasicTest::connectSecondResource() {
-	serverFromClientSession2 = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
+	serverFromClientSession2 = std::shared_ptr<Swift::ServerFromClientSession>(new Swift::ServerFromClientSession("id", factories->getConnectionFactory()->createConnection(),
 			payloadParserFactories, payloadSerializers, userRegistry, factories->getXMLParserFactory(), Swift::JID("user@localhost/resource2")));
 	serverFromClientSession2->startSession();
 

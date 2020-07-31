@@ -21,6 +21,9 @@
 #pragma once
 
 #include <time.h>
+
+#include <boost/signals2.hpp>
+
 #include "transport/StorageBackend.h"
 #include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include "Swiften/Elements/SpectrumErrorPayload.h"
@@ -30,7 +33,6 @@
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Network/Connection.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -90,7 +92,7 @@ class User {
 
 		void handleSubscription(Swift::Presence::ref presence);
 
-		void handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info);
+		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
 
 		time_t &getLastActivity() {
 			return m_lastActivity;
@@ -148,12 +150,12 @@ class User {
 
 		void leaveRoom(const std::string &room);
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onReadyToConnect;
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &room)> onRoomLeft;
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onDisconnected;
+		boost::signals2::signal<void ()> onReadyToConnect;
+		boost::signals2::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
+		boost::signals2::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
+		boost::signals2::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		boost::signals2::signal<void (const std::string &room)> onRoomLeft;
+		boost::signals2::signal<void ()> onDisconnected;
 
 	private:
 		void onConnectingTimeout();
@@ -170,10 +172,10 @@ class User {
 		bool m_readyForConnect;
 		bool m_ignoreDisconnect;
 		Swift::Timer::ref m_reconnectTimer;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> connection;
+		std::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
-		std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
+		std::vector<std::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
 		int m_reconnectCounter;
 		std::list<Swift::Presence::ref> m_joinedRooms;

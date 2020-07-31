@@ -85,11 +85,11 @@ class NetworkConversation : public Conversation {
 		}
 
 		// Called when there's new message to legacy network from XMPP network
-		void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &message) {
+		void sendMessage(std::shared_ptr<Swift::Message> &message) {
 			onMessageToSend(this, message);
 		}
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (NetworkConversation *, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &)> onMessageToSend;
+		boost::signals2::signal<void (NetworkConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class NetworkFactory : public Factory {
@@ -272,11 +272,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_firstPong = true;
 	m_xmppParser = new Swift::XMPPParser(this, &m_collection, component->getNetworkFactories()->getXMLParserFactory());
 	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
-#if HAVE_SWIFTEN_3
 	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType, false);
-#else
-	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType);
-#endif
 	m_component->m_factory = new NetworkFactory(this);
 	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
 	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
@@ -308,7 +304,7 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 // // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
 // // 	m_blockResponder->start();
 
-	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(SWIFT_HOSTADDRESS(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1")), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
+	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(*(Swift::HostAddress::fromString(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1"))), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 }
 
@@ -391,7 +387,7 @@ void NetworkPluginServer::loginDelayFinished() {
 	connectWaitingUsers();
 }
 
-void NetworkPluginServer::handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> c) {
+void NetworkPluginServer::handleNewClientConnection(std::shared_ptr<Swift::Connection> c) {
 	// Create new Backend instance
 	Backend *client = new Backend;
 	client->pongReceived = -1;
@@ -497,7 +493,7 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 	}
 	std::string field;
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
+	std::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
 
 	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), std::back_inserter(field), '_');
 	vcard->setFullName(field);
@@ -561,8 +557,8 @@ void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift:
 	}
 
 	// Forward chatstate
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(type));
+	std::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->addPayload(std::make_shared<Swift::ChatState>(type));
 
 	conv->handleMessage(msg);
 }
@@ -712,7 +708,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 
 	// Convert payload to Swift::Message
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+	std::shared_ptr<Swift::Message> msg(new Swift::Message());
 	if (subject) {
 		msg->setSubject(payload.message());
 	}
@@ -722,12 +718,12 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 
 	// Add xhtml-im payload.
 	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
-		msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
+		msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
 	// Split the message if configured, or just preprocess
 	LOG4CXX_TRACE(logger, "handleConvMessagePayload: wrapping media");
-	typedef std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > MsgList;
+	typedef std::vector<std::shared_ptr<Swift::Message> > MsgList;
 	MsgList msgs = wrapIncomingMedia(msg);
 
 	// Forward all parts
@@ -736,11 +732,11 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 			(*it)->setType(Swift::Message::Headline);
 		}
 
-		(*it)->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::ChatState>(Swift::ChatState::Active));
+		(*it)->addPayload(std::make_shared<Swift::ChatState>(Swift::ChatState::Active));
 
 		if (!payload.timestamp().empty()) {
 			boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Delay> delay(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::Delay>());
+			std::shared_ptr<Swift::Delay> delay(std::make_shared<Swift::Delay>());
 			delay->setStamp(timestamp);
 			(*it)->addPayload(delay);
 		}
@@ -768,8 +764,8 @@ void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
 		return;
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::DeliveryReceipt>(payload.id()));
+	std::shared_ptr<Swift::Message> msg(new Swift::Message());
+	msg->addPayload(std::make_shared<Swift::DeliveryReceipt>(payload.id()));
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
 
@@ -793,9 +789,9 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+	std::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->setBody(payload.message());
-	msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::AttentionPayload>());
+	msg->addPayload(std::make_shared<Swift::AttentionPayload>());
 
 	// Attentions trigger new Conversation creation
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
@@ -845,7 +841,7 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	fileInfo.setName(payload.filename());
 
 	Backend *c = (Backend *) user->getData();
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream(payload.size()));
+	std::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream(payload.size()));
 	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, c, bytestream_id + 1));
 
 	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());
@@ -857,10 +853,6 @@ void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
 	}
 
 	m_filetransfers[++bytestream_id] = transfer;
-#if !HAVE_SWIFTEN_3
-	transfer.ft->onStateChange.connect(boost::bind(&NetworkPluginServer::handleFTStateChanged, this, _1, payload.username(), payload.buddyname(), payload.filename(), payload.size(), bytestream_id));
-	transfer.ft->start();
-#endif
 }
 
 void NetworkPluginServer::handleFTFinishPayload(const std::string &data) {
@@ -980,16 +972,12 @@ void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data
 		return;
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+	std::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->setBody(payload.config());
 	m_adminInterface->handleQuery(msg);
 
 	pbnetwork::BackendConfig response;
-#if HAVE_SWIFTEN_3
 	response.set_config(msg->getBody().get_value_or(""));
-#else
-	response.set_config(msg->getBody());
-#endif
 
 	std::string message;
 	response.SerializeToString(&message);
@@ -1035,12 +1023,8 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 		}
 	}
 }
-#if HAVE_SWIFTEN_3
-void NetworkPluginServer::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement> element) {
-#else
-void NetworkPluginServer::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element> element) {
-#endif
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Stanza> stanza = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::Stanza>(element);
+void NetworkPluginServer::handleElement(std::shared_ptr<Swift::ToplevelElement> element) {
+	std::shared_ptr<Swift::Stanza> stanza = std::dynamic_pointer_cast<Swift::Stanza>(element);
 	if (!stanza) {
 		return;
 	}
@@ -1087,7 +1071,7 @@ void NetworkPluginServer::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swi
 		}
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::Message>(stanza);
+	std::shared_ptr<Swift::Message> message = std::dynamic_pointer_cast<Swift::Message>(stanza);
 	if (message) {
 		if (conv) {
 			conv->handleRawMessage(message);
@@ -1098,7 +1082,7 @@ void NetworkPluginServer::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swi
 		return;
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> presence = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::Presence>(stanza);
+	std::shared_ptr<Swift::Presence> presence = std::dynamic_pointer_cast<Swift::Presence>(stanza);
 	if (presence) {
 		if (buddy) {
 			if (!buddy->isAvailable() && presence->getType() != Swift::Presence::Unavailable) {
@@ -1117,7 +1101,7 @@ void NetworkPluginServer::handleElement(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swi
 	}
 
 	// TODO: Move m_id2resource in User and clean it up
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::IQ>(stanza);
+	std::shared_ptr<Swift::IQ> iq = std::dynamic_pointer_cast<Swift::IQ>(stanza);
 	if (iq) {
 		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
 			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
@@ -1140,7 +1124,7 @@ void NetworkPluginServer::handleRawXML(const std::string &xml) {
 	m_xmppParser->parse(xml);
 }
 
-void NetworkPluginServer::handleRawPresenceReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Presence> presence) {
+void NetworkPluginServer::handleRawPresenceReceived(std::shared_ptr<Swift::Presence> presence) {
 	if (!CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
 		return;
 	}
@@ -1167,7 +1151,7 @@ void NetworkPluginServer::handleRawPresenceReceived(SWIFTEN_SHRPTR_NAMESPACE::sh
 	send(c->connection, xml);
 }
 
-void NetworkPluginServer::handleRawIQReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ> iq) {
+void NetworkPluginServer::handleRawIQReceived(std::shared_ptr<Swift::IQ> iq) {
 	User *user = m_userManager->getUser(iq->getFrom().toBare());
 	if (!user)
 		return;
@@ -1194,7 +1178,7 @@ void NetworkPluginServer::handleRawIQReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_p
 	send(c->connection, xml);
 }
 
-void NetworkPluginServer::handleDataRead(Backend *c, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data) {
+void NetworkPluginServer::handleDataRead(Backend *c, std::shared_ptr<Swift::SafeByteArray> data) {
 	// Append data to buffer
 	c->data.insert(c->data.end(), data->begin(), data->end());
 
@@ -1314,7 +1298,7 @@ void NetworkPluginServer::handleDataRead(Backend *c, SWIFTEN_SHRPTR_NAMESPACE::s
 	}
 }
 
-void NetworkPluginServer::send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> &c, const std::string &data) {
+void NetworkPluginServer::send(std::shared_ptr<Swift::Connection> &c, const std::string &data) {
 	// generate header - size of wrapper message
 	uint32_t size = htonl(data.size());
 	char *header = (char *) &size;
@@ -1651,7 +1635,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	}
 }
 
-void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> &msg) {
+void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, std::shared_ptr<Swift::Message> &msg) {
 	conv->getConversationManager()->getUser()->updateLastActivity();
 
 	if (CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
@@ -1672,7 +1656,7 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, SWIFT
 		return;
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
+	std::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
 	if (statePayload) {
 		pbnetwork::WrapperMessage_Type type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED;
 		switch (statePayload->getChatState()) {
@@ -1706,16 +1690,12 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, SWIFT
 		}
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::AttentionPayload> attentionPayload = msg->getPayload<Swift::AttentionPayload>();
+	std::shared_ptr<Swift::AttentionPayload> attentionPayload = msg->getPayload<Swift::AttentionPayload>();
 	if (attentionPayload) {
 		pbnetwork::ConversationMessage m;
 		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 		m.set_buddyname(conv->getLegacyName());
-#if HAVE_SWIFTEN_3
 		m.set_message(msg->getBody().get_value_or(""));
-#else
-		m.set_message(msg->getBody());
-#endif
 
 		std::string message;
 		m.SerializeToString(&message);
@@ -1745,24 +1725,20 @@ void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, SWIFT
 	
 
 	std::string xhtml;
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload = msg->getPayload<Swift::XHTMLIMPayload>();
+	std::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload = msg->getPayload<Swift::XHTMLIMPayload>();
 	if (xhtmlPayload) {
 		xhtml = xhtmlPayload->getBody();
 	}
 
 	// Send normal message
-#if HAVE_SWIFTEN_3
 	std::string body = msg->getBody().get_value_or("");
-#else
-	std::string body = msg->getBody();
-#endif
 	if (!body.empty() || !xhtml.empty()) {
 		pbnetwork::ConversationMessage m;
 		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
 		m.set_buddyname(conv->getLegacyName());
 		m.set_message(body);
 		m.set_xhtml(xhtml);
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DeliveryReceiptRequest> receiptPayload = msg->getPayload<Swift::DeliveryReceiptRequest>();
+		std::shared_ptr<Swift::DeliveryReceiptRequest> receiptPayload = msg->getPayload<Swift::DeliveryReceiptRequest>();
 		if (receiptPayload && !msg->getID().empty()) {
 			m.set_id(msg->getID());
 		}
@@ -1847,7 +1823,7 @@ Swift::Message::ref copySwiftMessage(const Swift::Message* msg, const std::strin
     }
     //Add new body and XHTML tags
     this_msg->setBody(body);
-    this_msg->addPayload(SWIFTEN_SHRPTR_NAMESPACE::make_shared<Swift::XHTMLIMPayload>(xhtml));
+    this_msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(xhtml));
     LOG4CXX_TRACE(logger, "Adding partial message: '" << xhtml << "', '" << body << "'");
     return this_msg;
 }
@@ -1867,11 +1843,11 @@ enum OobMode {
 	OobSplit	= 3,	//3. Split into multiple text-only/media-only messages.
 };
 
-std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> >
-NetworkPluginServer::wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>& msg) {
-    std::vector<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> > result;
+std::vector<std::shared_ptr<Swift::Message> >
+NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
+    std::vector<std::shared_ptr<Swift::Message> > result;
 
-    SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload =
+    std::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload =
         msg->getPayload<Swift::XHTMLIMPayload>();
     if (!xhtmlPayload) { //XHTML not available or disabled
         result.push_back(msg);
@@ -1939,7 +1915,7 @@ NetworkPluginServer::wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
         }
 
         //Now the match
-        SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> this_msg;
+        std::shared_ptr<Swift::Message> this_msg;
         if (oobMode == OobSplit) {
             this_msg = copySwiftMessage(msg.get(), image_tag, image_url);
             result.push_back(this_msg);
@@ -1948,7 +1924,7 @@ NetworkPluginServer::wrapIncomingMedia(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swif
         }
 
         //Add OOB tag
-        SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RawXMLPayload>
+        std::shared_ptr<Swift::RawXMLPayload>
             oob_payload(new Swift::RawXMLPayload(
                 "<x xmlns='jabber:x:oob'><url>"
                 + image_url
@@ -2076,7 +2052,7 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 }
 
 
-void NetworkPluginServer::handleVCardUpdated(User *user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> v) {
+void NetworkPluginServer::handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> v) {
 	if (!v) {
 		LOG4CXX_INFO(logger, user->getJID().toString() << ": Received empty VCard");
 		return;
@@ -2165,14 +2141,6 @@ void NetworkPluginServer::handleFTStateChanged(Swift::FileTransfer::State state,
 		// TODO: FIXME We have to remove filetransfer when use disconnects
 		return;
 	}
-#if !HAVE_SWIFTEN_3
-	if (state.state == Swift::FileTransfer::State::Transferring) {
-		handleFTAccepted(user, buddyName, fileName, size, id);
-	}
-	else if (state.state == Swift::FileTransfer::State::Canceled) {
-		handleFTRejected(user, buddyName, fileName, size);
-	}
-#endif
 }
 
 void NetworkPluginServer::sendPing(Backend *c) {

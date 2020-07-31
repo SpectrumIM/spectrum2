@@ -68,13 +68,13 @@ class SlackRTM {
 
 		void sendMessage(const std::string &channel, const std::string &message);
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onRTMStarted;
+		boost::signals2::signal<void ()> onRTMStarted;
 
 		SlackAPI *getAPI() {
 			return m_api;
 		}
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
+		boost::signals2::signal<void (const std::string &channel, const std::string &user, const std::string &text, const std::string &ts)> onMessageReceived;
 
 #ifndef LIBTRANSPORT_TEST
 	private:

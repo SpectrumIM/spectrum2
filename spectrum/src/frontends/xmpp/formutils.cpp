@@ -20,126 +20,54 @@
 
 #include "formutils.h"
 #include "adhoccommand.h"
-
-#include "Swiften/SwiftenCompat.h"
-
-#if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>
-#endif
 
 using namespace Swift;
 
 namespace Transport {
 namespace FormUtils {
 
-static 
-#if HAVE_SWIFTEN_3
-FormField::ref
-#else
-HiddenFormField::ref
-#endif
-createHiddenField(const std::string &name, const std::string &value) {
-#if HAVE_SWIFTEN_3
-	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::HiddenType, value);
-#else
-	HiddenFormField::ref field = HiddenFormField::create();
-	field->setValue(value);
-#endif
+static FormField::ref createHiddenField(const std::string &name, const std::string &value) {
+	FormField::ref field = std::make_shared<FormField>(FormField::HiddenType, value);
 	field->setName(name);
 	return field;
 }
 
-static 
-#if HAVE_SWIFTEN_3
-FormField::ref
-#else
-TextSingleFormField::ref
-#endif
-createTextSingleField(const std::string &name, const std::string &value, const std::string &label, bool required) {
-#if HAVE_SWIFTEN_3
-	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::TextSingleType, value);
-#else
-	TextSingleFormField::ref field = TextSingleFormField::create();
-	field->setValue(value);
-#endif
+static FormField::ref createTextSingleField(const std::string &name, const std::string &value, const std::string &label, bool required) {
+	FormField::ref field = std::make_shared<FormField>(FormField::TextSingleType, value);
 	field->setName(name);
 	field->setLabel(label);
 	field->setRequired(required);
 	return field;
 }
 
-static 
-#if HAVE_SWIFTEN_3
-FormField::ref
-#else
-TextPrivateFormField::ref
-#endif
-createTextPrivateField(const std::string &name, const std::string &label, bool required) {
-#if HAVE_SWIFTEN_3
-	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::TextPrivateType);
-#else
-	TextPrivateFormField::ref field = TextPrivateFormField::create();
-#endif
+static FormField::ref createTextPrivateField(const std::string &name, const std::string &label, bool required) {
+	FormField::ref field = std::make_shared<FormField>(FormField::TextPrivateType);
 	field->setName(name);
 	field->setLabel(label);
 	field->setRequired(required);
 	return field;
 }
 
-static 
-#if HAVE_SWIFTEN_3
-FormField::ref
-#else
-ListSingleFormField::ref
-#endif
-createListSingleField(const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
-#if HAVE_SWIFTEN_3
-	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::ListSingleType);
-#else
-	ListSingleFormField::ref field = ListSingleFormField::create();
-#endif
+static FormField::ref createListSingleField(const std::string &name, Swift::FormField::Option value, const std::string &label, const std::string &def, bool required) {
+	FormField::ref field = std::make_shared<FormField>(FormField::ListSingleType);
 	field->setName(name);
 	field->setLabel(label);
 	field->addOption(value);
-#if HAVE_SWIFTEN_3
 	field->addValue(def);
-#else
-	field->setValue(def);
-#endif
 	return field;
 }
 
-static 
-#if HAVE_SWIFTEN_3
-FormField::ref
-#else
-BooleanFormField::ref
-#endif
-createBooleanField(const std::string &name, const std::string &value, const std::string &label, bool required) {
-#if HAVE_SWIFTEN_3
-	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::BooleanType, value);
-#else
-	BooleanFormField::ref field = BooleanFormField::create();
-	field->setValue(value == "1");
-#endif
+static FormField::ref createBooleanField(const std::string &name, const std::string &value, const std::string &label, bool required) {
+	FormField::ref field = std::make_shared<FormField>(FormField::BooleanType, value);
 	field->setName(name);
 	field->setLabel(label);
 	field->setRequired(required);
 	return field;
 }
 
-static 
-#if HAVE_SWIFTEN_3
-FormField::ref
-#else
-FixedFormField::ref
-#endif
-createTextFixedField(const std::string &value) {
-#if HAVE_SWIFTEN_3
-	FormField::ref field = SWIFTEN_SHRPTR_NAMESPACE::make_shared<FormField>(FormField::FixedType, value);
-#else
-	FixedFormField::ref field = FixedFormField::create(value);
-#endif
+static FormField::ref createTextFixedField(const std::string &value) {
+	FormField::ref field = std::make_shared<FormField>(FormField::FixedType, value);
 	return field;
 }
 
@@ -169,64 +97,18 @@ void addTextFixedField(Swift::Form::ref form, const std::string &value) {
 
 
 std::string fieldValue(Swift::FormField::ref field) {
-#if HAVE_SWIFTEN_3
 	const std::vector<std::string> values = field->getValues();
 	return values.empty() ? "" : values[0];
-#else
-	TextSingleFormField::ref textSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextSingleFormField>(field);
-	if (textSingle) {
-		return textSingle->getValue();
-	}
-
-	TextPrivateFormField::ref textPrivate = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextPrivateFormField>(field);
-	if (textPrivate) {
-		return textPrivate->getValue();
-	}
-
-	ListSingleFormField::ref listSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<ListSingleFormField>(field);
-	if (listSingle) {
-		return listSingle->getValue();
-	}
-
-	BooleanFormField::ref boolean = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<BooleanFormField>(field);
-	if (boolean) {
-		return boolean->getValue() ? "1" : "0";
-	}
-	
-	return "";
-#endif
 }
 
 std::string fieldValue(Swift::Form::ref form, const std::string &key, const std::string &def) {
 	const std::vector<FormField::ref> fields = form->getFields();
 	for (std::vector<FormField::ref>::const_iterator it = fields.begin(); it != fields.end(); it++) {
-#if HAVE_SWIFTEN_3
 		FormField::ref field = *it;
 		const std::vector<std::string> values = field->getValues();
 		if (field->getName() == key) {
 			return values.empty() ? "" : values[0];
 		}
-#else
-		TextSingleFormField::ref textSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextSingleFormField>(*it);
-		if (textSingle && textSingle->getName() == key) {
-			return textSingle->getValue();
-		}
-
-		TextPrivateFormField::ref textPrivate = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<TextPrivateFormField>(*it);
-		if (textPrivate && textPrivate->getName() == key) {
-			return textPrivate->getValue();
-		}
-
-		ListSingleFormField::ref listSingle = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<ListSingleFormField>(*it);
-		if (listSingle && listSingle->getName() == key) {
-			return listSingle->getValue();
-		}
-
-		BooleanFormField::ref boolean = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<BooleanFormField>(*it);
-		if (boolean && boolean->getName() == key) {
-			return boolean->getValue() ? "1" : "0";
-		}
-#endif
 	}
 
 	return def;

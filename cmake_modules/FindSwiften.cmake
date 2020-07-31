@@ -1,4 +1,4 @@
-FIND_LIBRARY(SWIFTEN_LIBRARY NAMES Swiften Swiften3 Swiften4 HINTS ../lib)
+FIND_LIBRARY(SWIFTEN_LIBRARY NAMES Swiften Swiften4 HINTS ../lib)
 FIND_PATH(SWIFTEN_INCLUDE_DIR NAMES "Swiften/Swiften.h" PATH_SUFFIXES libSwiften Swiften HINTS ../include)
 
 if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
@@ -32,20 +32,8 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 			endif()
 		endforeach(f)
 		
-		# Version
-		execute_process(
-			COMMAND ${SWIFTEN_CONFIG_EXECUTABLE} --version
-			OUTPUT_VARIABLE SWIFTEN_VERSION)
-		string(REGEX REPLACE "[\r\n]"                  " " SWIFTEN_VERSION "${SWIFTEN_VERSION}")
-		string(REGEX REPLACE " +$"                     ""  SWIFTEN_VERSION "${SWIFTEN_VERSION}")
-		string(REGEX REPLACE "swiften-config "          ""  SWIFTEN_VERSION "${SWIFTEN_VERSION}")
-
-		if("${SWIFTEN_VERSION}" STRGREATER "4" AND NOT MSVC)
-			message( STATUS "Found Swiften > 4 requesting C++11")
+		if(NOT MSVC)
 			set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-		endif()
-		if("${SWIFTEN_VERSION}" STRLESS "4")
-			set(CMAKE_CXX_FLAGS "-DBOOST_SIGNALS_NO_DEPRECATION_WARNING ${CMAKE_CXX_FLAGS}")
 		endif()
 		
 		set( SWIFTEN_FOUND 1 )

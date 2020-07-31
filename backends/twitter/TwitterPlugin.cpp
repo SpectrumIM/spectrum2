@@ -21,7 +21,6 @@ const std::string OLD_APP_KEY = "PCWAdQpyyR12ezp2fVwEhw";
 const std::string OLD_APP_SECRET = "EveLmCXJIg2R7BTCpm6OWV8YyX49nI0pxnYXh7JMvDg";
 
 #define abs(x) ((x)<0?-(x):(x))
-#define SHA(x) (Swift::Hexify::hexify(Swift::SHA1::getHash(Swift::createByteArray((x)))))
 
 //Compares two +ve intergers 'a' and 'b' represented as strings
 static int cmp(std::string a, std::string b)
@@ -72,7 +71,7 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 	m_factories = new Swift::BoostNetworkFactories(loop);
 	m_conn = m_factories->getConnectionFactory()->createConnection();
 	m_conn->onDataRead.connect(boost::bind(&TwitterPlugin::_handleDataRead, this, _1));
-	m_conn->connect(Swift::HostAddressPort(SWIFT_HOSTADDRESS(host), port));
+	m_conn->connect(Swift::HostAddressPort(*(Swift::HostAddress::fromString(host)), port));
 
 	tp = new ThreadPool(loop_, 10);
 
@@ -85,10 +84,7 @@ TwitterPlugin::TwitterPlugin(Config *config, Swift::SimpleEventLoop *loop, Stora
 
 	tweet_timer->start();
 	message_timer->start();
-
-#if HAVE_SWIFTEN_3
-		cryptoProvider = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
-#endif
+    cryptoProvider = std::shared_ptr<Swift::CryptoProvider>(Swift::PlatformCryptoProvider::create());
 
 
 	LOG4CXX_INFO(logger, "Starting the plugin.");
@@ -109,7 +105,7 @@ void TwitterPlugin::sendData(const std::string &string)
 }
 
 // Receive date from the NetworkPlugin server and invoke the appropirate payload handler (implement in the NetworkPlugin class)
-void TwitterPlugin::_handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data)
+void TwitterPlugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 {
 	if (m_firstPing) {
 		m_firstPing = false;
@@ -661,11 +657,7 @@ void TwitterPlugin::populateRoster(std::string &user, std::vector<User> &friends
 				std::string lastTweet = friends[i].getLastStatus().getTweet();
 				//LOG4CXX_INFO(logger, user << " - " << SHA(friendAvatars[i]))
 				handleBuddyChanged(user, friends[i].getScreenName(), friends[i].getUserName(), std::vector<std::string>(),
-#if HAVE_SWIFTEN_3
 					pbnetwork::STATUS_ONLINE, lastTweet, Swift::Hexify::hexify(cryptoProvider->getSHA1Hash(Swift::createByteArray(friendAvatars[i]))));
-#else
-								   pbnetwork::STATUS_ONLINE, lastTweet, SHA(friendAvatars[i]));
-#endif
 			}
 			else if(userdb[user].twitterMode == CHATROOM)
 				handleParticipantChanged(user, friends[i].getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
@@ -839,11 +831,7 @@ void TwitterPlugin::createFriendResponse(std::string &user, User &frnd, std::str
 
 	LOG4CXX_INFO(logger, user << " - " << frnd.getScreenName() << ", " << frnd.getProfileImgURL());
 	if(userdb[user].twitterMode == MULTIPLECONTACT) {
-#if HAVE_SWIFTEN_3
 		handleBuddyChanged(user, frnd.getScreenName(), frnd.getUserName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", Swift::byteArrayToString(cryptoProvider->getSHA1Hash(Swift::createByteArray(img))));
-#else
-		handleBuddyChanged(user, frnd.getScreenName(), frnd.getUserName(), std::vector<std::string>(), pbnetwork::STATUS_ONLINE, "", SHA(img));
-#endif
 	} else if(userdb[user].twitterMode == CHATROOM) {
 		handleParticipantChanged(user, frnd.getScreenName(), adminChatRoom, 0, pbnetwork::STATUS_ONLINE);
 	}

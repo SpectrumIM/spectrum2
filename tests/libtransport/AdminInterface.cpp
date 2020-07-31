@@ -5,16 +5,11 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
-#include "Swiften/SwiftenCompat.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Server/ServerFromClientSession.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "BasicSlackTest.h"
 #include "transport/AdminInterface.h"
-
-#if !HAVE_SWIFTEN_3
-#define get_value_or(X) substr()
-#endif
 
 using namespace Transport;
 
@@ -49,7 +44,7 @@ class AdminInterfaceTest : public CPPUNIT_NS :: TestFixture, public BasicSlackTe
 		}
 
 	std::string sendAdminMessage(const std::string &cmd) {
-		Swift::Message::ref msg = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message>(new Swift::Message());
+		Swift::Message::ref msg = std::shared_ptr<Swift::Message>(new Swift::Message());
 		msg->setFrom(Swift::JID("me@localhost"));
 		msg->setTo(Swift::JID("localhost"));
 		msg->setBody(cmd);

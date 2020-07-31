@@ -9,6 +9,7 @@
 #include <string>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/signals2.hpp>
 
 #include "Swiften/Base/String.h"
 #include "Swiften/Network/Connection.h"
@@ -69,7 +70,7 @@ void Server::start() {
 		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(port_);
 	}
 	else {
-		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(SWIFT_HOSTADDRESS(address_), port_);
+		serverFromClientConnectionServer = networkFactories_->getConnectionServerFactory()->createConnectionServer(*(Swift::HostAddress::fromString(address_)), port_);
 	}
 	serverFromClientConnectionServerSignalConnections.push_back(
 		serverFromClientConnectionServer->onNewConnection.connect(
@@ -88,14 +89,14 @@ void Server::stop() {
 
 	stopping = true;
 
-// 	foreach(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
+// 	foreach(std::shared_ptr<ServerFromClientSession> session, serverFromClientSessions) {
 // 		session->finishSession();
 // 	}
 	serverFromClientSessions.clear();
 
 	if (serverFromClientConnectionServer) {
 		serverFromClientConnectionServer->stop();
-		BOOST_FOREACH(SWIFTEN_SIGNAL_CONNECTION_NAMESPACE::connection& connection, serverFromClientConnectionServerSignalConnections) {
+		BOOST_FOREACH(boost::signals2::connection& connection, serverFromClientConnectionServerSignalConnections) {
 			connection.disconnect();
 		}
 		serverFromClientConnectionServerSignalConnections.clear();
@@ -106,9 +107,9 @@ void Server::stop() {
 // 	onStopped(e);
 }
 
-void Server::handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> connection) {
+void Server::handleNewClientConnection(std::shared_ptr<Connection> connection) {
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> serverFromClientSession = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>(
+	std::shared_ptr<ServerFromClientSession> serverFromClientSession = std::shared_ptr<ServerFromClientSession>(
 			new ServerFromClientSession(idGenerator.generateID(), connection, 
 					getPayloadParserFactories(), getPayloadSerializers(), userRegistry_, parserFactory_));
 	//serverFromClientSession->setAllowSASLEXTERNAL();
@@ -138,11 +139,11 @@ void Server::handleDataWritten(const SafeByteArray& data) {
 	onDataWritten(data);
 }
 
-void Server::handleSessionStarted(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) {
+void Server::handleSessionStarted(std::shared_ptr<ServerFromClientSession> session) {
 	dynamic_cast<ServerStanzaChannel *>(stanzaChannel_)->addSession(session);
 }
 
-void Server::handleSessionFinished(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session) {
+void Server::handleSessionFinished(std::shared_ptr<ServerFromClientSession> session) {
 // 	if (!session->getRemoteJID().isValid()) {
 // 		Swift::Presence::ref presence = Swift::Presence::create();
 // 		presence->setFrom(session->getBareJID());

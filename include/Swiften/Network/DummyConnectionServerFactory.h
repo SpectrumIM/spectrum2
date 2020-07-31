@@ -11,8 +11,6 @@
 #include <Swiften/Network/ConnectionServerFactory.h>
 #include <Swiften/Network/DummyConnectionServer.h>
 
-#include "Swiften/SwiftenCompat.h"
-
 namespace Swift {
 	class ConnectionServer;
 
@@ -20,9 +18,9 @@ namespace Swift {
 		public:
 			DummyConnectionServerFactory(EventLoop* eventLoop);
 
-			virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> createConnectionServer(int port);
+			virtual std::shared_ptr<ConnectionServer> createConnectionServer(int port);
 
-			virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> createConnectionServer(const Swift::HostAddress &hostAddress, int port);
+			virtual std::shared_ptr<ConnectionServer> createConnectionServer(const Swift::HostAddress &hostAddress, int port);
 
 		private:
 			EventLoop* eventLoop;

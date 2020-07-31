@@ -4,12 +4,15 @@
  * See Documentation/Licenses/GPLv3.txt for more information.
  */
 
+#pragma once
+
+#include <boost/signals2.hpp>
+
 #include "Swiften/Base/SafeByteArray.h"
 #include "Swiften/StreamStack/StreamLayer.h"
 #include "Swiften/TLS/Certificate.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 #include "Swiften/TLS/CertificateVerificationError.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 	class TLSServerContext;
@@ -25,7 +28,7 @@ namespace Swift {
 			bool setServerCertificate(CertificateWithKey::ref cert);
 
 			Certificate::ref getPeerCertificate() const;
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
+			std::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
 
 			void writeData(const SafeByteArray& data);
 			void handleDataRead(const SafeByteArray& data);
@@ -35,8 +38,8 @@ namespace Swift {
 			}
 
 		public:
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onError;
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onConnected;
+			boost::signals2::signal<void ()> onError;
+			boost::signals2::signal<void ()> onConnected;
 
 		private:
 			TLSServerContext* context;

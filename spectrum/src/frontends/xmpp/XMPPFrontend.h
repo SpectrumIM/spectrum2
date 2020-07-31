@@ -23,8 +23,6 @@
 #include "transport/Frontend.h"
 
 #include <vector>
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 #include "Swiften/Server/Server.h"
 #include "Swiften/Disco/GetDiscoInfoRequest.h"
 #include "Swiften/Disco/EntityCapsManager.h"
@@ -68,20 +66,20 @@ namespace Transport {
 
 			virtual void sendRosterRequest(Swift::RosterPayload::ref, Swift::JID to);
 
-			virtual void sendMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
+			virtual void sendMessage(std::shared_ptr<Swift::Message> message);
 
-			virtual void sendIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>);
+			virtual void sendIQ(std::shared_ptr<Swift::IQ>);
 
 			virtual void reconnectUser(const std::string &user);
 
 			virtual RosterManager *createRosterManager(User *user, Component *component);
 			virtual User *createUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager);
 			virtual UserManager *createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
-			virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to);
+			virtual std::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to);
 			virtual void clearRoomList();
 			virtual void addRoomToRoomList(const std::string &handle, const std::string &name);
 		
-			void handleMessage(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> message);
+			void handleMessage(std::shared_ptr<Swift::Message> message);
 
 
 			Swift::StanzaChannel *getStanzaChannel();
@@ -105,11 +103,11 @@ namespace Transport {
 			void handleDataRead(const Swift::SafeByteArray &data);
 			void handleDataWritten(const Swift::SafeByteArray &data);
 
-			void handleDiscoInfoResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+			void handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
 			void handleBackendConfigChanged();
-			bool handleIQ(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>);
+			bool handleIQ(std::shared_ptr<Swift::IQ>);
 
 			Swift::NetworkFactories *m_factories;
 			Swift::Component *m_component;
