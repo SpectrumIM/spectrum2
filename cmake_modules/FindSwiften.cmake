@@ -32,10 +32,6 @@ if( SWIFTEN_LIBRARY AND SWIFTEN_INCLUDE_DIR )
 			endif()
 		endforeach(f)
 		
-		if(NOT MSVC)
-			set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-		endif()
-		
 		set( SWIFTEN_FOUND 1 )
 	else()
 		message( STATUS "Could NOT find swiften-config" )
