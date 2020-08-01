@@ -1880,7 +1880,7 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
     //Doesn't handle: unquoted src, escaped "'>s, quotes in quotes ("quote: 'text' end quote")
     static boost::regex image_expr("<img\\s+[^>]*src\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>");
 
-    bool matchCount = 0;
+    int matchCount = 0;
     std::string firstUrl;
 
     std::string::const_iterator xhtml_pos = xhtml.begin();

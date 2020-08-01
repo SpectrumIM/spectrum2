@@ -1,14 +1,14 @@
 FROM alpine:latest
 
 RUN apk add --no-cache ca-certificates && \
-	apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev glib-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt5-qtbase-dev qt5-qtdeclarative-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl libevent-dev mercurial json-glib-dev libgcrypt-dev libwebp-dev libgnome-keyring-dev nss-dev jsoncpp-dev cppunit-dev
+	apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt5-qtbase-dev qt5-qtdeclarative-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl libevent-dev jsoncpp-dev cppunit-dev python2
 
 WORKDIR	/usr/src/
 
 RUN wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommuni-3.5.0.tar.gz && \
 	tar xfz libcommuni-*.tar.gz && \
 	cd libcommuni-* && \
-	./configure --prefix=/usr/local && \
+	./configure --prefix=/usr && \
 	make && \
 	make install && \
 	cd .. && \
@@ -17,22 +17,20 @@ RUN wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommu
 RUN	git clone https://github.com/apache/logging-log4cxx.git && \
 	cd logging-log4cxx && \
 	./autogen.sh && \
-	./configure --prefix=/usr/local && \
+	./configure --prefix=/usr && \
 	make && \
 	make install && \
 	cd .. && \
 	rm -rf logging-log4cxx
 
+RUN     git clone git://swift.im/swift && \
+        cd swift && \
+        git checkout swift-4.x && \
+        ./scons Swiften swiften_dll=yes optimize=yes debug=no SWIFTEN_INSTALLDIR=/usr /usr -j5
+
 RUN	git clone https://github.com/jtv/libpqxx.git && \
-	apk add --no-cache python2 && \
 	cd libpqxx && \
 	git checkout 7.1.2 && \
-	cmake . -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_TEST=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
+	cmake . -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib -DBUILD_SHARED_LIBS=ON -DBUILD_TEST=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
 	make && \
 	make install
-
-RUN	git clone git://swift.im/swift && \
-	cd swift && \
-	git checkout swift-4.x && \
-	./scons Swiften SWIFTEN_INSTALLDIR=/usr/local /usr/local -j5
-
