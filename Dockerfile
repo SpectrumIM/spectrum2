@@ -133,7 +133,7 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		make DESTDIR=/tmp/out install
 
 		
-FROM debian:10.4-slim as production
+FROM debian:buster-slim as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
