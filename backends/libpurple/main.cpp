@@ -144,6 +144,7 @@ class AuthRequestList : public std::map<std::string, authRequest*> {
 			LOG4CXX_TRACE(logger, "AuthRequestList::accept(" << user << ", " << buddyName << ")");
 			it->second->authorize_cb(it->second->user_data);
 			this->erase(user + buddyName);
+			return true;
 		}
 		
 
@@ -157,6 +158,7 @@ class AuthRequestList : public std::map<std::string, authRequest*> {
 			LOG4CXX_TRACE(logger, "AuthRequestList::deny(" << user << ", " << buddyName << ")");
 			it->second->deny_cb(it->second->user_data);
 			this->erase(user + buddyName);
+			return true;
 		}
 };
 
