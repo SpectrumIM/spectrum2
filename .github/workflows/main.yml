@@ -50,8 +50,14 @@ jobs:
         rm /usr/local/include/Swiften/Network/DummyConnectionServer.h
         rm /usr/local/include/Swiften/Network/DummyConnectionServerFactory.h
         cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON .
-    - name: Build tests
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: cpp
+    - name: Build
       run:  make -j4
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1
     - name: Run tests
       run:  make test
 
