@@ -432,6 +432,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				adminLegacyName = "telegram";
 				adminAlias = "telegram";
 			}
+			else if (protocol == "prpl-eionrobb-instagram") {
+				adminLegacyName = "instagram";
+				adminAlias = "instagram";
+			}
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
 				np->handleDisconnected(user, 1, "Invalid protocol " + protocol);
@@ -1857,6 +1861,17 @@ void * requestInput(const char *title, const char *primary,const char *secondary
 		else if (boost::starts_with(primaryString, "Enter authentication code")) {
 			LOG4CXX_INFO(logger, "telegram-tdlib 2FA request");
 			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Authentication code: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
+		else if (boost::starts_with(primaryString, "Enter the six-digit code")) {
+			LOG4CXX_INFO(logger, "prpl-eionrobb-instagram verification request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Verification code: "));
 			inputRequest *req = new inputRequest;
 			req->ok_cb = (PurpleRequestInputCb)ok_cb;
 			req->user_data = user_data;
