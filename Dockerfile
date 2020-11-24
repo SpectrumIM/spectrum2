@@ -77,10 +77,9 @@ RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev
 		
 RUN echo "---> Installing purple-facebook" && \
-		wget https://github.com/dequis/purple-facebook/archive/7aa7aa1e96358cbe20cbe596f9e5e07f0e2cb348.tar.gz && \
-		tar -xf 7aa7aa1e96358cbe20cbe596f9e5e07f0e2cb348.tar.gz && \
-		cd purple-facebook-7aa7aa1e96358cbe20cbe596f9e5e07f0e2cb348 && \
-		./autogen.sh && \
+		git clone https://github.com/dequis/purple-facebook.git && \
+		cd purple-facebook && \
+		/bin/bash ./autogen.sh && \
 		./configure && \
 		make && \
 		make DESTDIR=/tmp/out install
