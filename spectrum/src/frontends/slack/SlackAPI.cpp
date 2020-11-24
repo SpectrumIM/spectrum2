@@ -35,42 +35,6 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(slackAPILogger, "SlackAPI");
-
-#define GET_ARRAY(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
-	if (!NAME.isArray()) { \
-		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' object in the reply."); \
-		return; \
-	}
-	
-#define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.isString()) {  \
-		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(slackAPILogger, data); \
-		return; \
-	} \
-	std::string NAME = NAME##_tmp.asString();
-
-#define STORE_BOOL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.isBool()) {  \
-		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(slackAPILogger, data); \
-		return; \
-	} \
-	bool NAME = NAME##_tmp.asBool();
-
-#define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
-	if (!NAME.isObject()) { \
-		LOG4CXX_ERROR(slackAPILogger, "No '" << #NAME << "' object in the reply."); \
-		return; \
-	}
-
-#define STORE_STRING_OPTIONAL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
-	std::string NAME; \
-	if (NAME##_tmp.isString()) {  \
-		 NAME = NAME##_tmp.asString(); \
-	}
-
 SlackAPI::SlackAPI(Component *component, SlackIdManager *idManager, const std::string &token, const std::string &domain) : HTTPRequestQueue(component, domain) {
 	m_component = component;
 	m_token = token;

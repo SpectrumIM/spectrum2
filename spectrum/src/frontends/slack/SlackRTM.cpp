@@ -72,41 +72,13 @@ void SlackRTM::start() {
 	req->execute();
 }
 
-#define STORE_STRING(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.isString()) {  \
-		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' string in the reply."); \
-		LOG4CXX_ERROR(slackRTMLogger, payload); \
-		return; \
-	} \
-	std::string NAME = NAME##_tmp.asString();
-
-#define STORE_STRING_OPTIONAL(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
-	std::string NAME; \
-	if (NAME##_tmp.isString()) {  \
-		 NAME = NAME##_tmp.asString(); \
-	}
-
-#define GET_OBJECT(FROM, NAME) Json::Value &NAME = FROM[#NAME]; \
-	if (!NAME.isObject()) { \
-		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' object in the reply."); \
-		return; \
-	}
-
-#define STORE_INT(FROM, NAME) Json::Value &NAME##_tmp = FROM[#NAME]; \
-	if (!NAME##_tmp.isInt()) {  \
-		LOG4CXX_ERROR(slackRTMLogger, "No '" << #NAME << "' number in the reply."); \
-		LOG4CXX_ERROR(slackRTMLogger, payload); \
-		return; \
-	} \
-	int NAME = NAME##_tmp.asInt();
-
-void SlackRTM::handlePayloadReceived(const std::string &payload) {
+void SlackRTM::handlePayloadReceived(const std::string &data) {
 	Json::Value d;
 	Json::CharReaderBuilder rbuilder;
 	std::shared_ptr<Json::CharReader> const reader(rbuilder.newCharReader());
-	if (!reader->parse(payload.c_str(), payload.c_str() + payload.size(), &d, NULL)) {
+	if (!reader->parse(data.c_str(), data.c_str() + data.size(), &d, NULL)) {
 		LOG4CXX_ERROR(slackRTMLogger, "Error while parsing JSON");
-		LOG4CXX_ERROR(slackRTMLogger, payload);
+		LOG4CXX_ERROR(slackRTMLogger, data);
 		return;
 	}
 
@@ -152,7 +124,7 @@ void SlackRTM::handlePayloadReceived(const std::string &payload) {
 	else if (type == "channel_joined"
 		  || type == "channel_created") {
 		std::map<std::string, SlackChannelInfo> &channels = m_idManager->getChannels();
-		SlackAPI::getSlackChannelInfo(NULL, true, d, payload, channels);
+		SlackAPI::getSlackChannelInfo(NULL, true, d, data, channels);
 	}
 	else if (type == "error") {
 		GET_OBJECT(d, error);
