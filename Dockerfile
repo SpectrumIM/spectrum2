@@ -74,7 +74,15 @@ RUN /bin/bash ./build_spectrum2.sh
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
-		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev
+		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev mercurial
+		
+RUN echo "---> Installing purple-facebook" && \
+		git clone https://github.com/dequis/purple-facebook.git && \
+		cd purple-facebook && \
+		/bin/bash ./autogen.sh && \
+		./configure && \
+		make && \
+		make DESTDIR=/tmp/out install
 
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
@@ -147,16 +155,12 @@ RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libma
 
 RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
-RUN echo "deb http://download.opensuse.org/repositories/home:/jgeboski/Debian_10/ /" | tee /etc/apt/sources.list.d/home:jgeboski.list
-RUN curl -fsSL https://download.opensuse.org/repositories/home:jgeboski/Debian_10/Release.key | apt-key add
 RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_10/ /" | tee /etc/apt/sources.list.d/home:ars3n1y.list
 RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_10/Release.key | apt-key add
 RUN apt-get update -qq
 
 RUN echo "---> Installing pidgin-sipe" && \
 		apt-get install --no-install-recommends -y pidgin-sipe
-RUN echo "---> Installing purple-facebook" && \
-		apt-get install --no-install-recommends -y purple-facebook
 RUN echo "---> Installing purple-telegram" && \
 		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.6.0
 RUN echo "---> Installing purple-discord" && \

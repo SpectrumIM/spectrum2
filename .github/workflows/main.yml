@@ -10,9 +10,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Build tests
-      run: docker build . --target test -t spectrum:tests
-      env:
-        DOCKER_BUILDKIT: 1
+      run: docker buildx build . --target test -t spectrum:tests
     - name: Run tests
       run: docker run -tt spectrum:tests
   linux-clang:
@@ -22,9 +20,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Build tests
-      run: docker build . --target test-clang -t spectrum:tests-clang
-      env:
-        DOCKER_BUILDKIT: 1
+      run: docker buildx build . --target test-clang -t spectrum:tests-clang
     - name: Run tests
       run: docker run -tt spectrum:tests-clang
   linux-musl:
@@ -34,9 +30,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Build tests
-      env:
-        DOCKER_BUILDKIT: 1
-      run: docker build . --target test-musl -t spectrum:tests-musl
+      run: docker buildx build . --target test-musl -t spectrum:tests-musl
     - name: Run tests
       run: docker run -tt --env LANG=en_US.UTF-8 spectrum:tests-musl
   macos:
