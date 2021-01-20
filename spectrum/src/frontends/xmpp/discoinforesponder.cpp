@@ -148,6 +148,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 		if (m_commands.find(info->getNode()) != m_commands.end()) {
 			std::shared_ptr<DiscoInfo> res(new DiscoInfo());
 			res->addFeature("http://jabber.org/protocol/commands");
+			res->addFeature("http://jabber.org/protocol/disco#items");
 			res->addFeature("jabber:x:data");
 			res->addIdentity(DiscoInfo::Identity(m_commands[info->getNode()], "automation", "command-node"));
 			res->setNode(info->getNode());
