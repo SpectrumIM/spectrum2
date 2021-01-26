@@ -404,7 +404,7 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 	}
 
 	// User tries to register someone who's already registered (password-less backends)
-	if (needPassword) {
+	if (!needPassword) {
 		std::vector<std::string> legacyNetworkUsers;
 		m_storageBackend->getLegacyNetworkUsers(legacyNetworkUsers);
 		bool legacyUserExists = std::find(legacyNetworkUsers.begin(), legacyNetworkUsers.end(), *payload->getUsername()) != legacyNetworkUsers.end();
