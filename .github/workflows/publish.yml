@@ -43,5 +43,6 @@ jobs:
         labels: ${{ steps.docker_meta.outputs.labels }}
     - name: Fix Docker tags
       run: |
+        docker pull spectrum2/spectrum:master
         docker tag spectrum2/spectrum:master spectrum2/spectrum:latest
         docker push spectrum2/spectrum:latest
