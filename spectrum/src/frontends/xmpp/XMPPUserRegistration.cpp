@@ -378,7 +378,9 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		}
 	}
 
-	if (!payload->getUsername() || (!payload->getPassword() && CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true))) {
+	bool needPassword = CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true);
+
+	if (!payload->getUsername() || (!payload->getPassword() && needPassword)) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}
@@ -393,18 +395,20 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		return true;
 	}
 
-	// TODO: Move this check to backend somehow
-	if (CONFIG_STRING(m_config, "service.protocol") == "prpl-jabber") {
-		// User tries to register himself.
+	// User tries to register himself (XMPP backends)
+	if (JID::parse(*payload->getUsername())) {
 		if ((Swift::JID(*payload->getUsername()).toBare() == from.toBare())) {
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}
+	}
 
-		// User tries to register someone who's already registered.
-		UserInfo user_row;
-		bool registered = m_storageBackend->getUser(Swift::JID(*payload->getUsername()).toBare().toString(), user_row);
-		if (registered) {
+	// User tries to register someone who's already registered (password-less backends)
+	if (needPassword) {
+		std::vector<std::string> legacyNetworkUsers;
+		m_storageBackend->getLegacyNetworkUsers(legacyNetworkUsers);
+		bool legacyUserExists = std::find(legacyNetworkUsers.begin(), legacyNetworkUsers.end(), *payload->getUsername()) != legacyNetworkUsers.end();
+		if (legacyUserExists) {
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}

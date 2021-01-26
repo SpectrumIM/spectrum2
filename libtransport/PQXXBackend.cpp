@@ -261,6 +261,23 @@ bool PQXXBackend::getUsers(std::vector<std::string> &users) {
 	return true;
 }
 
+bool PQXXBackend::getLegacyNetworkUsers(std::vector<std::string> &users) {
+	try {
+		pqxx::nontransaction txn(*m_conn);
+		pqxx::result r = txn.exec("SELECT uin FROM " + m_prefix + "users");
+
+		for (pqxx::result::const_iterator it = r.begin(); it != r.end(); it++)  {
+			users.push_back((*it)[0].as<std::string>());
+		}
+	}
+	catch (std::exception& e) {
+		LOG4CXX_ERROR(pxxLogger, e.what());
+		return false;
+	}
+
+	return true;
+}
+
 long PQXXBackend::addBuddy(long userId, const BuddyInfo &buddyInfo) {
 	try {
 		pqxx::nontransaction txn(*m_conn);
