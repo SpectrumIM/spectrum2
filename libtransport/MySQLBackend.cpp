@@ -256,6 +256,7 @@ void MySQLBackend::disconnect() {
 	delete m_setUserOnline;
 	delete m_getOnlineUsers;
 	delete m_getUsers;
+	delete m_getLegacyNetworkUsers;
 }
 
 bool MySQLBackend::connect() {
@@ -303,7 +304,7 @@ bool MySQLBackend::connect() {
 	m_setUserOnline = new Statement(&m_conn, "bi", "UPDATE " + m_prefix + "users SET online=?, last_login=NOW()  WHERE id=?");
 	m_getOnlineUsers = new Statement(&m_conn, "|s", "SELECT jid FROM " + m_prefix + "users WHERE online=1");
 	m_getUsers = new Statement(&m_conn, "|s", "SELECT jid FROM " + m_prefix + "users");
-
+	m_getLegacyNetworkUsers = new Statement(&m_conn, "|s", "SELECT uin FROM " + m_prefix + "users");
 	return true;
 }
 
@@ -445,6 +446,20 @@ bool MySQLBackend::getUsers(std::vector<std::string> &users) {
 	std::string jid;
 	while (m_getUsers->fetch() == 0) {
 		*m_getUsers >> jid;
+		users.push_back(jid);
+	}
+
+	return true;
+}
+
+bool MySQLBackend::getLegacyNetworkUsers(std::vector<std::string> &users) {
+	EXEC(m_getLegacyNetworkUsers, getLegacyNetworkUsers(users));
+	if (!exec_ok)
+		return false;
+
+	std::string jid;
+	while (m_getLegacyNetworkUsers->fetch() == 0) {
+		*m_getLegacyNetworkUsers >> jid;
 		users.push_back(jid);
 	}
 

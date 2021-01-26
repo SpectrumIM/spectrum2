@@ -125,6 +125,8 @@ class StorageBackend
 
 		virtual bool getUsers(std::vector<std::string> &users) = 0;
 
+		virtual bool getLegacyNetworkUsers(std::vector<std::string> &users) = 0;
+
 		virtual long addBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
 		virtual void updateBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
 		virtual void removeBuddy(long id) = 0;
