@@ -18,7 +18,9 @@ jobs:
       uses: crazy-max/ghaction-docker-meta@v1
       with:
         images: spectrum2/spectrum
-        tag-sha: true
+        tag-semver: |
+            {{version}}
+        tag-latest: ${{ endsWith(github.ref, github.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
     - name: Set up Docker Buildx
@@ -37,12 +39,7 @@ jobs:
         platforms: linux/amd64,linux/arm64        
         target: production
         cache-from: type=registry,ref=spectrum2/spectrum
-        cache-to: type=registry,ref=spectrum2/spectrum
+        cache-to: type=inline
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
-    - name: Fix Docker tags
-      run: |
-        docker pull spectrum2/spectrum:master
-        docker tag spectrum2/spectrum:master spectrum2/spectrum:latest
-        docker push spectrum2/spectrum:latest
