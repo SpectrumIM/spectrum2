@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 if(PROTOBUF_FOUND)
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol_pb2.py

@@ -165,10 +165,6 @@ if(NOT PROTOBUF_FOUND AND PROTOBUF_INCLUDE_DIR AND PROTOBUF_LIBRARY)
 endif()
 
 find_package(JsonCpp REQUIRED)
-if(JSONCPP_FOUND)
-	include_directories(${JSONCPP_INCLUDE_DIRS})
-	message(STATUS "Found jsoncpp: ${JSONCPP_INCLUDE_DIRS} ${JSONCPP_LIBRARY}, shared: ${JSONCPP_LIBRARY_IS_SHARED}")
-endif()
 
 if(WIN32)
 	add_definitions(-DSWIFTEN_STATIC=1)
