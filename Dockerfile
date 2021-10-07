@@ -108,13 +108,6 @@ RUN echo "---> Install Steam" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-RUN echo "---> purple-gowhatsapp" && \
-		apt-get -y install golang && \
-		git clone https://github.com/hoehermann/purple-gowhatsapp && \
-		cd purple-gowhatsapp && \
-		make && \
-		make DESTDIR=/tmp/out install
-
 RUN echo "---> purple-telegram" && \
 git clone --recursive https://github.com/majn/telegram-purple && \
 		cd telegram-purple && \
