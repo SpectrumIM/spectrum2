@@ -164,7 +164,7 @@ RUN echo "---> Installing pidgin-sipe" && \
 RUN echo "---> Installing purple-telegram" && \
 		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.6.0
 RUN echo "---> Installing purple-discord" && \
-                apt-get install --no-install-recommends -y -t buster-backports purple-discord
+                apt-get install --no-install-recommends -y -t buster-backports-sloppy purple-discord
 
 COPY --from=staging /tmp/out/* /usr/
 
