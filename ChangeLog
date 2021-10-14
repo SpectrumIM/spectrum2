@@ -1,3 +1,13 @@
+Version 2.1.0 (2021-10-15):
+        General:
+        * Swiften 4.0 is now minumum supported Swiften version
+        * CMake 3.7 is now minimal supported CMake version (which is present in Debian
+	oldoldstable)
+        * improve compatibility with latest build tools and dependencies
+        * Fix service discovery compatibility with some clients (Gajim)
+        libpurple backend:
+        * Improved support for passwordless backends
+
 Version 2.0.13 (2020-07-13):
 	General:
 	* improve compatibility with latest build tools
