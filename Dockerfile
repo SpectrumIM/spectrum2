@@ -1,19 +1,19 @@
-FROM debian:buster-backports as base
+FROM debian:bullseye as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
+RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+RUN echo "deb-src https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl https://packages.spectrum.im/packages.key | apt-key add -
 
 RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
 
-RUN apt-get install -t buster-backports --no-install-recommends -y cmake
+RUN apt-get install --no-install-recommends -y cmake
 
 #TODO include in Build-Depends
 RUN apt-get install --no-install-recommends -y libssl-dev
@@ -30,7 +30,7 @@ WORKDIR spectrum2
 
 RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev psmisc
 
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
 ENTRYPOINT ["make", "extended_test"]
 
@@ -41,14 +41,14 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-RUN echo 'deb http://apt.llvm.org/buster/ llvm-toolchain-buster-10 main' > /etc/apt/sources.list.d/llvm.list
+RUN echo 'deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-13 main' > /etc/apt/sources.list.d/llvm.list
 RUN apt-get update -qq
 
-RUN apt-get install --no-install-recommends -y libcppunit-dev clang-10 lld-10
+RUN apt-get install --no-install-recommends -y libcppunit-dev clang-13 lld-13
 
 WORKDIR spectrum2
 
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-10 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-10 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-13 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-13 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
 
 ENTRYPOINT ["make", "test"]
 
@@ -58,7 +58,7 @@ COPY . spectrum2/
 
 WORKDIR spectrum2
 
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
 ENTRYPOINT ["make", "test"]
 
@@ -134,7 +134,7 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		make DESTDIR=/tmp/out install
 
 		
-FROM debian:buster-slim as production
+FROM debian:bullseye-slim as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
@@ -142,11 +142,10 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
-RUN echo 'deb http://deb.debian.org/debian buster-backports-sloppy main' > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libmarkdown2
 
-RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
+RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
 RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_10/ /" | tee /etc/apt/sources.list.d/home:ars3n1y.list
 RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_10/Release.key | apt-key add
@@ -157,7 +156,7 @@ RUN echo "---> Installing pidgin-sipe" && \
 RUN echo "---> Installing purple-telegram" && \
 		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.6.0
 RUN echo "---> Installing purple-discord" && \
-                apt-get install --no-install-recommends -y -t buster-backports-sloppy purple-discord
+                apt-get install --no-install-recommends -y purple-discord
 
 COPY --from=staging /tmp/out/* /usr/
 
