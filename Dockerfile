@@ -161,7 +161,7 @@ RUN apt-get update -qq
 RUN echo "---> Installing pidgin-sipe" && \
 		apt-get install --no-install-recommends -y pidgin-sipe
 RUN echo "---> Installing purple-telegram" && \
-		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.6.0
+		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.7.9
 RUN echo "---> Installing purple-discord" && \
                 apt-get install --no-install-recommends -y purple-discord
 
