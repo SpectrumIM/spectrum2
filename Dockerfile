@@ -154,8 +154,8 @@ RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libma
 
 RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
-RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_10/ /" | tee /etc/apt/sources.list.d/home:ars3n1y.list
-RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_10/Release.key | apt-key add
+RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_11/ /" | tee /etc/apt/sources.list.d/home:ars3n1y.list
+RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_11/Release.key | apt-key add
 RUN apt-get update -qq
 
 RUN echo "---> Installing pidgin-sipe" && \
