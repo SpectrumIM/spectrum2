@@ -352,7 +352,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 
 				if (!found) {
-					purple_account_set_string_wrapped(account, strippedKey.c_str(), keyItem.second.as<std::string>().c_str());
+					LOG4CXX_ERROR(logger, "Unknown [purple] option: " << strippedKey);
 				}
 				i++;
 			}

@@ -54,7 +54,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	void enumerateConfigSection() {
 		const char *argv[3] = {"binary", "--service.jids=localhost", NULL};
 		Config cfg(2, const_cast<char **>(argv));
-		std::istringstream ifs("purple.irc_send_pass=1\npurple.group-chat-open=false\npurple.test=passed");
+		std::istringstream ifs("[purple]\nirc_send_pass=1\ngroup-chat-open=false\ntest=passed");
 		cfg.load(ifs);
 		Config::SectionValuesCont purpleConfigValues = cfg.getSectionValues("purple");
 		CPPUNIT_ASSERT_EQUAL(true, purpleConfigValues["purple.irc_send_pass"].as<bool>());
