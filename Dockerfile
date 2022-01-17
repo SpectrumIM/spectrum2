@@ -1,4 +1,4 @@
-FROM debian:bullseye as base
+FROM debian:bullseye-backports as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
@@ -109,7 +109,7 @@ RUN echo "---> Install Steam" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-gowhatsapp" && \
-		apt-get -y install golang && \
+		apt-get -y install -t bullseye-backports golang && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp && \
 		cd purple-gowhatsapp && \
 		git checkout whatsmeow && \
