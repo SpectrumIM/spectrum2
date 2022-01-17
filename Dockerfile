@@ -112,6 +112,7 @@ RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install golang && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp && \
 		cd purple-gowhatsapp && \
+		git checkout whatsmeow && \
 		make && \
 		make DESTDIR=/tmp/out install
 
