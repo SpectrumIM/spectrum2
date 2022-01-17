@@ -113,6 +113,7 @@ RUN echo "---> purple-gowhatsapp" && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp && \
 		cd purple-gowhatsapp && \
 		git checkout whatsmeow && \
+		cmake . && \
 		make && \
 		make DESTDIR=/tmp/out install
 
