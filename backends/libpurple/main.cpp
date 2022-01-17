@@ -2507,12 +2507,17 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 				cfg.setNeedRegistration(false);
 			}
 			else {
-				PurplePlugin *plugin = purple_find_prpl_wrapped(CONFIG_STRING(config, "service.protocol").c_str());
-				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
-				if (prpl_info) {
-					bool isPasswordlessPlugin = prpl_info->options & OPT_PROTO_NO_PASSWORD;
-					LOG4CXX_INFO(logger, "passwordless backend: " << isPasswordlessPlugin);
-					cfg.setNeedPassword(!isPasswordlessPlugin);
+				std::string protocol = CONFIG_STRING(config, "service.protocol");
+				PurplePlugin *plugin = purple_find_prpl_wrapped(protocol.c_str());
+				if (plugin) {
+					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+					if (prpl_info) {
+						bool isPasswordlessPlugin = prpl_info->options & OPT_PROTO_NO_PASSWORD;
+						LOG4CXX_INFO(logger, "passwordless backend: " << isPasswordlessPlugin);
+						cfg.setNeedPassword(!isPasswordlessPlugin);
+					}
+				} else {
+					LOG4CXX_ERROR(logger, "Protocol not found: " << protocol);
 				}
 				cfg.setNeedRegistration(true);
 			}
