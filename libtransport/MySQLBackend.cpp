@@ -62,7 +62,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 				m_params.resize(m_params.size() + 1);
 				memset(&m_params.back(), 0, sizeof(MYSQL_BIND));
 
-				m_params.back().buffer_type= MYSQL_TYPE_STRING;
+				m_params.back().buffer_type= MYSQL_TYPE_VAR_STRING;
 				m_params.back().buffer= (char *) malloc(sizeof(char) * 4096);
 				m_params.back().buffer_length= 4096;
 				m_params.back().is_null= 0;
@@ -98,7 +98,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 				m_results.resize(m_results.size() + 1);
 				memset(&m_results.back(), 0, sizeof(MYSQL_BIND));
 
-				m_results.back().buffer_type= MYSQL_TYPE_STRING;
+				m_results.back().buffer_type= MYSQL_TYPE_VAR_STRING;
 				m_results.back().buffer= (char *) malloc(sizeof(char) * 4096);
 				m_results.back().buffer_length= 4096;
 				m_results.back().is_null= 0;
