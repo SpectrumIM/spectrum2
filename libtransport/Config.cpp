@@ -104,6 +104,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		("service.max_room_list_size", value<int>()->default_value(100), "")
 		("service.login_delay", value<int>()->default_value(0), "")
 		("service.jid_escaping", value<bool>()->default_value(true), "")
+		("service.verify_certs", value<bool>()->default_value(false), "")
 		("service.vip_only", value<bool>()->default_value(false), "")
 		("service.vip_message", value<std::string>()->default_value(""), "")
 		("service.reconnect_all_users", value<bool>()->default_value(false), "")
@@ -222,28 +223,14 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	BOOST_FOREACH(option &opt, parsed.options) {
 		if (opt.unregistered) {
 			if (std::find(has_key.begin(), has_key.end(), opt.string_key) == has_key.end()) {
+				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 				has_key.push_back(opt.string_key);
-				if (opt.value[0] == "true" || opt.value[0] == "1") {
-					m_unregistered[opt.string_key] = variable_value(true, false);
-				}
-				else if (opt.value[0] == "false" || opt.value[0] == "0") {
-					m_unregistered[opt.string_key] = variable_value(false, false);
-				}
-				else {
-					m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
-				}
 			}
 			else {
 				std::list<std::string> list;
-				try {
-					list = m_unregistered[opt.string_key].as<std::list<std::string> >();
-				}
-				catch(...) {
-					list.push_back(m_unregistered[opt.string_key].as<std::string>());
-				}
-				
+				boost::algorithm::split(list, m_unregistered[opt.string_key].as<std::string>(), boost::is_any_of(","));
 				list.push_back(opt.value[0]);
-				m_unregistered[opt.string_key] = variable_value(list, false);
+				m_unregistered[opt.string_key] = variable_value(boost::algorithm::join(list, ","), false);
 			}
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {

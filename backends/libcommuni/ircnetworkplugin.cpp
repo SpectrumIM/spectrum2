@@ -36,15 +36,9 @@ IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, con
 	m_socket->connectToHost(FROM_UTF8(host), port);
 	connect(m_socket, SIGNAL(readyRead()), this, SLOT(readData()));
 
-	std::string server = CONFIG_STRING_DEFAULTED(m_config, "service.irc_server", "");
-	if (!server.empty()) {
-		m_servers.push_back(server);
-	}
-	else {
-		std::list<std::string> list;
-		list = CONFIG_LIST_DEFAULTED(m_config, "service.irc_server", list);
-		m_servers.insert(m_servers.begin(), list.begin(), list.end());
-	}
+	std::list<std::string> list;
+	boost::algorithm::split(list, CONFIG_STRING_DEFAULTED(m_config, "service.irc_server", ""), boost::is_any_of(","));
+	m_servers.insert(m_servers.begin(), list.begin(), list.end());
 
 	if (CONFIG_HAS_KEY(m_config, "service.irc_identify")) {
 		m_identify = CONFIG_STRING(m_config, "service.irc_identify");
@@ -113,7 +107,7 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 		std::string identify = m_identify;
 		boost::replace_all(identify, "$password", password);
 		boost::replace_all(identify, "$name", nickname);
-		if (CONFIG_BOOL_DEFAULTED(m_config, "service.irc_send_pass", false)) {
+		if (boost::lexical_cast<bool>(CONFIG_STRING_DEFAULTED(m_config, "service.irc_send_pass", "false"))) {
 			session->setPassword(FROM_UTF8(password)); // use IRC PASS
 		} else {
 			session->setIdentify(identify); // use identify supplied

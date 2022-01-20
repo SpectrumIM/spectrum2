@@ -67,11 +67,11 @@ std::shared_ptr<Swift::Command> SettingsAdHocCommand::getForm() {
 	m_storageBackend->getUserSetting(user.id, "enable_transport", type, value);
 	FormUtils::addBooleanField(form, "enable_transport", value, "Enable transport");
 
-	value = CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "settings.send_headlines", false) ? "1" : "0";
+	value = CONFIG_STRING_DEFAULTED(m_component->getConfig(), "settings.send_headlines", "0");
 	m_storageBackend->getUserSetting(user.id, "send_headlines", type, value);
 	FormUtils::addBooleanField(form, "send_headlines", value, "Allow sending messages as headlines");
 
-	value = CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "settings.stay_connected", false) ? "1" : "0";
+	value = CONFIG_STRING_DEFAULTED(m_component->getConfig(), "settings.stay_connected", "0");
 	m_storageBackend->getUserSetting(user.id, "stay_connected", type, value);
 	FormUtils::addBooleanField(form, "stay_connected", value, "Stay connected to legacy network when offline on XMPP");
 
