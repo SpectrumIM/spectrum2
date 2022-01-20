@@ -171,6 +171,6 @@ RUN apt install --no-install-recommends -y /tmp/*.deb
 
 RUN rm -rf /tmp/*.deb
 
-RUN apt-get autoremove && apt-get clean
+RUN apt-get autoremove -y && apt-get clean
 
 ENTRYPOINT ["/run.sh"]
