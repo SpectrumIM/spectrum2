@@ -23,6 +23,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 	CPPUNIT_TEST(unregisteredList);
 	CPPUNIT_TEST(unregisteredString);
 	CPPUNIT_TEST(unregisteredListAsString);
+	CPPUNIT_TEST(unregisteredStringAsList);
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
@@ -46,8 +47,8 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		Config cfg(2, const_cast<char **>(argv));
 		std::istringstream ifs("service.irc_send_pass = 1\npurple.group-chat-open=0\n");
 		cfg.load(ifs);
-		CPPUNIT_ASSERT_EQUAL(true, boost::lexical_cast<bool>(CONFIG_STRING_DEFAULTED(&cfg, "service.irc_send_pass", "false")));
-		CPPUNIT_ASSERT_EQUAL(false, boost::lexical_cast<bool>(CONFIG_STRING_DEFAULTED(&cfg, "purple.group-chat-open", "true")));
+		CPPUNIT_ASSERT_EQUAL(true, CONFIG_BOOL_DEFAULTED(&cfg, "service.irc_send_pass", false));
+		CPPUNIT_ASSERT_EQUAL(false, CONFIG_BOOL_DEFAULTED(&cfg, "purple.group-chat-open", true));
 	}
 
 	void enumerateConfigSection() {
@@ -56,8 +57,8 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		std::istringstream ifs("[purple]\nirc_send_pass=1\ngroup-chat-open=false\ntest=passed");
 		cfg.load(ifs);
 		Config::SectionValuesCont purpleConfigValues = cfg.getSectionValues("purple");
-		CPPUNIT_ASSERT_EQUAL(std::string("1"), purpleConfigValues["purple.irc_send_pass"].as<std::string>());
-		CPPUNIT_ASSERT_EQUAL(std::string("false"), purpleConfigValues["purple.group-chat-open"].as<std::string>());
+		CPPUNIT_ASSERT_EQUAL(true, purpleConfigValues["purple.irc_send_pass"].as<bool>());
+		CPPUNIT_ASSERT_EQUAL(false, purpleConfigValues["purple.group-chat-open"].as<bool>());
 		CPPUNIT_ASSERT_EQUAL(std::string("passed"), purpleConfigValues["purple.test"].as<std::string>());
 	}
 
@@ -84,7 +85,7 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 		Config cfg;
 		std::istringstream ifs("service.irc_server = irc.freenode.org\nservice.irc_server=localhost\n");
 		cfg.load(ifs);
-		CPPUNIT_ASSERT_EQUAL(std::string("irc.freenode.org,localhost"), CONFIG_STRING(&cfg, "service.irc_server"));
+		CPPUNIT_ASSERT_EQUAL(2, (int) CONFIG_LIST(&cfg, "service.irc_server").size());
 	}
 
 	void unregisteredString() {
@@ -96,10 +97,19 @@ class ConfigTest : public CPPUNIT_NS :: TestFixture{
 
 	void unregisteredListAsString() {
 		Config cfg;
-		std::istringstream ifs("service.irc_server = irc.freenode.org\nservice.irc_server = irc2.freenode.org");
+		std::istringstream ifs("service.irc_server = irc.freenode.orgn\nservice.irc_server = irc2.freenode.org");
 		cfg.load(ifs);
-		CPPUNIT_ASSERT_EQUAL(std::string("irc.freenode.org,irc2.freenode.org"), CONFIG_STRING_DEFAULTED(&cfg, "service.irc_server", ""));
+		CPPUNIT_ASSERT_EQUAL(std::string(""), CONFIG_STRING_DEFAULTED(&cfg, "service.irc_server", ""));
 	}
+
+	void unregisteredStringAsList() {
+		Config cfg;
+		std::istringstream ifs("service.irc_server = irc.freenode.org");
+		cfg.load(ifs);
+		std::list<std::string> list;
+		CPPUNIT_ASSERT_EQUAL(0, (int) CONFIG_LIST_DEFAULTED(&cfg, "service.irc_server", list).size());
+	}
+
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION (ConfigTest);

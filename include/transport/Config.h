@@ -46,10 +46,12 @@ const myType &safeAs(const boost::program_options::variable_value &var, const my
 #define CONFIG_STRING(PTR, KEY) (*PTR)[KEY].as<std::string>()
 #define CONFIG_INT(PTR, KEY) (*PTR)[KEY].as<int>()
 #define CONFIG_BOOL(PTR, KEY) (*PTR)[KEY].as<bool>()
+#define CONFIG_LIST(PTR, KEY) (*PTR)[KEY].as<std::list<std::string> >()
 #define CONFIG_VECTOR(PTR, KEY) ((*PTR).hasKey(KEY) ? (*PTR)[KEY].as<std::vector<std::string> >() : std::vector<std::string>())
 
 #define CONFIG_STRING_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<std::string>((*PTR)[KEY], DEF) : DEF)
 #define CONFIG_BOOL_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<bool>((*PTR)[KEY], DEF) : DEF)
+#define CONFIG_LIST_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<std::list<std::string> >((*PTR)[KEY], DEF) : DEF)
 #define CONFIG_INT_DEFAULTED(PTR, KEY, DEF) ((*PTR).hasKey(KEY) ? Transport::safeAs<int>((*PTR)[KEY], DEF) : DEF)
 
 namespace Transport {
