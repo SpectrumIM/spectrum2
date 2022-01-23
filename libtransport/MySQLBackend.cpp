@@ -288,14 +288,14 @@ bool MySQLBackend::connect() {
 	m_removeUserSettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "users_settings WHERE user_id=?");
 	m_removeUserBuddiesSettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
 
-	m_addBuddy = new Statement(&m_conn, "issssi", "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
+	m_addBuddy = new Statement(&m_conn, "issssi", "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, `groups`, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 	m_removeBuddy = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies WHERE id=?");
 	m_removeBuddySettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE buddy_id=?");
-	m_updateBuddy = new Statement(&m_conn, "ssisis", "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
-	m_getBuddies = new Statement(&m_conn, "i|issssi", "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
+	m_updateBuddy = new Statement(&m_conn, "ssisis", "UPDATE " + m_prefix + "buddies SET `groups`=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
+	m_getBuddies = new Statement(&m_conn, "i|issssi", "SELECT id, uin, subscription, nickname, `groups`, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	m_getBuddiesSettings = new Statement(&m_conn, "i|iiss", "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	m_updateBuddySetting = new Statement(&m_conn, "iisiss", "INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value=?");
-	m_getBuddySetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
+	m_getBuddySetting = new Statement(&m_conn, "iss|is", "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
 	
 	m_getUserSetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	m_setUserSetting = new Statement(&m_conn, "isis", "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
