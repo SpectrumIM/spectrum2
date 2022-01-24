@@ -2573,7 +2573,9 @@ int main(int argc, char **argv) {
 	config = std::shared_ptr<Config>(cfg);
 
 	Logging::initBackendLogging(config.get());
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile" || CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
+	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile"
+	|| CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord" || CONFIG_STRING(config, "service.protocol") == "prpl-hehoe-whatsmeow")
+	{
 		storagebackend = StorageBackend::createBackend(config.get(), error);
 		if (storagebackend == NULL) {
 			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
