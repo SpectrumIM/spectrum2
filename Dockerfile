@@ -159,8 +159,6 @@ RUN echo "---> Installing purple-telegram" && \
 		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.7.9
 RUN echo "---> Installing purple-discord" && \
                 apt-get install --no-install-recommends -y purple-discord
-RUN echo "---> Installing telegram-purple" && \
-        apt-get install --no-install-recommends -y telegram-purple
 
 COPY --from=staging /tmp/out/* /usr/
 
