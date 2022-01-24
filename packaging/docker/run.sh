@@ -5,8 +5,8 @@ web_dir=/var/lib/spectrum2/media
 
 if [-d "$web_dir"]; then
   web_dir_owner="$(stat -c %u "$web_dir")"
-  if [[ "$(id -u www-data)" != "$data_dir_owner" ]]; then
-      usermod -u "$data_dir_owner" www-data
+  if [[ "$(id -u www-data)" != "$web_dir_owner" ]]; then
+      usermod -u "$web_dir_owner" www-data
   fi
 fi
 
