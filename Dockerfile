@@ -112,7 +112,7 @@ RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install -t bullseye-backports golang && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp && \
 		cd purple-gowhatsapp && \
-		git checkout 7892dd1cd6ace4cd35f214fbcb1ef67afb4e13f4 && \
+		git checkout dev && \
 		cmake . && \
 		make && \
 		make DESTDIR=/tmp/out install
