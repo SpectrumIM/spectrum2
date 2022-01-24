@@ -241,6 +241,7 @@ static boost::mutex dblock;
 static std::string OAUTH_TOKEN = "hangouts_oauth_token";
 static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
 static std::string DISCORD_ACCESS_TOKEN = "discord_access_token";
+static std::string WHATSMEOW_ACCESS_TOKEN = "credentials";
 
 static bool getUserToken(const std::string user, const std::string token_name, std::string &token_value)
 {
@@ -485,6 +486,13 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				getUserToken(user, DISCORD_ACCESS_TOKEN, token);
 				if (!token.empty()) {
 					purple_account_set_string_wrapped(account, "token", token.c_str());
+				}
+			}
+			else if (protocol == "prpl-hehoe-whatsmeow") {
+				std::string token;
+				getUserToken(user, WHATSMEOW_ACCESS_TOKEN, token);
+				if (!token.empty()) {
+					purple_account_set_string_wrapped(account, "credentials", token.c_str());
 				}
 			}
 
@@ -2320,6 +2328,9 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	}
     else if (CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
         storeUserToken(np->m_accounts[account], DISCORD_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "token", NULL));
+    }
+    else if (CONFIG_STRING(config, "service.protocol") == "prpl-hehoe-whatsmeow") {
+        storeUserToken(np->m_accounts[account], WHATSMEOW_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "credentials", NULL));
     }
 }
 
