@@ -86,7 +86,7 @@ jobs:
         cmake -G "Visual Studio 16 2019" -A Win32 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_FROTZ=OFF -DENABLE_PURPLE=OFF -DENABLE_MYSQL=OFF -DENABLE_IRC=OFF -DENABLE_PQXX=OFF -DCMAKE_INSTALL_PREFIX=dist .
       shell: cmd
     - name: Build solution
-      run:  msbuild /t:Build INSTALL.vcxproj /p:Configuration=RelWithDebInfo /p:Platform=Win32
+      run:  msbuild /t:Build INSTALL.vcxproj /p:Configuration=RelWithDebInfo /p:Platform=Win32 /m
     - name: Run tests
       shell: cmd
       run: |
