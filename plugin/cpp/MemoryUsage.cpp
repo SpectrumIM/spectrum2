@@ -22,7 +22,6 @@
 
 #include <iostream>
 #include <cstring>
-#include <sstream>
 #include <fstream>
 #include <algorithm>
 #include <boost/lexical_cast.hpp>

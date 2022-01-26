@@ -17,14 +17,20 @@ endif()
 
 file(GLOB HEADERS ../../include/transport/*.h)
 include_directories(../../spectrum/src/frontends/xmpp/)
+if(ENABLE_SLACK_FRONTEND)
+file(GLOB SRC slack/*.cpp slack/*.h)
 include_directories(../../spectrum/src/frontends/slack/)
+endif()
 
 if(CPPUNIT_FOUND)
 	file(GLOB SRC_TEST *.cpp)
 	file(GLOB SRC_TEST_FRONTEND_XMPP ../../spectrum/src/frontends/xmpp/*.cpp)
+	add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP})
+	target_link_libraries(libtransport_test JsonCpp::JsonCpp)
+	if(ENABLE_SLACK_FRONTEND)
 	file(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
-
-	add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
+	target_link_libraries(libtransport_test ${SRC_TEST_FRONTEND_SLACK})
+	endif()
 	set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
 	
 

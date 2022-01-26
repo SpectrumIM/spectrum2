@@ -27,7 +27,6 @@
 #include <IrcBuffer>
 #include <IrcUserModel>
 #include <transport/NetworkPlugin.h>
-#include "Swiften/Swiften.h"
 #include <boost/smart_ptr/make_shared.hpp>
 #include <QTimer>
 #endif

@@ -4,8 +4,27 @@
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
 #include "transport/PQXXBackend.h"
-#include "Swiften/StringCodecs/Base64.h"
 
+
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
+#include <boost/algorithm/string.hpp>
+
+std::string decode64(const std::string &val) {
+    using namespace boost::archive::iterators;
+    using It = transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>;
+    return boost::algorithm::trim_right_copy_if(std::string(It(std::begin(val)), It(std::end(val))), [](char c) {
+        return c == '\0';
+    });
+}
+
+std::string encode64(const std::string &val) {
+    using namespace boost::archive::iterators;
+    using It = base64_from_binary<transform_width<std::string::const_iterator, 6, 8>>;
+    auto tmp = std::string(It(std::begin(val)), It(std::end(val)));
+    return tmp.append((3 - val.size() % 3) % 3, '=');
+}
 
 namespace Transport {
 
@@ -59,12 +78,12 @@ std::string StorageBackend::encryptPassword(const std::string &password, const s
 		encrypted[i] = c;
 	}
 
-	encrypted = Swift::Base64::encode(Swift::createByteArray(encrypted));
+	encrypted = encode64(encrypted);
 	return encrypted;
 }
 
 std::string StorageBackend::decryptPassword(std::string &encrypted, const std::string &key) {
-	encrypted = Swift::byteArrayToString(Swift::Base64::decode(encrypted));
+	encrypted = decode64(encrypted);
 	std::string password;
 	password.resize(encrypted.size());
 	for (unsigned i = 0; i < encrypted.size(); i++) {

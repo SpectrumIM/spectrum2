@@ -7,9 +7,8 @@
 #include <cppunit/BriefTestProgressListener.h>
 #ifdef WITH_LOG4CXX
 #include "log4cxx/logger.h"
-#include "log4cxx/fileappender.h"
+#include "log4cxx/consoleappender.h"
 #include "log4cxx/patternlayout.h"
-#include "log4cxx/propertyconfigurator.h"
 using namespace log4cxx;
 #endif
 
@@ -33,6 +32,7 @@ int main (int argc, char* argv[])
 #else
 	root->addAppender(new FileAppender(new PatternLayout(L"%d %-5p %c: %m%n"), L"libtransport_test.log", false));
 #endif
+    root->setLevel(log4cxx::Level::getWarn());
 #endif
 
 	std::vector<std::string> testsToRun;
@@ -44,8 +44,6 @@ int main (int argc, char* argv[])
 	if (testsToRun.empty()) {
 		testsToRun.push_back("");
 	}
-
-	Transport::HTTPRequest::globalInit();
 
 	// informs test-listener about testresults
 	CPPUNIT_NS :: TestResult testresult;
@@ -67,7 +65,6 @@ int main (int argc, char* argv[])
 		}
 		catch (const std::exception& e) {
 			google::protobuf::ShutdownProtobufLibrary();
-			Transport::HTTPRequest::globalCleanup();
 			std::cerr << "Error: " << e.what() << std::endl;
 			return -1;
 		}
@@ -78,7 +75,6 @@ int main (int argc, char* argv[])
 	compileroutputter.write ();
 
 	google::protobuf::ShutdownProtobufLibrary();
-	Transport::HTTPRequest::globalCleanup();
 
 	// return 0 if tests were successful
 	return collectedresults.wasSuccessful () ? 0 : 1;

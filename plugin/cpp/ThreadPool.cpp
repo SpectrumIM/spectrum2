@@ -1,13 +1,11 @@
 #include "transport/ThreadPool.h"
 #include "transport/Logging.h"
-
 namespace Transport {
 
 DEFINE_LOGGER(threadPoolLogger, "ThreadPool")
 
-ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(maxthreads)
+ThreadPool::ThreadPool(const boost::asio::io_context &io_context, int  maxthreads) : MAX_THREADS(maxthreads)
 {
-	this->loop = loop;
 	activeThreads = 0;
 	worker = (boost::thread **) malloc(sizeof(boost::thread *) * MAX_THREADS);
 	for (int i=0 ; i<MAX_THREADS ; i++) {
@@ -119,7 +117,7 @@ void ThreadPool::runAsThread(Thread *t)
 void ThreadPool::workerBody(Thread *t, int wid) {
 	LOG4CXX_INFO(threadPoolLogger, "Starting thread " << wid);
 	t->run();
-	loop->postEvent(boost::bind(&ThreadPool::cleandUp, this, t, wid), std::shared_ptr<Swift::EventOwner>());
+	cleandUp(t, wid);
 }
 
 }

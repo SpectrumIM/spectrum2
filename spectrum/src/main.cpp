@@ -14,7 +14,9 @@
 #include "transport/Logging.h"
 #include "transport/Frontend.h"
 #include "frontends/xmpp/XMPPFrontendPlugin.h"
+#ifdef ENABLE_SLACK_FRONTEND
 #include "frontends/slack/SlackFrontendPlugin.h"
+#endif
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
 #include <boost/thread.hpp>

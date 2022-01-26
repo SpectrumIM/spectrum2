@@ -22,16 +22,9 @@
 #include "transport/MemoryUsage.h"
 #include "transport/Logging.h"
 
-#include <sstream>
+#include <boost/asio.hpp>
 
-#ifndef WIN32
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <unistd.h>
-#else 
-#include <winsock2.h>
-#include <stdint.h>
-#include <process.h>
+#ifdef _WIN32
 #define getpid _getpid
 #endif
 
@@ -511,7 +504,6 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 		else {
 			return;
 		}
-
 		pbnetwork::WrapperMessage wrapper;
 		if (wrapper.ParseFromArray(&m_data[4], expected_size) == false) {
 			m_data.erase(m_data.begin(), m_data.begin() + 4 + expected_size);
@@ -573,7 +565,7 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 				break;
 			default:
 				return;
-		}
+			}
 	}
 }
 
