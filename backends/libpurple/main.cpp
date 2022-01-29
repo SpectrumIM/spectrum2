@@ -2022,7 +2022,7 @@ static void fileRecvStart(PurpleXfer *xfer) {
 // 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
 // 	repeater->fileRecvStart();
 	FTData *ftData = (FTData *) xfer->ui_data;
-	if (ftData->timer == 0) {
+	if (ftData && ftData->timer == 0) {
 		ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, xfer);
 	}
 }
