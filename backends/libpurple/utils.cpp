@@ -164,14 +164,3 @@ int create_socket(const char *host, int portno) {
 
 	return SocketFD;
 }
-
-#ifdef _WIN32
-std::wstring utf8ToUtf16(const std::string& str)
-{
-	int numRequiredBytes = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
-	std::wstring result;
-	result.resize(numRequiredBytes);
-	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.size(), result.data(), numRequiredBytes);
-	return result;
-}
-#endif // _WIN32
