@@ -1981,7 +1981,7 @@ static void XferCreated(PurpleXfer *xfer) {
 	}
 
  	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-	if (np->m_accounts[account]) {
+	if (np->m_accounts.find(account) != np->m_accounts.end()) {
 		np->handleFTStart(np->m_accounts[account], xfer->who ? xfer->who : "", purple_xfer_get_filename_wrapped(xfer), purple_xfer_get_size_wrapped(xfer));
 	}
 }
