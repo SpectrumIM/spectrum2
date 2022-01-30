@@ -112,14 +112,6 @@ bool caching = true;
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
 
-static gboolean ft_ui_ready(void *data) {
-	PurpleXfer *xfer = (PurpleXfer *) data;
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	ftdata->timer = 0;
-	purple_xfer_ui_ready_wrapped((PurpleXfer *) data);
-	return FALSE;
-}
-
 /*
 Authorization requests from buddies are cached for the duration of the session.
 To authorize or deny, call the cached callbacks.
@@ -898,44 +890,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_conversation_destroy_wrapped(conv);
 		}
 
-		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
-			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
-			if (xfer) {
-				m_unhandledXfers.erase(user + fileName + buddyName);
-				FTData *ftData = (FTData *) xfer->ui_data;
-
-				ftData->id = ftID;
-				m_xfers[ftID] = xfer;
-				purple_xfer_request_accepted_wrapped(xfer, fileName.c_str());
-				purple_xfer_ui_ready_wrapped(xfer);
-			}
-		}
-
-		void handleFTFinishRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
-			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
-			if (xfer) {
-				m_unhandledXfers.erase(user + fileName + buddyName);
-				purple_xfer_request_denied_wrapped(xfer);
-			}
-		}
-
-		void handleFTPauseRequest(unsigned long ftID) {
-			PurpleXfer *xfer = m_xfers[ftID];
-			if (!xfer)
-				return;
-			FTData *ftData = (FTData *) xfer->ui_data;
-			ftData->paused = true;
-		}
-
-		void handleFTContinueRequest(unsigned long ftID) {
-			PurpleXfer *xfer = m_xfers[ftID];
-			if (!xfer)
-				return;
-			FTData *ftData = (FTData *) xfer->ui_data;
-			ftData->paused = false;
-			purple_xfer_ui_ready_wrapped(xfer);
-		}
-
 		void sendData(const std::string &string) {
 #ifdef WIN32
 			::send(main_socket, string.c_str(), string.size(), 0);
@@ -946,30 +900,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				writeInput = purple_input_add_wrapped(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
 
-		void readyForData() {
-			if (m_waitingXfers.empty())
-				return;
-			std::vector<PurpleXfer *> tmp;
-			tmp.swap(m_waitingXfers);
-
-			for (std::vector<PurpleXfer *>::const_iterator it = tmp.begin(); it != tmp.end(); it++) {
-				FTData *ftData = (FTData *) (*it)->ui_data;
-				if (ftData->timer == 0) {
-					ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, *it);
-				}
-// 				purple_xfer_ui_ready_wrapped(xfer);
-			}
-		}
-
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		AuthRequestList m_authRequests;
 		std::map<std::string, inputRequest *> m_inputRequests;
 		std::map<std::string, std::list<std::string> > m_rooms;
-		std::map<unsigned long, PurpleXfer *> m_xfers;
-		std::map<std::string, PurpleXfer *> m_unhandledXfers;
-		std::vector<PurpleXfer *> m_waitingXfers;
 		std::string adminLegacyName;
 		std::string adminAlias;
 };
@@ -1487,7 +1423,7 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
-	LOG4CXX_INFO(logger, "conv_write_im()");
+	LOG4CXX_DEBUG(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 	bool isCarbon = false;
 
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
@@ -1512,8 +1448,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 	std::string message_; //plain text
 	std::string xhtml_;   //enhanced xhtml, if available
-
-	LOG4CXX_DEBUG(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 
 	if (flags & PURPLE_MESSAGE_IMAGES) {
 		//Store image locally and adjust the message
@@ -1975,145 +1909,91 @@ static PurpleAccountUiOps accountUiOps =
 	NULL
 };
 
-static void XferCreated(PurpleXfer *xfer) {
-	if (!xfer) {
-		return;
+static gboolean
+ensure_path_exists(const char *dir)
+{
+	if (!g_file_test(dir, G_FILE_TEST_IS_DIR))
+	{
+		if (g_mkdir_with_parents(dir, S_IRUSR | S_IWUSR | S_IXUSR)) {
+			return FALSE;
+		}
 	}
-
- 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-	if (np->m_accounts.find(account) != np->m_accounts.end()) {
-		const char * filenameData = purple_xfer_get_filename_wrapped(xfer);
-		std::string filename(filenameData ? filenameData : "");
-		np->handleFTStart(np->m_accounts[account], xfer->who ? xfer->who : "", filename, purple_xfer_get_size_wrapped(xfer));
-	}
-}
-
-static void XferDestroyed(PurpleXfer *xfer) {
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	if (ftdata) {
-		np->m_xfers.erase(ftdata->id);
-	}
-}
-
-static void xferCanceled(PurpleXfer *xfer) {
-	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-	std::string filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
-	std::string w = xfer->who ? xfer->who : "";
-	size_t pos = w.find("/");
-	if (pos != std::string::npos)
-		w.erase((int) pos, w.length() - (int) pos);
-
-	FTData *ftdata = (FTData *) xfer->ui_data;
-
-	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size_wrapped(xfer), ftdata ? ftdata->id : 0);
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	purple_xfer_unref_wrapped(xfer);
-}
-
-static void fileSendStart(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->fileSendStart();
-}
-
-static void fileRecvStart(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->fileRecvStart();
-	FTData *ftData = (FTData *) xfer->ui_data;
-	if (ftData && ftData->timer == 0) {
-		ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, xfer);
-	}
+	return TRUE;
 }
 
 static void newXfer(PurpleXfer *xfer) {
 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-	std::string filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
-	purple_xfer_ref_wrapped(xfer);
+	std::string remote_filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
 	std::string w = xfer->who ? xfer->who : "";
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
+	int count = 1;
+	const char *escape;
+	gchar **name_and_ext;
+	const gchar *name;
+	gchar *ext;
+	std::string web_dir = CONFIG_STRING(config, "service.web_directory");
+	std::string web_url = CONFIG_STRING(config, "service.web_url");
+	if (web_dir.empty() || web_url.empty()) {
+		LOG4CXX_DEBUG(logger, "Denied " << remote_filename << " from " << w << ",  web_directory is disabled.");
+		purple_xfer_request_denied_wrapped(xfer);
+		return;
+	}
+	LOG4CXX_INFO(logger, "Accepting " << remote_filename << " from " << w);
+	gchar *dirname = g_build_filename(web_dir.c_str(), NULL);
+	gchar *filename = g_build_filename(dirname, remote_filename.c_str(), NULL);
+	// Uniqifying code taken from Pidgin autoaccept plugin
+	/* Split at the first dot, to avoid uniquifying "foo.tar.gz" to "foo.tar-2.gz" */
+	name_and_ext = g_strsplit(escape, ".", 2);
+	name = name_and_ext[0];
+	if (name == NULL)
+	{
+		g_strfreev(name_and_ext);
+		g_return_if_reached();
+	}
+	if (name_and_ext[1] != NULL)
+	{
+		/* g_strsplit does not include the separator in each chunk. */
+		ext = g_strdup_printf(".%s", name_and_ext[1]);
+	}
+	else
+	{
+		ext = g_strdup("");
+	}
+	/* Make sure the file doesn't exist. Do we want some better checking than this? */
+	/* FIXME: There is a race here: if the newly uniquified file name gets created between
+	 *        this g_file_test and the transfer starting, the file created in the meantime
+	 *        will be clobbered. But it's not at all straightforward to fix.
+	 */
+	while (g_file_test(filename, G_FILE_TEST_EXISTS))
+	{
+		char *file = g_strdup_printf("%s-%d%s", name, count++, ext);
+		g_free(filename);
+		filename = g_build_filename(dirname, file, NULL);
+		g_free(file);
+	}
 
-	FTData *ftdata = new FTData;
-	ftdata->paused = false;
-	ftdata->id = 0;
-	ftdata->timer = 0;
-	xfer->ui_data = (void *) ftdata;
-
-	np->m_unhandledXfers[np->m_accounts[account] + filename + w] = xfer;
-
-	np->handleFTStart(np->m_accounts[account], w, filename, purple_xfer_get_size_wrapped(xfer));
+	purple_xfer_request_accepted_wrapped(xfer, filename);
+	g_strfreev(name_and_ext);
+	g_free(ext);
+	g_free(dirname);
+	g_free(filename);
 }
 
 static void XferReceiveComplete(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->_tryToDeleteMe();
-// 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveComplete(xfer);
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	purple_xfer_unref_wrapped(xfer);
+	std::string filename(xfer ? purple_xfer_get_local_filename_wrapped(xfer) : "");
+	std::string w = xfer->who ? xfer->who : "";
+	LOG4CXX_INFO(logger, "Received " << filename << " from " << w);
+	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
+	std::string web_url = CONFIG_STRING(config, "service.web_url");
+	pbnetwork::Attachment attachment;
+	gchar *base_filename = g_path_get_basename(filename.c_str());
+	attachment.set_url(web_url + "/" + std::string(base_filename));
+	g_free(base_filename);
+	std::vector<pbnetwork::Attachment> attachments = { attachment };
+	np->handleMessage(np->m_accounts[account], w, "", "", "", xfer->end_time? std::to_string(xfer->end_time) : "", false, false, false, attachments);
 }
-
-static void XferSendComplete(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->_tryToDeleteMe();
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	purple_xfer_unref_wrapped(xfer);
-}
-
-static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
-	FTData *ftData = (FTData *) xfer->ui_data;
-	std::string data((const char *) buffer, (size_t) size);
-// 	std::cout << "xferwrite\n";
-	if (!ftData->paused) {
-// 		std::cout << "adding xfer to waitingXfers queue\n";
-		np->m_waitingXfers.push_back(xfer);
-	}
-	np->handleFTData(ftData->id, data);
-	return size;
-}
-
-static void XferNotSent(PurpleXfer *xfer, const guchar *buffer, gsize size) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->handleDataNotSent(buffer, size);
-}
-
-static gssize XferRead(PurpleXfer *xfer, guchar **buffer, gssize size) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	int data_size = repeater->getDataToSend(buffer, size);
-// 	if (data_size == 0)
-// 		return 0;
-//
-// 	return data_size;
-	return 0;
-}
-
-static PurpleXferUiOps xferUiOps =
-{
-	XferCreated,
-	XferDestroyed,
-	NULL,
-	NULL,
-	xferCanceled,
-	xferCanceled,
-	XferWrite,
-	XferRead,
-	XferNotSent,
-	NULL
-};
 
 static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 {
@@ -2219,7 +2099,6 @@ static void transport_core_ui_init(void)
 	purple_accounts_set_ui_ops_wrapped(&accountUiOps);
 	purple_notify_set_ui_ops_wrapped(&notifyUiOps);
 	purple_request_set_ui_ops_wrapped(&requestUiOps);
-	purple_xfers_set_ui_ops_wrapped(&xferUiOps);
 	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
 	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
 	purple_roomlist_set_ui_ops_wrapped(&roomlist_ui_ops);
@@ -2477,11 +2356,8 @@ static bool initPurple() {
 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
 		static int xfer_handle;
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-start", &xfer_handle, PURPLE_CALLBACK(fileSendStart), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-start", &xfer_handle, PURPLE_CALLBACK(fileRecvStart), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), &xfer_handle);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), &xfer_handle);
 //
 // 		purple_commands_init();
 
@@ -2546,7 +2422,6 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			purple_input_remove_wrapped(writeInput);
 			writeInput = 0;
 		}
-		np->readyForData();
 	}
 }
 

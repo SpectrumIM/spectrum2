@@ -1,6 +1,5 @@
 #include "transport/Config.h"
 #include "transport/Transport.h"
-#include "transport/FileTransferManager.h"
 #include "transport/UserManager.h"
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
@@ -272,9 +271,7 @@ int mainloop() {
 		LOG4CXX_WARN(logger, "Registrations won't work, you have specified [database] type=none in config file.");
 	}
 
-	FileTransferManager ftManager(&transport, userManager);
-
-	NetworkPluginServer plugin(&transport, config_, userManager, &ftManager);
+	NetworkPluginServer plugin(&transport, config_, userManager);
 	plugin.start();
 
 	AdminInterface adminInterface(&transport, userManager, &plugin, storageBackend, userRegistration);

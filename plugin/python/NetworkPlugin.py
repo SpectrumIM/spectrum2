@@ -183,40 +183,6 @@ class NetworkPlugin:
 		message = WRAP(roomList.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_ROOM_LIST)
 		self.send(message);
 
-
-	def handleFTStart(self, user, buddyName, fileName, size):
-		room = protocol_pb2.File()
-		room.userName = user
-		room.buddyName = buddyName
-		room.fileName = fileName
-		room.size = size
-
-		message = WRAP(room.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_START)
-		self.send(message);
-
-	def handleFTFinish(self, user, buddyName, fileName, size, ftid):
-		room = protocol_pb2.File()
-		room.userName = user
-		room.buddyName = buddyName
-		room.fileName = fileName
-		room.size = size
-
-		# Check later
-		if ftid != 0:
-			room.ftID = ftid 
-			
-		message = WRAP(room.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_FINISH)
-		self.send(message)
-
-
-	def handleFTData(self, ftID, data):
-		d = protocol_pb2.FileTransferData()
-		d.ftid = ftID
-		d.data = data
-
-		message = WRAP(d.SerializeToString(), protocol_pb2.WrapperMessage.TYPE_FT_DATA);
-		self.send(message)
-
 	def handleBackendConfig(self, section, key, value):
 		c = protocol_pb2.BackendConfig()
 		c.config = "[%s]\n%s = %s\n" % (section, key, value)
@@ -267,34 +233,6 @@ class NetworkPlugin:
 			#TODO: ERROR
 			return
 		self.handleAttentionRequest(payload.userName, payload.buddyName, payload.message)
-	
-	def handleFTStartPayload(self, data):
-		payload = protocol_pb2.File()
-		if (payload.ParseFromString(data) == False):
-			#TODO: ERROR
-			return
-		self.handleFTStartRequest(payload.userName, payload.buddyName, payload.fileName, payload.size, payload.ftID);
-
-	def handleFTFinishPayload(self, data):
-		payload = protocol_pb2.File()
-		if (payload.ParseFromString(data) == False):
-			#TODO: ERROR
-			return
-		self.handleFTFinishRequest(payload.userName, payload.buddyName, payload.fileName, payload.size, payload.ftID)
-
-	def handleFTPausePayload(self, data):
-		payload = protocol_pb2.FileTransferData()
-		if (payload.ParseFromString(data) == False):
-			#TODO: ERROR
-			return
-		self.handleFTPauseRequest(payload.ftID)
-
-	def handleFTContinuePayload(self, data):
-		payload = protocol_pb2.FileTransferData()
-		if (payload.ParseFromString(data) == False):
-			#TODO: ERROR
-			return
-		self.handleFTContinueRequest(payload.ftID)
 
 	def handleJoinRoomPayload(self, data):
 		payload = protocol_pb2.Room()
@@ -406,14 +344,6 @@ class NetworkPlugin:
 					self.handleChatStatePayload(wrapper.payload, protocol_pb2.WrapperMessage.TYPE_BUDDY_STOPPED_TYPING)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_ATTENTION:
 					self.handleAttentionPayload(wrapper.payload)
-			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_FT_START:
-					self.handleFTStartPayload(wrapper.payload)
-			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_FT_FINISH:
-					self.handleFTFinishPayload(wrapper.payload)
-			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_FT_PAUSE:
-					self.handleFTPausePayload(wrapper.payload)
-			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_FT_CONTINUE:
-					self.handleFTContinuePayload(wrapper.payload)
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_EXIT:
 				self.handleExitRequest()
 			elif wrapper.type == protocol_pb2.WrapperMessage.TYPE_CONV_MESSAGE_ACK:
@@ -574,18 +504,6 @@ class NetworkPlugin:
 		pass
 		
 	def handleAttentionRequest(self, user, buddyName, message):
-		pass
-
-	def handleFTStartRequest(self, user, buddyName, fileName, size, ftID):
-		pass
-		
-	def handleFTFinishRequest(self, user, buddyName, fileName, size, ftID):
-		pass
-		
-	def handleFTPauseRequest(self, ftID):
-		pass
-
-	def handleFTContinueRequest(self, ftID):
 		pass
 	
 

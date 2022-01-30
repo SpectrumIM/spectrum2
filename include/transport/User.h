@@ -25,7 +25,6 @@
 #include <boost/signals2.hpp>
 
 #include "transport/StorageBackend.h"
-#include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/JID/JID.h"
 #include "Swiften/Elements/Presence.h"
@@ -175,7 +174,6 @@ class User {
 		std::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
 		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
-		std::vector<std::shared_ptr<Swift::OutgoingFileTransfer> > m_filetransfers;
 		int m_resources;
 		int m_reconnectCounter;
 		std::list<Swift::Presence::ref> m_joinedRooms;

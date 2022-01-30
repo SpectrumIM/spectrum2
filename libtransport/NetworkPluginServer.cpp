@@ -19,6 +19,7 @@
  */
 
 #include "transport/NetworkPluginServer.h"
+#include "transport/PresenceOracle.h"
 #include "transport/User.h"
 #include "transport/Transport.h"
 #include "transport/RosterManager.h"
@@ -27,7 +28,6 @@
 #include "transport/LocalBuddy.h"
 #include "transport/Config.h"
 #include "transport/Conversation.h"
-#include "transport/MemoryReadBytestream.h"
 #include "transport/Logging.h"
 #include "transport/AdminInterface.h"
 #include "transport/Frontend.h"
@@ -53,9 +53,6 @@
 #include <boost/algorithm/string.hpp>
 
 #include "transport/utf8.h"
-
-#include <Swiften/FileTransfer/ReadBytestream.h>
-#include <Swiften/Elements/StreamInitiationFileInfo.h>
 
 #ifdef _WIN32
 #include "windows.h"
@@ -259,9 +256,8 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 	buddy->setBlocked(payload.blocked());
 }
 
-NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager) {
+NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, UserManager *userManager) {
 	_server = this;
-	m_ftManager = ftManager;
 	m_userManager = userManager;
 	m_config = config;
 	m_component = component;
@@ -721,6 +717,10 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 		msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
 	}
 
+	for (const pbnetwork::Attachment &att : payload.attachment()) {
+		addOobPayload(msg, att.url());
+	}
+
 	// Split the message if configured, or just preprocess
 	LOG4CXX_TRACE(logger, "handleConvMessagePayload: wrapping media");
 	typedef std::vector<std::shared_ptr<Swift::Message> > MsgList;
@@ -815,109 +815,6 @@ void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data
 	c->init_res = payload.init_res();
 	c->shared = payload.shared();
 	c->id = payload.id();
-}
-
-void NetworkPluginServer::handleFTStartPayload(const std::string &data) {
-	pbnetwork::File payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-	User *user = m_userManager->getUser(payload.username());
-	if (!user)
-		return;
-
-	LOG4CXX_INFO(logger, "handleFTStartPayload " << payload.filename() << " " << payload.buddyname());
-	
-	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(payload.buddyname());
-	if (!buddy) {
-		// TODO: escape? reject?
-		return;
-	}
-
-	Swift::StreamInitiationFileInfo fileInfo;
-	fileInfo.setSize(payload.size());
-	fileInfo.setName(payload.filename());
-
-	Backend *c = (Backend *) user->getData();
-	std::shared_ptr<MemoryReadBytestream> bytestream(new MemoryReadBytestream(payload.size()));
-	bytestream->onDataNeeded.connect(boost::bind(&NetworkPluginServer::handleFTDataNeeded, this, c, bytestream_id + 1));
-
-	LOG4CXX_INFO(logger, "jid=" << buddy->getJID());
-
-	FileTransferManager::Transfer transfer = m_ftManager->sendFile(user, buddy, bytestream, fileInfo);
-	if (!transfer.ft) {
-		handleFTRejected(user, payload.buddyname(), payload.filename(), payload.size());
-		return;
-	}
-
-	m_filetransfers[++bytestream_id] = transfer;
-}
-
-void NetworkPluginServer::handleFTFinishPayload(const std::string &data) {
-	pbnetwork::File payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-	if (payload.has_ftid()) {
-		if (m_filetransfers.find(payload.ftid()) != m_filetransfers.end()) {
-			FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
-			transfer.ft->cancel();
-		}
-		else {
-			LOG4CXX_ERROR(logger, "FTFinishPayload for unknown ftid=" << payload.ftid());
-		}
-	}
-
-}
-
-void NetworkPluginServer::handleFTDataPayload(Backend *b, const std::string &data) {
-	pbnetwork::FileTransferData payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-// 	User *user = m_userManager->getUser(payload.username());
-// 	if (!user)
-// 		return;
-
-	if (m_filetransfers.find(payload.ftid()) == m_filetransfers.end()) {
-		LOG4CXX_ERROR(logger, "Uknown filetransfer with id " << payload.ftid());
-		return;
-	}
-
-	FileTransferManager::Transfer &transfer = m_filetransfers[payload.ftid()];
-	MemoryReadBytestream *bytestream = (MemoryReadBytestream *) transfer.readByteStream.get();
-
-	if (bytestream->appendData(payload.data()) > 5000000) {
-		pbnetwork::FileTransferData f;
-		f.set_ftid(payload.ftid());
-		f.set_data("");
-
-		std::string message;
-		f.SerializeToString(&message);
-
-		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_PAUSE);
-
-		send(b->connection, message);
-	}
-}
-
-void NetworkPluginServer::handleFTDataNeeded(Backend *b, unsigned long ftid) {
-	pbnetwork::FileTransferData f;
-	f.set_ftid(ftid);
-	f.set_data("");
-
-	std::string message;
-	f.SerializeToString(&message);
-
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_CONTINUE);
-
-	send(b->connection, message);
 }
 
 void NetworkPluginServer::connectWaitingUsers() {
@@ -1264,15 +1161,6 @@ void NetworkPluginServer::handleDataRead(Backend *c, std::shared_ptr<Swift::Safe
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_STATS:
 				handleStatsPayload(c, wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
-				handleFTStartPayload(wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH:
-				handleFTFinishPayload(wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_DATA:
-				handleFTDataPayload(c, wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED:
 				handleBuddyRemovedPayload(wrapper.payload());
@@ -1843,6 +1731,15 @@ enum OobMode {
 	OobSplit	= 3,	//3. Split into multiple text-only/media-only messages.
 };
 
+void NetworkPluginServer::addOobPayload(Swift::Message::ref message, const std::string &url) {
+	//Add OOB tag
+	std::shared_ptr<Swift::RawXMLPayload>
+		oob_payload(new Swift::RawXMLPayload(
+			"<x xmlns='jabber:x:oob'><url>" + url + "</url>" + "</x>"));
+	// todo: add the payload itself as a caption
+	message->addPayload(oob_payload);
+}
+
 std::vector<std::shared_ptr<Swift::Message> >
 NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
     std::vector<std::shared_ptr<Swift::Message> > result;
@@ -1923,16 +1820,7 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
             this_msg = msg;
         }
 
-        //Add OOB tag
-        std::shared_ptr<Swift::RawXMLPayload>
-            oob_payload(new Swift::RawXMLPayload(
-                "<x xmlns='jabber:x:oob'><url>"
-                + image_url
-                + "</url>"
-                + "</x>"
-            ));
-            // todo: add the payload itself as a caption
-        this_msg->addPayload(oob_payload);
+        addOobPayload(this_msg, image_url);
 
         //In single-OOB mode there's no point to process further media
         if (oobMode == OobExclusive)
@@ -2093,54 +1981,6 @@ void NetworkPluginServer::handleVCardRequired(User *user, const std::string &nam
 		return;
 	}
 	send(c->connection, message);
-}
-
-void NetworkPluginServer::handleFTAccepted(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
-	pbnetwork::File f;
-	f.set_username(user->getJID().toBare());
-	f.set_buddyname(buddyName);
-	f.set_filename(fileName);
-	f.set_size(size);
-	f.set_ftid(ftID);
-
-	std::string message;
-	f.SerializeToString(&message);
-
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_START);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
-}
-
-void NetworkPluginServer::handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size) {
-	pbnetwork::File f;
-	f.set_username(user->getJID().toBare());
-	f.set_buddyname(buddyName);
-	f.set_filename(fileName);
-	f.set_size(size);
-	f.set_ftid(0);
-
-	std::string message;
-	f.SerializeToString(&message);
-
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
-}
-
-void NetworkPluginServer::handleFTStateChanged(Swift::FileTransfer::State state, const std::string &userName, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id) {
-	User *user = m_userManager->getUser(userName);
-	if (!user) {
-		// TODO: FIXME We have to remove filetransfer when use disconnects
-		return;
-	}
 }
 
 void NetworkPluginServer::sendPing(Backend *c) {

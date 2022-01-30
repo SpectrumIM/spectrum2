@@ -311,6 +311,9 @@ extern purple_xfer_get_account_wrapped_fnc purple_xfer_get_account_wrapped;
 typedef const char * (_cdecl * purple_xfer_get_filename_wrapped_fnc)(const PurpleXfer *xfer);
 extern purple_xfer_get_filename_wrapped_fnc purple_xfer_get_filename_wrapped;
 
+typedef const char * (_cdecl * purple_xfer_get_local_filename_wrapped_fnc)(const PurpleXfer *xfer);
+extern purple_xfer_get_local_filename_wrapped_fnc purple_xfer_get_local_filename_wrapped;
+
 typedef size_t  (_cdecl * purple_xfer_get_size_wrapped_fnc)(const PurpleXfer *xfer);
 extern purple_xfer_get_size_wrapped_fnc purple_xfer_get_size_wrapped;
 
@@ -580,6 +583,7 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define purple_xfer_request_denied_wrapped purple_xfer_request_denied
 #define purple_xfer_get_account_wrapped purple_xfer_get_account
 #define purple_xfer_get_filename_wrapped purple_xfer_get_filename
+#define purple_xfer_get_local_filename_wrapped purple_xfer_get_local_filename
 #define purple_xfer_get_size_wrapped purple_xfer_get_size
 #define purple_xfer_unref_wrapped purple_xfer_unref
 #define purple_xfer_ref_wrapped purple_xfer_ref

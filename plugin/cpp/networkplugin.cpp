@@ -84,7 +84,7 @@ void NetworkPlugin::sendConfig(const PluginConfig &cfg) {
 	m.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BACKEND_CONFIG);
-
+	LOG4CXX_INFO(logger, "Sending data: " << message);
 	send(message);
 }
 
@@ -94,7 +94,10 @@ void NetworkPlugin::sendRawXML(std::string &xml) {
 	send(xml);
 }
 
-void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg, const std::string &nickname, const std::string &xhtml, const std::string &timestamp, bool headline, bool pm, bool carbon) {
+void NetworkPlugin::handleMessage(const std::string &user, const std::string &legacyName, const std::string &msg,
+								  const std::string &nickname, const std::string &xhtml, const std::string &timestamp,
+								  bool headline, bool pm, bool carbon, const std::vector<pbnetwork::Attachment> &attachments)
+{
 	pbnetwork::ConversationMessage m;
 	m.set_username(user);
 	m.set_buddyname(legacyName);
@@ -105,6 +108,11 @@ void NetworkPlugin::handleMessage(const std::string &user, const std::string &le
 	m.set_headline(headline);
 	m.set_pm(pm);
 	m.set_carbon(carbon);
+
+	for (const pbnetwork::Attachment &att : attachments) {
+		auto attach = m.add_attachment();
+		attach->CopyFrom(att);
+	}
 
 	std::string message;
 	m.SerializeToString(&message);
@@ -322,52 +330,6 @@ void NetworkPlugin::handleRoomNicknameChanged(const std::string &user, const std
 	send(message);
 }
 
-void NetworkPlugin::handleFTStart(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size) {
-	pbnetwork::File room;
-	room.set_username(user);
-	room.set_buddyname(buddyName);
-	room.set_filename(fileName);
-	room.set_size(size);
-
-	std::string message;
-	room.SerializeToString(&message);
-
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_START);
- 
-	send(message);
-}
-
-void NetworkPlugin::handleFTFinish(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size, unsigned long ftid) {
-	pbnetwork::File room;
-	room.set_username(user);
-	room.set_buddyname(buddyName);
-	room.set_filename(fileName);
-	room.set_size(size);
-	if (ftid) {
-		room.set_ftid(ftid);
-	}
-
-	std::string message;
-	room.SerializeToString(&message);
-
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH);
- 
-	send(message);
-}
-
-void NetworkPlugin::handleFTData(unsigned long ftID, const std::string &data) {
-	pbnetwork::FileTransferData d;
-	d.set_ftid(ftID);
-	d.set_data(data);
-
-	std::string message;
-	d.SerializeToString(&message);
-
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_FT_DATA);
- 
-	send(message);
-}
-
 void NetworkPlugin::handleRoomList(const std::string &user, const std::list<std::string> &rooms, const std::list<std::string> &names) {
 	pbnetwork::RoomList d;
 	for (std::list<std::string>::const_iterator it = rooms.begin(); it != rooms.end(); it++) {
@@ -444,46 +406,6 @@ void NetworkPlugin::handleAttentionPayload(const std::string &data) {
 	}
 
 	handleAttentionRequest(payload.username(), payload.buddyname(), payload.message());
-}
-
-void NetworkPlugin::handleFTStartPayload(const std::string &data) {
-	pbnetwork::File payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-	handleFTStartRequest(payload.username(), payload.buddyname(), payload.filename(), payload.size(), payload.ftid());
-}
-
-void NetworkPlugin::handleFTFinishPayload(const std::string &data) {
-	pbnetwork::File payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-	handleFTFinishRequest(payload.username(), payload.buddyname(), payload.filename(), payload.size(), payload.ftid());
-}
-
-void NetworkPlugin::handleFTPausePayload(const std::string &data) {
-	pbnetwork::FileTransferData payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-	handleFTPauseRequest(payload.ftid());
-}
-
-void NetworkPlugin::handleFTContinuePayload(const std::string &data) {
-	pbnetwork::FileTransferData payload;
-	if (payload.ParseFromString(data) == false) {
-		// TODO: ERROR
-		return;
-	}
-
-	handleFTContinueRequest(payload.ftid());
 }
 
 void NetworkPlugin::handleJoinRoomPayload(const std::string &data) {
@@ -644,18 +566,6 @@ void NetworkPlugin::handleDataRead(std::string &data) {
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
 				handleAttentionPayload(wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_START:
-				handleFTStartPayload(wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_FINISH:
-				handleFTFinishPayload(wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_PAUSE:
-				handleFTPausePayload(wrapper.payload());
-				break;
-			case pbnetwork::WrapperMessage_Type_TYPE_FT_CONTINUE:
-				handleFTContinuePayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_EXIT:
 				handleExitRequest();

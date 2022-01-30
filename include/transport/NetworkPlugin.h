@@ -136,7 +136,9 @@ class NetworkPlugin {
 		/// \param nickname Nickname of buddy in room. Empty if it's normal chat message.
 		/// \param xhtml XHTML message.
 		/// \param carbon If set, the message is a carbon copy of our own message, sent in a different legacy network client. The message should be treated as sent FROM us, not TO us.
-		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "", const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false, bool pm = false, bool carbon = false);
+		void handleMessage(const std::string &user, const std::string &legacyName, const std::string &message, const std::string &nickname = "",
+						   const std::string &xhtml = "", const std::string &timestamp = "", bool headline = false, bool pm = false, bool carbon = false,
+						   const std::vector<pbnetwork::Attachment> &attachments = {});
 
 		void handleMessageAck(const std::string &user, const std::string &legacyName, const std::string &id);
 
@@ -187,11 +189,6 @@ class NetworkPlugin {
 		/// \param buddyName Name of legacy network buddy. (eg. "user2@gmail.com")
 		/// \param message Message.
 		void handleAttention(const std::string &user, const std::string &buddyName, const std::string &message);
-
-		void handleFTStart(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size);
-		void handleFTFinish(const std::string &user, const std::string &buddyName, const std::string fileName, unsigned long size, unsigned long ftid);
-
-		void handleFTData(unsigned long ftID, const std::string &data);
 
 		void handleRoomList(const std::string &user, const std::list<std::string> &rooms, const std::list<std::string> &names);
 
@@ -263,11 +260,6 @@ class NetworkPlugin {
 		virtual void handleStoppedTypingRequest(const std::string &/*user*/, const std::string &/*buddyName*/) {}
 		virtual void handleAttentionRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*message*/) {}
 
-		virtual void handleFTStartRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
-		virtual void handleFTFinishRequest(const std::string &/*user*/, const std::string &/*buddyName*/, const std::string &/*fileName*/, unsigned long size, unsigned long ftID) {}
-		virtual void handleFTPauseRequest(unsigned long ftID) {}
-		virtual void handleFTContinueRequest(unsigned long ftID) {}
-
 		virtual void handleRawXML(const std::string &xml) {}
 
 		virtual void handleMemoryUsage(double &res, double &shared) {res = 0; shared = 0;}
@@ -290,10 +282,6 @@ class NetworkPlugin {
 		void handleBuddyRemovedPayload(const std::string &payload);
 		void handleChatStatePayload(const std::string &payload, int type);
 		void handleAttentionPayload(const std::string &payload);
-		void handleFTStartPayload(const std::string &payload);
-		void handleFTFinishPayload(const std::string &payload);
-		void handleFTPausePayload(const std::string &payload);
-		void handleFTContinuePayload(const std::string &payload);
 		void handleRoomSubjectChangedPayload(const std::string &payload);
 
 		void send(const std::string &data);
