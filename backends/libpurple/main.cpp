@@ -1916,7 +1916,6 @@ static void newXfer(PurpleXfer *xfer) {
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
 	int count = 1;
-	const char *escape;
 	gchar **name_and_ext;
 	const gchar *name;
 	gchar *ext;
@@ -1932,7 +1931,7 @@ static void newXfer(PurpleXfer *xfer) {
 	gchar *filename = g_build_filename(dirname, remote_filename.c_str(), NULL);
 	// Uniqifying code taken from Pidgin autoaccept plugin
 	/* Split at the first dot, to avoid uniquifying "foo.tar.gz" to "foo.tar-2.gz" */
-	name_and_ext = g_strsplit(escape, ".", 2);
+	name_and_ext = g_strsplit(filename, ".", 2);
 	name = name_and_ext[0];
 	if (name == NULL)
 	{
@@ -1971,6 +1970,7 @@ static void newXfer(PurpleXfer *xfer) {
 static void XferReceiveComplete(PurpleXfer *xfer) {
 	std::string filename(xfer ? purple_xfer_get_local_filename_wrapped(xfer) : "");
 	std::string w = xfer->who ? xfer->who : "";
+	std::string message = xfer->message ? xfer->message : "";
 	LOG4CXX_INFO(logger, "Received " << filename << " from " << w);
 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
 	std::string web_url = CONFIG_STRING(config, "service.web_url");
@@ -1979,7 +1979,7 @@ static void XferReceiveComplete(PurpleXfer *xfer) {
 	attachment.set_url(web_url + "/" + std::string(base_filename));
 	g_free(base_filename);
 	std::vector<pbnetwork::Attachment> attachments = { attachment };
-	np->handleMessage(np->m_accounts[account], w, "", "", "", xfer->end_time? std::to_string(xfer->end_time) : "", false, false, false, attachments);
+	np->handleMessage(np->m_accounts[account], w, message, "", "", xfer->end_time? std::to_string(xfer->end_time) : "", false, false, false, attachments);
 }
 
 static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
