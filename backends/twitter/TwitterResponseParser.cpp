@@ -4,21 +4,9 @@
 #include <cctype>
 #include "boost/date_time/local_time/local_time.hpp"
 #include "boost/date_time/time_facet.hpp"
+#include <boost/locale.hpp>
 
 DEFINE_LOGGER(responseParserLogger, "TwitterResponseParser")
-
-static std::string tolowercase(std::string inp)
-{
-	std::string out = inp;
-	for (unsigned i=0 ; i<out.size() ; i++) out[i] = tolower(out[i]);
-	return out;
-}
-
-template <class T> std::string stringOf(T object) {
-	std::ostringstream os;
-	os << object;
-	return (os.str());
-}
 
 static std::string unescape(std::string data, std::vector<UrlEntity> urls) {
 	using boost::algorithm::replace_all;
@@ -57,13 +45,13 @@ EmbeddedStatus getEmbeddedStatus(const Json::Value &element)
 		return status;
 	}
 	status.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
-	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
+	status.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
 	status.setTweet( unescape ( element[TwitterReponseTypes::text.c_str()].asString(), getUrlEntities(element) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].asBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].isNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].asInt64()) );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].asInt64()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].isNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].asInt64())  );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].asInt64())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].isNull() ?
 "" : element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].asString() );
 	status.setRetweetCount( element[TwitterReponseTypes::retweet_count.c_str()].asInt64() );
@@ -80,8 +68,8 @@ User getUser(const Json::Value &element)
 		return user;
 	}
 
-	user.setUserID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
-	user.setScreenName( tolowercase( element[TwitterReponseTypes::screen_name.c_str()].asString() ) );
+	user.setUserID( std::to_string( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
+	user.setScreenName( boost::locale::to_lower( element[TwitterReponseTypes::screen_name.c_str()].asString() ) );
 	user.setUserName( element[TwitterReponseTypes::name.c_str()].asString() );
 	user.setProfileImgURL( element[TwitterReponseTypes::profile_image_url.c_str()].asString() );
 	user.setNumberOfTweets( element[TwitterReponseTypes::statuses_count.c_str()].asInt64() );
@@ -95,13 +83,13 @@ Status getStatus(const Json::Value &element)
 	Status status;
 
 	status.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
-	status.setID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64()  ));
+	status.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].asInt64()  ));
 	status.setTweet( unescape ( element[TwitterReponseTypes::text.c_str()].asString(), getUrlEntities(element) ) );
 	status.setTruncated( element[TwitterReponseTypes::truncated.c_str()].asBool());
 	status.setReplyToStatusID( element[TwitterReponseTypes::in_reply_to_status_id.c_str()].isNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].asInt64()) );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_status_id.c_str()].asInt64()) );
 	status.setReplyToUserID( element[TwitterReponseTypes::in_reply_to_user_id.c_str()].isNull() ?
-"" : stringOf(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].asInt64())  );
+"" : std::to_string(element[TwitterReponseTypes::in_reply_to_user_id.c_str()].asInt64())  );
 	status.setReplyToScreenName( element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].isNull() ?
 "" : element[TwitterReponseTypes::in_reply_to_screen_name.c_str()].asString() );
 	status.setUserData( getUser(element[TwitterReponseTypes::user.c_str()]) );
@@ -112,7 +100,7 @@ Status getStatus(const Json::Value &element)
 	if (rt.isObject()) {
 		status.setTweet(unescape( rt[TwitterReponseTypes::text.c_str()].asString() + " (RT by @" + status.getUserData().getScreenName() + ")"
 			, getUrlEntities(element)) );
-		status.setRetweetID( stringOf(rt[TwitterReponseTypes::id.c_str()].asInt64()) );
+		status.setRetweetID( std::to_string(rt[TwitterReponseTypes::id.c_str()].asInt64()) );
 		status.setCreationTime( toIsoTime ( rt[TwitterReponseTypes::created_at.c_str()].asString() ) );
 		status.setUserData( getUser ( rt[TwitterReponseTypes::user.c_str()]) );
 	}
@@ -125,10 +113,10 @@ DirectMessage getDirectMessage(const Json::Value &element)
 	DirectMessage DM;
 
 	DM.setCreationTime( toIsoTime ( element[TwitterReponseTypes::created_at.c_str()].asString() ) );
-	DM.setID( stringOf( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
+	DM.setID( std::to_string( element[TwitterReponseTypes::id.c_str()].asInt64() ) );
 	DM.setMessage( unescape ( element[TwitterReponseTypes::text.c_str()].asString(), getUrlEntities(element) ) );
-	DM.setSenderID( stringOf( element[TwitterReponseTypes::sender_id.c_str()].asInt64())  );
-	DM.setRecipientID( stringOf( element[TwitterReponseTypes::recipient_id.c_str()].asInt64() ) );
+	DM.setSenderID( std::to_string( element[TwitterReponseTypes::sender_id.c_str()].asInt64())  );
+	DM.setRecipientID( std::to_string( element[TwitterReponseTypes::recipient_id.c_str()].asInt64() ) );
 	DM.setSenderScreenName( element[TwitterReponseTypes::sender_screen_name.c_str()].asString() );
 	DM.setRecipientScreenName( element[TwitterReponseTypes::recipient_screen_name.c_str()].asString() );
 	DM.setSenderData( getUser(element[TwitterReponseTypes::sender.c_str()] ));
@@ -250,7 +238,7 @@ std::vector<std::string> getIDs(std::string &json)
 	const Json::Value & ids = rootElement[TwitterReponseTypes::ids.c_str()];
 
 	for (Json::Value::ArrayIndex i=0 ; i<ids.size() ; i++) {
-		IDs.push_back(stringOf( ids[i].asInt64()) );
+		IDs.push_back(std::to_string( ids[i].asInt64()) );
 	}
 	return IDs;
 }
@@ -272,7 +260,7 @@ Error getErrorMessage(std::string &json)
 		if (!rootElement["errors"].isNull()) {
 			const Json::Value &errorElement = rootElement["errors"][0u]; // first error
 			error = errorElement["message"].asString();
-			code = stringOf(errorElement["code"].asInt64());
+			code = std::to_string(errorElement["code"].asInt64());
 			resp.setCode(code);
 			resp.setMessage(error);
 		}

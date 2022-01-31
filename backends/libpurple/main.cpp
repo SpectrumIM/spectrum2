@@ -57,19 +57,6 @@ bool firstPing = true;
 
 using namespace Transport;
 
-template <class T> T fromString(const std::string &str) {
-	T i;
-	std::istringstream os(str);
-	os >> i;
-	return i;
-}
-
-template <class T> std::string stringOf(T object) {
-	std::ostringstream os;
-	os << object;
-	return (os.str());
-}
-
 static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
@@ -331,7 +318,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 							break;
 
 						case PURPLE_PREF_INT:
-							purple_account_set_int_wrapped(account, strippedKey.c_str(), fromString<int>(keyItem.second.as<std::string>()));
+							purple_account_set_int_wrapped(account, strippedKey.c_str(), std::stoi(keyItem.second.as<std::string>()));
 							break;
 
 						case PURPLE_PREF_STRING:
@@ -354,7 +341,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			gsize length;
 			gboolean ret = g_file_get_contents ("gfire.cfg", &contents, &length, NULL);
 			if (ret) {
-				purple_account_set_int_wrapped(account, "version", fromString<int>(std::string(contents, length)));
+				purple_account_set_int_wrapped(account, "version", std::stoi(std::string(contents, length)));
 			}
 
 
@@ -521,7 +508,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					account->ui_data = NULL;
 				}
 				if (purple_account_get_int_wrapped(account, "version", 0) != 0) {
-					std::string data = stringOf(purple_account_get_int_wrapped(account, "version", 0));
+					std::string data = std::to_string(purple_account_get_int_wrapped(account, "version", 0));
 					g_file_set_contents ("gfire.cfg", data.c_str(), data.size(), NULL);
 				}
 // 				VALGRIND_DO_LEAK_CHECK;

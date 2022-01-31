@@ -44,12 +44,6 @@ namespace Transport {
 	wrap.set_payload(MESSAGE); \
 	wrap.SerializeToString(&MESSAGE);
 
-template <class T> std::string stringOf(T object) {
-	std::ostringstream os;
-	os << object;
-	return (os.str());
-}
-
 NetworkPlugin::NetworkPlugin() {
 	m_pingReceived = false;
 
@@ -620,7 +614,7 @@ void NetworkPlugin::sendMemoryUsage() {
 
 	stats.set_res(res + e_res);
 	stats.set_shared(shared + e_shared);
-	stats.set_id(stringOf(getpid()));
+	stats.set_id(std::to_string(getpid()));
 
 	std::string message;
 	stats.SerializeToString(&message);
