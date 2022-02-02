@@ -71,7 +71,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		void setUp (void) {
 			setMeUp();
 
-			serv = new NetworkPluginServer(component, cfg, userManager, NULL);
+			serv = new NetworkPluginServer(component, cfg, userManager);
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
 			user->setData(&backend);

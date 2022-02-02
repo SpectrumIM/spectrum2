@@ -219,6 +219,9 @@ bool OpenSSLServerContext::setServerCertificate(CertificateWithKey::ref certref)
 		LOG4CXX_ERROR(logger, "TLS WILL NOT WORK: Can't use this private key");
 		return false;
 	}
+	for (int i = 0;  i < sk_X509_num(caCerts.get()); ++i) {
+        SSL_CTX_add_extra_chain_cert(context_, sk_X509_value(caCerts.get(), i));
+    }
 	return true;
 }
 

@@ -32,7 +32,7 @@ class AdminInterfaceTest : public CPPUNIT_NS :: TestFixture, public BasicSlackTe
 
 		void setUp (void) {
 			setMeUp();
-			serv = new NetworkPluginServer(component, cfg, userManager, NULL);
+			serv = new NetworkPluginServer(component, cfg, userManager);
 			admin = new AdminInterface(component, userManager, serv, storage, NULL);
 			component->setAdminInterface(admin);
 		}

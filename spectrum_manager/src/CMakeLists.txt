@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp *.c)
 
 add_executable(spectrum2_manager ${SRC})

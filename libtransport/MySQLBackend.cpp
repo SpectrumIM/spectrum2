@@ -62,7 +62,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 				m_params.resize(m_params.size() + 1);
 				memset(&m_params.back(), 0, sizeof(MYSQL_BIND));
 
-				m_params.back().buffer_type= MYSQL_TYPE_STRING;
+				m_params.back().buffer_type= MYSQL_TYPE_VAR_STRING;
 				m_params.back().buffer= (char *) malloc(sizeof(char) * 4096);
 				m_params.back().buffer_length= 4096;
 				m_params.back().is_null= 0;
@@ -98,7 +98,7 @@ MySQLBackend::Statement::Statement(MYSQL *conn, const std::string &format, const
 				m_results.resize(m_results.size() + 1);
 				memset(&m_results.back(), 0, sizeof(MYSQL_BIND));
 
-				m_results.back().buffer_type= MYSQL_TYPE_STRING;
+				m_results.back().buffer_type= MYSQL_TYPE_VAR_STRING;
 				m_results.back().buffer= (char *) malloc(sizeof(char) * 4096);
 				m_results.back().buffer_length= 4096;
 				m_results.back().is_null= 0;
@@ -256,6 +256,7 @@ void MySQLBackend::disconnect() {
 	delete m_setUserOnline;
 	delete m_getOnlineUsers;
 	delete m_getUsers;
+	delete m_getLegacyNetworkUsers;
 }
 
 bool MySQLBackend::connect() {
@@ -287,14 +288,14 @@ bool MySQLBackend::connect() {
 	m_removeUserSettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "users_settings WHERE user_id=?");
 	m_removeUserBuddiesSettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE user_id=?");
 
-	m_addBuddy = new Statement(&m_conn, "issssi", "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, groups, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
+	m_addBuddy = new Statement(&m_conn, "issssi", "INSERT INTO " + m_prefix + "buddies (user_id, uin, subscription, `groups`, nickname, flags) VALUES (?, ?, ?, ?, ?, ?)");
 	m_removeBuddy = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies WHERE id=?");
 	m_removeBuddySettings = new Statement(&m_conn, "i", "DELETE FROM " + m_prefix + "buddies_settings WHERE buddy_id=?");
-	m_updateBuddy = new Statement(&m_conn, "ssisis", "UPDATE " + m_prefix + "buddies SET groups=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
-	m_getBuddies = new Statement(&m_conn, "i|issssi", "SELECT id, uin, subscription, nickname, groups, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
+	m_updateBuddy = new Statement(&m_conn, "ssisis", "UPDATE " + m_prefix + "buddies SET `groups`=?, nickname=?, flags=?, subscription=? WHERE user_id=? AND uin=?");
+	m_getBuddies = new Statement(&m_conn, "i|issssi", "SELECT id, uin, subscription, nickname, `groups`, flags FROM " + m_prefix + "buddies WHERE user_id=? ORDER BY id ASC");
 	m_getBuddiesSettings = new Statement(&m_conn, "i|iiss", "SELECT buddy_id, type, var, value FROM " + m_prefix + "buddies_settings WHERE user_id=? ORDER BY buddy_id ASC");
 	m_updateBuddySetting = new Statement(&m_conn, "iisiss", "INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value=?");
-	m_getBuddySetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
+	m_getBuddySetting = new Statement(&m_conn, "iss|is", "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
 	
 	m_getUserSetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	m_setUserSetting = new Statement(&m_conn, "isis", "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
@@ -303,7 +304,7 @@ bool MySQLBackend::connect() {
 	m_setUserOnline = new Statement(&m_conn, "bi", "UPDATE " + m_prefix + "users SET online=?, last_login=NOW()  WHERE id=?");
 	m_getOnlineUsers = new Statement(&m_conn, "|s", "SELECT jid FROM " + m_prefix + "users WHERE online=1");
 	m_getUsers = new Statement(&m_conn, "|s", "SELECT jid FROM " + m_prefix + "users");
-
+	m_getLegacyNetworkUsers = new Statement(&m_conn, "|s", "SELECT uin FROM " + m_prefix + "users");
 	return true;
 }
 
@@ -445,6 +446,20 @@ bool MySQLBackend::getUsers(std::vector<std::string> &users) {
 	std::string jid;
 	while (m_getUsers->fetch() == 0) {
 		*m_getUsers >> jid;
+		users.push_back(jid);
+	}
+
+	return true;
+}
+
+bool MySQLBackend::getLegacyNetworkUsers(std::vector<std::string> &users) {
+	EXEC(m_getLegacyNetworkUsers, getLegacyNetworkUsers(users));
+	if (!exec_ok)
+		return false;
+
+	std::string jid;
+	while (m_getLegacyNetworkUsers->fetch() == 0) {
+		*m_getLegacyNetworkUsers >> jid;
 		users.push_back(jid);
 	}
 

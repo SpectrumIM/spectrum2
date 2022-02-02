@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp *.h)
 file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/include/transport/*.h)
 

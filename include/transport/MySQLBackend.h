@@ -86,6 +86,8 @@ class MySQLBackend : public StorageBackend
 
 		bool getUsers(std::vector<std::string> &users);
 
+		bool getLegacyNetworkUsers(std::vector<std::string> &users);
+
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
@@ -160,6 +162,7 @@ class MySQLBackend : public StorageBackend
 		Statement *m_setUserOnline;
 		Statement *m_getOnlineUsers;
 		Statement *m_getUsers;
+		Statement *m_getLegacyNetworkUsers;
 };
 
 }

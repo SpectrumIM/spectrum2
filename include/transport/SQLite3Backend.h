@@ -74,6 +74,8 @@ class SQLite3Backend : public StorageBackend
 
 		bool getUsers(std::vector<std::string> &users);
 
+		bool getLegacyNetworkUsers(std::vector<std::string> &users);
+
 		/// Removes user and all connected data from database.
 		/// \param id id of user - UserInfo.id
 		/// \return true if user has been found in database and removed
@@ -127,6 +129,7 @@ class SQLite3Backend : public StorageBackend
 		sqlite3_stmt *m_setUserOnline;
 		sqlite3_stmt *m_getOnlineUsers;
 		sqlite3_stmt *m_getUsers;
+		sqlite3_stmt *m_getLegacyNetworkUsers;
 };
 
 }

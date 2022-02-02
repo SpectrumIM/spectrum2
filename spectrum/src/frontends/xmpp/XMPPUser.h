@@ -25,7 +25,6 @@
 #include <time.h>
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
-#include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Network/Connection.h"

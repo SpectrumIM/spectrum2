@@ -1,19 +1,19 @@
-FROM debian:buster-backports as base
+FROM debian:bullseye-backports as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
+RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+RUN echo "deb-src https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl https://packages.spectrum.im/packages.key | apt-key add -
 
 RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
 
-RUN apt-get install -t buster-backports --no-install-recommends -y cmake
+RUN apt-get install --no-install-recommends -y cmake
 
 #TODO include in Build-Depends
 RUN apt-get install --no-install-recommends -y libssl-dev
@@ -26,11 +26,11 @@ FROM base as test
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
-WORKDIR spectrum2
+WORKDIR /spectrum2
 
-RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev libpurple-xmpp-carbons1 libglib2.0-dev psmisc
+RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
 
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
 ENTRYPOINT ["make", "extended_test"]
 
@@ -41,24 +41,24 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-RUN echo 'deb http://apt.llvm.org/buster/ llvm-toolchain-buster-10 main' > /etc/apt/sources.list.d/llvm.list
+RUN echo 'deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-13 main' > /etc/apt/sources.list.d/llvm.list
 RUN apt-get update -qq
 
-RUN apt-get install --no-install-recommends -y libcppunit-dev clang-10 lld-10
+RUN apt-get install --no-install-recommends -y libcppunit-dev clang-13 lld-13
 
-WORKDIR spectrum2
+WORKDIR /spectrum2
 
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-10 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-10 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-13 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-13 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
 
 ENTRYPOINT ["make", "test"]
 
 FROM spectrum2/alpine-build-environment:latest as test-musl
 
-COPY . spectrum2/
+COPY . /spectrum2/
 
-WORKDIR spectrum2
+WORKDIR /spectrum2
 
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_FROTZ=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
 ENTRYPOINT ["make", "test"]
 
@@ -74,7 +74,15 @@ RUN /bin/bash ./build_spectrum2.sh
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
-		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev
+		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev mercurial
+		
+RUN echo "---> Installing purple-facebook" && \
+		git clone https://github.com/dequis/purple-facebook.git && \
+		cd purple-facebook && \
+		/bin/bash ./autogen.sh && \
+		./configure && \
+		make && \
+		make DESTDIR=/tmp/out install
 
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
@@ -101,16 +109,11 @@ RUN echo "---> Install Steam" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-gowhatsapp" && \
-		apt-get -y install golang && \
-		git clone https://github.com/hoehermann/purple-gowhatsapp && \
+		apt-get -y install -t bullseye-backports golang && \
+		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
 		cd purple-gowhatsapp && \
-		make && \
-		make DESTDIR=/tmp/out install
-
-RUN echo "---> purple-telegram" && \
-git clone --recursive https://github.com/majn/telegram-purple && \
-		cd telegram-purple && \
-		./configure && \
+		git checkout whatsmeow && \
+		cmake . && \
 		make && \
 		make DESTDIR=/tmp/out install
 
@@ -133,7 +136,7 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		make DESTDIR=/tmp/out install
 
 		
-FROM debian:buster-slim as production
+FROM debian:bullseye-slim as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
@@ -141,26 +144,21 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
-RUN echo 'deb http://deb.debian.org/debian stable-backports main' > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libmarkdown2
 
-RUN echo "deb https://packages.spectrum.im/spectrum2/ buster main" | tee -a /etc/apt/sources.list
+RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
-RUN echo "deb http://download.opensuse.org/repositories/home:/jgeboski/Debian_10/ /" | tee /etc/apt/sources.list.d/home:jgeboski.list
-RUN curl -fsSL https://download.opensuse.org/repositories/home:jgeboski/Debian_10/Release.key | apt-key add
-RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_10/ /" | tee /etc/apt/sources.list.d/home:ars3n1y.list
-RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_10/Release.key | apt-key add
+RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_11/ /" | tee /etc/apt/sources.list.d/home:ars3n1y.list
+RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_11/Release.key | apt-key add
 RUN apt-get update -qq
 
 RUN echo "---> Installing pidgin-sipe" && \
 		apt-get install --no-install-recommends -y pidgin-sipe
-RUN echo "---> Installing purple-facebook" && \
-		apt-get install --no-install-recommends -y purple-facebook
 RUN echo "---> Installing purple-telegram" && \
-		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.6.0
+		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.7.9
 RUN echo "---> Installing purple-discord" && \
-                apt-get install --no-install-recommends -y -t buster-backports purple-discord
+                apt-get install --no-install-recommends -y purple-discord
 
 COPY --from=staging /tmp/out/* /usr/
 
@@ -171,6 +169,6 @@ RUN apt install --no-install-recommends -y /tmp/*.deb
 
 RUN rm -rf /tmp/*.deb
 
-RUN apt-get autoremove && apt-get clean
+RUN apt-get autoremove -y && apt-get clean
 
 ENTRYPOINT ["/run.sh"]

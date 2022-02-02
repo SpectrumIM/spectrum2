@@ -26,8 +26,11 @@
 # Incorporates work from the module contributed to VRPN under the same license:
 # 2011 Philippe Crassous (ENSAM ParisTech / Institut Image) p.crassous _at_ free.fr
 #
-# Copyright Philippe Crassous 2011.
-# Copyright Sensics, Inc. 2016.
+# Copyright 2011, Philippe Crassous
+# Copyright 2016, Sensics, Inc.
+#
+# SPDX-License-Identifier: BSL-1.0
+#
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
@@ -84,7 +87,7 @@ if(jsoncpp_FOUND)
 		set_property(TARGET ${target} APPEND PROPERTY MAP_IMPORTED_CONFIG_RELEASE RELEASE RELWITHDEBINFO MINSIZEREL NONE ${_jsoncpp_debug_fallback})
 		set_property(TARGET ${target} APPEND PROPERTY MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELWITHDEBINFO RELEASE MINSIZEREL NONE ${_jsoncpp_debug_fallback})
 		set_property(TARGET ${target} APPEND PROPERTY MAP_IMPORTED_CONFIG_MINSIZEREL MINSIZEREL RELEASE RELWITHDEBINFO NONE ${_jsoncpp_debug_fallback})
-		set_property(TARGET ${target} APPEND PROPERTY MAP_IMPORTED_CONFIG_NONE RELEASE RELWITHDEBINFO MINSIZEREL ${_jsoncpp_debug_fallback})
+		set_property(TARGET ${target} APPEND PROPERTY MAP_IMPORTED_CONFIG_NONE NONE RELEASE RELWITHDEBINFO MINSIZEREL ${_jsoncpp_debug_fallback})
 		if(NOT MSVC)
 			set_property(TARGET ${target} APPEND PROPERTY MAP_IMPORTED_CONFIG_DEBUG DEBUG RELWITHDEBINFO RELEASE MINSIZEREL NONE)
 		endif()

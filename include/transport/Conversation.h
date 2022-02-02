@@ -23,6 +23,7 @@
 #include <string>
 #include <algorithm>
 #include <list>
+#include <map>
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/Presence.h"
 

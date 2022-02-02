@@ -20,11 +20,8 @@
 
 #pragma once
 
-#include "transport/FileTransferManager.h"
-
 #include <time.h>
 #include <vector>
-#include "Swiften/Presence/PresenceOracle.h"
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Network/Connection.h"
@@ -40,7 +37,6 @@
 #include "Swiften/Parser/XMPPParser.h"
 #include "Swiften/Parser/XMPPParserClient.h"
 #include "Swiften/Serializer/XMPPSerializer.h"
-#include <Swiften/FileTransfer/FileTransfer.h>
 #include "transport/protocol.pb.h"
 
 #define NETWORK_PLUGIN_API_VERSION (1)
@@ -59,8 +55,6 @@ class RosterResponder;
 class BlockResponder;
 class DummyReadBytestream;
 class AdminInterface;
-class FileTransferManager;
-class FileTransfer;
 
 class NetworkPluginServer : Swift::XMPPParserClient {
 	public:
@@ -78,7 +72,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 			std::string id;
 		};
 
-		NetworkPluginServer(Component *component, Config *config, UserManager *userManager, FileTransferManager *ftManager);
+		NetworkPluginServer(Component *component, Config *config, UserManager *userManager);
 
 		virtual ~NetworkPluginServer();
 
@@ -125,9 +119,6 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleAuthorizationPayload(const std::string &payload);
 		void handleAttentionPayload(const std::string &payload);
 		void handleStatsPayload(Backend *c, const std::string &payload);
-		void handleFTStartPayload(const std::string &payload);
-		void handleFTFinishPayload(const std::string &payload);
-		void handleFTDataPayload(Backend *b, const std::string &payload);
 		void handleQueryPayload(Backend *b, const std::string &payload);
 		void handleBackendConfigPayload(const std::string &payload);
 		void handleRoomListPayload(const std::string &payload);
@@ -151,11 +142,6 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> vcard);
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
 
-		void handleFTStateChanged(Swift::FileTransfer::State state, const std::string &userName, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long id);
-		void handleFTAccepted(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID);
-		void handleFTRejected(User *user, const std::string &buddyName, const std::string &fileName, unsigned long size);
-		void handleFTDataNeeded(Backend *b, unsigned long ftid);
-
 		void handlePIDTerminated(unsigned long pid);
 
 		std::vector<std::shared_ptr<Swift::Message> > wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg);
@@ -175,6 +161,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleStreamStart(const Swift::ProtocolHeader&) {}
 		void handleElement(std::shared_ptr<Swift::ToplevelElement> element);
 		void handleStreamEnd() {}
+		void addOobPayload(Swift::Message::ref message, const std::string &url);
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;
@@ -190,8 +177,6 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		Component *m_component;
 		std::list<User *> m_waitingUsers;
 		bool m_isNextLongRun;
-		std::map<unsigned long, FileTransferManager::Transfer> m_filetransfers;
-		FileTransferManager *m_ftManager;
 		std::vector<std::string> m_crashedBackends;
 		AdminInterface *m_adminInterface;
 		bool m_startingBackend;
