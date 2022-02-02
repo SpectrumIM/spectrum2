@@ -263,7 +263,7 @@ function show_instance() {
 	$.get($.cookie("base_location") + "api/v1/instances/commands/" + htmlEncode(query.get("id")), function(data) {
 		$.each(data.commands, function(i, command) {
 			var row = '<tr>'
-			row += '<td><a class="button_command" command="' + command.name + '" instance="' + htmlEncode(query.get("id") + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + htmlEncode(query.get("id") + '?command=' + command.name +'">' + command.label + '</a></td>';
+			row += '<td><a class="button_command" command="' + command.name + '" instance="' + htmlEncode(query.get("id")) + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + htmlEncode(query.get("id")) + '?command=' + command.name +'">' + command.label + '</a></td>';
 			row += '<td>' + command.category + '</td>';
 			row += '<td>' + command.desc + '</td>';
 			row += '</tr>';
