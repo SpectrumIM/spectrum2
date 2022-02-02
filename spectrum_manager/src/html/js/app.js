@@ -1,3 +1,10 @@
+function htmlEncode(s) {
+  var el = document.createElement("div");
+  el.innerText = el.textContent = s;
+  s = el.innerHTML;
+  return s;
+}
+
 function show_instances() {
 	$.get($.cookie("base_location") + "api/v1/instances", function(data) {
 		var admin = $.cookie("admin") == "1";
@@ -251,12 +258,12 @@ function execute_command(instance, command) {
 function show_instance() {
 	var query = new URL(document.location.href).searchParams;
 
-	$("#main_content").html("<h2>Instance: " + query.get("id") + "</h2><h4>Available commands:</h4><table id='commands'><tr><th>Name<th>Category</th><th>Description</th></tr></table><h4>Available variables:</h4><table id='variables'><tr><th>Name<th>Value</th><th>Read-only</th><th>Desc</th></tr></table>");
+	$("#main_content").html("<h2>Instance: " + htmlEncode(query.get("id")) + "</h2><h4>Available commands:</h4><table id='commands'><tr><th>Name<th>Category</th><th>Description</th></tr></table><h4>Available variables:</h4><table id='variables'><tr><th>Name<th>Value</th><th>Read-only</th><th>Desc</th></tr></table>");
 
-	$.get($.cookie("base_location") + "api/v1/instances/commands/" + query.get("id"), function(data) {
+	$.get($.cookie("base_location") + "api/v1/instances/commands/" + htmlEncode(query.get("id")), function(data) {
 		$.each(data.commands, function(i, command) {
 			var row = '<tr>'
-			row += '<td><a class="button_command" command="' + command.name + '" instance="' + query.get("id") + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + query.get("id") + '?command=' + command.name +'">' + command.label + '</a></td>';
+			row += '<td><a class="button_command" command="' + command.name + '" instance="' + htmlEncode(query.get("id") + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + htmlEncode(query.get("id") + '?command=' + command.name +'">' + command.label + '</a></td>';
 			row += '<td>' + command.category + '</td>';
 			row += '<td>' + command.desc + '</td>';
 			row += '</tr>';
