@@ -1,3 +1,18 @@
+### Version 2.1.1 (2022-02-03)
+#### General
+* Fix MySQL 8.x compatibility
+* Various minor code improvements, see commit log
+#### libpurple backend
+* Fix issues with filetransfers: files automatically downloaded to `web.directory`
+* Add support for the purple-gowhatsapp QR code auth
+* Fix crash when processing `[purple]` boolean config options
+#### Docker
+* Updated base image to Debian 11
+* Added example `docker-compose` configuration
+#### Web interface
+* Fix security issues found by CodeQL scans
+* Use third-party scripts from CDN
+___
 ### Version 2.1.0 (2021-10-15)
 #### General
 * Swiften 4.0 is now minimum supported Swiften version
