@@ -15,6 +15,7 @@
     <script src="/js/config.js"></script>
     <script src="https://netdna.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+    <script src="https://unpkg.com/@ungap/url-search-params"></script>
     <script src="/js/app.js"></script>
     <title>Spectrum 2</title>
   </head>

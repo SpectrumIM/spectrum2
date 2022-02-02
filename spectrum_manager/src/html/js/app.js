@@ -1,17 +1,3 @@
-function getQueryParams(qs) {
-	qs = qs.split('+').join(' ');
-
-	var params = {},
-		tokens,
-		re = /[?&]?([^=]+)=([^&]*)/g;
-
-	while (tokens = re.exec(qs)) {
-		params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
-	}
-
-	return params;
-}
-
 function show_instances() {
 	$.get($.cookie("base_location") + "api/v1/instances", function(data) {
 		var admin = $.cookie("admin") == "1";
@@ -113,8 +99,8 @@ function fill_users_register_form() {
 				$('#error').text(data.message);
 			}
 			else {
-				var query = getQueryParams(document.location.search);
-				if (query.back_to_list == "1") {
+				var query = new URL(document.location.href).searchParams;
+				if (query.get("back_to_list") == "1") {
 					window.location.replace("list.shtml");
 				}
 				else {
@@ -263,14 +249,14 @@ function execute_command(instance, command) {
 }
 
 function show_instance() {
-	var query = getQueryParams(document.location.search);
+	var query = new URL(document.location.href).searchParams;
 
-	$("#main_content").html("<h2>Instance: " + query.id + "</h2><h4>Available commands:</h4><table id='commands'><tr><th>Name<th>Category</th><th>Description</th></tr></table><h4>Available variables:</h4><table id='variables'><tr><th>Name<th>Value</th><th>Read-only</th><th>Desc</th></tr></table>");
+	$("#main_content").html("<h2>Instance: " + query.get("id") + "</h2><h4>Available commands:</h4><table id='commands'><tr><th>Name<th>Category</th><th>Description</th></tr></table><h4>Available variables:</h4><table id='variables'><tr><th>Name<th>Value</th><th>Read-only</th><th>Desc</th></tr></table>");
 
-	$.get($.cookie("base_location") + "api/v1/instances/commands/" + query.id, function(data) {
+	$.get($.cookie("base_location") + "api/v1/instances/commands/" + query.get("id"), function(data) {
 		$.each(data.commands, function(i, command) {
 			var row = '<tr>'
-			row += '<td><a class="button_command" command="' + command.name + '" instance="' + query.id + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + query.id + '?command=' + command.name +'">' + command.label + '</a></td>';
+			row += '<td><a class="button_command" command="' + command.name + '" instance="' + query.get("id") + '" href="' + $.cookie("base_location") +  'api/v1/instances/command_args/' + query.get("id") + '?command=' + command.name +'">' + command.label + '</a></td>';
 			row += '<td>' + command.category + '</td>';
 			row += '<td>' + command.desc + '</td>';
 			row += '</tr>';
