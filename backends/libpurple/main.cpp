@@ -1928,10 +1928,9 @@ static void newXfer(PurpleXfer *xfer) {
 	}
 	LOG4CXX_INFO(logger, "Accepting " << remote_filename << " from " << w);
 	gchar *dirname = g_build_filename(web_dir.c_str(), NULL);
-	gchar *filename = g_build_filename(dirname, remote_filename.c_str(), NULL);
 	// Uniqifying code taken from Pidgin autoaccept plugin
 	/* Split at the first dot, to avoid uniquifying "foo.tar.gz" to "foo.tar-2.gz" */
-	name_and_ext = g_strsplit(filename, ".", 2);
+	name_and_ext = g_strsplit(remote_filename.c_str(), ".", 2);
 	name = name_and_ext[0];
 	if (name == NULL)
 	{
@@ -1947,24 +1946,14 @@ static void newXfer(PurpleXfer *xfer) {
 	{
 		ext = g_strdup("");
 	}
-	/* Make sure the file doesn't exist. Do we want some better checking than this? */
-	/* FIXME: There is a race here: if the newly uniquified file name gets created between
-	 *        this g_file_test and the transfer starting, the file created in the meantime
-	 *        will be clobbered. But it's not at all straightforward to fix.
-	 */
-	while (g_file_test(filename, G_FILE_TEST_EXISTS))
-	{
-		char *file = g_strdup_printf("%s-%d%s", name, count++, ext);
-		g_free(filename);
-		filename = g_build_filename(dirname, file, NULL);
-		g_free(file);
-	}
-
+	char *file = g_strdup_printf("%s%s", g_uuid_string_random(), ext);
+	gchar *filename = g_build_filename(dirname, file, NULL);
 	purple_xfer_request_accepted_wrapped(xfer, filename);
 	g_strfreev(name_and_ext);
 	g_free(ext);
 	g_free(dirname);
 	g_free(filename);
+	g_free(file);
 }
 
 static void XferReceiveComplete(PurpleXfer *xfer) {
