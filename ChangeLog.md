@@ -1,3 +1,7 @@
+### Version 2.1.2 (2022-02-03)
+#### libpurple backend
+* Fix issues with filetransfers: always use unique filename for incoming file
+___
 ### Version 2.1.1 (2022-02-03)
 #### General
 * Fix MySQL 8.x compatibility
