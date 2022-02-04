@@ -8,6 +8,20 @@ on:
 jobs:
   linux-glibc:
     runs-on: ubuntu-latest
+    services:
+      ircd:
+        image: linuxserver/ngircd
+        ports:
+          - 6667:6667
+      xmppd:
+        image: cr.spectrum.im/spectrumim/prosody:master
+        ports:
+          - 5222:5222
+          - 5347:5347
+        env:
+          LOCAL: admin
+          DOMAIN: localhost
+          PASSWORD: secret
 
     steps:
     - uses: actions/checkout@v2
