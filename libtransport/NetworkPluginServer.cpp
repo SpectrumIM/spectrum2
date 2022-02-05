@@ -718,7 +718,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	for (const pbnetwork::Attachment &att : payload.attachment()) {
-		addOobPayload(msg, att.url());
+		addOobPayload(msg, att.url(), att.description());
 	}
 
 	// Split the message if configured, or just preprocess
@@ -1731,11 +1731,11 @@ enum OobMode {
 	OobSplit	= 3,	//3. Split into multiple text-only/media-only messages.
 };
 
-void NetworkPluginServer::addOobPayload(Swift::Message::ref message, const std::string &url) {
+void NetworkPluginServer::addOobPayload(Swift::Message::ref message, const std::string &url, const std::string &description) {
 	//Add OOB tag
 	std::shared_ptr<Swift::RawXMLPayload>
 		oob_payload(new Swift::RawXMLPayload(
-			"<x xmlns='jabber:x:oob'><url>" + url + "</url>" + "</x>"));
+			"<x xmlns='jabber:x:oob'><url>" + url + "</url>" + "<desc>" + description + "</desc>" + "</x>"));
 	// todo: add the payload itself as a caption
 	message->addPayload(oob_payload);
 }
@@ -1820,7 +1820,7 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
             this_msg = msg;
         }
 
-        addOobPayload(this_msg, image_url);
+        addOobPayload(this_msg, image_url, "");
 
         //In single-OOB mode there's no point to process further media
         if (oobMode == OobExclusive)

@@ -161,7 +161,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleStreamStart(const Swift::ProtocolHeader&) {}
 		void handleElement(std::shared_ptr<Swift::ToplevelElement> element);
 		void handleStreamEnd() {}
-		void addOobPayload(Swift::Message::ref message, const std::string &url);
+		void addOobPayload(Swift::Message::ref message, const std::string &url, const std::string &description);
 
 		UserManager *m_userManager;
 		VCardResponder *m_vcardResponder;

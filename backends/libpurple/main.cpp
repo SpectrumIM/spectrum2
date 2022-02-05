@@ -1966,6 +1966,8 @@ static void XferReceiveComplete(PurpleXfer *xfer) {
 	pbnetwork::Attachment attachment;
 	gchar *base_filename = g_path_get_basename(filename.c_str());
 	attachment.set_url(web_url + "/" + std::string(base_filename));
+	std::string remote_filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
+	attachment.set_description(remote_filename.c_str());
 	g_free(base_filename);
 	std::vector<pbnetwork::Attachment> attachments = { attachment };
 	np->handleMessage(np->m_accounts[account], w, message, "", "", xfer->end_time? std::to_string(xfer->end_time) : "", false, false, false, attachments);
