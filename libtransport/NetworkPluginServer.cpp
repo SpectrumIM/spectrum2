@@ -47,6 +47,7 @@
 #include "Swiften/Elements/InvisiblePayload.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/Elements/RawXMLPayload.h"
+#include <Swiften/Serializer/XML/XMLElement.h>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/regex.hpp>
@@ -1732,12 +1733,16 @@ enum OobMode {
 };
 
 void NetworkPluginServer::addOobPayload(Swift::Message::ref message, const std::string &url, const std::string &description) {
-	//Add OOB tag
-	std::shared_ptr<Swift::RawXMLPayload>
-		oob_payload(new Swift::RawXMLPayload(
-			"<x xmlns='jabber:x:oob'><url>" + url + "</url>" + "<desc>" + description + "</desc>" + "</x>"));
-	// todo: add the payload itself as a caption
-	message->addPayload(oob_payload);
+	const std::string OOB_NAMESPACE = "jabber:x:oob";
+	std::shared_ptr<Swift::XMLElement> oobElement = std::make_shared<Swift::XMLElement>("x", OOB_NAMESPACE);
+	std::shared_ptr<Swift::XMLElement> urlNode = std::make_shared<Swift::XMLElement>("url", "", url);
+	oobElement->addNode(urlNode);
+	if (!description.empty()) {
+		std::shared_ptr<Swift::XMLElement> descNode = std::make_shared<Swift::XMLElement>("desc");
+		oobElement->addNode(descNode);
+	}
+	std::shared_ptr<Swift::RawXMLPayload> oobPayload = std::make_shared<Swift::RawXMLPayload>(oobElement->serialize());
+	message->addPayload(oobPayload);
 }
 
 std::vector<std::shared_ptr<Swift::Message> >

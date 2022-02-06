@@ -41,7 +41,7 @@ class Clock {
 
 static const std::string OOB_TEST_BODY = "Test message http://example.org/example1.png more text https://example.org/example2.png final text";
 static const std::string OOB_TEST_XHTML = "Test message <img src='http://example.org/example1.png' /> more text <img src=\"https://example.org/example2.png\"> final text";
-static const std::string OOB_XML_START = "<x xmlns='jabber:x:oob'><url>";
+static const std::string OOB_XML_START = "<x xmlns=\"jabber:x:oob\"><url>";
 static const std::string OOB_XML_END = "</url></x>";
 
 class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
