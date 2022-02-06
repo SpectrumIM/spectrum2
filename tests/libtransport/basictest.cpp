@@ -28,8 +28,6 @@
 #include "Swiften/Serializer/PayloadSerializers/GatewayPayloadSerializer.h"
 #include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
 #include "Swiften/Parser/PayloadParsers/MUCPayloadParser.h"
-#include "BlockParser.h"
-#include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 #include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
@@ -69,7 +67,7 @@ void BasicTest::setMeUp (void) {
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
-	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::BlockParser<Swift::BlockPayload>>("block", "urn:xmpp:block:0"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
@@ -86,7 +84,7 @@ void BasicTest::setMeUp (void) {
 
 	_payloadSerializers.push_back(new Swift::AttentionSerializer());
 	_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
-	_payloadSerializers.push_back(new Transport::BlockSerializer());
+	_payloadSerializers.push_back(new Swift::BlockSerializer<Swift::BlockPayload>("block"));
 	_payloadSerializers.push_back(new Swift::InvisibleSerializer());
 	_payloadSerializers.push_back(new Swift::StatsSerializer());
 	_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());

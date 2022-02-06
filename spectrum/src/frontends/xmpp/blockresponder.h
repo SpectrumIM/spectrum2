@@ -24,15 +24,16 @@
 
 #include <boost/signals2.hpp>
 
-#include "Swiften/Queries/SetResponder.h"
-#include "BlockPayload.h"
+#include <Swiften/Elements/BlockPayload.h>
+#include <Swiften/Queries/SetResponder.h>
+
 
 namespace Transport {
 
 class UserManager;
 class Buddy;
 
-class BlockResponder : public Swift::SetResponder<Transport::BlockPayload> {
+class BlockResponder : public Swift::SetResponder<Swift::BlockPayload> {
 	public:
 		BlockResponder(Swift::IQRouter *router, UserManager *userManager);
 		~BlockResponder();
@@ -40,7 +41,7 @@ class BlockResponder : public Swift::SetResponder<Transport::BlockPayload> {
 		boost::signals2::signal<void (Buddy *)> onBlockToggled;
 
 	private:
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Transport::BlockPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::BlockPayload> payload);
 
 		UserManager *m_userManager;
 };

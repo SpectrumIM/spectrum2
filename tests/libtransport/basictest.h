@@ -49,9 +49,11 @@
 #include <Swiften/Server/Server.h>
 #include <Swiften/Network/DummyNetworkFactories.h>
 #include <Swiften/Network/DummyConnectionServer.h>
-#include "Swiften/Server/ServerStanzaChannel.h"
-#include "Swiften/Server/ServerFromClientSession.h"
-#include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
+#include <Swiften/Server/ServerStanzaChannel.h>
+#include <Swiften/Server/ServerFromClientSession.h>
+#include <Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h>
+#include <Swiften/Parser/PayloadParsers/MUCPayloadParser.h>
+#include <Swiften/Parser/PayloadParsers/BlockParser.h>
 
 using namespace Transport;
 

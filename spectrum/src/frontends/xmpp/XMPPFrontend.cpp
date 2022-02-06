@@ -55,8 +55,9 @@
 #include "Swiften/Serializer/PayloadSerializers/GatewayPayloadSerializer.h"
 #include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
 #include "Swiften/Parser/PayloadParsers/MUCPayloadParser.h"
-#include "BlockParser.h"
-#include "BlockSerializer.h"
+#include <Swiften/Elements/BlockPayload.h>
+#include <Swiften/Parser/PayloadParsers/BlockParser.h>
+#include <Swiften/Serializer/PayloadSerializers/BlockSerializer.h>
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 #include "Swiften/Parser/PayloadParsers/HintPayloadParser.h"
@@ -108,7 +109,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::XHTMLIMParser>("html", "http://jabber.org/protocol/xhtml-im"));
-	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Transport::BlockParser>("block", "urn:xmpp:block:0"));
+	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::BlockParser<Swift::BlockPayload>>("block", "urn:xmpp:block:0"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::InvisibleParser>("invisible", "urn:xmpp:invisible:0"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::StatsParser>("query", "http://jabber.org/protocol/stats"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::GatewayPayloadParser>("query", "jabber:iq:gateway"));
@@ -120,7 +121,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 	m_payloadSerializers.push_back(new Swift::AttentionSerializer());
 	m_payloadSerializers.push_back(new Swift::XHTMLIMSerializer());
-	m_payloadSerializers.push_back(new Transport::BlockSerializer());
+	m_payloadSerializers.push_back(new Swift::BlockSerializer<Swift::BlockPayload>("block"));
 	m_payloadSerializers.push_back(new Swift::InvisibleSerializer());
 	m_payloadSerializers.push_back(new Swift::StatsSerializer());
 	m_payloadSerializers.push_back(new Swift::SpectrumErrorSerializer());

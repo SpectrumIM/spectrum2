@@ -26,8 +26,6 @@
 #include "Swiften/Serializer/PayloadSerializers/GatewayPayloadSerializer.h"
 #include "Swiften/Serializer/PayloadSerializers/SpectrumErrorSerializer.h"
 #include "Swiften/Parser/PayloadParsers/MUCPayloadParser.h"
-#include "BlockParser.h"
-#include "BlockSerializer.h"
 #include "Swiften/Parser/PayloadParsers/InvisibleParser.h"
 #include "Swiften/Serializer/PayloadSerializers/InvisibleSerializer.h"
 

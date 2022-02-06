@@ -22,8 +22,7 @@
 
 #include <iostream>
 #include <boost/bind.hpp>
-#include "Swiften/Queries/IQRouter.h"
-#include "BlockPayload.h"
+#include <Swiften/Queries/IQRouter.h>
 #include "transport/UserManager.h"
 #include "transport/User.h"
 #include "transport/Buddy.h"
@@ -36,7 +35,7 @@ namespace Transport {
 
 DEFINE_LOGGER(blockResponderLogger, "BlockResponder");
 
-BlockResponder::BlockResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::SetResponder<BlockPayload>(router) {
+BlockResponder::BlockResponder(Swift::IQRouter *router, UserManager *userManager) : Swift::SetResponder<Swift::BlockPayload>(router) {
 	m_userManager = userManager;
 }
 
@@ -44,7 +43,7 @@ BlockResponder::~BlockResponder() {
 	
 }
 
-bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Transport::BlockPayload> info) {
+bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::BlockPayload> info) {
 	User *user = m_userManager->getUser(from.toBare().toString());
 	if (!user) {
 		LOG4CXX_WARN(blockResponderLogger, from.toBare().toString() << ": User is not logged in");
