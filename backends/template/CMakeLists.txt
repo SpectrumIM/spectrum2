@@ -9,7 +9,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 		target_link_libraries(spectrum2_template_backend transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 	endif()
 else()
-	target_link_libraries(spectrum2_template_backend transport ${PROTOBUF_LIBRARY} ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
+	target_link_libraries(spectrum2_template_backend transport ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
 endif()
 
 #install(TARGETS spectrum2_template_backend RUNTIME DESTINATION bin)
