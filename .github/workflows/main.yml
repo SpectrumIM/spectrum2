@@ -82,7 +82,7 @@ jobs:
     - name: Configure build
       run: |
         set CMAKE_PREFIX_PATH=%cd%\deps32
-        set PATH=%PATH%;%cd%\deps32\bin
+        set PATH=%PATH%;%cd%\deps32\bin;%cd%\deps32\tools\bin
         cmake -G "Visual Studio 17 2022" -A Win32 -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_IRC=OFF -DENABLE_FROTZ=OFF -DENABLE_PURPLE=OFF -DENABLE_MYSQL=OFF -DENABLE_PQXX=OFF -DCMAKE_INSTALL_PREFIX=dist .
       shell: cmd
     - name: Build solution
