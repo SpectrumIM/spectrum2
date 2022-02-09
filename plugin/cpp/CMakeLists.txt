@@ -1,10 +1,6 @@
 file(GLOB SRC *.cpp *.h)
 file(GLOB HEADERS ../include/transport/*.h)
 
-set(EXTRA_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/MemoryUsage.cpp)
-set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/Logging.cpp)
-set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/Config.cpp)
-set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../libtransport/Util.cpp)
 set(EXTRA_SOURCES ${EXTRA_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc)
 
 if(NOT WIN32)
