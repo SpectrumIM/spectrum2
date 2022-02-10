@@ -11,10 +11,7 @@ RUN curl https://packages.spectrum.im/packages.key | apt-key add -
 
 RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
-RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
-
 RUN apt-get install --no-install-recommends -y cmake
-
 #TODO include in Build-Depends
 RUN apt-get install --no-install-recommends -y libssl-dev
 
