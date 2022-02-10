@@ -145,7 +145,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
-RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 libmarkdown2
+RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1
 
 RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
@@ -165,7 +165,7 @@ COPY --from=staging /tmp/out/* /usr/
 COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
 
-RUN apt install --no-install-recommends -y /tmp/*.deb
+RUN apt install --no-install-recommends -y /tmp/*.deb libmarkdown2
 
 RUN rm -rf /tmp/*.deb
 
