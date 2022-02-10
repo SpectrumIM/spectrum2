@@ -13,7 +13,7 @@ RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
 RUN apt-get install --no-install-recommends -y cmake
 #TODO include in Build-Depends
-RUN apt-get install --no-install-recommends -y libssl-dev libnatpmp1 libminiupnpc17
+RUN apt-get install --no-install-recommends -y libssl-dev
 
 # Spectrum 2
 COPY . spectrum2/
