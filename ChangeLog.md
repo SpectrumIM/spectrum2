@@ -2,7 +2,7 @@
 #### General
 * minor code refactoring/cleanup, see Git log for details
 #### XMPP frontend
-* map attachment descriptions to {jabber:x:oob}desc element
+* map attachment descriptions to `{jabber:x:oob}desc` element
 * do not send carbon copy to the originated entity
 #### libpurple backend
 * forward Xfer remote filename as attachment description
