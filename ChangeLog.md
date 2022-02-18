@@ -1,3 +1,12 @@
+### Version 2.1.3 (2022-02-18)
+#### General
+* minor code refactoring/cleanup, see Git log for details
+#### XMPP frontend
+* map attachment descriptions to {jabber:x:oob}desc element
+* do not send carbon copy to the originated entity
+#### libpurple backend
+* forward Xfer remote filename as attachment description
+___
 ### Version 2.1.2 (2022-02-03)
 #### libpurple backend
 * Fix issues with filetransfers: always use unique filename for incoming file
