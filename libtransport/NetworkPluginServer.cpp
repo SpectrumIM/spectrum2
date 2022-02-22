@@ -1369,6 +1369,11 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 	login.set_user(user->getJID().toBare());
 	login.set_legacyname(userInfo.uin);
 	login.set_password(userInfo.password);
+	pbnetwork::Login_UserSettings *settings = login.mutable_settings();
+	auto value = settings->mutable_value();
+	for (const auto& item : userInfo.settings) {
+		(*value)[item.first] = item.second;
+	}
 
 	std::string message;
 	login.SerializeToString(&message);

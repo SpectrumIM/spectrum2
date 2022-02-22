@@ -35,7 +35,7 @@ class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 	public:
 		IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port);
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password);
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings);
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName);
 

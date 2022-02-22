@@ -197,6 +197,7 @@ class NetworkPlugin {
 		/// \param user XMPP JID of user for which this event occurs.
 		/// \param legacyName Legacy network name of this user used for login.
 		/// \param password Legacy network password of this user.
+		/// \param settings User settings
 		/**
 			\msc
 			NetworkPlugin,YourNetworkPlugin,LegacyNetwork;
@@ -210,7 +211,7 @@ class NetworkPlugin {
 			YourNetworkPlugin->NetworkPlugin [label="handleDisconnected()", URL="\ref NetworkPlugin::handleDisconnected()"];
 			\endmsc
 		*/
-		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) = 0;
+		virtual void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings = {}) = 0;
 
 		/// Called when XMPP user wants to disconnect legacy network.
 		/// You should disconnect him from legacy network.

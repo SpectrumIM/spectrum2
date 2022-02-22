@@ -121,7 +121,7 @@ void TwitterPlugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 }
 
 // User trying to login into his twitter account
-void TwitterPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password)
+void TwitterPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings)
 {
 	if(userdb.count(user) && (userdb[user].connectionState == NEW ||
 										userdb[user].connectionState == CONNECTED ||

@@ -248,6 +248,7 @@ void MySQLBackend::disconnect() {
 	delete m_updateBuddy;
 	delete m_getBuddies;
 	delete m_getBuddiesSettings;
+	delete m_getUserSettings;
 	delete m_getUserSetting;
 	delete m_setUserSetting;
 	delete m_updateUserSetting;
@@ -297,6 +298,8 @@ bool MySQLBackend::connect() {
 	m_updateBuddySetting = new Statement(&m_conn, "iisiss", "INSERT INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE value=?");
 	m_getBuddySetting = new Statement(&m_conn, "iss|is", "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
 	
+	m_getUserSettings = new Statement(&m_conn, "i|sis", "SELECT var, type, value FROM " + m_prefix + "users_settings WHERE user_id=?");
+
 	m_getUserSetting = new Statement(&m_conn, "is|is", "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	m_setUserSetting = new Statement(&m_conn, "isis", "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
 	m_updateUserSetting = new Statement(&m_conn, "sis", "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
@@ -381,6 +384,19 @@ void MySQLBackend::setUser(const UserInfo &user) {
 	}
 	*m_setUser << user.jid << user.uin << encrypted << user.language << user.encoding << user.vip << user.uin << encrypted;
 	EXEC(m_setUser, setUser(user));
+}
+
+void MySQLBackend::getAllSettings(long userId, std::map<std::string, std::string> &userSettings) {
+	*m_getUserSettings << userId;
+	EXEC(m_getUserSettings, getAllSettings(userId, userSettings));
+	while (m_getUserSettings->fetch() == 0) {
+		std::string var;
+		int type;
+		std::string val;
+		SettingVariableInfo value;
+		*m_getUserSettings >> var >> type >> val;
+		userSettings[var] = val;
+	}
 }
 
 bool MySQLBackend::getUser(const std::string &barejid, UserInfo &user) {

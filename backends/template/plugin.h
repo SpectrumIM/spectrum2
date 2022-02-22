@@ -12,7 +12,7 @@ class Plugin : public Transport::NetworkPlugin {
 		// NetworkPlugin uses this method to send the data to networkplugin server
 		void sendData(const std::string &string);
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password);
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings);
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName);
 

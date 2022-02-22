@@ -126,11 +126,11 @@ class User {
 		}
 
 		void addUserSetting(const std::string &key, const std::string &value) {
-			m_settings[key] = value;
+			m_userInfo.settings[key] = value;
 		}
 
 		const std::string &getUserSetting(const std::string &key) {
-			return m_settings[key];
+			return m_userInfo.settings[key];
 		}
 
 		void setCacheMessages(bool cacheMessages);
@@ -177,7 +177,6 @@ class User {
 		int m_resources;
 		int m_reconnectCounter;
 		std::list<Swift::Presence::ref> m_joinedRooms;
-		std::map<std::string, std::string> m_settings;
 		bool m_cacheMessages;
 		int m_reconnectLimit;
 		StorageBackend *m_storageBackend;

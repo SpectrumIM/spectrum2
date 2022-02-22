@@ -359,6 +359,7 @@ class SettingsAdHocCommandTest : public CPPUNIT_NS :: TestFixture, public BasicT
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
 			CPPUNIT_ASSERT_EQUAL(std::string("1"), user->getUserSetting("send_headlines"));
+			CPPUNIT_ASSERT_EQUAL(3, (int) user->getUserInfo().settings.size());
 			std::shared_ptr<Swift::Command> payload(new Swift::Command("settings"));
 			std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Set, Swift::JID("localhost"), "id", payload);
 			iq->setFrom("user@localhost");

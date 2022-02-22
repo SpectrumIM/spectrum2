@@ -85,6 +85,9 @@ User *UserManager::getUser(const std::string &barejid){
 	if (m_users.find(barejid) != m_users.end()) {
 		User *user = m_users[barejid];
 		m_cachedUser = user;
+		if (m_storageBackend) {
+			m_storageBackend->getAllSettings(user->getUserInfo().id, user->getUserInfo().settings);
+		}
 		return user;
 	}
 	return NULL;

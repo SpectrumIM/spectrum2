@@ -48,6 +48,10 @@ message Login {
 	required string legacyName = 2;
 	required string password = 3;
 	repeated string extraFields = 4;
+	message UserSettings {
+		map<string, string> value = 1;
+	}
+	optional UserSettings settings = 5;
 }
 
 message Logout {
