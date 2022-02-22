@@ -294,7 +294,7 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 			LOG4CXX_INFO(logger_xml, "XML OUT " << safeByteArrayToString(data));
 		}
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 			LOG4CXX_INFO(logger, user << ": connecting as " << legacyName);
 			Swift::JID jid(legacyName);
 			if (legacyName.find("/") == std::string::npos) {

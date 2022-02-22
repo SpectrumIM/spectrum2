@@ -126,7 +126,7 @@ MyIrcSession *IRCNetworkPlugin::createSession(const std::string &user, const std
 	return session;
 }
 
-void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 	if (!m_servers.empty()) {
 		// legacy name is user's nickname
 		if (m_sessions[user] != NULL) {

@@ -174,7 +174,7 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			handleDataRead(d);
 		}
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 			UserInfo info;
 			if (!storageBackend->getUser(user, info)) {
 				handleDisconnected(user, 0, "Not registered user.");

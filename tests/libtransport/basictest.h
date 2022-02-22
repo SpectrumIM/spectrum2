@@ -197,6 +197,12 @@ class TestingStorageBackend : public StorageBackend {
 		virtual void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {}
 		virtual void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {}
 
+		virtual void getAllSettings(long userId, std::map<std::string, std::string> &userSettings) {
+			for (const auto& it : settings[userId]) {
+				userSettings[it.first] = it.second;
+			}
+		}
+
 		virtual void getUserSetting(long userId, const std::string &variable, int &type, std::string &value) {
 			if (settings[userId].find(variable) == settings[userId].end()) {
 				settings[userId][variable] = value;

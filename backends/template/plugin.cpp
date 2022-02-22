@@ -36,7 +36,7 @@ void Plugin::_handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
 	handleDataRead(d);
 }
 
-void Plugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+void Plugin::handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 	handleConnected(user);
 	LOG4CXX_INFO(logger, user << ": Added buddy - Echo.");
 	handleBuddyChanged(user, "echo", "Echo", std::vector<std::string>(), pbnetwork::STATUS_ONLINE);

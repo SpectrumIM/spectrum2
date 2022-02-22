@@ -169,7 +169,7 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 			handleDataRead(d);
 		}
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 			np->handleConnected(user);
 			std::vector<std::string> groups;
 			groups.push_back("ZCode");

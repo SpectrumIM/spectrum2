@@ -399,6 +399,25 @@ bool PQXXBackend::removeUser(long id) {
 	return false;
 }
 
+void PQXXBackend::getAllSettings(long userId, std::map<std::string, std::string> &userSettings) {
+	try
+	{
+		pqxx::nontransaction settings_txn(*m_conn);
+		pqxx::result settings_r = settings_txn.exec("SELECT var, type, value FROM " + m_prefix + "users_settings WHERE user_id=" + pqxx::to_string(userId));
+		for (pqxx::result::const_iterator it = settings_r.begin(); it != settings_r.end(); it++)
+		{
+			std::string var = (*it)[0].as<std::string>();
+			//int type = (*it)[1].as<long>();
+			std::string val = (*it)[2].as<std::string>();
+			userSettings[var] = val;
+		}
+	}
+	catch (std::exception &e)
+	{
+		LOG4CXX_ERROR(pxxLogger, e.what());
+	}
+}
+
 void PQXXBackend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {
 	try {
 		pqxx::nontransaction txn(*m_conn);

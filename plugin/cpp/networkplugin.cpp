@@ -350,7 +350,7 @@ void NetworkPlugin::handleLoginPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
-	handleLoginRequest(payload.user(), payload.legacyname(), payload.password());
+	handleLoginRequest(payload.user(), payload.legacyname(), payload.password(), { payload.settings().value().begin(), payload.settings().value().end() });
 }
 
 void NetworkPlugin::handleLogoutPayload(const std::string &data) {

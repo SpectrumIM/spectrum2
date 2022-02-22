@@ -16,7 +16,6 @@
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
 #include "transport/Config.h"
-#include "transport/StorageBackend.h"
 #include "geventloop.h"
 
 // #include "valgrind/memcheck.h"
@@ -78,7 +77,6 @@ class SpectrumNetworkPlugin;
 
 std::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
-StorageBackend *storagebackend;
 
 static std::string host;
 static int port = 10000;
@@ -214,38 +212,6 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 		alias = (std::string) purple_buddy_get_server_alias_wrapped(m_buddy);
 	}
 	return alias;
-}
-
-static boost::mutex dblock;
-static std::string OAUTH_TOKEN = "hangouts_oauth_token";
-static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
-static std::string DISCORD_ACCESS_TOKEN = "discord_access_token";
-static std::string WHATSMEOW_ACCESS_TOKEN = "credentials";
-
-static bool getUserToken(const std::string user, const std::string token_name, std::string &token_value)
-{
-	boost::mutex::scoped_lock lock(dblock);
-	UserInfo info;
-	if (storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
-		return false;
-	}
-	token_value = "";
-	int type = TYPE_STRING;
-	storagebackend->getUserSetting((long)info.id, token_name, type, token_value);
-	return true;
-}
-
-static bool storeUserToken(const std::string user, const std::string token_name, const std::string token_value)
-{
-	boost::mutex::scoped_lock lock(dblock);
-	UserInfo info;
-	if (storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
-		return false;
-	}
-	storagebackend->updateUserSetting((long)info.id, token_name, token_value);
-	return true;
 }
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
@@ -389,7 +355,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 			PurpleAccount *account = NULL;
 
 			std::string name;
@@ -447,32 +413,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool_wrapped(account, "custom_smileys", FALSE);
 			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
-			if (protocol == "prpl-hangouts") {
-				std::string token;
-				if (getUserToken(user, OAUTH_TOKEN, token)) {
-					purple_account_set_password_wrapped(account, token.c_str());
-				}
-			}
-			else if (protocol == "prpl-steam-mobile") {
-				std::string token;
-				getUserToken(user, STEAM_ACCESS_TOKEN, token);
-				if (!token.empty()) {
-					purple_account_set_string_wrapped(account, "access_token", token.c_str());
-				}
-			}
-			else if (protocol == "prpl-eionrobb-discord") {
-				std::string token;
-				getUserToken(user, DISCORD_ACCESS_TOKEN, token);
-				if (!token.empty()) {
-					purple_account_set_string_wrapped(account, "token", token.c_str());
-				}
-			}
-			else if (protocol == "prpl-hehoe-whatsmeow") {
-				std::string token;
-				getUserToken(user, WHATSMEOW_ACCESS_TOKEN, token);
-				if (!token.empty()) {
-					purple_account_set_string_wrapped(account, "credentials", token.c_str());
-				}
+
+
+			// Stored user settings
+			for (const auto& item: settings) {
+				purple_account_set_string_wrapped(account, item.first.c_str(), item.second.c_str());
 			}
 
 			setDefaultAccountOptions(account);
@@ -517,8 +462,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_set_enabled_wrapped(account, "spectrum", FALSE);
 
 				m_accounts.erase(account);
-
-				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
 #if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 				malloc_trim(0);
@@ -1150,69 +1093,6 @@ static PurpleBlistUiOps blistUiOps =
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime);
 
-static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
-	LOG4CXX_INFO(logger, "conv_write()");
-
-	if (flags & PURPLE_MESSAGE_SYSTEM && CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
-		PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
-
-	// 	char *striped = purple_markup_strip_html_wrapped(message);
-	// 	std::string msg = striped;
-	// 	g_free(striped);
-
-
-		// Escape HTML characters.
-		char *newline = purple_strdup_withhtml_wrapped(msg);
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
-	// 	xhtml_linkified = spectrum_markup_linkify(xhtml);
-		std::string message_(strip);
-
-		std::string xhtml_(xhtml);
-		g_free(newline);
-		g_free(xhtml);
-	// 	g_free(xhtml_linkified);
-		g_free(strip);
-
-		// AIM and XMPP adds <body>...</body> here...
-		if (xhtml_.find("<body>") == 0) {
-			xhtml_ = xhtml_.substr(6);
-			if (xhtml_.find("</body>") != std::string::npos) {
-				xhtml_ = xhtml_.substr(0, xhtml_.find("</body>"));
-			}
-		}
-
-		if (xhtml_ == message_) {
-			xhtml_ = "";
-		}
-
-		std::string timestamp;
-		if (mtime && (unsigned long) time(NULL)-10 > (unsigned long) mtime/* && (unsigned long) time(NULL) - 31536000 < (unsigned long) mtime*/) {
-			char buf[80];
-			strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", gmtime(&mtime));
-			timestamp = buf;
-		}
-
-		if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
-			std::string w = purple_normalize_wrapped(account, who);
-			size_t pos = w.find("/");
-			if (pos != std::string::npos)
-				w.erase((int) pos, w.length() - (int) pos);
-			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
-			np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
-		}
-		else {
-			std::string conversationName = purple_conversation_get_name_wrapped(conv);
-			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
-			np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
-		}
-	}
-	else {
-	    //Handle all non-special cases by just passing them to conv_write_im
-	    conv_write_im(conv, who, msg, flags, mtime);
-	}
-}
-
 static char *calculate_data_hash(guchar *data, size_t len,
     const gchar *hash_algo)
 {
@@ -1485,6 +1365,11 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
 		np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp, false, false, isCarbon);
 	}
+}
+
+static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
+	//Handle all non-special cases by just passing them to conv_write_im
+    conv_write_im(conv, who, msg, flags, mtime);
 }
 
 static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gboolean new_arrivals) {
@@ -2181,18 +2066,6 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
-		storeUserToken(np->m_accounts[account], OAUTH_TOKEN, purple_account_get_password_wrapped(account));
-	}
-	else if (CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile") {
-		storeUserToken(np->m_accounts[account], STEAM_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "access_token", NULL));
-	}
-    else if (CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
-        storeUserToken(np->m_accounts[account], DISCORD_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "token", NULL));
-    }
-    else if (CONFIG_STRING(config, "service.protocol") == "prpl-hehoe-whatsmeow") {
-        storeUserToken(np->m_accounts[account], WHATSMEOW_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "credentials", NULL));
-    }
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -2276,8 +2149,6 @@ static bool initPurple() {
 	LOG4CXX_INFO(logger, "Setting libpurple user directory to: " << userDir);
 
 	purple_util_set_user_dir_wrapped(userDir.c_str());
-	remove("./accounts.xml");
-	remove("./blist.xml");
 
 	purple_debug_set_ui_ops_wrapped(&debugUiOps);
 // 	purple_debug_set_verbose_wrapped(true);
@@ -2430,20 +2301,6 @@ int main(int argc, char **argv) {
 	config = std::shared_ptr<Config>(cfg);
 
 	Logging::initBackendLogging(config.get());
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile"
-	|| CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord" || CONFIG_STRING(config, "service.protocol") == "prpl-hehoe-whatsmeow")
-	{
-		storagebackend = StorageBackend::createBackend(config.get(), error);
-		if (storagebackend == NULL) {
-			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
-			LOG4CXX_ERROR(logger, "Selected libpurple protocol need storage backend configured to work! " << error);
-			return NetworkPlugin::StorageBackendNeeded;
-		}
-		else if (!storagebackend->connect()) {
-			LOG4CXX_ERROR(logger, "Can't connect to database!");
-			return -1;
-		}
-	}
 
 	initPurple();
 
