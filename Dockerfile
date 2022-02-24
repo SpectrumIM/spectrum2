@@ -74,16 +74,8 @@ RUN /bin/bash ./build_spectrum2.sh
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
-		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev mercurial
+		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev
 		
-RUN echo "---> Installing purple-facebook" && \
-		git clone https://github.com/dequis/purple-facebook.git && \
-		cd purple-facebook && \
-		/bin/bash ./autogen.sh && \
-		./configure && \
-		make && \
-		make DESTDIR=/tmp/out install
-
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
 		cd purple-instagram && \
@@ -153,22 +145,24 @@ RUN echo "deb http://download.opensuse.org/repositories/home:/ars3n1y/Debian_11/
 RUN curl -fsSL https://download.opensuse.org/repositories/home:ars3n1y/Debian_11/Release.key | apt-key add
 RUN apt-get update -qq
 
-RUN echo "---> Installing pidgin-sipe" && \
-		apt-get install --no-install-recommends -y pidgin-sipe
-RUN echo "---> Installing purple-telegram" && \
-		apt-get install --no-install-recommends -y libpurple-telegram-tdlib libtdjson1.7.9
-RUN echo "---> Installing purple-discord" && \
-                apt-get install --no-install-recommends -y purple-discord
+COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
+
+RUN echo "---> Installing libpurple plugins" && \
+		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
+		pidgin-sipe \
+		libpurple-telegram-tdlib \
+		libtdjson1.7.9 \
+		purple-discord \
+		purple-facebook \
+		libmarkdown2 \
+		/tmp/*.deb \
+		&& rm -rf /var/lib/apt/lists/*
+
 
 COPY --from=staging /tmp/out/* /usr/
 
 COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
-COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
-
-RUN apt install --no-install-recommends -y /tmp/*.deb libmarkdown2
 
 RUN rm -rf /tmp/*.deb
-
-RUN apt-get autoremove -y && apt-get clean
 
 ENTRYPOINT ["/run.sh"]
