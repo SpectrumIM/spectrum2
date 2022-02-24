@@ -35,6 +35,8 @@
 #define getpid _getpid
 #endif
 
+#include <boost/locale.hpp>
+
 DEFINE_LOGGER(logger, "NetworkPlugin");
 
 namespace Transport {
@@ -45,6 +47,8 @@ namespace Transport {
 	wrap.SerializeToString(&MESSAGE);
 
 NetworkPlugin::NetworkPlugin() {
+	boost::locale::generator gen;
+	std::locale::global(gen(""));
 	m_pingReceived = false;
 
 	double shared;

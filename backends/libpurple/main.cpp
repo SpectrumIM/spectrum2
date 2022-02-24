@@ -2275,8 +2275,6 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 }
 
 int main(int argc, char **argv) {
-	boost::locale::generator gen;
-	std::locale::global(gen(""));
 #ifndef WIN32
 #if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 		mallopt(M_CHECK_ACTION, 2);
