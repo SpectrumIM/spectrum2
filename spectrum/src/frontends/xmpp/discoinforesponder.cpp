@@ -84,6 +84,7 @@ void DiscoInfoResponder::updateFeatures() {
 	features2.push_back("jabber:iq:register");
 	features2.push_back("jabber:iq:gateway");
 	features2.push_back("jabber:iq:private");
+	features2.push_back("http://jabber.org/protocol/disco#items");
 	features2.push_back("http://jabber.org/protocol/disco#info");
 	features2.push_back("http://jabber.org/protocol/commands");
 	if (CONFIG_BOOL_DEFAULTED(m_config, "features.muc", false)) {
@@ -148,7 +149,6 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 		if (m_commands.find(info->getNode()) != m_commands.end()) {
 			std::shared_ptr<DiscoInfo> res(new DiscoInfo());
 			res->addFeature("http://jabber.org/protocol/commands");
-			res->addFeature("http://jabber.org/protocol/disco#items");
 			res->addFeature("jabber:x:data");
 			res->addIdentity(DiscoInfo::Identity(m_commands[info->getNode()], "automation", "command-node"));
 			res->setNode(info->getNode());
