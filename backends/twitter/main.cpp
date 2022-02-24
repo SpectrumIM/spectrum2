@@ -1,4 +1,5 @@
 #include "TwitterPlugin.h"
+#include <boost/locale.hpp>
 DEFINE_LOGGER(logger, "Twitter Backend");
 
 #ifndef _WIN32
@@ -21,6 +22,8 @@ static void spectrum_sigchld_handler(int sig)
 
 
 int main (int argc, char* argv[]) {
+	boost::locale::generator gen;
+	std::locale::global(gen(""));
 	std::string host;
 	int port;
 #ifndef _WIN32
