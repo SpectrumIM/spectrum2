@@ -88,12 +88,6 @@ RUN echo "---> Installing icyque" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-RUN echo "---> Installing skype4pidgin" && \
-		git clone git://github.com/EionRobb/skype4pidgin.git && \
-		cd skype4pidgin/skypeweb && \
-		make && \
-		make DESTDIR=/tmp/out install
-
 RUN echo "---> Install Steam" && \
 		git clone https://github.com/EionRobb/pidgin-opensteamworks.git && \
 		cd pidgin-opensteamworks/steam-mobile && \
@@ -155,6 +149,7 @@ RUN echo "---> Installing libpurple plugins" && \
 		purple-discord \
 		purple-facebook \
 		libmarkdown2 \
+		skypeweb \
 		/tmp/*.deb \
 		&& rm -rf /var/lib/apt/lists/*
 
