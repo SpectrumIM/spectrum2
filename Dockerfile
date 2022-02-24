@@ -127,9 +127,6 @@ FROM debian:bullseye-slim as production
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_LISTCHANGES_FRONTEND=none
-
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1
 
