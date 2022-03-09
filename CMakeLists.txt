@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.7)
+# Use test target on CMake 3.11+
+cmake_policy(SET CMP0037 OLD)
 
 project(libtransport)
 
