@@ -1,11 +1,7 @@
 {
   "problemMatcher": [
       {
-        "name": "gcc",
-        "fileLocation": [
-          "relative",
-          "${workspaceFolder}"
-        ],
+        "owner": "gcc",
         "pattern": [
           {
             "regexp": "^(.*):(\\d+):(\\d+):\\s+(?:fatal\\s+)?(warning|error):\\s+(.*)$",
