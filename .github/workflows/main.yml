@@ -10,7 +10,9 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Build tests
-      run: docker buildx build . --target test -t spectrum:tests
+      run: |
+        echo "::add-matcher::.github/gcc.json" 
+        docker buildx build . --target test -t spectrum:tests
     - name: Run tests
       run: docker run -tt spectrum:tests
   linux-clang:
