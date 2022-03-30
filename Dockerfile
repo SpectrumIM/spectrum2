@@ -83,7 +83,7 @@ RUN echo "---> Installing purple-instagram" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> Installing icyque" && \
-		git clone git://github.com/EionRobb/icyque.git && \
+		git clone https://github.com/EionRobb/icyque.git && \
 		cd icyque && \
 		make && \
 		make DESTDIR=/tmp/out install
