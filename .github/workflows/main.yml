@@ -11,7 +11,7 @@ jobs:
 
     - name: Build tests
       run: |
-        echo "::add-matcher::gcc.json" 
+        echo "::add-matcher::.github/gcc.json" 
         docker buildx build . --target test -t spectrum:tests
     - name: Run tests
       run: docker run -tt spectrum:tests
