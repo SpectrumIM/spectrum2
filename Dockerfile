@@ -148,6 +148,7 @@ RUN echo "---> Installing libpurple plugins" && \
 		libmarkdown2 \
 		skypeweb \
 		/tmp/*.deb \
+		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
 
 
