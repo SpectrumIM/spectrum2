@@ -1,6 +1,9 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: master
 
 jobs:
   linux-glibc:
@@ -36,13 +39,13 @@ jobs:
     - name: Run tests
       run: docker run -tt --env LANG=en_US.UTF-8 spectrum:tests-musl
   macos:
-    runs-on: macOS-11.0
+    runs-on: macOS-12
     steps:
     - uses: actions/checkout@v2
     - name: Install MacPorts
       run: |
-        curl -L -O "https://github.com/macports/macports-base/releases/download/v2.7.1/MacPorts-2.7.1-11-BigSur.pkg"
-        sudo installer -store -pkg MacPorts-2.7.1-11-BigSur.pkg -target /
+        curl -L -O "https://github.com/macports/macports-base/releases/download/v2.7.2/MacPorts-2.7.2-12-Monterey.pkg"
+        sudo installer -store -pkg MacPorts-2.7.2-12-Monterey.pkg -target /
         echo "https://packages.spectrum.im/macports/ports.tar.bz2" | sudo tee -a /opt/local/etc/macports/sources.conf
     - name: Install dependencies
       run: |
