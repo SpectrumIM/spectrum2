@@ -399,7 +399,7 @@ void XMPPFrontend::handleServerStopped(boost::optional<Swift::BoostConnectionSer
 			}
 		}
 		if (*e == Swift::BoostConnectionServer::UnknownError)
-			LOG4CXX_INFO(logger, "Unknown error occured! Stopping server..");
+			LOG4CXX_INFO(logger, "Unknown error occurred! Stopping server..");
 		exit(1);
 	}
 }

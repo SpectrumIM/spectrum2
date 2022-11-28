@@ -162,7 +162,7 @@ static void *requestAction(const char *title, const char *primary, const char *s
 		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
 	}
 	else if (t == "Plaintext Authentication") {
-		LOG4CXX_INFO(logger,  "Rejecting plaintext authentification");
+		LOG4CXX_INFO(logger,  "Rejecting plaintext authentication");
 		va_arg(actions, char *);
 		va_arg(actions, GCallback);
 		va_arg(actions, char *);

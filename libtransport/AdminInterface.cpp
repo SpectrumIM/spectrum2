@@ -1053,7 +1053,7 @@ class ArgsCommand : public AdminInterfaceCommand {
 							AdminInterfaceCommand::AdminMode,
 							AdminInterfaceCommand::Execute, "Command's arguments") {
 			m_commands = commands;
-			setDescription("Shows descripton of arguments for command");
+			setDescription("Shows description of arguments for command");
 			addArg("command", "Command", "string", "register");
 		}
 
