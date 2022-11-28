@@ -74,7 +74,8 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 	memset(&opts, 0, sizeof(opts));
 	const char *error_string;
 	opts.error_string = &error_string;
-	m_nc = mg_bind_opt(&m_mgr, std::string(":" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port"))).c_str(), &_event_handler, opts);
+	std::string connection_string = CONFIG_STRING(m_config, "service.bind") + ":" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "service.port"));
+	m_nc = mg_bind_opt(&m_mgr, connection_string.c_str(), &_event_handler, opts);
 	if (!m_nc) {
 		std::cerr << "Error creating server: " << error_string << "\n";
 		exit(1);
