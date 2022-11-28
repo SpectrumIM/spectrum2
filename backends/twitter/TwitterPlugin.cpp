@@ -149,7 +149,7 @@ void TwitterPlugin::handleLoginRequest(const std::string &user, const std::strin
 		setTwitterMode(user, 0);
 		tp->runAsThread(new OAuthFlow(np, userdb[user].sessions, user, userdb[user].sessions->getTwitterUsername()));
 	} else {
-		LOG4CXX_INFO(logger, user << " is already registerd. Using the stored oauth key and secret");
+		LOG4CXX_INFO(logger, user << " is already registered. Using the stored oauth key and secret");
 		LOG4CXX_INFO(logger, key << " " << secret);
 		pinExchangeComplete(user, key, secret);
 	}
