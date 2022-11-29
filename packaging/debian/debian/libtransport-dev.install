@@ -1,2 +1,2 @@
-/usr/lib/libtransport.so
+/usr/lib/*/libtransport.so
 /usr/include
