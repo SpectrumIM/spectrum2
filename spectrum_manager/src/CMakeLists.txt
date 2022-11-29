@@ -18,7 +18,7 @@ if(APPLE)
 	target_link_libraries(spectrum2_manager transport ${APPLE_FRAMEWORKS})
 endif()
 
-install(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
+install(TARGETS spectrum2_manager RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # if(NOT EXISTS "/etc/spectrum2/spectrum_manager.cfg")
 # install(FILES
@@ -28,12 +28,12 @@ install(TARGETS spectrum2_manager RUNTIME DESTINATION bin)
 # endif()
 
 install(CODE "
-if(NOT EXISTS \"$ENV{DESTDIR}/etc/spectrum2/spectrum_manager.cfg\")
-file(INSTALL DESTINATION \"/etc/spectrum2\" TYPE FILES \"${CMAKE_CURRENT_SOURCE_DIR}/spectrum_manager.cfg\")
+if(NOT EXISTS \"$ENV{DESTDIR}/${CMAKE_INSTALL_SYSCONFDIR}/spectrum2/spectrum_manager.cfg\")
+file(INSTALL DESTINATION \"${CMAKE_INSTALL_SYSCONFDIR}/spectrum2\" TYPE FILES \"${CMAKE_CURRENT_SOURCE_DIR}/spectrum_manager.cfg\")
 endif()
 ")
 
 install(DIRECTORY
 	html
-	DESTINATION /var/lib/spectrum2_manager
+	DESTINATION ${CMAKE_INSTALL_LOCALSTATEDIR}/lib/spectrum2_manager
 )
