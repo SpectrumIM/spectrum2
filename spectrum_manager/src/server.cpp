@@ -70,6 +70,11 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 
 	mg_mgr_init(&m_mgr, this);
 
+	if(m_password == "" || m_password == "test") {
+        std::cerr << "Rejecting empty or default admin password." << std::endl;
+        exit(1);
+	}
+
 	struct mg_bind_opts opts;
 	memset(&opts, 0, sizeof(opts));
 	const char *error_string;
