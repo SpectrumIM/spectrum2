@@ -23,31 +23,31 @@ if(NOT MSVC AND NOT APPLE)
 	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export-dynamic")
 endif()
 
-install(TARGETS spectrum2 RUNTIME DESTINATION bin)
+install(TARGETS spectrum2 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES
 	sample2_gateway.cfg
 	RENAME spectrum.cfg.example
-	DESTINATION /etc/spectrum2/transports
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2/transports
 )
 
 install(FILES
 	sample2.cfg
 	RENAME spectrum_server_mode.cfg.example
-	DESTINATION /etc/spectrum2/transports
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2/transports
 )
 
 install(FILES
 	backend-logging.cfg
-	DESTINATION /etc/spectrum2
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2
 )
 
 install(FILES
 	logging.cfg
-	DESTINATION /etc/spectrum2
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2
 )
 
 install(FILES
 	manager-logging.cfg
-	DESTINATION /etc/spectrum2
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2
 )

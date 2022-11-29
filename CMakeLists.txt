@@ -11,6 +11,8 @@ endif(WIN32)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(GNUInstallDirs)
+
 include(CPack)
 message(STATUS "Variables to override default places where to find libraries:")
 message(STATUS "|- cppunit : -DCPPUNIT_INCLUDE_DIR,  -DCPPUNIT_LIBRARY")

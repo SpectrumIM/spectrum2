@@ -61,7 +61,7 @@ if(APPLE)
 	target_link_libraries(transport ${APPLE_FRAMEWORKS})
 endif()
 
-install(TARGETS transport LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+install(TARGETS transport LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
 
 #configure_file(transport.pc.in "${CMAKE_CURRENT_BINARY_DIR}/transport.pc")
 #install(FILES "${CMAKE_CURRENT_BINARY_DIR}/transport.pc" DESTINATION lib/pkgconfig)
