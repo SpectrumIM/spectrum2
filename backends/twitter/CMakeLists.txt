@@ -13,4 +13,4 @@ else()
 	message(FATAL_ERROR "curl not found")
 endif()
 
-install(TARGETS spectrum2_twitter_backend RUNTIME DESTINATION bin)
+install(TARGETS spectrum2_twitter_backend RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})

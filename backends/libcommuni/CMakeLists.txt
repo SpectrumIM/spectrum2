@@ -25,4 +25,4 @@ else()
 	endif()
 endif()
 
-install(TARGETS spectrum2_libcommuni_backend RUNTIME DESTINATION bin)
+install(TARGETS spectrum2_libcommuni_backend RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
