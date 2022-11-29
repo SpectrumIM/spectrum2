@@ -50,7 +50,7 @@ IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, con
 		m_identify = CONFIG_STRING(m_config, "service.irc_identify");
 	}
 	else {
-		m_identify = "NickServ identify $name $password";
+		m_identify = "NickServ identify $password";
 	}
 }
 
