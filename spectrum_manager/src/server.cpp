@@ -2,6 +2,8 @@
 #include "server.h"
 #include "methods.h"
 
+#include <boost/random.hpp>
+#include <chrono>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -71,8 +73,16 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 	mg_mgr_init(&m_mgr, this);
 
 	if(m_password == "" || m_password == "test") {
-		std::cerr << "Rejecting empty or default admin password." << std::endl;
-		exit(1);
+		// this pool only which cannot be easily confused with one another. (e.g avoids 0-O, 1-l)
+		const char pool[] = "!#%+23456789:=?@ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+		auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		boost::random::mt19937 rng(now);
+		boost::random::uniform_int_distribution<> index_dist(0, strlen(pool)-1);
+		m_password.clear();
+		for(int i = 0; i < 10 ; ++i) {
+			m_password += pool[index_dist(rng)];
+		}
+		std::cerr << "Rejecting empty or default admin password -- Temporary password: " << m_password << std::endl;
 	}
 
 	struct mg_bind_opts opts;
