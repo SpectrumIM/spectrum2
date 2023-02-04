@@ -1,11 +1,22 @@
-FROM alpine:3.12.0
+FROM alpine:3.17.1
 
 RUN apk add --no-cache ca-certificates && \
-	apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt5-qtbase-dev qt5-qtdeclarative-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl libevent-dev jsoncpp-dev cppunit-dev python2
+	apk add --no-cache cmake make gcc g++ musl-dev boost-dev git openssl-dev expat-dev libidn-dev scons
 
 WORKDIR	/usr/src/
 
-RUN wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommuni-3.5.0.tar.gz && \
+COPY fix-ftbfs.patch /
+
+RUN     git clone git://swift.im/swift && \
+        cd swift && \
+		git apply /fix-ftbfs.patch && \
+		rm -rf 3rdParty Swift Limber && \
+        scons Swiften swiften_dll=yes optimize=yes debug=no SWIFTEN_INSTALLDIR=/usr /usr -j5
+
+# it should not be installed before Swiften to not trigger Sluift build with libedit-dev package
+RUN apk add pidgin-dev qt5-qtbase-dev qt5-qtdeclarative-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev libev-dev apr-util-dev libevent-dev jsoncpp-dev cppunit-dev popt-dev curl-dev 
+
+RUN wget https://github.com/communi/libcommuni/archive/v3.7.0.tar.gz -O libcommuni-3.7.0.tar.gz && \
 	tar xfz libcommuni-*.tar.gz && \
 	cd libcommuni-* && \
 	./configure --prefix=/usr && \
@@ -16,18 +27,12 @@ RUN wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommu
 
 RUN	git clone https://github.com/apache/logging-log4cxx.git && \
 	cd logging-log4cxx && \
-	git checkout v0.11.0 && \
-	./autogen.sh && \
-	./configure --prefix=/usr && \
+	git checkout rel/v1.0.0 && \
+	cmake . -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=OFF && \
 	make && \
 	make install && \
 	cd .. && \
 	rm -rf logging-log4cxx
-
-RUN     git clone git://swift.im/swift && \
-        cd swift && \
-        git checkout swift-4.x && \
-        ./scons Swiften swiften_dll=yes optimize=yes debug=no SWIFTEN_INSTALLDIR=/usr /usr -j5
 
 RUN	git clone https://github.com/jtv/libpqxx.git && \
 	cd libpqxx && \
@@ -35,3 +40,5 @@ RUN	git clone https://github.com/jtv/libpqxx.git && \
 	cmake . -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=/usr/lib -DBUILD_SHARED_LIBS=ON -DBUILD_TEST=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
 	make && \
 	make install
+
+
