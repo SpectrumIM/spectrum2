@@ -31,7 +31,7 @@
 #include <boost/algorithm/string.hpp>
 
 #ifndef WIN32
-#include "sys/signal.h"
+#include <signal.h>
 #include <sys/stat.h>
 #include <pwd.h>
 #include <grp.h>
