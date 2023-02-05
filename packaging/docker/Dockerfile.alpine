@@ -11,7 +11,9 @@ RUN     git clone git://swift.im/swift && \
         cd swift && \
 		git apply /fix-ftbfs.patch && \
 		rm -rf 3rdParty Swift Limber && \
-        scons Swiften swiften_dll=yes optimize=yes debug=no SWIFTEN_INSTALLDIR=/usr /usr -j5
+        scons Swiften swiften_dll=yes optimize=yes debug=no SWIFTEN_INSTALLDIR=/usr /usr -j5 && \
+		rm /usr/include/Swiften/Network/DummyConnectionServer.h && \
+        rm /usr/include/Swiften/Network/DummyConnectionServerFactory.h
 
 # it should not be installed before Swiften to not trigger Sluift build with libedit-dev package
 RUN apk add pidgin-dev qt5-qtbase-dev qt5-qtdeclarative-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev libev-dev apr-util-dev libevent-dev jsoncpp-dev cppunit-dev popt-dev curl-dev 
