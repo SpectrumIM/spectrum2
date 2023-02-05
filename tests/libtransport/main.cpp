@@ -23,7 +23,13 @@ int main (int argc, char* argv[])
 #ifdef WITH_LOG4CXX
 	LoggerPtr root = Logger::getRootLogger();
 #ifndef _MSC_VER
-	root->addAppender(new FileAppender(new PatternLayout("%d %-5p %c: %m%n"), "libtransport_test.log", false));
+	#ifdef LOG4CXX_VERSION
+		auto patternlayout = std::make_shared<PatternLayout>("%d %-5p %c: %m%n");
+		auto fileappender = std::make_shared<FileAppender>(patternlayout, "libtransport_test.log", false);
+		root->addAppender(fileappender);
+	#else
+		root->addAppender(new FileAppender(new PatternLayout("%d %-5p %c: %m%n"), "libtransport_test.log", false));
+	#endif
 #else
 	root->addAppender(new FileAppender(new PatternLayout(L"%d %-5p %c: %m%n"), L"libtransport_test.log", false));
 #endif

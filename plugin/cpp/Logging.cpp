@@ -25,6 +25,7 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
+#include <memory>
 
 
 #include <boost/filesystem.hpp>
@@ -100,15 +101,22 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 #ifdef _MSC_VER
 		root->addAppender(new ConsoleAppender(new PatternLayout(L"%d %-5p %c: %m%n")));
 #else
+#ifdef LOG4CXX_VERSION
+		root->addAppender(std::make_shared<ConsoleAppender>(std::make_shared<PatternLayout>("%d %-5p %c: %m%n")));
+#else
 		root->addAppender(new ConsoleAppender(new PatternLayout("%d %-5p %c: %m%n")));
+#endif
 #endif
 	}
 	else {
 		log4cxx::helpers::Properties p;
-
-		log4cxx::helpers::FileInputStream *istream = NULL;
+		log4cxx::helpers::FileInputStreamPtr istream;
 		try {
+#ifdef LOG4CXX_VERSION
+			istream = std::make_shared<log4cxx::helpers::FileInputStream>(CONFIG_STRING(config, key));
+#else			
 			istream = new log4cxx::helpers::FileInputStream(CONFIG_STRING(config, key));
+#endif
 		}
 		catch(log4cxx::helpers::IOException &ex) {
 			std::cerr << "Can't create FileInputStream logger instance: " << ex.what() << "\n";
@@ -118,11 +126,9 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 			std::cerr << "Can't create FileInputStream logger instance\n";
 			std::cerr << "This is usually caused by the non-existing \"" << CONFIG_STRING(config, key) << "\" file or bad permissions.\n";
 		}
-
 		if (!istream) {
 			return;
 		}
-
 		p.load(istream);
 		LogString pid, jid, id;
 		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
