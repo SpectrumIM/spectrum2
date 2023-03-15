@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: master
+    branches: [master]
 
 jobs:
   linux-glibc:
@@ -39,7 +39,7 @@ jobs:
     - name: Run tests
       run: docker run -tt --env LANG=en_US.UTF-8 spectrum:tests-musl
   macos:
-    runs-on: macOS-12
+    runs-on: macos-12
     steps:
     - uses: actions/checkout@v2
     - name: Install MacPorts
