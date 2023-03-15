@@ -1,6 +1,8 @@
 #include "managerconfig.h"
 #include "methods.h"
-#include "server.h"
+#ifdef ENABLE_WEBUI
+#include "server/server.h"
+#endif
 #include "transport/Config.h"
 #include "transport/protocol.pb.h"
 #include "Swiften/Swiften.h"
@@ -108,6 +110,7 @@ int main(int argc, char **argv)
 		}
 		return ret;
 	}
+#ifdef ENABLE_WEBUI
 	else if (command[0] == "server") {
 		Server server(&config, config_file);
 		if (server.start() == false) {
@@ -115,6 +118,7 @@ int main(int argc, char **argv)
 			return 1;
 		}
 	}
+#endif
 	else {
 		if (command.size() < 2) {
 			std::cout << desc << "\n";
