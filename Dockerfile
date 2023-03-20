@@ -52,13 +52,13 @@ RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -
 
 ENTRYPOINT ["make", "test"]
 
-FROM spectrum2/alpine-build-environment:latest as test-musl
+FROM ghcr.io/spectrumim/alpine:1.0.1 as test-musl
 
 COPY . /spectrum2/
 
 WORKDIR /spectrum2
 
-RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_WEBUI=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
 ENTRYPOINT ["make", "test"]
 

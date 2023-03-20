@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.12.0
 
 RUN apk add --no-cache ca-certificates && \
 	apk add --no-cache --virtual .build-deps cmake make gcc g++ musl-dev boost-dev protobuf-dev mariadb-dev sqlite-dev postgresql-dev pidgin-dev libev-dev qt5-qtbase-dev qt5-qtdeclarative-dev apr-util-dev automake autoconf libtool git popt-dev curl-dev openssl libevent-dev jsoncpp-dev cppunit-dev python2
@@ -16,6 +16,7 @@ RUN wget https://github.com/communi/libcommuni/archive/v3.5.0.tar.gz -O libcommu
 
 RUN	git clone https://github.com/apache/logging-log4cxx.git && \
 	cd logging-log4cxx && \
+	git checkout v0.11.0 && \
 	./autogen.sh && \
 	./configure --prefix=/usr && \
 	make && \

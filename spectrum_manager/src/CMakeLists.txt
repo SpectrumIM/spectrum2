@@ -4,10 +4,16 @@ add_executable(spectrum2_manager ${SRC})
 add_dependencies(spectrum2_manager pb)
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 
+target_include_directories(spectrum2_manager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(spectrum2_manager transport ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES})
 
-if(${OPENSSL_FOUND})
-	add_definitions(-DMG_ENABLE_SSL)
+if (ENABLE_WEBUI)
+	add_definitions(-DENABLE_WEBUI)
+	file(GLOB SERVER_SRC ${CMAKE_CURRENT_SOURCE_DIR}/server/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/server/*.c)
+	target_sources(spectrum2_manager PRIVATE ${SERVER_SRC})
+	if(${OPENSSL_FOUND})
+		add_definitions(-DMG_ENABLE_SSL)
+	endif()
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
@@ -33,7 +39,9 @@ file(INSTALL DESTINATION \"${CMAKE_INSTALL_SYSCONFDIR}/spectrum2\" TYPE FILES \"
 endif()
 ")
 
-install(DIRECTORY
-	html
-	DESTINATION ${CMAKE_INSTALL_LOCALSTATEDIR}/lib/spectrum2_manager
-)
+if (ENABLE_WEBUI)
+	install(DIRECTORY
+		html
+		DESTINATION ${CMAKE_INSTALL_LOCALSTATEDIR}/lib/spectrum2_manager
+	)
+endif()

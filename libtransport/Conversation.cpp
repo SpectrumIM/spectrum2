@@ -264,10 +264,6 @@ void Conversation::forwardAsCarbonSent(
 	const std::shared_ptr<Swift::Message> &payload,
 	const Swift::JID& to)
 {
-	if (payload->getFrom().equals(to, Swift::JID::CompareType::WithResource)) {
-		LOG4CXX_INFO(conversationLogger, "Carbon to " << to.toString() << " skipped (originated entity)");
-		return;
-	}
 	LOG4CXX_INFO(conversationLogger, "Carbon <sent> to -> " << to.toString());
 
 	//Message envelope

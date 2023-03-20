@@ -56,14 +56,8 @@ jobs:
       run: |
         export PATH=$PATH:/opt/local/bin:/usr/local/bin
         cmake -DCMAKE_BUILD_TYPE=MacPorts -DENABLE_TESTS=ON -DCMAKE_UNITY_BUILD=ON .
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
-      with:
-        languages: cpp
     - name: Build
       run:  make -j4
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
     - name: Run tests
       run:  |
         install_name_tool -change libSwiften.4.dylib @rpath/libSwiften.4.dylib tests/libtransport/libtransport_test
