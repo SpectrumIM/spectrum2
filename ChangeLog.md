@@ -1,3 +1,20 @@
+### Version 2.2.0 (2023-03-27)
+#### General
+* Fix locale issues/crashes with Twitter and maybe other backends
+* Fix Service Discovery issues with Gajim (it was addresses in 2.1.0 but was not completed properly)
+* Revert "do not send carbon copy to the originated entity" fix added in 2.1.3 - it was `purple-gowhatsapp` issue and now fixed on their side
+* Now backends are installed into `/usr/libexec` directory. Debian packages keep symlinks to `/usr/bin`, consider update your configuration files to the new path.
+#### IRC backend
+* Better NickServ identify command
+#### libpurple backend
+* Do not delete accounts.xml, this will allow to simplify plugin a lot: no need in storage backend,
+no need to save/restore settings on backend side
+* Read old saved settings on the frontend side and push to backend on login to be backward compatible
+#### Web interface
+* Allow to build without Web interface
+* Allow the possibility to bind only to localhost and do that by default
+* Reject empty or previous default password and use random one instead
+___
 ### Version 2.1.3 (2022-02-18)
 #### General
 * minor code refactoring/cleanup, see Git log for details
