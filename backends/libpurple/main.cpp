@@ -707,7 +707,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, buddyName.c_str(), account);
 			}
 			if (conv) {
-				purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
+				purple_conversation_set_data_wrapped(conv, "unseen-count", 0);
 				purple_conversation_update_wrapped(conv, PURPLE_CONV_UPDATE_UNSEEN);
 			}
 		}
