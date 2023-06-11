@@ -5,8 +5,8 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 RUN curl https://packages.spectrum.im/packages.key | gpg --no-default-keyring --keyring=/etc/apt/trusted.gpg.d/spectrumim.gpg --import -
 
 RUN apt-get update -qq
