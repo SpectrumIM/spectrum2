@@ -130,8 +130,8 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1
 
-RUN echo "deb https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN curl -fsSL https://packages.spectrum.im/packages.key | apt-key add -
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+RUN curl -fsSL https://packages.spectrum.im/packages.key | gpg --no-default-keyring --keyring=/etc/apt/trusted.gpg.d/spectrumim.gpg --import -
 RUN apt-get update -qq
 
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
