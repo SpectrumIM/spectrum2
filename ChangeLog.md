@@ -1,3 +1,9 @@
+### Version 2.2.1 (2023-06-12)
+#### General
+* Fix compatibility with latest libraries (log4cxx)
+#### libpurple backend
+* XMPP "active" chatstate should send correct `unseen-count` data with `conversation-updated` signal, this should allow protocol plugin to mark messages as read on user "focus".
+___
 ### Version 2.2.0 (2023-03-27)
 #### General
 * Fix locale issues/crashes with Twitter and maybe other backends
