@@ -176,10 +176,10 @@ class BaseTest:
 		return ret
 	
 	def pre_test(self):
-		os.system("../../spectrum/src/spectrum2 -n ./" + self.config + " > spectrum2.log &")
+		pass
 	
 	def post_test(self):
-		os.system("killall -w spectrum2")
+		pass
 
 class LibcommuniServerModeSingleServerConf(BaseTest):
 	def __init__(self):
@@ -191,28 +191,10 @@ class LibcommuniServerModeSingleServerConf(BaseTest):
 			return True
 		return False
 
-	def pre_test(self):
-		BaseTest.pre_test(self)
-		os.system("/usr/sbin/ngircd -f ../libcommuni/ngircd.conf &")
-
-	def post_test(self):
-		os.system("killall -w ngircd 2>/dev/null")
-		os.system("killall -w spectrum2_libcommuni_backend 2>/dev/null")
-		BaseTest.post_test(self)
-
 class LibcommuniServerModeConf(BaseTest):
 	def __init__(self):
 		BaseTest.__init__(self, "../libcommuni/irc_test2.cfg", True, "#channel%localhost@localhost")
 		self.directory = "../libcommuni/"
-
-	def pre_test(self):
-		BaseTest.pre_test(self)
-		os.system("/usr/sbin/ngircd -f ../libcommuni/ngircd.conf &")
-
-	def post_test(self):
-		os.system("killall -w ngircd 2>/dev/null")
-		os.system("killall -w spectrum2_libcommuni_backend 2>/dev/null")
-		BaseTest.post_test(self)
 
 class JabberServerModeConf(BaseTest):
 	def __init__(self):
@@ -233,68 +215,13 @@ class JabberServerModeConf(BaseTest):
 	def pre_test(self):
 		os.system("cp ../libpurple_jabber/prefs.xml ./ -f >/dev/null")
 		BaseTest.pre_test(self)
-		os.system("prosody --config ../libpurple_jabber/prosody.cfg.lua >prosody.log &")
-		time.sleep(3)
-		os.system("../../spectrum_manager/src/spectrum2_manager -c ../libpurple_jabber/manager.conf localhostxmpp register client%localhost@localhostxmpp client@localhost password 2>/dev/null >/dev/null")
-		os.system("../../spectrum_manager/src/spectrum2_manager -c ../libpurple_jabber/manager.conf localhostxmpp register responder%localhost@localhostxmpp responder@localhost password 2>/dev/null >/dev/null")
-
-	def post_test(self):
-		os.system("killall -w -r lua.* 2>/dev/null")
-		os.system("killall -w spectrum2_libpurple_backend 2>/dev/null")
-		BaseTest.post_test(self)
-
-class JabberSlackServerModeConf(BaseTest):
-	def __init__(self):
-		BaseTest.__init__(self, "../slack_jabber/jabber_slack_test.cfg", True, "room%conference.localhost@localhostxmpp")
-		self.directory = "../slack_jabber/"
-		self.client_jid = "client@localhost"
-		self.client_room = "room@conference.localhost"
-		# Implicitly forces responder to connect to slack.com instead of localhost
-		# by passing a nonstandard responder_roompassword
-		self.responder_jid = "owner@spectrum2tests.xmpp.slack.com"
-		self.responder_password = "spectrum2tests.e2zJwtKjLhLmt14VsMKq"
-		self.responder_room = "spectrum2_room@conference.spectrum2tests.xmpp.slack.com"
-		self.responder_nick = "owner"
-		self.responder_roompassword = "spectrum2tests.e2zJwtKjLhLmt14VsMKq"
-
-	def skip_test(self, test):
-		os.system("cp ../slack_jabber/slack.sql .")
-		if test.find("bad_password") != -1:
-			print("Changing password to 'badpassword'")
-			os.system("sqlite3 slack.sql \"UPDATE users SET password='badpassword' WHERE id=1\"")
-		return False
-
-	def pre_test(self):
-		BaseTest.pre_test(self)
-		os.system("prosody --config ../slack_jabber/prosody.cfg.lua > prosody.log &")
-
-	def post_test(self):
-		os.system("killall -w -r lua.* 2>/dev/null")
-		os.system("killall -w spectrum2_libpurple_backend 2>/dev/null")
-		BaseTest.post_test(self)
-
-class TwitterServerModeConf(BaseTest):
-	def __init__(self):
-		BaseTest.__init__(self, "../twitter/twitter_test.cfg", True, "")
-		self.directory = "../twitter/"
-		self.client_password = "testpass123"
-
-	def skip_test(self, test):
-		os.system("cp ../twitter/twitter.sql .")
-
-	def pre_test(self):
-		BaseTest.pre_test(self)
-
-	def post_test(self):
-		os.system("killall -w spectrum2_twitter_backend 2>/dev/null")
-		BaseTest.post_test(self)
+		os.system("spectrum2_manager localhostxmpp register client%localhost@localhostxmpp client@localhost password")
+		os.system("spectrum2_manager localhostxmpp register responder%localhost@localhostxmpp responder@localhost password")
 
 configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())
 configurations.append(JabberServerModeConf())
-#configurations.append(JabberSlackServerModeConf())
-#configurations.append(TwitterServerModeConf())
 
 exitcode = 0
 
