@@ -273,22 +273,6 @@ class JabberSlackServerModeConf(BaseTest):
 		os.system("killall -w spectrum2_libpurple_backend 2>/dev/null")
 		BaseTest.post_test(self)
 
-class TwitterServerModeConf(BaseTest):
-	def __init__(self):
-		BaseTest.__init__(self, "../twitter/twitter_test.cfg", True, "")
-		self.directory = "../twitter/"
-		self.client_password = "testpass123"
-
-	def skip_test(self, test):
-		os.system("cp ../twitter/twitter.sql .")
-
-	def pre_test(self):
-		BaseTest.pre_test(self)
-
-	def post_test(self):
-		os.system("killall -w spectrum2_twitter_backend 2>/dev/null")
-		BaseTest.post_test(self)
-
 configurations = []
 configurations.append(LibcommuniServerModeSingleServerConf())
 configurations.append(LibcommuniServerModeConf())

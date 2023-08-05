@@ -13,10 +13,6 @@ if(PROTOBUF_FOUND)
 		add_subdirectory(swiften)
 	endif()
 
-	if(ENABLE_TWITTER)
-		add_subdirectory(twitter)
-	endif()
-
 	if(NOT WIN32)
 		if(ENABLE_SMSTOOLS3)
 			add_subdirectory(smstools3)

@@ -151,21 +151,6 @@ Spectrum2 Swiften backend
 %defattr(-, root, root,-)
 /usr/bin/spectrum2_swiften_backend
 
-# TWITTER
-
-%package twitter-backend
-Summary:    Libtransport
-Group:      Development/Libraries
-Requires:   boost
-Requires:   libtransport%{?_isa} = %{version}-%{release}
-
-%description twitter-backend
-Spectrum2 libyahoo2 backend
-
-%files twitter-backend
-%defattr(-, root, root,-)
-/usr/bin/spectrum2_twitter_backend
-
 # LIBTRANSPORT
 
 %package -n libtransport
