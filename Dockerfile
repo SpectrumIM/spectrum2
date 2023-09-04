@@ -96,9 +96,9 @@ RUN echo "---> Install Steam" && \
 
 RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install -t bullseye-backports golang && \
-		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
+		git clone --recursive https://github.com/hoehermann/purple-gowhatsapp.git && \
 		cd purple-gowhatsapp && \
-		git checkout v1.11.1 && \
+		git checkout v1.13.0 && \
 		cmake . && \
 		make && \
 		make DESTDIR=/tmp/out install
