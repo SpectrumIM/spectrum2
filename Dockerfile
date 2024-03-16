@@ -94,6 +94,12 @@ RUN echo "---> Install Steam" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
+RUN echo "---> Install Teams" && \
+		git clone https://github.com/EionRobb/purple-teams.git && \
+		cd purple-teams && \
+		make && \
+		make DESTDIR=/tmp/out install
+
 RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install -t bullseye-backports golang && \
 		git clone --recursive https://github.com/hoehermann/purple-gowhatsapp.git && \
