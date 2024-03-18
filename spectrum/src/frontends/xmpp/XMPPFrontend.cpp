@@ -145,7 +145,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 			
 		}
 		else {
-			LOG4CXX_WARN(logger, "No PKCS#12 certificate used. TLS is disabled.");
+			LOG4CXX_INFO(logger, "No PKCS#12 certificate used. TLS is disabled.");
 		}
 // 		m_server->start();
 		m_stanzaChannel = m_server->getStanzaChannel();

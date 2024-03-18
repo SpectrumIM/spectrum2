@@ -50,7 +50,6 @@ class NetworkPlugin {
 				void setExtraFields(const std::vector<std::string> &fields) { m_extraFields = fields; }
 				void setRawXML(bool rawXML = false) { m_rawXML = rawXML; }
 				void disableJIDEscaping() { m_disableJIDEscaping = true; }
-
 			private:
 				bool m_needPassword;
 				bool m_needRegistration;
@@ -63,9 +62,6 @@ class NetworkPlugin {
 		};
 
 		/// Creates new NetworkPlugin and connects the Spectrum2 NetworkPluginServer.
-		/// \param loop Event loop.
-		/// \param host Host where Spectrum2 NetworkPluginServer runs.
-		/// \param port Port.
 		NetworkPlugin();
 
 		/// Destructor.
@@ -267,7 +263,7 @@ class NetworkPlugin {
 
 		virtual void handleExitRequest() { exit(1); }
 		void handleDataRead(std::string &data);
-		virtual void sendData(const std::string &string) {}
+		virtual void sendData(const std::string &string) {};
 
 		void checkPing();
 
@@ -292,7 +288,6 @@ class NetworkPlugin {
 		std::string m_data;
 		bool m_pingReceived;
 		double m_init_res;
-
 };
 
 }
