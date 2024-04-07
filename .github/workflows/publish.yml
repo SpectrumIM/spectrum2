@@ -22,7 +22,7 @@ jobs:
             {{version}}
         tag-latest: ${{ endsWith(github.ref, github.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
     - name: Login to the container registry
