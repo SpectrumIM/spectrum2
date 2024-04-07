@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Build tests
       run: |
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Build tests
       run: docker buildx build . --target test-clang -t spectrum:tests-clang
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Build tests
       run: docker buildx build . --target test-musl -t spectrum:tests-musl
@@ -41,7 +41,7 @@ jobs:
   macos:
     runs-on: macos-14
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install MacPorts
       run: |
         curl -L -O "https://github.com/macports/macports-base/releases/download/v2.9.0/MacPorts-2.9.0-14-Sonoma.pkg"
@@ -70,7 +70,7 @@ jobs:
   windows:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
         curl -L -O https://packages.spectrum.im/deps32.zip
