@@ -39,7 +39,7 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm64        
         target: production
-        cache-from: type=registry,ref=spectrumim/spectrum
+        cache-from: type=registry,ref=spectrumim/spectrum:buildcache
         cache-to: type=registry,ref=spectrumim/spectrum:buildcache,mode=max
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.docker_meta.outputs.tags }}
