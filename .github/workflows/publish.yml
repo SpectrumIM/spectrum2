@@ -39,8 +39,8 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm64        
         target: production
-        cache-from: type=registry,ref=spectrumim/spectrum
-        cache-to: type=inline
+        cache-from: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache
+        cache-to: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
