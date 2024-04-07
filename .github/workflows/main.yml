@@ -77,7 +77,7 @@ jobs:
         7z x deps32.zip
       shell: cmd
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v2.0.0
     - name: Configure build
       run: |
         set CMAKE_PREFIX_PATH=%cd%\deps32
