@@ -12,35 +12,35 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Docker meta
       id: docker_meta
-      uses: crazy-max/ghaction-docker-meta@v1
+      uses: crazy-max/ghaction-docker-meta@v5
       with:
         images: ghcr.io/spectrumim/spectrum
         tag-semver: |
             {{version}}
         tag-latest: ${{ endsWith(github.ref, github.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1
+      uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v3
     - name: Login to the container registry
       if: github.event_name != 'pull_request'
-      uses: docker/login-action@v1 
+      uses: docker/login-action@v3 
       with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v5
       with:
         context: .
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm64        
         target: production
-        cache-from: type=registry,ref=spectrumim/spectrum
-        cache-to: type=inline
+        cache-from: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache
+        cache-to: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.docker_meta.outputs.tags }}
         labels: ${{ steps.docker_meta.outputs.labels }}
