@@ -97,6 +97,7 @@ RUN echo "---> Install Steam" && \
 RUN echo "---> Install Teams" && \
 		git clone https://github.com/EionRobb/purple-teams.git && \
 		cd purple-teams && \
+		git checkout c0b5d9947e359c6cc8d54ee76af8dba116e0ec72 && \
 		make && \
 		make DESTDIR=/tmp/out install
 
