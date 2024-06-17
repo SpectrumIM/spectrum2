@@ -10,12 +10,11 @@
 
 #include "transport/Config.h"
 #include "transport/Logging.h"
-#include "transport/NetworkPlugin.h"
+#include "transport/BoostNetworkPlugin.h"
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
 #include "transport/PQXXBackend.h"
 #include "transport/StorageBackend.h"
-#include <Swiften/Swiften.h>
 #include <boost/filesystem.hpp>
 #include "unistd.h"
 #include "signal.h"
@@ -24,14 +23,13 @@
 #include <fstream>
 #include <streambuf>
 
-Swift::SimpleEventLoop *loop_;
-
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
+using namespace boost::asio::ip;
 using namespace boost::filesystem;
-
 using namespace boost::program_options;
+
 using namespace Transport;
 
 DEFINE_LOGGER(logger, "SMSNetworkPlugin");
@@ -41,30 +39,18 @@ DEFINE_LOGGER(logger, "SMSNetworkPlugin");
 class SMSNetworkPlugin;
 SMSNetworkPlugin * np = NULL;
 
-class SMSNetworkPlugin : public NetworkPlugin {
+class SMSNetworkPlugin : public BoostNetworkPlugin {
 	public:
-		Swift::BoostNetworkFactories *m_factories;
-		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		std::shared_ptr<Swift::Connection> m_conn;
-		Swift::Timer::ref m_timer;
 		int m_internalUser;
+		std::shared_ptr<boost::asio::deadline_timer> m_timer;
 		StorageBackend *storageBackend;
 
-		SMSNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, StorageBackend *storagebackend, const std::string &host, int port) : NetworkPlugin() {
-			this->config = config;
+		SMSNetworkPlugin(Config *config, StorageBackend *storagebackend, const std::string &host, int port) 
+			: BoostNetworkPlugin(config, host, port) {
 			this->storageBackend = storagebackend;
-			m_factories = new Swift::BoostNetworkFactories(loop);
-			m_conn = m_factories->getConnectionFactory()->createConnection();
-			m_conn->onDataRead.connect(boost::bind(&SMSNetworkPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(*(Swift::HostAddress::fromString(host)), port));
-// 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
-// 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
 
-			LOG4CXX_INFO(logger, "Starting the plugin.");
-
-			m_timer = m_factories->getTimerFactory()->createTimer(5000);
-			m_timer->onTick.connect(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
-			m_timer->start();
+			m_timer = std::make_shared<boost::asio::deadline_timer>(io_context, boost::posix_time::seconds(5));
+			m_timer->async_wait(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
 
 			// We're reusing our database model here. Buddies of user with JID INTERNAL_USER are there
 			// to match received GSM messages from number N with the XMPP users who sent message to number N.
@@ -144,7 +130,6 @@ class SMSNetworkPlugin : public NetworkPlugin {
 					LOG4CXX_ERROR(logger, "Error when removing the SMS: " << ex.what() << ".");
 				}
 			}
-			m_timer->start();
 		}
 
 		void sendSMS(const std::string &to, const std::string &msg) {
@@ -163,15 +148,6 @@ class SMSNetworkPlugin : public NetworkPlugin {
 			myfile.open (std::string("/var/spool/sms/outgoing/spectrum." + uuid).c_str());
 			myfile << data;
 			myfile.close();
-		}
-
-		void sendData(const std::string &string) {
-			m_conn->write(Swift::createSafeByteArray(string));
-		}
-
-		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
-			std::string d(data->begin(), data->end());
-			handleDataRead(d);
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
@@ -228,11 +204,6 @@ class SMSNetworkPlugin : public NetworkPlugin {
 		void handleBuddyRemovedRequest(const std::string &user, const std::string &buddyName, const std::vector<std::string> &groups) {
 
 		}
-
-
-	private:
-
-		Config *config;
 };
 
 static void spectrum_sigchld_handler(int sig)
@@ -282,10 +253,8 @@ int main (int argc, char* argv[]) {
 		return -1;
 	}
 
-	Swift::SimpleEventLoop eventLoop;
-	loop_ = &eventLoop;
-	np = new SMSNetworkPlugin(cfg, &eventLoop, storageBackend, host, port);
-	loop_->run();
+	np = new SMSNetworkPlugin(cfg, storageBackend, host, port);
+	np->run();
 
 	return 0;
 }

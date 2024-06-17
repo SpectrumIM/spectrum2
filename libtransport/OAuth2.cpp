@@ -33,6 +33,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <json/json.h>
 
 namespace Transport {
 
@@ -81,20 +82,21 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 		url += "&redirect_uri=" + Util::urlencode(m_redirectURL);
 	}
 
-	Json::Value resp;
-	HTTPRequest req(HTTPRequest::Get, url);
-	if (!req.execute(resp)) {
+	std::string responseData;
+	HTTPRequest req;
+	req.init();
+	if (!req.GET(url, responseData)) {
 		LOG4CXX_ERROR(oauth2Logger, url);
-		LOG4CXX_ERROR(oauth2Logger, req.getError());
-		return req.getError();
+		LOG4CXX_ERROR(oauth2Logger, req.getCurlError());
+		return req.getCurlError();
 	}
 
-	LOG4CXX_ERROR(oauth2Logger, req.getRawData());
+	LOG4CXX_ERROR(oauth2Logger, responseData);
+	Json::Value resp(responseData);
 	Json::Value& access_token = resp["access_token"];
 	if (!access_token.isString()) {
 		LOG4CXX_ERROR(oauth2Logger, "No 'access_token' object in the reply.");
 		LOG4CXX_ERROR(oauth2Logger, url);
-		LOG4CXX_ERROR(oauth2Logger, req.getRawData());
 		return "No 'access_token' object in the reply.";
 	}
 
@@ -102,7 +104,6 @@ std::string OAuth2::requestToken(const std::string &code, std::string &token, st
 	if (token.empty()) {
 		LOG4CXX_ERROR(oauth2Logger, "Empty 'access_token' object in the reply.");
 		LOG4CXX_ERROR(oauth2Logger, url);
-		LOG4CXX_ERROR(oauth2Logger, req.getRawData());
 		return "Empty 'access_token' object in the reply.";
 	}
 

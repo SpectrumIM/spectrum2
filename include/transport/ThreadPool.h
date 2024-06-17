@@ -1,12 +1,12 @@
 #pragma once 
 
+#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/signals2.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <queue>
 #include <iostream>
-#include "Swiften/EventLoop/EventLoop.h"
 
 namespace Transport {
 
@@ -55,12 +55,12 @@ class ThreadPool
 	boost::mutex count_lock;
 	boost::mutex pool_lock;
 	boost::mutex criticalregion;
-	Swift::EventLoop *loop;
+	boost::asio::io_context *loop;
 
 	boost::signals2::signal < void () > onWorkerAvailable;
 	
 	public:
-	ThreadPool(Swift::EventLoop *loop, int maxthreads);
+	ThreadPool(const boost::asio::io_context &loop, int maxthreads);
 	~ThreadPool();
 	void runAsThread(Thread *t);
 	int getActiveThreadCount(); 
