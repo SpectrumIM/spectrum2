@@ -168,7 +168,7 @@ int start_instances(ManagerConfig *config, const std::string &_jid) {
 
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
@@ -232,7 +232,7 @@ void stop_instances(ManagerConfig *config, const std::string &_jid) {
 
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
@@ -315,7 +315,7 @@ int restart_instances(ManagerConfig *config, const std::string &_jid) {
 
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
@@ -401,7 +401,7 @@ int show_status(ManagerConfig *config) {
 
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
@@ -531,7 +531,7 @@ std::string get_config(ManagerConfig *config, const std::string &jid, const std:
 
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
@@ -572,7 +572,7 @@ void ask_local_server(ManagerConfig *config, Swift::BoostNetworkFactories &netwo
 		bool found = false;
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";
@@ -619,7 +619,7 @@ std::vector<std::string> show_list(ManagerConfig *config, bool show) {
 
 		directory_iterator end_itr;
 		for (directory_iterator itr(p); itr != end_itr; ++itr) {
-			if (is_regular(itr->path()) && extension(itr->path()) == ".cfg") {
+			if (is_regular_file(itr->path()) && itr->path().extension().string() == ".cfg") {
 				Config cfg;
 				if (cfg.load(itr->path().string()) == false) {
 					std::cerr << "Can't load config file " << itr->path().string() << ". Skipping...\n";

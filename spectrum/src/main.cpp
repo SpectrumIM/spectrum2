@@ -147,7 +147,7 @@ static void _createDirectories(Transport::Config *config, boost::filesystem::pat
 	}
 
 	// First create branch, by calling ourself recursively
-	_createDirectories(config, ph.branch_path());
+	_createDirectories(config, ph.parent_path());
 
 	// Now that parent's path exists, create the directory
 	boost::filesystem::create_directory(ph);

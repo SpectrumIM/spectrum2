@@ -53,7 +53,7 @@ void createDirectories(Transport::Config *config, const boost::filesystem::path&
 	}
 
 	// First create branch, by calling ourself recursively
-	createDirectories(config, ph.branch_path());
+	createDirectories(config, ph.parent_path());
 	
 	// Now that parent's path exists, create the directory
 	create_directory(ph);
@@ -89,7 +89,7 @@ void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t) {
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 				if (last_write_time(itr->path()) < t) {
 					try {
-						if (is_regular(itr->path())) {
+						if (is_regular_file(itr->path())) {
 							remove(itr->path());
 						}
 						else if (is_directory(itr->path())) {
