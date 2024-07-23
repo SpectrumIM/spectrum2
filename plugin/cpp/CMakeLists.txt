@@ -11,6 +11,7 @@ endif()
 
 add_dependencies(transport-plugin pb)
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
+target_compile_features(transport-plugin PUBLIC cxx_std_11)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	if(NOT WIN32)

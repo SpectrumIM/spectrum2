@@ -6,6 +6,7 @@ set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../../include/transport/
 
 target_include_directories(spectrum2_manager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(spectrum2_manager transport ${SWIFTEN_LIBRARY} ${PROTOBUF_LIBRARIES})
+target_compile_features(spectrum2_manager PUBLIC cxx_std_11)
 
 if (ENABLE_WEBUI)
 	add_definitions(-DENABLE_WEBUI)

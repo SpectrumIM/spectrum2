@@ -1,6 +1,7 @@
 file(GLOB SRC *.c *.cpp)
 
 add_executable(spectrum2_template_backend ${SRC})
+target_compile_features(spectrum2_template_backend PUBLIC cxx_std_11)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	if(NOT WIN32)

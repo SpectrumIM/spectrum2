@@ -25,6 +25,7 @@ if(CPPUNIT_FOUND)
 	file(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
 
 	add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
+	target_compile_features(libtransport_test PUBLIC cxx_std_11)
 	set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
 	
 

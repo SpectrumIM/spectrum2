@@ -17,6 +17,7 @@ add_dependencies(spectrum2 spectrum2_libpurple_backend)
 endif()
 
 target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+target_compile_features(spectrum2 PUBLIC cxx_std_11)
 
 if(NOT MSVC AND NOT APPLE)
 	# export all symbols (used for loading frontends)

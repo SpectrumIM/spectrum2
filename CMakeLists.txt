@@ -4,13 +4,6 @@ cmake_policy(SET CMP0037 OLD)
 
 project(libtransport)
 
-set(CMAKE_CXX_STANDARD 11)
-if(WIN32)
-	set(CMAKE_CXX_STANDARD 17)
-endif(WIN32)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 include(GNUInstallDirs)
 
 include(CPack)
