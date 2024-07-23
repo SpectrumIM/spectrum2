@@ -40,7 +40,7 @@ option(ENABLE_PURPLE "Build Libpurple plugin" ON)
 option(ENABLE_SMSTOOLS3 "Build SMSTools3 plugin" ON)
 option(ENABLE_XMPP "Build XMPP plugin" ON)
 option(ENABLE_WEBUI "Build Web UI" ON)
-
+option(ENABLE_SLACK_FRONTEND "Build Slack frontend" OFF)
 option(ENABLE_DOCS "Build Docs" ON)
 # option(ENABLE_LOG "Build with logging using Log4cxx" ON)
 option(ENABLE_TESTS "Build Tests using CppUnit" OFF)
@@ -97,6 +97,8 @@ if(WIN32)
 	add_definitions(-DBOOST_ALL_NO_LIB)
 	link_directories("$ENV{CMAKE_PREFIX_PATH}/lib")
 endif(WIN32)
+
+find_package( Threads )
 
 set(Boost_FIND_QUIETLY ON)
 find_package(Boost COMPONENTS program_options date_time system filesystem regex thread locale REQUIRED)

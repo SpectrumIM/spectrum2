@@ -18,12 +18,15 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 	endif()
 endif()
 
-if(NOT WIN32)
-	target_link_libraries(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
-else()
-	target_link_libraries(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ws2_32.lib)
-endif() 
+target_link_libraries(transport-plugin JsonCpp::JsonCpp ${CMAKE_THREAD_LIBS_INIT})
 
+find_package(CURL)
+
+if(NOT WIN32)
+	target_link_libraries(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ${PQXX_LIBRARIES} ${CURL_LIBRARIES} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES})
+else()
+	target_link_libraries(transport-plugin ${PROTOBUF_LIBRARY} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES} ${PQXX_LIBRARIES} ${CURL_LIBRARIES} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} psapi.lib bcrypt.lib ws2_32.lib)
+endif() 
 set_target_properties(transport-plugin PROPERTIES
 	VERSION ${TRANSPORT_VERSION} SOVERSION ${TRANSPORT_VERSION}
 )
