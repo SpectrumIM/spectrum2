@@ -101,6 +101,9 @@ RUN echo "---> Install Teams" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
+RUN echo "---> purple-gowhatsapp" && \
+		curl -o /tmp/out/usr/lib/purple-2/libwhatsmeow_1.15.0r288_20240726213518_amd64_ubuntu22.04.so https://buildbot.hehoe.de/purple-whatsmeow/builds/libwhatsmeow_1.15.0r288_20240726213518_amd64_ubuntu22.04.so
+
 RUN echo "---> purple-battlenet" && \
 git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		cd purple-battlenet && \
