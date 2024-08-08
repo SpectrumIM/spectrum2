@@ -1,14 +1,22 @@
 [Unit]
-Description=spectrum2
+Description=An open source instant messaging transport
+Documentation=https://spectrum.im/documentation/
 Wants=network-online.target
 After=network.target network-online.target
 
 [Service]
 Type=forking
+
+User=spectrum2
+
+RestartSec=5
+Restart=on-failure
+
 ExecStart=/usr/bin/spectrum2_manager start
-TimeoutStopSec=3
 ExecStop=/usr/bin/spectrum2_manager stop
 ExecReload=/usr/bin/spectrum2_manager restart
+
+RuntimeDirectory=spectrum2
 
 [Install]
 WantedBy=multi-user.target
