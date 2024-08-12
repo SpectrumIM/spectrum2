@@ -92,3 +92,12 @@ jobs:
         set PATH=%PATH%;%cd%\deps32\bin
         cd tests\libtransport\RelWithDebInfo
         libtransport_test
+
+  linux-debian:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build from Dockerfile\.trixie
+      run: docker build -f Dockerfile\.trixie -t spectrum:trixie \.
