@@ -48,7 +48,7 @@ RUN echo "---> Install Teams" && \
 		make && \
 		make DESTDIR=/tmp/out install
 RUN echo "---> Install Skypeweb" && \
-		git clone git://github.com/EionRobb/skype4pidgin.git && \
+		git clone https://github.com/EionRobb/skype4pidgin.git && \
 		cd skype4pidgin/skypeweb && \
 		make && \
 		make DESTDIR=/tmp/out install
