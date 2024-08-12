@@ -45,7 +45,11 @@ RUN echo "---> Install Steam" && \
 RUN echo "---> Install Teams" && \
 		git clone https://github.com/EionRobb/purple-teams.git && \
 		cd purple-teams && \
-		git checkout c0b5d9947e359c6cc8d54ee76af8dba116e0ec72 && \
+		make && \
+		make DESTDIR=/tmp/out install
+RUN echo "---> Install Skypeweb" && \
+		git clone git://github.com/EionRobb/skype4pidgin.git && \
+		cd skype4pidgin/skypeweb && \
 		make && \
 		make DESTDIR=/tmp/out install
 
@@ -82,13 +86,9 @@ RUN curl -L https://buildbot.hehoe.de/purple-whatsmeow/builds/libwhatsmeow.so -o
 
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
-		pidgin-sipe \
 		#libpurple-telegram-tdlib \
-		libtdjson1.7.9 \
 		purple-discord \
-		purple-facebook \
 		libmarkdown2 \
-		skypeweb \
 		libogg0 libopusfile0 \
 		/tmp/*.deb \
 		nodejs \
