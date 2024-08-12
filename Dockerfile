@@ -1,66 +1,16 @@
-FROM debian:bullseye-backports as base
+FROM debian:trixie as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN curl https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
+#RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+#RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
+#RUN curl https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 
 RUN apt-get update -qq
-RUN apt-get build-dep --no-install-recommends -y spectrum2
-RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
-
-RUN apt-get install --no-install-recommends -y cmake
-
-#TODO include in Build-Depends
-RUN apt-get install --no-install-recommends -y libssl-dev
-
-# Spectrum 2
-COPY . spectrum2/
-
-FROM base as test
-
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_LISTCHANGES_FRONTEND=none
-
-WORKDIR /spectrum2
-
-RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
-
-RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
-
-ENTRYPOINT ["make", "extended_test"]
-
-FROM base as test-clang
-
-ARG DEBIAN_FRONTEND=noninteractive
-ARG APT_LISTCHANGES_FRONTEND=none
-
-RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-
-RUN echo 'deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-13 main' > /etc/apt/sources.list.d/llvm.list
-RUN apt-get update -qq
-
-RUN apt-get install --no-install-recommends -y libcppunit-dev clang-13 lld-13
-
-WORKDIR /spectrum2
-
-RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-13 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-13 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
-
-ENTRYPOINT ["make", "test"]
-
-FROM ghcr.io/spectrumim/alpine:1.0.1 as test-musl
-
-COPY . /spectrum2/
-
-WORKDIR /spectrum2
-
-RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DENABLE_WEBUI=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
-
-ENTRYPOINT ["make", "test"]
+RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev spectrum2 libpurple-dev cmake libssl-dev
 
 FROM base as staging
 
@@ -69,12 +19,10 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR /spectrum2/packaging/debian/
 
-RUN /bin/bash ./build_spectrum2.sh
-
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
-		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev libopusfile-dev
+		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev libopusfile-dev build-essential
 		
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
@@ -101,9 +49,6 @@ RUN echo "---> Install Teams" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-RUN echo "---> purple-gowhatsapp" && \
-		curl -o /tmp/out/usr/lib/purple-2/libwhatsmeow_1.16.0r292_20240726213518_amd64_ubuntu22.04.so https://buildbot.hehoe.de/purple-whatsmeow/builds/libwhatsmeow_1.16.0r292_20240726213518_amd64_ubuntu22.04.so
-
 RUN echo "---> purple-battlenet" && \
 git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		cd purple-battlenet && \
@@ -122,8 +67,8 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-		
-FROM debian:bullseye-slim as production
+
+FROM debian:trixie as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
@@ -131,16 +76,14 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
 
-RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
-RUN apt-get update -qq
-
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
+
+RUN curl -L https://buildbot.hehoe.de/purple-whatsmeow/builds/libwhatsmeow.so -o /usr/local/lib/libwhatsmeow.so && ldconfig
 
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
 		pidgin-sipe \
-		libpurple-telegram-tdlib \
+		#libpurple-telegram-tdlib \
 		libtdjson1.7.9 \
 		purple-discord \
 		purple-facebook \
@@ -151,10 +94,9 @@ RUN echo "---> Installing libpurple plugins" && \
 		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
 
-
 COPY --from=staging /tmp/out/* /usr/
 
-COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
+RUN curl -L https://github.com/SpectrumIM/spectrum2/blob/54801b3e7e2c0f13d5aac668bc45a1d8e95a2855/packaging/docker/run.sh -o /run.sh
 
 RUN rm -rf /tmp/*.deb
 
