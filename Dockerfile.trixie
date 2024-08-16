@@ -92,6 +92,7 @@ RUN echo "---> Installing libpurple plugins" && \
 		libogg0 libopusfile0 \
 		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
+RUN echo "Debug: Listing DEB files in /tmp/" && ls -l /tmp/*.deb
 RUN dpkg -i /tmp/*
 COPY --from=staging /tmp/out/* /usr/
 
