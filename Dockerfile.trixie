@@ -92,8 +92,6 @@ RUN echo "---> Installing libpurple plugins" && \
 		libogg0 libopusfile0 \
 		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
-RUN bash -c 'echo "Debug: Listing DEB files in /tmp/" && ls -l /tmp/*.deb'
-RUN bash -c 'dpkg -i /tmp/*'
 COPY --from=staging /tmp/out/* /usr/
 
 RUN curl -L https://github.com/SpectrumIM/spectrum2/blob/54801b3e7e2c0f13d5aac668bc45a1d8e95a2855/packaging/docker/run.sh -o /run.sh
