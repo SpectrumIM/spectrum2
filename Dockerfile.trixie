@@ -52,11 +52,13 @@ RUN echo "---> Install Skypeweb" && \
 		cd skype4pidgin/skypeweb && \
 		make && \
 		make DESTDIR=/tmp/out install
+
 RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install golang && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
 		cd purple-gowhatsapp && \
 		git checkout v1.16.0 && \
+		git submodule update --init && \
 		cmake . && \
 		make && \
 		make DESTDIR=/tmp/out install
