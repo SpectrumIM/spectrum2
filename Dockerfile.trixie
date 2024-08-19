@@ -52,6 +52,14 @@ RUN echo "---> Install Skypeweb" && \
 		cd skype4pidgin/skypeweb && \
 		make && \
 		make DESTDIR=/tmp/out install
+RUN echo "---> purple-gowhatsapp" && \
+		apt-get -y install golang && \
+		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
+		cd purple-gowhatsapp && \
+		git checkout v1.16.0 && \
+		cmake . && \
+		make && \
+		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-battlenet" && \
 git clone --recursive https://github.com/EionRobb/purple-battlenet && \
@@ -82,7 +90,6 @@ RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg g
 
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
 
-RUN curl -L https://buildbot.hehoe.de/purple-whatsmeow/builds/libwhatsmeow.so -o /usr/local/lib/libwhatsmeow.so && ldconfig
 
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
