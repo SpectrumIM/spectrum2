@@ -25,23 +25,19 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR /spectrum2
 
-RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
-
+RUN apt-get install --no-install-recommends -y prosody ngircd libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
 RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
-ENTRYPOINT ["make", "extended_test"]
+ENTRYPOINT ["make", "test"]
 
 FROM base as test-clang
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
-RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-
-RUN echo 'deb http://apt.llvm.org/trixie/ llvm-toolchain-trixie-13 main' > /etc/apt/sources.list.d/llvm.list
 RUN apt-get update -qq
 
-RUN apt-get install --no-install-recommends -y libcppunit-dev clang-13 lld-13
+RUN apt-get install --no-install-recommends -y libcppunit-dev clang-16 lld-16
 
 WORKDIR /spectrum2
 
