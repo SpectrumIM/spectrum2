@@ -1,13 +1,10 @@
-FROM debian:bullseye-backports as base
+FROM debian:trixie as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN curl https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 
 RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
@@ -41,7 +38,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-RUN echo 'deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-13 main' > /etc/apt/sources.list.d/llvm.list
+RUN echo 'deb http://apt.llvm.org/trixie/ llvm-toolchain-trixie-13 main' > /etc/apt/sources.list.d/llvm.list
 RUN apt-get update -qq
 
 RUN apt-get install --no-install-recommends -y libcppunit-dev clang-13 lld-13
@@ -97,7 +94,23 @@ RUN echo "---> Install Steam" && \
 RUN echo "---> Install Teams" && \
 		git clone https://github.com/EionRobb/purple-teams.git && \
 		cd purple-teams && \
-		git checkout c0b5d9947e359c6cc8d54ee76af8dba116e0ec72 && \
+		git checkout 1177f13c88822d75396196391058deab2d5b461a && \
+		make && \
+		make DESTDIR=/tmp/out install
+
+RUN echo "---> Install Skypeweb" && \
+		git clone https://github.com/EionRobb/skype4pidgin.git && \
+		cd skype4pidgin/skypeweb && \
+		make && \
+		make DESTDIR=/tmp/out install
+
+RUN echo "---> purple-gowhatsapp" && \
+		apt-get -y install golang && \
+		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
+		cd purple-gowhatsapp && \
+		git checkout v1.16.0 && \
+		git submodule update --init && \
+		cmake . && \
 		make && \
 		make DESTDIR=/tmp/out install
 
@@ -119,30 +132,27 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		make && \
 		make DESTDIR=/tmp/out install
 
+RUN echo "---> tdlib-purple" && \
+		apt install -y gperf && \
+		cd /tmp && ( git clone https://github.com/tdlib/td.git ; cd td && git checkout 8d08b34 && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(pwd) .. && make && make install/strip ) && ( git clone -b tdlib-1.8.34 https://github.com/667bdrm/tdlib-purple.git ; mkdir -p tdlib-purple/build && cd tdlib-purple/build && cmake -DCMAKE_BUILD_TYPE=Release -DTd_DIR=/tmp/td/build/lib/cmake/Td/ -DNoVoip=1 .. && make install/strip DESTDIR=/tmp/out install)
+
 		
-FROM debian:bullseye-slim as production
+FROM debian:trixie-slim as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 RUN apt-get update -qq
-RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
-
-RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
-RUN curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
+RUN apt-get install --no-install-recommends -y curl
 RUN apt-get update -qq
 
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
 
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
-		pidgin-sipe \
-		libpurple-telegram-tdlib \
-		libtdjson1.7.9 \
 		purple-discord \
 		purple-facebook \
 		libmarkdown2 \
-		skypeweb \
 		libogg0 libopusfile0 \
 		/tmp/*.deb \
 		nodejs \
