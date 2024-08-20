@@ -5,7 +5,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-
+RUN sed -i 's/^#\s*\(deb-src.*trixie.*main\)/\1/' /etc/apt/sources.list
 RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
