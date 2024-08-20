@@ -5,7 +5,7 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+RUN echo "deb-src http://deb.debian.org/debian/ trixie main" | tee -a /etc/apt/sources.list
 RUN apt-get update -qq
 RUN apt-get build-dep --no-install-recommends -y spectrum2
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
