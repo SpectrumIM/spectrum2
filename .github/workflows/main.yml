@@ -46,7 +46,7 @@ jobs:
       run: |
         curl -L -O "https://github.com/macports/macports-base/releases/download/v2.9.0/MacPorts-2.9.0-14-Sonoma.pkg"
         sudo installer -store -pkg MacPorts-2.9.0-14-Sonoma.pkg -target /
-        echo "https://packages.spectrum.im/macports/ports.tar.bz2" | sudo tee -a /opt/local/etc/macports/sources.conf
+        echo "https://github.com/SpectrumIM/ports/archive/refs/tags/v1.0.1.tar.gz" | sudo tee -a /opt/local/etc/macports/sources.conf
     - name: Install dependencies
       run: |
         export PATH=$PATH:/opt/local/bin
