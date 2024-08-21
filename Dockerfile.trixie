@@ -11,6 +11,7 @@ RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev spectrum2 libpurple-dev cmake libssl-dev
+COPY . spectrum2/
 
 FROM base as staging
 
