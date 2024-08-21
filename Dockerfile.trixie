@@ -102,8 +102,7 @@ RUN echo "---> Installing libpurple plugins" && \
 		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
 COPY --from=staging /tmp/out/* /usr/
-
-RUN curl -L https://github.com/SpectrumIM/spectrum2/blob/54801b3e7e2c0f13d5aac668bc45a1d8e95a2855/packaging/docker/run.sh -o /run.sh
+COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
 
 RUN rm -rf /tmp/*.deb
 
