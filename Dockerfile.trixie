@@ -84,6 +84,7 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 
 RUN echo "---> tdlib-purple" && \
 		apt install -y gperf && \
+		apt install -y gettext && \
 		cd /tmp && ( git clone https://github.com/tdlib/td.git ; cd td && git checkout 8d08b34 && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(pwd) .. && make && make install/strip ) && ( git clone -b tdlib-1.8.34 https://github.com/667bdrm/tdlib-purple.git ; mkdir -p tdlib-purple/build && cd tdlib-purple/build && cmake -DCMAKE_BUILD_TYPE=Release -DTd_DIR=/tmp/td/build/lib/cmake/Td/ -DNoVoip=1 .. && make install/strip DESTDIR=/tmp/out install)
 
 FROM debian:trixie as production
