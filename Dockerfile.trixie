@@ -94,7 +94,7 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
-
+RUN apt-get install spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-swiften
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
 
 
