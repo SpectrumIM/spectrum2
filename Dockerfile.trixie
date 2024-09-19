@@ -82,10 +82,7 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-RUN echo "---> tdlib-purple" && \
-		apt install -y gperf && \
-		apt install -y gettext && \
-		cd /tmp && ( git clone https://github.com/tdlib/td.git ; cd td && git checkout 8d08b34 && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(pwd) .. && make && make install/strip ) && ( git clone -b tdlib-1.8.34 https://github.com/667bdrm/tdlib-purple.git ; mkdir -p tdlib-purple/build && cd tdlib-purple/build && cmake -DCMAKE_BUILD_TYPE=Release -DTd_DIR=/tmp/td/build/lib/cmake/Td/ -DNoVoip=1 .. && make install/strip DESTDIR=/tmp/out install)
+#todo: Fix tdlib-purple here
 
 FROM debian:trixie as production
 
@@ -94,7 +91,7 @@ VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
-
+RUN apt-get install --no-install-recommends -y spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-swiften
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
 
 
