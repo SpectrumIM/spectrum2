@@ -1,4 +1,4 @@
-FROM debian:trixie as base
+FROM debian:trixie-20240904 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
@@ -84,7 +84,7 @@ git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 
 #todo: Fix tdlib-purple here
 
-FROM debian:trixie as production
+FROM debian:trixie-20240904 as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
