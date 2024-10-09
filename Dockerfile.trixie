@@ -58,7 +58,7 @@ RUN echo "---> purple-gowhatsapp" && \
 		apt-get -y install golang && \
 		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
 		cd purple-gowhatsapp && \
-		git checkout v1.16.0 && \
+		git checkout pinned && \
 		git submodule update --init && \
 		cmake . && \
 		make && \
