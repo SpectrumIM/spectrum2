@@ -1,4 +1,4 @@
-FROM debian:trixie-20240904 as base
+FROM debian:unstable-20240904 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
@@ -55,6 +55,10 @@ RUN echo "---> Install Skypeweb" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-gowhatsapp" && \
+		wget https://go.dev/dl/go1.24.5.linux-amd64.tar.gz && \
+		tar -C /usr/local -xzf go1.24.5.linux-amd64.tar.gz && \
+		rm go1.24.5.linux-amd64.tar.gz
+		ENV PATH=$PATH:/usr/local/go/bin
 		git clone --recurse-submodules https://github.com/hoehermann/purple-gowhatsapp.git purple-whatsmeow && \
 		cd purple-whatsmeow && \
 		git checkout v1.20.0 && \
