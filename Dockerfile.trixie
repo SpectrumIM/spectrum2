@@ -55,14 +55,13 @@ RUN echo "---> Install Skypeweb" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-gowhatsapp" && \
-		apt-get -y install golang && \
-		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
-		cd purple-gowhatsapp && \
-		git checkout 723c329cfa54a7ce9a50c63c513c37759ffce82f && \
-		git submodule update --init && \
-		cmake . && \
-		make && \
-		make DESTDIR=/tmp/out install
+		git clone --recurse-submodules https://github.com/hoehermann/purple-gowhatsapp.git purple-whatsmeow && \
+		cd purple-whatsmeow && \
+		git checkout v1.20.0 && \
+		cd .. && \
+		cmake -S purple-whatsmeow -B build && \
+		cmake --build build && \
+		cmake --install build --strip --prefix /tmp/out
 
 RUN echo "---> purple-battlenet" && \
 git clone --recursive https://github.com/EionRobb/purple-battlenet && \
