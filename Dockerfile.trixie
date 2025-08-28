@@ -1,4 +1,4 @@
-FROM debian:unstable-20250101 as base
+FROM debian:unstable-20250811 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
@@ -85,7 +85,7 @@ RUN echo "---> purple-mattermost" && \
 
 RUN curl -o /tmp/out/libtelegram-tdlib.so https://buildbot.hehoe.de/tdlib-pruple/libtelegram-tdlib-1.8.35_bookworm_amd64.so
 
-FROM debian:unstable-20250101 as production
+FROM debian:unstable-20250811 as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
