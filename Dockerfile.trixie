@@ -1,4 +1,4 @@
-FROM debian:trixie-20240904 as base
+FROM debian:unstable-20250811 as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
@@ -9,7 +9,7 @@ RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
 #RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
 #RUN curl https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 
-RUN apt-get update -qq
+# RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev spectrum2 libpurple-dev cmake libssl-dev
 COPY . spectrum2/
 
@@ -48,6 +48,7 @@ RUN echo "---> Install Teams" && \
 		cd purple-teams && \
 		make && \
 		make DESTDIR=/tmp/out install
+
 RUN echo "---> Install Skypeweb" && \
 		git clone https://github.com/EionRobb/skype4pidgin.git && \
 		cd skype4pidgin/skypeweb && \
@@ -55,44 +56,46 @@ RUN echo "---> Install Skypeweb" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-gowhatsapp" && \
-		apt-get -y install golang && \
-		git clone https://github.com/hoehermann/purple-gowhatsapp.git && \
-		cd purple-gowhatsapp && \
-		git checkout 723c329cfa54a7ce9a50c63c513c37759ffce82f && \
-		git submodule update --init && \
-		cmake . && \
-		make && \
-		make DESTDIR=/tmp/out install
+		apt-get install -y golang-go && \
+		git clone --recurse-submodules https://github.com/hoehermann/purple-gowhatsapp.git purple-whatsmeow && \
+		cd purple-whatsmeow && \
+		git checkout v1.20.0 && \
+		cd .. && \
+		cmake -S purple-whatsmeow -B build && \
+		cmake --build build && \
+		cmake --install build --strip --prefix /tmp/out
 
 RUN echo "---> purple-battlenet" && \
-git clone --recursive https://github.com/EionRobb/purple-battlenet && \
+		git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		cd purple-battlenet && \
 		make && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-hangouts" && \
-git clone --recursive https://github.com/EionRobb/purple-hangouts && \
+		git clone --recursive https://github.com/EionRobb/purple-hangouts && \
 		cd purple-hangouts && \
 		make && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-mattermost" && \
-git clone --recursive https://github.com/EionRobb/purple-mattermost && \
+		git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		cd purple-mattermost && \
 		make && \
 		make DESTDIR=/tmp/out install
-RUN curl -o /tmp/out/libtelegram-tdlib.so https://buildbot.hehoe.de/tdlib-pruple/libtelegram-tdlib-1.8.35_bookworm_amd64.so
 
-FROM debian:trixie-20240904 as production
+#RUN curl -o /tmp/out/libtelegram-tdlib.so https://buildbot.hehoe.de/tdlib-pruple/libtelegram-tdlib-1.8.35_bookworm_amd64.so
+
+FROM debian:unstable-20250811 as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
+
+
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
 RUN apt-get install --no-install-recommends -y spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-swiften
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
-
 
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
