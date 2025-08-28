@@ -83,7 +83,7 @@ RUN echo "---> purple-mattermost" && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-RUN curl -o /tmp/out/libtelegram-tdlib.so https://buildbot.hehoe.de/tdlib-pruple/libtelegram-tdlib-1.8.35_bookworm_amd64.so
+#RUN curl -o /tmp/out/libtelegram-tdlib.so https://buildbot.hehoe.de/tdlib-pruple/libtelegram-tdlib-1.8.35_bookworm_amd64.so
 
 FROM debian:unstable-20250811 as production
 
