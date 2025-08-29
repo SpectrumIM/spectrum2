@@ -1,5 +1,6 @@
 FROM debian:unstable-20250811 as base
-
+RUN echo "deb http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" > /etc/apt/sources.list
+RUN echo "deb-src http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" >> /etc/apt/sources.list
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
