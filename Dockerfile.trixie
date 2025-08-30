@@ -106,7 +106,6 @@ RUN echo "---> Installing libpurple plugins" && \
 		purple-discord \
 		libmarkdown2 \
 		libogg0 libopusfile0 \
-		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
 COPY --from=staging /tmp/out/* /usr/
 COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
