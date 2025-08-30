@@ -101,13 +101,15 @@ RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg g
 RUN apt-get install --no-install-recommends -y spectrum2 spectrum2-backend-libpurple spectrum2-backend-libcommuni spectrum2-backend-swiften
 COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
 
-RUN echo "---> Installing libpurple plugins" && \
-		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
-		purple-discord \
-		libmarkdown2 \
-		libogg0 libopusfile0 \
-		nodejs \
-		&& rm -rf /var/lib/apt/lists/*
+
+RUN echo "---> Installing libpurple-plugins and Node.js from NodeSource" && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
+    purple-discord \
+    libmarkdown2 \
+    libogg0 libopusfile0 \
+    nodejs \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=staging /tmp/out/* /usr/
 COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
 
