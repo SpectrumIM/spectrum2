@@ -1,6 +1,7 @@
 FROM debian:unstable-20250811 as base
-RUN echo "deb http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" > /etc/apt/sources.list
-RUN echo "deb-src http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" >> /etc/apt/sources.list
+RUN echo "deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" > /etc/apt/sources.list
+RUN echo "deb-src [check-valid-until=no] http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" >> /etc/apt/sources.list
+RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99snapshot
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
@@ -87,7 +88,9 @@ RUN echo "---> purple-mattermost" && \
 #RUN curl -o /tmp/out/libtelegram-tdlib.so https://buildbot.hehoe.de/tdlib-pruple/libtelegram-tdlib-1.8.35_bookworm_amd64.so
 
 FROM debian:unstable-20250811 as production
-
+RUN echo "deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" > /etc/apt/sources.list
+RUN echo "deb-src [check-valid-until=no] http://snapshot.debian.org/archive/debian/20250811T000000Z/ unstable main" >> /etc/apt/sources.list
+RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99snapshot
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
