@@ -1,7 +1,8 @@
 name: Publish
+permissions:
+  contents: read
 
 on:
-  push:
     branches:
       - master
     tags:
