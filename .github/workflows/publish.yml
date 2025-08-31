@@ -1,6 +1,4 @@
 name: Publish
-permissions:
-  contents: read-write
 
 on:
   push:
@@ -10,7 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-24.04
-
+    permissions:
+      contents: read
+      packages: write
     steps:
     - uses: actions/checkout@v5
     - name: Docker meta
