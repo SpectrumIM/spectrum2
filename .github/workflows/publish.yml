@@ -3,10 +3,9 @@ permissions:
   contents: read
 
 on:
-    branches:
-      - master
-    tags:
-      - '*.*.*'
+  push:
+    branches: [master]
+    tags: ['*.*.*']
 
 jobs:
   build:
