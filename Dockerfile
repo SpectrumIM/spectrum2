@@ -3,6 +3,7 @@ FROM debian:bullseye-backports as base
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
+RUN echo "deb http://archive.debian.org/debian/ bullseye main" > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
 RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bullseye main" | tee -a /etc/apt/sources.list
