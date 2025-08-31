@@ -56,9 +56,14 @@ RUN echo "---> Install Skypeweb" && \
 		cd skype4pidgin/skypeweb && \
 		make && \
 		make DESTDIR=/tmp/out install
-
+RUN apt-get install -y wget tar && \
+    wget https://go.dev/dl/go1.24.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.24.5.linux-amd64.tar.gz && \
+    rm go1.24.5.linux-amd64.tar.gz
+ENV PATH=$PATH:/usr/local/go/bin
+ENV GOPATH=/go
+ENV GOBIN=/go/bin
 RUN echo "---> purple-gowhatsapp" && \
-		apt-get install -y golang-go && \
 		git clone --recurse-submodules https://github.com/hoehermann/purple-gowhatsapp.git purple-whatsmeow && \
 		cd purple-whatsmeow && \
 		git checkout v1.20.0 && \
