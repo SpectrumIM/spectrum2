@@ -5,6 +5,8 @@ on:
   push:
     branches: [master]
 
+permissions:
+  contents: read
 jobs:
   linux-glibc:
     runs-on: ubuntu-latest
