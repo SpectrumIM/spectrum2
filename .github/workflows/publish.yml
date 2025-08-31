@@ -1,6 +1,6 @@
 name: Publish
 permissions:
-  contents: read
+  contents: read-write
 
 on:
   push:
