@@ -23,7 +23,7 @@ endif()
 
 if(NOT MSVC AND NOT APPLE)
 	# export all symbols (used for loading frontends)
-	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export-dynamic")
+	set(CMAKE_EXE_LINKER_FLAGS "-Wl,--export-dynamic")
 endif()
 
 install(TARGETS spectrum2 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
