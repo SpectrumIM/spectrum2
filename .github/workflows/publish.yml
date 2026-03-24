@@ -20,7 +20,7 @@ jobs:
         images: ghcr.io/spectrumim/spectrum
         tag-semver: |
             {{version}}
-        tag-latest: ${{ endsWith(github.ref, github.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
+        tag-latest: ${{ endsWith(github.ref, github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
