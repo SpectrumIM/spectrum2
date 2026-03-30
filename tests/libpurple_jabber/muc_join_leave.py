@@ -4,12 +4,12 @@ import time
 import subprocess
 import os
 
-import sleekxmpp
+import slixmpp
 
 
-class Responder(sleekxmpp.ClientXMPP):
+class Responder(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, room, room_password, nick):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.room_password = room_password
 		self.nick = nick
@@ -22,6 +22,7 @@ class Responder(sleekxmpp.ClientXMPP):
 		self.tests["online_received"] = ["MUC: Received available presence", False]
 		self.tests["offline_received"] = ["MUC: Received unavailable presence", False]
 
+		self.register_plugin('xep_0045')  # MUC plugin
 	def muc_got_online(self, presence):
 		if presence['muc']['nick'] == "client":
 			self.tests["online_received"][1] = True
@@ -32,11 +33,11 @@ class Responder(sleekxmpp.ClientXMPP):
 			self.finished = True
 
 	def start(self, event):
-		self.plugin['xep_0045'].joinMUC(self.room, self.nick, password=self.room_password, wait=True)
+		self.plugin['xep_0045'].join_muc(self.room, self.nick, password=self.room_password)
 
-class Client(sleekxmpp.ClientXMPP):
+class Client(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.add_event_handler("session_start", self.start)
@@ -44,9 +45,10 @@ class Client(sleekxmpp.ClientXMPP):
 
 		self.tests = {}
 
+		self.register_plugin('xep_0045')  # MUC plugin
 	def start(self, event):
-		self.getRoster()
-		self.sendPresence()
-		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
-		self.plugin['xep_0045'].leaveMUC(self.room, self.nick)
+		self.get_roster()
+		self.send_presence()
+		self.plugin['xep_0045'].join_muc(self.room, self.nick)
+		self.plugin['xep_0045'].leave_muc(self.room, self.nick)
 		self.finished = True

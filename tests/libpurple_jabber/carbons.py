@@ -4,8 +4,8 @@ import time
 import subprocess
 import os
 
-import sleekxmpp
-from sleekxmpp.jid import JID
+import slixmpp
+from slixmpp.jid import JID
 
 # Verifies that our own messages sent elsewhere are delivered as carbons, and that our local
 # messages are not.
@@ -19,9 +19,9 @@ from sleekxmpp.jid import JID
 # What we cannot test:
 # - Spectrum passes through carbons of outside client messages
 
-class Client(sleekxmpp.ClientXMPP):
+class Client(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, alt_jid, responder_jid):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.full_jid = jid
 		self.alt_jid = JID(alt_jid) # our own alternative jid (backend/spectrum)
 		self.responder_jid = JID(responder_jid)
@@ -41,18 +41,75 @@ class Client(sleekxmpp.ClientXMPP):
 	def __str__(self):
 		return "Client("+str(self.jid)+")"
 
-	def run(self, host, port):
-		#print str(self)+": connect("+host+":"+str(port)+")"
-		to = (host, port)
-		if self.connect(to):
-			self.process(block=False)
-		else:
-			raise Exception("connect() failed")
+	async def run(self, host, port):
+		# Create and run the client in its own thread
+		import threading
+		import time
+		
+		# Store parameters for the thread
+		client_jid = self.jid
+		client_password = self.password
+		client_alt_jid = self.alt_jid
+		client_responder_jid = self.responder_jid
+		client_full_jid = self.full_jid
+		
+		# We need to update self in the main thread with the client created in the thread
+		# Use a queue to pass the client back
+		import queue
+		client_queue = queue.Queue()
+		
+		def create_and_run_client_in_thread():
+			# Create event loop for this thread
+			import asyncio
+			loop = asyncio.new_event_loop()
+			asyncio.set_event_loop(loop)
+			
+			# Create client in this thread (will use this thread's event loop)
+			client = Client(client_full_jid, client_password, client_alt_jid, client_responder_jid)
+			
+			# Copy event handlers and other attributes from self to client
+			# This is needed because the test expects certain attributes
+			for attr_name in dir(self):
+				if not attr_name.startswith('_') and not hasattr(client, attr_name):
+					try:
+						setattr(client, attr_name, getattr(self, attr_name))
+					except:
+						pass
+            
+			# Put the client in the queue for the main thread
+			client_queue.put(client)
+			
+			try:
+				to = (host, port)
+				client.connect(*to)
+				client.process(forever=True, timeout=60)
+			except Exception as e:
+				print(f"{client} connect() failed in thread: {e}")
+		
+		thread = threading.Thread(target=create_and_run_client_in_thread)
+		thread.daemon = True
+		thread.start()
+		
+		# Wait for client to be created and get it from the queue
+		try:
+			# Get the client with timeout
+			new_client = client_queue.get(timeout=5)
+			# Update self with the new client's attributes
+			for attr_name in dir(new_client):
+				if not attr_name.startswith('_'):
+					try:
+						setattr(self, attr_name, getattr(new_client, attr_name))
+					except:
+						pass
+		except queue.Empty:
+			print(f"Timeout waiting for client to be created in thread")
+		
+		time.sleep(2)  # Give it time to connect
 
 	def start(self, event):
 		#print str(self)+": on_start"
-		self.getRoster()
-		self.sendPresence()
+		self.get_roster()
+		self.send_presence()
 		#print str(self)+": enabling xep_0280..."
 		self.plugin['xep_0280'].enable()
 		#print str(self)+": xep_0280 enable()d"
@@ -120,9 +177,9 @@ class Client(sleekxmpp.ClientXMPP):
 		print(str(self)+": msg1="+str(self.cs_m1_cnt)+", msg2="+str(self.cs_m2_cnt)+", msg3="+str(self.cs_m3_cnt)+", weird="+str(self.weird_cnt))
 
 
-class Responder(sleekxmpp.ClientXMPP):
+class Responder(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, client1_jid, client2_jid):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.add_event_handler("session_start", self.start)
 		self.add_event_handler("message", self.message)
 		self.client1_jid = JID(client1_jid)
@@ -132,18 +189,72 @@ class Responder(sleekxmpp.ClientXMPP):
 	def __str__(self):
 		return "Responder("+str(self.jid)+")"
 
-	def run(self, host, port):
-		#print "Responder: connect("+host+":"+str(port)+")"
-		to = (host, port)
-		if self.connect(to):
-			self.process(block=False)
-		else:
-			raise Exception("connect() failed")
+	async def run(self, host, port):
+		# Create and run the responder in its own thread
+		import threading
+		import time
+		import queue
+		
+		# Store parameters for the thread
+		responder_jid = self.jid
+		responder_password = self.password
+		responder_client1_jid = self.client1_jid
+		responder_client2_jid = self.client2_jid
+		
+		# Queue to get the responder object back
+		responder_queue = queue.Queue()
+		
+		def create_and_run_responder_in_thread():
+			# Create event loop for this thread
+			import asyncio
+			loop = asyncio.new_event_loop()
+			asyncio.set_event_loop(loop)
+			
+			# Create responder in this thread
+			responder = Responder(responder_jid, responder_password, 
+								responder_client1_jid, responder_client2_jid)
+			
+			# Copy attributes from self to responder
+			for attr_name in dir(self):
+				if not attr_name.startswith('_') and not hasattr(responder, attr_name):
+					try:
+						setattr(responder, attr_name, getattr(self, attr_name))
+					except:
+						pass
+            
+			# Put responder in queue for main thread
+			responder_queue.put(responder)
+			
+			try:
+				to = (host, port)
+				responder.connect(*to)
+				responder.process(forever=True, timeout=60)
+			except Exception as e:
+				print(f"{responder} connect() failed in thread: {e}")
+		
+		thread = threading.Thread(target=create_and_run_responder_in_thread)
+		thread.daemon = True
+		thread.start()
+		
+		# Wait for responder to be created and get it from the queue
+		try:
+			new_responder = responder_queue.get(timeout=5)
+			# Update self with the new responder's attributes
+			for attr_name in dir(new_responder):
+				if not attr_name.startswith('_'):
+					try:
+						setattr(self, attr_name, getattr(new_responder, attr_name))
+					except:
+						pass
+		except queue.Empty:
+			print(f"Timeout waiting for responder to be created in thread")
+		
+		time.sleep(2)  # Give it time to connect
 
 	def start(self, event):
 		#print "Responder: on_start"
-		self.getRoster()
-		self.sendPresence()
+		self.get_roster()
+		self.send_presence()
 
 	def message(self, msg):
 		#print "Responder: on_message: "+str(msg)
@@ -166,19 +277,19 @@ class TestCase():
 		self.tests["message3"] = ["backend-libpurple: Repeated carbons are delivered correctly", False]
 		self.tests["responder_got_all"] = ["backend-libpurple: All messages have been delivered to responder", False]
 
-	def setup(self):
+	async def setup(self):
 		# We need two clients: one connecting to spectrum, the other to backend.
 		self.client1 = Client(self.env.client_jid+"/res1", self.env.client_password,
 				self.env.client_backend_jid+"/res1", self.env.responder_jid)
-		self.client1.run(self.env.spectrum.host, self.env.spectrum.port)
+		await self.client1.run(self.env.spectrum.host, self.env.spectrum.port)
 		self.client2 = Client(self.env.client_backend_jid+"/res2", self.env.client_backend_password,
 				self.env.client_jid+"/res1", self.env.responder_backend_jid+"/res2")
-		self.client2.run(self.env.backend.host, self.env.backend.port)
+		await self.client2.run(self.env.backend.host, self.env.backend.port)
 		# And one buddy at backend
 		self.responder = Responder(self.env.responder_backend_jid, self.env.responder_backend_password,
 			self.client1.alt_jid,
 			self.client2.jid)
-		self.responder.run(self.env.backend.host, self.env.backend.port)
+		await self.responder.run(self.env.backend.host, self.env.backend.port)
 
 	def finished(self):
 		return (

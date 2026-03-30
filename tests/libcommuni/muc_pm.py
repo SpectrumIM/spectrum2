@@ -4,12 +4,12 @@ import time
 import subprocess
 import os
 
-import sleekxmpp
+import slixmpp
 
 
-class Responder(sleekxmpp.ClientXMPP):
+class Responder(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, room, room_password, nick):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.room_password = room_password
 		self.nick = nick
@@ -19,6 +19,7 @@ class Responder(sleekxmpp.ClientXMPP):
 
 		self.tests = {}
 
+		self.register_plugin('xep_0045')  # MUC plugin
 	def message(self, msg):
 		if msg['body'] == "abc" and msg['from'] == self.room + "/client":
 			self.send_message(mto=self.room + "/client",
@@ -32,11 +33,11 @@ class Responder(sleekxmpp.ClientXMPP):
 			self.finished = True
 
 	def start(self, event):
-		self.plugin['xep_0045'].joinMUC(self.room, self.nick, password=self.room_password, wait=True)
+		self.plugin['xep_0045'].join_muc(self.room, self.nick, password=self.room_password)
 
-class Client(sleekxmpp.ClientXMPP):
+class Client(slixmpp.ClientXMPP):
 	def __init__(self, jid, password, room, nick):
-		sleekxmpp.ClientXMPP.__init__(self, jid, password)
+		slixmpp.ClientXMPP.__init__(self, jid, password)
 		self.room = room
 		self.nick = nick
 		self.add_event_handler("session_start", self.start)
@@ -47,6 +48,7 @@ class Client(sleekxmpp.ClientXMPP):
 		self.tests["echo1_received"] = ["libcommuni: Send and receive private messages - 1st msg", False]
 		self.tests["echo2_received"] = ["libcommuni: Send and receive private messages - 2nd msg", False]
 
+		self.register_plugin('xep_0045')  # MUC plugin
 	def message(self, msg):
 		if msg['body'] == "echo abc" and msg['from'] == self.room + "/responder":
 			self.tests["echo1_received"][1] = True
@@ -56,7 +58,7 @@ class Client(sleekxmpp.ClientXMPP):
 			self.finished = True
 
 	def start(self, event):
-		self.getRoster()
-		self.sendPresence()
-		self.plugin['xep_0045'].joinMUC(self.room, self.nick, wait=True)
+		self.get_roster()
+		self.send_presence()
+		self.plugin['xep_0045'].join_muc(self.room, self.nick)
 		self.send_message(mto=self.room + "/responder", mbody="abc", mtype='chat')
