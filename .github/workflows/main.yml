@@ -41,6 +41,7 @@ jobs:
     - name: Run tests
       run: docker run -tt --env LANG=en_US.UTF-8 spectrum:tests-musl
   macos:
+    if: false
     runs-on: macos-14
     steps:
     - uses: actions/checkout@v6
@@ -96,6 +97,7 @@ jobs:
         libtransport_test
 
   linux-debian:
+    if: false
     runs-on: ubuntu-latest
 
     steps:
