@@ -1,17 +1,8 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp)
 
 add_executable(spectrum2_libpurple_backend ${SRC})
+target_compile_features(spectrum2_libpurple_backend PUBLIC cxx_std_11)
 
-if(MSVC)
-	target_link_libraries(spectrum2_libpurple_backend transport ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${LIBXML2_LIBRARIES} ${EVENT_LIBRARIES} transport-plugin ${PROTOBUF_LIBRARY})
-else()
-	if(NOT WIN32)
-		target_link_libraries(spectrum2_libpurple_backend transport ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport-plugin pthread)
-	else()
-		target_link_libraries(spectrum2_libpurple_backend transport ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES} transport-plugin)
-	endif()
-endif()
+target_link_libraries(spectrum2_libpurple_backend transport-plugin ${PURPLE_LIBRARY} ${GLIB2_LIBRARIES} ${EVENT_LIBRARIES})
 
-install(TARGETS spectrum2_libpurple_backend RUNTIME DESTINATION bin)
+install(TARGETS spectrum2_libpurple_backend RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})

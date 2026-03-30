@@ -4,7 +4,6 @@
 #include "Swiften/Queries/SetResponder.h"
 #include "Swiften/Elements/CarbonsEnable.h"
 #include "Swiften/Elements/CarbonsDisable.h"
-#include "Swiften/SwiftenCompat.h"
 
 #include "discoinforesponder.h"
 
@@ -21,8 +20,8 @@ class CarbonResponder : public CarbonsEnableResponder, public CarbonsDisableResp
 		void setDiscoInfoResponder(DiscoInfoResponder *discoInfoResponder); //can be after start()
 
 	private:
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsEnable> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsDisable> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::CarbonsEnable> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::CarbonsDisable> payload);
 };
 
 }

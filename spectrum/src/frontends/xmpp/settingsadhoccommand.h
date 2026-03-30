@@ -25,8 +25,6 @@
 #include <map>
 #include "adhoccommand.h"
 #include "adhoccommandfactory.h"
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 
 namespace Transport {
@@ -45,13 +43,13 @@ class SettingsAdHocCommand : public AdHocCommand {
 		/// Destructor.
 		virtual ~SettingsAdHocCommand();
 
-		virtual SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> handleRequest(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload);
+		virtual std::shared_ptr<Swift::Command> handleRequest(std::shared_ptr<Swift::Command> payload);
 
 	private:
 		void updateUserSetting(Swift::Form::ref form, UserInfo &user, const std::string &name);
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> getForm();
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> handleResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Command> payload);
+		std::shared_ptr<Swift::Command> getForm();
+		std::shared_ptr<Swift::Command> handleResponse(std::shared_ptr<Swift::Command> payload);
 		State m_state;
 };
 

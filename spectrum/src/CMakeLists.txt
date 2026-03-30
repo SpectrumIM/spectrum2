@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp)
 #include_directories(frontends/xmpp)
 
@@ -14,40 +12,43 @@ else()
 	add_executable(spectrum2 ${SRC})
 endif()
 
+if (ENABLE_PURPLE AND PURPLE_FOUND)
 add_dependencies(spectrum2 spectrum2_libpurple_backend)
+endif()
 
 target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend spectrum2-slack-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+target_compile_features(spectrum2 PUBLIC cxx_std_11)
 
 if(NOT MSVC AND NOT APPLE)
 	# export all symbols (used for loading frontends)
-	set(CMAKE_EXE_LINKER_FLAGS "-Wl,-export-dynamic")
+	set(CMAKE_EXE_LINKER_FLAGS "-Wl,--export-dynamic")
 endif()
 
-install(TARGETS spectrum2 RUNTIME DESTINATION bin)
+install(TARGETS spectrum2 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES
 	sample2_gateway.cfg
 	RENAME spectrum.cfg.example
-	DESTINATION /etc/spectrum2/transports
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2/transports
 )
 
 install(FILES
 	sample2.cfg
 	RENAME spectrum_server_mode.cfg.example
-	DESTINATION /etc/spectrum2/transports
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2/transports
 )
 
 install(FILES
 	backend-logging.cfg
-	DESTINATION /etc/spectrum2
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2
 )
 
 install(FILES
 	logging.cfg
-	DESTINATION /etc/spectrum2
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2
 )
 
 install(FILES
 	manager-logging.cfg
-	DESTINATION /etc/spectrum2
+	DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/spectrum2
 )

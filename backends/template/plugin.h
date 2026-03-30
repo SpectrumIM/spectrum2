@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Swiften/Swiften.h"
-#include "Swiften/SwiftenCompat.h"
 
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
@@ -13,7 +12,7 @@ class Plugin : public Transport::NetworkPlugin {
 		// NetworkPlugin uses this method to send the data to networkplugin server
 		void sendData(const std::string &string);
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password);
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings);
 
 		void handleLogoutRequest(const std::string &user, const std::string &legacyName);
 
@@ -25,11 +24,11 @@ class Plugin : public Transport::NetworkPlugin {
 
 	private:
 		// This method has to call handleDataRead with all received data from network plugin server
-		void _handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
+		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data);
 
 	private:
 		Swift::BoostNetworkFactories *m_factories;
 		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::Connection> m_conn;
 		Transport::Config *config;
 };

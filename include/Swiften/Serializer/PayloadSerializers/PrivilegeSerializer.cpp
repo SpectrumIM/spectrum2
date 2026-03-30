@@ -12,12 +12,8 @@
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
 
-#ifdef SWIFTEN_SUPPORTS_FORWARDED
 #include <Swiften/Elements/Forwarded.h>
 #include <Swiften/Serializer/PayloadSerializers/ForwardedSerializer.h>
-#else
-#include <Swiften/Serializer/PayloadSerializerCollection.h>
-#endif
 
 namespace Swift {
 
@@ -27,25 +23,18 @@ PrivilegeSerializer::PrivilegeSerializer(PayloadSerializerCollection* serializer
 PrivilegeSerializer::~PrivilegeSerializer() {
 }
 
-std::string PrivilegeSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege> payload)  const {
+std::string PrivilegeSerializer::serializePayload(std::shared_ptr<Privilege> payload)  const {
 	if (!payload) {
 		return "";
 	}
 
 	XMLElement element("privilege", "urn:xmpp:privilege:1");
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Privilege::Forwarded> forwarded(payload->getForwarded());
+	std::shared_ptr<Privilege::Forwarded> forwarded(payload->getForwarded());
 	if (forwarded) {
 		std::string forwardedStr = "";
-#ifdef SWIFTEN_SUPPORTS_FORWARDED
 		forwardedStr = ForwardedSerializer(serializers_).serialize(forwarded);
-#else
-		PayloadSerializer* serializer = serializers_->getPayloadSerializer(payload);
-		if(serializer) {
-			forwardedStr = serializer->serialize(payload);
-		}
-#endif
-		element.addNode(SWIFTEN_SHRPTR_NAMESPACE::make_shared<XMLRawTextNode>(forwardedStr));
+		element.addNode(std::make_shared<XMLRawTextNode>(forwardedStr));
 	}
 
 	return element.serialize();

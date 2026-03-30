@@ -75,24 +75,6 @@ Replaces: spectrum2-git-dbg
 Description: XMPP transport
  Spectrum2 debugging symbols
 
-Package: spectrum2-backend-twitter
-Architecture: any
-Section: net
-Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Replaces: spectrum2-backend-libpurple-git
-Description: Spectrum2 libpurple backend
- Spectrum2 backend using libpurple
-
-Package: spectrum2-backend-twitter-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends: spectrum2-backend-libpurple (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
-Replaces: spectrum2-backend-libpurple-git-dbg
-Description: Spectrum2 libpurple backend - debugging symbols
- Debugging symbols for the Spectrum2 libpurple backend
-
 Package: spectrum2-backend-libpurple
 Architecture: any
 Section: net

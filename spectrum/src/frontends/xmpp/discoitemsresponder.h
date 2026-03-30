@@ -24,7 +24,6 @@
 #include "Swiften/Queries/GetResponder.h"
 #include "Swiften/Elements/DiscoItems.h"
 #include "Swiften/Elements/CapsInfo.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -50,12 +49,12 @@ class DiscoItemsResponder : public Swift::GetResponder<Swift::DiscoItems> {
 		}
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::DiscoItems> payload);
 
 	private:
 		Component *m_component;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> m_commands;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> m_rooms;
+		std::shared_ptr<Swift::DiscoItems> m_commands;
+		std::shared_ptr<Swift::DiscoItems> m_rooms;
 		DiscoInfoResponder *m_discoInfoResponder;
 		UserManager *m_userManager;
 };

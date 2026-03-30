@@ -94,6 +94,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_updateBuddy);
 		FINALIZE_STMT(m_getBuddies);
 		FINALIZE_STMT(m_getBuddiesSettings);
+		FINALIZE_STMT(m_getUserSettings);
 		FINALIZE_STMT(m_getUserSetting);
 		FINALIZE_STMT(m_setUserSetting);
 		FINALIZE_STMT(m_updateUserSetting);
@@ -102,6 +103,7 @@ SQLite3Backend::~SQLite3Backend(){
 		FINALIZE_STMT(m_setUserOnline);
 		FINALIZE_STMT(m_getOnlineUsers);
 		FINALIZE_STMT(m_getUsers);
+		FINALIZE_STMT(m_getLegacyNetworkUsers);
 		sqlite3_close(m_db);
 	}
 }
@@ -136,6 +138,8 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_updateBuddySetting, "INSERT OR REPLACE INTO " + m_prefix + "buddies_settings (user_id, buddy_id, var, type, value) VALUES (?, ?, ?, ?, ?)");
 	PREP_STMT(m_getBuddySetting, "SELECT type, value FROM " + m_prefix + "buddies_settings WHERE user_id=? AND buddy_id=? AND var=?");
 	
+	PREP_STMT(m_getUserSettings, "SELECT var, type, value FROM " + m_prefix + "users_settings WHERE user_id=?");
+
 	PREP_STMT(m_getUserSetting, "SELECT type, value FROM " + m_prefix + "users_settings WHERE user_id=? AND var=?");
 	PREP_STMT(m_setUserSetting, "INSERT INTO " + m_prefix + "users_settings (user_id, var, type, value) VALUES (?,?,?,?)");
 	PREP_STMT(m_updateUserSetting, "UPDATE " + m_prefix + "users_settings SET value=? WHERE user_id=? AND var=?");
@@ -143,7 +147,7 @@ bool SQLite3Backend::connect() {
 	PREP_STMT(m_setUserOnline, "UPDATE " + m_prefix + "users SET online=?, last_login=DATETIME('NOW') WHERE id=?");
 	PREP_STMT(m_getOnlineUsers, "SELECT jid FROM " + m_prefix + "users WHERE online=1");
 	PREP_STMT(m_getUsers, "SELECT jid FROM " + m_prefix + "users");
-
+	PREP_STMT(m_getLegacyNetworkUsers, "SELECT uin FROM " + m_prefix + "users");
 	return true;
 }
 
@@ -295,6 +299,23 @@ bool SQLite3Backend::getUsers(std::vector<std::string> &users) {
 
 	if (ret != SQLITE_DONE) {
 		LOG4CXX_ERROR(sqlite3Logger, "getUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
+		return false;
+	}
+
+	return true;
+}
+
+bool SQLite3Backend::getLegacyNetworkUsers(std::vector<std::string> &users) {
+	sqlite3_reset(m_getLegacyNetworkUsers);
+
+	int ret;
+	while ((ret = sqlite3_step(m_getLegacyNetworkUsers)) == SQLITE_ROW) {
+		std::string jid = (const char *) sqlite3_column_text(m_getLegacyNetworkUsers, 0);
+		users.push_back(jid);
+	}
+
+	if (ret != SQLITE_DONE) {
+		LOG4CXX_ERROR(sqlite3Logger, "getLegacyNetworkUsers query"<< (sqlite3_errmsg(m_db) == NULL ? "" : sqlite3_errmsg(m_db)));
 		return false;
 	}
 
@@ -493,6 +514,20 @@ bool SQLite3Backend::removeUser(long id) {
 	}
 
 	return true;
+}
+
+void SQLite3Backend::getAllSettings(long userId, std::map<std::string, std::string> &userSettings) {
+	BEGIN(m_getUserSettings);
+	BIND_INT(m_getUserSettings, userId);
+	int ret2;
+	while ((ret2 = sqlite3_step(m_getUserSettings)) == SQLITE_ROW)
+	{
+		RESET_GET_COUNTER(m_getUserSettings);
+		std::string var = GET_STR(m_getUserSettings);
+		int type = GET_INT(m_getUserSettings);
+		std::string val = GET_STR(m_getUserSettings);
+		userSettings[var] = val;
+	}
 }
 
 void SQLite3Backend::getUserSetting(long id, const std::string &variable, int &type, std::string &value) {

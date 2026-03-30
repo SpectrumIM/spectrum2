@@ -37,6 +37,7 @@ struct UserInfo {
 	std::string password;	///< password for legacy network
 	std::string language;	///< user's preferred language
 	std::string encoding;	///< user's preferred encoding
+	std::map<std::string, std::string> settings;
 	bool vip;				///< true if user is VIP
 };
 
@@ -125,12 +126,16 @@ class StorageBackend
 
 		virtual bool getUsers(std::vector<std::string> &users) = 0;
 
+		virtual bool getLegacyNetworkUsers(std::vector<std::string> &users) = 0;
+
 		virtual long addBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
 		virtual void updateBuddy(long userId, const BuddyInfo &buddyInfo) = 0;
 		virtual void removeBuddy(long id) = 0;
 
 		virtual void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) = 0;
 		virtual void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) = 0;
+
+		virtual void getAllSettings(long userId, std::map<std::string, std::string> &userSettings) = 0;
 
 		virtual void getUserSetting(long userId, const std::string &variable, int &type, std::string &value) = 0;
 		virtual void updateUserSetting(long userId, const std::string &variable, const std::string &value) = 0;

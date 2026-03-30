@@ -31,8 +31,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define foreach         BOOST_FOREACH
-
 namespace Transport {
 
 DEFINE_LOGGER(xmppUserLogger, "XMPPUser");
@@ -43,16 +41,12 @@ XMPPUser::XMPPUser(const Swift::JID &jid, UserInfo &userInfo, Component *compone
 	m_component = component;
 	m_userManager = userManager;
 	m_userInfo = userInfo;
-	m_rooms = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems>(new Swift::DiscoItems());
+	m_rooms = std::shared_ptr<Swift::DiscoItems>(new Swift::DiscoItems());
 }
 
 XMPPUser::~XMPPUser(){
 	if (m_component->inServerMode()) {
-#if HAVE_SWIFTEN_3
-		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>());
-#else
-		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element>());
-#endif
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, std::shared_ptr<Swift::ToplevelElement>());
 	}
 
 	if (m_vcardRequests.size() != 0) {
@@ -74,15 +68,11 @@ void XMPPUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPayl
 		// We can't be sure finishSession sends unavailable presence everytime, so check if user gets removed
 		// in finishSession(...) call and if not, remove it here.
 		std::string jid = m_jid.toBare().toString();
-#if HAVE_SWIFTEN_3
-		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
-#else
-		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
-#endif
+		dynamic_cast<Swift::ServerStanzaChannel *>(static_cast<XMPPFrontend*>(m_component->getFrontend())->getStanzaChannel())->finishSession(m_jid, std::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError(Swift::StreamError::UndefinedCondition, error)));
 	}
 }
 
-void XMPPUser::handleVCardReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request) {
+void XMPPUser::handleVCardReceived(std::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request) {
 	m_vcardRequests.remove(request);
 	request->onResponse.disconnect_all_slots();
 	m_component->getFrontend()->onVCardUpdated(this, vcard);
@@ -98,7 +88,7 @@ void XMPPUser::requestVCard() {
 }
 
 void XMPPUser::clearRoomList() {
-	m_rooms = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems>(new Swift::DiscoItems());
+	m_rooms = std::shared_ptr<Swift::DiscoItems>(new Swift::DiscoItems());
 }
 
 void XMPPUser::addRoomToRoomList(const std::string &handle, const std::string &name) {

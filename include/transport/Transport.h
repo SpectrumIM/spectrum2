@@ -22,13 +22,13 @@
 
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/signals2.hpp>
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Network/NetworkFactories.h"
 #include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Elements/IQ.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 	class StorageBackend;
@@ -93,10 +93,10 @@ namespace Transport {
 			/// This signal is emitted when server disconnects the transport because of some error.
 
 			/// \param error disconnection error
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &error)> onConnectionError;
+			boost::signals2::signal<void (const std::string &error)> onConnectionError;
 
 			/// This signal is emitted when transport successfully connects the server.
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onConnected;
+			boost::signals2::signal<void ()> onConnected;
 
 			/// This signal is emitted when XML stanza is sent to server.
 
@@ -106,11 +106,11 @@ namespace Transport {
 			/// (for example to="j2j.domain.tld") and for presences comming to
 			/// MUC (for example to="#chat%irc.freenode.org@irc.domain.tld")
 			/// \param presence Presence.
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
+			boost::signals2::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::IQ>)> onRawIQReceived;
+			boost::signals2::signal<void (std::shared_ptr<Swift::IQ>)> onRawIQReceived;
 
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onAdminInterfaceSet;
+			boost::signals2::signal<void ()> onAdminInterfaceSet;
 			
 			void handlePresence(Swift::Presence::ref presence);
 			void handleConnected();
@@ -134,7 +134,7 @@ namespace Transport {
 			}
 
 		private:
-			void handleDiscoInfoResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
+			void handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
 			void handleCapsChanged(const Swift::JID& jid);
 
 			void handleBackendConfigChanged();

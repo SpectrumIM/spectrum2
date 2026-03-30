@@ -1,15 +1,14 @@
 
 #pragma once
 
-#include "curl/curl.h"
+#include <boost/signals2.hpp>
+#include <curl/curl.h>
 #include "transport/Logging.h"
 #include "transport/ThreadPool.h"
 #include <iostream>
 #include <sstream>
 #include <string.h>
 #include <json/json.h>
-
-#include <Swiften/SwiftenCompat.h>
 
 namespace Transport {
 
@@ -38,7 +37,7 @@ class HTTPRequest : public Thread {
 			return m_url;
 		}
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onRequestFinished;
+		boost::signals2::signal<void ()> onRequestFinished;
 
 		static void globalInit() {
 			curl_global_init(CURL_GLOBAL_ALL);

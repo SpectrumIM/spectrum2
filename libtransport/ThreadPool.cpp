@@ -1,8 +1,6 @@
 #include "transport/ThreadPool.h"
 #include "transport/Logging.h"
 
-#include "Swiften/SwiftenCompat.h"
-
 namespace Transport {
 
 DEFINE_LOGGER(threadPoolLogger, "ThreadPool")
@@ -121,7 +119,7 @@ void ThreadPool::runAsThread(Thread *t)
 void ThreadPool::workerBody(Thread *t, int wid) {
 	LOG4CXX_INFO(threadPoolLogger, "Starting thread " << wid);
 	t->run();
-	loop->postEvent(boost::bind(&ThreadPool::cleandUp, this, t, wid), SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::EventOwner>());
+	loop->postEvent(boost::bind(&ThreadPool::cleandUp, this, t, wid), std::shared_ptr<Swift::EventOwner>());
 }
 
 }

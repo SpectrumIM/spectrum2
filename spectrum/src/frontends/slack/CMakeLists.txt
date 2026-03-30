@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp *.h)
 file(GLOB HEADERS ${CMAKE_SOURCE_DIR}/include/transport/*.h)
 
@@ -12,6 +10,7 @@ else()
 endif()
 
 add_dependencies(spectrum2-slack-frontend transport)
+target_compile_features(spectrum2-slack-frontend PUBLIC cxx_std_11)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	if(NOT WIN32)

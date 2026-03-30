@@ -9,13 +9,11 @@
 #include <Swiften/Serializer/GenericPayloadSerializer.h>
 #include <Swiften/Elements/GatewayPayload.h>
 
-#include "Swiften/SwiftenCompat.h"
-
 namespace Swift {
 	class GatewayPayloadSerializer : public GenericPayloadSerializer<GatewayPayload> {
 		public:
 			GatewayPayloadSerializer();
 
-			virtual std::string serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<GatewayPayload> item)  const;
+			virtual std::string serializePayload(std::shared_ptr<GatewayPayload> item)  const;
 	};
 }

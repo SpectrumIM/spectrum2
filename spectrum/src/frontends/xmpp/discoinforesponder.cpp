@@ -47,9 +47,7 @@ DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config, 
 	m_transportInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"),
 													CONFIG_STRING(m_config, "identity.category"),
 													CONFIG_STRING(m_config, "identity.type")));
-#if HAVE_SWIFTEN_3
-	crypto = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CryptoProvider>(PlatformCryptoProvider::create());
-#endif
+	crypto = std::shared_ptr<CryptoProvider>(PlatformCryptoProvider::create());
 
 	updateFeatures();
 	m_userManager = userManager;
@@ -86,6 +84,7 @@ void DiscoInfoResponder::updateFeatures() {
 	features2.push_back("jabber:iq:register");
 	features2.push_back("jabber:iq:gateway");
 	features2.push_back("jabber:iq:private");
+	features2.push_back("http://jabber.org/protocol/disco#items");
 	features2.push_back("http://jabber.org/protocol/disco#info");
 	features2.push_back("http://jabber.org/protocol/commands");
 	if (CONFIG_BOOL_DEFAULTED(m_config, "features.muc", false)) {
@@ -124,11 +123,7 @@ void DiscoInfoResponder::setBuddyFeatures(std::list<std::string> &f) {
 			m_buddyInfo->addFeature(*it);
 		}
 	}
-#if HAVE_SWIFTEN_3
 	CapsInfoGenerator caps("spectrum", crypto.get());
-#else
-	CapsInfoGenerator caps("spectrum");
-#endif
 	m_capsInfo = caps.generateCapsInfo(*m_buddyInfo);
 	onBuddyCapsInfoChanged(m_capsInfo);
 }
@@ -147,12 +142,12 @@ void DiscoInfoResponder::addAdHocCommand(const std::string &node, const std::str
 	m_commands[node] = node;
 }
 
-bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info) {
+bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::DiscoInfo> info) {
 	// disco#info for transport
 	if (to.getNode().empty()) {
 		// Adhoc command
 		if (m_commands.find(info->getNode()) != m_commands.end()) {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo());
+			std::shared_ptr<DiscoInfo> res(new DiscoInfo());
 			res->addFeature("http://jabber.org/protocol/commands");
 			res->addFeature("jabber:x:data");
 			res->addIdentity(DiscoInfo::Identity(m_commands[info->getNode()], "automation", "command-node"));
@@ -160,7 +155,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 			sendResponse(from, to, id, res);
 		}
 		else if (info->getNode() == "http://jabber.org/protocol/commands") {
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo());
+			std::shared_ptr<DiscoInfo> res(new DiscoInfo());
 			res->addIdentity(DiscoInfo::Identity("Commands", "automation", "command-list"));
 			res->setNode(info->getNode());
 			sendResponse(from, to, id, res);
@@ -172,7 +167,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 			}
 
 			LOG4CXX_TRACE(logger, "handleGetRequest(): Sending features");
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
+			std::shared_ptr<DiscoInfo> res(new DiscoInfo(m_transportInfo));
 			res->setNode(info->getNode());
 			sendResponse(from, id, res);
 		}
@@ -181,7 +176,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 
 	// disco#info for room
 	if (m_rooms.find(to.toBare().toString()) != m_rooms.end()) {
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo());
+		std::shared_ptr<DiscoInfo> res(new DiscoInfo());
 		res->addIdentity(DiscoInfo::Identity(m_rooms[to.toBare().toString()], "conference", "text"));
 		res->addFeature("http://jabber.org/protocol/muc");
 		res->setNode(info->getNode());
@@ -195,7 +190,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 		BOOST_FOREACH(const DiscoItems::Item &item, user->getRoomList()->getItems()) {
 			LOG4CXX_INFO(logger, "XXX " << item.getNode() << " " << to.toBare().toString());
 			if (item.getJID().toString() == to.toBare().toString()) {
-				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo());
+				std::shared_ptr<DiscoInfo> res(new DiscoInfo());
 				res->addIdentity(DiscoInfo::Identity(item.getName(), "conference", "text"));
 				res->addFeature("http://jabber.org/protocol/muc");
 				res->setNode(info->getNode());
@@ -206,7 +201,7 @@ bool DiscoInfoResponder::handleGetRequest(const Swift::JID& from, const Swift::J
 	}
 
 	// disco#info for buddy
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<DiscoInfo> res(new DiscoInfo(*m_buddyInfo));
+	std::shared_ptr<DiscoInfo> res(new DiscoInfo(*m_buddyInfo));
 	res->setNode(info->getNode());
 	sendResponse(from, to, id, res);
 	return true;

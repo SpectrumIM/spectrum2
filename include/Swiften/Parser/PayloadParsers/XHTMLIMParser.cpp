@@ -7,7 +7,6 @@
 #include <cassert>
 #include <Swiften/Parser/PayloadParsers/XHTMLIMParser.h>
 #include <Swiften/Parser/SerializingParser.h>
-#include "Swiften/SwiftenCompat.h"
 
 namespace Swift {
 
@@ -52,7 +51,7 @@ void XHTMLIMParser::handleCharacterData(const std::string& data) {
 	}
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<XHTMLIMPayload> XHTMLIMParser::getLabelPayload() const {
+std::shared_ptr<XHTMLIMPayload> XHTMLIMParser::getLabelPayload() const {
 	return getPayloadInternal();
 }
 

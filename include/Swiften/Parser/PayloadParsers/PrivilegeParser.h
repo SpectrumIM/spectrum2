@@ -29,7 +29,7 @@ namespace Swift {
 
 	private:
 		PayloadParserFactoryCollection* factories_;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<PayloadParser> childParser_;
+		std::shared_ptr<PayloadParser> childParser_;
 		int level_;
 	};
 }

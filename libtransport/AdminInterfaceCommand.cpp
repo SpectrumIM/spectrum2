@@ -25,9 +25,6 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
 namespace Transport {
 
 AdminInterfaceCommand::AdminInterfaceCommand(const std::string &name, Category category, Context context, AccessMode accessMode, Actions actions, const std::string &label) {

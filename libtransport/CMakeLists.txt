@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp *.h)
 file(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
 
@@ -46,11 +44,15 @@ endif(PROTOBUF_FOUND)
 
 find_package(CURL)
 
+target_link_libraries(transport transport-plugin ${CURL_LIBRARIES} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY} ${PROTOBUF_LIBRARY} JsonCpp::JsonCpp)
+target_compile_features(transport PUBLIC cxx_std_11)
+
 if(WIN32)
-	include_directories("${CMAKE_SOURCE_DIR}/msvc-deps/sqlite3")
-	target_link_libraries(transport transport-plugin ${PQXX_LIBRARY} ${CURL_LIBRARIES} ${PQ_LIBRARY} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY} ${JSONCPP_LIBRARY} psapi.lib bcrypt.lib)
-else()
-	target_link_libraries(transport transport-plugin ${PQXX_LIBRARY} ${CURL_LIBRARIES} ${PQ_LIBRARY} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY} ${PROTOBUF_LIBRARY} ${JSONCPP_LIBRARY})
+	target_link_libraries(transport psapi.lib bcrypt.lib)
+endif()
+
+if(PQXX_FOUND)
+	target_link_libraries(transport	${PQXX_LIBRARIES} ${PQ_LIBRARY})
 endif()
 
 set_target_properties(transport PROPERTIES
@@ -60,7 +62,7 @@ if(APPLE)
 	target_link_libraries(transport ${APPLE_FRAMEWORKS})
 endif()
 
-install(TARGETS transport LIBRARY DESTINATION ${LIB_INSTALL_DIR} ARCHIVE DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+install(TARGETS transport LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
 
 #configure_file(transport.pc.in "${CMAKE_CURRENT_BINARY_DIR}/transport.pc")
 #install(FILES "${CMAKE_CURRENT_BINARY_DIR}/transport.pc" DESTINATION lib/pkgconfig)

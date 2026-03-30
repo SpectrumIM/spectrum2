@@ -10,4 +10,4 @@ endif()
 
 file(GLOB HEADERS *.h protocol.h)
 
-install(FILES ${HEADERS} DESTINATION include/transport COMPONENT headers)
+install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/transport COMPONENT headers)

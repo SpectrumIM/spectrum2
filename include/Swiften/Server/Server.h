@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
+#include <boost/signals2.hpp>
 #include <vector>
 
 #include "Swiften/Network/BoostIOServiceThread.h"
@@ -21,10 +21,8 @@
 #include "Swiften/Entity/Entity.h"
 #include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
 #include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
-#include "Swiften/SwiftenCompat.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 #include <Swiften/Parser/PlatformXMLParserFactory.h>
-#include <Swiften/SwiftenCompat.h>
 
 namespace Swift {
 	class ConnectionServer;
@@ -55,20 +53,20 @@ namespace Swift {
 				return iqRouter_;
 			}
 
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> getConnectionServer() const {
+			std::shared_ptr<ConnectionServer> getConnectionServer() const {
 				return serverFromClientConnectionServer;
 			}
 
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const SafeByteArray&)> onDataRead;
-			SWIFTEN_SIGNAL_NAMESPACE::signal<void (const SafeByteArray&)> onDataWritten;
+			boost::signals2::signal<void (const SafeByteArray&)> onDataRead;
+			boost::signals2::signal<void (const SafeByteArray&)> onDataWritten;
 
 			void addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert);
 
 		private:
-			void handleNewClientConnection(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Connection> c);
-			void handleSessionStarted(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>);
-			void handleSessionFinished(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession>);
-			void handleElementReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Element> element, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> session);
+			void handleNewClientConnection(std::shared_ptr<Connection> c);
+			void handleSessionStarted(std::shared_ptr<ServerFromClientSession>);
+			void handleSessionFinished(std::shared_ptr<ServerFromClientSession>);
+			void handleElementReceived(std::shared_ptr<Element> element, std::shared_ptr<ServerFromClientSession> session);
 			void handleDataRead(const SafeByteArray&);
 			void handleDataWritten(const SafeByteArray&);
 
@@ -79,9 +77,9 @@ namespace Swift {
 			EventLoop* eventLoop;
 			NetworkFactories* networkFactories_;
 			bool stopping;
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ConnectionServer> serverFromClientConnectionServer;
-			std::vector<SWIFTEN_SIGNAL_CONNECTION_NAMESPACE::connection> serverFromClientConnectionServerSignalConnections;
-			std::list<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<ServerFromClientSession> > serverFromClientSessions;
+			std::shared_ptr<ConnectionServer> serverFromClientConnectionServer;
+			std::vector<boost::signals2::connection> serverFromClientConnectionServerSignalConnections;
+			std::list<std::shared_ptr<ServerFromClientSession> > serverFromClientSessions;
 			JID selfJID;
 			StanzaChannel *stanzaChannel_;
 			IQRouter *iqRouter_;

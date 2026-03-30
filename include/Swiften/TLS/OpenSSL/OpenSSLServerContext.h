@@ -11,7 +11,6 @@
 
 #include "Swiften/TLS/TLSServerContext.h"
 #include "Swiften/Base/ByteArray.h"
-#include "Swiften/SwiftenCompat.h"
 #include <Swiften/TLS/CertificateWithKey.h>
 
 namespace Swift {
@@ -29,7 +28,7 @@ namespace Swift {
 			void handleDataFromApplication(const SafeByteArray&);
 
 			Certificate::ref getPeerCertificate() const;
-			SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
+			std::shared_ptr<CertificateVerificationError> getPeerCertificateVerificationError() const;
 
 			virtual ByteArray getFinishMessage() const;
 

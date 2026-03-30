@@ -520,7 +520,7 @@ void SchannelServerContext::encryptAndSendData(const SafeByteArray& data)
 
 bool SchannelServerContext::setServerCertificate(CertificateWithKey::ref certificate)
 {
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CAPICertificate> capiCertificate = std::dynamic_pointer_cast<CAPICertificate>(certificate);
+	std::shared_ptr<CAPICertificate> capiCertificate = std::dynamic_pointer_cast<CAPICertificate>(certificate);
 	if (!capiCertificate || capiCertificate->isNull()) {
 		return false;
 	}
@@ -551,7 +551,7 @@ Certificate::ref SchannelServerContext::getPeerCertificate() const
 
 CertificateVerificationError::ref SchannelServerContext::getPeerCertificateVerificationError() const 
 {
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<CertificateVerificationError> pCertError;
+	std::shared_ptr<CertificateVerificationError> pCertError;
 
 	if (m_state == Error)
 		pCertError.reset( new CertificateVerificationError(m_verificationError) );

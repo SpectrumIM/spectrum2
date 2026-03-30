@@ -1,6 +1,5 @@
 #include "transport/Config.h"
 #include "transport/Transport.h"
-#include "transport/FileTransferManager.h"
 #include "transport/UserManager.h"
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
@@ -148,7 +147,7 @@ static void _createDirectories(Transport::Config *config, boost::filesystem::pat
 	}
 
 	// First create branch, by calling ourself recursively
-	_createDirectories(config, ph.branch_path());
+	_createDirectories(config, ph.parent_path());
 
 	// Now that parent's path exists, create the directory
 	boost::filesystem::create_directory(ph);
@@ -227,10 +226,10 @@ int mainloop() {
 	std::string plugin_fc = "create_" + frontend_name + "_frontend_plugin";
 
 	dll::shared_library self(dll::program_location());
-	boost::function<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<FrontendPlugin>()> creator;
+	boost::function<std::shared_ptr<FrontendPlugin>()> creator;
 
 	try {
-		creator = self.get_alias<SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<FrontendPlugin>()>(plugin_fc);
+		creator = self.get_alias<std::shared_ptr<FrontendPlugin>()>(plugin_fc);
 	} catch(boost::system::system_error& e) {
 		LOG4CXX_ERROR(logger, "Error when loading frontend " << e.what());
 		return -3;
@@ -272,9 +271,7 @@ int mainloop() {
 		LOG4CXX_WARN(logger, "Registrations won't work, you have specified [database] type=none in config file.");
 	}
 
-	FileTransferManager ftManager(&transport, userManager);
-
-	NetworkPluginServer plugin(&transport, config_, userManager, &ftManager);
+	NetworkPluginServer plugin(&transport, config_, userManager);
 	plugin.start();
 
 	AdminInterface adminInterface(&transport, userManager, &plugin, storageBackend, userRegistration);
@@ -320,8 +317,10 @@ int main(int argc, char **argv)
 #ifndef WIN32
 #ifndef __FreeBSD__
 #ifndef __MACH__
+#if defined (__GLIBC__)
 	mallopt(M_CHECK_ACTION, 2);
 	mallopt(M_PERTURB, 0xb);
+#endif
 #endif
 #endif
 #endif

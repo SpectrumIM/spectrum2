@@ -5,13 +5,7 @@
  */
 
 #include <Swiften/Parser/PayloadParsers/PrivilegeParser.h>
-#ifdef SWIFTEN_SUPPORTS_FORWARDED
 #include <Swiften/Parser/PayloadParsers/ForwardedParser.h>
-#else
-#include <Swiften/Parser/PayloadParserFactoryCollection.h>
-#include <Swiften/Parser/PayloadParserFactory.h>
-#include <Swiften/Parser/UnknownPayloadParser.h>
-#endif
 
 namespace Swift {
 
@@ -21,17 +15,7 @@ PrivilegeParser::PrivilegeParser(PayloadParserFactoryCollection* factories) : fa
 void PrivilegeParser::handleStartElement(const std::string& element, const std::string& ns, const AttributeMap& attributes) {
 	if (level_ == PayloadLevel) {
 		if (element == "forwarded" && ns == "urn:xmpp:forward:0") {
-#ifdef SWIFTEN_SUPPORTS_FORWARDED
-			childParser_ = SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<PayloadParser>(SWIFTEN_SHRPTR_NAMESPACE::make_shared<ForwardedParser>(factories_));
-#else
-			PayloadParserFactory* parserFactory = factories_->getPayloadParserFactory(element, ns, attributes);
-			if (parserFactory) {
-				childParser_.reset(parserFactory->createPayloadParser());
-			}
-			else {
-				childParser_.reset(new UnknownPayloadParser());
-			}
-#endif
+			childParser_ = std::dynamic_pointer_cast<PayloadParser>(std::make_shared<ForwardedParser>(factories_));
 		};
 	}
 	if (childParser_) {
@@ -46,7 +30,7 @@ void PrivilegeParser::handleEndElement(const std::string& element, const std::st
 		childParser_->handleEndElement(element, ns);
 	}
 	if (childParser_ && level_ == PayloadLevel) {
-		getPayloadInternal()->setForwarded(SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Privilege::Forwarded>(childParser_->getPayload()));
+		getPayloadInternal()->setForwarded(std::dynamic_pointer_cast<Privilege::Forwarded>(childParser_->getPayload()));
 		childParser_.reset();
 	}
 }

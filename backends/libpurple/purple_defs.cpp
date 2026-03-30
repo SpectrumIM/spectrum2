@@ -98,6 +98,7 @@ purple_xfer_request_accepted_wrapped_fnc purple_xfer_request_accepted_wrapped = 
 purple_xfer_request_denied_wrapped_fnc purple_xfer_request_denied_wrapped = NULL;
 purple_xfer_get_account_wrapped_fnc purple_xfer_get_account_wrapped = NULL;
 purple_xfer_get_filename_wrapped_fnc purple_xfer_get_filename_wrapped = NULL;
+purple_xfer_get_local_filename_wrapped_fnc purple_xfer_get_local_filename_wrapped = NULL;
 purple_xfer_get_size_wrapped_fnc purple_xfer_get_size_wrapped = NULL;
 purple_xfer_unref_wrapped_fnc purple_xfer_unref_wrapped = NULL;
 purple_xfer_ref_wrapped_fnc purple_xfer_ref_wrapped = NULL;
@@ -538,6 +539,10 @@ bool resolvePurpleFunctions() {
 
 	purple_xfer_get_filename_wrapped = (purple_xfer_get_filename_wrapped_fnc)GetProcAddress(f_hPurple, "purple_xfer_get_filename");
 	if (!purple_xfer_get_filename_wrapped)
+		return false;
+
+	purple_xfer_get_local_filename_wrapped = (purple_xfer_get_local_filename_wrapped_fnc)GetProcAddress(f_hPurple, "purple_xfer_get_local_filename");
+	if (!purple_xfer_get_local_filename_wrapped)
 		return false;
 
 	purple_xfer_get_size_wrapped = (purple_xfer_get_size_wrapped_fnc)GetProcAddress(f_hPurple, "purple_xfer_get_size");

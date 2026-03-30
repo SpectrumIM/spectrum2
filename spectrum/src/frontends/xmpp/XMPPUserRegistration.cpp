@@ -78,7 +78,7 @@ bool XMPPUserRegistration::doUserUnregistration(const UserInfo &row) {
 	return true;
 }
 
-void XMPPUserRegistration::handleRegisterRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &row){
+void XMPPUserRegistration::handleRegisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &row){
 	if (remoteRosterNotSupported || !payload) {
 		// Remote roster is not support, so send normal Subscribe presence to add transport.
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -103,7 +103,7 @@ void XMPPUserRegistration::handleRegisterRemoteRosterResponse(SWIFTEN_SHRPTR_NAM
 	// If the JID for registration notification is configured, send the notification message.
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
 	BOOST_FOREACH(const std::string &notify_jid, x) {
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody(std::string("registered: ") + row.jid);
 		msg->setTo(notify_jid);
 		msg->setFrom(m_component->getJID());
@@ -111,7 +111,7 @@ void XMPPUserRegistration::handleRegisterRemoteRosterResponse(SWIFTEN_SHRPTR_NAM
 	}
 }
 
-void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &userInfo) {
+void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref remoteRosterNotSupported, const UserInfo &userInfo) {
 	if (remoteRosterNotSupported || !payload) {
 		// Remote roster is ont support, so get the buddies from database
 		// and send Unsubsribe and Unsubscribed presence to them.
@@ -197,7 +197,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_N
 	// If the JID for registration notification is configured, send the notification message.
 	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"registration.notify_jid");
 	BOOST_FOREACH(const std::string &notify_jid, x) {
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody(std::string("unregistered: ") + userInfo.jid);
 		msg->setTo(notify_jid);
 		msg->setFrom(m_component->getJID());
@@ -237,8 +237,8 @@ Form::ref XMPPUserRegistration::generateRegistrationForm(const UserInfo &res, bo
 	return form;
 }
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InBandRegistrationPayload> XMPPUserRegistration::generateInBandRegistrationPayload(const Swift::JID& from) {
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
+std::shared_ptr<InBandRegistrationPayload> XMPPUserRegistration::generateInBandRegistrationPayload(const Swift::JID& from) {
+	std::shared_ptr<InBandRegistrationPayload> reg(new InBandRegistrationPayload());
 
 	UserInfo res;
 	bool registered = m_storageBackend->getUser(from.toBare().toString(), res);
@@ -257,7 +257,7 @@ SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InBandRegistrationPayload> XMPPUserRegistra
 	return reg;
 }
 
-bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -273,13 +273,13 @@ bool XMPPUserRegistration::handleGetRequest(const Swift::JID& from, const Swift:
 		}
 	}
 
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InBandRegistrationPayload> reg = generateInBandRegistrationPayload(from);
+	std::shared_ptr<InBandRegistrationPayload> reg = generateInBandRegistrationPayload(from);
 	sendResponse(from, id, reg);
 
 	return true;
 }
 
-bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::InBandRegistrationPayload> payload) {
+bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload) {
 	// TODO: backend should say itself if registration is needed or not...
 	if (CONFIG_STRING(m_config, "service.protocol") == "irc") {
 		sendError(from, id, ErrorPayload::BadRequest, ErrorPayload::Modify);
@@ -378,7 +378,9 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		}
 	}
 
-	if (!payload->getUsername() || (!payload->getPassword() && CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true))) {
+	bool needPassword = CONFIG_BOOL_DEFAULTED(m_config, "registration.needPassword", true);
+
+	if (!payload->getUsername() || (!payload->getPassword() && needPassword)) {
 		sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 		return true;
 	}
@@ -393,18 +395,20 @@ bool XMPPUserRegistration::handleSetRequest(const Swift::JID& from, const Swift:
 		return true;
 	}
 
-	// TODO: Move this check to backend somehow
-	if (CONFIG_STRING(m_config, "service.protocol") == "prpl-jabber") {
-		// User tries to register himself.
+	// User tries to register himself (XMPP backends)
+	if (JID::parse(*payload->getUsername())) {
 		if ((Swift::JID(*payload->getUsername()).toBare() == from.toBare())) {
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}
+	}
 
-		// User tries to register someone who's already registered.
-		UserInfo user_row;
-		bool registered = m_storageBackend->getUser(Swift::JID(*payload->getUsername()).toBare().toString(), user_row);
-		if (registered) {
+	// User tries to register someone who's already registered (password-less backends)
+	if (!needPassword) {
+		std::vector<std::string> legacyNetworkUsers;
+		m_storageBackend->getLegacyNetworkUsers(legacyNetworkUsers);
+		bool legacyUserExists = std::find(legacyNetworkUsers.begin(), legacyNetworkUsers.end(), *payload->getUsername()) != legacyNetworkUsers.end();
+		if (legacyUserExists) {
 			sendError(from, id, ErrorPayload::NotAcceptable, ErrorPayload::Modify);
 			return true;
 		}

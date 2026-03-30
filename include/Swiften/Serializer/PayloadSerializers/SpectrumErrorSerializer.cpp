@@ -9,7 +9,6 @@
 #include <Swiften/Serializer/XML/XMLTextNode.h>
 #include <Swiften/Serializer/XML/XMLRawTextNode.h>
 #include <Swiften/Serializer/XML/XMLElement.h>
-#include "Swiften/SwiftenCompat.h"
 #include <boost/lexical_cast.hpp>
 
 namespace Swift {
@@ -17,7 +16,7 @@ namespace Swift {
 SpectrumErrorSerializer::SpectrumErrorSerializer() : GenericPayloadSerializer<SpectrumErrorPayload>() {
 }
 
-std::string SpectrumErrorSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<SpectrumErrorPayload> error)  const {
+std::string SpectrumErrorSerializer::serializePayload(std::shared_ptr<SpectrumErrorPayload> error)  const {
 	std::string data;
 	switch (error->getError()) {
 		case SpectrumErrorPayload::CONNECTION_ERROR_NETWORK_ERROR: data = "CONNECTION_ERROR_NETWORK_ERROR"; break;

@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-
 file(GLOB SRC *.cpp)
 file(GLOB HEADERS *.h)
 
@@ -12,6 +10,7 @@ endif()
 
 add_definitions(-DQT_NO_KEYWORDS)
 add_executable(spectrum2_libcommuni_backend ${SRC})
+target_compile_features(spectrum2_libcommuni_backend PUBLIC cxx_std_11)
 
 if(NOT WIN32)
 	if(ENABLE_QT4)
@@ -27,4 +26,4 @@ else()
 	endif()
 endif()
 
-install(TARGETS spectrum2_libcommuni_backend RUNTIME DESTINATION bin)
+install(TARGETS spectrum2_libcommuni_backend RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})

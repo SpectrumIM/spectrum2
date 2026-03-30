@@ -25,7 +25,6 @@
 #include <time.h>
 #include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Disco/EntityCapsProvider.h"
-#include <Swiften/FileTransfer/OutgoingFileTransfer.h>
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/Network/Timer.h"
 #include "Swiften/Network/Connection.h"
@@ -62,20 +61,20 @@ class XMPPUser : public User {
 
 		void addRoomToRoomList(const std::string &handle, const std::string &name);
 
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> getRoomList() {
+		std::shared_ptr<Swift::DiscoItems> getRoomList() {
 			return m_rooms;
 		}
 
 	private:
 		void onConnectingTimeout();
-		void handleVCardReceived(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
+		void handleVCardReceived(std::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
 
 		Swift::JID m_jid;
 		Component *m_component;
 		UserManager *m_userManager;
 		UserInfo m_userInfo;
 		std::list <Swift::GetVCardRequest::ref> m_vcardRequests;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoItems> m_rooms;
+		std::shared_ptr<Swift::DiscoItems> m_rooms;
 };
 
 }

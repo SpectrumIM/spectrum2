@@ -23,11 +23,8 @@
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 #include "Swiften/Elements/RosterPayload.h"
-#include "Swiften/SwiftenCompat.h"
 
-#include <Swiften/Version.h>
 #include "transport/UserRegistration.h"
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Transport {
 
@@ -61,12 +58,12 @@ class XMPPUserRegistration : public UserRegistration, public Swift::Responder<Sw
 		virtual bool doUserUnregistration(const UserInfo &userInfo);
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::InBandRegistrationPayload> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::InBandRegistrationPayload> payload);
 
-		void handleRegisterRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
-		void handleUnregisterRemoteRosterResponse(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::InBandRegistrationPayload> generateInBandRegistrationPayload(const Swift::JID& from);
+		void handleRegisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
+		void handleUnregisterRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> payload, Swift::ErrorPayload::ref error, const UserInfo &row);
+		std::shared_ptr<Swift::InBandRegistrationPayload> generateInBandRegistrationPayload(const Swift::JID& from);
 		Swift::Form::ref generateRegistrationForm(const UserInfo &res, bool registered);
 		
 		Component *m_component;

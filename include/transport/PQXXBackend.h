@@ -85,6 +85,8 @@ class PQXXBackend : public StorageBackend
 
 		bool getUsers(std::vector<std::string> &users);
 
+		bool getLegacyNetworkUsers(std::vector<std::string> &users);
+
 		long addBuddy(long userId, const BuddyInfo &buddyInfo);
 
 		void updateBuddy(long userId, const BuddyInfo &buddyInfo);
@@ -92,6 +94,8 @@ class PQXXBackend : public StorageBackend
 
 		void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value) {}
 		void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value) {}
+
+		void getAllSettings(long userId, std::map<std::string, std::string> &userSettings);
 
 		void getUserSetting(long userId, const std::string &variable, int &type, std::string &value);
 		void updateUserSetting(long userId, const std::string &variable, const std::string &value);

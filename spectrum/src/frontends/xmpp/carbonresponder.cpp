@@ -34,14 +34,14 @@ void CarbonResponder::setDiscoInfoResponder(DiscoInfoResponder *discoInfoRespond
 	discoInfoResponder->addTransportFeature("urn:xmpp:carbons:2");
 }
 
-bool CarbonResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsEnable> payload) {
+bool CarbonResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::CarbonsEnable> payload) {
 	LOG4CXX_TRACE(carbonResponderLogger, "handle(CarbonsEnable) -> Confirm");
 	//Always confirm
 	CarbonsEnableResponder::getIQRouter()->sendIQ(Swift::IQ::createResult(from, to, id));
 	return true;
 }
 
-bool CarbonResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::CarbonsDisable> payload) {
+bool CarbonResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::CarbonsDisable> payload) {
 	LOG4CXX_TRACE(carbonResponderLogger, "handle(CarbonsDisable) -> NotImplemented");
 	//Never allow
 	CarbonsDisableResponder::sendError(from, id, Swift::ErrorPayload::FeatureNotImplemented, Swift::ErrorPayload::Cancel);

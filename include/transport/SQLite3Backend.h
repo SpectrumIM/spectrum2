@@ -74,6 +74,8 @@ class SQLite3Backend : public StorageBackend
 
 		bool getUsers(std::vector<std::string> &users);
 
+		bool getLegacyNetworkUsers(std::vector<std::string> &users);
+
 		/// Removes user and all connected data from database.
 		/// \param id id of user - UserInfo.id
 		/// \return true if user has been found in database and removed
@@ -93,6 +95,8 @@ class SQLite3Backend : public StorageBackend
 		void getBuddySetting(long userId, long buddyId, const std::string &variable, int &type, std::string &value);
 		void updateBuddySetting(long userId, long buddyId, const std::string &variable, int type, const std::string &value);
 
+		void getAllSettings(long userId, std::map<std::string, std::string> &userSettings);
+
 		void getUserSetting(long userId, const std::string &variable, int &type, std::string &value);
 		void updateUserSetting(long userId, const std::string &variable, const std::string &value);
 
@@ -109,6 +113,7 @@ class SQLite3Backend : public StorageBackend
 		// statements
 		sqlite3_stmt *m_setUser;
 		sqlite3_stmt *m_getUser;
+		sqlite3_stmt *m_getUserSettings;
 		sqlite3_stmt *m_getUserSetting;
 		sqlite3_stmt *m_setUserSetting;
 		sqlite3_stmt *m_updateUserSetting;
@@ -127,6 +132,7 @@ class SQLite3Backend : public StorageBackend
 		sqlite3_stmt *m_setUserOnline;
 		sqlite3_stmt *m_getOnlineUsers;
 		sqlite3_stmt *m_getUsers;
+		sqlite3_stmt *m_getLegacyNetworkUsers;
 };
 
 }

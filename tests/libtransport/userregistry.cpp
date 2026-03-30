@@ -40,23 +40,23 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			connectionServer = server->getConnectionServer();
 
 			client1 = factories->getConnectionFactory()->createConnection();
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client1);
+			std::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client1);
 
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client1));
+			std::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client1));
 
 			client2 = factories->getConnectionFactory()->createConnection();
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client2);
+			std::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client2);
 
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client2));
+			std::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client2));
 
 			loop->processEvents();
 		}
 
 		void tearDown (void) {
 			delete server;
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.disconnect_all_slots();
+			std::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.disconnect_all_slots();
 			client1.reset();
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.disconnect_all_slots();
+			std::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.disconnect_all_slots();
 			client2.reset();
 			connectionServer.reset();
 			delete userRegistry;
@@ -67,12 +67,12 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			received2.clear();
 		}
 
-		void send(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> conn, const std::string &data) {
-			SWIFTEN_SHRPTR_NAMESPACE::dynamic_pointer_cast<Swift::DummyConnection>(conn)->receive(Swift::createSafeByteArray(data));
+		void send(std::shared_ptr<Swift::Connection> conn, const std::string &data) {
+			std::dynamic_pointer_cast<Swift::DummyConnection>(conn)->receive(Swift::createSafeByteArray(data));
 			loop->processEvents();
 		}
 
-		void sendCredentials(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> conn, const std::string &username, const std::string &password, const std::string &b64) {
+		void sendCredentials(std::shared_ptr<Swift::Connection> conn, const std::string &username, const std::string &password, const std::string &b64) {
 			std::vector<std::string> &received = conn == client1 ? received1 : received2;
 			send(conn, "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 			CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -90,7 +90,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			CPPUNIT_ASSERT_EQUAL(std::string(""), userRegistry->getUserPassword("unknown@localhost"));
 		}
 
-		void bindSession(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> conn) {
+		void bindSession(std::shared_ptr<Swift::Connection> conn) {
 			std::vector<std::string> &received = conn == client1 ? received1 : received2;
 
 			send(conn, "<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
@@ -101,7 +101,7 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			
 		}
 
-		void handleDataReceived(const Swift::SafeByteArray &data, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> conn) {
+		void handleDataReceived(const Swift::SafeByteArray &data, std::shared_ptr<Swift::Connection> conn) {
 			if (conn == client1) {
 				received1.push_back(safeByteArrayToString(data));
 // 				std::cout << received1.back() << "\n";
@@ -212,9 +212,9 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 		Swift::Server *server;
 		Swift::DummyNetworkFactories *factories;
 		Swift::DummyEventLoop *loop;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ConnectionServer> connectionServer;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> client1;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> client2;
+		std::shared_ptr<Swift::ConnectionServer> connectionServer;
+		std::shared_ptr<Swift::Connection> client1;
+		std::shared_ptr<Swift::Connection> client2;
 		std::vector<std::string> received1;
 		std::vector<std::string> received2;
 		State state1;

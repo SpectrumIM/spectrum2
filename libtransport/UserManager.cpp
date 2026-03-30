@@ -85,6 +85,9 @@ User *UserManager::getUser(const std::string &barejid){
 	if (m_users.find(barejid) != m_users.end()) {
 		User *user = m_users[barejid];
 		m_cachedUser = user;
+		if (m_storageBackend) {
+			m_storageBackend->getAllSettings(user->getUserInfo().id, user->getUserInfo().settings);
+		}
 		return user;
 	}
 	return NULL;
@@ -125,7 +128,9 @@ void UserManager::removeUser(User *user, bool onUserBehalf) {
 #ifndef WIN32
 #ifndef __FreeBSD__
 #ifndef __MACH__
+#if defined (__GLIBC__)
 	malloc_trim(0);
+#endif
 #endif
 #endif
 #endif
@@ -142,7 +147,7 @@ int UserManager::getUserCount() {
 	return m_users.size();
 }
 
-void UserManager::handleDiscoInfo(const Swift::JID& jid, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DiscoInfo> info) {
+void UserManager::handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info) {
 	User *user = getUser(jid.toBare().toString());
 	if (!user) {
 		return;
@@ -278,7 +283,7 @@ void UserManager::handlePresence(Swift::Presence::ref presence) {
 
 		if (CONFIG_BOOL(m_component->getConfig(), "service.vip_only") && res.vip == false) {
 			if (!CONFIG_STRING(m_component->getConfig(), "service.vip_message").empty()) {
-				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+				std::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody(CONFIG_STRING(m_component->getConfig(), "service.vip_message"));
 				msg->setTo(presence->getFrom());
 				msg->setFrom(m_component->getJID());
@@ -370,16 +375,12 @@ void UserManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	// Do not count chatstate notification...
-	SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
+	std::shared_ptr<Swift::ChatState> statePayload = message->getPayload<Swift::ChatState>();
 	if (!statePayload) {
 		messageToBackendSent();
 	}
 
-#if HAVE_SWIFTEN_3
 	std::string body = message->getBody().get_value_or("");
-#else
-	std::string body = message->getBody();
-#endif
 	if (body.empty() && !statePayload && message->getSubject().empty()) {
 		return;
 	}
@@ -555,7 +556,7 @@ void UserManager::connectUser(const Swift::JID &user) {
 			}
 			else {
 				// Send message to currently logged in session
-				SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Message> msg(new Swift::Message());
+				std::shared_ptr<Swift::Message> msg(new Swift::Message());
 				msg->setBody("You have signed on from another location.");
 				msg->setTo(user);
 				msg->setFrom(m_component->getJID());
@@ -565,11 +566,6 @@ void UserManager::connectUser(const Swift::JID &user) {
 				// Unavailable presence from old session has to be ignored, otherwise it would disconnect the user from legacy network.
 				m_userRegistry->onPasswordValid(user);
 				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
-// #if HAVE_SWIFTEN_3
-// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::ToplevelElement>(new Swift::StreamError()), true);
-// #else
-// 				dynamic_cast<Swift::ServerStanzaChannel *>(m_component->getFrontend())->finishSession(user, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Element>(new Swift::StreamError()), true);
-// #endif
 				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}
 		}

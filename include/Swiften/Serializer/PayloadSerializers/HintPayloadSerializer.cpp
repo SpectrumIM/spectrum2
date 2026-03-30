@@ -19,7 +19,7 @@ namespace Swift {
 HintPayloadSerializer::HintPayloadSerializer() : GenericPayloadSerializer<HintPayload>() {
 }
 
-std::string HintPayloadSerializer::serializePayload(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<HintPayload> hint)  const {
+std::string HintPayloadSerializer::serializePayload(std::shared_ptr<HintPayload> hint)  const {
 	std::string tagname = "";
 	switch(hint->getType()) {
 	case HintPayload::NoPermanentStore: tagname = "no-permanent-store"; break;

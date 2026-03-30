@@ -8,18 +8,16 @@
 
 #include <vector>
 #include <string>
-#include <boost/shared_ptr.hpp>
-
+#include <boost/signals2.hpp>
 #include <Swiften/Elements/Payload.h>
 
-#include "Swiften/SwiftenCompat.h"
 
 // This payload is NOT part of ANY XEP and it is only
 // libtransport related extension.
 namespace Swift {
 	class InvisiblePayload : public Payload {
 		public:
-			typedef SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<InvisiblePayload> ref;
+			typedef std::shared_ptr<InvisiblePayload> ref;
 
 		public:
 			InvisiblePayload();

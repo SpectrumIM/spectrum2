@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <boost/signals2.hpp>
+
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
 #include <Swiften/TLS/PlatformTLSFactories.h>
@@ -29,15 +31,8 @@
 #include <Swiften/Network/HostAddress.h>
 #include <Swiften/Network/Connection.h>
 #include <Swiften/Base/SafeByteArray.h>
-#include "Swiften/Version.h"
 #include "Swiften/Network/Timer.h"
-#include "Swiften/SwiftenCompat.h"
-
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
-#if HAVE_SWIFTEN_3
 #include <Swiften/TLS/TLSOptions.h>
-#endif
 
 #include <string>
 #include <algorithm>
@@ -58,14 +53,14 @@ class WebSocketClient {
 
 		void write(const std::string &data);
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const std::string &payload)> onPayloadReceived;
+		boost::signals2::signal<void (const std::string &payload)> onPayloadReceived;
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void ()> onWebSocketConnected;
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
+		boost::signals2::signal<void ()> onWebSocketConnected;
+		boost::signals2::signal<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
 
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);
-		void handleDataRead(SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::SafeByteArray> data);
+		void handleDataRead(std::shared_ptr<Swift::SafeByteArray> data);
 		void handleConnected(bool error);
 		void handleDisconnected(const boost::optional<Swift::Connection::Error> &error);
 
@@ -73,8 +68,8 @@ class WebSocketClient {
 
 	private:
 		Component *m_component;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
-		SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::Connection> m_conn;
+		std::shared_ptr<Swift::DomainNameAddressQuery> m_dnsQuery;
+		std::shared_ptr<Swift::Connection> m_conn;
 		Swift::TLSConnectionFactory *m_tlsConnectionFactory;
 		Swift::PlatformTLSFactories *m_tlsFactory;
 		std::string m_host;

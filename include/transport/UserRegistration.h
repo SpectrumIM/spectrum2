@@ -20,12 +20,11 @@
 
 #pragma once
 
+#include <boost/signals2.hpp>
+
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 #include "Swiften/Elements/RosterPayload.h"
-#include <Swiften/Version.h>
-#include "Swiften/SwiftenCompat.h"
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
 
 namespace Transport {
 
@@ -71,15 +70,15 @@ class UserRegistration {
 
 		/// Called when new user has been registered.
 		/// \param userInfo UserInfo struct with informations about user
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const UserInfo &userInfo)> onUserRegistered;
+		boost::signals2::signal<void (const UserInfo &userInfo)> onUserRegistered;
 
 		/// Called when user has been unregistered.
 		/// \param userInfo UserInfo struct with informations about user
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const UserInfo &userInfo)> onUserUnregistered;
+		boost::signals2::signal<void (const UserInfo &userInfo)> onUserUnregistered;
 
 		/// Called when user's registration has been updated.
 		/// \param userInfo UserInfo struct with informations about user
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (const UserInfo &userInfo)> onUserUpdated;
+		boost::signals2::signal<void (const UserInfo &userInfo)> onUserUpdated;
 
 	private:
 		Component *m_component;

@@ -23,7 +23,6 @@
 #include <vector>
 #include "Swiften/Queries/SetResponder.h"
 #include "Swiften/Elements/StatsPayload.h"
-#include "Swiften/SwiftenCompat.h"
 
 namespace Transport {
 
@@ -38,8 +37,8 @@ class StatsResponder : public Swift::Responder<Swift::StatsPayload> {
 		~StatsResponder();
 
 	private:
-		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::StatsPayload> payload);
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Swift::StatsPayload> payload);
+		virtual bool handleGetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::StatsPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::StatsPayload> payload);
 
 		unsigned long usedMemory();
 

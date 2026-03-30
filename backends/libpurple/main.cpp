@@ -16,9 +16,7 @@
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
 #include "transport/Config.h"
-#include "transport/StorageBackend.h"
 #include "geventloop.h"
-#include "Swiften/SwiftenCompat.h"
 
 // #include "valgrind/memcheck.h"
 #if !defined(__FreeBSD__) && !defined(__APPLE__)
@@ -58,19 +56,6 @@ bool firstPing = true;
 
 using namespace Transport;
 
-template <class T> T fromString(const std::string &str) {
-	T i;
-	std::istringstream os(str);
-	os >> i;
-	return i;
-}
-
-template <class T> std::string stringOf(T object) {
-	std::ostringstream os;
-	os << object;
-	return (os.str());
-}
-
 static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
     std::string item;
@@ -90,9 +75,8 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 
 class SpectrumNetworkPlugin;
 
-SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config> config;
+std::shared_ptr<Config> config;
 SpectrumNetworkPlugin *np;
-StorageBackend *storagebackend;
 
 static std::string host;
 static int port = 10000;
@@ -112,14 +96,6 @@ struct NodeCache {
 bool caching = true;
 
 static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotifyUserInfo *user_info);
-
-static gboolean ft_ui_ready(void *data) {
-	PurpleXfer *xfer = (PurpleXfer *) data;
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	ftdata->timer = 0;
-	purple_xfer_ui_ready_wrapped((PurpleXfer *) data);
-	return FALSE;
-}
 
 /*
 Authorization requests from buddies are cached for the duration of the session.
@@ -145,6 +121,7 @@ class AuthRequestList : public std::map<std::string, authRequest*> {
 			LOG4CXX_TRACE(logger, "AuthRequestList::accept(" << user << ", " << buddyName << ")");
 			it->second->authorize_cb(it->second->user_data);
 			this->erase(user + buddyName);
+			return true;
 		}
 		
 
@@ -158,6 +135,7 @@ class AuthRequestList : public std::map<std::string, authRequest*> {
 			LOG4CXX_TRACE(logger, "AuthRequestList::deny(" << user << ", " << buddyName << ")");
 			it->second->deny_cb(it->second->user_data);
 			this->erase(user + buddyName);
+			return true;
 		}
 };
 
@@ -184,7 +162,7 @@ static void *requestAction(const char *title, const char *primary, const char *s
 		((PurpleRequestActionCb) va_arg(actions, GCallback)) (user_data, 2);
 	}
 	else if (t == "Plaintext Authentication") {
-		LOG4CXX_INFO(logger,  "Rejecting plaintext authentification");
+		LOG4CXX_INFO(logger,  "Rejecting plaintext authentication");
 		va_arg(actions, char *);
 		va_arg(actions, GCallback);
 		va_arg(actions, char *);
@@ -234,37 +212,6 @@ static std::string getAlias(PurpleBuddy *m_buddy) {
 		alias = (std::string) purple_buddy_get_server_alias_wrapped(m_buddy);
 	}
 	return alias;
-}
-
-static boost::mutex dblock;
-static std::string OAUTH_TOKEN = "hangouts_oauth_token";
-static std::string STEAM_ACCESS_TOKEN = "steammobile_access_token";
-static std::string DISCORD_ACCESS_TOKEN = "discord_access_token";
-
-static bool getUserToken(const std::string user, const std::string token_name, std::string &token_value)
-{
-	boost::mutex::scoped_lock lock(dblock);
-	UserInfo info;
-	if (storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
-		return false;
-	}
-	token_value = "";
-	int type = TYPE_STRING;
-	storagebackend->getUserSetting((long)info.id, token_name, type, token_value);
-	return true;
-}
-
-static bool storeUserToken(const std::string user, const std::string token_name, const std::string token_value)
-{
-	boost::mutex::scoped_lock lock(dblock);
-	UserInfo info;
-	if (storagebackend->getUser(user, info) == false) {
-		LOG4CXX_ERROR(logger, "Didn't find entry for " << user << " in the database!");
-		return false;
-	}
-	storagebackend->updateUserSetting((long)info.id, token_name, token_value);
-	return true;
 }
 
 class SpectrumNetworkPlugin : public NetworkPlugin {
@@ -337,7 +284,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 							break;
 
 						case PURPLE_PREF_INT:
-							purple_account_set_int_wrapped(account, strippedKey.c_str(), fromString<int>(keyItem.second.as<std::string>()));
+							purple_account_set_int_wrapped(account, strippedKey.c_str(), std::stoi(keyItem.second.as<std::string>()));
 							break;
 
 						case PURPLE_PREF_STRING:
@@ -351,7 +298,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				}
 
 				if (!found) {
-					purple_account_set_string_wrapped(account, strippedKey.c_str(), keyItem.second.as<std::string>().c_str());
+					LOG4CXX_ERROR(logger, "Unknown [purple] option: " << strippedKey);
 				}
 				i++;
 			}
@@ -360,7 +307,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			gsize length;
 			gboolean ret = g_file_get_contents ("gfire.cfg", &contents, &length, NULL);
 			if (ret) {
-				purple_account_set_int_wrapped(account, "version", fromString<int>(std::string(contents, length)));
+				purple_account_set_int_wrapped(account, "version", std::stoi(std::string(contents, length)));
 			}
 
 
@@ -408,7 +355,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			}
 		}
 
-		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password) {
+		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 			PurpleAccount *account = NULL;
 
 			std::string name;
@@ -430,6 +377,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			else if (protocol == "telegram-tdlib") {
 				adminLegacyName = "telegram";
 				adminAlias = "telegram";
+			}
+			else if (protocol == "prpl-eionrobb-instagram") {
+				adminLegacyName = "instagram";
+				adminAlias = "instagram";
 			}
 			if (!purple_find_prpl_wrapped(protocol.c_str())) {
 				LOG4CXX_INFO(logger,  name.c_str() << ": Invalid protocol '" << protocol << "'");
@@ -462,25 +413,11 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool_wrapped(account, "custom_smileys", FALSE);
 			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
-			if (protocol == "prpl-hangouts") {
-				std::string token;
-				if (getUserToken(user, OAUTH_TOKEN, token)) {
-					purple_account_set_password_wrapped(account, token.c_str());
-				}
-			}
-			else if (protocol == "prpl-steam-mobile") {
-				std::string token;
-				getUserToken(user, STEAM_ACCESS_TOKEN, token);
-				if (!token.empty()) {
-					purple_account_set_string_wrapped(account, "access_token", token.c_str());
-				}
-			}
-			else if (protocol == "prpl-eionrobb-discord") {
-				std::string token;
-				getUserToken(user, DISCORD_ACCESS_TOKEN, token);
-				if (!token.empty()) {
-					purple_account_set_string_wrapped(account, "token", token.c_str());
-				}
+
+
+			// Stored user settings
+			for (const auto& item: settings) {
+				purple_account_set_string_wrapped(account, item.first.c_str(), item.second.c_str());
 			}
 
 			setDefaultAccountOptions(account);
@@ -516,7 +453,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 					account->ui_data = NULL;
 				}
 				if (purple_account_get_int_wrapped(account, "version", 0) != 0) {
-					std::string data = stringOf(purple_account_get_int_wrapped(account, "version", 0));
+					std::string data = std::to_string(purple_account_get_int_wrapped(account, "version", 0));
 					g_file_set_contents ("gfire.cfg", data.c_str(), data.size(), NULL);
 				}
 // 				VALGRIND_DO_LEAK_CHECK;
@@ -525,10 +462,8 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				purple_account_set_enabled_wrapped(account, "spectrum", FALSE);
 
 				m_accounts.erase(account);
-
-				purple_accounts_delete_wrapped(account);
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 				malloc_trim(0);
 #endif
 #endif
@@ -772,7 +707,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				conv = purple_find_conversation_with_account_wrapped(PURPLE_CONV_TYPE_IM, buddyName.c_str(), account);
 			}
 			if (conv) {
-				purple_conversation_set_data_wrapped(conv, "unseen_count", 0);
+				purple_conversation_set_data_wrapped(conv, "unseen-count", 0);
 				purple_conversation_update_wrapped(conv, PURPLE_CONV_UPDATE_UNSEEN);
 			}
 		}
@@ -885,44 +820,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_conversation_destroy_wrapped(conv);
 		}
 
-		void handleFTStartRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
-			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
-			if (xfer) {
-				m_unhandledXfers.erase(user + fileName + buddyName);
-				FTData *ftData = (FTData *) xfer->ui_data;
-
-				ftData->id = ftID;
-				m_xfers[ftID] = xfer;
-				purple_xfer_request_accepted_wrapped(xfer, fileName.c_str());
-				purple_xfer_ui_ready_wrapped(xfer);
-			}
-		}
-
-		void handleFTFinishRequest(const std::string &user, const std::string &buddyName, const std::string &fileName, unsigned long size, unsigned long ftID) {
-			PurpleXfer *xfer = m_unhandledXfers[user + fileName + buddyName];
-			if (xfer) {
-				m_unhandledXfers.erase(user + fileName + buddyName);
-				purple_xfer_request_denied_wrapped(xfer);
-			}
-		}
-
-		void handleFTPauseRequest(unsigned long ftID) {
-			PurpleXfer *xfer = m_xfers[ftID];
-			if (!xfer)
-				return;
-			FTData *ftData = (FTData *) xfer->ui_data;
-			ftData->paused = true;
-		}
-
-		void handleFTContinueRequest(unsigned long ftID) {
-			PurpleXfer *xfer = m_xfers[ftID];
-			if (!xfer)
-				return;
-			FTData *ftData = (FTData *) xfer->ui_data;
-			ftData->paused = false;
-			purple_xfer_ui_ready_wrapped(xfer);
-		}
-
 		void sendData(const std::string &string) {
 #ifdef WIN32
 			::send(main_socket, string.c_str(), string.size(), 0);
@@ -933,30 +830,12 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				writeInput = purple_input_add_wrapped(main_socket, PURPLE_INPUT_WRITE, &transportDataReceived, NULL);
 		}
 
-		void readyForData() {
-			if (m_waitingXfers.empty())
-				return;
-			std::vector<PurpleXfer *> tmp;
-			tmp.swap(m_waitingXfers);
-
-			for (std::vector<PurpleXfer *>::const_iterator it = tmp.begin(); it != tmp.end(); it++) {
-				FTData *ftData = (FTData *) (*it)->ui_data;
-				if (ftData->timer == 0) {
-					ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, *it);
-				}
-// 				purple_xfer_ui_ready_wrapped(xfer);
-			}
-		}
-
 		std::map<std::string, PurpleAccount *> m_sessions;
 		std::map<PurpleAccount *, std::string> m_accounts;
 		std::map<std::string, unsigned int> m_vcards;
 		AuthRequestList m_authRequests;
 		std::map<std::string, inputRequest *> m_inputRequests;
 		std::map<std::string, std::list<std::string> > m_rooms;
-		std::map<unsigned long, PurpleXfer *> m_xfers;
-		std::map<std::string, PurpleXfer *> m_unhandledXfers;
-		std::vector<PurpleXfer *> m_waitingXfers;
 		std::string adminLegacyName;
 		std::string adminAlias;
 };
@@ -1214,69 +1093,6 @@ static PurpleBlistUiOps blistUiOps =
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime);
 
-static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
-	LOG4CXX_INFO(logger, "conv_write()");
-
-	if (flags & PURPLE_MESSAGE_SYSTEM && CONFIG_STRING(config, "service.protocol") == "prpl-telegram") {
-		PurpleAccount *account = purple_conversation_get_account_wrapped(conv);
-
-	// 	char *striped = purple_markup_strip_html_wrapped(message);
-	// 	std::string msg = striped;
-	// 	g_free(striped);
-
-
-		// Escape HTML characters.
-		char *newline = purple_strdup_withhtml_wrapped(msg);
-		char *strip, *xhtml;
-		purple_markup_html_to_xhtml_wrapped(newline, &xhtml, &strip);
-	// 	xhtml_linkified = spectrum_markup_linkify(xhtml);
-		std::string message_(strip);
-
-		std::string xhtml_(xhtml);
-		g_free(newline);
-		g_free(xhtml);
-	// 	g_free(xhtml_linkified);
-		g_free(strip);
-
-		// AIM and XMPP adds <body>...</body> here...
-		if (xhtml_.find("<body>") == 0) {
-			xhtml_ = xhtml_.substr(6);
-			if (xhtml_.find("</body>") != std::string::npos) {
-				xhtml_ = xhtml_.substr(0, xhtml_.find("</body>"));
-			}
-		}
-
-		if (xhtml_ == message_) {
-			xhtml_ = "";
-		}
-
-		std::string timestamp;
-		if (mtime && (unsigned long) time(NULL)-10 > (unsigned long) mtime/* && (unsigned long) time(NULL) - 31536000 < (unsigned long) mtime*/) {
-			char buf[80];
-			strftime(buf, sizeof(buf), "%Y%m%dT%H%M%S", gmtime(&mtime));
-			timestamp = buf;
-		}
-
-		if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
-			std::string w = purple_normalize_wrapped(account, who);
-			size_t pos = w.find("/");
-			if (pos != std::string::npos)
-				w.erase((int) pos, w.length() - (int) pos);
-			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << w << "'");
-			np->handleMessage(np->m_accounts[account], w, message_, "", xhtml_, timestamp);
-		}
-		else {
-			std::string conversationName = purple_conversation_get_name_wrapped(conv);
-			LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' name='" << conversationName << "' " << who);
-			np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp);
-		}
-	}
-	else {
-	    //Handle all non-special cases by just passing them to conv_write_im
-	    conv_write_im(conv, who, msg, flags, mtime);
-	}
-}
-
 static char *calculate_data_hash(guchar *data, size_t len,
     const gchar *hash_algo)
 {
@@ -1474,7 +1290,7 @@ static bool conv_msg_to_image(const char* msg, std::string* xhtml_, std::string*
 
 
 static void conv_write_im(PurpleConversation *conv, const char *who, const char *msg, PurpleMessageFlags flags, time_t mtime) {
-	LOG4CXX_INFO(logger, "conv_write_im()");
+	LOG4CXX_DEBUG(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 	bool isCarbon = false;
 
 	if (purple_conversation_get_type_wrapped(conv) == PURPLE_CONV_TYPE_IM) {
@@ -1499,8 +1315,6 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 
 	std::string message_; //plain text
 	std::string xhtml_;   //enhanced xhtml, if available
-
-	LOG4CXX_DEBUG(logger, "conv_write_im(): msg='" << msg << "', flags=" << flags);
 
 	if (flags & PURPLE_MESSAGE_IMAGES) {
 		//Store image locally and adjust the message
@@ -1551,6 +1365,11 @@ static void conv_write_im(PurpleConversation *conv, const char *who, const char 
 		LOG4CXX_TRACE(logger, "Received message body='" << message_ << "' xhtml='" << xhtml_ << "' name='" << conversationName << "' " << who);
 		np->handleMessage(np->m_accounts[account], np->NameToLegacyName(account, conversationName), message_, who, xhtml_, timestamp, false, false, isCarbon);
 	}
+}
+
+static void conv_write(PurpleConversation *conv, const char *who, const char *alias, const char *msg, PurpleMessageFlags flags, time_t mtime) {
+	//Handle all non-special cases by just passing them to conv_write_im
+    conv_write_im(conv, who, msg, flags, mtime);
 }
 
 static void conv_chat_add_users(PurpleConversation *conv, GList *cbuddies, gboolean new_arrivals) {
@@ -1864,6 +1683,17 @@ void * requestInput(const char *title, const char *primary,const char *secondary
 			np->m_inputRequests[req->mainJID] = req;
 			return NULL;
 		}
+		else if (boost::starts_with(primaryString, "Enter the six-digit code")) {
+			LOG4CXX_INFO(logger, "prpl-eionrobb-instagram verification request");
+			np->handleMessage(np->m_accounts[account], np->adminLegacyName, std::string("Verification code: "));
+			inputRequest *req = new inputRequest;
+			req->ok_cb = (PurpleRequestInputCb)ok_cb;
+			req->user_data = user_data;
+			req->account = account;
+			req->mainJID = np->m_accounts[account];
+			np->m_inputRequests[req->mainJID] = req;
+			return NULL;
+		}
 		else {
 			LOG4CXX_WARN(logger, "Unhandled request input. primary=" << primaryString);
 		}
@@ -1951,141 +1781,82 @@ static PurpleAccountUiOps accountUiOps =
 	NULL
 };
 
-static void XferCreated(PurpleXfer *xfer) {
-	if (!xfer) {
-		return;
+static gboolean
+ensure_path_exists(const char *dir)
+{
+	if (!g_file_test(dir, G_FILE_TEST_IS_DIR))
+	{
+		if (g_mkdir_with_parents(dir, S_IRUSR | S_IWUSR | S_IXUSR)) {
+			return FALSE;
+		}
 	}
-
- 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
- 	np->handleFTStart(np->m_accounts[account], xfer->who, purple_xfer_get_filename_wrapped(xfer), purple_xfer_get_size_wrapped(xfer));
-}
-
-static void XferDestroyed(PurpleXfer *xfer) {
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	if (ftdata) {
-		np->m_xfers.erase(ftdata->id);
-	}
-}
-
-static void xferCanceled(PurpleXfer *xfer) {
-	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-	std::string filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
-	std::string w = xfer->who;
-	size_t pos = w.find("/");
-	if (pos != std::string::npos)
-		w.erase((int) pos, w.length() - (int) pos);
-
-	FTData *ftdata = (FTData *) xfer->ui_data;
-
-	np->handleFTFinish(np->m_accounts[account], w, filename, purple_xfer_get_size_wrapped(xfer), ftdata ? ftdata->id : 0);
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	purple_xfer_unref_wrapped(xfer);
-}
-
-static void fileSendStart(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->fileSendStart();
-}
-
-static void fileRecvStart(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->fileRecvStart();
-	FTData *ftData = (FTData *) xfer->ui_data;
-	if (ftData->timer == 0) {
-		ftData->timer = purple_timeout_add_wrapped(1, ft_ui_ready, xfer);
-	}
+	return TRUE;
 }
 
 static void newXfer(PurpleXfer *xfer) {
 	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
-	std::string filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
-	purple_xfer_ref_wrapped(xfer);
-	std::string w = xfer->who;
+	std::string remote_filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
+	std::string w = xfer->who ? xfer->who : "";
 	size_t pos = w.find("/");
 	if (pos != std::string::npos)
 		w.erase((int) pos, w.length() - (int) pos);
-
-	FTData *ftdata = new FTData;
-	ftdata->paused = false;
-	ftdata->id = 0;
-	ftdata->timer = 0;
-	xfer->ui_data = (void *) ftdata;
-
-	np->m_unhandledXfers[np->m_accounts[account] + filename + w] = xfer;
-
-	np->handleFTStart(np->m_accounts[account], w, filename, purple_xfer_get_size_wrapped(xfer));
+	int count = 1;
+	gchar **name_and_ext;
+	const gchar *name;
+	gchar *ext;
+	std::string web_dir = CONFIG_STRING(config, "service.web_directory");
+	std::string web_url = CONFIG_STRING(config, "service.web_url");
+	if (web_dir.empty() || web_url.empty()) {
+		LOG4CXX_DEBUG(logger, "Denied " << remote_filename << " from " << w << ",  web_directory is disabled.");
+		purple_xfer_request_denied_wrapped(xfer);
+		return;
+	}
+	LOG4CXX_INFO(logger, "Accepting " << remote_filename << " from " << w);
+	gchar *dirname = g_build_filename(web_dir.c_str(), NULL);
+	// Uniqifying code taken from Pidgin autoaccept plugin
+	/* Split at the first dot, to avoid uniquifying "foo.tar.gz" to "foo.tar-2.gz" */
+	name_and_ext = g_strsplit(remote_filename.c_str(), ".", 2);
+	name = name_and_ext[0];
+	if (name == NULL)
+	{
+		g_strfreev(name_and_ext);
+		g_return_if_reached();
+	}
+	if (name_and_ext[1] != NULL)
+	{
+		/* g_strsplit does not include the separator in each chunk. */
+		ext = g_strdup_printf(".%s", name_and_ext[1]);
+	}
+	else
+	{
+		ext = g_strdup("");
+	}
+	char *file = g_strdup_printf("%s%s", g_uuid_string_random(), ext);
+	gchar *filename = g_build_filename(dirname, file, NULL);
+	purple_xfer_request_accepted_wrapped(xfer, filename);
+	g_strfreev(name_and_ext);
+	g_free(ext);
+	g_free(dirname);
+	g_free(filename);
+	g_free(file);
 }
 
 static void XferReceiveComplete(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->_tryToDeleteMe();
-// 	GlooxMessageHandler::instance()->ftManager->handleXferFileReceiveComplete(xfer);
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	purple_xfer_unref_wrapped(xfer);
+	std::string filename(xfer ? purple_xfer_get_local_filename_wrapped(xfer) : "");
+	std::string w = xfer->who ? xfer->who : "";
+	std::string message = xfer->message ? xfer->message : "";
+	LOG4CXX_INFO(logger, "Received " << filename << " from " << w);
+	PurpleAccount *account = purple_xfer_get_account_wrapped(xfer);
+	std::string web_url = CONFIG_STRING(config, "service.web_url");
+	pbnetwork::Attachment attachment;
+	gchar *base_filename = g_path_get_basename(filename.c_str());
+	attachment.set_url(web_url + "/" + std::string(base_filename));
+	std::string remote_filename(xfer ? purple_xfer_get_filename_wrapped(xfer) : "");
+	attachment.set_description(remote_filename.c_str());
+	g_free(base_filename);
+	std::vector<pbnetwork::Attachment> attachments = { attachment };
+	np->handleMessage(np->m_accounts[account], w, message, "", "", xfer->end_time? std::to_string(xfer->end_time) : "", false, false, false, attachments);
 }
-
-static void XferSendComplete(PurpleXfer *xfer) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->_tryToDeleteMe();
-	std::remove(np->m_waitingXfers.begin(), np->m_waitingXfers.end(), xfer);
-	FTData *ftdata = (FTData *) xfer->ui_data;
-	if (ftdata && ftdata->timer) {
-		purple_timeout_remove_wrapped(ftdata->timer);
-	}
-	purple_xfer_unref_wrapped(xfer);
-}
-
-static gssize XferWrite(PurpleXfer *xfer, const guchar *buffer, gssize size) {
-	FTData *ftData = (FTData *) xfer->ui_data;
-	std::string data((const char *) buffer, (size_t) size);
-// 	std::cout << "xferwrite\n";
-	if (!ftData->paused) {
-// 		std::cout << "adding xfer to waitingXfers queue\n";
-		np->m_waitingXfers.push_back(xfer);
-	}
-	np->handleFTData(ftData->id, data);
-	return size;
-}
-
-static void XferNotSent(PurpleXfer *xfer, const guchar *buffer, gsize size) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	repeater->handleDataNotSent(buffer, size);
-}
-
-static gssize XferRead(PurpleXfer *xfer, guchar **buffer, gssize size) {
-// 	FiletransferRepeater *repeater = (FiletransferRepeater *) xfer->ui_data;
-// 	int data_size = repeater->getDataToSend(buffer, size);
-// 	if (data_size == 0)
-// 		return 0;
-//
-// 	return data_size;
-	return 0;
-}
-
-static PurpleXferUiOps xferUiOps =
-{
-	XferCreated,
-	XferDestroyed,
-	NULL,
-	NULL,
-	xferCanceled,
-	xferCanceled,
-	XferWrite,
-	XferRead,
-	XferNotSent,
-	NULL
-};
 
 static void RoomlistProgress(PurpleRoomlist *list, gboolean in_progress)
 {
@@ -2191,7 +1962,6 @@ static void transport_core_ui_init(void)
 	purple_accounts_set_ui_ops_wrapped(&accountUiOps);
 	purple_notify_set_ui_ops_wrapped(&notifyUiOps);
 	purple_request_set_ui_ops_wrapped(&requestUiOps);
-	purple_xfers_set_ui_ops_wrapped(&xferUiOps);
 	purple_connections_set_ui_ops_wrapped(&conn_ui_ops);
 	purple_conversations_set_ui_ops_wrapped(&conversation_ui_ops);
 	purple_roomlist_set_ui_ops_wrapped(&roomlist_ui_ops);
@@ -2287,7 +2057,7 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 	PurpleAccount *account = purple_connection_get_account_wrapped(gc);
 	np->handleConnected(np->m_accounts[account]);
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 	// force returning of memory chunks allocated by libxml2 to kernel
 	malloc_trim(0);
 #endif
@@ -2296,15 +2066,6 @@ static void signed_on(PurpleConnection *gc, gpointer unused) {
 
 	// For prpl-gg
 	execute_purple_plugin_action(gc, "Download buddylist from Server");
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts") {
-		storeUserToken(np->m_accounts[account], OAUTH_TOKEN, purple_account_get_password_wrapped(account));
-	}
-	else if (CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile") {
-		storeUserToken(np->m_accounts[account], STEAM_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "access_token", NULL));
-	}
-    else if (CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
-        storeUserToken(np->m_accounts[account], DISCORD_ACCESS_TOKEN, purple_account_get_string_wrapped(account, "token", NULL));
-    }
 }
 
 static void printDebug(PurpleDebugLevel level, const char *category, const char *arg_s) {
@@ -2388,8 +2149,6 @@ static bool initPurple() {
 	LOG4CXX_INFO(logger, "Setting libpurple user directory to: " << userDir);
 
 	purple_util_set_user_dir_wrapped(userDir.c_str());
-	remove("./accounts.xml");
-	remove("./blist.xml");
 
 	purple_debug_set_ui_ops_wrapped(&debugUiOps);
 // 	purple_debug_set_verbose_wrapped(true);
@@ -2446,11 +2205,8 @@ static bool initPurple() {
 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "blist-node-removed", &blist_handle,PURPLE_CALLBACK(NodeRemoved), NULL);
 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "chat-topic-changed", &conversation_handle, PURPLE_CALLBACK(conv_chat_topic_changed), NULL);
 		static int xfer_handle;
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-start", &xfer_handle, PURPLE_CALLBACK(fileSendStart), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-start", &xfer_handle, PURPLE_CALLBACK(fileRecvStart), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), NULL);
-		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-send-complete", &xfer_handle, PURPLE_CALLBACK(XferSendComplete), NULL);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-request", &xfer_handle, PURPLE_CALLBACK(newXfer), &xfer_handle);
+		purple_signal_connect_wrapped(purple_xfers_get_handle_wrapped(), "file-recv-complete", &xfer_handle, PURPLE_CALLBACK(XferReceiveComplete), &xfer_handle);
 //
 // 		purple_commands_init();
 
@@ -2491,11 +2247,18 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 				cfg.setNeedRegistration(false);
 			}
 			else {
-				PurplePlugin *plugin = purple_find_prpl_wrapped(CONFIG_STRING(config, "service.protocol").c_str());
-				PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
-				bool isPasswordlessPlugin = prpl_info->options & OPT_PROTO_NO_PASSWORD;
-				LOG4CXX_INFO(logger, "passwordless backend: " << isPasswordlessPlugin);
-				cfg.setNeedPassword(!isPasswordlessPlugin);
+				std::string protocol = CONFIG_STRING(config, "service.protocol");
+				PurplePlugin *plugin = purple_find_prpl_wrapped(protocol.c_str());
+				if (plugin) {
+					PurplePluginProtocolInfo *prpl_info = PURPLE_PLUGIN_PROTOCOL_INFO(plugin);
+					if (prpl_info) {
+						bool isPasswordlessPlugin = prpl_info->options & OPT_PROTO_NO_PASSWORD;
+						LOG4CXX_INFO(logger, "passwordless backend: " << isPasswordlessPlugin);
+						cfg.setNeedPassword(!isPasswordlessPlugin);
+					}
+				} else {
+					LOG4CXX_ERROR(logger, "Protocol not found: " << protocol);
+				}
 				cfg.setNeedRegistration(true);
 			}
 			np->sendConfig(cfg);
@@ -2508,15 +2271,12 @@ static void transportDataReceived(gpointer data, gint source, PurpleInputConditi
 			purple_input_remove_wrapped(writeInput);
 			writeInput = 0;
 		}
-		np->readyForData();
 	}
 }
 
 int main(int argc, char **argv) {
-	boost::locale::generator gen;
-	std::locale::global(gen(""));
 #ifndef WIN32
-#if !defined(__FreeBSD__) && !defined(__APPLE__)
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && defined (__GLIBC__)
 		mallopt(M_CHECK_ACTION, 2);
 		mallopt(M_PERTURB, 0xb);
 #endif
@@ -2536,21 +2296,9 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	config = SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Config>(cfg);
+	config = std::shared_ptr<Config>(cfg);
 
 	Logging::initBackendLogging(config.get());
-	if (CONFIG_STRING(config, "service.protocol") == "prpl-hangouts" || CONFIG_STRING(config, "service.protocol") == "prpl-steam-mobile" || CONFIG_STRING(config, "service.protocol") == "prpl-eionrobb-discord") {
-		storagebackend = StorageBackend::createBackend(config.get(), error);
-		if (storagebackend == NULL) {
-			LOG4CXX_ERROR(logger, "Error creating StorageBackend! " << error);
-			LOG4CXX_ERROR(logger, "Selected libpurple protocol need storage backend configured to work! " << error);
-			return NetworkPlugin::StorageBackendNeeded;
-		}
-		else if (!storagebackend->connect()) {
-			LOG4CXX_ERROR(logger, "Can't connect to database!");
-			return -1;
-		}
-	}
 
 	initPurple();
 

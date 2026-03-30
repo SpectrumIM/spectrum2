@@ -21,23 +21,27 @@
 #pragma once
 
 #include <vector>
-#include "Swiften/Queries/SetResponder.h"
-#include "BlockPayload.h"
+
+#include <boost/signals2.hpp>
+
+#include <Swiften/Elements/BlockPayload.h>
+#include <Swiften/Queries/SetResponder.h>
+
 
 namespace Transport {
 
 class UserManager;
 class Buddy;
 
-class BlockResponder : public Swift::SetResponder<Transport::BlockPayload> {
+class BlockResponder : public Swift::SetResponder<Swift::BlockPayload> {
 	public:
 		BlockResponder(Swift::IQRouter *router, UserManager *userManager);
 		~BlockResponder();
 
-		SWIFTEN_SIGNAL_NAMESPACE::signal<void (Buddy *)> onBlockToggled;
+		boost::signals2::signal<void (Buddy *)> onBlockToggled;
 
 	private:
-		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, SWIFTEN_SHRPTR_NAMESPACE::shared_ptr<Transport::BlockPayload> payload);
+		virtual bool handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::BlockPayload> payload);
 
 		UserManager *m_userManager;
 };
