@@ -126,6 +126,7 @@ FROM debian:bullseye-slim as production
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
+RUN echo "deb http://archive.debian.org/debian/ bullseye main" > /etc/apt/sources.list.d/backports.list
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
 
