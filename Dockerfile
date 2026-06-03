@@ -18,6 +18,7 @@ RUN apt-get install --no-install-recommends -y cmake
 
 #TODO include in Build-Depends
 RUN apt-get install --no-install-recommends -y libssl-dev
+RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
 
 # Spectrum 2
 COPY . spectrum2/
@@ -28,8 +29,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR /spectrum2
-
-RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
 
 RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_QT4=OFF -DCMAKE_UNITY_BUILD=ON . && make -j4
 
