@@ -162,19 +162,19 @@ class BaseTest:
 			testCase.teardown()
 			self.post_test()
 
-		ret = True
-		for v in testCase.tests:
-			if v[1]:
-				print(v[0] + ": PASSED")
-			else:
-				print(v[0] + ": FAILED")
-				ret = False
+			ret = True
+			for v in testCase.tests:
+				if v[1]:
+					print(v[0] + ": PASSED")
+				else:
+					print(v[0] + ": FAILED")
+					ret = False
 
-		if not ret:
+			os.system("echo === spectrum2.log ===")
 			os.system("cat spectrum2.log")
-
-		return ret
-	
+			if not ret:
+				pass
+			return ret
 	def pre_test(self):
 		os.system("../../spectrum/src/spectrum2 -n ./" + self.config + " > spectrum2.log &")
 	
