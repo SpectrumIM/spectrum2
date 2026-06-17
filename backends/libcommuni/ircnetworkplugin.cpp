@@ -134,7 +134,7 @@ void IRCNetworkPlugin::handleLoginRequest(const std::string &user, const std::st
 			return;
 		}
 
-		m_sessions[user] = createSession(user, m_servers[m_currentServer], legacyName, password, "");
+		m_sessions[user] = createSession(user, m_servers[m_currentServer], legacyName, password, "@" + m_servers[m_currentServer]);
 		m_sessions[user]->open();
 	}
 	else {
