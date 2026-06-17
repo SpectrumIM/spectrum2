@@ -18,7 +18,7 @@ RUN apt-get install --no-install-recommends -y cmake
 
 #TODO include in Build-Depends
 RUN apt-get install --no-install-recommends -y libssl-dev
-RUN apt-get install --no-install-recommends -y prosody ngircd python3-sleekxmpp python3-dateutil python3-dnspython libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
+RUN apt-get install --no-install-recommends -y ngircd libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
 
 # Spectrum 2
 COPY . spectrum2/

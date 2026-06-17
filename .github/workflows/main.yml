@@ -10,9 +10,27 @@ permissions:
 jobs:
   linux-glibc:
     runs-on: ubuntu-latest
-
+    services:
+      ircd:
+        image: linuxserver/ngircd
+        ports:
+          - 6667:6667
     steps:
     - uses: actions/checkout@v6
+
+    - name: Start prosody for Slack tests
+      run: |
+        docker pull cr.spectrum.im/spectrumim/prosody:master
+        docker run -d --name prosody \
+          -p 5222:5222 -p 5347:5347 \
+          -v ${{ github.workspace }}/tests/slack_jabber/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua \
+          -v ${{ github.workspace }}/tests/tests_output/localhost:/var/lib/prosody/localhost \
+          cr.spectrum.im/spectrumim/prosody:master
+        sleep 3
+        echo "--- prosody status ---"
+        docker ps -a --filter name=prosody
+        echo "--- prosody logs ---"
+        docker logs prosody 2>&1 || true
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
@@ -28,7 +46,10 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Run tests
-      run: docker run -tt spectrum:tests
+      run: docker run -tt --network host spectrum:tests
+    - name: Prosody logs
+      if: always()
+      run: docker logs prosody 2>&1 || true
   linux-clang:
     runs-on: ubuntu-latest
 

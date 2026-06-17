@@ -30,8 +30,10 @@
 #include "transport/Frontend.h"
 #include "transport/MemoryUsage.h"
 #include "transport/Config.h"
+#include "Swiften/Elements/MUCPayload.h"
 
 #include <boost/foreach.hpp>
+#include <memory>
 #include <boost/lexical_cast.hpp>
 
 namespace Transport {

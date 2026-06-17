@@ -22,7 +22,7 @@
 -- Example: admins = { "user1@example.com", "user2@example.net" }
 admins = { }
 
-data_path="."
+-- data_path defaults to /var/lib/prosody which has correct permissions
 
 -- Enable use of libevent for better performance under high load
 -- For more information see: http://prosody.im/doc/libevent
