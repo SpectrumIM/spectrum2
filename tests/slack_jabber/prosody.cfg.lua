@@ -22,7 +22,7 @@
 -- Example: admins = { "user1@example.com", "user2@example.net" }
 admins = { }
 
-data_path="."
+-- data_path defaults to /var/lib/prosody
 
 -- Enable use of libevent for better performance under high load
 -- For more information see: http://prosody.im/doc/libevent
@@ -44,6 +44,7 @@ modules_enabled = {
 	-- Not essential, but recommended
 		"private"; -- Private XML storage (for room bookmarks, etc.)
 		"vcard"; -- Allow users to set vCards
+			"carbons"; -- XEP-0280 message carbons
 	
 	-- These are commented by default as they have a performance impact
 		--"privacy"; -- Support privacy lists
@@ -165,3 +166,4 @@ VirtualHost "localhost"
 --Component "gateway.localhost"
 --	component_secret = "secret"
 Component "conference.localhost" "muc"
+	muc_room_locking = false
