@@ -6,6 +6,7 @@
 
 #include "Swiften/Server/ServerStanzaChannel.h"
 #include "Swiften/Base/Error.h"
+#include <Swiften/Elements/IQ.h>
 #include <iostream>
 
 #include <boost/bind.hpp>
@@ -99,7 +100,12 @@ void ServerStanzaChannel::send(std::shared_ptr<Stanza> stanza) {
 	assert(to.isValid());
 
 	if (!stanza->getFrom().isValid()) {
-		stanza->setFrom(m_jid);
+		// IQ responses to server-directed requests (Result/Error) should not
+		// have 'from' added. Server-initiated pushes (Set/Get) still need it.
+		IQ* iq = dynamic_cast<IQ*>(stanza.get());
+		if (!iq || (iq->getType() != IQ::Result && iq->getType() != IQ::Error)) {
+			stanza->setFrom(m_jid);
+		}
 	}
 
 	// For a full JID, first try to route to a session with the full JID
