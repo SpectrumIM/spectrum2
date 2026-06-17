@@ -332,10 +332,6 @@ bool XMPPFrontend::handleIQ(std::shared_ptr<Swift::IQ> iq) {
 	if (iq->getPayload<Swift::InBandRegistrationPayload>() != NULL) { return false; }
 	if (iq->getPayload<Swift::StatsPayload>() != NULL) { return false; }
 
-	if (iq->getTo().getNode().empty()) {
-		return false;
-	}
-
 	m_transport->onRawIQReceived(iq);
 	return true;
 }
