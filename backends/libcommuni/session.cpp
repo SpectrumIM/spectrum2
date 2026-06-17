@@ -172,9 +172,6 @@ void MyIrcSession::onIrcUserRemoved(IrcUser *user) {
 
 void MyIrcSession::on_connected() {
 	m_connected = true;
-	if (m_suffix.empty()) {
-		m_np->handleConnected(m_user);
-	}
 
 	if (getIdentify().find(" ") != std::string::npos) {
 		std::string to = getIdentify().substr(0, getIdentify().find(" "));
@@ -437,6 +434,9 @@ void MyIrcSession::on_numericMessageReceived(IrcMessage *message) {
 	IrcNumericMessage *m = (IrcNumericMessage *) message;
 	QStringList parameters = m->parameters();
 	switch (m->code()) {
+		case Irc::RPL_WELCOME:
+			m_np->handleConnected(m_user);
+			break;
 		case Irc::RPL_TOPIC:
 			m_topicData = TO_UTF8(parameters[2]);
 			break;
