@@ -1,4 +1,7 @@
 #include <QtCore>
+#ifdef WITH_QT6
+#include <QtCore5Compat>
+#endif
 #include <iostream>
 #include <IrcCommand>
 #include <IrcMessage>

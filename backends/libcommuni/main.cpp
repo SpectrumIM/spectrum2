@@ -18,6 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 #include <QtCore>
+#ifdef WITH_QT6
+#include <QtCore5Compat>
+#endif
 #include <QtNetwork>
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"

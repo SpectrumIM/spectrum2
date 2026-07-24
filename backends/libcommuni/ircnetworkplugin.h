@@ -23,6 +23,9 @@
 #ifndef Q_MOC_RUN
 #include "session.h"
 #include <QtCore>
+#ifdef WITH_QT6
+#include <QtCore5Compat>
+#endif
 #include <QtNetwork>
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
