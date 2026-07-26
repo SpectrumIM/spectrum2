@@ -404,7 +404,8 @@ static std::string cmd(int fd, const std::string &c) {
     return send_command(fd, c);
 }
 
-static const std::string IRC_CHANNEL_JID = "#channel@localhost";
+static const std::string IRC_CHANNEL_JID = "#channel%localhost@localhost";
+static const std::string IRC_SERVER_CHANNEL_JID = "#channel@localhost";
 static const std::string XMPP_CHATROOM_JID = "group%conference.localhost@localhostxmpp";
 static const std::string PROSODY_ROOM_JID = "group@conference.localhost";
 
@@ -649,7 +650,7 @@ static void test_bad_password() {
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
-        std::cerr << "Usage: test_chat <host> <port> [slack|jabber] [xmpp_port]" << std::endl;
+        std::cerr << "Usage: test_chat <host> <port> [slack|jabber|irc_server] [xmpp_port]" << std::endl;
         return 1;
     }
 
@@ -658,6 +659,7 @@ int main(int argc, char *argv[]) {
     std::string mode = (argc > 3) ? argv[3] : "";
     bool isSlack = (mode == "slack");
     bool isJabber = (mode == "jabber");
+    bool isIrcServer = (mode == "irc_server");
     int xmppPort = (argc > 4) ? std::atoi(argv[4]) : 5223;
 
     // Redirect stderr (XMPP XML debug) to file for clean test output
@@ -791,6 +793,9 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     else {
+        const std::string &ircChannel = isIrcServer ? IRC_SERVER_CHANNEL_JID : IRC_CHANNEL_JID;
+        const std::string label = isIrcServer ? " (irc_server)" : " (irc)";
+
         cmd(fd, "register client@localhost client password");
         cmd(fd, "register resp@localhost resp password");
 
@@ -804,30 +809,30 @@ int main(int argc, char *argv[]) {
         check("responder connected", responder.isReady);
 
         // Pre-join responder for msg verification in echo/pm/topic tests
-        responder.joinRoom(IRC_CHANNEL_JID, "resp"); responder.waitForJoin();
+        responder.joinRoom(ircChannel, "resp"); responder.waitForJoin();
 
-        std::cout << "\n--- muc_join_leave (irc_server) ---\n";
-        test_muc_join_leave(client, responder, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_join_leave" << label << " ---\n";
+        test_muc_join_leave(client, responder, ircChannel);
 
-        std::cout << "\n--- muc_echo (irc_server) ---\n";
-        test_muc_echo(client, responder, IRC_CHANNEL_JID, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_echo" << label << " ---\n";
+        test_muc_echo(client, responder, ircChannel, ircChannel);
 
-        std::cout << "\n--- muc_pm (irc_server) ---\n";
-        test_muc_pm(client, responder, IRC_CHANNEL_JID, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_pm" << label << " ---\n";
+        test_muc_pm(client, responder, ircChannel, ircChannel);
 
-        std::cout << "\n--- muc_change_topic (irc_server) ---\n";
-        test_muc_change_topic(client, responder, IRC_CHANNEL_JID, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_change_topic" << label << " ---\n";
+        test_muc_change_topic(client, responder, ircChannel, ircChannel);
 
-        responder.leaveRoom(IRC_CHANNEL_JID, "resp"); responder.waitForLeave();
+        responder.leaveRoom(ircChannel, "resp"); responder.waitForLeave();
 
-        std::cout << "\n--- muc_away (irc_server) ---\n";
-        test_muc_away(client, responder, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_away" << label << " ---\n";
+        test_muc_away(client, responder, ircChannel);
 
-        std::cout << "\n--- muc_join_nickname_used (irc_server) ---\n";
-        test_muc_join_nickname_used(client, responder, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_join_nickname_used" << label << " ---\n";
+        test_muc_join_nickname_used(client, responder, ircChannel);
 
-        std::cout << "\n--- muc_whois (irc_server) ---\n";
-        test_muc_whois(client, IRC_CHANNEL_JID);
+        std::cout << "\n--- muc_whois" << label << " ---\n";
+        test_muc_whois(client, ircChannel);
 
         // Single cleanup after all tests
         client.disconnect();
