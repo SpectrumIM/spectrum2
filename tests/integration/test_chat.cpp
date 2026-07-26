@@ -404,7 +404,7 @@ static std::string cmd(int fd, const std::string &c) {
     return send_command(fd, c);
 }
 
-static const std::string IRC_CHANNEL_JID = "#channel%localhost@localhost";
+static const std::string IRC_CHANNEL_JID = "#channel@localhost";
 static const std::string XMPP_CHATROOM_JID = "group%conference.localhost@localhostxmpp";
 static const std::string PROSODY_ROOM_JID = "group@conference.localhost";
 
@@ -806,27 +806,27 @@ int main(int argc, char *argv[]) {
         // Pre-join responder for msg verification in echo/pm/topic tests
         responder.joinRoom(IRC_CHANNEL_JID, "resp"); responder.waitForJoin();
 
-        std::cout << "\n--- muc_join_leave (irc) ---\n";
+        std::cout << "\n--- muc_join_leave (irc_server) ---\n";
         test_muc_join_leave(client, responder, IRC_CHANNEL_JID);
 
-        std::cout << "\n--- muc_echo (irc) ---\n";
+        std::cout << "\n--- muc_echo (irc_server) ---\n";
         test_muc_echo(client, responder, IRC_CHANNEL_JID, IRC_CHANNEL_JID);
 
-        std::cout << "\n--- muc_pm (irc) ---\n";
+        std::cout << "\n--- muc_pm (irc_server) ---\n";
         test_muc_pm(client, responder, IRC_CHANNEL_JID, IRC_CHANNEL_JID);
 
-        std::cout << "\n--- muc_change_topic (irc) ---\n";
+        std::cout << "\n--- muc_change_topic (irc_server) ---\n";
         test_muc_change_topic(client, responder, IRC_CHANNEL_JID, IRC_CHANNEL_JID);
 
         responder.leaveRoom(IRC_CHANNEL_JID, "resp"); responder.waitForLeave();
 
-        std::cout << "\n--- muc_away ---\n";
+        std::cout << "\n--- muc_away (irc_server) ---\n";
         test_muc_away(client, responder, IRC_CHANNEL_JID);
 
-        std::cout << "\n--- muc_join_nickname_used ---\n";
+        std::cout << "\n--- muc_join_nickname_used (irc_server) ---\n";
         test_muc_join_nickname_used(client, responder, IRC_CHANNEL_JID);
 
-        std::cout << "\n--- muc_whois ---\n";
+        std::cout << "\n--- muc_whois (irc_server) ---\n";
         test_muc_whois(client, IRC_CHANNEL_JID);
 
         // Single cleanup after all tests
