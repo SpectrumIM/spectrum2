@@ -95,7 +95,7 @@ class SMSNetworkPlugin : public BoostNetworkPlugin {
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
 
 				try {
-					if (is_regular(itr->path())) {
+					if (is_regular_file(itr->path())) {
 						handleSMS(itr->path().string());
 						remove(itr->path());
 					}
