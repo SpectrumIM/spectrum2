@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 #include <QtCore>
-#ifdef WITH_QT6
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QtCore5Compat>
 #endif
 #include <QtNetwork>
