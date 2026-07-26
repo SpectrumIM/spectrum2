@@ -25,7 +25,6 @@
 #include <IrcMessage>
 #include <IrcUser>
 #include <IrcChannel>
-#include "backports.h"
 
 #include "ircnetworkplugin.h"
 
