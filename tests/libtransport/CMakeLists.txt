@@ -17,13 +17,21 @@
 
 	file(GLOB HEADERS ../../include/transport/*.h)
 	include_directories(../../spectrum/src/frontends/xmpp/)
+	if(ENABLE_SLACK_FRONTEND)
 	include_directories(../../spectrum/src/frontends/slack/)
+	endif()
 
 	if(CPPUNIT_FOUND)
+		include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 		file(GLOB SRC_TEST *.cpp)
+		if(ENABLE_SLACK_FRONTEND)
+			file(GLOB SRC_TEST_SLACK slack/*.cpp)
+			list(APPEND SRC_TEST ${SRC_TEST_SLACK})
+		endif()
 		file(GLOB SRC_TEST_FRONTEND_XMPP ../../spectrum/src/frontends/xmpp/*.cpp)
-		file(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
-
+		if(ENABLE_SLACK_FRONTEND)
+			file(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
+		endif()
 		add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
 		target_compile_features(libtransport_test PUBLIC cxx_std_11)
 		set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
