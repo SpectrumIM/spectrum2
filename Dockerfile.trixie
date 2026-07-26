@@ -26,7 +26,7 @@ RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
 		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev libopusfile-dev build-essential
-		
+
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
 		cd purple-instagram && \
@@ -48,12 +48,6 @@ RUN echo "---> Install Steam" && \
 RUN echo "---> Install Teams" && \
 		git clone https://github.com/EionRobb/purple-teams.git && \
 		cd purple-teams && \
-		make && \
-		make DESTDIR=/tmp/out install
-
-RUN echo "---> Install Skypeweb" && \
-		git clone https://github.com/EionRobb/skype4pidgin.git && \
-		cd skype4pidgin/skypeweb && \
 		make && \
 		make DESTDIR=/tmp/out install
 
@@ -93,7 +87,6 @@ RUN echo "deb-src [check-valid-until=no] http://snapshot.debian.org/archive/debi
 RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99snapshot
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
-
 
 
 RUN apt-get update -qq

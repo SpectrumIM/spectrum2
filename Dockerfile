@@ -75,7 +75,7 @@ RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		graphicsmagick-imagemagick-compat libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
 		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev libopusfile-dev
-		
+
 RUN echo "---> Installing purple-instagram" && \
 		git clone https://github.com/EionRobb/purple-instagram.git && \
 		cd purple-instagram && \
@@ -102,24 +102,24 @@ RUN echo "---> Install Teams" && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-battlenet" && \
-git clone --recursive https://github.com/EionRobb/purple-battlenet && \
+	git clone --recursive https://github.com/EionRobb/purple-battlenet && \
 		cd purple-battlenet && \
 		make && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-hangouts" && \
-git clone --recursive https://github.com/EionRobb/purple-hangouts && \
+	git clone --recursive https://github.com/EionRobb/purple-hangouts && \
 		cd purple-hangouts && \
 		make && \
 		make DESTDIR=/tmp/out install
 
 RUN echo "---> purple-mattermost" && \
-git clone --recursive https://github.com/EionRobb/purple-mattermost && \
+	git clone --recursive https://github.com/EionRobb/purple-mattermost && \
 		cd purple-mattermost && \
 		make && \
 		make DESTDIR=/tmp/out install
 
-		
+
 FROM debian:bullseye-slim as production
 
 EXPOSE 8080
@@ -143,7 +143,6 @@ RUN echo "---> Installing libpurple plugins" && \
 		purple-discord \
 		purple-facebook \
 		libmarkdown2 \
-		skypeweb \
 		libogg0 libopusfile0 \
 		frotz \
 		/tmp/*.deb \
