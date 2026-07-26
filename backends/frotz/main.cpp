@@ -123,7 +123,7 @@ static void start_dfrotz(dfrotz &p, const std::string &game) {
 	if (pipe(p.readpipe) < 0 || pipe(p.writepipe) < 0) {
 	}
 
-	std::cout << "dfrotz -p " << game << "\n";
+	std::cout << "dfrotz -p -q " << game << "\n";
 
 	if ((p.pid = fork()) < 0) {
 		/* FATAL: cannot fork child */
@@ -135,7 +135,7 @@ static void start_dfrotz(dfrotz &p, const std::string &game) {
 		dup2(CHILD_READ,  0);  close(CHILD_READ);
 		dup2(CHILD_WRITE, 1);  close(CHILD_WRITE);
 
-		execlp("dfrotz", "-p", game.c_str(), NULL);
+		execlp("dfrotz", "-p", "-q", game.c_str(), NULL);
 
 	}
 	else {

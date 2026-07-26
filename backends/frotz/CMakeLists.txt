@@ -1,5 +1,3 @@
-add_subdirectory(dfrotz)
-
 file(GLOB SRC *.c *.cpp)
 
 add_executable(spectrum2_frotz_backend ${SRC})
