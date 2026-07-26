@@ -145,6 +145,7 @@ RUN echo "---> Installing libpurple plugins" && \
 		libmarkdown2 \
 		skypeweb \
 		libogg0 libopusfile0 \
+		frotz \
 		/tmp/*.deb \
 		nodejs \
 		&& rm -rf /var/lib/apt/lists/*
