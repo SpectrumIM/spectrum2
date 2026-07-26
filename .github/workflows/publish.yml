@@ -7,7 +7,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
@@ -21,26 +30,52 @@ jobs:
         tag-semver: |
             {{version}}
         tag-latest: ${{ endsWith(github.ref, github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v4
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
     - name: Login to the container registry
       if: github.event_name != 'pull_request'
-      uses: docker/login-action@v4 
+      uses: docker/login-action@v4
       with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and push
       uses: docker/build-push-action@v7
       with:
         context: .
         file: ./Dockerfile
-        platforms: linux/amd64,linux/arm64        
+        platforms: ${{ matrix.platform }}
         target: production
-        cache-from: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache
-        cache-to: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache
+        cache-from: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache-${{ matrix.arch }}
+        cache-to: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache-${{ matrix.arch }}
         push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.docker_meta.outputs.tags }}
+        tags: ghcr.io/spectrumim/spectrum:tmp-${{ github.sha }}-${{ matrix.arch }}
         labels: ${{ steps.docker_meta.outputs.labels }}
+
+  merge:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+    - name: Docker meta
+      id: docker_meta
+      uses: crazy-max/ghaction-docker-meta@v6
+      with:
+        images: ghcr.io/spectrumim/spectrum
+        tag-semver: |
+            {{version}}
+        tag-latest: ${{ endsWith(github.ref, github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/') }}
+    - name: Login to the container registry
+      uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create and push multi-arch manifests
+      run: |
+        for tag in ${{ steps.docker_meta.outputs.tags }}; do
+          docker buildx imagetools create -t "$tag" \
+            ghcr.io/spectrumim/spectrum:tmp-${{ github.sha }}-amd64 \
+            ghcr.io/spectrumim/spectrum:tmp-${{ github.sha }}-arm64
+        done
