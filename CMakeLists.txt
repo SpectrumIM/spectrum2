@@ -182,6 +182,10 @@ endif()
 
 add_definitions(-DSUPPORT_LEGACY_CAPS)
 
+if(ENABLE_SLACK_FRONTEND)
+	add_definitions(-DENABLE_SLACK_FRONTEND)
+endif()
+
 if(ENABLE_IRC)
 	find_package(Communi)
 	find_package(Qt5 COMPONENTS Core Network)
