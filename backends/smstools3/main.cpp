@@ -35,14 +35,14 @@ SMSNetworkPlugin * np = NULL;
 
 class SMSNetworkPlugin : public BoostNetworkPlugin {
 	public:
-		std::shared_ptr<boost::asio::deadline_timer> m_timer;
+		std::shared_ptr<boost::asio::system_timer> m_timer;
 		// Maps phone number -> XMPP user JID for SMS routing
 		std::map<std::string, std::string> m_numberToUser;
 
 		SMSNetworkPlugin(Config *config, const std::string &host, int port)
 			: BoostNetworkPlugin(config, host, port) {
 
-			m_timer = std::make_shared<boost::asio::deadline_timer>(io_context, boost::posix_time::seconds(5));
+			m_timer = std::make_shared<boost::asio::system_timer>(io_context, std::chrono::seconds(5));
 			m_timer->async_wait(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
 		}
 
@@ -105,7 +105,7 @@ class SMSNetworkPlugin : public BoostNetworkPlugin {
 				}
 			}
 
-			m_timer->expires_from_now(boost::posix_time::seconds(5));
+			m_timer->expires_after(std::chrono::seconds(5));
 			m_timer->async_wait(boost::bind(&SMSNetworkPlugin::handleSMSDir, this));
 		}
 
