@@ -126,6 +126,11 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 		footer.close();
 	}
 
+	m_storageCfg = new Config();
+	m_storageCfg->load(config_file);
+
+	Logging::initManagerLogging(m_storageCfg);
+
 	std::ofstream output;
 	output.open(std::string(CONFIG_STRING(config, "service.data_dir") + "/js/config.js").c_str(), std::ios::out);
 	if (output.fail()) {
@@ -133,11 +138,6 @@ Server::Server(ManagerConfig *config, const std::string &config_file) {
 	}
 	output << "var BaseLocation = \"" << CONFIG_STRING(m_config, "service.base_location") << "\";\n";
 	output.close();
-
-	m_storageCfg = new Config();
-	m_storageCfg->load(config_file);
-	
-	Logging::initManagerLogging(m_storageCfg);
 	std::string error;
 	m_storage = StorageBackend::createBackend(m_storageCfg, error);
 	if (m_storage == NULL) {
