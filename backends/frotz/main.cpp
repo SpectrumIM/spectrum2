@@ -219,7 +219,7 @@ class FrotzNetworkPlugin : public BoostNetworkPlugin {
 			path p(".");
 			directory_iterator end_itr;
 			for (directory_iterator itr(p); itr != end_itr; ++itr) {
-				if (extension(itr->path()) == ".z5") {
+				if (itr->path().extension().string() == ".z5") {
 #if BOOST_FILESYSTEM_VERSION == 3
 					games.push_back(itr->path().filename().string());
 #else
