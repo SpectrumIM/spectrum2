@@ -1,8 +1,3 @@
-find_program(FROTZ_EXECUTABLE dfrotz)
-if(NOT FROTZ_EXECUTABLE)
-	message(FATAL_ERROR "dfrotz not found — install the frotz package")
-endif()
-
 file(GLOB SRC *.c *.cpp)
 
 add_executable(spectrum2_frotz_backend ${SRC})
