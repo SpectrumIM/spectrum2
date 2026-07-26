@@ -32,7 +32,7 @@
 
 namespace Transport {
 
-DEFINE_LOGGER(logger, "WebSocketClient");
+DEFINE_LOGGER(wsLogger, "WebSocketClient");
 
 WebSocketClient::WebSocketClient(Component *component, const std::string &user) {
 	m_component = component;
@@ -58,7 +58,7 @@ WebSocketClient::~WebSocketClient() {
 }
 
 void WebSocketClient::connectServer() {
-	LOG4CXX_INFO(logger, m_user << ": Starting DNS query for " << m_host << " " << m_path);
+	LOG4CXX_INFO(wsLogger, m_user << ": Starting DNS query for " << m_host << " " << m_path);
 
 	m_upgraded = false;
 	m_buffer.clear();
@@ -120,7 +120,7 @@ void WebSocketClient::write(const std::string &data) {
 			+ payload));
 	}
 
-	LOG4CXX_INFO(logger, m_user << ": > " << data);
+	LOG4CXX_INFO(wsLogger, m_user << ": > " << data);
 }
 
 void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
@@ -159,7 +159,7 @@ void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 			// This seems to be Slack bug... sometimes we receive 0x89 followed by 0x81
 			// For now, in that case we will just ignore the 0x89 and skip it...
 			if (opcode == 9 && mask && size7 == 1) {
-				LOG4CXX_WARN(logger, m_user << ": Applying Slack workaround because of partial data received from server");
+				LOG4CXX_WARN(wsLogger, m_user << ": Applying Slack workaround because of partial data received from server");
 				m_buffer.erase(0, 1);
 				continue;
 			}
@@ -167,7 +167,7 @@ void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 			unsigned int size = (size16 == 0 ? size7 : size16);
 			if (m_buffer.size() >= size + header_size) {
 				std::string payload = m_buffer.substr(header_size, size);
-				LOG4CXX_INFO(logger, m_user << ": < " << payload);
+				LOG4CXX_INFO(wsLogger, m_user << ": < " << payload);
 				onPayloadReceived(payload);
 				m_buffer.erase(0, size + header_size);
 				
@@ -187,12 +187,12 @@ void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 
 void WebSocketClient::handleConnected(bool error) {
 	if (error) {
-		LOG4CXX_ERROR(logger, "Connection to " << m_host << " failed. Will reconnect in 1 second.");
+		LOG4CXX_ERROR(wsLogger, "Connection to " << m_host << " failed. Will reconnect in 1 second.");
 		m_reconnectTimer->start();
 		return;
 	}
 
-	LOG4CXX_INFO(logger, m_user << ": Connected to " << m_host);
+	LOG4CXX_INFO(wsLogger, m_user << ": Connected to " << m_host);
 
 	std::string req = "";
 	req += "GET " + m_path + " HTTP/1.1\r\n";
@@ -211,20 +211,20 @@ void WebSocketClient::handleDisconnected(const boost::optional<Swift::Connection
 		return;
 	}
 
-	LOG4CXX_ERROR(logger, m_user << ": Disconnected from " << m_host << ". Will reconnect in 1 second.");
+	LOG4CXX_ERROR(wsLogger, m_user << ": Disconnected from " << m_host << ". Will reconnect in 1 second.");
 	onWebSocketDisconnected(error);
 	m_reconnectTimer->start();
 }
 
 void WebSocketClient::handleDNSResult(const std::vector<Swift::HostAddress> &addrs, boost::optional<Swift::DomainNameResolveError> error) {
 	if (error) {
-		LOG4CXX_ERROR(logger, m_user << ": DNS resolving error. Will try again in 1 second.");
+		LOG4CXX_ERROR(wsLogger, m_user << ": DNS resolving error. Will try again in 1 second.");
 		m_reconnectTimer->start();
 		return;
 	}
 
 	if (addrs.empty()) {
-		LOG4CXX_ERROR(logger, m_user << ": DNS name cannot be resolved. Will try again in 1 second.");
+		LOG4CXX_ERROR(wsLogger, m_user << ": DNS name cannot be resolved. Will try again in 1 second.");
 		m_reconnectTimer->start();
 		return;
 	}

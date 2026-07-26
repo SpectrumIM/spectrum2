@@ -41,13 +41,6 @@ class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		result = true;
 	}
 
-	void GET() {
-		Json::Value resp;
-		HTTPRequest *req = new HTTPRequest(tp, HTTPRequest::Get, "http://spectrum.im/params.json", boost::bind(&HTTPRequestTest::handleResult, this, _1, _2, _3, _4));
-		req->execute(resp);
-		delete req;
-	}
-
 	void GETThreadPool() {
 		HTTPRequest *req = new HTTPRequest(tp, HTTPRequest::Get, "http://spectrum.im/params.json", boost::bind(&HTTPRequestTest::handleResult, this, _1, _2, _3, _4));
 		req->execute();
@@ -66,4 +59,3 @@ class HTTPRequestTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION (HTTPRequestTest);
-

@@ -21,6 +21,14 @@ Replaces: libtransport2.0-git
 Description: XMPP transport
  Spectrum 2 XMPP transport - development snapshots
 
+Package: libtransport-protocol2.0
+Architecture: any
+Section: net
+Priority: optional
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Spectrum2 transport protocol library
+ Spectrum 2 XMPP transport - wire protocol and shared utilities
+
 Package: libtransport-plugin2.0
 Architecture: any
 Section: net
@@ -79,7 +87,7 @@ Package: spectrum2-backend-libpurple
 Architecture: any
 Section: net
 Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Replaces: spectrum2-backend-libpurple-git
 Description: Spectrum2 libpurple backend
  Spectrum2 backend using libpurple
@@ -97,7 +105,7 @@ Package: spectrum2-backend-frotz
 Architecture: any
 Section: net
 Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), frotz, ${shlibs:Depends}, ${misc:Depends}
+Depends: libtransport-plugin2.0 (= ${binary:Version}), frotz, ${shlibs:Depends}, ${misc:Depends}
 Replaces: spectrum2-backend-frotz-git
 Description: Spectrum2 frotz backend
  Spectrum2 backend using frotz
@@ -106,7 +114,7 @@ Package: spectrum2-backend-swiften
 Architecture: any
 Section: net
 Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Replaces: spectrum2-backend-swiften-git
 Description: Spectrum2 Swiften backend
  Spectrum2 backend using Swiften
@@ -133,7 +141,7 @@ Package: spectrum2-backend-smstools3
 Architecture: any
 Section: net
 Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Replaces: spectrum2-backend-smstools3-git
 Description: Spectrum2 backend for sending SMS
  Spectrum2 backend using smstools3
@@ -151,7 +159,7 @@ Package: spectrum2-backend-libcommuni
 Architecture: any
 Section: net
 Priority: optional
-Depends: libtransport2.0 (= ${binary:Version}), libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libtransport-plugin2.0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Description: Spectrum2 backend to connect IRC using libcommuni
  Spectrum2 backend using libcommuni
 

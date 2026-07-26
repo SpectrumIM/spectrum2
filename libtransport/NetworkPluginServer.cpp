@@ -74,7 +74,7 @@ namespace Transport {
 static unsigned long backend_id;
 static unsigned long bytestream_id;
 
-DEFINE_LOGGER(logger, "NetworkPluginServer");
+DEFINE_LOGGER(networkPluginServerLogger, "NetworkPluginServer");
 
 static NetworkPluginServer *_server;
 
@@ -147,7 +147,7 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 	if (cmdlineArgs)
 		fullCmdLine << " " << cmdlineArgs;
 
-	LOG4CXX_INFO(logger, "Starting new backend " << fullCmdLine.str());
+	LOG4CXX_INFO(networkPluginServerLogger, "Starting new backend " << fullCmdLine.str());
 
 	// We must provide a non-const buffer to CreateProcess below
 	std::vector<wchar_t> rawCommandLineArgs( fullCmdLine.str().size() + 1 );
@@ -172,14 +172,14 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 		&pi
 		)
 	)  {
-		LOG4CXX_ERROR(logger, "Could not start process");
+		LOG4CXX_ERROR(networkPluginServerLogger, "Could not start process");
 	}
 
 	return 0;
 #else
 	// Add host and port.
 	finalExePath += std::string(" --host ") + host + " --port " + port + " --service.backend_id=" + log_id + " " + cmdlineArgs;
-	LOG4CXX_INFO(logger, "Starting new backend " << finalExePath);
+	LOG4CXX_INFO(networkPluginServerLogger, "Starting new backend " << finalExePath);
 
 	// Create array of char * from string using -lpopt library
 	char *p = (char *) malloc(finalExePath.size() + 1);
@@ -222,7 +222,7 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 		}
 		exit(0);
 	} else if ( pid < 0 ) {
-		LOG4CXX_ERROR(logger, "Fork failed");
+		LOG4CXX_ERROR(networkPluginServerLogger, "Fork failed");
 	}
 	free(p);
 
@@ -241,11 +241,11 @@ static void SigCatcher(int n) {
 			_server->handlePIDTerminated((unsigned long)result);
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
-// 					LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status));
+// 					LOG4CXX_ERROR(networkPluginServerLogger, "Backend can not be started, exit_code=" << WEXITSTATUS(status));
 				}
 			}
 			else {
-// 				LOG4CXX_ERROR(logger, "Backend can not be started");
+// 				LOG4CXX_ERROR(networkPluginServerLogger, "Backend can not be started");
 			}
 		}
 	}
@@ -329,7 +329,7 @@ NetworkPluginServer::~NetworkPluginServer() {
 #endif
 
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
-		LOG4CXX_INFO(logger, "Stopping backend " << *it);
+		LOG4CXX_INFO(networkPluginServerLogger, "Stopping backend " << *it);
 		std::string message;
 		pbnetwork::WrapperMessage wrap;
 		wrap.set_type(pbnetwork::WrapperMessage_Type_TYPE_EXIT);
@@ -352,12 +352,12 @@ NetworkPluginServer::~NetworkPluginServer() {
 void NetworkPluginServer::start() {
 	m_server->start();
 
-	LOG4CXX_INFO(logger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
+	LOG4CXX_INFO(networkPluginServerLogger, "Listening on host " << CONFIG_STRING(m_config, "service.backend_host") << " port " << CONFIG_STRING(m_config, "service.backend_port"));
 
 	while (true) {
 		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), "1", m_config->getCommandLineArgs().c_str());
-		LOG4CXX_INFO(logger, "Tried to spawn first backend with pid " << pid);
-		LOG4CXX_INFO(logger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
+		LOG4CXX_INFO(networkPluginServerLogger, "Tried to spawn first backend with pid " << pid);
+		LOG4CXX_INFO(networkPluginServerLogger, "Backend should now connect to Spectrum2 instance. Spectrum2 won't accept any connection before backend connects");
 
 #ifndef _WIN32
 		// wait if the backend process will still be alive after 1 second
@@ -369,21 +369,21 @@ void NetworkPluginServer::start() {
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) != 0) {
 					if (status == 254) {
-						LOG4CXX_ERROR(logger, "Backend can not be started, because it needs database to store data, but the database backend is not configured.");
+						LOG4CXX_ERROR(networkPluginServerLogger, "Backend can not be started, because it needs database to store data, but the database backend is not configured.");
 					}
 					else {
-						LOG4CXX_ERROR(logger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
+						LOG4CXX_ERROR(networkPluginServerLogger, "Backend can not be started, exit_code=" << WEXITSTATUS(status) << ", possible error: " << strerror(WEXITSTATUS(status)));
 						if (WEXITSTATUS(status) == ENOENT) {
-							LOG4CXX_ERROR(logger, "This usually means the path to backend executable defined in config file as '[service] backend=\"...\"' is wrong or the executable does not exists.");
+							LOG4CXX_ERROR(networkPluginServerLogger, "This usually means the path to backend executable defined in config file as '[service] backend=\"...\"' is wrong or the executable does not exists.");
 						}
 						
 					}
-					LOG4CXX_ERROR(logger, "Check backend log for more details");
+					LOG4CXX_ERROR(networkPluginServerLogger, "Check backend log for more details");
 					continue;
 				}
 			}
 			else {
-				LOG4CXX_ERROR(logger, "Backend can not be started");
+				LOG4CXX_ERROR(networkPluginServerLogger, "Backend can not be started");
 				continue;
 			}
 		}
@@ -418,7 +418,7 @@ void NetworkPluginServer::handleNewClientConnection(std::shared_ptr<Swift::Conne
 
 	m_startingBackend = false;
 
-	LOG4CXX_INFO(logger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
+	LOG4CXX_INFO(networkPluginServerLogger, "New" + (client->longRun ? std::string(" long-running") : "") +  " backend " << client << " connected. Current backend count=" << (m_clients.size() + 1));
 
 	m_clients.push_front(client);
 
@@ -433,7 +433,7 @@ void NetworkPluginServer::handleNewClientConnection(std::shared_ptr<Swift::Conne
 }
 
 void NetworkPluginServer::handleSessionFinished(Backend *c) {
-	LOG4CXX_INFO(logger, "Backend " << c << " (ID=" << c->id << ") disconnected. Current backend count=" << (m_clients.size() - 1));
+	LOG4CXX_INFO(networkPluginServerLogger, "Backend " << c << " (ID=" << c->id << ") disconnected. Current backend count=" << (m_clients.size() - 1));
 
 	// This backend will do, so we can't reconnect users to it in User::handleDisconnected call
 	c->willDie = true;
@@ -445,7 +445,7 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 	}
 
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
-		LOG4CXX_ERROR(logger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getJID().toString());
+		LOG4CXX_ERROR(networkPluginServerLogger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getJID().toString());
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
@@ -475,7 +475,7 @@ void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 
 	User *user = m_userManager->getUser(payload.user());
 	if (!user) {
-		LOG4CXX_ERROR(logger, "Connected payload received for unknown user " << payload.user());
+		LOG4CXX_ERROR(networkPluginServerLogger, "Connected payload received for unknown user " << payload.user());
 		return;
 	}
 
@@ -661,13 +661,13 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 
 	User *user = m_userManager->getUser(payload.username());
 	if (!user) {
-		LOG4CXX_ERROR(logger, "RoomChangePayload for unknown user " << user);
+		LOG4CXX_ERROR(networkPluginServerLogger, "RoomChangePayload for unknown user " << user);
 		return;
 	}
 
 	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.room());
 	if (!conv) {
-		LOG4CXX_ERROR(logger, "RoomChangePayload for unknown conversation " << payload.room());
+		LOG4CXX_ERROR(networkPluginServerLogger, "RoomChangePayload for unknown conversation " << payload.room());
 		return;
 	}
 
@@ -676,16 +676,16 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool subject) {
 	pbnetwork::ConversationMessage payload;
-	LOG4CXX_TRACE(logger, "handleConvMessagePayload");
+	LOG4CXX_TRACE(networkPluginServerLogger, "handleConvMessagePayload");
 
 	if (payload.ParseFromString(data) == false) {
-		LOG4CXX_ERROR(logger, "handleConvMessagePayload: cannot parse payload");
+		LOG4CXX_ERROR(networkPluginServerLogger, "handleConvMessagePayload: cannot parse payload");
 		return;
 	}
 
 	User *user = m_userManager->getUser(payload.username());
 	if (!user) {
-		LOG4CXX_ERROR(logger, "handleConvMessagePayload: unknown username " << payload.username());
+		LOG4CXX_ERROR(networkPluginServerLogger, "handleConvMessagePayload: unknown username " << payload.username());
 		return;
 	}
 
@@ -697,7 +697,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	// We can't create Conversation for payload with nickname, because this means the message is from room,
 	// but this user is not in any room, so it's OK to just reject this message
 	if (!conv && !payload.nickname().empty()) {
-		LOG4CXX_WARN(logger, "handleConvMessagePayload: No conversation with name " << payload.buddyname());
+		LOG4CXX_WARN(networkPluginServerLogger, "handleConvMessagePayload: No conversation with name " << payload.buddyname());
 		return;
 	}
 
@@ -741,7 +741,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	// Split the message if configured, or just preprocess
-	LOG4CXX_TRACE(logger, "handleConvMessagePayload: wrapping media");
+	LOG4CXX_TRACE(networkPluginServerLogger, "handleConvMessagePayload: wrapping media");
 	typedef std::vector<std::shared_ptr<Swift::Message> > MsgList;
 	MsgList msgs = wrapIncomingMedia(msg);
 
@@ -779,7 +779,7 @@ void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
 		return;
 
 	if (payload.id().empty()) {
-		LOG4CXX_WARN(logger, "Received message ack with empty ID, not forwarding to XMPP.");
+		LOG4CXX_WARN(networkPluginServerLogger, "Received message ack with empty ID, not forwarding to XMPP.");
 		return;
 	}
 
@@ -847,7 +847,7 @@ void NetworkPluginServer::connectWaitingUsers() {
 		User *u = m_waitingUsers.front();
 		m_waitingUsers.pop_front();
 
-		LOG4CXX_INFO(logger, "Associating " << u->getJID().toString() << " with this backend");
+		LOG4CXX_INFO(networkPluginServerLogger, "Associating " << u->getJID().toString() << " with this backend");
 
 		// associate backend with user
 		handleUserCreated(u);
@@ -923,7 +923,7 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 	if (!payload.user().empty()) {
 		User *user = m_userManager->getUser(payload.user());
 		if (!user) {
-			LOG4CXX_ERROR(logger, "Room list payload received for unknown user " << payload.user());
+			LOG4CXX_ERROR(networkPluginServerLogger, "Room list payload received for unknown user " << payload.user());
 			return;
 		}
 
@@ -1215,7 +1215,7 @@ void NetworkPluginServer::send(std::shared_ptr<Swift::Connection> &c, const std:
 }
 
 void NetworkPluginServer::pingTimeout() {
-	LOG4CXX_INFO(logger, "Sending PING to backends");
+	LOG4CXX_INFO(networkPluginServerLogger, "Sending PING to backends");
 	// TODO: move to separate timer, those 2 loops could be expensive
 	// Some users are connected for weeks and they are blocking backend to be destroyed and its memory
 	// to be freed. We are finding users who are inactive for more than "idle_reconnect_time" seconds and
@@ -1240,7 +1240,7 @@ void NetworkPluginServer::pingTimeout() {
 
 		// Move inactive users to long-running backend.
 		BOOST_FOREACH(User *u, usersToMove) {
-			LOG4CXX_INFO(logger, "Moving user " << u->getJID().toString() << " to long-running backend");
+			LOG4CXX_INFO(networkPluginServerLogger, "Moving user " << u->getJID().toString() << " to long-running backend");
 			if (!moveToLongRunBackend(u))
 				break;
 		}
@@ -1262,11 +1262,11 @@ void NetworkPluginServer::pingTimeout() {
 				sendPing((*it));
 			}
 			else {
-				LOG4CXX_INFO(logger, "Tried to send PING to backend without pongReceived= " << (*it)->pongReceived << ": (ID=" << (*it)->id << ")");
+				LOG4CXX_INFO(networkPluginServerLogger, "Tried to send PING to backend without pongReceived= " << (*it)->pongReceived << ": (ID=" << (*it)->id << ")");
 			}
 		}
 		else {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
+			LOG4CXX_INFO(networkPluginServerLogger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). PING response not received.");
 			toRemove.push_back(*it);
 
 #ifndef WIN32
@@ -1282,7 +1282,7 @@ void NetworkPluginServer::pingTimeout() {
 		}
 
 		if ((*it)->users.size() == 0) {
-			LOG4CXX_INFO(logger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). There are no users.");
+			LOG4CXX_INFO(networkPluginServerLogger, "Disconnecting backend " << (*it) << " (ID=" << (*it)->id << "). There are no users.");
 			toRemove.push_back(*it);
 		}
 	}
@@ -1297,7 +1297,7 @@ void NetworkPluginServer::pingTimeout() {
 void NetworkPluginServer::collectBackend() {
 	// Stop accepting new users to backend with the biggest memory usage. This prevents backends
 	// which are leaking to eat whole memory by connectin new users to legacy network.
-	LOG4CXX_INFO(logger, "Collect backend called, finding backend which will be set to die");
+	LOG4CXX_INFO(networkPluginServerLogger, "Collect backend called, finding backend which will be set to die");
 	unsigned long max = 0;
 	Backend *backend = NULL;
 	for (std::list<Backend *>::const_iterator it = m_clients.begin(); it != m_clients.end(); it++) {
@@ -1311,7 +1311,7 @@ void NetworkPluginServer::collectBackend() {
 		if (m_collectTimer) {
 			m_collectTimer->start();
 		}
-		LOG4CXX_INFO(logger, "Backend " << backend << " (ID=" << backend->id << ") is set to die");
+		LOG4CXX_INFO(networkPluginServerLogger, "Backend " << backend << " (ID=" << backend->id << ") is set to die");
 		backend->acceptUsers = false;
 	}
 }
@@ -1320,13 +1320,13 @@ bool NetworkPluginServer::moveToLongRunBackend(User *user) {
 	// Check if user has already some backend
 	Backend *old = (Backend *) user->getData();
 	if (!old) {
-		LOG4CXX_INFO(logger, "User " << user->getJID().toString() << " does not have old backend. Not moving.");
+		LOG4CXX_INFO(networkPluginServerLogger, "User " << user->getJID().toString() << " does not have old backend. Not moving.");
 		return true;
 	}
 
 	// if he's already on long run, do nothing
 	if (old->longRun) {
-		LOG4CXX_INFO(logger, "User " << user->getJID().toString() << " is already on long-running backend. Not moving.");
+		LOG4CXX_INFO(networkPluginServerLogger, "User " << user->getJID().toString() << " is already on long-running backend. Not moving.");
 		return true;
 	}
 
@@ -1334,7 +1334,7 @@ bool NetworkPluginServer::moveToLongRunBackend(User *user) {
 	// for its connection
 	Backend *backend = getFreeClient(false, true);
 	if (!backend) {
-		LOG4CXX_INFO(logger, "No free long-running backend for user " << user->getJID().toString() << ". Will try later");
+		LOG4CXX_INFO(networkPluginServerLogger, "No free long-running backend for user " << user->getJID().toString() << ". Will try later");
 		return false;
 	}
 
@@ -1360,7 +1360,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 
 	// Add user to queue if there's no free backend to handle him so far.
 	if (!c) {
-		LOG4CXX_INFO(logger, "There is no backend to handle user " << user->getJID().toString() << ". Adding him to queue.");
+		LOG4CXX_INFO(networkPluginServerLogger, "There is no backend to handle user " << user->getJID().toString() << ". Adding him to queue.");
 		m_waitingUsers.push_back(user);
 		return;
 	}
@@ -1447,7 +1447,7 @@ void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence:
 
 	bool isInvisible = presence->getPayload<Swift::InvisiblePayload>() != NULL;
 	if (isInvisible) {
-		LOG4CXX_INFO(logger, "This presence is invisible");
+		LOG4CXX_INFO(networkPluginServerLogger, "This presence is invisible");
 		status.set_status((pbnetwork::STATUS_INVISIBLE));
 	}
 	else {
@@ -1542,7 +1542,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	// If backend should handle only one user, it must not accept another one before 
 	// we kill it, so set up willDie to true
 	if (c->users.size() == 0 && CONFIG_INT(m_config, "service.users_per_backend") == 1) {
-		LOG4CXX_INFO(logger, "Backend " << c->id << " will die, because the last user disconnected");
+		LOG4CXX_INFO(networkPluginServerLogger, "Backend " << c->id << " will die, because the last user disconnected");
 		c->willDie = true;
 	}
 }
@@ -1736,7 +1736,7 @@ Swift::Message::ref copySwiftMessage(const Swift::Message* msg, const std::strin
     //Add new body and XHTML tags
     this_msg->setBody(body);
     this_msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(xhtml));
-    LOG4CXX_TRACE(logger, "Adding partial message: '" << xhtml << "', '" << body << "'");
+    LOG4CXX_TRACE(networkPluginServerLogger, "Adding partial message: '" << xhtml << "', '" << body << "'");
     return this_msg;
 }
 
@@ -1795,9 +1795,9 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
         // This is not required by XEP and we lose parts of plaintext (e.g. captions).
         oobMode = OobExclusive;
 
-    LOG4CXX_TRACE(logger, "wrapIncomingMedia: mode=" << (int) oobMode);
-    LOG4CXX_TRACE(logger, "xhtml = " << xhtml);
-    LOG4CXX_TRACE(logger, "body = " << body);
+    LOG4CXX_TRACE(networkPluginServerLogger, "wrapIncomingMedia: mode=" << (int) oobMode);
+    LOG4CXX_TRACE(networkPluginServerLogger, "xhtml = " << xhtml);
+    LOG4CXX_TRACE(networkPluginServerLogger, "body = " << body);
 
 
     //Find all <img...> entries
@@ -1818,7 +1818,7 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
         const std::string& image_url = match[1];
         if (firstUrl.empty())
             firstUrl = image_url;
-        LOG4CXX_TRACE(logger, "match: image_tag=" << image_tag << ", image_url="<< image_url);
+        LOG4CXX_TRACE(networkPluginServerLogger, "match: image_tag=" << image_tag << ", image_url="<< image_url);
 
         //Process the part before the match
         if ((oobMode == OobSplit) && (match[0].first != xhtml_pos)) {
@@ -1869,13 +1869,13 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
             result.push_back(copySwiftMessage(msg.get(), xhtml_prev, body_prev));
     }
 
-    LOG4CXX_DEBUG(logger, "wrapIncomingMedia: matchCount==" << matchCount);
+    LOG4CXX_DEBUG(networkPluginServerLogger, "wrapIncomingMedia: matchCount==" << matchCount);
 
     if (oobMode != OobSplit)
         result.push_back(msg); //Push the non-split message only
 
     if (matchCount==0) {
-        LOG4CXX_WARN(logger, "xhtml seems to contain an image, but doesn't match: " + xhtml);
+        LOG4CXX_WARN(networkPluginServerLogger, "xhtml seems to contain an image, but doesn't match: " + xhtml);
     } else {
         // Replace the plaintext.
         // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
@@ -1970,7 +1970,7 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 
 void NetworkPluginServer::handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> v) {
 	if (!v) {
-		LOG4CXX_INFO(logger, user->getJID().toString() << ": Received empty VCard");
+		LOG4CXX_INFO(networkPluginServerLogger, user->getJID().toString() << ": Received empty VCard");
 		return;
 	}
 
@@ -2019,14 +2019,14 @@ void NetworkPluginServer::sendPing(Backend *c) {
 	wrap.SerializeToString(&message);
 
 	if (c->connection) {
-		LOG4CXX_INFO(logger, "PING to " << c << " (ID=" << c->id << ")");
+		LOG4CXX_INFO(networkPluginServerLogger, "PING to " << c << " (ID=" << c->id << ")");
 		send(c->connection, message);
 		c->pongReceived = false;
 	}
 	else {
-		LOG4CXX_WARN(logger, "Tried to send PING to backend without connection: " << c << " (ID=" << c->id << ")");
+		LOG4CXX_WARN(networkPluginServerLogger, "Tried to send PING to backend without connection: " << c << " (ID=" << c->id << ")");
 	}
-// 	LOG4CXX_INFO(logger, "PING to " << c);
+// 	LOG4CXX_INFO(networkPluginServerLogger, "PING to " << c);
 }
 
 void NetworkPluginServer::sendAPIVersion(Backend *c) {
@@ -2040,7 +2040,7 @@ void NetworkPluginServer::sendAPIVersion(Backend *c) {
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_API_VERSION);
 
 	if (c->connection) {
-		LOG4CXX_INFO(logger, "API Version to " << c << " (ID=" << c->id << ")");
+		LOG4CXX_INFO(networkPluginServerLogger, "API Version to " << c << " (ID=" << c->id << ")");
 		send(c->connection, message);
 	}
 }
@@ -2106,7 +2106,7 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 		m_loginTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer((diff - (now - m_lastLogin)) * 1000);
 		m_loginTimer->onTick.connect(boost::bind(&NetworkPluginServer::loginDelayFinished, this));
 		m_loginTimer->start();
-		LOG4CXX_INFO(logger, "Postponing login because of service.login_delay setting");
+		LOG4CXX_INFO(networkPluginServerLogger, "Postponing login because of service.login_delay setting");
 		return NULL;
 	}
 

@@ -91,6 +91,8 @@ if(WIN32)
 	link_directories("$ENV{CMAKE_PREFIX_PATH}/lib")
 endif(WIN32)
 
+find_package( Threads )
+
 set(Boost_FIND_QUIETLY ON)
 find_package(Boost COMPONENTS program_options date_time system filesystem regex thread locale REQUIRED)
 
@@ -387,6 +389,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 include_directories(${OPENSSL_INCLUDE_DIR})
 endif()
 
+add_subdirectory(protocol)
 add_subdirectory(libtransport)
 add_subdirectory(plugin)
 add_subdirectory(include)

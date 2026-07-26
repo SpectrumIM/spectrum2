@@ -9,14 +9,18 @@
  */
 
 #include "transport/Config.h"
-#include "transport/NetworkPlugin.h"
-#include <Swiften/Swiften.h>
+#include "transport/BoostNetworkPlugin.h"
+#include <memory>
+
+#include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 #include "unistd.h"
 #include "signal.h"
 #include "sys/wait.h"
 #include "sys/signal.h"
-Swift::SimpleEventLoop *loop_;
+
+using namespace boost::asio::ip;
 
 using namespace boost::program_options;
 using namespace Transport;
@@ -144,29 +148,10 @@ static void start_dfrotz(dfrotz &p, const std::string &game) {
 	}
 }
 
-class FrotzNetworkPlugin : public NetworkPlugin {
+class FrotzNetworkPlugin : public BoostNetworkPlugin {
 	public:
-		Swift::BoostNetworkFactories *m_factories;
-		Swift::BoostIOServiceThread m_boostIOServiceThread;
-		std::shared_ptr<Swift::Connection> m_conn;
 
-		FrotzNetworkPlugin(Config *config, Swift::SimpleEventLoop *loop, const std::string &host, int port) : NetworkPlugin() {
-			this->config = config;
-			m_factories = new Swift::BoostNetworkFactories(loop);
-			m_conn = m_factories->getConnectionFactory()->createConnection();
-			m_conn->onDataRead.connect(boost::bind(&FrotzNetworkPlugin::_handleDataRead, this, _1));
-			m_conn->connect(Swift::HostAddressPort(*(Swift::HostAddress::fromString(host)), port));
-// 			m_conn->onConnectFinished.connect(boost::bind(&FrotzNetworkPlugin::_handleConnected, this, _1));
-// 			m_conn->onDisconnected.connect(boost::bind(&FrotzNetworkPlugin::handleDisconnected, this));
-		}
-
-		void sendData(const std::string &string) {
-			m_conn->write(Swift::createSafeByteArray(string));
-		}
-
-		void _handleDataRead(std::shared_ptr<Swift::SafeByteArray> data) {
-			std::string d(data->begin(), data->end());
-			handleDataRead(d);
+		FrotzNetworkPlugin(Config *config, const std::string &host, int port) : BoostNetworkPlugin(config, host, port) {
 		}
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
@@ -308,9 +293,6 @@ class FrotzNetworkPlugin : public NetworkPlugin {
 
 		std::map<std::string, dfrotz> games;
 		std::string first_msg;
-	private:
-		
-		Config *config;
 };
 
 static void spectrum_sigchld_handler(int sig)
@@ -346,10 +328,8 @@ int main (int argc, char* argv[]) {
 		return 1;
 	}
 
-	Swift::SimpleEventLoop eventLoop;
-	loop_ = &eventLoop;
-	np = new FrotzNetworkPlugin(cfg, &eventLoop, host, port);
-	loop_->run();
+	np = new FrotzNetworkPlugin(cfg, host, port);
+	np->run();
 
 	delete cfg;
 

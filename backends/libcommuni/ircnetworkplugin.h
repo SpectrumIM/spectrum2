@@ -26,14 +26,13 @@
 #include <QtNetwork>
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
-#include "Swiften/EventLoop/Qt/QtEventLoop.h"
 #endif
 
 class IRCNetworkPlugin : public QObject, public NetworkPlugin {
 	Q_OBJECT
 
 	public:
-		IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port);
+		IRCNetworkPlugin(Config *config, const std::string &host, int port);
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings);
 

@@ -1,11 +1,10 @@
 #include "transport/StorageBackend.h"
 #include "transport/Config.h"
+#include "transport/Util.h"
 
 #include "transport/SQLite3Backend.h"
 #include "transport/MySQLBackend.h"
 #include "transport/PQXXBackend.h"
-#include "Swiften/StringCodecs/Base64.h"
-
 
 namespace Transport {
 
@@ -59,12 +58,12 @@ std::string StorageBackend::encryptPassword(const std::string &password, const s
 		encrypted[i] = c;
 	}
 
-	encrypted = Swift::Base64::encode(Swift::createByteArray(encrypted));
+	encrypted = Util::base64Encode(encrypted);
 	return encrypted;
 }
 
 std::string StorageBackend::decryptPassword(std::string &encrypted, const std::string &key) {
-	encrypted = Swift::byteArrayToString(Swift::Base64::decode(encrypted));
+	encrypted = Util::base64Decode(encrypted);
 	std::string password;
 	password.resize(encrypted.size());
 	for (unsigned i = 0; i < encrypted.size(); i++) {

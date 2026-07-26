@@ -118,12 +118,12 @@ jobs:
         cmake -G "Visual Studio 17 2022" -A Win32 -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_IRC=OFF -DENABLE_FROTZ=OFF -DENABLE_PURPLE=OFF -DENABLE_MYSQL=OFF -DENABLE_PQXX=OFF -DENABLE_SLACK_FRONTEND=ON -DCMAKE_INSTALL_PREFIX=dist -DCMAKE_CXX_STANDARD=17 .
       shell: cmd
     - name: Build solution
-      run:  msbuild /t:Build INSTALL.vcxproj /p:Configuration=RelWithDebInfo /p:Platform=Win32 /m
+      run:  cmake --build . --config RelWithDebInfo --target install -- /m
     - name: Run tests
       shell: cmd
       run: |
-        set PATH=%PATH%;%cd%\deps32\bin
-        cd tests\libtransport\RelWithDebInfo
+        set PATH=%PATH%;%cd%\deps32\bin;%cd%\dist\bin
+        cd dist\bin
         libtransport_test
 
   linux-debian:

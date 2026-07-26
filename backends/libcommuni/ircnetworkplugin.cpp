@@ -27,7 +27,7 @@ DEFINE_LOGGER(logger, "IRCNetworkPlugin");
 #define FROM_UTF8(WHAT) QString::fromUtf8((WHAT).c_str(), (WHAT).size())
 #define TO_UTF8(WHAT) std::string((WHAT).toUtf8().data(), (WHAT).toUtf8().size())
 
-IRCNetworkPlugin::IRCNetworkPlugin(Config *config, Swift::QtEventLoop *loop, const std::string &host, int port) {
+IRCNetworkPlugin::IRCNetworkPlugin(Config *config, const std::string &host, int port) : NetworkPlugin() {
 	m_config = config;
 	m_currentServer = 0;
 	m_firstPing = true;

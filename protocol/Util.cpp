@@ -27,6 +27,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/base64_from_binary.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
 
 #ifndef WIN32
 #include "sys/signal.h"
@@ -174,6 +177,20 @@ std::wstring utf8ToUtf16(const std::string& str)
 }
 #endif // _WIN32
 
+std::string base64Encode(const std::string &input) {
+    using namespace boost::archive::iterators;
+    using It = base64_from_binary<transform_width<std::string::const_iterator, 6, 8>>;
+    auto tmp = std::string(It(std::begin(input)), It(std::end(input)));
+    return tmp.append((3 - input.size() % 3) % 3, '=');
+}
+
+std::string base64Decode(const std::string &input) {
+    using namespace boost::archive::iterators;
+    using It = transform_width<binary_from_base64<std::string::const_iterator>, 8, 6>;
+    return boost::algorithm::trim_right_copy_if(std::string(It(std::begin(input)), It(std::end(input))), [](char c) {
+        return c == '\0';
+    });
+}
 
 }
 

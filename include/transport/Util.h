@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <vector>
 #include <string>
-#include "Swiften/StringCodecs/Base64.h"
 
 #include <boost/filesystem.hpp>
 
@@ -34,17 +33,20 @@ class Config;
 
 namespace Util {
 
-void createDirectories(Transport::Config *config, const boost::filesystem::path& ph);
+TRANSPORT_API void createDirectories(Transport::Config *config, const boost::filesystem::path& ph);
 
-void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t);
+TRANSPORT_API void removeEverythingOlderThan(const std::vector<std::string> &dirs, time_t t);
 
-int getRandomPort(const std::string &s);
+TRANSPORT_API int getRandomPort(const std::string &s);
 
-std::string char2hex( char dec );
-std::string urlencode( const std::string &c );
+TRANSPORT_API std::string char2hex( char dec );
+TRANSPORT_API std::string urlencode( const std::string &c );
+
+TRANSPORT_API std::string base64Encode(const std::string &input);
+TRANSPORT_API std::string base64Decode(const std::string &input);
 
 #ifdef _WIN32
-	std::wstring utf8ToUtf16(const std::string& str);
+	TRANSPORT_API std::wstring utf8ToUtf16(const std::string& str);
 #endif
 
 }

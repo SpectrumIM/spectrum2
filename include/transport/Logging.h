@@ -56,11 +56,11 @@ class Config;
 
 namespace Logging {
 
-void initBackendLogging(Config *config);
-void initMainLogging(Config *config);
-void initManagerLogging(Config *config);
-void shutdownLogging();
-void redirect_stderr();
+TRANSPORT_API void initBackendLogging(Config *config);
+TRANSPORT_API void initMainLogging(Config *config);
+TRANSPORT_API void initManagerLogging(Config *config);
+TRANSPORT_API void shutdownLogging();
+TRANSPORT_API void redirect_stderr();
 
 }
 

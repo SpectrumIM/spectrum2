@@ -22,7 +22,6 @@
 #include "transport/Config.h"
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
-#include "Swiften/EventLoop/Qt/QtEventLoop.h"
 #include "ircnetworkplugin.h"
 
 using namespace boost::program_options;
@@ -45,9 +44,7 @@ int main (int argc, char* argv[]) {
 
 	QCoreApplication app(argc, argv);
 
-	Swift::QtEventLoop eventLoop;
 
-
-	np = new IRCNetworkPlugin(cfg, &eventLoop, host, port);
+	np = new IRCNetworkPlugin(cfg, host, port);
 	return app.exec();
 }

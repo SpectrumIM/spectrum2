@@ -65,7 +65,7 @@ typedef boost::program_options::variables_map Variables;
 /// properly. Config files are text files which use "ini" format. Variables are divided into multiple
 /// sections. Every class is configurable with some variables which change its behavior. Check particular
 /// class documentation to get a list of all relevant variables for that class.
-class Config {
+class TRANSPORT_API Config {
 	public:
 		typedef std::map<std::string, boost::program_options::variable_value> SectionValuesCont;
 		typedef std::map<std::string, boost::program_options::variable_value> UnregisteredCont;

@@ -1,7 +1,7 @@
 /**
  * libtransport -- C++ library for easy XMPP Transports development
  *
- * Copyright (C) 2011, Jan Kaluza <hanzz.k@gmail.com>
+ * Copyright (C) 2011-2023, Jan Kaluza <hanzz.k@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,14 +20,26 @@
 
 #pragma once
 
-#include <vector>
+#include <transport/Config.h>
+#include <transport/Logging.h>
+#include <transport/NetworkPlugin.h>
 
-#ifndef WIN32
-#include "signal.h"
-#else 
-#define pid_t void*
-#endif
+#include <boost/asio.hpp>
+
+#include <memory>
 
 namespace Transport {
-	TRANSPORT_API void process_mem_usage(double& shared, double& resident_set, pid_t pid = 0);
+    class BoostNetworkPlugin: public NetworkPlugin {
+        public:
+            BoostNetworkPlugin(Config *config, const std::string &host, int port);
+            void sendData(const std::string &string) override;
+            void handleExitRequest() override;
+            void run();
+        protected:
+            Transport::Config *config;
+            boost::asio::io_context io_context;
+        private:
+		    std::shared_ptr<boost::asio::ip::tcp::socket> socket_;
+		    bool is_connected;
+    };
 }
