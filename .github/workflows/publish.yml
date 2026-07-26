@@ -49,6 +49,7 @@ jobs:
         cache-from: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache-${{ matrix.arch }}
         cache-to: type=registry,ref=ghcr.io/spectrumim/spectrum:buildcache-${{ matrix.arch }}
         push: ${{ github.event_name != 'pull_request' }}
+        provenance: false
         tags: ghcr.io/spectrumim/spectrum:tmp-${{ github.sha }}-${{ matrix.arch }}
         labels: ${{ steps.docker_meta.outputs.labels }}
 
