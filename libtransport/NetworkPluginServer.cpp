@@ -193,9 +193,8 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 	if ( pid == 0 ) {
 		setsid();
 		// Close all open file descriptors beyond stdin/stdout/stderr.
-		// We enumerate /proc/self/fd instead of looping sysconf(_SC_OPEN_MAX),
-		// which in Docker containers can be ~1 billion — that loop would hang
-		// the child process for minutes.
+		// Prefer /proc/self/fd (Linux) — sysconf(_SC_OPEN_MAX) can return
+		// ~1 billion in Docker containers, which would hang for minutes.
 		DIR *d = opendir("/proc/self/fd");
 		if (d) {
 			int dir_fd = dirfd(d);
@@ -208,6 +207,12 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 				}
 			}
 			closedir(d);
+		} else {
+			// Fallback for non-Linux (macOS, BSD): sysconf is safe there
+			int maxfd = sysconf(_SC_OPEN_MAX);
+			for (int fd = 3; fd < maxfd; fd++) {
+				close(fd);
+			}
 		}
 		// child process
 		errno = 0;
