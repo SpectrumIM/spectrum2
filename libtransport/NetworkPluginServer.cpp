@@ -64,6 +64,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "popt.h"
+#include <dirent.h>
 #endif
 
 using namespace Transport::Util;
@@ -191,10 +192,22 @@ static unsigned long exec_(const std::string& exePath, const char *host, const c
 	pid_t pid = fork();
 	if ( pid == 0 ) {
 		setsid();
-		// close all files
-		int maxfd=sysconf(_SC_OPEN_MAX);
-		for (int fd=3; fd<maxfd; fd++) {
-			close(fd);
+		// Close all open file descriptors beyond stdin/stdout/stderr.
+		// We enumerate /proc/self/fd instead of looping sysconf(_SC_OPEN_MAX),
+		// which in Docker containers can be ~1 billion — that loop would hang
+		// the child process for minutes.
+		DIR *d = opendir("/proc/self/fd");
+		if (d) {
+			int dir_fd = dirfd(d);
+			struct dirent *ent;
+			while ((ent = readdir(d)) != NULL) {
+				if (ent->d_name[0] == '.') continue;
+				int fd = atoi(ent->d_name);
+				if (fd > 2 && fd != dir_fd) {
+					close(fd);
+				}
+			}
+			closedir(d);
 		}
 		// child process
 		errno = 0;
