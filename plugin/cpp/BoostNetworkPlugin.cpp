@@ -31,7 +31,7 @@ BoostNetworkPlugin::BoostNetworkPlugin(Config *config, const std::string &host,
     : NetworkPlugin(), io_context() {
   this->config = config;
   LOG4CXX_INFO(pluginLogger, "Starting the plugin.");
-  boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), port);
+  boost::asio::ip::tcp::endpoint ep(boost::asio::ip::make_address(host), port);
   socket_ = std::make_shared<boost::asio::ip::tcp::socket>(io_context);
   socket_->async_connect(ep, [this, host](boost::system::error_code ec) {
     if (!ec) {
