@@ -29,7 +29,7 @@ option(ENABLE_PQXX "Build with Postgres supoort" ON)
 
 option(ENABLE_FROTZ "Build Frotz plugin" ON)
 option(ENABLE_IRC "Build IRC plugin" ON)
-option(ENABLE_QT6 "Build IRC plugin with QT6 libraries" OFF)
+option(ENABLE_QT6 "Build IRC plugin with Qt 6 libraries" OFF)
 option(ENABLE_PURPLE "Build Libpurple plugin" ON)
 option(ENABLE_SMSTOOLS3 "Build SMSTools3 plugin" ON)
 option(ENABLE_XMPP "Build XMPP plugin" ON)
