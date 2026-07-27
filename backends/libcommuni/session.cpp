@@ -25,7 +25,6 @@
 #include <IrcMessage>
 #include <IrcUser>
 #include <IrcChannel>
-#include "backports.h"
 
 #include "ircnetworkplugin.h"
 
@@ -409,7 +408,7 @@ void MyIrcSession::sendMessageToFrontend(const std::string &channel, const std::
 void MyIrcSession::on_messageReceived(IrcMessage *message) {
 	IrcPrivateMessage *m = (IrcPrivateMessage *) message;
 	if (m->isRequest()) {
-		QString request = m->content().split(" ", QString::SkipEmptyParts).value(0).toUpper();
+		QString request = m->content().split(" ", Qt::SkipEmptyParts).value(0).toUpper();
 		if (request == "PING" || request == "TIME" || request == "VERSION") {
 			LOG4CXX_INFO(connectionLogger, m_user << ": " << TO_UTF8(request) << " received and has been answered");
 			return;
