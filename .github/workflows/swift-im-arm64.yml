@@ -88,6 +88,6 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: swift-im-trixie-amd64-debs
-          path: *.deb
+          path: "*.deb"
           if-no-files-found: warn
           retention-days: 14
