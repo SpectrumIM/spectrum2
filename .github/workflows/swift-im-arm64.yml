@@ -1,0 +1,80 @@
+name: swift-im-arm64
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: swift-im bookworm arm64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install host tools
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends debootstrap schroot
+      - name: Bootstrap bookworm arm64 chroot
+        run: |
+          set -eux
+          sudo rm -rf /chroot-bookworm-arm64
+          sudo debootstrap --arch=arm64 --variant=minbase \
+            --include=gnupg,ca-certificates,curl \
+            bookworm /chroot-bookworm-arm64 \
+            http://ftp.de.debian.org/debian
+      - name: Configure chroot (spectrumim deb-src + key)
+        run: |
+          set -eux
+          sudo chroot /chroot-bookworm-arm64 /bin/bash -c '
+            set -eux
+            apt-get update
+            curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
+            cat > /etc/apt/sources.list.d/spectrum2.sources <<EOF
+          Types: deb deb-src
+          URIs: https://packages.spectrum.im/spectrum2/
+          Suites: bookworm
+          Components: main
+          Signed-By: /etc/apt/trusted.gpg.d/spectrumim.gpg
+          EOF
+            apt-get update
+          '
+      - name: Build swift-im inside the chroot
+        run: |
+          set -eux
+          sudo chroot /chroot-bookworm-arm64 /bin/bash -c "
+            set -eux
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get install -y --no-install-recommends \
+              devscripts build-essential fakeroot \
+              scons help2man xsltproc docbook-xsl docbook-xml libxml2-utils \
+              debhelper
+            apt-get build-dep -y --no-install-recommends swift-im
+            cd /tmp
+            apt-get source swift-im
+            cd \$(ls -d swift-im-* | head -n1)
+            DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -B -us -uc
+          "
+          sudo mkdir -p /tmp/swift-im-debs
+          sudo cp /chroot-bookworm-arm64/tmp/*.deb /tmp/swift-im-debs/ || true
+          ls -la /tmp/swift-im-debs
+      - name: Verify .debs are real arm64 packages
+        run: |
+          set -eux
+          for deb in /tmp/swift-im-debs/*.deb; do
+            [ -f "$deb" ] || continue
+            echo "=== $deb ==="
+            dpkg-deb -I "$deb" | grep -E '^(Package|Architecture|Version):' || true
+            arch=$(dpkg-deb -f "$deb" Architecture)
+            test "$arch" = "arm64" || { echo "WRONG ARCH: $arch in $deb"; exit 1; }
+          done
+      - name: Upload .deb artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: swift-im-arm64-debs
+          path: /tmp/swift-im-debs/*.deb
+          if-no-files-found: error
+          retention-days: 14
