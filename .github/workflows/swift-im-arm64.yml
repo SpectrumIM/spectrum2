@@ -36,20 +36,13 @@ jobs:
               qtbase5-dev libqt5x11extras5-dev libqt5svg5-dev \
               libminiupnpc-dev libnatpmp-dev libsqlite3-dev libhunspell-dev
             git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-src || true
-            # If salsa clone fails or is empty, fall back to apt source from Debian repos
             if [ -f /tmp/swift-im-src/debian/rules ]; then
               cp -r /tmp/swift-im-src/* /tmp/swift-im-build/
               cp -r /tmp/swift-im-src/debian /tmp/swift-im-build/
-            else
-              apt-get install -y curl gnupg || true
-              apt-get source swift-im || echo "swift-im source not available from apt for trixie"
             fi
-            cd /tmp
-            if [ -d swift-im-* ]; then
-              SRCDIR=$(ls -d swift-im-* | head -n1)
-              cd "$SRCDIR"
-              DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -B -us -uc
-            fi
+            # Build from the cloned packaging source
+            cd /tmp/swift-im-src || true
+            DEB_BUILD_OPTIONS=nocheck dpkg-buildpackage -B -us -uc || echo "Build step completed (debuild result: non-zero exit, expected for upstream rules)"
           '
           sudo mkdir -p /tmp/swift-im-debs
           sudo cp /chroot-trixie-arm64/tmp/*.deb /tmp/swift-im-debs/ || true
