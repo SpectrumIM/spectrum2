@@ -2,6 +2,9 @@ name: swift-im-arm64
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ci/swift-im-arm64-bookworm]
+    paths: ['.github/workflows/swift-im-arm64.yml']
 
 permissions:
   contents: read
