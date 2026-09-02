@@ -9,85 +9,85 @@ permissions:
   contents: read
 
 jobs:
-  build-arm64:
-    name: swift-im trixie arm64
-    runs-on: ubuntu-24.04-arm
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            deb_path: /tmp/swift-im-debs/*.deb
+            chroot: /chroot-trixie-arm64
+          - arch: amd64
+            runner: ubuntu-latest
+            deb_path: '*.deb'
+            chroot: ''
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
+    name: swift-im trixie ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v7
-      - name: Install host tools
+      - name: Install host tools (arm64 only)
+        if: matrix.arch == 'arm64'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debootstrap schroot
       - name: Bootstrap trixie arm64 chroot
+        if: matrix.arch == 'arm64'
         run: |
-          sudo rm -rf /chroot-trixie-arm64
+          sudo rm -rf ${{ matrix.chroot }}
           sudo debootstrap --arch=arm64 --variant=minbase \
             --include=ca-certificates \
-            trixie /chroot-trixie-arm64 \
+            trixie ${{ matrix.chroot }} \
             http://ftp.de.debian.org/debian
-      - name: Build swift-im inside chroot
+      - name: Build swift-im
         run: |
-          sudo chroot /chroot-trixie-arm64 /bin/bash -c '
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            sudo chroot ${{ matrix.chroot }} /bin/bash -c '
+              set -eux
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                devscripts build-essential fakeroot scons \
+                help2man xsltproc docbook-xsl docbook-xml \
+                libxml2-utils debhelper libssl-dev libboost-all-dev \
+                qtbase5-dev libqt5x11extras5-dev libqt5svg5-dev \
+                libminiupnpc-dev libnatpmp-dev libsqlite3-dev libhunspell-dev
+              git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-src || true
+              if [ -f /tmp/swift-im-src/debian/rules ]; then
+                mkdir -p /tmp/swift-im-build
+                cp -r /tmp/swift-im-src/* /tmp/swift-im-build/
+                cp -r /tmp/swift-im-src/debian /tmp/swift-im-build/
+              fi
+              cd /tmp/swift-im-src || true
+              DEB_BUILD_OPTIONS=nocheck git-buildpackage --git-upstream-tag="%(version)s" -B -us -uc || echo "Build step completed (git-buildpackage result: non-zero exit, expected)"
+            '
+            sudo mkdir -p /tmp/swift-im-debs
+            sudo cp ${{ matrix.chroot }}/tmp/*.deb /tmp/swift-im-debs/ || true
+          else
             set -eux
-            apt-get update
-            apt-get install -y --no-install-recommends \
-              devscripts build-essential fakeroot scons \
-              help2man xsltproc docbook-xsl docbook-xml \
-              libxml2-utils debhelper libssl-dev libboost-all-dev \
-              qtbase5-dev libqt5x11extras5-dev libqt5svg5-dev \
-              libminiupnpc-dev libnatpmp-dev libsqlite3-dev libhunspell-dev
-            git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-src || true
-            if [ -f /tmp/swift-im-src/debian/rules ]; then
-              cp -r /tmp/swift-im-src/* /tmp/swift-im-build/
-              cp -r /tmp/swift-im-src/debian /tmp/swift-im-build/
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              devscripts build-essential fakeroot scons help2man
+            apt-get source swift-im || echo "swift-im not in apt for trixie"
+            SRCDIR=$(ls -d swift-im-* | head -n1 || true)
+            if [ -n "$SRCDIR" ]; then
+              cd "$SRCDIR"
+              DEB_BUILD_OPTIONS=nocheck git-buildpackage --git-upstream-tag="%(version)s" -B -us -uc
             fi
-            # Build from the cloned packaging source
-            cd /tmp/swift-im-src || true
-            DEB_BUILD_OPTIONS=nocheck git-buildpackage --git-upstream-tag='%(version)s' -B -us -uc || echo "Build step completed (git-buildpackage result: non-zero exit, expected)"
-          '
-          sudo mkdir -p /tmp/swift-im-debs
-          sudo cp /chroot-trixie-arm64/tmp/*.deb /tmp/swift-im-debs/ || true
-          ls -la /tmp/swift-im-debs/
-      - name: Verify .debs are arm64
+          fi
+      - name: Verify .debs are ${{ matrix.arch }}
+        if: matrix.arch == 'arm64'
         run: |
           set -eux
-          for deb in /tmp/swift-im-debs/*.deb; do
+          for deb in ${{ matrix.deb_path }}; do
             [ -f "$deb" ] || continue
             echo "=== $deb ==="
             dpkg-deb -I "$deb" | grep -E '^(Package|Architecture|Version):' || true
             arch=$(dpkg-deb -f "$deb" Architecture)
-            test "$arch" = "arm64" || { echo "WRONG ARCH: $arch in $deb"; exit 1; }
+            test "$arch" = "${{ matrix.arch }}" || { echo "WRONG ARCH: $arch in $deb"; exit 1; }
           done
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
-          name: swift-im-trixie-arm64-debs
-          path: /tmp/swift-im-debs/*.deb
-          if-no-files-found: error
-          retention-days: 14
-
-  build-amd64:
-    name: swift-im trixie amd64
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build swift-im amd64
-        run: |
-          set -eux
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            devscripts build-essential fakeroot scons help2man
-          apt-get source swift-im || echo "swift-im not in apt for trixie"
-          SRCDIR=$(ls -d swift-im-* | head -n1 || true)
-          if [ -n "$SRCDIR" ]; then
-            cd "$SRCDIR"
-            DEB_BUILD_OPTIONS=nocheck git-buildpackage --git-upstream-tag='%(version)s' -B -us -uc
-          fi
-          ls -la *.deb 2>/dev/null || echo "No .debs produced (trixie source may not be available)"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: swift-im-trixie-amd64-debs
-          path: "*.deb"
-          if-no-files-found: warn
+          name: swift-im-trixie-${{ matrix.arch }}-debs
+          path: ${{ matrix.deb_path }}
+          if-no-files-found: ${{ matrix.arch == 'amd64' && 'warn' || 'error' }}
           retention-days: 14
