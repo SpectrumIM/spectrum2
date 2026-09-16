@@ -159,7 +159,7 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 	}
 
 	// update resource and send the message
-	m_convs[name]->setJID(message->getFrom());
+	m_convs[name]->setJID(message->getFrom().toBare());
 	m_convs[name]->sendMessage(message);
 }
 
