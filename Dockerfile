@@ -39,11 +39,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
-RUN apt-get install --no-install-recommends -y libcppunit-dev clang-16 lld-16
+RUN apt-get install --no-install-recommends -y libcppunit-dev clang-19 lld-19
 
 WORKDIR /spectrum2
 
-RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_SLACK_FRONTEND=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-16 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-16 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
+RUN cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_TESTS=ON -DENABLE_SLACK_FRONTEND=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=/usr/bin/clang-19 -DCMAKE_CXX_COMPILER=/usr/bin/clang++-19 -DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=lld -DCMAKE_SHARED_LINKER_FLAGS=-fuse-ld=lld . && make -j4
 
 ENTRYPOINT ["make", "test"]
 
