@@ -4,13 +4,17 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
 RUN apt-get update -qq
-RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
+RUN apt-get install --no-install-recommends -y dpkg-dev devscripts equivs curl git
 RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" | tee -a /etc/apt/sources.list
 RUN curl https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 
 RUN apt-get update -qq
-RUN apt-get build-dep --no-install-recommends -y spectrum2
+
+# Spectrum 2
+COPY . spectrum2/
+
+RUN mk-build-deps --install --remove \
+		--tool "apt-get -y --no-install-recommends" spectrum2/packaging/debian/debian/control
 RUN apt-get install --no-install-recommends -y libminiupnpc-dev libnatpmp-dev
 
 RUN apt-get install --no-install-recommends -y cmake
@@ -18,9 +22,6 @@ RUN apt-get install --no-install-recommends -y cmake
 #TODO include in Build-Depends
 RUN apt-get install --no-install-recommends -y libssl-dev
 RUN apt-get install --no-install-recommends -y ngircd libcppunit-dev purple-xmpp-carbons libglib2.0-dev psmisc
-
-# Spectrum 2
-COPY . spectrum2/
 
 FROM base as test
 
