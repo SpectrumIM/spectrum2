@@ -39,6 +39,8 @@ jobs:
         run: |
           set -euxo pipefail
           sudo cp -a "$GITHUB_WORKSPACE" /chroot-trixie-${{ matrix.arch }}/tmp/spectrum2-src
+          sudo mount -t proc proc /chroot-trixie-${{ matrix.arch }}/proc
+          trap 'ec=$?; sudo umount /chroot-trixie-${{ matrix.arch }}/proc || true; exit $ec' EXIT
           sudo chroot /chroot-trixie-${{ matrix.arch }} /bin/bash -s <<'BUILD'
           set -euxo pipefail
           export DEBIAN_FRONTEND=noninteractive
