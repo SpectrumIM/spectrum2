@@ -1,5 +1,6 @@
 	file(GLOB SRC *.cpp *.h)
 	file(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
+	string(REGEX REPLACE "[^;]+;?/DummyConnectionServer[^;]*;?" "" SWIFTEN_SRC "${SWIFTEN_SRC}")
 
 	# Build without openssl on msvc
 	if(NOT MSVC)
