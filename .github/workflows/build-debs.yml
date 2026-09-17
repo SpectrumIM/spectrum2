@@ -47,7 +47,8 @@ jobs:
           export DEB_BUILD_OPTIONS=nocheck
           apt-get update
           apt-get install -y --no-install-recommends \
-            curl gnupg devscripts build-essential fakeroot equivs git
+            curl gnupg devscripts build-essential fakeroot equivs git \
+            libminiupnpc-dev libnatpmp-dev
 
           curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
           echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" > /etc/apt/sources.list.d/spectrumim.list
