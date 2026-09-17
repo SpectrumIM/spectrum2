@@ -9,6 +9,7 @@
 #include <boost/signals2.hpp>
 
 #include <string>
+#include <memory>
 #include <Swiften/Session/Session.h>
 #include <Swiften/JID/JID.h>
 #include <Swiften/Network/Connection.h>
@@ -77,7 +78,7 @@ namespace Swift {
 			bool initialized;
 			bool allowSASLEXTERNAL;
 			std::string user_;
-			TLSServerLayer* tlsLayer;
+			std::unique_ptr<TLSServerLayer> tlsLayer;
 			bool tlsConnected;
 	};
 }
