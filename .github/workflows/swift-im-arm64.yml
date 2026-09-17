@@ -33,11 +33,18 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             git git-buildpackage devscripts build-essential fakeroot equivs
-          git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-src
+          git clone --branch swiften5_debian --single-branch \
+            https://github.com/SpectrumIM/swift.git /tmp/swift-im-src
+          git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-packaging
+          git -C /tmp/swift-im-packaging checkout --detach 8e9b0ecabea0ee24c13f4d3c3e15f8436638d399
           cd /tmp/swift-im-src
+          # Source fixes are already committed on swiften5_debian; do not reapply quilt patches.
+          mkdir debian
+          git -C /tmp/swift-im-packaging archive HEAD debian \
+            | tar -x --exclude=debian/patches
           mk-build-deps --install --remove \
             --tool "apt-get -y --no-install-recommends" debian/control
-          gbp buildpackage --git-ignore-branch -B -us -uc
+          gbp buildpackage --git-ignore-branch --git-ignore-new --git-upstream-tree=HEAD -B -us -uc
           BUILD
           sudo mkdir -p /tmp/swift-im-debs
           sudo cp /chroot-trixie-arm64/tmp/*.deb /tmp/swift-im-debs/
