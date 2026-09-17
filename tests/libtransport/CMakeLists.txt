@@ -1,5 +1,8 @@
 		file(GLOB SRC *.cpp *.h)
 		file(GLOB_RECURSE SWIFTEN_SRC ../include/Swiften/*.cpp)
+		file(GLOB DUMMY_CONNECTION_SERVER_SRC
+			../../include/Swiften/Network/DummyConnectionServer.cpp
+			../../include/Swiften/Network/DummyConnectionServerFactory.cpp)
 
 		# Build without openssl on msvc
 		if(NOT MSVC)
@@ -32,7 +35,7 @@
 			if(ENABLE_SLACK_FRONTEND)
 				file(GLOB SRC_TEST_FRONTEND_SLACK ../../spectrum/src/frontends/slack/*.cpp)
 			endif()
-			add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK})
+			add_executable(libtransport_test ${SRC_TEST} ${SRC_TEST_FRONTEND_XMPP} ${SRC_TEST_FRONTEND_SLACK} ${DUMMY_CONNECTION_SERVER_SRC})
 			set_target_properties(libtransport_test PROPERTIES COMPILE_DEFINITIONS LIBTRANSPORT_TEST=1)
 			target_link_libraries(libtransport_test transport ${CPPUNIT_LIBRARY} ${Boost_LIBRARIES} JsonCpp::JsonCpp)
 			install(TARGETS libtransport_test RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
