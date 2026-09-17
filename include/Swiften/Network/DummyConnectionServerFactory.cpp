@@ -12,6 +12,7 @@ namespace Swift {
 DummyConnectionServerFactory::DummyConnectionServerFactory(EventLoop* eventLoop) : eventLoop(eventLoop) {
 }
 
+#if HAVE_SWIFTEN_5
 std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(unsigned short port) {
 	return DummyConnectionServer::create(eventLoop);
 }
@@ -19,5 +20,14 @@ std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnection
 std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(const Swift::HostAddress &hostAddress, unsigned short port) {
 	return DummyConnectionServer::create(eventLoop);
 }
+#else
+std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(int port) {
+	return DummyConnectionServer::create(eventLoop);
+}
+
+std::shared_ptr<ConnectionServer> DummyConnectionServerFactory::createConnectionServer(const Swift::HostAddress &hostAddress, int port) {
+	return DummyConnectionServer::create(eventLoop);
+}
+#endif
 
 }
