@@ -126,12 +126,3 @@ jobs:
         cd dist\bin
         libtransport_test
 
-  linux-debian:
-    if: false
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v7
-
-    - name: Build from Dockerfile\.trixie
-      run: docker build -f Dockerfile\.trixie -t spectrum:trixie \.
