@@ -160,8 +160,6 @@ RUN echo "---> purple-whatsmeow (gowhatsapp, nightly build, ${TARGETARCH})" && \
 # libpurple-telegram-tdlib also aren't available for bookworm regardless).
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
-		pidgin-sipe \
-		purple-facebook \
 		libmarkdown2 \
 		libogg0 libopusfile0 \
 		frotz \
