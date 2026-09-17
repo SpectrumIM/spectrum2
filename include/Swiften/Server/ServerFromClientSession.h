@@ -15,6 +15,8 @@
 #include <Swiften/Network/Connection.h>
 #include <Swiften/Base/ByteArray.h>
 #include <Swiften/TLS/CertificateWithKey.h>
+#include <Swiften/Version.h>
+#define HAVE_SWIFTEN_5  (SWIFTEN_VERSION >= 0x050000)
 
 namespace Swift {
 	class ProtocolHeader;
@@ -78,7 +80,11 @@ namespace Swift {
 			bool initialized;
 			bool allowSASLEXTERNAL;
 			std::string user_;
+#if HAVE_SWIFTEN_5
 			std::unique_ptr<TLSServerLayer> tlsLayer;
+#else
+			TLSServerLayer* tlsLayer;
+#endif
 			bool tlsConnected;
 	};
 }

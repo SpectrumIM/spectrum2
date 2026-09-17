@@ -46,12 +46,21 @@ ServerFromClientSession::ServerFromClientSession(
 			authenticated_(false),
 			initialized(false),
 			allowSASLEXTERNAL(false),
+#if !HAVE_SWIFTEN_5
+			tlsLayer(0),
+#endif
 			tlsConnected(false) {
 				setRemoteJID(remoteJID);
 }
 
 ServerFromClientSession::~ServerFromClientSession() {
+#if HAVE_SWIFTEN_5
 	tlsLayer.reset();
+#else
+	if (tlsLayer) {
+		delete tlsLayer;
+	}
+#endif
 }
 
 void ServerFromClientSession::handlePasswordValid() {
@@ -99,9 +108,14 @@ void ServerFromClientSession::handleElement(std::shared_ptr<ToplevelElement> ele
 		}
 		else if (dynamic_cast<StartTLSRequest*>(element.get()) != NULL) {
 			getXMPPLayer()->writeElement(std::shared_ptr<TLSProceed>(new TLSProceed));
+#if HAVE_SWIFTEN_5
 			auto ptls = tlsLayer.get();  // retain pointer for connect call.
 			getStreamStack()->addLayer(std::move(tlsLayer));
 			ptls->connect();
+#else
+			getStreamStack()->addLayer(tlsLayer);
+			tlsLayer->connect();
+#endif
 			getXMPPLayer()->resetParser();
 		}
 		else if (IQ* iq = dynamic_cast<IQ*>(element.get())) {
@@ -163,7 +177,11 @@ void ServerFromClientSession::handleSessionFinished(const boost::optional<Sessio
 }
 
 void ServerFromClientSession::addTLSEncryption(TLSServerContextFactory* tlsContextFactory, CertificateWithKey::ref cert) {
+#if HAVE_SWIFTEN_5
 	tlsLayer.reset(new TLSServerLayer(tlsContextFactory));
+#else
+	tlsLayer = new TLSServerLayer(tlsContextFactory);
+#endif
 	if (!tlsLayer->setServerCertificate(cert)) {
 // 		std::cout << "error\n";
 		// TODO:
