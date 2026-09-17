@@ -6,8 +6,6 @@
 #include <Swiften/Network/DummyConnectionServer.h>
 #include <Swiften/Network/ConnectionFactory.h>
 #include <Swiften/Network/DummyTimerFactory.h>
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_5  (SWIFTEN_VERSION >= 0x050000)
 #include "basictest.h"
 
 using namespace Transport;
@@ -42,20 +40,12 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			connectionServer = server->getConnectionServer();
 
 			client1 = factories->getConnectionFactory()->createConnection();
-#if HAVE_SWIFTEN_5
 			std::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->onNewConnection(client1);
-#else
-			std::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client1);
-#endif
 
 			std::dynamic_pointer_cast<Swift::DummyConnection>(client1)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client1));
 
 			client2 = factories->getConnectionFactory()->createConnection();
-#if HAVE_SWIFTEN_5
 			std::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->onNewConnection(client2);
-#else
-			std::dynamic_pointer_cast<Swift::DummyConnectionServer>(connectionServer)->acceptConnection(client2);
-#endif
 
 			std::dynamic_pointer_cast<Swift::DummyConnection>(client2)->onDataSent.connect(boost::bind(&UserRegistryTest::handleDataReceived, this, _1, client2));
 
