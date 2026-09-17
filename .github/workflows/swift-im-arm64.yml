@@ -1,4 +1,4 @@
-name: swift-im
+name: swift-im-arm64
 
 on:
   push:
@@ -10,84 +10,49 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: arm64
-            runner: ubuntu-24.04-arm
-            deb_path: /tmp/swift-im-debs/*.deb
-            chroot: /chroot-trixie-arm64
-          - arch: amd64
-            runner: ubuntu-latest
-            deb_path: '*.deb'
-            chroot: ''
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 60
-    name: swift-im trixie ${{ matrix.arch }}
+    name: swift-im trixie arm64
     steps:
-      - uses: actions/checkout@v7
-      - name: Install host tools (arm64 only)
-        if: matrix.arch == 'arm64'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debootstrap schroot
+      - name: Install host tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debootstrap
       - name: Bootstrap trixie arm64 chroot
-        if: matrix.arch == 'arm64'
         run: |
-          sudo rm -rf ${{ matrix.chroot }}
           sudo debootstrap --arch=arm64 --variant=minbase \
             --include=ca-certificates \
-            trixie ${{ matrix.chroot }} \
+            trixie /chroot-trixie-arm64 \
             http://ftp.de.debian.org/debian
       - name: Build swift-im
         run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            sudo chroot ${{ matrix.chroot }} /bin/bash -c '
-              set -eux
-              apt-get update
-              apt-get install -y --no-install-recommends \
-                devscripts build-essential fakeroot scons \
-                help2man xsltproc docbook-xsl docbook-xml \
-                libxml2-utils debhelper libssl-dev libboost-all-dev \
-                qtbase5-dev libqt5x11extras5-dev libqt5svg5-dev \
-                libminiupnpc-dev libnatpmp-dev libsqlite3-dev libhunspell-dev
-              git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-src || true
-              if [ -f /tmp/swift-im-src/debian/rules ]; then
-                mkdir -p /tmp/swift-im-build
-                cp -r /tmp/swift-im-src/* /tmp/swift-im-build/
-                cp -r /tmp/swift-im-src/debian /tmp/swift-im-build/
-              fi
-              cd /tmp/swift-im-src || true
-              DEB_BUILD_OPTIONS=nocheck git-buildpackage --git-upstream-tag="%(version)s" -B -us -uc || echo "Build step completed (git-buildpackage result: non-zero exit, expected)"
-            '
-            sudo mkdir -p /tmp/swift-im-debs
-            sudo cp ${{ matrix.chroot }}/tmp/*.deb /tmp/swift-im-debs/ || true
-          else
-            set -eux
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends \
-              devscripts build-essential fakeroot scons help2man
-            apt-get source swift-im || echo "swift-im not in apt for trixie"
-            SRCDIR=$(ls -d swift-im-* | head -n1 || true)
-            if [ -n "$SRCDIR" ]; then
-              cd "$SRCDIR"
-              DEB_BUILD_OPTIONS=nocheck git-buildpackage --git-upstream-tag="%(version)s" -B -us -uc
-            fi
-          fi
-      - name: Verify .debs are ${{ matrix.arch }}
-        if: matrix.arch == 'arm64'
+          set -euxo pipefail
+          sudo chroot /chroot-trixie-arm64 /bin/bash -s <<'BUILD'
+          set -euxo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          export DEB_BUILD_OPTIONS=nocheck
+          test "$(dpkg --print-architecture)" = arm64
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git git-buildpackage devscripts build-essential fakeroot equivs
+          git clone https://salsa.debian.org/xmpp-team/swift-im.git /tmp/swift-im-src
+          cd /tmp/swift-im-src
+          mk-build-deps --install --remove \
+            --tool "apt-get -y --no-install-recommends" debian/control
+          gbp buildpackage --git-ignore-branch -B -us -uc
+          BUILD
+          sudo mkdir -p /tmp/swift-im-debs
+          sudo cp /chroot-trixie-arm64/tmp/*.deb /tmp/swift-im-debs/
+      - name: Verify arm64 packages
         run: |
-          set -eux
-          for deb in ${{ matrix.deb_path }}; do
-            [ -f "$deb" ] || continue
-            echo "=== $deb ==="
-            dpkg-deb -I "$deb" | grep -E '^(Package|Architecture|Version):' || true
-            arch=$(dpkg-deb -f "$deb" Architecture)
-            test "$arch" = "${{ matrix.arch }}" || { echo "WRONG ARCH: $arch in $deb"; exit 1; }
+          set -euxo pipefail
+          for deb in /tmp/swift-im-debs/*.deb; do
+            test -f "$deb"
+            dpkg-deb -f "$deb" Package Version Architecture
+            test "$(dpkg-deb -f "$deb" Architecture)" = arm64
           done
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
         with:
-          name: swift-im-trixie-${{ matrix.arch }}-debs
-          path: ${{ matrix.deb_path }}
-          if-no-files-found: ${{ matrix.arch == 'amd64' && 'warn' || 'error' }}
+          name: swift-im-trixie-arm64-debs
+          path: /tmp/swift-im-debs/*.deb
+          if-no-files-found: error
           retention-days: 14
