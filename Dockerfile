@@ -1,15 +1,12 @@
-FROM debian:bookworm-backports as base
+FROM debian:trixie-backports as base
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
-# NOTE: bookworm is still on the regular mirrors (unlike bullseye, which had to
-# be pulled from archive.debian.org). No override of sources.list should be
-# necessary here beyond what debian:bookworm-backports already ships with.
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y dpkg-dev devscripts curl git
-RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bookworm main" | tee -a /etc/apt/sources.list
-RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bookworm main" | tee -a /etc/apt/sources.list
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" | tee -a /etc/apt/sources.list
+RUN echo "deb-src [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" | tee -a /etc/apt/sources.list
 RUN curl https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 
 RUN apt-get update -qq
@@ -41,8 +38,6 @@ FROM base as test-clang
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_LISTCHANGES_FRONTEND=none
 
-# Verified via packages.debian.org: clang-16 (1:16.0.6-15~deb12u1) ships natively
-# in bookworm's own repos - no need for the apt.llvm.org third-party repo at all.
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y libcppunit-dev clang-16 lld-16
 
@@ -126,23 +121,22 @@ RUN echo "---> purple-discord" && \
 		make DESTDIR=/tmp/out install
 
 
-FROM debian:bookworm-slim as production
+FROM debian:trixie-slim as production
 
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
 # purple-gowhatsapp / purple-whatsmeow nightly build: needs glibc >= 2.34.
-# bookworm ships glibc 2.36, so this is fine (bullseye's 2.31 was NOT enough,
+# trixie ships a newer glibc, so this is fine (bullseye's 2.31 was NOT enough,
 # see below). Bump these two ARGs to move to a newer nightly later.
 ARG GOWHATSAPP_RELEASE=nightly-20260901
 ARG GOWHATSAPP_DEB_AMD64=purple-whatsmeow_1.22.0_amd64.deb
 ARG GOWHATSAPP_DEB_ARM64=purple-whatsmeow_1.22.0_arm64.deb
 
-# NOTE: bookworm is still on the regular mirrors, no override needed here.
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
 
-RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ bookworm main" | tee -a /etc/apt/sources.list
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" | tee -a /etc/apt/sources.list
 RUN curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 RUN apt-get update -qq
 
