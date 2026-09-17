@@ -67,7 +67,7 @@ WORKDIR /spectrum2/packaging/debian/
 RUN /bin/bash ./build_spectrum2.sh
 
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
-		imagemagick libsecret-1-dev libnss3-dev \
+		imagemagick librsvg2-bin libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
 		libprotobuf-c-dev protobuf-c-compiler libmarkdown2-dev libopusfile-dev \
 		libqrencode-dev
