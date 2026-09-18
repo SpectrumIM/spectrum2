@@ -10,6 +10,7 @@ permissions:
 jobs:
   linux-glibc:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       ircd:
         image: linuxserver/ngircd
@@ -52,22 +53,44 @@ jobs:
       run: docker logs prosody 2>&1 || true
   linux-clang:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v7
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
     - name: Build tests
-      run: docker buildx build . --target test-clang -t spectrum:tests-clang
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        target: test-clang
+        load: true
+        tags: spectrum:tests-clang
+        cache-from: type=gha,scope=linux-clang
+        cache-to: type=gha,mode=max,scope=linux-clang
     - name: Run tests
       run: docker run -tt spectrum:tests-clang
   linux-musl:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
     - uses: actions/checkout@v7
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
     - name: Build tests
-      run: docker buildx build . --target test-musl -t spectrum:tests-musl
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        target: test-musl
+        load: true
+        tags: spectrum:tests-musl
+        cache-from: type=gha,scope=linux-musl
+        cache-to: type=gha,mode=max,scope=linux-musl
     - name: Run tests
       run: docker run -tt --env LANG=en_US.UTF-8 spectrum:tests-musl
   macos:
@@ -102,6 +125,7 @@ jobs:
 
   windows:
     runs-on: windows-2022
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v7
     - name: Install dependencies
