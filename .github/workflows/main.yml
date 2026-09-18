@@ -121,7 +121,7 @@ jobs:
         install_name_tool -add_rpath /opt/local/lib tests/libtransport/libtransport_test
         install_name_tool -change libSwiften.4.dylib @rpath/libSwiften.4.dylib libtransport/libtransport.2.0.dylib
         install_name_tool -add_rpath /opt/local/lib libtransport/libtransport.2.0.dylib
-        make test
+        CTEST_OUTPUT_ON_FAILURE=1 make test
     
 
   windows:

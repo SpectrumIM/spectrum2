@@ -1,6 +1,4 @@
 cmake_minimum_required(VERSION 3.7)
-# Use test target on CMake 3.11+
-cmake_policy(SET CMP0037 OLD)
 
 project(libtransport)
 
@@ -211,6 +209,7 @@ find_package(log4cxx)
 
 # FIND CPPUNIT
 if(ENABLE_TESTS)
+	enable_testing()
 	find_package(CppUnit)
 
 	if(NOT CPPUNIT_FOUND AND CPPUNIT_INCLUDE_DIR AND CPPUNIT_LIBRARY)
