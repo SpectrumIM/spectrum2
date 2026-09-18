@@ -35,9 +35,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include <Swiften/Version.h>
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
 namespace Transport {
 
 DEFINE_LOGGER(slackUserManagerLogger, "SlackUserManager");

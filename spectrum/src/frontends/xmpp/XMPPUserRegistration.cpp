@@ -37,9 +37,7 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/regex.hpp>
-#if HAVE_SWIFTEN_3
 #include <Swiften/Elements/Form.h>
-#endif
 #include "XMPPFrontend.h"
 
 using namespace Swift;

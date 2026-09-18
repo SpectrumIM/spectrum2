@@ -34,13 +34,7 @@
 #include <Swiften/Network/Connection.h>
 #include <Swiften/Base/SafeByteArray.h>
 #include "Swiften/Network/Timer.h"
-#include "Swiften/Version.h"
-
-#define HAVE_SWIFTEN_3  (SWIFTEN_VERSION >= 0x030000)
-
-#if HAVE_SWIFTEN_3
 #include <Swiften/TLS/TLSOptions.h>
-#endif
 
 #include <string>
 #include <algorithm>
