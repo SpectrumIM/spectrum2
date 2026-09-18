@@ -65,8 +65,6 @@ ARG APT_LISTCHANGES_FRONTEND=none
 
 WORKDIR /spectrum2/packaging/debian/
 
-RUN /bin/bash ./build_spectrum2.sh
-
 RUN apt-get install --no-install-recommends -y libjson-glib-dev \
 		imagemagick librsvg2-bin libsecret-1-dev libnss3-dev \
 		libwebp-dev libgcrypt20-dev libpng-dev libglib2.0-dev \
@@ -142,9 +140,9 @@ RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages
 RUN curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
 RUN apt-get update -qq
 
-COPY --from=staging spectrum2/packaging/debian/*.deb /tmp/
-
 ARG TARGETARCH
+
+COPY debs/*.deb /tmp/
 
 RUN echo "---> purple-whatsmeow (gowhatsapp, nightly build, ${TARGETARCH})" && \
 		case "${TARGETARCH}" in \

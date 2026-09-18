@@ -4,9 +4,83 @@ on:
   push:
     branches: [master]
     tags: ['*.*.*']
+  workflow_dispatch: {}
 
 jobs:
+  build-debs:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runs-on: ubuntu-24.04
+          - arch: arm64
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 60
+    name: spectrum2 trixie debs ${{ matrix.arch }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install host tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debootstrap
+
+      - name: Bootstrap trixie ${{ matrix.arch }} chroot
+        run: |
+          sudo debootstrap --arch=${{ matrix.arch }} --variant=minbase \
+            --include=ca-certificates \
+            trixie /chroot-trixie-${{ matrix.arch }} \
+            http://ftp.de.debian.org/debian
+
+      - name: Build spectrum2
+        run: |
+          set -euxo pipefail
+          sudo cp -a "$GITHUB_WORKSPACE" /chroot-trixie-${{ matrix.arch }}/tmp/spectrum2-src
+          sudo mount -t proc proc /chroot-trixie-${{ matrix.arch }}/proc
+          trap 'ec=$?; sudo umount /chroot-trixie-${{ matrix.arch }}/proc || true; exit $ec' EXIT
+          sudo chroot /chroot-trixie-${{ matrix.arch }} /bin/bash -s <<'BUILD'
+          set -euxo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          export DEB_BUILD_OPTIONS=nocheck
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            curl gnupg devscripts build-essential fakeroot equivs git \
+            libminiupnpc-dev libnatpmp-dev
+
+          curl -fsSL https://packages.spectrum.im/packages.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/spectrumim.gpg
+          echo "deb [signed-by=/etc/apt/trusted.gpg.d/spectrumim.gpg] https://packages.spectrum.im/spectrum2/ trixie main" > /etc/apt/sources.list.d/spectrumim.list
+          apt-get update
+
+          cd /tmp/spectrum2-src/packaging/debian
+          mk-build-deps --install --remove \
+            --tool "apt-get -y --no-install-recommends" debian/control
+          ./build_spectrum2.sh
+          BUILD
+          sudo mkdir -p /tmp/spectrum2-debs
+          sudo cp /chroot-trixie-${{ matrix.arch }}/tmp/spectrum2-src/packaging/debian/*.deb \
+                  /tmp/spectrum2-debs/
+
+      - name: Verify ${{ matrix.arch }} packages
+        run: |
+          set -euxo pipefail
+          for deb in /tmp/spectrum2-debs/*.deb; do
+            test -f "$deb"
+            dpkg-deb -f "$deb" Package Version Architecture
+            test "$(dpkg-deb -f "$deb" Architecture)" = "${{ matrix.arch }}"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: spectrum2-trixie-${{ matrix.arch }}-debs
+          path: /tmp/spectrum2-debs/*.deb
+          if-no-files-found: error
+          retention-days: 14
+
   build:
+    needs: build-debs
     strategy:
       matrix:
         include:
@@ -22,6 +96,11 @@ jobs:
       packages: write
     steps:
     - uses: actions/checkout@v7
+    - name: Download spectrum2 debs
+      uses: actions/download-artifact@v6
+      with:
+        name: spectrum2-trixie-${{ matrix.arch }}-debs
+        path: debs
     - name: Docker meta
       id: docker_meta
       uses: crazy-max/ghaction-docker-meta@v6
