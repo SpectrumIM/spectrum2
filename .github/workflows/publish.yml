@@ -72,7 +72,7 @@ jobs:
           done
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: spectrum2-trixie-${{ matrix.arch }}-debs
           path: /tmp/spectrum2-debs/*.deb
