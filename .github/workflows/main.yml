@@ -99,7 +99,7 @@ jobs:
     - uses: actions/checkout@v7
     - name: Cache MacPorts
       id: macports-cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /opt/local
         key: macports-14-v1.0.1-${{ hashFiles('.github/workflows/main.yml') }}
