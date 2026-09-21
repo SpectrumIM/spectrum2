@@ -97,7 +97,7 @@ jobs:
     steps:
     - uses: actions/checkout@v7
     - name: Download spectrum2 debs
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v8
       with:
         name: spectrum2-trixie-${{ matrix.arch }}-debs
         path: debs
