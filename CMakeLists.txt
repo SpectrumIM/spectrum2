@@ -336,7 +336,6 @@ if(PROTOBUF_FOUND)
 	else()
 		message("Frotz plugin      : no (does not run on Win32)")
 		message("SMSTools3 plugin  : no (does not run on Win32)")
-		message("Skype plugin      : no (does not run on Win32)")
 	endif()
 
 	if(ENABLE_XMPP)
