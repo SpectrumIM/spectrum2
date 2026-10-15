@@ -126,12 +126,13 @@ FROM debian:trixie-slim as production
 EXPOSE 8080
 VOLUME ["/etc/spectrum2/transports", "/var/lib/spectrum2"]
 
-# purple-gowhatsapp / purple-whatsmeow nightly build: needs glibc >= 2.34.
+# purple-gowhatsapp / purple-whatsmeow release build: needs glibc >= 2.34.
 # trixie ships a newer glibc, so this is fine (bullseye's 2.31 was NOT enough,
-# see below). Bump these two ARGs to move to a newer nightly later.
-ARG GOWHATSAPP_RELEASE=nightly-20260901
-ARG GOWHATSAPP_DEB_AMD64=purple-whatsmeow_1.22.0_amd64.deb
-ARG GOWHATSAPP_DEB_ARM64=purple-whatsmeow_1.22.0_arm64.deb
+# see below). Upstream deletes old nightly releases, so pin a tagged release;
+# bump these three ARGs to move to a newer one.
+ARG GOWHATSAPP_RELEASE=v1.26.0
+ARG GOWHATSAPP_DEB_AMD64=purple-whatsmeow_1.26.0_amd64.deb
+ARG GOWHATSAPP_DEB_ARM64=purple-whatsmeow_1.26.0_arm64.deb
 
 RUN apt-get update -qq
 RUN apt-get install --no-install-recommends -y curl ca-certificates gnupg1 gpg gpg-agent
@@ -144,11 +145,11 @@ ARG TARGETARCH
 
 COPY debs/*.deb /tmp/
 
-RUN echo "---> purple-whatsmeow (gowhatsapp, nightly build, ${TARGETARCH})" && \
+RUN echo "---> purple-whatsmeow (gowhatsapp, ${GOWHATSAPP_RELEASE}, ${TARGETARCH})" && \
 		case "${TARGETARCH}" in \
 			amd64) GOWHATSAPP_DEB="${GOWHATSAPP_DEB_AMD64}" ;; \
 			arm64) GOWHATSAPP_DEB="${GOWHATSAPP_DEB_ARM64}" ;; \
-			*) echo "no purple-whatsmeow nightly build for arch ${TARGETARCH}" >&2; exit 1 ;; \
+			*) echo "no purple-whatsmeow build for arch ${TARGETARCH}" >&2; exit 1 ;; \
 		esac && \
 		curl -fL -o /tmp/purple-whatsmeow.deb \
 			"https://github.com/hoehermann/purple-gowhatsapp/releases/download/${GOWHATSAPP_RELEASE}/${GOWHATSAPP_DEB}" && \
