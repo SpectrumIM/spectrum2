@@ -990,7 +990,25 @@ void NetworkPluginServer::handleElement(std::shared_ptr<Swift::ToplevelElement> 
 	std::shared_ptr<Swift::Message> message = std::dynamic_pointer_cast<Swift::Message>(stanza);
 	if (message) {
 		if (conv) {
+			if (conv->isMUC() || message->getType() == Swift::Message::Groupchat) {
+				conv->handleRawMessage(message);
+				return;
+			}
+
+			// The message goes to the last-replied resource
+			Swift::JID delivered = conv->getDeliveryJID();
+			message->setTo(delivered);
+
+			// In gateway mode the XMPP server copies the message to the other resources itself
+			if (!m_component->inServerMode()) {
+				conv->handleRawMessage(message);
+				return;
+			}
+
+			// The other resources of the user get a XEP-0280 <received> carbon
+			std::shared_ptr<Swift::Message> copy(new Swift::Message(*message));
 			conv->handleRawMessage(message);
+			conv->forwardReceivedCopies(copy, delivered);
 			return;
 		}
 

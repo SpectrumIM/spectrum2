@@ -38,6 +38,7 @@
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/Elements/VCardUpdate.h"
 #include "Swiften/Elements/CarbonsSent.h"
+#include "Swiften/Elements/CarbonsReceived.h"
 #include "Swiften/Elements/Forwarded.h"
 #include "Swiften/Elements/HintPayload.h"
 #include "Swiften/Elements/Privilege.h"
@@ -256,8 +257,69 @@ void Conversation::handleMessage(std::shared_ptr<Swift::Message> &message, const
 			this->forwardAsCarbonSent(message, it->getFrom());
 		}
 	} else {
+		// In gateway mode the XMPP server copies the message to the other resources itself
+		bool copyToOthers = this->getConversationManager()->getComponent()->inServerMode()
+			&& !m_muc && message->getType() != Swift::Message::Groupchat;
+		std::shared_ptr<Swift::Message> copy;
+		if (copyToOthers) {
+			copy = std::shared_ptr<Swift::Message>(new Swift::Message(*message));
+		}
 		handleRawMessage(message);
+		if (copyToOthers) {
+			forwardReceivedCopies(copy, getDeliveryJID());
+		}
 	}
+}
+
+// The resource an incoming 1:1 message goes to: m_jid, or the highest-priority resource while m_jid is still bare
+Swift::JID Conversation::getDeliveryJID() {
+	if (this->m_jid.isBare()) {
+		Component* transport = this->getConversationManager()->getComponent();
+		Swift::Presence::ref highest = transport->getPresenceOracle()->getHighestPriorityPresence(this->m_jid.toBare());
+		if (highest) {
+			return highest->getFrom();
+		}
+	}
+	return this->m_jid;
+}
+
+// Every resource of the user except the one the message was delivered to gets a XEP-0280 <received> carbon
+void Conversation::forwardReceivedCopies(const std::shared_ptr<Swift::Message> &copy, const Swift::JID &delivered) {
+	Component* transport = this->getConversationManager()->getComponent();
+	std::vector<Swift::Presence::ref> presences = transport->getPresenceOracle()->getAllPresence(this->m_jid.toBare());
+	BOOST_FOREACH(const Swift::Presence::ref &it, presences) {
+		if (it->getFrom() == delivered) {
+			continue;
+		}
+		this->forwardAsCarbonReceived(copy, it->getFrom());
+	}
+}
+
+void Conversation::forwardAsCarbonReceived(
+	const std::shared_ptr<Swift::Message> &payload,
+	const Swift::JID& to)
+{
+	LOG4CXX_INFO(conversationLogger, "Carbon <received> to -> " << to.toString());
+
+	//Message envelope
+	std::shared_ptr<Swift::Message> message(new Swift::Message());
+	message->setType(payload->getType());
+	message->setFrom(m_jid.toBare());
+	message->setTo(to);
+
+	//Wrap the payload in a <received><forwarded>
+	std::shared_ptr<Swift::Forwarded> forwarded(new Swift::Forwarded());
+	forwarded->setStanza(payload);
+	std::shared_ptr<Swift::CarbonsReceived> received(new Swift::CarbonsReceived());
+	received->setForwarded(forwarded);
+	message->addPayload(received);
+
+	//Add no-copy to prevent some servers from creating carbons of carbons
+	Swift::HintPayload::ref noCopy(new Swift::HintPayload(Swift::HintPayload::NoCopy));
+	message->addPayload(noCopy);
+
+	// Only used in server mode: in gateway mode the XMPP server generates the carbons
+	handleRawMessage(message);
 }
 
 void Conversation::forwardAsCarbonSent(

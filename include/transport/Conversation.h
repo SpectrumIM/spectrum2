@@ -71,6 +71,17 @@ class Conversation {
 			const std::shared_ptr<Swift::Message> &payload,
 			const Swift::JID& to);
 
+		//Generates a carbon <received> wrapper <message> around the given payload and delivers it
+		void forwardAsCarbonReceived(
+			const std::shared_ptr<Swift::Message> &payload,
+			const Swift::JID& to);
+
+		//Sends a <received> carbon of an incoming message to every resource except the one it was delivered to
+		void forwardReceivedCopies(const std::shared_ptr<Swift::Message> &copy, const Swift::JID &delivered);
+
+		//Resource an incoming 1:1 message is delivered to
+		Swift::JID getDeliveryJID();
+
 		//Generates a impersonation request <message> arount the given payload and delivers it
 		void forwardImpersonated(
 			std::shared_ptr<Swift::Message> payload,
