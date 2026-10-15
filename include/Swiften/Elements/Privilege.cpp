@@ -8,7 +8,7 @@
 
 namespace Swift {
 
-Privilege::Privilege() {
+Privilege::Privilege() : ns_("urn:xmpp:privilege:2") {
 }
 
 }

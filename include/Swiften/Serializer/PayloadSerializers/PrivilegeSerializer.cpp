@@ -28,7 +28,7 @@ std::string PrivilegeSerializer::serializePayload(std::shared_ptr<Privilege> pay
 		return "";
 	}
 
-	XMLElement element("privilege", "urn:xmpp:privilege:1");
+	XMLElement element("privilege", payload->getNamespace());
 
 	std::shared_ptr<Privilege::Forwarded> forwarded(payload->getForwarded());
 	if (forwarded) {

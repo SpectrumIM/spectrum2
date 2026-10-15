@@ -100,6 +100,8 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_component = NULL;
 	m_server = NULL;
 	m_rawXML = false;
+	// Until the server announces its XEP-0356 permissions, use the current namespace
+	m_privilegeNamespace = "urn:xmpp:privilege:2";
 	m_config = transport->getConfig();
 	m_userManager = NULL;
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
@@ -153,6 +155,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 		SwiftServerExposed* entity(reinterpret_cast<SwiftServerExposed*>(m_server));
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
+		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:2", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
@@ -177,6 +180,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 		SwiftComponentExposed* entity(reinterpret_cast<SwiftComponentExposed*>(m_component));
 		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", entity->getPayloadParserFactories()));
+		m_parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:2", entity->getPayloadParserFactories()));
 		m_payloadSerializers.push_back(new Swift::PrivilegeSerializer(entity->getPayloadSerializers()));
 
 		BOOST_FOREACH(Swift::PayloadParserFactory *factory, m_parserFactories) {
@@ -232,6 +236,11 @@ void XMPPFrontend::handleGeneralPresence(Swift::Presence::ref presence) {
 }
 
 void XMPPFrontend::handleMessage(std::shared_ptr<Swift::Message> message) {
+	// The server announces the XEP-0356 permissions it granted us; reply in the same namespace
+	Swift::Privilege::ref privilege = message->getPayload<Swift::Privilege>();
+	if (privilege && message->getFrom().getNode().empty() && message->getFrom().getResource().empty()) {
+		m_privilegeNamespace = privilege->getNamespace();
+	}
 	onMessageReceived(message);
 }
 
@@ -263,6 +272,10 @@ void XMPPFrontend::sendRosterRequest(Swift::RosterPayload::ref payload, Swift::J
 }
 
 void XMPPFrontend::sendMessage(std::shared_ptr<Swift::Message> message) {
+	Swift::Privilege::ref privilege = message->getPayload<Swift::Privilege>();
+	if (privilege) {
+		privilege->setNamespace(m_privilegeNamespace);
+	}
 	m_stanzaChannel->sendMessage(message);
 }
 

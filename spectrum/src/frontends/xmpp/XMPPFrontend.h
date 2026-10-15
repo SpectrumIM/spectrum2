@@ -127,6 +127,7 @@ namespace Transport {
 			UserManager *m_userManager;
 			std::vector<Swift::PayloadParserFactory *> m_parserFactories;
 			std::vector<Swift::PayloadSerializer *> m_payloadSerializers;
+			std::string m_privilegeNamespace;
 
 		friend class XMPPUser;
 		friend class UserRegistration;

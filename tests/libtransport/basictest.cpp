@@ -76,7 +76,7 @@ void BasicTest::setMeUp (void) {
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-store", "urn:xmpp:hints"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("no-copy", "urn:xmpp:hints"));
 	parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::HintPayloadParser>("store", "urn:xmpp:hints"));
-	parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:1", payloadParserFactories));
+	parserFactories.push_back(new Swift::GenericPayloadParserFactory2<Swift::PrivilegeParser>("privilege", "urn:xmpp:privilege:2", payloadParserFactories));
 
 	BOOST_FOREACH(Swift::PayloadParserFactory *factory, parserFactories) {
 		payloadParserFactories->addFactory(factory);

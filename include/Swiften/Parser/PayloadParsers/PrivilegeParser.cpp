@@ -13,6 +13,9 @@ PrivilegeParser::PrivilegeParser(PayloadParserFactoryCollection* factories) : fa
 }
 
 void PrivilegeParser::handleStartElement(const std::string& element, const std::string& ns, const AttributeMap& attributes) {
+	if (level_ == TopLevel) {
+		getPayloadInternal()->setNamespace(ns);
+	}
 	if (level_ == PayloadLevel) {
 		if (element == "forwarded" && ns == "urn:xmpp:forward:0") {
 			childParser_ = std::dynamic_pointer_cast<PayloadParser>(std::make_shared<ForwardedParser>(factories_));
