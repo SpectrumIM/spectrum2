@@ -233,12 +233,9 @@ void Conversation::handleMessage(std::shared_ptr<Swift::Message> &message, const
 
 	if (carbon) {
 		LOG4CXX_DEBUG(conversationLogger, "CARBON MSG");
-		//Swap from and to
-		Swift::JID from = message->getTo();
-		if (from.getResource().empty()) {
-		    //If no resource is specified, set the same that is used for legacy network contacts
-		    from = Swift::JID(from.getNode(), from.getDomain(), JID_DEFAULT_RESOURCE);
-		}
+		//Swap from and to. The message was sent from a legacy client, not from any XMPP resource,
+		//so it comes from the user's bare JID.
+		Swift::JID from = message->getTo().toBare();
 		message->setTo(message->getFrom());
 		message->setFrom(from);
 
