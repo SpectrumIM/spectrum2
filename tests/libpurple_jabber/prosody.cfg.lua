@@ -28,6 +28,9 @@ admins = { }
 -- For more information see: http://prosody.im/doc/libevent
 --use_libevent = true;
 
+-- Component connections must be reachable through the Docker port mapping (-p 5347:5347), not only 127.0.0.1
+component_interface = { "0.0.0.0" }
+
 -- This is the list of modules Prosody will load on startup.
 -- It looks for mod_modulename.lua in the plugins folder, so make sure that exists too.
 -- Documentation on modules can be found at: http://prosody.im/doc/modules
@@ -166,6 +169,23 @@ run_as_root = true
 -- all config files in /etc/prosody/conf.d/
 
 VirtualHost "localhost"
+	modules_enabled = {
+		"privilege"
+	}
+	privileged_entities = {
+		["localhostxmpp"] = {
+			roster = "both",
+			message = "outgoing"
+		}
+	}
 --Component "gateway.localhost"
 --	component_secret = "secret"
 Component "conference.localhost" "muc"
+	muc_room_locking = false
+
+-- Gateway-mode transport (service.server_mode unset): connects as a component with gateway_test.cfg's password
+Component "localhostxmpp"
+	component_secret = "secret"
+	modules_enabled = {
+		"privilege"
+	}

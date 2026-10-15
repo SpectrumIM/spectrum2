@@ -59,6 +59,14 @@ struct XmppClient {
     std::set<std::string> presenceNicks;
     bool disconnected = false;
     int carbonCount = 0;
+    int plainMessageCount = 0;
+    struct CarbonEvent {
+        bool sent;
+        Swift::JID from;
+        Swift::JID innerFrom;
+        std::string body;
+    };
+    std::vector<CarbonEvent> carbonEvents;
     std::string vcardPhotoHash;
 
     void connect(const std::string &jidStr, const std::string &pass, int port = 5223) {
@@ -80,10 +88,24 @@ struct XmppClient {
             std::shared_ptr<Swift::CarbonsSent> cs = m->getPayload<Swift::CarbonsSent>();
             if (cr || cs) {
                 carbonCount++;
+                CarbonEvent ev;
+                ev.sent = (cs != nullptr);
+                ev.from = m->getFrom();
+                std::shared_ptr<Swift::Forwarded> fwd = cs ? cs->getForwarded() : cr->getForwarded();
+                if (fwd) {
+                    std::shared_ptr<Swift::Message> inner = std::dynamic_pointer_cast<Swift::Message>(fwd->getStanza());
+                    if (inner) {
+                        ev.body = inner->getBody().get_value_or("");
+                        ev.innerFrom = inner->getFrom();
+                    }
+                }
+                carbonEvents.push_back(ev);
                 std::cerr << "[XMPP] Carbon #" << carbonCount
-                          << " type=" << (cr ? "received" : "sent") << std::endl;
+                          << " type=" << (cr ? "received" : "sent")
+                          << " from=" << ev.from.toString() << " body='" << ev.body << "'" << std::endl;
                 return;
             }
+            plainMessageCount++;
             std::cerr << "[XMPP] Message: body='" << m->getBody().get_value_or("")
                       << "' subject='" << m->getSubject() << "'"
                       << " type=" << static_cast<int>(m->getType()) << std::endl;
@@ -249,10 +271,6 @@ struct XmppClient {
         std::cerr << "[XMPP] SetVCard sent (" << photoData.size() << " bytes)" << std::endl;
     }
 
-    void enableCarbons() {
-        Swift::EnableCarbonsRequest::create(client->getIQRouter())->send();
-        std::cerr << "[XMPP] Carbons enable sent" << std::endl;
-    }
 
     void waitForCarbonCount(int expected, int timeoutSec = 15) {
         time_t start = time(NULL);
@@ -406,6 +424,11 @@ static std::string cmd(int fd, const std::string &c) {
 
 static const std::string IRC_CHANNEL_JID = "#channel%localhost@localhost";
 static const std::string IRC_SERVER_CHANNEL_JID = "#channel@localhost";
+// Carbons are per session, so every resource of the user has to enable them itself
+static void enableCarbons(Swift::Client *client) {
+    Swift::EnableCarbonsRequest::create(client->getIQRouter())->send();
+}
+
 static const std::string XMPP_CHATROOM_JID = "group%conference.localhost@localhostxmpp";
 static const std::string PROSODY_ROOM_JID = "group@conference.localhost";
 
@@ -596,12 +619,59 @@ static void test_avatar(XmppClient &client, XmppClient &responder) {
     check("avatar VCardUpdate received", responder.vcardPhotoHash, expectedHash);
 }
 
+// Per-client tally of carbons received since a given index, classified the same way
+// as Python carbons.py: sent carbons only, from our own bare JID (not our full JID),
+// body must be one of the expected message kinds.
+struct CarbonTally {
+    int m1 = 0, m2 = 0, m3 = 0, weird = 0;
+};
+
+static bool startsWith(const std::string &s, const std::string &prefix) {
+    return s.compare(0, prefix.size(), prefix) == 0;
+}
+
+static CarbonTally tallyCarbons(const XmppClient &c, size_t fromIndex) {
+    CarbonTally t;
+    std::string ownFull = c.client->getJID().toString();
+    std::string ownBare = c.client->getJID().toBare().toString();
+    for (size_t i = fromIndex; i < c.carbonEvents.size(); i++) {
+        const XmppClient::CarbonEvent &ev = c.carbonEvents[i];
+        // Carbons of legacy-side messages come from the transport JID (client\40localhost@localhostxmpp),
+        // as Python's alt_jid allowed; carbons of our own account come from its bare JID.
+        bool fromOwnAccount = ev.from.toBare().toString() == ownBare;
+        bool fromTransport = ev.from.getDomain() == "localhostxmpp";
+        if (!ev.sent || ev.from.toString() == ownFull || !(fromOwnAccount || fromTransport)) {
+            std::cerr << "[XMPP] Weird carbon from=" << ev.from.toString() << " body='" << ev.body << "'" << std::endl;
+            t.weird++;
+        } else if (startsWith(ev.body, "Message 1 from ")) {
+            t.m1++;
+        } else if (ev.body == "Message 2") {
+            t.m2++;
+        } else if (startsWith(ev.body, "Message 3 from ")) {
+            t.m3++;
+        } else {
+            std::cerr << "[XMPP] Weird carbon body='" << ev.body << "'" << std::endl;
+            t.weird++;
+        }
+    }
+    return t;
+}
+
+static void addTally(CarbonTally &sum, const CarbonTally &t) {
+    sum.m1 += t.m1; sum.m2 += t.m2; sum.m3 += t.m3; sum.weird += t.weird;
+}
+
 // test_carbons: Full replication of Python carbons.py.
-// Per-batch carbon counts match Python assertions exactly.
+// Carbon counts are checked per batch; each batch waits for the expected count and then
+// settles so that late duplicates are counted before the exact comparison.
 static void test_carbons(XmppClient &c1, XmppClient &c2, XmppClient &responder) {
-    c1.enableCarbons();
-    c2.enableCarbons();
-    sleep(1);
+    // Plain messages from earlier tests on these clients must not count as weird here
+    c1.plainMessageCount = 0;
+    c2.plainMessageCount = 0;
+
+    enableCarbons(c1.client);
+    enableCarbons(c2.client);
+    sleep(2); // Python waits 5s for other clients; enable is an IQ and not confirmed here
 
     Swift::JID respXmpp("responder%localhost@localhostxmpp");
     Swift::JID respProsody("responder@localhost");
@@ -613,31 +683,243 @@ static void test_carbons(XmppClient &c1, XmppClient &c2, XmppClient &responder) 
         from.client->sendMessage(m);
     };
 
+    // Each batch: send from both clients, wait for the expected carbons, then settle.
+    auto runBatch = [&](const std::string &body1, const std::string &body2, int perClient) {
+        size_t s1 = c1.carbonEvents.size();
+        size_t s2 = c2.carbonEvents.size();
+        int base1 = c1.carbonCount, base2 = c2.carbonCount;
+        for (int i = 0; i < perClient; i++) {
+            sendMsg(c1, respXmpp, body1);
+            sendMsg(c2, respProsody, body2);
+            usleep(200000);
+        }
+        c1.waitForCarbonCount(base1 + perClient, 10);
+        c2.waitForCarbonCount(base2 + perClient, 10);
+        sleep(2); // catch late duplicates before the exact comparison
+        CarbonTally t1 = tallyCarbons(c1, s1);
+        CarbonTally t2 = tallyCarbons(c2, s2);
+        return std::make_pair(t1, t2);
+    };
+
+    CarbonTally sum1, sum2;
+
     // Python: "Message 1 from <jid>" — unique per client (cs_m1_cnt)
-    sendMsg(c1, respXmpp, "Message 1 from " + c1name);
-    sendMsg(c2, respProsody, "Message 1 from " + c2name);
-    usleep(200000);
-    c1.waitForCarbonCount(1, 10); c2.waitForCarbonCount(1, 10);
-    check("backend-xmpp: Carbons are delivered to clients across spectrum boundary", c1.carbonCount >= 1 && c2.carbonCount >= 1);
-    check("backend-xmpp: No unexpected carbons are delivered", c1.carbonCount == 1 && c2.carbonCount == 1);
+    auto b1 = runBatch("Message 1 from " + c1name, "Message 1 from " + c2name, 1);
+    addTally(sum1, b1.first); addTally(sum2, b1.second);
+    check("backend-xmpp: Carbons are delivered to clients across spectrum boundary",
+          b1.first.m1 >= 1 && b1.second.m1 >= 1);
+    check("backend-xmpp: No unexpected carbons are delivered",
+          b1.first.m1 == 1 && b1.second.m1 == 1);
 
     // Python: "Message 2" — identical text (cs_m2_cnt)
-    c1.carbonCount = c2.carbonCount = 0;
-    sendMsg(c1, respXmpp, "Message 2");
-    sendMsg(c2, respProsody, "Message 2");
-    usleep(200000);
-    c1.waitForCarbonCount(1, 10); c2.waitForCarbonCount(1, 10);
-    check("backend-xmpp: Identical carbons are delivered correctly", c1.carbonCount == 1 && c2.carbonCount == 1);
+    auto b2 = runBatch("Message 2", "Message 2", 1);
+    addTally(sum1, b2.first); addTally(sum2, b2.second);
+    check("backend-xmpp: Identical carbons are delivered correctly",
+          b2.first.m2 == 1 && b2.second.m2 == 1);
 
     // Python: "Message 3 from <jid>" x3 — repeated (cs_m3_cnt)
-    c1.carbonCount = c2.carbonCount = 0;
-    for (int i = 0; i < 3; i++) {
-        sendMsg(c1, respXmpp, "Message 3 from " + c1name);
-        sendMsg(c2, respProsody, "Message 3 from " + c2name);
-        usleep(200000);
+    auto b3 = runBatch("Message 3 from " + c1name, "Message 3 from " + c2name, 3);
+    addTally(sum1, b3.first); addTally(sum2, b3.second);
+    check("backend-xmpp: Repeated carbons are delivered correctly",
+          b3.first.m3 == 3 && b3.second.m3 == 3);
+
+    // Python: no_weird — any unexpected carbon or plain message fails the run
+    check("backend-xmpp: No weird carbon-related messages delivered",
+          sum1.weird == 0 && sum2.weird == 0 && c1.plainMessageCount == 0 && c2.plainMessageCount == 0);
+
+    // Python responder_got_all is not ported: this `responder` is the spectrum-side
+    // resp@localhost, not the prosody-side responder the Python test used, so the
+    // incoming count is not comparable here yet.
+    (void)responder;
+}
+
+// test_received_copies: a legacy message goes only to the last-replied XMPP resource,
+// and every other resource of the user gets a XEP-0280 <received> carbon of it.
+// c1 replies first, so it is the last-replied resource; c3 is another resource of the same user.
+static void test_received_copies(XmppClient &c1, XmppClient &c3, XmppClient &prosodyResponder) {
+    enableCarbons(c1.client);
+    enableCarbons(c3.client);
+    // Spectrum copies only to resources in its presence oracle, so both must announce presence
+    c1.client->sendPresence(Swift::Presence::create());
+    c3.client->sendPresence(Swift::Presence::create());
+    sleep(2);
+
+    // c1 replies to the legacy contact, making its full JID the last-replied resource
+    std::shared_ptr<Swift::Message> reply(new Swift::Message());
+    reply->setTo(Swift::JID("responder%localhost@localhostxmpp"));
+    reply->setBody("reply from c1");
+    reply->setType(Swift::Message::Chat);
+    c1.client->sendMessage(reply);
+    sleep(2);
+
+    // Reset what the reply may have produced, then send the legacy message from the Prosody side
+    c1.receivedBody.clear();
+    c1.plainMessageCount = 0;
+    c1.carbonCount = 0;
+    c1.carbonEvents.clear();
+    c3.receivedBody.clear();
+    c3.plainMessageCount = 0;
+    c3.carbonCount = 0;
+    c3.carbonEvents.clear();
+
+    const std::string legacyBody = "Received copy test";
+    std::shared_ptr<Swift::Message> legacy(new Swift::Message());
+    legacy->setTo(Swift::JID("client@localhost"));
+    legacy->setBody(legacyBody);
+    legacy->setType(Swift::Message::Chat);
+    prosodyResponder.client->sendMessage(legacy);
+
+    c1.waitForBody(10);
+    sleep(2); // catch late copies before the exact comparisons
+    c3.waitForCarbonCount(1, 10);
+    sleep(2);
+
+    check("received: last-replied resource gets the message", c1.receivedBody, legacyBody);
+    check("received: last-replied resource gets no copy", c1.carbonCount == 0);
+    check("received: other resource gets exactly one copy", c3.carbonCount == 1);
+    bool isReceived = c3.carbonCount == 1 && !c3.carbonEvents[0].sent;
+    check("received: copy is a <received> carbon", isReceived);
+    check("received: copy carries the legacy body", c3.carbonCount == 1 && c3.carbonEvents[0].body == legacyBody);
+    check("received: other resource gets no plain message", c3.plainMessageCount == 0);
+}
+
+// test_gateway_received_copies: gateway mode. The transport is a Prosody component, so the user's
+// XMPP clients are Prosody accounts. Prosody generates the copies for the other resources.
+static void test_gateway_received_copies(XmppClient &c1, XmppClient &c3, XmppClient &c4, XmppClient &prosodyResponder) {
+    std::vector<XmppClient *> clients = {&c1, &c3, &c4};
+    for (XmppClient *c : clients) {
+        enableCarbons(c->client);
     }
-    c1.waitForCarbonCount(3, 10); c2.waitForCarbonCount(3, 10);
-    check("backend-xmpp: Repeated carbons are delivered correctly", c1.carbonCount == 3 && c2.carbonCount == 3);
+    // Presence to the transport logs the user in to the legacy network; broadcast presence is what the oracle sees
+    for (XmppClient *c : clients) {
+        Swift::Presence::ref toTransport = Swift::Presence::create();
+        toTransport->setTo(Swift::JID("localhostxmpp"));
+        c->client->sendPresence(toTransport);
+        c->client->sendPresence(Swift::Presence::create());
+    }
+    sleep(3);
+
+    // A resource replies to the legacy contact, making its full JID the last-replied resource
+    auto replyFrom = [&](XmppClient &c, const std::string &body) {
+        std::shared_ptr<Swift::Message> reply(new Swift::Message());
+        reply->setTo(Swift::JID("responder%localhost@localhostxmpp"));
+        reply->setBody(body);
+        reply->setType(Swift::Message::Chat);
+        c.client->sendMessage(reply);
+        sleep(2);
+    };
+    auto resetAll = [&]() {
+        for (XmppClient *c : clients) {
+            c->carbonEvents.clear(); c->carbonCount = 0; c->receivedBody.clear();
+        }
+    };
+    // Address the resource the transport's backend logs in with, not the XMPP user: a message to
+    // client@localhost would be fanned out by Prosody itself to every resource and never pass the transport
+    auto sendLegacy = [&](const std::string &body) {
+        std::shared_ptr<Swift::Message> legacy(new Swift::Message());
+        legacy->setTo(Swift::JID("responder@localhost/Spectrum"));
+        legacy->setBody(body);
+        legacy->setType(Swift::Message::Chat);
+        prosodyResponder.client->sendMessage(legacy);
+    };
+    // Copies from the transport carry the user's bare JID as sender and the legacy body
+    auto countCopies = [&](const XmppClient &c, const std::string &body) {
+        int n = 0;
+        for (const XmppClient::CarbonEvent &ev : c.carbonEvents) {
+            if (!ev.sent && ev.from.toBare().toString() == "client@localhost" && ev.body == body) n++;
+        }
+        return n;
+    };
+
+    replyFrom(c1, "gateway reply from c1");
+    resetAll();
+
+    // The backend logs in asynchronously; the transport announces its session to the user as the contact's presence
+    c3.waitForNick("Spectrum", 60);
+    check("gateway: backend session announced by the transport", c3.presenceNicks.count("Spectrum"));
+
+    // Phase 1: c1 is the last-replied resource; c3 and c4 are the other resources of the same user
+    const std::string firstBody = "Gateway copy test";
+    sendLegacy(firstBody);
+    c3.waitForCarbonCount(1, 10);
+    c4.waitForCarbonCount(1, 10);
+    sleep(2); // catch late copies before the exact comparisons
+
+    check("gateway: last-replied resource gets the message", c1.receivedBody == firstBody);
+    check("gateway: other resource gets exactly one copy", countCopies(c3, firstBody) == 1);
+    check("gateway: third resource gets exactly one copy", countCopies(c4, firstBody) == 1);
+    check("gateway: replied resource gets no copy", countCopies(c1, firstBody) == 0);
+
+    // Phase 2: c3 replies, so it becomes the last-replied resource; c1 and c4 get the copies
+    replyFrom(c3, "gateway reply from c3");
+    resetAll();
+
+    const std::string secondBody = "Gateway copy test after switch";
+    sendLegacy(secondBody);
+    c1.waitForCarbonCount(1, 10);
+    c4.waitForCarbonCount(1, 10);
+    sleep(2);
+
+    check("gateway: switched last-replied resource gets the message", c3.receivedBody == secondBody);
+    check("gateway: previous resource gets exactly one copy after switch", countCopies(c1, secondBody) == 1);
+    check("gateway: third resource gets exactly one copy after switch", countCopies(c4, secondBody) == 1);
+    check("gateway: switched replied resource gets no copy", countCopies(c3, secondBody) == 0);
+}
+
+// test_gateway_sent_carbons: gateway mode. The account sends a message from another legacy client,
+// so the backend reports it with carbon=true. A component cannot send from the user's bare JID, so the
+// transport asks Prosody through a XEP-0356 <privilege> wrapper to send the <sent> carbon to every resource.
+// The swiften backend never sets carbon=true, so the test sends that message to the transport as a backend.
+// The test's first connection answers only the first PING, so Spectrum drops it on the next ping round;
+// a fresh connection is opened here instead.
+static void test_gateway_sent_carbons(const std::string &host, int port, XmppClient &c1, XmppClient &c3, XmppClient &c4, XmppClient &prosodyResponder) {
+    std::vector<XmppClient *> clients = {&c1, &c3, &c4};
+    for (XmppClient *c : clients) {
+        c->carbonEvents.clear(); c->carbonCount = 0; c->receivedBody.clear();
+    }
+    prosodyResponder.carbonEvents.clear(); prosodyResponder.carbonCount = 0; prosodyResponder.receivedBody.clear();
+
+    int fd = connect_tcp(host, port);
+    check("gateway sent: backend connection", fd >= 0 && handshake(fd));
+    if (fd < 0) return;
+
+    const std::string body = "Sent from another legacy client";
+    ConversationMessage m;
+    m.set_username("client@localhost");
+    m.set_buddyname("responder@localhost");
+    m.set_message(body);
+    m.set_carbon(true);
+    WrapperMessage wrap;
+    wrap.set_type(WrapperMessage_Type_TYPE_CONV_MESSAGE);
+    wrap.set_payload(m.SerializeAsString());
+    check("gateway sent: carbon message sent to the transport", send_wrapper(fd, wrap));
+
+    for (XmppClient *c : clients) {
+        c->waitForCarbonCount(1, 10);
+    }
+    sleep(2); // catch late duplicates before the exact comparisons
+    close(fd);
+
+    // A <sent> carbon must come from the user's own bare JID and carry the legacy body. No XMPP resource
+    // sent the message, so the forwarded message is from the bare JID too.
+    auto countSent = [&](const XmppClient &c) {
+        int n = 0;
+        for (const XmppClient::CarbonEvent &ev : c.carbonEvents) {
+            if (ev.sent && ev.from.toString() == "client@localhost" && ev.innerFrom.toString() == "client@localhost" && ev.body == body) n++;
+        }
+        return n;
+    };
+    check("gateway sent: first resource gets exactly one <sent> carbon", countSent(c1) == 1);
+    check("gateway sent: second resource gets exactly one <sent> carbon", countSent(c3) == 1);
+    check("gateway sent: third resource gets exactly one <sent> carbon", countSent(c4) == 1);
+    bool noPlain = c1.receivedBody != body && c3.receivedBody != body && c4.receivedBody != body;
+    check("gateway sent: no resource gets it as a plain message", noPlain);
+    // The message was already sent on the legacy network, so it must not be sent there again
+    bool notEchoed = prosodyResponder.receivedBody != body;
+    for (const XmppClient::CarbonEvent &ev : prosodyResponder.carbonEvents) {
+        if (ev.body == body) notEchoed = false;
+    }
+    check("gateway sent: the legacy contact does not get it again", notEchoed);
 }
 
 static void test_bad_password() {
@@ -659,6 +941,7 @@ int main(int argc, char *argv[]) {
     std::string mode = (argc > 3) ? argv[3] : "";
     bool isSlack = (mode == "slack");
     bool isJabber = (mode == "jabber");
+    bool isGateway = (mode == "gateway");
     bool isIrcServer = (mode == "irc_server");
     int xmppPort = (argc > 4) ? std::atoi(argv[4]) : 5223;
 
@@ -734,6 +1017,55 @@ int main(int argc, char *argv[]) {
         dump_log("xmpp_debug.log");
         return 0;
     }
+    else if (isGateway) {
+        // Gateway mode: no frontend on xmppPort; the user's clients are Prosody accounts
+        // The legacy account is the existing responder account, so legacy traffic must pass through the transport.
+        // The backend logs in as responder@localhost/Spectrum; the test's sender is a second resource of the same account.
+        // The jabber run shares this database and registers client@localhost first, so drop that record before registering.
+        cmd(fd, "unregister client@localhost");
+        cmd(fd, "register client@localhost responder@localhost password");
+
+        XmppClient c1, c3, c4, prosodyResponder;
+        c1.connect("client@localhost/gw1", "password", 5222);
+        c1.waitForConnect(60);
+        check("gateway: c1 connected", c1.isReady);
+        c3.connect("client@localhost/gw3", "password", 5222);
+        c3.waitForConnect(60);
+        check("gateway: c3 connected", c3.isReady);
+        c4.connect("client@localhost/gw4", "password", 5222);
+        c4.waitForConnect(60);
+        check("gateway: c4 connected", c4.isReady);
+        prosodyResponder.connect("responder@localhost/sender", "password", 5222);
+        prosodyResponder.waitForConnect(60);
+        check("gateway: prosody responder connected", prosodyResponder.isReady);
+        // Lower than the backend's resource (priority 0), so bare-JID messages to responder go to the backend
+        Swift::Presence::ref senderPresence = Swift::Presence::create();
+        senderPresence->setPriority(-1);
+        prosodyResponder.client->sendPresence(senderPresence);
+        // Prosody only delivers between resources of the same account when carbons are enabled
+        enableCarbons(prosodyResponder.client);
+
+        std::cout << "\n--- gateway received copies ---\n";
+        test_gateway_received_copies(c1, c3, c4, prosodyResponder);
+
+        std::cout << "\n--- gateway sent carbons ---\n";
+        test_gateway_sent_carbons(host, port, c1, c3, c4, prosodyResponder);
+
+        prosodyResponder.disconnect();
+        c4.disconnect();
+        c3.disconnect();
+        c1.disconnect();
+        close(fd);
+        if (tests_failed > 0) {
+            std::cout << "\n" << tests_failed << " test(s) FAILED" << std::endl;
+            dump_log("spectrum2.log");
+            dump_log("xmpp_debug.log");
+            return 1;
+        }
+        std::cout << "\nAll tests PASSED" << std::endl;
+        dump_log("xmpp_debug.log");
+        return 0;
+    }
     else if (isJabber) {
         cmd(fd, "register client@localhost client@localhost password");
         cmd(fd, "register resp@localhost responder@localhost password");
@@ -777,6 +1109,19 @@ int main(int argc, char *argv[]) {
         check("c2 direct connected", c2.isReady);
         test_carbons(client, c2, responder);
         c2.disconnect();
+
+        std::cout << "\n--- received copies ---\n";
+        XmppClient c3;
+        c3.connect("client@localhost/rcv", "password", xmppPort);
+        c3.waitForConnect(60);
+        check("c3 spectrum connected", c3.isReady);
+        XmppClient prosodyResponder;
+        prosodyResponder.connect("responder@localhost", "password", 5222);
+        prosodyResponder.waitForConnect(60);
+        check("prosody responder connected", prosodyResponder.isReady);
+        test_received_copies(client, c3, prosodyResponder);
+        prosodyResponder.disconnect();
+        c3.disconnect();
 
         client.disconnect(); client.waitForDisconnect();
         responder.disconnect(); responder.waitForDisconnect();

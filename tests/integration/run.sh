@@ -12,6 +12,8 @@ fi
 echo "Starting spectrum2 with config: $CONFIG"
 $SPECTRUM -n "./$CONFIG" > spectrum2.log 2>&1 &
 SPECTRUM_PID=$!
+# Gateway mode has no frontend listening on 5223; the transport connects out to the XMPP server instead
+if [ "$TEST_MODE" != "gateway" ]; then
 echo "Waiting for spectrum2 frontend..."
 for i in $(seq 1 15); do
     if timeout 1 bash -c "echo >/dev/tcp/127.0.0.1/5223" 2>/dev/null; then
@@ -22,6 +24,7 @@ for i in $(seq 1 15); do
     fi
     sleep 1
 done
+fi
 # Wait for backend portfile (spectrum2 auto-spawns backend)
 sleep 3
 if [ -f "$PORTFILE" ]; then
