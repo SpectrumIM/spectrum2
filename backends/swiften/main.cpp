@@ -5,6 +5,8 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <set>
+
 // Swiften
 #include <Swiften/Swiften.h>
 
@@ -43,6 +45,8 @@ Swift::XMPPSerializer *serializer;
 class ForwardIQHandler : public Swift::IQHandler {
 	public:
 		std::map <std::string, std::string> m_id2resource;
+		// ids of get/set IQs that came from the transport in handleElement and were sent out through this client
+		std::set<std::string> m_forwardedIds;
 
 		ForwardIQHandler(NetworkPlugin *np, const std::string &user) {
 			m_np = np;
@@ -51,6 +55,10 @@ class ForwardIQHandler : public Swift::IQHandler {
 
 		bool handleIQ(std::shared_ptr<Swift::IQ> iq) {
 			if (iq->getPayload<Swift::RosterPayload>() != NULL) {
+				return false;
+			}
+			// Replies to the backend's own requests (disco, caps) belong to Swift; relay only replies to the user's IQs
+			if ((iq->getType() == Swift::IQ::Result || iq->getType() == Swift::IQ::Error) && m_forwardedIds.erase(iq->getID()) == 0) {
 				return false;
 			}
 			if (iq->getType() == Swift::IQ::Get) {
@@ -150,6 +158,9 @@ class SwiftenPlugin : public NetworkPlugin, Swift::XMPPParserClient {
 					}
 
 					m_handlers[user]->m_id2resource.erase(stanza->getID());
+				}
+				if (iq->getType() == Swift::IQ::Get || iq->getType() == Swift::IQ::Set) {
+					m_handlers[user]->m_forwardedIds.insert(iq->getID());
 				}
 				client->getIQRouter()->sendIQ(iq);
 				return;

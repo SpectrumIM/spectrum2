@@ -1049,6 +1049,12 @@ void NetworkPluginServer::handleElement(std::shared_ptr<Swift::ToplevelElement> 
 			    iq->setTo(user->getJID());
 			}
 		}
+		// In gateway mode the XMPP server rejects a component stanza without a recipient and drops the stream.
+		// In server mode an IQ without 'to' is a valid server-directed IQ, so it is left alone.
+		if (!m_component->inServerMode() && !iq->getTo().isValid()) {
+			LOG4CXX_WARN(networkPluginServerLogger, "Dropping IQ " << iq->getID() << " from backend: no valid recipient");
+			return;
+		}
 		m_component->getFrontend()->sendIQ(iq);
 		return;
 	}
