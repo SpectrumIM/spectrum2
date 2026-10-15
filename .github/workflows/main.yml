@@ -19,12 +19,14 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
-    - name: Start prosody for Slack tests
+    - name: Start prosody
       run: |
         docker pull cr.spectrum.im/spectrumim/prosody:master
+        # Prosody runs as its own user and writes offline storage into the mounted test data
+        chmod -R a+rwX ${{ github.workspace }}/tests/tests_output
         docker run -d --name prosody \
           -p 5222:5222 -p 5347:5347 \
-          -v ${{ github.workspace }}/tests/slack_jabber/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua \
+          -v ${{ github.workspace }}/tests/libpurple_jabber/prosody.cfg.lua:/etc/prosody/prosody.cfg.lua \
           -v ${{ github.workspace }}/tests/tests_output/localhost:/var/lib/prosody/localhost \
           cr.spectrum.im/spectrumim/prosody:master
         sleep 3
