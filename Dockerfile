@@ -158,8 +158,16 @@ RUN echo "---> purple-whatsmeow (gowhatsapp, ${GOWHATSAPP_RELEASE}, ${TARGETARCH
 
 # Telegram removed due to it being broken since 2024 anyway (libtdjson1.7.9 /
 # libpurple-telegram-tdlib also aren't available for bookworm regardless).
+# Runtime libs of the plugins built in the staging stage: json-glib (teams,
+# discord, hangouts, icyque, mattermost), protobuf-c (hangouts, battlenet),
+# qrencode + nss (discord QR login), libsecret (steam). json-glib used to come
+# in only as a dependency of the purple-facebook package.
 RUN echo "---> Installing libpurple plugins" && \
 		DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
+		libjson-glib-1.0-0 \
+		libprotobuf-c1 \
+		libqrencode4 libnss3 \
+		libsecret-1-0 \
 		libmarkdown2 \
 		libogg0 libopusfile0 \
 		frotz \
@@ -169,6 +177,20 @@ RUN echo "---> Installing libpurple plugins" && \
 
 
 COPY --from=staging /tmp/out/* /usr/
+
+# Fail the build if any libpurple plugin has an unresolved shared library,
+# instead of the plugin silently not loading at runtime.
+RUN echo "---> Checking libpurple plugin dependencies" && \
+		plugins="$(find /usr/lib -path '*/purple-2/*.so')" && \
+		{ echo "$plugins" | grep -q '/libteams\.so$' || \
+			{ echo "libteams.so not found in any purple-2 plugin dir" >&2; exit 1; }; } && \
+		missing=0 && \
+		for so in $plugins; do \
+			if ldd "$so" | grep -q 'not found'; then \
+				echo "$so:" >&2; ldd "$so" | grep 'not found' >&2; missing=1; \
+			fi; \
+		done && \
+		[ "$missing" = 0 ]
 
 COPY --from=staging spectrum2/packaging/docker/run.sh /run.sh
 
