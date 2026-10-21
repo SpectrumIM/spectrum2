@@ -179,9 +179,10 @@ RUN echo "---> Installing libpurple plugins" && \
 COPY --from=staging /tmp/out/* /usr/
 
 # Fail the build if any libpurple plugin has an unresolved shared library,
-# instead of the plugin silently not loading at runtime.
+# instead of the plugin silently not loading at runtime. tcl.so is libpurple's
+# Tcl script loader: Tcl/Tk are only Recommends of libpurple0 and not needed.
 RUN echo "---> Checking libpurple plugin dependencies" && \
-		plugins="$(find /usr/lib -path '*/purple-2/*.so')" && \
+		plugins="$(find /usr/lib -path '*/purple-2/*.so' ! -name tcl.so)" && \
 		{ echo "$plugins" | grep -q '/libteams\.so$' || \
 			{ echo "libteams.so not found in any purple-2 plugin dir" >&2; exit 1; }; } && \
 		missing=0 && \
