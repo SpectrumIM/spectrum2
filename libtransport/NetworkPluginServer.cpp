@@ -33,6 +33,7 @@
 #include "transport/Frontend.h"
 #include "transport/Factory.h"
 #include "transport/UserRegistry.h"
+#include "transport/StorageBackend.h"
 #include "transport/protocol.pb.h"
 #include "transport/Util.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
@@ -52,6 +53,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
+#include <algorithm>
 
 #include "transport/utf8.h"
 
@@ -481,6 +483,35 @@ void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 
 	user->setConnected(true);
 	m_component->m_userRegistry->onPasswordValid(payload.user());
+}
+
+void NetworkPluginServer::handleAccountPasswordUpdatedPayload(Backend *backend, const std::string &data) {
+	pbnetwork::AccountPasswordUpdated payload;
+	if (!payload.ParseFromString(data)) {
+		return;
+	}
+
+	User *user = m_userManager->getUser(payload.user());
+	if (!user || !backend || std::find(backend->users.begin(), backend->users.end(), user) == backend->users.end()) {
+		LOG4CXX_WARN(networkPluginServerLogger, "Ignoring credential update for unknown or unowned user " << payload.user());
+		return;
+	}
+
+	if (!m_component->m_storageBackend) {
+		LOG4CXX_ERROR(networkPluginServerLogger, "Cannot persist credential update: no storage backend configured");
+		return;
+	}
+
+	UserInfo stored;
+	if (!m_component->m_storageBackend->getUser(payload.user(), stored)) {
+		LOG4CXX_WARN(networkPluginServerLogger, "Ignoring credential update for unregistered user " << payload.user());
+		return;
+	}
+
+	stored.password = payload.password();
+	m_component->m_storageBackend->setUser(stored);
+	user->getUserInfo().password = stored.password;
+	LOG4CXX_INFO(networkPluginServerLogger, "Updated stored credential for " << payload.user());
 }
 
 void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
@@ -1162,6 +1193,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, std::shared_ptr<Swift::Safe
 		switch(wrapper.type()) {
 			case pbnetwork::WrapperMessage_Type_TYPE_CONNECTED:
 				handleConnectedPayload(wrapper.payload());
+				break;
+			case pbnetwork::WrapperMessage_Type_TYPE_ACCOUNT_PASSWORD_UPDATED:
+				handleAccountPasswordUpdatedPayload(c, wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_DISCONNECTED:
 				handleDisconnectedPayload(wrapper.payload());
