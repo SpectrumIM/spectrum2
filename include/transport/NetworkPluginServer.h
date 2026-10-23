@@ -107,6 +107,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleDataRead(Backend *c, std::shared_ptr<Swift::SafeByteArray> data);
 
 		void handleConnectedPayload(const std::string &payload);
+		void handleAccountPasswordUpdatedPayload(Backend *backend, const std::string &payload);
 		void handleDisconnectedPayload(const std::string &payload);
 		void handleBuddyChangedPayload(const std::string &payload);
 		void handleBuddyRemovedPayload(const std::string &payload);
