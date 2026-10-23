@@ -176,14 +176,23 @@ void PQXXBackend::setUser(const UserInfo &user) {
 	}
 	try {
 		pqxx::nontransaction txn(*m_conn);
-		txn.exec("INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
-			+ "(" + quote(txn, user.jid) + ","
-			+ quote(txn, user.uin) + ","
-			+ quote(txn, encrypted) + ","
-			+ quote(txn, user.language) + ","
-			+ quote(txn, user.encoding) + ","
-			+ "NOW(),"
-			+ (user.vip ? "'true'" : "'false'") +")");
+		pqxx::result updated = txn.exec("UPDATE " + m_prefix + "users SET "
+			+ "uin=" + quote(txn, user.uin)
+			+ ", password=" + quote(txn, encrypted)
+			+ ", language=" + quote(txn, user.language)
+			+ ", encoding=" + quote(txn, user.encoding)
+			+ ", vip=" + (user.vip ? "'true'" : "'false'")
+			+ " WHERE jid=" + quote(txn, user.jid));
+		if (updated.affected_rows() == 0) {
+			txn.exec("INSERT INTO " + m_prefix + "users (jid, uin, password, language, encoding, last_login, vip) VALUES "
+				+ "(" + quote(txn, user.jid) + ","
+				+ quote(txn, user.uin) + ","
+				+ quote(txn, encrypted) + ","
+				+ quote(txn, user.language) + ","
+				+ quote(txn, user.encoding) + ","
+				+ "NOW(),"
+				+ (user.vip ? "'true'" : "'false'") +")");
+		}
 	}
 	catch (std::exception& e) {
 		LOG4CXX_ERROR(pxxLogger, e.what());
@@ -205,6 +214,9 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 		user.jid = r[0][1].as<std::string>();
 		user.uin = r[0][2].as<std::string>();
 		user.password = r[0][3].as<std::string>();
+		if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
+			user.password = StorageBackend::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
+		}
 		user.encoding = r[0][4].as<std::string>();
 		user.language = r[0][5].as<std::string>();
 		user.vip = r[0][6].as<bool>();
