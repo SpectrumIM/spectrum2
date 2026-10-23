@@ -138,6 +138,10 @@ serv_alias_buddy_wrapped_fnc serv_alias_buddy_wrapped = NULL;
 serv_send_typing_wrapped_fnc serv_send_typing_wrapped = NULL;
 serv_join_chat_wrapped_fnc serv_join_chat_wrapped = NULL;
 purple_signal_connect_wrapped_fnc purple_signal_connect_wrapped = NULL;
+purple_signal_register_wrapped_fnc purple_signal_register_wrapped = NULL;
+purple_accounts_get_handle_wrapped_fnc purple_accounts_get_handle_wrapped = NULL;
+purple_value_new_wrapped_fnc purple_value_new_wrapped = NULL;
+PurpleCallbackMarshal purple_marshal_POINTER__POINTER_POINTER_wrapped = NULL;
 purple_status_type_get_id_wrapped_fnc purple_status_type_get_id_wrapped = NULL;
 purple_presence_get_active_status_wrapped_fnc purple_presence_get_active_status_wrapped = NULL;
 purple_status_type_get_primitive_wrapped_fnc purple_status_type_get_primitive_wrapped = NULL;
@@ -699,6 +703,22 @@ bool resolvePurpleFunctions() {
 
 	purple_signal_connect_wrapped = (purple_signal_connect_wrapped_fnc)GetProcAddress(f_hPurple, "purple_signal_connect");
 	if (!purple_signal_connect_wrapped)
+		return false;
+
+	purple_signal_register_wrapped = (purple_signal_register_wrapped_fnc)GetProcAddress(f_hPurple, "purple_signal_register");
+	if (!purple_signal_register_wrapped)
+		return false;
+
+	purple_accounts_get_handle_wrapped = (purple_accounts_get_handle_wrapped_fnc)GetProcAddress(f_hPurple, "purple_accounts_get_handle");
+	if (!purple_accounts_get_handle_wrapped)
+		return false;
+
+	purple_value_new_wrapped = (purple_value_new_wrapped_fnc)GetProcAddress(f_hPurple, "purple_value_new");
+	if (!purple_value_new_wrapped)
+		return false;
+
+	purple_marshal_POINTER__POINTER_POINTER_wrapped = (PurpleCallbackMarshal)GetProcAddress(f_hPurple, "purple_marshal_POINTER__POINTER_POINTER");
+	if (!purple_marshal_POINTER__POINTER_POINTER_wrapped)
 		return false;
 
 	purple_status_type_get_id_wrapped = (purple_status_type_get_id_wrapped_fnc)GetProcAddress(f_hPurple, "purple_status_type_get_id");
