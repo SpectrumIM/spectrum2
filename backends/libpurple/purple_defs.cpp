@@ -141,7 +141,7 @@ purple_signal_connect_wrapped_fnc purple_signal_connect_wrapped = NULL;
 purple_signal_register_wrapped_fnc purple_signal_register_wrapped = NULL;
 purple_accounts_get_handle_wrapped_fnc purple_accounts_get_handle_wrapped = NULL;
 purple_value_new_wrapped_fnc purple_value_new_wrapped = NULL;
-PurpleCallbackMarshal purple_marshal_POINTER__POINTER_POINTER_wrapped = NULL;
+PurpleSignalMarshalFunc purple_marshal_POINTER__POINTER_POINTER_wrapped = NULL;
 purple_status_type_get_id_wrapped_fnc purple_status_type_get_id_wrapped = NULL;
 purple_presence_get_active_status_wrapped_fnc purple_presence_get_active_status_wrapped = NULL;
 purple_status_type_get_primitive_wrapped_fnc purple_status_type_get_primitive_wrapped = NULL;
@@ -717,7 +717,7 @@ bool resolvePurpleFunctions() {
 	if (!purple_value_new_wrapped)
 		return false;
 
-	purple_marshal_POINTER__POINTER_POINTER_wrapped = (PurpleCallbackMarshal)GetProcAddress(f_hPurple, "purple_marshal_POINTER__POINTER_POINTER");
+	purple_marshal_POINTER__POINTER_POINTER_wrapped = (PurpleSignalMarshalFunc)GetProcAddress(f_hPurple, "purple_marshal_POINTER__POINTER_POINTER");
 	if (!purple_marshal_POINTER__POINTER_POINTER_wrapped)
 		return false;
 
