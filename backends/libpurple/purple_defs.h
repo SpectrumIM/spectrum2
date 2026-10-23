@@ -431,6 +431,17 @@ extern serv_join_chat_wrapped_fnc serv_join_chat_wrapped;
 typedef gulong  (_cdecl * purple_signal_connect_wrapped_fnc)(void *instance, const char *signal, void *handle, PurpleCallback func, void *data);
 extern purple_signal_connect_wrapped_fnc purple_signal_connect_wrapped;
 
+typedef gulong (_cdecl * purple_signal_register_wrapped_fnc)(void *instance, const char *signal, PurpleCallbackMarshal marshal, PurpleValue *ret_value, int num_values, ...);
+extern purple_signal_register_wrapped_fnc purple_signal_register_wrapped;
+
+typedef void * (_cdecl * purple_accounts_get_handle_wrapped_fnc)(void);
+extern purple_accounts_get_handle_wrapped_fnc purple_accounts_get_handle_wrapped;
+
+typedef PurpleValue * (_cdecl * purple_value_new_wrapped_fnc)(PurpleType type, ...);
+extern purple_value_new_wrapped_fnc purple_value_new_wrapped;
+
+extern PurpleCallbackMarshal purple_marshal_POINTER__POINTER_POINTER_wrapped;
+
 typedef const char * (_cdecl * purple_status_type_get_id_wrapped_fnc)(const PurpleStatusType *status_type);
 extern purple_status_type_get_id_wrapped_fnc purple_status_type_get_id_wrapped;
 
@@ -623,6 +634,10 @@ extern wpurple_g_io_channel_win32_new_socket_wrapped_fnc wpurple_g_io_channel_wi
 #define serv_send_typing_wrapped serv_send_typing
 #define serv_join_chat_wrapped serv_join_chat
 #define purple_signal_connect_wrapped purple_signal_connect
+#define purple_signal_register_wrapped purple_signal_register
+#define purple_accounts_get_handle_wrapped purple_accounts_get_handle
+#define purple_value_new_wrapped purple_value_new
+#define purple_marshal_POINTER__POINTER_POINTER_wrapped purple_marshal_POINTER__POINTER_POINTER
 #define purple_status_type_get_id_wrapped purple_status_type_get_id
 #define purple_presence_get_active_status_wrapped purple_presence_get_active_status
 #define purple_status_type_get_primitive_wrapped purple_status_type_get_primitive
