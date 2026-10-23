@@ -273,6 +273,17 @@ void NetworkPlugin::handleConnected(const std::string &user) {
 	send(message);	
 }
 
+void NetworkPlugin::handleAccountPasswordUpdated(const std::string &user, const std::string &password) {
+	pbnetwork::AccountPasswordUpdated d;
+	d.set_user(user);
+	d.set_password(password);
+
+	std::string message;
+	d.SerializeToString(&message);
+	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ACCOUNT_PASSWORD_UPDATED);
+	send(message);
+}
+
 void NetworkPlugin::handleDisconnected(const std::string &user, int error, const std::string &msg) {
 	pbnetwork::Disconnected d;
 	d.set_user(user);
