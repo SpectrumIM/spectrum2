@@ -2127,6 +2127,24 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
 	np->handleAttention(np->m_accounts[account], w, "");
 }
 
+/* Frontend-independent signal for prpls that rotate account credentials.
+ * The BitlBee alias allows existing plugins to work without modification.
+ */
+static gpointer accountSetPassword(PurpleAccount *account, const char *password, gpointer unused) {
+	if (!account || !password) {
+		return NULL;
+	}
+
+	std::map<PurpleAccount *, std::string>::const_iterator it = np->m_accounts.find(account);
+	if (it == np->m_accounts.end()) {
+		return NULL;
+	}
+
+	purple_account_set_password_wrapped(account, password);
+	np->handleAccountPasswordUpdated(it->second, password);
+	return GINT_TO_POINTER(TRUE);
+}
+
 static bool initPurple() {
 	bool ret;
 
@@ -2166,6 +2184,7 @@ static bool initPurple() {
 	if (ret) {
 		static int blist_handle;
 		static int conversation_handle;
+		static int account_password_handle;
 
 		purple_set_blist_wrapped(purple_blist_new_wrapped());
 		purple_blist_load_wrapped();
@@ -2197,6 +2216,18 @@ static bool initPurple() {
 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "buddy-typing-stopped", &conversation_handle, PURPLE_CALLBACK(buddyTypingStopped), NULL);
 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-privacy-changed", &conversation_handle, PURPLE_CALLBACK(buddyPrivacyChanged), NULL);
 		purple_signal_connect_wrapped(purple_conversations_get_handle_wrapped(), "got-attention", &conversation_handle, PURPLE_CALLBACK(gotAttention), NULL);
+		/* Generic credential update API, also exposed using the BitlBee name for compatibility. */
+		const char *password_signals[] = {"account-set-password", "bitlbee-set-account-password"};
+		for (unsigned int i = 0; i < sizeof(password_signals) / sizeof(password_signals[0]); ++i) {
+			purple_signal_register_wrapped(purple_accounts_get_handle_wrapped(), password_signals[i],
+				purple_marshal_POINTER__POINTER_POINTER_wrapped,
+				purple_value_new_wrapped(PURPLE_TYPE_BOOLEAN), 2,
+				purple_value_new_wrapped(PURPLE_TYPE_SUBTYPE, PURPLE_SUBTYPE_ACCOUNT),
+				purple_value_new_wrapped(PURPLE_TYPE_STRING));
+			purple_signal_connect_wrapped(purple_accounts_get_handle_wrapped(), password_signals[i],
+				&account_password_handle, PURPLE_CALLBACK(accountSetPassword), NULL);
+		}
+
 		purple_signal_connect_wrapped(purple_connections_get_handle_wrapped(), "signed-on", &blist_handle,PURPLE_CALLBACK(signed_on), NULL);
 // 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-removed", &blist_handle,PURPLE_CALLBACK(buddyRemoved), NULL);
 // 		purple_signal_connect_wrapped(purple_blist_get_handle_wrapped(), "buddy-signed-on", &blist_handle,PURPLE_CALLBACK(buddySignedOn), NULL);
