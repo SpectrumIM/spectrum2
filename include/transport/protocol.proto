@@ -54,6 +54,11 @@ message Login {
 	optional UserSettings settings = 5;
 }
 
+message AccountPasswordUpdated {
+	required string user = 1;
+	required string password = 2;
+}
+
 message Logout {
 	required string user = 1;
 	required string legacyName = 2;
@@ -197,6 +202,7 @@ message WrapperMessage {
 		TYPE_RAW_XML				= 34;
 		TYPE_BUDDIES				= 35;
 		TYPE_API_VERSION			= 36;
+		TYPE_ACCOUNT_PASSWORD_UPDATED = 37;
 	}
 	required Type type = 1;
 	optional bytes payload = 2;
