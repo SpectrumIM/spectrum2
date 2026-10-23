@@ -2131,7 +2131,7 @@ static void gotAttention(PurpleAccount *account, const char *who, PurpleConversa
  * The BitlBee alias allows existing plugins to work without modification.
  */
 static gpointer accountSetPassword(PurpleAccount *account, const char *password, gpointer unused) {
-	if (!account || !password) {
+	if (!account) {
 		return NULL;
 	}
 
@@ -2140,8 +2140,9 @@ static gpointer accountSetPassword(PurpleAccount *account, const char *password,
 		return NULL;
 	}
 
-	purple_account_set_password_wrapped(account, password);
-	np->handleAccountPasswordUpdated(it->second, password);
+	const char *credential = password ? password : "";
+	purple_account_set_password_wrapped(account, credential);
+	np->handleAccountPasswordUpdated(it->second, credential);
 	return GINT_TO_POINTER(TRUE);
 }
 
