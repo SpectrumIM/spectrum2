@@ -125,6 +125,9 @@ class NetworkPlugin {
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		void handleConnected(const std::string &user);
 
+		/// Persist a credential supplied by a backend using the user's existing registration password field.
+		void handleAccountPasswordUpdated(const std::string &user, const std::string &password);
+
 		/// Call this function when new message is received from legacy network for user.
 		/// \param user XMPP JID of user for which this event occurs. You can get it from NetworkPlugin::handleLoginRequest(). (eg. "user%gmail.com@xmpp.domain.tld")
 		/// \param legacyName Name of legacy network buddy or name of room. (eg. "user2@gmail.com")
