@@ -3,7 +3,8 @@
 //
 //   spectrum_next_irc [frontend_host=127.0.0.1] [frontend_port=5231] [irc_host=127.0.0.1] [irc_port=6667]
 //
-// Login.legacyName is used as the IRC nick. Password is ignored (first test).
+// Login.legacyName is "nick@server[:port]" (as in the libpurple IRC backend); a bare nick
+// uses the default IRC server given on the command line. Password is ignored (first test).
 // ConversationMessage.buddyName is the IRC target: a nick or a #channel.
 // Channels are joined on the first message sent to them.
 
@@ -182,15 +183,40 @@ void readIrc(std::shared_ptr<Session> s) {
 	closeSocket(s->fd);
 }
 
+// Splits Login.legacyName "nick@host[:port]" into its parts; without "@host" the
+// default IRC server from the command line is used.
+void parseLegacyName(const std::string &legacyName, std::string &nick, std::string &host, int &port) {
+	nick = legacyName;
+	host = ircHost;
+	port = ircPort;
+	size_t at = legacyName.find('@');
+	if (at == std::string::npos) return;
+	nick = legacyName.substr(0, at);
+	host = legacyName.substr(at + 1);
+	size_t colon = host.rfind(':');
+	if (colon != std::string::npos) {
+		port = std::atoi(host.c_str() + colon + 1);
+		host.erase(colon);
+	}
+}
+
 void login(const pbnetwork::Login &login) {
-	Socket fd = connectTo(ircHost, ircPort);
+	std::string nick, host;
+	int port;
+	parseLegacyName(login.legacyname(), nick, host, port);
+	if (nick.empty() || host.empty() || port <= 0) {
+		sendDisconnected(login.user(), 1, "bad IRC account " + login.legacyname() + ", expected nick@server[:port]");
+		return;
+	}
+	std::cerr << login.user() << ": connecting to " << host << ":" << port << " as " << nick << "\n";
+	Socket fd = connectTo(host, port);
 	if (fd < 0) {
-		sendDisconnected(login.user(), 1, "cannot reach IRC server");
+		sendDisconnected(login.user(), 1, "cannot reach IRC server " + host + ":" + std::to_string(port));
 		return;
 	}
 	auto s = std::make_shared<Session>();
 	s->user = login.user();
-	s->nick = login.legacyname();
+	s->nick = nick;
 	// Libera (and most IRC networks) limit nicks to 16 characters.
 	constexpr size_t kMaxNick = 16;
 	if (s->nick.size() > kMaxNick) s->nick.resize(kMaxNick);
