@@ -1,4 +1,6 @@
+if(ENABLE_XMPP_FRONTEND)
 add_subdirectory(xmpp)
+endif()
 if(ENABLE_SLACK_FRONTEND)
 add_subdirectory(slack)
 endif()

@@ -24,7 +24,6 @@
 #include "transport/Logging.h"
 #include "ircnetworkplugin.h"
 
-using namespace boost::program_options;
 using namespace Transport;
 
 NetworkPlugin * np = NULL;

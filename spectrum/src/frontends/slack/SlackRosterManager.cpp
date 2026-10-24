@@ -19,6 +19,7 @@
  */
 
 #include "SlackRosterManager.h"
+#include <boost/bind.hpp>
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackSession.h"
@@ -27,7 +28,6 @@
 #include "transport/User.h"
 #include "transport/Logging.h"
 #include "transport/Factory.h"
-#include "transport/PresenceOracle.h"
 #include "transport/Transport.h"
 
 #include <boost/foreach.hpp>
@@ -54,7 +54,7 @@ SlackRosterManager::~SlackRosterManager() {
 
 void SlackRosterManager::sendOnlineBuddies() {
 	std::string onlineBuddies = "Online users: ";
-	Swift::StatusShow s;
+	pbnetwork::StatusType s;
 	std::string statusMessage;
 
 	const RosterManager::BuddiesMap &roster = getBuddies();
@@ -68,7 +68,7 @@ void SlackRosterManager::sendOnlineBuddies() {
 			continue;
 		}
 
-		if (s.getType() == Swift::StatusShow::None) {
+		if (s == pbnetwork::STATUS_NONE) {
 			continue;
 		}
 

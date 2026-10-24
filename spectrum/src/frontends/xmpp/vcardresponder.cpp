@@ -19,6 +19,7 @@
  */
 
 #include "vcardresponder.h"
+#include "jidutils.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
@@ -90,10 +91,10 @@ bool VCardResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 
 	std::string name = to_.getUnescapedNode();
 	if (name.empty()) {
-		to_ = user->getJID();
+		to_ = Swift::JID(user->getUserName());
 	}
 
-	name = Buddy::JIDToLegacyName(to_, user);
+	name = JIDUtils::JIDToLegacyName(to_, user);
 	// If the resource is not empty, it is probably VCard for room participant
 	if (!to.getResource().empty()) {
 		name += "/" + to.getResource();

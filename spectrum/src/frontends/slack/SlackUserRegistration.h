@@ -22,6 +22,9 @@
 
 #include "transport/UserRegistration.h"
 
+#include <map>
+#include <string>
+
 namespace Transport {
 
 struct UserInfo;

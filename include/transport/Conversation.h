@@ -20,18 +20,27 @@
 
 #pragma once
 
+#include "transport/Event.h"
+#include "transport/protocol.pb.h"
+
 #include <string>
 #include <algorithm>
 #include <list>
 #include <map>
-#include "Swiften/Elements/Message.h"
-#include "Swiften/Elements/Presence.h"
 
 namespace Transport {
 
 class ConversationManager;
 
-/// Represents one XMPP-Legacy network conversation.
+/// Represents one user - legacy network conversation (1:1 chat or room).
+///
+/// Messages are pbnetwork::ConversationMessage tagged with the WrapperMessage
+/// type they travel as to and from the backend: TYPE_CONV_MESSAGE,
+/// TYPE_ROOM_SUBJECT_CHANGED, TYPE_ATTENTION, TYPE_CONV_MESSAGE_ACK and the
+/// chat states TYPE_BUDDY_TYPING, TYPE_BUDDY_TYPED and TYPE_BUDDY_STOPPED_TYPING.
+///
+/// The frontend creates conversations (Frontend::createConversation) and shows
+/// them to the user.
 class Conversation {
 	public:
 		typedef enum {
@@ -60,76 +69,33 @@ class Conversation {
 		/// \return legacy network name of this conversation.
 		const std::string &getLegacyName() { return m_legacyName; }
 
-		/// Handles new message from Legacy network and forwards it to XMPP.
+		/// Handles new message from Legacy network and shows it to the user.
 
-		/// \param message Message received from legacy network.
-		/// \param nickname For MUC conversation this is nickname of room participant who sent this message.
-		void handleMessage(std::shared_ptr<Swift::Message> &message, const std::string &nickname = "", const bool carbon = false);
+		/// \param type kind of the message (see the class description).
+		/// \param message Message received from legacy network. For MUC, message.nickname()
+		/// is the nickname of the room participant who sent the message.
+		virtual void handleMessage(pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &message) = 0;
 
-		//Generates a carbon <sent> wrapper <message> around the given payload and delivers it
-		void forwardAsCarbonSent(
-			const std::shared_ptr<Swift::Message> &payload,
-			const Swift::JID& to);
+		/// Handles participant change in MUC. Updates the participant list and calls
+		/// doHandleParticipantChanged.
 
-		//Generates a carbon <received> wrapper <message> around the given payload and delivers it
-		void forwardAsCarbonReceived(
-			const std::shared_ptr<Swift::Message> &payload,
-			const Swift::JID& to);
+		/// \param participant changed participant; newname() is set if the participant was renamed.
+		void handleParticipantChanged(const pbnetwork::Participant &participant);
 
-		//Sends a <received> carbon of an incoming message to every resource except the one it was delivered to
-		void forwardReceivedCopies(const std::shared_ptr<Swift::Message> &copy, const Swift::JID &delivered);
+		/// Sets user nickname in MUC rooms.
 
-		//Resource an incoming 1:1 message is delivered to
-		Swift::JID getDeliveryJID();
-
-		//Generates a impersonation request <message> arount the given payload and delivers it
-		void forwardImpersonated(
-			std::shared_ptr<Swift::Message> payload,
-			const Swift::JID& server);
-
-		void handleRawMessage(std::shared_ptr<Swift::Message> &message);
-		void handleRawPresence(Swift::Presence::ref presence);
-
-		/// Handles participant change in MUC.
-
-		/// \param nickname Nickname of participant which changed.
-		/// \param flag ParticipantFlag.
-		/// \param status Current status of this participant.
-		/// \param statusMessage Current status message of this participant.
-		/// \param newname If participant was renamed, this variable contains his new name.
-		void handleParticipantChanged(const std::string &nickname, ParticipantFlag flag, int status = Swift::StatusShow::None, const std::string &statusMessage = "", const std::string &newname = "", const std::string &iconhash = "", const std::string &alias = "");
-
-		/// Sets XMPP user nickname in MUC rooms.
-
-		/// \param nickname XMPP user nickname in MUC rooms.
-		void setNickname(const std::string &nickname);
+		/// \param nickname user nickname in MUC rooms.
+		virtual void setNickname(const std::string &nickname);
 
 		const std::string &getNickname() {
 			return m_nickname;
 		}
 
-		void setJID(const Swift::JID &jid) {
-			m_jid = jid;
-		}
+		/// Sends message from the user to Legacy network (onMessageToSend).
 
-		void addJID(const Swift::JID &jid) {
-			m_jids.push_back(jid);
-		}
-
-		void clearJIDs() {
-			m_jids.clear();
-		}
-
-		void removeJID(const Swift::JID &jid);
-
-		const std::list<Swift::JID> &getJIDs() {
-			return m_jids;
-		}
-
-		/// Sends message to Legacy network.
-
+		/// \param type kind of the message (see the class description).
 		/// \param message Message.
-		virtual void sendMessage(std::shared_ptr<Swift::Message> &message) = 0;
+		void sendMessage(pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &message);
 
 		/// Returns ConversationManager associated with this Conversation.
 
@@ -158,18 +124,26 @@ class Conversation {
 			return m_room;
 		}
 
-		void destroyRoom();
+		/// Tells the user the room is gone (the transport is shutting down).
+		virtual void destroyRoom() {}
 
+		/// Returns comma separated list of participants' names.
 		std::string getParticipants();
-		void sendParticipants(const Swift::JID &to, const std::string &nickname);
 
-		void sendCachedMessages(const Swift::JID &to = Swift::JID());
+		/// Participants by nickname.
+		const std::map<std::string, pbnetwork::Participant> &getParticipantList() {
+			return m_participants;
+		}
 
-		void setMUCEscaping(bool mucEscaping);
+		/// Sends messages the frontend cached while the user could not receive them.
+		virtual void sendCachedMessages() {}
 
-	private:
-		Swift::Presence::ref generatePresence(const std::string &nick, int flag, int status, const std::string &statusMessage, const std::string &newname = "", const std::string &iconhash = "");
-		void cacheMessage(std::shared_ptr<Swift::Message> &message);
+		/// Message from the user for the legacy network.
+		Event<void (Conversation *, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &message)> onMessageToSend;
+
+	protected:
+		/// Shows the participant change to the user.
+		virtual void doHandleParticipantChanged(const pbnetwork::Participant &participant) {}
 
 	private:
 		ConversationManager *m_conversationManager;
@@ -177,26 +151,7 @@ class Conversation {
 		std::string m_nickname;
 		std::string m_room;
 		bool m_muc;
-		Swift::JID m_jid;
-		std::list<Swift::JID> m_jids;
-		bool m_sentInitialPresence;
-		bool m_nicknameChanged;
-		bool m_mucEscaping;
-		bool m_sentInitialSubject;
-
-		// TODO: Move this to some extra class to cache the most used
-		// rooms across different accounts. Just now if we have 10 users
-		// connected to single room, we store all those things 10 times.
-		// It would be also great to store last 100 messages per room
-		// every time, so we can get history messages for IRC for example.
-		std::shared_ptr<Swift::Message> m_subject;
-		std::list<std::shared_ptr<Swift::Message> > m_cachedMessages;
-
-		typedef struct {
-			Swift::Presence::ref presence;
-			std::string alias;
-		} Participant;
-		std::map<std::string, Participant> m_participants;
+		std::map<std::string, pbnetwork::Participant> m_participants;
 };
 
 }

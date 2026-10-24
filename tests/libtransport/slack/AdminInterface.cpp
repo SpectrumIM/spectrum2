@@ -44,13 +44,7 @@ class AdminInterfaceTest : public CPPUNIT_NS :: TestFixture, public BasicSlackTe
 		}
 
 	std::string sendAdminMessage(const std::string &cmd) {
-		Swift::Message::ref msg = std::shared_ptr<Swift::Message>(new Swift::Message());
-		msg->setFrom(Swift::JID("me@localhost"));
-		msg->setTo(Swift::JID("localhost"));
-		msg->setBody(cmd);
-
-		admin->handleMessageReceived(msg);
-		return msg->getBody().get_value_or("");
+		return admin->handleQuery(cmd);
 	}
 
 	void helpCommand() {

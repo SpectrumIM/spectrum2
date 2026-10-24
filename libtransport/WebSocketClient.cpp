@@ -19,14 +19,14 @@
  */
 
 #include "transport/WebSocketClient.h"
+#include <boost/bind.hpp>
+#include <boost/optional.hpp>
 #include "transport/Transport.h"
 #include "transport/Util.h"
 #include "transport/Logging.h"
 
 #include "Swiften/StringCodecs/Hexify.h"
 
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
 #include <map>
 #include <iterator>
 
@@ -131,7 +131,9 @@ void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 		if (m_buffer.find("\r\n\r\n") != std::string::npos) {
 			m_buffer.erase(0, m_buffer.find("\r\n\r\n") + 4);
 			m_upgraded = true;
-			onWebSocketConnected();
+			if (onWebSocketConnected) {
+				onWebSocketConnected();
+			}
 		}
 		else {
 			return;
@@ -168,7 +170,9 @@ void WebSocketClient::handleDataRead(std::shared_ptr<Swift::SafeByteArray> data)
 			if (m_buffer.size() >= size + header_size) {
 				std::string payload = m_buffer.substr(header_size, size);
 				LOG4CXX_INFO(wsLogger, m_user << ": < " << payload);
-				onPayloadReceived(payload);
+				if (onPayloadReceived) {
+					onPayloadReceived(payload);
+				}
 				m_buffer.erase(0, size + header_size);
 				
 			}
@@ -212,7 +216,9 @@ void WebSocketClient::handleDisconnected(const boost::optional<Swift::Connection
 	}
 
 	LOG4CXX_ERROR(wsLogger, m_user << ": Disconnected from " << m_host << ". Will reconnect in 1 second.");
-	onWebSocketDisconnected(error);
+	if (onWebSocketDisconnected) {
+		onWebSocketDisconnected(error);
+	}
 	m_reconnectTimer->start();
 }
 

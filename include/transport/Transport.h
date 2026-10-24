@@ -20,21 +20,20 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
+#include <string>
 #include <vector>
 #include <boost/bind.hpp>
-#include <boost/signals2.hpp>
+#include <functional>
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Network/NetworkFactories.h"
-#include "Swiften/Elements/DiscoInfo.h"
-#include "Swiften/Elements/Presence.h"
-#include "Swiften/Elements/IQ.h"
 
 namespace Transport {
 	class StorageBackend;
 	class UserRegistry;
 	class Frontend;
-	class PresenceOracle;
 	class Factory;
 	class Config;
 	class UserManager;
@@ -75,15 +74,19 @@ namespace Transport {
 			/// Stops the component.
 			void stop();
 
-			/// Returns Jabber ID of this transport.
+			/// Returns Jabber ID of this transport (service.jid).
 
 			/// \return Jabber ID of this transport
-			Swift::JID &getJID() { return m_jid; }
+			const std::string &getJID() { return m_jid; }
 
 			/// Returns Swift::NetworkFactories which can be used to create new connections.
 
 			/// \return Swift::NetworkFactories which can be used to create new connections.
 			Swift::NetworkFactories *getNetworkFactories() { return m_factories; }
+
+			Swift::EventLoop *getEventLoop() { return m_loop; }
+
+			UserRegistry *getUserRegistry() { return m_userRegistry; }
 
 			/// Returns Transport Factory used to create basic Transport components.
 
@@ -93,26 +96,17 @@ namespace Transport {
 			/// This signal is emitted when server disconnects the transport because of some error.
 
 			/// \param error disconnection error
-			boost::signals2::signal<void (const std::string &error)> onConnectionError;
+			Event<void (const std::string &error)> onConnectionError;
 
 			/// This signal is emitted when transport successfully connects the server.
-			boost::signals2::signal<void ()> onConnected;
+			Event<void ()> onConnected;
 
 			/// This signal is emitted when XML stanza is sent to server.
 
 			Config *getConfig() { return m_config; }
 
-			/// It's emitted only for presences addressed to transport itself
-			/// (for example to="j2j.domain.tld") and for presences comming to
-			/// MUC (for example to="#chat%irc.freenode.org@irc.domain.tld")
-			/// \param presence Presence.
-			boost::signals2::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
+			Event<void ()> onAdminInterfaceSet;
 
-			boost::signals2::signal<void (std::shared_ptr<Swift::IQ>)> onRawIQReceived;
-
-			boost::signals2::signal<void ()> onAdminInterfaceSet;
-			
-			void handlePresence(Swift::Presence::ref presence);
 			void handleConnected();
 			void handleConnectionError(const std::string &error);
 			void handleDataRead(const std::string &data);
@@ -121,8 +115,6 @@ namespace Transport {
 			Frontend *getFrontend() {
 				return m_frontend;
 			}
-
-			PresenceOracle *getPresenceOracle();
 
 			void setAdminInterface(AdminInterface *adminInterface) {
 				m_adminInterface = adminInterface;
@@ -134,20 +126,14 @@ namespace Transport {
 			}
 
 		private:
-			void handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid);
-			void handleCapsChanged(const Swift::JID& jid);
-
-			void handleBackendConfigChanged();
-
 			Swift::NetworkFactories *m_factories;
 			Swift::Timer::ref m_reconnectTimer;
-			PresenceOracle *m_presenceOracle;
-			
+
 			Transport::UserRegistry *m_userRegistry;
 			StorageBackend *m_storageBackend;
 			int m_reconnectCount;
 			Config* m_config;
-			Swift::JID m_jid;
+			std::string m_jid;
 			Factory *m_factory;
 			Swift::EventLoop *m_loop;
 			Frontend *m_frontend;

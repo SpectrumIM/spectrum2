@@ -40,8 +40,14 @@
 #include "transport/LocalBuddy.h"
 #include "transport/StorageBackend.h"
 #include "transport/Factory.h"
+#include "transport/Frontend.h"
 #include "XMPPFrontend.h"
 #include "XMPPUserRegistration.h"
+#include "XMPPUserManager.h"
+#include "XMPPUser.h"
+#include "XMPPRosterManager.h"
+#include "XMPPConversation.h"
+#include "jidutils.h"
 
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
@@ -57,33 +63,38 @@
 
 using namespace Transport;
 
-class TestingConversation : public Conversation {
-	public:
-		TestingConversation(ConversationManager *conversationManager, const std::string &legacyName, bool muc = false) : Conversation(conversationManager, legacyName, muc) {
-		}
-
-		// Called when there's new message to legacy network from XMPP network
-		void sendMessage(std::shared_ptr<Swift::Message> &message) {
-			onMessageToSend(this, message);
-		}
-
-		boost::signals2::signal<void (TestingConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
-};
+// A room participant as the backend reports it.
+inline pbnetwork::Participant makeParticipant(const std::string &nickname, int flag, pbnetwork::StatusType status, const std::string &statusMessage, const std::string &newname = "", const std::string &iconhash = "", const std::string &alias = "") {
+	pbnetwork::Participant p;
+	p.set_username("user@localhost");
+	p.set_room("");
+	p.set_nickname(nickname);
+	p.set_flag(flag);
+	p.set_status(status);
+	p.set_statusmessage(statusMessage);
+	p.set_newname(newname);
+	p.set_iconhash(iconhash);
+	p.set_alias(alias);
+	return p;
+}
 
 class TestingFactory : public Factory {
 	public:
 		TestingFactory() {
+			m_frontend = NULL;
 		}
 
-		// Creates new conversation (NetworkConversation in this case)
+		void setFrontend(Frontend *frontend) {
+			m_frontend = frontend;
+		}
+
+		// Creates new conversation; its messages for the legacy network end up in onMessageToSend
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc = false) {
-			TestingConversation *nc = new TestingConversation(conversationManager, legacyName, isMuc);
-			nc->onMessageToSend.connect(boost::bind(&TestingFactory::handleMessageToSend, this, _1, _2));
+			Conversation *nc = m_frontend->createConversation(conversationManager, legacyName, isMuc);
+			nc->onMessageToSend = [this](Conversation *conv, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &msg) {
+				onMessageToSend(conv, type, msg);
+			};
 			return nc;
-		}
-
-		void handleMessageToSend(TestingConversation *_conv, std::shared_ptr<Swift::Message> &_msg) {
-			onMessageToSend(_conv, _msg);
 		}
 
 		// Creates new LocalBuddy
@@ -99,7 +110,10 @@ class TestingFactory : public Factory {
 			return buddy;
 		}
 
-		boost::signals2::signal<void (TestingConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
+		boost::signals2::signal<void (Conversation *, pbnetwork::WrapperMessage_Type, const pbnetwork::ConversationMessage &)> onMessageToSend;
+
+	private:
+		Frontend *m_frontend;
 };
 
 class TestingStorageBackend : public StorageBackend {
@@ -230,15 +244,10 @@ class TestingStorageBackend : public StorageBackend {
 
 class TestingConfig : public Config {
 public:
-	typedef std::map<std::string, boost::program_options::variable_value> VarMap;
+	inline std::map<std::string, ConfigValue>& variables() { return this->m_variables; }
 
-	inline boost::program_options::variables_map& variables() { return this->m_variables; }
-
-	void setValue(const std::string& name, const boost::program_options::variable_value& value) {
-		(*(static_cast<VarMap*>(&this->m_variables)))[name] = value;
-	}
-	void setValue(const std::string& name, const boost::any& value, const bool defaulted = false) {
-		this->setValue(name, boost::program_options::variable_value(value, defaulted));
+	void setValue(const std::string& name, const ConfigValue& value) {
+		this->m_variables[name] = value;
 	}
 };
 

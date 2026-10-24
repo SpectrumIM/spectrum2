@@ -36,8 +36,8 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			setMeUp();
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
-			user->getRosterManager()->onBuddyAdded.connect(boost::bind(&RosterManagerTest::handleBuddyAdded, this, _1));
-			user->getRosterManager()->onBuddyRemoved.connect(boost::bind(&RosterManagerTest::handleBuddyRemoved, this, _1));
+			user->getRosterManager()->onBuddyAdded = [this](Buddy *buddy) { handleBuddyAdded(buddy); };
+			user->getRosterManager()->onBuddyRemoved = [this](Buddy *buddy) { handleBuddyRemoved(buddy); };
 			received.clear();
 		}
 
@@ -59,7 +59,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		add2Buddies();
 		received.clear();
 		User *user = userManager->getUser("user@localhost");
-		user->getRosterManager()->sendBuddySubscribePresence(user->getRosterManager()->getBuddy("buddy1"));
+		static_cast<XMPPRosterManager *>(user->getRosterManager())->sendBuddySubscribePresence(user->getRosterManager()->getBuddy("buddy1"));
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::Nickname>());
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), getStanza(received[0])->getPayload<Swift::Nickname>()->getNickname());
@@ -82,7 +82,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(payload1);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 		CPPUNIT_ASSERT_EQUAL(std::string(""), item.getName());
 	}
 
@@ -101,7 +101,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(payload1);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("Катя антонова"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("Катя антонова"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 		CPPUNIT_ASSERT_EQUAL(std::string(""), item.getName());
 	}
 
@@ -114,7 +114,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(payload1);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 1"), item.getName());
 		CPPUNIT_ASSERT_EQUAL(std::string("localhost"), getStanza(received[0])->getFrom().toString());
 
@@ -122,7 +122,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(payload2);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload2->getItems().size());
 		item = payload2->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy2"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy2"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 2"), item.getName());
 
 		// send responses back
@@ -145,7 +145,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		received.clear();
 
 		User *user = userManager->getUser("user@localhost");
-		user->getRosterManager()->sendCurrentPresences("user@localhost/resource");
+		static_cast<XMPPRosterManager *>(user->getRosterManager())->sendCurrentPresences("user@localhost/resource");
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
 
@@ -161,7 +161,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		received.clear();
 
 		User *user = userManager->getUser("user@localhost");
-		user->getRosterManager()->sendUnavailablePresences("user@localhost/resource");
+		static_cast<XMPPRosterManager *>(user->getRosterManager())->sendUnavailablePresences("user@localhost/resource");
 
 		CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
 
@@ -177,7 +177,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		received.clear();
 
 		User *user = userManager->getUser("user@localhost");
-		user->getRosterManager()->sendCurrentPresence("buddy1@localhost", "user@localhost/resource");
+		static_cast<XMPPRosterManager *>(user->getRosterManager())->sendCurrentPresence("buddy1@localhost", "user@localhost/resource");
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
@@ -185,7 +185,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getTo().toString());
 
 		received.clear();
-		user->getRosterManager()->sendCurrentPresence("buddy_unknown@localhost", "user@localhost/resource");
+		static_cast<XMPPRosterManager *>(user->getRosterManager())->sendCurrentPresence("buddy_unknown@localhost", "user@localhost/resource");
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getType());
@@ -205,7 +205,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(payload1);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 		CPPUNIT_ASSERT_EQUAL(Swift::RosterItemPayload::Remove, item.getSubscription());
 	}
 
@@ -242,7 +242,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Subscribed, dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getType());
@@ -268,7 +268,7 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		Swift::RosterPayload::ref payload1 = getStanza(received[0])->getPayload<Swift::RosterPayload>();
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID(), user));
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), JIDUtils::JIDToLegacyName(item.getJID(), user));
 
 
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[1])));

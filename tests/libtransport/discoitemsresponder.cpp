@@ -55,7 +55,7 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void roomListUser() {
 		connectUser();
 		User *user = userManager->getUser("user@localhost");
-		user->addRoomToRoomList("#room2@localhost", "#room2");
+		user->addRoomToRoomList("#room2", "#room2");
 		itemsResponder->addRoom("#room@localhost", "#room");
 
 		std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
@@ -77,7 +77,7 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void roomInfoUser() {
 		connectUser();
 		User *user = userManager->getUser("user@localhost");
-		user->addRoomToRoomList("#room2@localhost", "#room2");
+		user->addRoomToRoomList("#room2", "#room2");
 		itemsResponder->addRoom("#room@localhost", "#room");
 
 		std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
@@ -116,7 +116,7 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	}
 
 	void roomListEscaping() {
-		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID().toString(), "#room");
+		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID(), "#room");
 
 		std::shared_ptr<Swift::DiscoItems> payload(new Swift::DiscoItems());
 		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);
@@ -133,7 +133,7 @@ class DiscoItemsResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	}
 
 	void roomInfoEscaping() {
-		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID().toString(), "#room");
+		itemsResponder->addRoom(Swift::JID::getEscapedNode("19:room@localhost") + "@" + component->getJID(), "#room");
 
 		std::shared_ptr<Swift::DiscoInfo> payload(new Swift::DiscoInfo());
 		std::shared_ptr<Swift::IQ> iq = Swift::IQ::createRequest(Swift::IQ::Get, Swift::JID("localhost"), "id", payload);

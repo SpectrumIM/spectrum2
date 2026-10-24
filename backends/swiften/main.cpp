@@ -1,5 +1,8 @@
 // Transport includes
 #include "transport/Config.h"
+#include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
 
@@ -28,7 +31,6 @@
 // Boost
 #include <boost/algorithm/string.hpp>
 using namespace boost::filesystem;
-using namespace boost::program_options;
 using namespace Transport;
 
 DEFINE_LOGGER(logger, "Swiften");

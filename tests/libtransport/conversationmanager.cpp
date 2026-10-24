@@ -1,4 +1,5 @@
 #include <cppunit/TestFixture.h>
+#include <boost/bind.hpp>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
@@ -39,23 +40,26 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
-		TestingConversation *m_conv;
-		std::shared_ptr<Swift::Message> m_msg;
+		Conversation *m_conv;
+		bool m_hasMsg;
+		pbnetwork::WrapperMessage_Type m_type;
+		pbnetwork::ConversationMessage m_msg;
 
 		void setUp (void) {
 			m_conv = NULL;
-			m_msg.reset();
+			m_hasMsg = false;
+			m_msg.Clear();
 			setMeUp();
 			connectUser();
 			add2Buddies();
-			factory->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+			factory->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2, _3));
 			received.clear();
 		}
 
 		void tearDown (void) {
 			received.clear();
 			disconnectUser();
-			factory->onMessageToSend.disconnect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+			factory->onMessageToSend.disconnect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2, _3));
 			tearMeDown();
 		}
 
@@ -63,17 +67,27 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		std::cout << " = " << sizeof(Conversation) << " B";
 	}
 
-	void handleMessageReceived(TestingConversation *_conv, std::shared_ptr<Swift::Message> &_msg) {
+	void handleMessageReceived(Conversation *_conv, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &_msg) {
 		m_conv = _conv;
+		m_hasMsg = true;
+		m_type = type;
 		m_msg = _msg;
+	}
+
+	// Conversation whose messages for the legacy network end up in handleMessageReceived
+	XMPPConversation *newConversation(User *user, const std::string &name, bool muc = false) {
+		XMPPConversation *conv = new XMPPConversation(user->getConversationManager(), name, muc);
+		conv->onMessageToSend = [this](Conversation *c, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &msg) {
+			handleMessageReceived(c, type, msg);
+		};
+		return conv;
 	}
 
 	void handleChatstateMessages() {
 		User *user = userManager->getUser("user@localhost");
 
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1");
+		XMPPConversation *conv = newConversation(user, "buddy1");
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->addPayload(std::make_shared<Swift::ChatState>(Swift::ChatState::Composing));
@@ -81,7 +95,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0]))->getPayload<Swift::ChatState>());
@@ -92,19 +106,18 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg->setTo("buddy1@localhost/bot");
 		injectMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT(m_msg->getPayload<Swift::ChatState>());
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING, m_type);
 
 		received.clear();
 	}
 
 	void handleSubjectMessages() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "#room", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
@@ -120,7 +133,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 
 		// this user presence - status code 110
-		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -133,10 +146,11 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg->setTo("#room@localhost");
 		injectMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("subject"), m_msg->getSubject());
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED, m_type);
+		CPPUNIT_ASSERT_EQUAL(std::string("subject"), m_msg.message());
 
 		received.clear();
 		delete conv;
@@ -145,9 +159,8 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleNormalMessages() {
 		User *user = userManager->getUser("user@localhost");
 
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
+		XMPPConversation *conv = newConversation(user, "buddy1@test");
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there<>!");
@@ -155,13 +168,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().get_value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
-		
+
 		received.clear();
 
 		// send response
@@ -170,10 +183,10 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg->setBody("response<>!");
 		injectMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg->getBody().get_value_or(""));
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(std::string("response<>!"), m_msg.message());
 
 		// send another message from legacy network, should be sent to user@localhost/resource now
 		std::shared_ptr<Swift::Message> msg2(new Swift::Message());
@@ -188,7 +201,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().get_value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost/resource"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
-		
+
 		received.clear();
 
 		// disable jid_escaping
@@ -196,20 +209,20 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		cfg->load(ifs);
 
 		// and now to bare JID again...
-		user->getConversationManager()->resetResources();
+		static_cast<XMPPUser *>(user)->resetResources();
 		conv->handleMessage(msg2);
 		loop->processEvents();
 
 		// enable jid_escaping again
 		std::istringstream ifs2("service.server_mode = 1\nservice.jid_escaping=1\nservice.jid=localhost\nservice.more_resources=1\n");
 		cfg->load(ifs2);
-		
+
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getBody().get_value_or(""));
 		CPPUNIT_ASSERT_EQUAL(std::string("user@localhost"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getTo().toString());
 		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test@localhost/bot"), dynamic_cast<Swift::Message *>(getStanza(received[0]))->getFrom().toString());
-		
+
 		received.clear();
 	}
 
@@ -224,13 +237,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		// Forward it
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), m_msg->getBody().get_value_or(""));
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there<>!"), m_msg.message());
 		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), m_conv->getLegacyName());
-		
-		TestingConversation *conv = (TestingConversation *) user->getConversationManager()->getConversation("BuddY1");
+
+		Conversation *conv = user->getConversationManager()->getConversation("BuddY1");
 		CPPUNIT_ASSERT(conv);
 		CPPUNIT_ASSERT_EQUAL(std::string("BuddY1"), conv->getLegacyName());
 	}
@@ -239,9 +252,8 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		User *user = userManager->getUser("user@localhost");
 		user->addUserSetting("send_headlines", "1");
 
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
+		XMPPConversation *conv = newConversation(user, "buddy1@test");
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there<>!");
@@ -250,7 +262,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		// Forward it
 		conv->handleMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Message *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::Message::Headline, dynamic_cast<Swift::Message *>(getStanza(received[0]))->getType());
@@ -288,14 +300,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleGroupchatMessages() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// reset resources should not touch this resource
-		user->getConversationManager()->resetResources();
+		static_cast<XMPPUser *>(user)->resetResources();
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
@@ -319,20 +330,19 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg->setType(Swift::Message::Groupchat);
 		injectMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody().get_value_or(""));
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg.message());
 	}
 
 	void handleGroupchatMessagesAlias() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message", "", "", "alias");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message", "", "", "alias"));
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
@@ -345,7 +355,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		received.clear();
 
 		// reset resources should not touch this resource
-		user->getConversationManager()->resetResources();
+		static_cast<XMPPUser *>(user)->resetResources();
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
@@ -364,9 +374,8 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleGroupchatMessagesBouncer() {
 		User *user = userManager->getUser("user@localhost");
 		user->addUserSetting("stay_connected", "1");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
@@ -377,14 +386,14 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(!user->shouldCacheMessages());
 
 		// disconnectUser
-		userManager->disconnectUser("user@localhost");
+		static_cast<XMPPUserManager *>(userManager)->disconnectUser(Swift::JID("user@localhost"));
 		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT(user->shouldCacheMessages());
 
 		// reset resources should not touch this resource
-		user->getConversationManager()->resetResources();
+		static_cast<XMPPUser *>(user)->resetResources();
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
@@ -441,9 +450,8 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 	void handleGroupchatMessagesBouncerLeave() {
 		User *user = userManager->getUser("user@localhost");
 		user->addUserSetting("stay_connected", "1");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
@@ -463,7 +471,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT(!user->shouldCacheMessages());
 
 		// reset resources should not touch this resource
-		user->getConversationManager()->resetResources();
+		static_cast<XMPPUser *>(user)->resetResources();
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
@@ -517,15 +525,14 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		connectSecondResource();
 		received2.clear();
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 		conv->addJID("user@localhost/resource2");
 
 		// reset resources should not touch this resource
-		user->getConversationManager()->resetResources();
+		static_cast<XMPPUser *>(user)->resetResources();
 
 		std::shared_ptr<Swift::Message> msg(new Swift::Message());
 		msg->setBody("hi there!");
@@ -549,22 +556,21 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		msg->setType(Swift::Message::Groupchat);
 		injectMessage(msg);
 		loop->processEvents();
-		
+
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg->getBody().get_value_or(""));
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(std::string("response!"), m_msg.message());
 	}
 
 	void handleParticipantChanged() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "#room", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -579,7 +585,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		received.clear();
 
 		// this user presence - status code 110
-		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("nickname", Conversation::PARTICIPANT_FLAG_MODERATOR, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -595,7 +601,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		received.clear();
 
 		// renamed - status code 303
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_MODERATOR, Swift::StatusShow::Away, "my status message", "hanzz");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_MODERATOR, pbnetwork::STATUS_AWAY, "my status message", "hanzz"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(2, (int) received.size());
@@ -608,19 +614,22 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		CPPUNIT_ASSERT_EQUAL(Swift::MUCOccupant::Moderator, *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].role);
 		CPPUNIT_ASSERT_EQUAL(std::string("hanzz"), *getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getItems()[0].nick);
 		CPPUNIT_ASSERT_EQUAL(303, getStanza(received[0])->getPayload<Swift::MUCUserPayload>()->getStatusCodes()[0].code);
+
+		// The participant list follows the rename.
+		CPPUNIT_ASSERT(conv->getParticipantList().find("anotheruser") == conv->getParticipantList().end());
+		CPPUNIT_ASSERT(conv->getParticipantList().find("hanzz") != conv->getParticipantList().end());
 		delete conv;
 	}
 
 	void handleParticipantChangedEscaped() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "19:70027094a9c84c518535a610766bed65@thread.skype", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "19:70027094a9c84c518535a610766bed65@thread.skype", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -636,15 +645,14 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleParticipantChangedEscaped2() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "19:70027094a9c84c518535a610766bed65@thread.skype", true);
+		XMPPConversation *conv = newConversation(user, "19:70027094a9c84c518535a610766bed65@thread.skype", true);
 		conv->setMUCEscaping(true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -660,15 +668,14 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleParticipantChangedIconHash() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "19:70027094a9c84c518535a610766bed65@thread.skype", true);
+		XMPPConversation *conv = newConversation(user, "19:70027094a9c84c518535a610766bed65@thread.skype", true);
 		conv->setMUCEscaping(true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message", "", "hash");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message", "", "hash"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -689,15 +696,14 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		connectSecondResource();
 		received2.clear();
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "#room", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 		conv->addJID("user@localhost/resource2");
 
 		// normal presence
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received2.size());
@@ -713,13 +719,12 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handlePMFromXMPP() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
 		conv->setNickname("nickname");
 		conv->setJID("user@localhost/resource");
 
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		received.clear();
@@ -732,11 +737,11 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
-		CPPUNIT_ASSERT(m_msg);
-		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), m_msg->getBody().get_value_or(""));
+		CPPUNIT_ASSERT(m_hasMsg);
+		CPPUNIT_ASSERT_EQUAL(std::string("hi there!"), m_msg.message());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room/anotheruser"), m_conv->getLegacyName());
 
-		Conversation *pmconv = user->getConversationManager()->getConversation("#room/anotheruser");
+		XMPPConversation *pmconv = static_cast<XMPPConversation *>(user->getConversationManager()->getConversation("#room/anotheruser"));
 
 		std::shared_ptr<Swift::Message> msg2(new Swift::Message());
 		msg2->setBody("response!");
@@ -746,7 +751,7 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleGroupchatRemoved() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
+		XMPPConversation *conv = newConversation(user, "#room", true);
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 		received.clear();
@@ -763,14 +768,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleNicknameConflict() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "#room", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_CONFLICT, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("nickname", Conversation::PARTICIPANT_FLAG_CONFLICT, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -783,14 +787,13 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleNotAuthorized() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "#room", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 
 		// normal presence
-		conv->handleParticipantChanged("nickname", Conversation::PARTICIPANT_FLAG_NOT_AUTHORIZED, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("nickname", Conversation::PARTICIPANT_FLAG_NOT_AUTHORIZED, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
@@ -803,15 +806,14 @@ class ConversationManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 	void handleSetNickname() {
 		User *user = userManager->getUser("user@localhost");
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "#room", true);
-		
-		conv->onMessageToSend.connect(boost::bind(&ConversationManagerTest::handleMessageReceived, this, _1, _2));
+		XMPPConversation *conv = newConversation(user, "#room", true);
+
 		conv->setNickname("nickname");
 		conv->addJID("user@localhost/resource");
 		loop->processEvents();
 
 		conv->setNickname("nickname2");
-		conv->handleParticipantChanged("nickname2", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("nickname2", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());

@@ -67,7 +67,7 @@ bool GatewayResponder::handleSetRequest(const Swift::JID& from, const Swift::JID
 		escaped = prompt;
 	}
 
-	std::string jid = escaped + "@" + m_userManager->getComponent()->getJID().toBare().toString();
+	std::string jid = escaped + "@" + Swift::JID(m_userManager->getComponent()->getJID()).toBare().toString();
 
 	sendResponse(from, id, std::shared_ptr<GatewayPayload>(new GatewayPayload(jid)));
 	return true;

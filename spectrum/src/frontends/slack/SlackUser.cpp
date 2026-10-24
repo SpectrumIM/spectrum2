@@ -35,14 +35,12 @@ namespace Transport {
 
 DEFINE_LOGGER(slackUserLogger, "SlackUser");
 
-SlackUser::SlackUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) : User(jid, userInfo, component, userManager) {
-	m_jid = jid.toBare();
-
+SlackUser::SlackUser(const std::string &user, UserInfo &userInfo, Component *component, UserManager *userManager) : User(user, userInfo, component, userManager) {
 	m_component = component;
 	m_userManager = userManager;
 	m_userInfo = userInfo;
 
-	m_session = static_cast<SlackUserManager *>(userManager)->moveTempSession(m_jid.toString());
+	m_session = static_cast<SlackUserManager *>(userManager)->moveTempSession(getUserName());
 	m_session->setUser(this);
 }
 
@@ -52,7 +50,7 @@ SlackUser::~SlackUser(){
 	}
 }
 
-void SlackUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) {
+void SlackUser::disconnectUser(const std::string &error, pbnetwork::ConnectionError e) {
 	if (!m_session) {
 		return;
 	}
@@ -66,7 +64,7 @@ void SlackUser::disconnectUser(const std::string &error, Swift::SpectrumErrorPay
 
 	m_session->handleDisconnected();
 	m_session->sendMessageToAll("Maybe you have provided wrong 3rd-party network account information.");
-	static_cast<SlackUserManager *>(m_userManager)->moveTempSession(m_jid.toString(), m_session);
+	static_cast<SlackUserManager *>(m_userManager)->moveTempSession(getUserName(), m_session);
 	m_session = NULL;
 }
 

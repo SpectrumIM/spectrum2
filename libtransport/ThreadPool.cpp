@@ -1,4 +1,5 @@
 #include "transport/ThreadPool.h"
+#include <boost/bind.hpp>
 #include "transport/Logging.h"
 
 namespace Transport {
@@ -9,22 +10,21 @@ ThreadPool::ThreadPool(Swift::EventLoop *loop, int maxthreads) : MAX_THREADS(max
 {
 	this->loop = loop;
 	activeThreads = 0;
-	worker = (boost::thread **) malloc(sizeof(boost::thread *) * MAX_THREADS);
+	worker.resize(MAX_THREADS);
 	for (int i=0 ; i<MAX_THREADS ; i++) {
-		worker[i] = NULL;
 		freeThreads.push(i);
 	}
-	onWorkerAvailable.connect(boost::bind(&ThreadPool::scheduleFromQueue, this));
+	onWorkerAvailable = [this]() { scheduleFromQueue(); };
 }
 
 ThreadPool::~ThreadPool()
 {
-	for (int i=0; i<MAX_THREADS ; i++) {
-		if (worker[i]) {
-			delete worker[i];
+	// Workers still running keep going on their own, as boost::thread did on delete.
+	for (std::thread &w : worker) {
+		if (w.joinable()) {
+			w.detach();
 		}
 	}
-	free(worker);
 
 	while (!requestQueue.empty()) {
 		Thread *t = requestQueue.front(); requestQueue.pop();
@@ -63,11 +63,13 @@ int ThreadPool::getFreeThread()
 
 void ThreadPool::releaseThread(int i)
 {
-	if (i < 0 || i > MAX_THREADS) return;
+	if (i < 0 || i >= MAX_THREADS) return;
 	pool_lock.lock();
 
-	delete worker[i];
-	worker[i] = NULL;
+	// The worker has posted its cleanup and is about to return, so this is short.
+	if (worker[i].joinable()) {
+		worker[i].join();
+	}
 	freeThreads.push(i);
 
 	updateActiveThreadCount(1);
@@ -94,7 +96,7 @@ void ThreadPool::scheduleFromQueue()
 		LOG4CXX_INFO(threadPoolLogger, "Worker Available. Creating thread #" << w);
 		Thread *t = requestQueue.front(); requestQueue.pop();
 		t->setThreadID(w);
-		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);
+		worker[w] = std::thread([this, t, w]() { workerBody(t, w); });
 		updateActiveThreadCount(-1);
 	}
 	criticalregion.unlock();
@@ -107,7 +109,7 @@ void ThreadPool::runAsThread(Thread *t)
 	if ((w = getFreeThread()) != -1) {
 		LOG4CXX_INFO(threadPoolLogger, "Creating thread #" << w);
 		t->setThreadID(w);
-		worker[w] = new boost::thread(boost::bind(&ThreadPool::workerBody, this, _1, _2), t, w, loop);
+		worker[w] = std::thread([this, t, w]() { workerBody(t, w); });
 		updateActiveThreadCount(-1);
 	}
 	else {

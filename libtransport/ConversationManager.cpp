@@ -25,9 +25,6 @@
 #include "transport/User.h"
 #include "transport/Logging.h"
 #include "transport/Transport.h"
-#include "Swiften/Roster/SetRosterRequest.h"
-#include "Swiften/Elements/RosterPayload.h"
-#include "Swiften/Elements/RosterItemPayload.h"
 
 namespace Transport {
 
@@ -53,7 +50,7 @@ void ConversationManager::sendCachedChatMessages() {
 
 void ConversationManager::deleteAllConversations() {
 	while (!m_convs.empty()) {
-		LOG4CXX_INFO(conversationManagerLogger, m_user->getJID().toString() << ": Removing conversation " << (*m_convs.begin()).first);
+		LOG4CXX_INFO(conversationManagerLogger, m_user->getUserName() << ": Removing conversation " << (*m_convs.begin()).first);
 		(*m_convs.begin()).second->destroyRoom();
 		delete (*m_convs.begin()).second;
 		m_convs.erase(m_convs.begin());
@@ -81,7 +78,7 @@ Conversation *ConversationManager::getConversation(const std::string &name) {
 
 void ConversationManager::addConversation(Conversation *conv) {
 	m_convs[conv->getLegacyName()] = conv;
-	LOG4CXX_INFO(conversationManagerLogger, m_user->getJID().toString() << ": Adding conversation " << conv->getLegacyName());
+	LOG4CXX_INFO(conversationManagerLogger, m_user->getUserName() << ": Adding conversation " << conv->getLegacyName());
 }
 
 void ConversationManager::removeConversation(Conversation *conv) {
@@ -93,52 +90,11 @@ void ConversationManager::removeConversation(Conversation *conv) {
 	m_convs.erase(conv->getLegacyName());
 }
 
-void ConversationManager::resetResources() {
-	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
-		if ((*it).second->isMUC()) {
-			continue;
-		}
-		(*it).second->setJID(m_user->getJID().toBare());
-	}
-}
-
-void ConversationManager::removeJID(const Swift::JID &jid) {
-	std::vector<std::string> toRemove;
-	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
-		if (it->first.empty() || !it->second) {
-			continue;
-		}
-
-		(*it).second->removeJID(jid);
-		if (it->second->getJIDs().empty() && (*it).second->isMUC()) {
-			toRemove.push_back(it->first);
-		}
-	}
-
-	if (m_user->getUserSetting("stay_connected") != "1") {
-		while (!toRemove.empty()) {
-			LOG4CXX_INFO(conversationManagerLogger, m_user->getJID().toString() << ": Leaving room " << toRemove.back() << ".");
-			m_user->leaveRoom(toRemove.back());
-			toRemove.pop_back();
-		}
-	}
-}
-
-void ConversationManager::clearJIDs() {
-	for (std::map<std::string, Conversation *>::const_iterator it = m_convs.begin(); it != m_convs.end(); it++) {
-		(*it).second->clearJIDs();
-	}
-}
-
-void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
-// 	std::string name = message->getTo().getUnescapedNode();
-// 	if (name.find_last_of("%") != std::string::npos) { // OK when commented
-// 		name.replace(name.find_last_of("%"), 1, "@"); // OK when commented
-// 	}
-	std::string name = Buddy::JIDToLegacyName(message->getTo(), m_user);
+Conversation *ConversationManager::getConversationForMessage(const std::string &buddyName, bool pm, const std::string &nickname) {
+	std::string name = buddyName;
 	if (name.empty()) {
-		LOG4CXX_WARN(conversationManagerLogger, m_user->getJID().toString() << ": Tried to create empty conversation");
-		return;
+		LOG4CXX_WARN(conversationManagerLogger, m_user->getUserName() << ": Tried to create empty conversation");
+		return NULL;
 	}
 
 	// create conversation if it does not exist.
@@ -147,20 +103,28 @@ void ConversationManager::handleMessageReceived(Swift::Message::ref message) {
 		addConversation(conv);
 	}
 	// if it exists and it's MUC, but this message is PM, get PM conversation or create new one.
-	else if (m_convs[name]->isMUC() && message->getType() != Swift::Message::Groupchat) {
+	else if (m_convs[name]->isMUC() && pm) {
 		std::string room_name = name;
-		name = room_name + "/" + message->getTo().getResource();
+		name = room_name + "/" + nickname;
 		if (m_convs.find(name) == m_convs.end()) {
-			Conversation *conv = m_component->getFactory()->createConversation(this, message->getTo().getResource());
+			Conversation *conv = m_component->getFactory()->createConversation(this, nickname);
 			conv->setRoom(room_name);
 			conv->setNickname(name);
 			addConversation(conv);
 		}
 	}
 
-	// update resource and send the message
-	m_convs[name]->setJID(message->getFrom());
-	m_convs[name]->sendMessage(message);
+	return m_convs[name];
+}
+
+Conversation *ConversationManager::handleMessageReceived(pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &message) {
+	Conversation *conv = getConversationForMessage(message.buddyname(), message.pm(), message.nickname());
+	if (!conv) {
+		return NULL;
+	}
+
+	conv->sendMessage(type, message);
+	return conv;
 }
 
 }

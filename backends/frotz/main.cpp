@@ -9,6 +9,8 @@
  */
 
 #include "transport/Config.h"
+#include <cstring>
+#include <boost/foreach.hpp>
 #include "transport/BoostNetworkPlugin.h"
 #include <memory>
 
@@ -22,7 +24,6 @@
 
 using namespace boost::asio::ip;
 
-using namespace boost::program_options;
 using namespace Transport;
 
 class FrotzNetworkPlugin;

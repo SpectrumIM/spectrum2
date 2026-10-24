@@ -21,8 +21,6 @@
 #include "transport/AdminInterfaceCommand.h"
 #include "transport/User.h"
 
-#include <boost/foreach.hpp>
-#include <boost/lexical_cast.hpp>
 #include <iostream>
 
 namespace Transport {

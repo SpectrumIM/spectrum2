@@ -19,6 +19,9 @@
  */
 
 #include "XMPPUserRegistration.h"
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 #include "XMPPRosterManager.h"
 #include "transport/UserManager.h"
 #include "transport/StorageBackend.h"
@@ -83,7 +86,7 @@ void XMPPUserRegistration::handleRegisterRemoteRosterResponse(std::shared_ptr<Sw
 		response->setFrom(m_component->getJID());
 		response->setTo(Swift::JID(row.jid));
 		response->setType(Swift::Presence::Subscribe);
-		m_component->getFrontend()->sendPresence(response);
+		static_cast<XMPPFrontend *>(m_component->getFrontend())->sendPresence(response);
 	}
 	else {
 		// Remote roster is support, so use remoteroster XEP to add transport.
@@ -105,7 +108,7 @@ void XMPPUserRegistration::handleRegisterRemoteRosterResponse(std::shared_ptr<Sw
 		msg->setBody(std::string("registered: ") + row.jid);
 		msg->setTo(notify_jid);
 		msg->setFrom(m_component->getJID());
-		m_component->getFrontend()->sendMessage(msg);
+		static_cast<XMPPFrontend *>(m_component->getFrontend())->sendMessage(msg);
 	}
 }
 
@@ -129,22 +132,22 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(std::shared_ptr<
 			Swift::Presence::ref response;
 			response = Swift::Presence::create();
 			response->setTo(Swift::JID(userInfo.jid));
-			response->setFrom(Swift::JID(name, m_component->getJID().toString()));
+			response->setFrom(Swift::JID(name, m_component->getJID()));
 			response->setType(Swift::Presence::Unsubscribe);
-			m_component->getFrontend()->sendPresence(response);
+			static_cast<XMPPFrontend *>(m_component->getFrontend())->sendPresence(response);
 
 			response = Swift::Presence::create();
 			response->setTo(Swift::JID(userInfo.jid));
-			response->setFrom(Swift::JID(name, m_component->getJID().toString()));
+			response->setFrom(Swift::JID(name, m_component->getJID()));
 			response->setType(Swift::Presence::Unsubscribed);
-			m_component->getFrontend()->sendPresence(response);
+			static_cast<XMPPFrontend *>(m_component->getFrontend())->sendPresence(response);
 		}
 	}
 	else {
 		// Remote roster is support, so iterate over all buddies we received
 		// from the XMPP server and remove them using remote roster.
 		BOOST_FOREACH(Swift::RosterItemPayload it, payload->getItems()) {
-			if (it.getJID().getDomain() != m_component->getJID().getDomain()) continue;
+			if (it.getJID().getDomain() != Swift::JID(m_component->getJID()).getDomain()) continue;
 			Swift::RosterPayload::ref p = Swift::RosterPayload::ref(new Swift::RosterPayload());
 			Swift::RosterItemPayload item;
 			item.setJID(it.getJID());
@@ -173,13 +176,13 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(std::shared_ptr<
 		response->setTo(Swift::JID(userInfo.jid));
 		response->setFrom(m_component->getJID());
 		response->setType(Swift::Presence::Unsubscribe);
-		m_component->getFrontend()->sendPresence(response);
+		static_cast<XMPPFrontend *>(m_component->getFrontend())->sendPresence(response);
 
 		response = Swift::Presence::create();
 		response->setTo(Swift::JID(userInfo.jid));
 		response->setFrom(m_component->getJID());
 		response->setType(Swift::Presence::Unsubscribed);
-		m_component->getFrontend()->sendPresence(response);
+		static_cast<XMPPFrontend *>(m_component->getFrontend())->sendPresence(response);
 	}
 	else {
 		Swift::RosterPayload::ref payload = Swift::RosterPayload::ref(new Swift::RosterPayload());
@@ -199,7 +202,7 @@ void XMPPUserRegistration::handleUnregisterRemoteRosterResponse(std::shared_ptr<
 		msg->setBody(std::string("unregistered: ") + userInfo.jid);
 		msg->setTo(notify_jid);
 		msg->setFrom(m_component->getJID());
-		m_component->getFrontend()->sendMessage(msg);
+		static_cast<XMPPFrontend *>(m_component->getFrontend())->sendMessage(msg);
 	}
 }
 

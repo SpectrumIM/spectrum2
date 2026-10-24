@@ -42,23 +42,25 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		std::string photo;
 		bool readyToConnect;
 		bool disconnected;
-		Swift::Presence::ref changedPresence;
+		bool statusChanged;
+		pbnetwork::Status changedStatus;
 
 		void setUp (void) {
 			disconnected = false;
 			readyToConnect = false;
-			changedPresence = Swift::Presence::ref();
+			statusChanged = false;
+			changedStatus.Clear();
 			room = "";
 			roomNickname = "";
 			roomPassword = "";
 			photo = "";
 
 			setMeUp();
-			userManager->onUserCreated.connect(boost::bind(&UserTest::handleUserCreated, this, _1));
+			userManager->onUserCreated = [this](User *user) { handleUserCreated(user); };
 			connectUser();
 			received.clear();
 
-			frontend->onVCardUpdated.connect(boost::bind(&UserTest::handleVCardUpdated, this, _1, _2));
+			frontend->onVCardUpdated = [this](User *user, const pbnetwork::VCard &vcard) { handleVCardUpdated(user, vcard); };
 		}
 
 		void tearDown (void) {
@@ -70,26 +72,27 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			tearMeDown();
 		}
 
-	void handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> v) {
-		photo = Swift::byteArrayToString(v->getPhoto());
+	void handleVCardUpdated(User *user, const pbnetwork::VCard &v) {
+		photo = v.photo();
 	}
 
 	void handleUserCreated(User *user) {
-		user->onReadyToConnect.connect(boost::bind(&UserTest::handleUserReadyToConnect, this, user));
-		user->onPresenceChanged.connect(boost::bind(&UserTest::handleUserPresenceChanged, this, user, _1));
-		user->onRoomJoined.connect(boost::bind(&UserTest::handleRoomJoined, this, user, _1, _2, _3, _4));
-		user->onRoomLeft.connect(boost::bind(&UserTest::handleRoomLeft, this, user, _1));
+		user->onReadyToConnect = [this, user]() { handleUserReadyToConnect(user); };
+		user->onStatusChanged = [this, user](const pbnetwork::Status &status) { handleUserStatusChanged(user, status); };
+		user->onRoomJoined = [this, user](const std::string &room, const std::string &nickname, const std::string &password) { handleRoomJoined(user, room, nickname, password); };
+		user->onRoomLeft = [this, user](const std::string &room) { handleRoomLeft(user, room); };
 	}
 
 	void handleUserReadyToConnect(User *user) {
 		readyToConnect = true;
 	}
 
-	void handleUserPresenceChanged(User *user, Swift::Presence::ref presence) {
-		changedPresence = presence;
+	void handleUserStatusChanged(User *user, const pbnetwork::Status &status) {
+		statusChanged = true;
+		changedStatus = status;
 	}
 
-	void handleRoomJoined(User *user, const std::string &jid, const std::string &r, const std::string &nickname, const std::string &password) {
+	void handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
 		room = r;
 		roomNickname = nickname;
 		roomPassword = password;
@@ -121,8 +124,8 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
 
-		CPPUNIT_ASSERT(changedPresence);
-		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::Away, changedPresence->getShow());
+		CPPUNIT_ASSERT(statusChanged);
+		CPPUNIT_ASSERT_EQUAL(pbnetwork::STATUS_AWAY, changedStatus.status());
 	}
 
 	void handlePresenceJoinRoom() {
@@ -148,7 +151,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		roomPassword = "";
 
 		// simulate that backend joined the room
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "room", true);
+		XMPPConversation *conv = new XMPPConversation(user->getConversationManager(), "room", true);
 		conv->addJID("user@localhost/resource");
 		conv->setNickname("hanzz");
 		user->getConversationManager()->addConversation(conv);
@@ -171,7 +174,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// Add 1 participant
 		Conversation *conv = user->getConversationManager()->getConversation("room");
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 
 		// Connect 2nd resource
 		connectSecondResource();
@@ -280,7 +283,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		Conversation *conv = user->getConversationManager()->getConversation("room");
+		XMPPConversation *conv = static_cast<XMPPConversation *>(user->getConversationManager()->getConversation("room"));
 		CPPUNIT_ASSERT_EQUAL(1, (int) conv->getJIDs().size());
 		CPPUNIT_ASSERT_EQUAL(Swift::JID("user@localhost/resource2"), conv->getJIDs().front());
 	}
@@ -291,7 +294,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 		// Add 1 participant
 		Conversation *conv = user->getConversationManager()->getConversation("room");
-		conv->handleParticipantChanged("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("anotheruser", Conversation::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_AWAY, "my status message"));
 
 		// Connect 2nd resource
 		connectSecondResource();
@@ -400,7 +403,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		Conversation *conv = user->getConversationManager()->getConversation("room");
+		XMPPConversation *conv = static_cast<XMPPConversation *>(user->getConversationManager()->getConversation("room"));
 		CPPUNIT_ASSERT_EQUAL(1, (int) conv->getJIDs().size());
 		CPPUNIT_ASSERT_EQUAL(Swift::JID("user@localhost/resource2"), conv->getJIDs().front());
 	}
@@ -420,14 +423,14 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	void doNotLeaveNormalChat() {
 		User *user = userManager->getUser("user@localhost");
 
-		TestingConversation *conv = new TestingConversation(user->getConversationManager(), "buddy1@test");
+		XMPPConversation *conv = new XMPPConversation(user->getConversationManager(), "buddy1@test");
 		user->getConversationManager()->addConversation(conv);
 
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
 
-		user->getConversationManager()->removeJID("user@localhost/resource");
+		static_cast<XMPPUser *>(user)->removeJID("user@localhost/resource");
 		CPPUNIT_ASSERT_EQUAL(std::string(""), room);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomNickname);
 		CPPUNIT_ASSERT_EQUAL(std::string(""), roomPassword);
@@ -437,7 +440,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	void handleDisconnected() {
 		User *user = userManager->getUser("user@localhost");
-		user->handleDisconnected("Connection error", Swift::SpectrumErrorPayload::CONNECTION_ERROR_AUTHENTICATION_FAILED);
+		user->handleDisconnected("Connection error", pbnetwork::CONNECTION_ERROR_AUTHENTICATION_FAILED);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT(streamEnded);
@@ -518,7 +521,7 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		handlePresenceJoinRoom();
 
 		Conversation *conv = user->getConversationManager()->getConversation("room");
-		conv->handleParticipantChanged("hanzz", Conversation::PARTICIPANT_FLAG_NOT_AUTHORIZED, Swift::StatusShow::Away, "my status message");
+		conv->handleParticipantChanged(makeParticipant("hanzz", Conversation::PARTICIPANT_FLAG_NOT_AUTHORIZED, pbnetwork::STATUS_AWAY, "my status message"));
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());

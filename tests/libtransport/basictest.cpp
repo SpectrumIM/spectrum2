@@ -1,4 +1,6 @@
 #include "basictest.h"
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include "XMPPFrontend.h"
 #include "XMPPUserRegistration.h"
 #include "XMPPUserManager.h"
@@ -53,6 +55,7 @@ void BasicTest::setMeUp (void) {
 	userRegistry = new UserRegistry(cfg, factories);
 
 	frontend = new Transport::XMPPFrontend();
+	factory->setFrontend(frontend);
 
 	component = new Component(frontend, loop, factories, cfg, factory, userRegistry);
 	component->start();
@@ -256,7 +259,7 @@ void BasicTest::connectSecondResource() {
 
 	User *user = userManager->getUser("user@localhost");
 	CPPUNIT_ASSERT(user);
-	CPPUNIT_ASSERT_EQUAL(2, user->getResourceCount());
+	CPPUNIT_ASSERT_EQUAL(2, static_cast<XMPPUser *>(user)->getResourceCount());
 
 	CPPUNIT_ASSERT(getStanza(received2[1])->getPayload<Swift::DiscoInfo>());
 }
@@ -270,7 +273,7 @@ void BasicTest::disconnectUser() {
 		return;
 	}
 	received.clear();
-	userManager->disconnectUser("user@localhost");
+	static_cast<XMPPUserManager *>(userManager)->disconnectUser(Swift::JID("user@localhost"));
 	dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(100);
 	loop->processEvents();
 
@@ -294,12 +297,12 @@ void BasicTest::add2Buddies() {
 	grp.push_back("group1");
 	LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "BuddY1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
 	user->getRosterManager()->setBuddy(buddy);
-	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
+	buddy->setStatus(pbnetwork::STATUS_AWAY, "status1");
 
 	std::vector<std::string> grp2;
 	grp2.push_back("group2");
 	buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy2", "Buddy 2", grp2, BUDDY_JID_ESCAPING);
 	user->getRosterManager()->setBuddy(buddy);
-	buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status2");
+	buddy->setStatus(pbnetwork::STATUS_AWAY, "status2");
 }
 

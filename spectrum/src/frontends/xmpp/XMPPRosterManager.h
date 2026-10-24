@@ -24,9 +24,9 @@
 
 #include <string>
 #include <algorithm>
+#include <list>
 #include <map>
-#include <boost/pool/pool_alloc.hpp>
-#include <boost/pool/object_pool.hpp>
+#include <vector>
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Queries/GenericRequest.h"
 #include "Swiften/Roster/SetRosterRequest.h"
@@ -40,6 +40,7 @@ class User;
 class Component;
 class StorageBackend;
 class RosterStorage;
+class XMPPFrontend;
 
 // TODO: Once Swiften GetRosterRequest will support setting to="", this can be removed
 class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload> {
@@ -54,7 +55,6 @@ class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload
 /// Manages roster of one XMPP user.
 class XMPPRosterManager : public RosterManager {
 	public:
-		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > BuddiesMap;
 		/// Creates new XMPPRosterManager.
 		/// \param user User associated with this XMPPRosterManager.
 		/// \param component Transport instance associated with this roster.
@@ -66,32 +66,59 @@ class XMPPRosterManager : public RosterManager {
 		virtual void doRemoveBuddy(Buddy *buddy);
 		virtual void doAddBuddy(Buddy *buddy);
 		virtual void doUpdateBuddy(Buddy *buddy);
-
-
+		virtual void doSendBuddyStatus(Buddy *buddy);
+		virtual void doRequestAuthorization(const std::string &buddyName);
+		virtual bool isValidBuddyName(const std::string &name, BuddyFlag flags);
 
 		bool isRemoteRosterSupported() {
 			return m_supportRemoteRoster;
 		}
 
-		void handleBuddyChanged(Buddy *buddy);
+		/// Generates whole Presence stanzas with current status/show for this buddy.
+
+		/// Presence stanzas are addressed to the user's bare JID.
+		/// \return Presence stanzas: the buddy's own and the raw ones from the backend.
+		std::vector<Swift::Presence::ref> &generatePresenceStanzas(Buddy *buddy);
+
+		/// Remembers and forwards a raw presence of the buddy from the backend (features.rawxml).
+		void handleRawPresence(Buddy *buddy, Swift::Presence::ref presence);
+
+		Swift::RosterPayload::ref generateRosterPayload();
+
+		void handleSubscription(Swift::Presence::ref presence);
 
 		void sendBuddyRosterPush(Buddy *buddy);
 
 		void sendBuddyRosterRemove(Buddy *buddy);
 
+		void sendBuddySubscribePresence(Buddy *buddy);
+
+		void sendBuddyUnsubscribePresence(Buddy *buddy);
+
+		void sendBuddyPresences(Buddy *buddy, const Swift::JID &to);
+
+		void sendCurrentPresences(const Swift::JID &to);
+
+		void sendCurrentPresence(const Swift::JID &from, const Swift::JID &to);
+
+		void sendUnavailablePresences(const Swift::JID &to);
+
 	private:
+		XMPPFrontend *getFrontend();
 		void sendRIE();
 		void handleBuddyRosterPushResponse(Swift::ErrorPayload::ref error, Swift::SetRosterRequest::ref request, const std::string &key);
 		void handleRemoteRosterResponse(std::shared_ptr<Swift::RosterPayload> roster, Swift::ErrorPayload::ref error);
 
 		Component *m_component;
-		RosterStorage *m_rosterStorage;
 		User *m_user;
-		Swift::Timer::ref m_setBuddyTimer;
+		// Bare JID of the user (the XMPPUser is not constructed yet when we are).
+		Swift::JID m_userJID;
 		Swift::Timer::ref m_RIETimer;
 		std::list <Swift::SetRosterRequest::ref> m_requests;
 		bool m_supportRemoteRoster;
 		AddressedRosterRequest::ref m_remoteRosterRequest;
+		// Presences of each buddy, by lowercased buddy name.
+		std::map<std::string, std::vector<Swift::Presence::ref> > m_presences;
 };
 
 }

@@ -38,13 +38,20 @@ class LocalBuddy : public Buddy {
 		std::string getName() { return m_name; }
 		bool setName(const std::string &name);
 
-		bool getStatus(Swift::StatusShow &status, std::string &statusMessage);
+		bool getStatus(pbnetwork::StatusType &status, std::string &statusMessage);
 
 		bool isAvailable() {
-			return m_status.getType() != Swift::StatusShow::None;
+			return m_status != pbnetwork::STATUS_NONE;
 		}
 
-		void setStatus(const Swift::StatusShow &status, const std::string &statusMessage);
+		void setStatus(pbnetwork::StatusType status, const std::string &statusMessage);
+
+		/// Marks the buddy online without sending its status (the frontend shows raw presences).
+		void setAvailable() {
+			if (m_status == pbnetwork::STATUS_NONE) {
+				m_status = pbnetwork::STATUS_ONLINE;
+			}
+		}
 
 		std::string getIconHash() { return m_iconHash; }
 		void setIconHash(const std::string &iconHash);
@@ -52,10 +59,8 @@ class LocalBuddy : public Buddy {
 		std::vector<std::string> getGroups() { return m_groups; }
 		void setGroups(const std::vector<std::string> &groups);
 
-		bool isValid() {
-			std::string safeName = getSafeName();
-			return m_jid.isValid() && safeName.find("/") == std::string::npos;
-		}
+		/// Returns true if the frontend can address this buddy.
+		bool isValid();
 
 	private:
 		std::string m_name;
@@ -63,9 +68,7 @@ class LocalBuddy : public Buddy {
 		std::vector<std::string> m_groups;
 		std::string m_statusMessage;
 		std::string m_iconHash;
-		Swift::StatusShow m_status;
-
-	friend class NetworkPluginServer;
+		pbnetwork::StatusType m_status;
 };
 
 }

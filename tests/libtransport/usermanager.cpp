@@ -26,7 +26,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	CPPUNIT_TEST_SUITE_END();
 
 	public:
-		Swift::Presence::ref changedPresence;
+		pbnetwork::Status changedStatus;
 
 		void setUp (void) {
 			setMeUp();
@@ -159,8 +159,8 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 	}
 
-	void handleUserPresenceChanged(User *user, Swift::Presence::ref presence) {
-		changedPresence = presence;
+	void handleUserStatusChanged(User *user, const pbnetwork::Status &status) {
+		changedStatus = status;
 	}
 
 	void connectTwoResources() {
@@ -169,7 +169,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		connectSecondResource();
 
 		User *user = userManager->getUser("user@localhost");
-		user->onPresenceChanged.connect(boost::bind(&UserManagerTest::handleUserPresenceChanged, this, user, _1));
+		user->onStatusChanged = [this, user](const pbnetwork::Status &status) { handleUserStatusChanged(user, status); };
 
 		// we should get presences
 		CPPUNIT_ASSERT_EQUAL(4, (int) received2.size());
@@ -187,7 +187,8 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response->setType(Swift::Presence::Unavailable);
 		injectPresence(response);
 
-		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Available, changedPresence->getType());
+		// resource2 is still online
+		CPPUNIT_ASSERT_EQUAL(pbnetwork::STATUS_ONLINE, changedStatus.status());
 
 		Swift::Presence::ref response2 = Swift::Presence::create();
 		response2->setTo("localhost");
@@ -195,7 +196,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		response2->setType(Swift::Presence::Unavailable);
 		injectPresence(response2);
 
-		CPPUNIT_ASSERT_EQUAL(Swift::Presence::Unavailable, changedPresence->getType());
+		CPPUNIT_ASSERT_EQUAL(pbnetwork::STATUS_NONE, changedStatus.status());
 	}
 
 	void disconnectUserBouncer() {
@@ -203,7 +204,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		User *user = userManager->getUser("user@localhost");
 		user->addUserSetting("stay_connected", "1");
 		received.clear();
-		userManager->disconnectUser("user@localhost");
+		static_cast<XMPPUserManager *>(userManager)->disconnectUser(Swift::JID("user@localhost"));
 		dynamic_cast<Swift::DummyTimerFactory *>(factories->getTimerFactory())->setTime(10);
 		loop->processEvents();
 

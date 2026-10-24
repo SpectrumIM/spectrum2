@@ -19,9 +19,13 @@
  */
 
 #include "XMPPFrontend.h"
+#include <boost/foreach.hpp>
 #include "XMPPRosterManager.h"
 #include "XMPPUser.h"
 #include "XMPPUserManager.h"
+#include "XMPPConversation.h"
+#include "PresenceOracle.h"
+#include "jidutils.h"
 #include <boost/bind.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -31,6 +35,9 @@
 #include "transport/Logging.h"
 #include "transport/Config.h"
 #include "transport/Transport.h"
+#include "transport/AdminInterface.h"
+#include "transport/LocalBuddy.h"
+#include "transport/ConversationManager.h"
 #include "storageparser.h"
 #ifdef _WIN32
 #include <Swiften/TLS/CAPICertificate.h>
@@ -67,7 +74,10 @@
 #include "Swiften/Parser/GenericPayloadParserFactory.h"
 #include "Swiften/Parser/GenericPayloadParserFactory2.h"
 #include "Swiften/Queries/IQRouter.h"
+#include "Swiften/Queries/GenericRequest.h"
+#include "Swiften/Roster/SetRosterRequest.h"
 #include "Swiften/Elements/RosterPayload.h"
+#include "Swiften/Elements/StatsPayload.h"
 #include "discoitemsresponder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
 #include "carbonresponder.h"
@@ -75,10 +85,14 @@
 using namespace Swift;
 
 namespace Transport {
-	
+
 DEFINE_LOGGER(logger, "XMPPFrontend");
 
 XMPPFrontend::XMPPFrontend() {
+	m_userManager = NULL;
+	m_presenceOracle = NULL;
+	m_xmppParser = NULL;
+	m_serializer = NULL;
 }
 
 class SwiftServerExposed: public Swift::Server
@@ -95,7 +109,7 @@ public:
 	PayloadSerializerCollection* getPayloadSerializers() { return Swift::Component::getPayloadSerializers(); }
 };
 
-void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Transport::UserRegistry *userRegistry) {
+void XMPPFrontend::init(Component *transport, Config *config, Transport::UserRegistry *userRegistry) {
 	m_transport = transport;
 	m_component = NULL;
 	m_server = NULL;
@@ -104,9 +118,23 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_privilegeNamespace = "urn:xmpp:privilege:2";
 	m_config = transport->getConfig();
 	m_userManager = NULL;
+	m_userRegistry = userRegistry;
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
+	m_factories = transport->getNetworkFactories();
+	Swift::EventLoop *loop = transport->getEventLoop();
 
-	m_config->onBackendConfigUpdated.connect(boost::bind(&XMPPFrontend::handleBackendConfigChanged, this));
+	m_presenceOracle = new PresenceOracle();
+	m_presenceOracle->onPresenceChange = [this](Swift::Presence::ref presence) { handlePresence(presence); };
+
+	m_xmppParser = new Swift::XMPPParser(this, &m_collection, m_factories->getXMLParserFactory());
+	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
+	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType, false);
+
+	auto prevBackendConfig = m_config->onBackendConfigUpdated;
+	m_config->onBackendConfigUpdated = [prevBackendConfig, this]() {
+		prevBackendConfig();
+		handleBackendConfigChanged();
+	};
 
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));
@@ -132,7 +160,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 	if (CONFIG_BOOL(m_config, "service.server_mode")) {
 		LOG4CXX_INFO(logger, "Creating component in server mode on port " << CONFIG_INT(m_config, "service.port"));
-		m_server = new Swift::Server(loop, factories, userRegistry, m_jid, CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
+		m_server = new Swift::Server(loop, m_factories, userRegistry, m_jid, CONFIG_STRING(m_config, "service.server"), CONFIG_INT(m_config, "service.port"));
 		if (!CONFIG_STRING(m_config, "service.cert").empty()) {
 #ifndef _WIN32
 #ifndef __APPLE__
@@ -144,7 +172,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 			m_server->addTLSEncryption(f, certificate);
 #endif
 #endif
-			
+
 		}
 		else {
 			LOG4CXX_INFO(logger, "No PKCS#12 certificate used. TLS is disabled.");
@@ -171,7 +199,7 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	}
 	else {
 		LOG4CXX_INFO(logger, "Creating component in gateway mode");
-		m_component = new Swift::Component(m_jid, CONFIG_STRING(m_config, "service.password"), factories);
+		m_component = new Swift::Component(m_jid, CONFIG_STRING(m_config, "service.password"), m_factories);
 		m_component->setSoftwareVersion("Spectrum", SPECTRUM_VERSION);
 		m_component->onConnected.connect(boost::bind(&XMPPFrontend::handleConnected, this));
 		m_component->onError.connect(boost::bind(&XMPPFrontend::handleConnectionError, this, _1));
@@ -197,13 +225,13 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 
 
 	m_capsMemoryStorage = new CapsMemoryStorage();
-	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter, factories->getCryptoProvider());
+	m_capsManager = new CapsManager(m_capsMemoryStorage, m_stanzaChannel, m_iqRouter, m_factories->getCryptoProvider());
 	m_entityCapsManager = new EntityCapsManager(m_capsManager, m_stanzaChannel);
 	m_entityCapsManager->onCapsChanged.connect(boost::bind(&XMPPFrontend::handleCapsChanged, this, _1));
 
 	m_stanzaChannel->onPresenceReceived.connect(bind(&XMPPFrontend::handleGeneralPresence, this, _1));
 	m_stanzaChannel->onMessageReceived.connect(bind(&XMPPFrontend::handleMessage, this, _1));
-	
+
 	m_carbonResponder = new CarbonResponder(m_iqRouter);
 	m_carbonResponder->start();
 }
@@ -229,10 +257,50 @@ XMPPFrontend::~XMPPFrontend() {
 		delete serializer;
 	}
 	m_payloadSerializers.clear();
+
+	delete m_xmppParser;
+	delete m_serializer;
+	delete m_presenceOracle;
 }
 
 void XMPPFrontend::handleGeneralPresence(Swift::Presence::ref presence) {
-	onPresenceReceived(presence);
+	// The oracle sees presences before the user manager does.
+	m_presenceOracle->handleIncomingPresence(presence);
+	if (m_userManager) {
+		m_userManager->handleGeneralPresenceReceived(presence);
+	}
+}
+
+// Presences the oracle tracks: those addressed to the transport itself.
+void XMPPFrontend::handlePresence(Swift::Presence::ref presence) {
+	// filter out login/logout presence spam
+	if (!presence->getTo().getNode().empty())
+		return;
+
+	// filter out bad presences
+	if (!presence->getFrom().isValid()) {
+		return;
+	}
+
+	switch (presence->getType()) {
+		case Presence::Error:
+		case Presence::Subscribe:
+		case Presence::Subscribed:
+		case Presence::Unsubscribe:
+		case Presence::Unsubscribed:
+			return;
+		default:
+			break;
+	};
+
+	// check if we have this client's capabilities and ask for them
+	if (presence->getType() != Swift::Presence::Unavailable) {
+		sendCapabilitiesRequest(presence->getFrom());
+	}
+
+	if (m_userManager) {
+		m_userManager->handlePresence(presence);
+	}
 }
 
 void XMPPFrontend::handleMessage(std::shared_ptr<Swift::Message> message) {
@@ -241,21 +309,54 @@ void XMPPFrontend::handleMessage(std::shared_ptr<Swift::Message> message) {
 	if (privilege && message->getFrom().getNode().empty() && message->getFrom().getResource().empty()) {
 		m_privilegeNamespace = privilege->getNamespace();
 	}
-	onMessageReceived(message);
+
+	// Message order: UserManager first, then the admin interface (if any).
+	if (m_userManager) {
+		m_userManager->handleMessageReceived(message);
+	}
+	handleAdminMessage(message);
 }
 
+void XMPPFrontend::handleAdminMessage(std::shared_ptr<Swift::Message> message) {
+	AdminInterface *adminInterface = m_transport->getAdminInterface();
+	if (!adminInterface) {
+		return;
+	}
+
+	if (!message->getTo().getNode().empty())
+		return;
+
+	std::vector<std::string> const &x = CONFIG_VECTOR(m_config,"service.admin_jid");
+	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
+	    LOG4CXX_WARN(logger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
+	    return;
+
+	}
+
+	// Ignore empty messages
+	if (message->getBody().get_value_or("").empty()) {
+		return;
+	}
+
+	std::string reply = adminInterface->handleQuery(message->getBody().get_value_or(""));
+
+	message->setTo(message->getFrom());
+	message->setFrom(m_jid);
+	message->setBody(reply);
+	sendMessage(message);
+}
 
 void XMPPFrontend::clearRoomList() {
-	static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->clearRooms();
+	m_userManager->getDiscoItemsResponder()->clearRooms();
 }
 
-void XMPPFrontend::addRoomToRoomList(const std::string &handle, const std::string &name) {
-	static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->addRoom(handle, name);
+void XMPPFrontend::addRoomToRoomList(const std::string &room, const std::string &name) {
+	m_userManager->getDiscoItemsResponder()->addRoom(Swift::JID::getEscapedNode(room) + "@" + m_jid.toString(), name);
 }
 
 void XMPPFrontend::sendPresence(Swift::Presence::ref presence) {
 	if (!presence->getFrom().getNode().empty()) {
-		presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::CapsInfo(static_cast<XMPPUserManager *>(m_userManager)->getDiscoItemsResponder()->getBuddyCapsInfo())));
+		presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::CapsInfo(m_userManager->getDiscoItemsResponder()->getBuddyCapsInfo())));
 	}
 
 	m_stanzaChannel->sendPresence(presence);
@@ -286,7 +387,9 @@ void XMPPFrontend::sendIQ(std::shared_ptr<Swift::IQ> iq) {
 std::shared_ptr<Swift::DiscoInfo> XMPPFrontend::sendCapabilitiesRequest(Swift::JID to) {
 	Swift::DiscoInfo::ref caps = m_entityCapsManager->getCaps(to);
 	if (caps != Swift::DiscoInfo::ref()) {
-		onCapabilitiesReceived(to, caps);
+		if (m_userManager) {
+			m_userManager->handleDiscoInfo(to, caps);
+		}
 		return caps;
 	}
 #ifdef SUPPORT_LEGACY_CAPS
@@ -311,7 +414,7 @@ void XMPPFrontend::reconnectUser(const std::string &user) {
 		response->setTo(user);
 	}
 	catch (...) { return; }
-	
+
 	response->setFrom(m_component->getJID());
 	response->setType(Swift::Presence::Probe);
 
@@ -322,8 +425,8 @@ RosterManager *XMPPFrontend::createRosterManager(User *user, Component *componen
 	return new XMPPRosterManager(user, component);
 }
 
-User *XMPPFrontend::createUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
-	return new XMPPUser(jid, userInfo, component, userManager);
+User *XMPPFrontend::createUser(const std::string &user, UserInfo &userInfo, Component *component, UserManager *userManager) {
+	return new XMPPUser(user, userInfo, component, userManager);
 }
 
 UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend) {
@@ -336,6 +439,35 @@ UserManager *XMPPFrontend::createUserManager(Component *component, UserRegistry 
 	return m_userManager;
 }
 
+Conversation *XMPPFrontend::createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) {
+	return new XMPPConversation(conversationManager, legacyName, isMUC);
+}
+
+void XMPPFrontend::handleLoginResult(const std::string &user, bool connected, const std::string &error) {
+	if (!m_userRegistry) {
+		return;
+	}
+
+	if (connected) {
+		m_userRegistry->onPasswordValid(user);
+	}
+	else {
+		m_userRegistry->onPasswordInvalid(user, error);
+	}
+}
+
+pbnetwork::VCard XMPPFrontend::toVCard(User *user, std::shared_ptr<Swift::VCard> v) {
+	pbnetwork::VCard vcard;
+	vcard.set_username(user->getUserName());
+	vcard.set_buddyname("");
+	vcard.set_id(0);
+	vcard.set_fullname(v->getFullName());
+	vcard.set_nickname(v->getNickname());
+	const Swift::ByteArray &photo = v->getPhoto();
+	vcard.set_photo(std::string(photo.begin(), photo.end()));
+	return vcard;
+}
+
 bool XMPPFrontend::handleIQ(std::shared_ptr<Swift::IQ> iq) {
 	if (!m_rawXML) {
 		return false;
@@ -345,8 +477,178 @@ bool XMPPFrontend::handleIQ(std::shared_ptr<Swift::IQ> iq) {
 	if (iq->getPayload<Swift::InBandRegistrationPayload>() != NULL) { return false; }
 	if (iq->getPayload<Swift::StatsPayload>() != NULL) { return false; }
 
-	m_transport->onRawIQReceived(iq);
+	User *user = m_userManager ? m_userManager->getUser(iq->getFrom().toBare()) : NULL;
+	if (!user) {
+		return true;
+	}
+
+	if (iq->getType() == Swift::IQ::Get) {
+		m_id2resource[iq->getFrom().toBare().toString() + iq->getID()] = iq->getFrom().getResource();
+	}
+
+	sendRawStanza(user, iq);
 	return true;
+}
+
+void XMPPFrontend::sendRawStanza(User *user, Swift::Presence::ref presence) {
+	doSendRawStanza(user, Swift::Presence::create(presence));
+}
+
+void XMPPFrontend::sendRawStanza(User *user, std::shared_ptr<Swift::Message> message) {
+	doSendRawStanza(user, std::make_shared<Swift::Message>(*message));
+}
+
+void XMPPFrontend::sendRawStanza(User *user, std::shared_ptr<Swift::IQ> iq) {
+	doSendRawStanza(user, std::make_shared<Swift::IQ>(*iq));
+}
+
+void XMPPFrontend::doSendRawStanza(User *user, std::shared_ptr<Swift::Stanza> stanza) {
+	if (!CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
+		return;
+	}
+
+	// The backend knows the buddy by its legacy JID.
+	Swift::JID legacyname = Swift::JID(JIDUtils::JIDToLegacyName(stanza->getTo()));
+	if (!stanza->getTo().getResource().empty()) {
+		stanza->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), stanza->getTo().getResource()));
+	}
+	else {
+		stanza->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
+	}
+
+	std::string xml = safeByteArrayToString(m_serializer->serializeElement(stanza));
+	onRawXMLReceived(user, xml);
+}
+
+void XMPPFrontend::sendRawXML(const std::string &xml) {
+	m_xmppParser->parse(xml);
+}
+
+void XMPPFrontend::handleElement(std::shared_ptr<Swift::ToplevelElement> element) {
+	std::shared_ptr<Swift::Stanza> stanza = std::dynamic_pointer_cast<Swift::Stanza>(element);
+	if (!stanza) {
+		return;
+	}
+
+	if (!m_userManager) {
+		return;
+	}
+
+	User *user = m_userManager->getUser(stanza->getTo().toBare());
+	if (!user)
+		return;
+
+	Swift::JID originalJID = stanza->getFrom();
+	XMPPConversation *conv = static_cast<XMPPConversation *>(user->getConversationManager()->getConversation(originalJID.toBare()));
+
+	XMPPRosterManager *rosterManager = static_cast<XMPPRosterManager *>(user->getRosterManager());
+	LocalBuddy *buddy = (LocalBuddy *) rosterManager->getBuddy(stanza->getFrom().toBare());
+	if (buddy) {
+		const Swift::JID jid = JIDUtils::getBuddyJID(buddy);
+		if (stanza->getFrom().getResource().empty()) {
+			stanza->setFrom(Swift::JID(jid.getNode(), jid.getDomain()));
+		}
+		else {
+			stanza->setFrom(Swift::JID(jid.getNode(), jid.getDomain(), stanza->getFrom().getResource()));
+		}
+	}
+	else {
+		std::string name = stanza->getFrom().toBare();
+		if (conv && conv->isMUC()) {
+			if (name.find_last_of("@") != std::string::npos) {
+				name.replace(name.find_last_of("@"), 1, "%");
+			}
+		}
+		else {
+			if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
+				name = Swift::JID::getEscapedNode(name);
+			}
+			else {
+				if (name.find_last_of("@") != std::string::npos) {
+					name.replace(name.find_last_of("@"), 1, "%");
+				}
+			}
+		}
+		if (stanza->getFrom().getResource().empty()) {
+			stanza->setFrom(Swift::JID(name, m_jid.toString()));
+		}
+		else {
+			stanza->setFrom(Swift::JID(name, m_jid.toString(), stanza->getFrom().getResource()));
+		}
+	}
+
+	std::shared_ptr<Swift::Message> message = std::dynamic_pointer_cast<Swift::Message>(stanza);
+	if (message) {
+		if (conv) {
+			if (conv->isMUC() || message->getType() == Swift::Message::Groupchat) {
+				conv->handleRawMessage(message);
+				return;
+			}
+
+			// The message goes to the last-replied resource
+			Swift::JID delivered = conv->getDeliveryJID();
+			message->setTo(delivered);
+
+			// In gateway mode the XMPP server copies the message to the other resources itself
+			if (!m_transport->inServerMode()) {
+				conv->handleRawMessage(message);
+				return;
+			}
+
+			// The other resources of the user get a XEP-0280 <received> carbon
+			std::shared_ptr<Swift::Message> copy(new Swift::Message(*message));
+			conv->handleRawMessage(message);
+			conv->forwardReceivedCopies(copy, delivered);
+			return;
+		}
+
+		sendMessage(message);
+		return;
+	}
+
+	std::shared_ptr<Swift::Presence> presence = std::dynamic_pointer_cast<Swift::Presence>(stanza);
+	if (presence) {
+		if (buddy) {
+			if (!buddy->isAvailable() && presence->getType() != Swift::Presence::Unavailable) {
+				buddy->setAvailable();
+			}
+			rosterManager->handleRawPresence(buddy, presence);
+		}
+		else if (conv) {
+			conv->handleRawPresence(presence);
+		}
+		else {
+			sendPresence(presence);
+		}
+
+		return;
+	}
+
+	// TODO: Move m_id2resource in User and clean it up
+	std::shared_ptr<Swift::IQ> iq = std::dynamic_pointer_cast<Swift::IQ>(stanza);
+	if (iq) {
+		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
+			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
+			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
+		}
+		else {
+			const Swift::JID &userJID = static_cast<XMPPUser *>(user)->getJID();
+			Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(userJID);
+			if (highest) {
+			    iq->setTo(highest->getFrom());
+			} else {
+			    iq->setTo(userJID);
+			}
+		}
+		// In gateway mode the XMPP server rejects a component stanza without a recipient and drops the stream.
+		// In server mode an IQ without 'to' is a valid server-directed IQ, so it is left alone.
+		if (!m_transport->inServerMode() && !iq->getTo().isValid()) {
+			LOG4CXX_WARN(logger, "Dropping IQ " << iq->getID() << " from backend: no valid recipient");
+			return;
+		}
+		sendIQ(iq);
+		return;
+	}
 }
 
 void XMPPFrontend::handleBackendConfigChanged() {
@@ -378,7 +680,7 @@ void XMPPFrontend::connectToServer() {
 		if (std::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())) {
 			std::dynamic_pointer_cast<Swift::BoostConnectionServer>(m_server->getConnectionServer())->onStopped.connect(boost::bind(&XMPPFrontend::handleServerStopped, this, _1));
 		}
-		
+
 		// We're connected right here, because we're in server mode...
 		handleConnected();
 	}
@@ -441,12 +743,16 @@ void XMPPFrontend::handleDataWritten(const Swift::SafeByteArray &data) {
 
 void XMPPFrontend::handleDiscoInfoResponse(std::shared_ptr<Swift::DiscoInfo> info, Swift::ErrorPayload::ref error, const Swift::JID& jid) {
 #ifdef SUPPORT_LEGACY_CAPS
-	onCapabilitiesReceived(jid, info);
+	if (m_userManager) {
+		m_userManager->handleDiscoInfo(jid, info);
+	}
 #endif
 }
 
 void XMPPFrontend::handleCapsChanged(const Swift::JID& jid) {
-	onCapabilitiesReceived(jid, m_entityCapsManager->getCaps(jid));
+	if (m_userManager) {
+		m_userManager->handleDiscoInfo(jid, m_entityCapsManager->getCaps(jid));
+	}
 }
 
 std::string XMPPFrontend::getRegistrationFields() {

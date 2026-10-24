@@ -10,7 +10,7 @@ else()
 endif()
 
 add_dependencies(spectrum2-slack-frontend transport)
-target_compile_features(spectrum2-slack-frontend PUBLIC cxx_std_11)
+target_compile_features(spectrum2-slack-frontend PUBLIC cxx_std_17)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	if(NOT WIN32)

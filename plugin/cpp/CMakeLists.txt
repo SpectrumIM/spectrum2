@@ -9,7 +9,8 @@ else()
 endif()
 
 add_dependencies(transport-plugin pb)
-target_compile_features(transport-plugin PUBLIC cxx_std_11)
+# See protocol/CMakeLists.txt for why the interface requirement is C++17.
+target_compile_features(transport-plugin PRIVATE cxx_std_20 INTERFACE cxx_std_17)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	if(NOT WIN32)

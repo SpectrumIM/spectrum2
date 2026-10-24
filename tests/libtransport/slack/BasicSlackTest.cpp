@@ -46,6 +46,7 @@ void BasicSlackTest::setMeUp (void) {
 	userRegistry = new UserRegistry(cfg, factories);
 
 	frontend = new SlackFrontend();
+	factory->setFrontend(frontend);
 
 	component = new Component(frontend, loop, factories, cfg, factory, userRegistry);
 	component->start();

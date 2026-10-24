@@ -1,4 +1,5 @@
 #include "transport/HTTPRequest.h"
+#include <cstring>
 
 namespace Transport {
 
@@ -133,7 +134,9 @@ void HTTPRequest::run() {
 
 void HTTPRequest::finalize() {
 	m_callback(this, m_ok, m_json, m_data);
-	onRequestFinished();
+	if (onRequestFinished) {
+		onRequestFinished();
+	}
 }
 
 bool HTTPRequest::execute() {

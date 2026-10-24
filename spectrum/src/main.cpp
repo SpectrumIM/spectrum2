@@ -1,4 +1,7 @@
 #include "transport/Config.h"
+#include <cstring>
+#include <boost/bind.hpp>
+#include "transport/CommandLine.h"
 #include "transport/Transport.h"
 #include "transport/UserManager.h"
 #include "transport/SQLite3Backend.h"
@@ -13,15 +16,16 @@
 #include "transport/Util.h"
 #include "transport/Logging.h"
 #include "transport/Frontend.h"
+#ifdef ENABLE_XMPP_FRONTEND
 #include "frontends/xmpp/XMPPFrontendPlugin.h"
+#endif
 #ifdef ENABLE_SLACK_FRONTEND
 #include "frontends/slack/SlackFrontendPlugin.h"
 #endif
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
-#include <boost/thread.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <filesystem>
+#include <functional>
 #ifndef WIN32
 #include "sys/signal.h"
 #include "sys/stat.h"
@@ -143,7 +147,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 }
 #endif
 
-static void _createDirectories(Transport::Config *config, boost::filesystem::path ph) {
+static void _createDirectories(Transport::Config *config, std::filesystem::path ph) {
 	if (ph.empty() || exists(ph)) {
 		return;
 	}
@@ -152,7 +156,7 @@ static void _createDirectories(Transport::Config *config, boost::filesystem::pat
 	_createDirectories(config, ph.parent_path());
 
 	// Now that parent's path exists, create the directory
-	boost::filesystem::create_directory(ph);
+	std::filesystem::create_directory(ph);
 
 #ifndef WIN32
 	if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
@@ -228,7 +232,7 @@ int mainloop() {
 	std::string plugin_fc = "create_" + frontend_name + "_frontend_plugin";
 
 	dll::shared_library self(dll::program_location());
-	boost::function<std::shared_ptr<FrontendPlugin>()> creator;
+	std::function<std::shared_ptr<FrontendPlugin>()> creator;
 
 	try {
 		creator = self.get_alias<std::shared_ptr<FrontendPlugin>()>(plugin_fc);
@@ -304,7 +308,7 @@ int main(int argc, char **argv)
 {
 	Config config(argc, argv);
 	config_ = &config;
-	boost::program_options::variables_map vm;
+	CommandLine cmdline;
 	bool no_daemon = false;
 	std::string config_file;
 	std::string jid;
@@ -344,52 +348,51 @@ int main(int argc, char **argv)
 		return -1;
 	}
 #endif
-	boost::program_options::options_description desc(std::string("Spectrum version: ") + SPECTRUM_VERSION + "\nUsage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
-	desc.add_options()
-		("help,h", "help")
-		("no-daemonize,n", "Do not run spectrum as daemon")
-		("no-debug,d", "Create coredumps on crash")
-		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
-		("config", boost::program_options::value<std::string>(&config_file)->default_value(""), "Config file")
-		("version,v", "Shows Spectrum version")
-		;
+	cmdline.addOption("help", 'h', false, "help");
+	cmdline.addOption("no-daemonize", 'n', false, "Do not run spectrum as daemon");
+	cmdline.addOption("no-debug", 'd', false, "Create coredumps on crash");
+	cmdline.addOption("jid", 'j', true, "Specify JID of transport manually", "");
+	cmdline.addOption("config", 0, true, "Config file", "");
+	cmdline.addOption("version", 'v', false, "Shows Spectrum version");
 #ifdef WIN32
-	desc.add_options()
-		("install-service,i", boost::program_options::value<std::string>(&install_service_name)->default_value(""), "Install spectrum as Windows service")
-		("uninstall-service,u", boost::program_options::value<std::string>(&uninstall_service_name)->default_value(""), "Uninstall Windows service")
-		("run-as-service,r", boost::program_options::value<std::string>(&run_service_name)->default_value(""), "stub for Windows Service Manager");
+	cmdline.addOption("install-service", 'i', true, "Install spectrum as Windows service", "");
+	cmdline.addOption("uninstall-service", 'u', true, "Uninstall Windows service", "");
+	cmdline.addOption("run-as-service", 'r', true, "stub for Windows Service Manager", "");
 #endif
-	try
+	cmdline.setPositional("config");
+	std::string usage = cmdline.usage(std::string("Spectrum version: ") + SPECTRUM_VERSION + "\nUsage: spectrum [OPTIONS] <config_file.cfg>\nAllowed options");
 	{
-		boost::program_options::positional_options_description p;
-		p.add("config", -1);
-		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-          options(desc).positional(p).allow_unregistered().run(), vm);
-		boost::program_options::notify(vm);
+		std::string error;
+		if (!cmdline.parse(argc, argv, error)) {
+			std::cout << usage << "\n";
+			return 1;
+		}
+		jid = cmdline.get("jid");
+		config_file = cmdline.get("config");
+#ifdef WIN32
+		install_service_name = cmdline.get("install-service");
+		uninstall_service_name = cmdline.get("uninstall-service");
+		run_service_name = cmdline.get("run-as-service");
+#endif
 
-		if (vm.count("version")) {
+		if (cmdline.has("version")) {
 			std::cout << SPECTRUM_VERSION << "\n";
 			return 0;
 		}
 
-		if (vm.count("help"))
+		if (cmdline.has("help"))
 		{
-			std::cout << desc << "\n";
+			std::cout << usage << "\n";
 			return 1;
 		}
 
-		if (vm.count("config") == 0) {
-			std::cout << desc << "\n";
-			return 1;
-		}
-
-		if (vm.count("no-daemonize")) {
+		if (cmdline.has("no-daemonize")) {
 			no_daemon = true;
 		}
 #ifdef WIN32
 		if (!install_service_name.empty()) {
 			// build command line for Service Manager
-			std::string service_path = exe_file + std::string(" --config ") + vm["config"].as<std::string>()
+			std::string service_path = exe_file + std::string(" --config ") + config_file
 						+ std::string(" --run-as-service ") + install_service_name;
 
 			ServiceWrapper ntservice((char *)install_service_name.c_str());
@@ -423,25 +426,15 @@ int main(int argc, char **argv)
 		}
 #endif
 	}
-	catch (std::runtime_error& e)
-	{
-		std::cout << desc << "\n";
-		return 1;
-	}
-	catch (...)
-	{
-		std::cout << desc << "\n";
-		return 1;
-	}
 
-	if (!config.load(vm["config"].as<std::string>(), jid)) {
+	if (!config.load(config_file, jid)) {
 		std::cerr << "Can't load configuration file.\n";
 		return 1;
 	}
 
 	// create directories
 	try {
-		_createDirectories(&config, boost::filesystem::path(CONFIG_STRING(&config, "service.working_dir")));
+		_createDirectories(&config, std::filesystem::path(CONFIG_STRING(&config, "service.working_dir")));
 	}
 	catch (...) {
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
@@ -451,17 +444,17 @@ int main(int argc, char **argv)
 	// create directories
 	try {
 		_createDirectories(&config,
-			boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
+			std::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
 		);
 	}
 	catch (...) {
-		std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
+		std::cerr << "Can't create service.pidfile directory " << std::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
 		return 1;
 	}
 	// create directories
 	try {
 		_createDirectories(&config,
-			boost::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
+			std::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
 		);
 	}
 	catch (...) {

@@ -1,4 +1,5 @@
 #include <boost/thread/thread.hpp>
+#include <boost/bind.hpp>
 #include <cppunit/TestFixture.h>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>

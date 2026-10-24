@@ -1,7 +1,7 @@
 file(GLOB SRC *.c *.cpp)
 
 add_executable(spectrum2_smstools3_backend ${SRC})
-target_compile_features(spectrum2_smstools3_backend PUBLIC cxx_std_11)
+target_compile_features(spectrum2_smstools3_backend PUBLIC cxx_std_20)
 
 target_link_libraries(spectrum2_smstools3_backend transport-plugin ${Boost_LIBRARIES} ${LOG4CXX_LIBRARIES})
 

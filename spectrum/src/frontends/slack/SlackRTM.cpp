@@ -19,6 +19,7 @@
  */
 
 #include "SlackRTM.h"
+#include <boost/bind.hpp>
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackIdManager.h"
@@ -46,8 +47,8 @@ SlackRTM::SlackRTM(Component *component, StorageBackend *storageBackend, SlackId
 	m_started = false;
 	m_idManager = idManager;
 	m_client = new WebSocketClient(component, m_uinfo.jid);
-	m_client->onPayloadReceived.connect(boost::bind(&SlackRTM::handlePayloadReceived, this, _1));
-	m_client->onWebSocketConnected.connect(boost::bind(&SlackRTM::handleWebSocketConnected, this));
+	m_client->onPayloadReceived = [this](const std::string &payload) { handlePayloadReceived(payload); };
+	m_client->onWebSocketConnected = [this]() { handleWebSocketConnected(); };
 
 	m_pingTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&SlackRTM::sendPing, this));

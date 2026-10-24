@@ -31,6 +31,8 @@
 #include "transport/Factory.h"
 #include "transport/Transport.h"
 #include "XMPPFrontend.h"
+#include "XMPPRosterManager.h"
+#include "jidutils.h"
 #include "transport/Frontend.h"
 
 using namespace Swift;
@@ -56,9 +58,22 @@ bool RosterResponder::handleGetRequest(const Swift::JID& from, const Swift::JID&
 		LOG4CXX_WARN(rosterResponderLogger, from.toBare().toString() << ": User is not logged in");
 		return true;
 	}
-	sendResponse(from, id, user->getRosterManager()->generateRosterPayload());
-	user->getRosterManager()->sendCurrentPresences(from);
+	XMPPRosterManager *rosterManager = static_cast<XMPPRosterManager *>(user->getRosterManager());
+	sendResponse(from, id, rosterManager->generateRosterPayload());
+	rosterManager->sendCurrentPresences(from);
 	return true;
+}
+
+// The roster item as the core sees it.
+static pbnetwork::Buddy toBuddy(User *user, Buddy *buddy, const Swift::RosterItemPayload &item) {
+	pbnetwork::Buddy b;
+	b.set_username(user->getUserName());
+	b.set_buddyname(buddy->getName());
+	b.set_alias(item.getName());
+	for (const std::string &group : item.getGroups()) {
+		b.add_group(group);
+	}
+	return b;
 }
 
 bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& to, const std::string& id, std::shared_ptr<Swift::RosterPayload> payload) {
@@ -81,19 +96,19 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		return true;
 	}
 
-	Buddy *buddy = Buddy::JIDToBuddy(item.getJID(), user);
+	Buddy *buddy = JIDUtils::JIDToBuddy(item.getJID(), user);
 	if (buddy) {
 		if (item.getSubscription() == Swift::RosterItemPayload::Remove) {
 			LOG4CXX_INFO(rosterResponderLogger, from.toBare().toString() << ": Removing buddy " << buddy->getName());
 			user->getComponent()->getFrontend()->onBuddyRemoved(buddy);
 
 			// send roster push here
-			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, user->getJID().toBare(), m_router);
+			Swift::SetRosterRequest::ref request = Swift::SetRosterRequest::create(payload, Swift::JID(user->getUserName()).toBare(), m_router);
 			request->send();
 		}
 		else {
 			LOG4CXX_INFO(rosterResponderLogger, from.toBare().toString() << ": Updating buddy " << buddy->getName());
-			user->getComponent()->getFrontend()->onBuddyUpdated(buddy, item);
+			user->getComponent()->getFrontend()->onBuddyUpdated(buddy, toBuddy(user, buddy, item));
 		}
 	}
 	else if (item.getSubscription() != Swift::RosterItemPayload::Remove) {
@@ -101,14 +116,14 @@ bool RosterResponder::handleSetRequest(const Swift::JID& from, const Swift::JID&
 		BuddyInfo buddyInfo;
 		buddyInfo.id = -1;
 		buddyInfo.alias = item.getName();
-		buddyInfo.legacyName = Buddy::JIDToLegacyName(item.getJID(), user);
+		buddyInfo.legacyName = JIDUtils::JIDToLegacyName(item.getJID(), user);
 		buddyInfo.subscription = "both";
-		buddyInfo.flags = Buddy::buddyFlagsFromJID(item.getJID());
+		buddyInfo.flags = JIDUtils::buddyFlagsFromJID(item.getJID());
 		LOG4CXX_INFO(rosterResponderLogger, from.toBare().toString() << ": Adding buddy " << buddyInfo.legacyName);
 
 		buddy = user->getComponent()->getFactory()->createBuddy(user->getRosterManager(), buddyInfo);
 		user->getRosterManager()->setBuddy(buddy);
-		user->getComponent()->getFrontend()->onBuddyAdded(buddy, item);
+		user->getComponent()->getFrontend()->onBuddyAdded(buddy, toBuddy(user, buddy, item));
 	}
 
 	return true;

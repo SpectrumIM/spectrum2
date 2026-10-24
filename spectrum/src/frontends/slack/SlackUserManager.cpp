@@ -197,8 +197,12 @@ SlackUserManager::SlackUserManager(Component *component, UserRegistry *userRegis
 	m_storageBackend = storageBackend;
     m_userRegistration = new SlackUserRegistration(component, this, storageBackend);
 
-	onUserCreated.connect(boost::bind(&SlackUserManager::handleUserCreated, this, _1));
-	m_component->onAdminInterfaceSet.connect(boost::bind(&SlackUserManager::handleAdminInterfaceSet, this));
+	auto prevUserCreated = onUserCreated;
+	onUserCreated = [prevUserCreated, this](User *user) {
+		prevUserCreated(user);
+		handleUserCreated(user);
+	};
+	m_component->onAdminInterfaceSet = [this]() { handleAdminInterfaceSet(); };
 }
 
 SlackUserManager::~SlackUserManager() {
@@ -225,18 +229,8 @@ void SlackUserManager::reconnectUser(const std::string &user) {
 	m_tempSessions[user] = new SlackSession(m_component, m_storageBackend, uinfo);
 }
 
-void SlackUserManager::sendVCard(unsigned int id, Swift::VCard::ref vcard) {
+void SlackUserManager::sendVCard(unsigned int id, const pbnetwork::VCard &vcard) {
 
-}
-
-void SlackUserManager::sendMessage(std::shared_ptr<Swift::Message> message) {
-	User *user = getUser(message->getTo().toBare().toString());
-	if (!user) {
-		LOG4CXX_ERROR(slackUserManagerLogger, "Received message for unknown user " << message->getTo().toBare().toString());
-		return;
-	}
-
-	static_cast<SlackUser *>(user)->getSession()->sendMessage(message);
 }
 
 SlackSession *SlackUserManager::moveTempSession(const std::string &user) {

@@ -25,7 +25,8 @@
 	include_directories(../../spectrum/src/frontends/slack/)
 	endif()
 
-		if(CPPUNIT_FOUND)
+		# The tests use the XMPP frontend
+		if(CPPUNIT_FOUND AND ENABLE_XMPP_FRONTEND)
 			include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 			file(GLOB SRC_TEST *.cpp)
 			if(ENABLE_SLACK_FRONTEND)

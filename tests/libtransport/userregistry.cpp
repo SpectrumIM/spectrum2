@@ -1,4 +1,6 @@
 #include <cppunit/TestFixture.h>
+#include <boost/bind.hpp>
+#include <boost/optional.hpp>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
 #include <Swiften/Server/Server.h>
@@ -32,8 +34,8 @@ class UserRegistryTest : public CPPUNIT_NS :: TestFixture {
 			factories = new Swift::DummyNetworkFactories(loop);
 
 			userRegistry = new UserRegistry(cfg, factories);
-			userRegistry->onConnectUser.connect(bind(&UserRegistryTest::handleConnectUser, this, _1));
-			userRegistry->onDisconnectUser.connect(bind(&UserRegistryTest::handleDisconnectUser, this, _1));
+			userRegistry->onConnectUser = [this](const Swift::JID &user) { handleConnectUser(user); };
+			userRegistry->onDisconnectUser = [this](const Swift::JID &user) { handleDisconnectUser(user); };
 
 			server = new Swift::Server(loop, factories, userRegistry, "localhost", "0.0.0.0", 5222);
 			server->start();

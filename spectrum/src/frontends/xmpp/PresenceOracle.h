@@ -20,21 +20,23 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <map>
 #include <string>
 
-#include <boost/signals2.hpp>
+#include <functional>
 
 #include <Swiften/Elements/Presence.h>
 #include <Swiften/Client/StanzaChannel.h>
 
 namespace Transport {
 
-class Frontend;
-
+/// Tracks the presences of connected users. XMPPFrontend feeds it every
+/// presence it receives.
 class PresenceOracle {
 	public:
-		PresenceOracle(Frontend* frontend);
+		PresenceOracle();
 		~PresenceOracle();
 
 		Swift::Presence::ref getLastPresence(const Swift::JID&) const;
@@ -43,18 +45,16 @@ class PresenceOracle {
 
 		void clearPresences(const Swift::JID& bareJID);
 
-	public:
-		boost::signals2::signal<void (Swift::Presence::ref)> onPresenceChange;
-
-	private:
 		void handleIncomingPresence(Swift::Presence::ref presence);
 		void handleStanzaChannelAvailableChanged(bool);
+
+	public:
+		Event<void (Swift::Presence::ref)> onPresenceChange;
 
 	private:
 		typedef std::map<Swift::JID, Swift::Presence::ref> PresenceMap;
 		typedef std::map<Swift::JID, PresenceMap> PresencesMap;
 		PresencesMap entries_;
-		Frontend* frontend_;
 };
 
 }

@@ -1,13 +1,16 @@
 
 #pragma once
 
-#include <boost/signals2.hpp>
+#include "transport/Event.h"
+
+#include <functional>
 #include <curl/curl.h>
 #include "transport/Logging.h"
 #include "transport/ThreadPool.h"
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <functional>
 #include <json/json.h>
 
 namespace Transport {
@@ -15,7 +18,7 @@ namespace Transport {
 class HTTPRequest : public Thread {
 	public:
 		typedef enum { Get } Type;
-		typedef boost::function< void (HTTPRequest *, bool, Json::Value &json, const std::string &data) > Callback;
+		typedef std::function< void (HTTPRequest *, bool, Json::Value &json, const std::string &data) > Callback;
 
 		HTTPRequest(ThreadPool *tp, Type type, const std::string &url, Callback callback);
 		HTTPRequest(Type type, const std::string &url);
@@ -37,7 +40,7 @@ class HTTPRequest : public Thread {
 			return m_url;
 		}
 
-		boost::signals2::signal<void ()> onRequestFinished;
+		Event<void ()> onRequestFinished;
 
 		static void globalInit() {
 			curl_global_init(CURL_GLOBAL_ALL);

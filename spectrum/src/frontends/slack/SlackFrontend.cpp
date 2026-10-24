@@ -19,6 +19,7 @@
  */
 
 #include "SlackFrontend.h"
+#include "SlackConversation.h"
 #include "SlackRosterManager.h"
 #include "SlackUser.h"
 #include "SlackUserManager.h"
@@ -48,14 +49,14 @@ namespace Transport {
 DEFINE_LOGGER(logger, "SlackFrontend");
 
 SlackFrontend::SlackFrontend() {
+	m_userManager = NULL;
 	HTTPRequest::globalInit();
 }
 
-void SlackFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, Transport::UserRegistry *userRegistry) {
+void SlackFrontend::init(Component *transport, Config *config, Transport::UserRegistry *userRegistry) {
 	m_transport = transport;
 	m_config = transport->getConfig();
-	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
-	m_tp = new ThreadPool(loop, 10);
+	m_tp = new ThreadPool(transport->getEventLoop(), 10);
 }
 
 SlackFrontend::~SlackFrontend() {
@@ -66,42 +67,20 @@ void SlackFrontend::clearRoomList() {
 
 }
 
-void SlackFrontend::addRoomToRoomList(const std::string &handle, const std::string &name) {
+void SlackFrontend::addRoomToRoomList(const std::string &room, const std::string &name) {
 
-}
-
-void SlackFrontend::sendPresence(Swift::Presence::ref presence) {
-
-}
-
-void SlackFrontend::sendVCard(Swift::VCard::ref vcard, Swift::JID to) {
-}
-
-void SlackFrontend::sendRosterRequest(Swift::RosterPayload::ref payload, Swift::JID to) {
-}
-
-void SlackFrontend::sendMessage(std::shared_ptr<Swift::Message> message) {
-	return static_cast<SlackUserManager *>(m_userManager)->sendMessage(message);
-}
-
-void SlackFrontend::sendIQ(std::shared_ptr<Swift::IQ> iq) {
-}
-
-std::shared_ptr<Swift::DiscoInfo> SlackFrontend::sendCapabilitiesRequest(Swift::JID to) {
-
-	return Swift::DiscoInfo::ref();
 }
 
 void SlackFrontend::reconnectUser(const std::string &user) {
-	return static_cast<SlackUserManager *>(m_userManager)->reconnectUser(user);
+	return m_userManager->reconnectUser(user);
 }
 
 RosterManager *SlackFrontend::createRosterManager(User *user, Component *component) {
 	return new SlackRosterManager(user, component);
 }
 
-User *SlackFrontend::createUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) {
-	SlackUser *user = new SlackUser(jid, userInfo, component, userManager);
+User *SlackFrontend::createUser(const std::string &userName, UserInfo &userInfo, Component *component, UserManager *userManager) {
+	SlackUser *user = new SlackUser(userName, userInfo, component, userManager);
 	user->setReconnectLimit(-1);
 	return user;
 }
@@ -111,6 +90,9 @@ UserManager *SlackFrontend::createUserManager(Component *component, UserRegistry
 	return m_userManager;
 }
 
+Conversation *SlackFrontend::createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMUC) {
+	return new SlackConversation(conversationManager, legacyName, isMUC);
+}
 
 void SlackFrontend::connectToServer() {
 	LOG4CXX_INFO(logger, "Started.");
@@ -118,11 +100,11 @@ void SlackFrontend::connectToServer() {
 }
 
 std::string SlackFrontend::setOAuth2Code(const std::string &code, const std::string &state) {
-	return static_cast<SlackUserManager *>(m_userManager)->handleOAuth2Code(code, state);
+	return m_userManager->handleOAuth2Code(code, state);
 }
 
 std::string SlackFrontend::getOAuth2URL(const std::vector<std::string> &args) {
-	return static_cast<SlackUserManager *>(m_userManager)->getOAuth2URL(args);
+	return m_userManager->getOAuth2URL(args);
 }
 
 std::string SlackFrontend::getRegistrationFields() {

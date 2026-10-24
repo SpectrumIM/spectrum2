@@ -19,7 +19,13 @@
  */
 
 #include "transport/Config.h"
+#include "transport/CommandLine.h"
+#include <algorithm>
+#include <cctype>
 #include <fstream>
+#include <iterator>
+#include <list>
+#include <sstream>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -28,35 +34,248 @@
 #ifdef _MSC_VER
 #define PATH_MAX MAX_PATH
 #endif
+#else
+#include <limits.h>
+#include <unistd.h>
 #endif
 
 #include "iostream"
-#include "boost/version.hpp"
-#include "boost/algorithm/string.hpp"
-
-#define BOOST_MAJOR_VERSION BOOST_VERSION / 100000
-#define BOOST_MINOR_VERSION BOOST_VERSION / 100 % 1000
-
-using namespace boost::program_options;
+#include "inih/ini.h"
+#include "transport/Util.h"
 
 namespace Transport {
-static int getRandomPort(const std::string &s) {
-	unsigned long r = 0;
-	BOOST_FOREACH(char c, s) {
-		r += (int) c;
+
+namespace {
+
+enum OptionType { OPTION_STRING, OPTION_INT, OPTION_BOOL, OPTION_VECTOR };
+
+struct OptionDesc {
+	const char *key;
+	OptionType type;
+	// NULL for options without a default (OPTION_VECTOR options)
+	const char *defaultValue;
+};
+
+const OptionDesc transportOptions[] = {
+	{"service.jid", OPTION_STRING, ""},
+	{"service.server", OPTION_STRING, "127.0.0.1"},
+	{"service.password", OPTION_STRING, ""},
+	{"service.port", OPTION_INT, "0"},
+	{"service.user", OPTION_STRING, ""},
+	{"service.group", OPTION_STRING, ""},
+	{"service.backend", OPTION_STRING, "libpurple_backend"},
+	{"service.protocol", OPTION_STRING, ""},
+	{"service.pidfile", OPTION_STRING, "/var/run/spectrum2/$jid.pid"},
+	{"service.portfile", OPTION_STRING, "/var/run/spectrum2/$jid.port"},
+	{"service.working_dir", OPTION_STRING, "/var/lib/spectrum2/$jid"},
+	{"service.allowed_servers", OPTION_VECTOR, NULL},
+	{"service.server_mode", OPTION_BOOL, "false"},
+	{"service.users_per_backend", OPTION_INT, "100"},
+	{"service.backend_host", OPTION_STRING, "127.0.0.1"},
+	{"service.backend_port", OPTION_STRING, "0"},
+	{"service.cert", OPTION_STRING, ""},
+	{"service.cert_password", OPTION_STRING, ""},
+	{"service.admin_jid", OPTION_VECTOR, NULL},
+	{"service.admin_password", OPTION_STRING, ""},
+	{"service.reuse_old_backends", OPTION_BOOL, "true"},
+	{"service.idle_reconnect_time", OPTION_INT, "0"},
+	{"service.memory_collector_time", OPTION_INT, "0"},
+	{"service.more_resources", OPTION_BOOL, "false"},
+	{"service.enable_privacy_lists", OPTION_BOOL, "true"},
+	{"service.enable_xhtml", OPTION_BOOL, "true"},
+	{"service.enable_remove_buddy", OPTION_BOOL, "false"},
+	{"service.oob_replace_body", OPTION_BOOL, "true"},
+	{"service.oob_split", OPTION_BOOL, "false"},
+	{"service.max_room_list_size", OPTION_INT, "100"},
+	{"service.login_delay", OPTION_INT, "0"},
+	{"service.jid_escaping", OPTION_BOOL, "true"},
+	{"service.vip_only", OPTION_BOOL, "false"},
+	{"service.vip_message", OPTION_STRING, ""},
+	{"service.reconnect_all_users", OPTION_BOOL, "false"},
+	{"service.frontend", OPTION_STRING, "xmpp"},
+	{"service.web_directory", OPTION_STRING, ""},
+	{"service.web_url", OPTION_STRING, ""},
+	{"service.web_maximgsize", OPTION_INT, "1000000"},
+	{"vhosts.vhost", OPTION_VECTOR, NULL},
+	{"identity.name", OPTION_STRING, "Spectrum 2 Transport"},
+	{"identity.category", OPTION_STRING, "gateway"},
+	{"identity.type", OPTION_STRING, ""},
+	{"registration.enable_public_registration", OPTION_BOOL, "true"},
+	{"registration.language", OPTION_STRING, "en"},
+	{"registration.instructions", OPTION_STRING, "Enter your legacy network username and password."},
+	{"registration.username_label", OPTION_STRING, "3rd-party network username"},
+	{"registration.password_label", OPTION_STRING, "3rd-party network password"},
+	{"registration.username_mask", OPTION_STRING, ""},
+	{"registration.allowed_usernames", OPTION_STRING, ""},
+	{"registration.auto_register", OPTION_BOOL, "false"},
+	{"registration.encoding", OPTION_STRING, "utf8"},
+	{"registration.require_local_account", OPTION_BOOL, "false"},
+	{"registration.notify_jid", OPTION_VECTOR, NULL},
+	{"registration.local_username_label", OPTION_STRING, "Local username:"},
+	{"registration.local_account_server", OPTION_STRING, "localhost"},
+	{"registration.local_account_server_timeout", OPTION_INT, "10000"},
+	{"gateway_responder.prompt", OPTION_STRING, "Contact ID"},
+	{"gateway_responder.label", OPTION_STRING, "Enter legacy network contact ID."},
+	{"database.type", OPTION_STRING, "none"},
+	{"database.database", OPTION_STRING, "/var/lib/spectrum2/$jid/database.sql"},
+	{"database.server", OPTION_STRING, "localhost"},
+	{"database.user", OPTION_STRING, ""},
+	{"database.password", OPTION_STRING, ""},
+	{"database.port", OPTION_INT, "0"},
+	{"database.prefix", OPTION_STRING, ""},
+	{"database.encryption_key", OPTION_STRING, ""},
+	{"database.vip_statement", OPTION_STRING, ""},
+	{"logging.config", OPTION_STRING, ""},
+	{"logging.backend_config", OPTION_STRING, ""},
+	{"backend.default_avatar", OPTION_STRING, ""},
+	{"backend.avatars_directory", OPTION_STRING, ""},
+	{"backend.no_vcard_fetch", OPTION_BOOL, "false"},
+	{"proxy.server", OPTION_STRING, "localhost"},
+	{"proxy.user", OPTION_STRING, ""},
+	{"proxy.password", OPTION_STRING, ""},
+	{"proxy.port", OPTION_INT, "0"},
+	{NULL, OPTION_STRING, NULL}
+};
+
+const OptionDesc backendOptions[] = {
+	{"registration.needPassword", OPTION_BOOL, "true"},
+	{"registration.needRegistration", OPTION_BOOL, "true"},
+	{"registration.extraField", OPTION_VECTOR, NULL},
+	{"features.receipts", OPTION_BOOL, "false"},
+	{"features.muc", OPTION_BOOL, "false"},
+	{"features.rawxml", OPTION_BOOL, "false"},
+	{"features.disable_jid_escaping", OPTION_BOOL, "false"},
+	{"features.send_buddies_on_login", OPTION_BOOL, "false"},
+	{NULL, OPTION_STRING, NULL}
+};
+
+struct ParsedOption {
+	std::string key;
+	std::string value;
+};
+
+const OptionDesc *findOption(const OptionDesc *options, const std::string &key) {
+	for (const OptionDesc *desc = options; desc->key; desc++) {
+		if (key == desc->key) {
+			return desc;
+		}
 	}
-	srand(time(NULL) + r);
-	return 30000 + rand() % 10000;
+	return NULL;
 }
 
-bool Config::load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid) {
+int handleIniValue(void *user, const char *section, const char *name, const char *value) {
+	std::vector<ParsedOption> *parsed = static_cast<std::vector<ParsedOption> *>(user);
+	std::string key = *section ? std::string(section) + "." + name : std::string(name);
+	std::string val(value);
+	// '#' starts a comment anywhere on the line, as it did with boost::program_options
+	size_t comment = val.find('#');
+	if (comment != std::string::npos) {
+		val.erase(comment);
+		val.erase(val.find_last_not_of(" \t\r\n") + 1);
+	}
+	parsed->push_back({key, val});
+	return 1;
+}
+
+// Parses "section.key = value" lines; returns false and sets error on a syntax error.
+bool parseIni(const std::string &data, std::vector<ParsedOption> &parsed, std::string &error) {
+	int line = ini_parse_string_length(data.c_str(), data.size(), handleIniValue, &parsed);
+	if (line != 0) {
+		error = "invalid line " + std::to_string(line);
+		return false;
+	}
+	return true;
+}
+
+bool parseValue(const OptionDesc &desc, const std::string &raw, ConfigValue &value, std::string &error) {
+	switch (desc.type) {
+		case OPTION_INT: {
+			size_t pos = 0;
+			int i = 0;
+			try {
+				i = std::stoi(raw, &pos);
+			}
+			catch (...) {
+				pos = 0;
+			}
+			if (raw.empty() || pos != raw.size()) {
+				error = "the argument ('" + raw + "') for option '" + desc.key + "' is invalid";
+				return false;
+			}
+			value = ConfigValue(i);
+			return true;
+		}
+		case OPTION_BOOL: {
+			std::string s(raw);
+			std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+			if (s.empty() || s == "on" || s == "yes" || s == "1" || s == "true") {
+				value = ConfigValue(true);
+			}
+			else if (s == "off" || s == "no" || s == "0" || s == "false") {
+				value = ConfigValue(false);
+			}
+			else {
+				error = "the argument ('" + raw + "') for option '" + desc.key + "' is invalid";
+				return false;
+			}
+			return true;
+		}
+		default:
+			value = ConfigValue(raw);
+			return true;
+	}
+}
+
+// Stores values of registered options. Variables in finalKeys already got their
+// value from an earlier store (command line, previous load) and are kept;
+// default values are replaced. Options not given anywhere get their default.
+bool storeOptions(const OptionDesc *options, const std::vector<ParsedOption> &parsed, std::map<std::string, ConfigValue> &variables, std::set<std::string> &finalKeys, std::string &error) {
+	std::set<std::string> stored;
+	for (const ParsedOption &opt : parsed) {
+		const OptionDesc *desc = findOption(options, opt.key);
+		if (!desc || finalKeys.count(opt.key)) {
+			continue;
+		}
+
+		if (desc->type == OPTION_VECTOR) {
+			std::vector<std::string> values;
+			if (stored.count(opt.key)) {
+				values = variables[opt.key].as<std::vector<std::string> >();
+			}
+			values.push_back(opt.value);
+			variables[opt.key] = ConfigValue(values);
+		}
+		else {
+			if (stored.count(opt.key)) {
+				error = "option '" + opt.key + "' cannot be specified more than once";
+				return false;
+			}
+			if (!parseValue(*desc, opt.value, variables[opt.key], error)) {
+				return false;
+			}
+		}
+		stored.insert(opt.key);
+	}
+	finalKeys.insert(stored.begin(), stored.end());
+
+	for (const OptionDesc *desc = options; desc->key; desc++) {
+		if (desc->defaultValue && variables.find(desc->key) == variables.end()) {
+			parseValue(*desc, desc->defaultValue, variables[desc->key], error);
+		}
+	}
+	return true;
+}
+
+}
+
+bool Config::load(const std::string &configfile, const std::string &jid) {
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
 		return false;
 
 	m_file = configfile;
 	m_jid = jid;
-	bool ret = load(ifs, opts, jid);
+	bool ret = load(ifs, jid);
 	ifs.close();
 #ifndef WIN32
 	char path[PATH_MAX] = "";
@@ -69,90 +288,16 @@ bool Config::load(const std::string &configfile, boost::program_options::options
 	return ret;
 }
 
-bool Config::load(std::istream &ifs, boost::program_options::options_description &opts, const std::string &_jid) {
+bool Config::load(std::istream &ifs, const std::string &_jid) {
 	m_unregistered.clear();
-	opts.add_options()
-		("service.jid", value<std::string>()->default_value(""), "Transport Jabber ID")
-		("service.server", value<std::string>()->default_value("127.0.0.1"), "Server to connect to")
-		("service.password", value<std::string>()->default_value(""), "Password used to auth the server")
-		("service.port", value<int>()->default_value(0), "Port the server is listening on")
-		("service.user", value<std::string>()->default_value(""), "The name of user Spectrum runs as.")
-		("service.group", value<std::string>()->default_value(""), "The name of group Spectrum runs as.")
-		("service.backend", value<std::string>()->default_value("libpurple_backend"), "Backend")
-		("service.protocol", value<std::string>()->default_value(""), "Protocol")
-		("service.pidfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.pid"), "Full path to pid file")
-		("service.portfile", value<std::string>()->default_value("/var/run/spectrum2/$jid.port"), "File to store backend_port to. It's used by spectrum2_manager.")
-		("service.working_dir", value<std::string>()->default_value("/var/lib/spectrum2/$jid"), "Working dir")
-		("service.allowed_servers", value<std::vector<std::string> >()->multitoken(), "Only users from these servers can connect")
-		("service.server_mode", value<bool>()->default_value(false), "True if Spectrum should behave as server")
-		("service.users_per_backend", value<int>()->default_value(100), "Number of users per one legacy network backend")
-		("service.backend_host", value<std::string>()->default_value("127.0.0.1"), "Host to bind backend server to")
-		("service.backend_port", value<std::string>()->default_value("0"), "Port to bind backend server to")
-		("service.cert", value<std::string>()->default_value(""), "PKCS#12 Certificate.")
-		("service.cert_password", value<std::string>()->default_value(""), "PKCS#12 Certificate password.")
-		("service.admin_jid", value<std::vector<std::string> >()->multitoken(), "Administrator jid.")
-		("service.admin_password", value<std::string>()->default_value(""), "Administrator password.")
-		("service.reuse_old_backends", value<bool>()->default_value(true), "True if Spectrum should use old backends which were full in the past.")
-		("service.idle_reconnect_time", value<int>()->default_value(0), "Time in seconds after which idle users are reconnected to let their backend die.")
-		("service.memory_collector_time", value<int>()->default_value(0), "Time in seconds after which backend with most memory is set to die.")
-		("service.more_resources", value<bool>()->default_value(false), "Allow more resources to be connected in server mode at the same time.")
-		("service.enable_privacy_lists", value<bool>()->default_value(true), "")
-		("service.enable_xhtml", value<bool>()->default_value(true), "")
-		("service.enable_remove_buddy", value<bool>()->default_value(false), "Remove your legacy network buddies when you unsubscribe from them. If disabled, you can still remove them in Spectrum but they'll remain on the legacy network roster.")
-		("service.oob_replace_body", value<bool>()->default_value(true), "Media messages: replace plaintext with a single media URL. Loses any plaintext captions and formatting but has better support in XMPP clients.")
-		("service.oob_split", value<bool>()->default_value(false), "Split mixed media/text or multiple media attachments into several messages. Ensures better compatibility with poorly implemented XMPP clients.")
-		("service.max_room_list_size", value<int>()->default_value(100), "")
-		("service.login_delay", value<int>()->default_value(0), "")
-		("service.jid_escaping", value<bool>()->default_value(true), "")
-		("service.vip_only", value<bool>()->default_value(false), "")
-		("service.vip_message", value<std::string>()->default_value(""), "")
-		("service.reconnect_all_users", value<bool>()->default_value(false), "")
-		("service.frontend", value<std::string>()->default_value("xmpp"), "")
-		("service.web_directory", value<std::string>()->default_value(""), "Full path to directory used to save files to which the links are sent to users.")
-		("service.web_url", value<std::string>()->default_value(""), "URL on which files in web_directory are accessible.")
-		("service.web_maximgsize", value<int>()->default_value(1000000), "Maximum image size in bytes allowed to be downloaded and stored locally.")
-		("vhosts.vhost", value<std::vector<std::string> >()->multitoken(), "")
-		("identity.name", value<std::string>()->default_value("Spectrum 2 Transport"), "Name showed in service discovery.")
-		("identity.category", value<std::string>()->default_value("gateway"), "Disco#info identity category. 'gateway' by default.")
-		("identity.type", value<std::string>()->default_value(""), "Type of transport ('icq','msn','gg','irc', ...)")
-		("registration.enable_public_registration", value<bool>()->default_value(true), "True if users should be able to register.")
-		("registration.language", value<std::string>()->default_value("en"), "Default language for registration form")
-		("registration.instructions", value<std::string>()->default_value("Enter your legacy network username and password."), "Instructions showed to user in registration form")
-		("registration.username_label", value<std::string>()->default_value("3rd-party network username"), "Label for username field")
-		("registration.password_label", value<std::string>()->default_value("3rd-party network password"), "Label for password field")
-		("registration.username_mask", value<std::string>()->default_value(""), "Username mask")
-		("registration.allowed_usernames", value<std::string>()->default_value(""), "Allowed usernames")
-		("registration.auto_register", value<bool>()->default_value(false), "Register new user automatically when the presence arrives.")
-		("registration.encoding", value<std::string>()->default_value("utf8"), "Default encoding in registration form")
-		("registration.require_local_account", value<bool>()->default_value(false), "True if users have to have a local account to register to this transport from remote servers.")
-		("registration.notify_jid", value<std::vector<std::string> >()->multitoken(), "Send message to this JID if user registers/unregisters")
-		("registration.local_username_label", value<std::string>()->default_value("Local username:"), "Label for local usernme field")
-		("registration.local_account_server", value<std::string>()->default_value("localhost"), "The server on which the local accounts will be checked for validity")
-		("registration.local_account_server_timeout", value<int>()->default_value(10000), "Timeout when checking local user on local_account_server (msecs)")
-		("gateway_responder.prompt", value<std::string>()->default_value("Contact ID"), "Value of <prompt> </promt> field")
-		("gateway_responder.label", value<std::string>()->default_value("Enter legacy network contact ID."), "Label for add contact ID field")
-		("database.type", value<std::string>()->default_value("none"), "Database type.")
-		("database.database", value<std::string>()->default_value("/var/lib/spectrum2/$jid/database.sql"), "Database used to store data")
-		("database.server", value<std::string>()->default_value("localhost"), "Database server.")
-		("database.user", value<std::string>()->default_value(""), "Database user.")
-		("database.password", value<std::string>()->default_value(""), "Database Password.")
-		("database.port", value<int>()->default_value(0), "Database port.")
-		("database.prefix", value<std::string>()->default_value(""), "Prefix of tables in database")
-		("database.encryption_key", value<std::string>()->default_value(""), "Encryption key.")
-		("database.vip_statement", value<std::string>()->default_value(""), "Encryption key.")
-		("logging.config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for Spectrum 2 instance")
-		("logging.backend_config", value<std::string>()->default_value(""), "Path to log4cxx config file which is used for backends")
-		("backend.default_avatar", value<std::string>()->default_value(""), "Full path to default avatar")
-		("backend.avatars_directory", value<std::string>()->default_value(""), "Path to directory with avatars")
-		("backend.no_vcard_fetch", value<bool>()->default_value(false), "True if VCards for buddies should not be fetched. Only avatars will be forwarded.")
-		("proxy.server", value<std::string>()->default_value("localhost"), "Proxy IP.")
-		("proxy.user", value<std::string>()->default_value(""), "Proxy user.")
-		("proxy.password", value<std::string>()->default_value(""), "Proxy Password.")
-		("proxy.port", value<int>()->default_value(0), "Proxy port.")
 
-	;
-
-	parsed_options parsed = parse_config_file(ifs, opts, true);
+	std::string data((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+	std::vector<ParsedOption> parsed;
+	std::string error;
+	if (!parseIni(data, parsed, error)) {
+		std::cerr << m_file << " parsing error: " << error << std::endl;
+		return false;
+	}
 
 	bool found_working = false;
 	bool found_pidfile = false;
@@ -160,133 +305,119 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	bool found_backend_port = false;
 	bool found_database = false;
 	std::string jid = "";
-	BOOST_FOREACH(option &opt, parsed.options) {
-		if (opt.string_key == "service.jid") {
+	for (ParsedOption &opt : parsed) {
+		if (opt.key == "service.jid") {
 			if (_jid.empty()) {
-				jid = opt.value[0];
+				jid = opt.value;
 			}
 			else {
-				opt.value[0] = _jid;
+				opt.value = _jid;
 				jid = _jid;
 			}
 		}
-		else if (opt.string_key == "service.backend_port") {
+		else if (opt.key == "service.backend_port") {
 			found_backend_port = true;
-			if (opt.value[0] == "0") {
-				opt.value[0] = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
+			if (opt.value == "0") {
+				opt.value = std::to_string(Util::getRandomPort(_jid.empty() ? jid : _jid));
 			}
 		}
-		else if (opt.string_key == "service.working_dir") {
+		else if (opt.key == "service.working_dir") {
 			found_working = true;
 		}
-		else if (opt.string_key == "service.pidfile") {
+		else if (opt.key == "service.pidfile") {
 			found_pidfile = true;
 		}
-		else if (opt.string_key == "service.portfile") {
+		else if (opt.key == "service.portfile") {
 			found_portfile = true;
 		}
-		else if (opt.string_key == "database.database") {
+		else if (opt.key == "database.database") {
 			found_database = true;
 		}
 	}
 
 	if (!found_working) {
-		std::vector<std::string> value;
-		value.push_back("/var/lib/spectrum2/$jid");
-		parsed.options.push_back(boost::program_options::basic_option<char>("service.working_dir", value));
+		parsed.push_back({"service.working_dir", "/var/lib/spectrum2/$jid"});
 	}
 	if (!found_pidfile) {
-		std::vector<std::string> value;
-		value.push_back("/var/run/spectrum2/$jid.pid");
-		parsed.options.push_back(boost::program_options::basic_option<char>("service.pidfile", value));
+		parsed.push_back({"service.pidfile", "/var/run/spectrum2/$jid.pid"});
 	}
 	if (!found_portfile) {
-		std::vector<std::string> value;
-		value.push_back("/var/run/spectrum2/$jid.port");
-		parsed.options.push_back(boost::program_options::basic_option<char>("service.portfile", value));
+		parsed.push_back({"service.portfile", "/var/run/spectrum2/$jid.port"});
 	}
 	if (!found_backend_port) {
-		std::vector<std::string> value;
-		std::string p = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
-		value.push_back(p);
-		parsed.options.push_back(boost::program_options::basic_option<char>("service.backend_port", value));
+		parsed.push_back({"service.backend_port", std::to_string(Util::getRandomPort(_jid.empty() ? jid : _jid))});
 	}
 	if (!found_database) {
-		std::vector<std::string> value;
-		value.push_back("/var/lib/spectrum2/$jid/database.sql");
-		parsed.options.push_back(boost::program_options::basic_option<char>("database.database", value));
+		parsed.push_back({"database.database", "/var/lib/spectrum2/$jid/database.sql"});
 	}
 
-	std::list<std::string> has_key;
-	BOOST_FOREACH(option &opt, parsed.options) {
-		if (opt.unregistered) {
-			if (std::find(has_key.begin(), has_key.end(), opt.string_key) == has_key.end()) {
-				has_key.push_back(opt.string_key);
-				if (opt.value[0] == "true" || opt.value[0] == "1") {
-					m_unregistered[opt.string_key] = variable_value(true, false);
-				}
-				else if (opt.value[0] == "false" || opt.value[0] == "0") {
-					m_unregistered[opt.string_key] = variable_value(false, false);
-				}
-				else {
-					m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
-				}
+	// Unregistered variables: a single value is a bool or a string,
+	// a variable set more than once is a list of strings.
+	std::map<std::string, std::list<std::string> > unregistered;
+	for (ParsedOption &opt : parsed) {
+		if (!findOption(transportOptions, opt.key)) {
+			std::list<std::string> &values = unregistered[opt.key];
+			values.push_back(opt.value);
+			if (values.size() > 1) {
+				m_unregistered[opt.key] = ConfigValue(values);
+			}
+			else if (opt.value == "true" || opt.value == "1") {
+				m_unregistered[opt.key] = ConfigValue(true);
+			}
+			else if (opt.value == "false" || opt.value == "0") {
+				m_unregistered[opt.key] = ConfigValue(false);
 			}
 			else {
-				std::list<std::string> list;
-				try {
-					list = m_unregistered[opt.string_key].as<std::list<std::string> >();
-				}
-				catch(...) {
-					list.push_back(m_unregistered[opt.string_key].as<std::string>());
-				}
-				
-				list.push_back(opt.value[0]);
-				m_unregistered[opt.string_key] = variable_value(list, false);
+				m_unregistered[opt.key] = ConfigValue(opt.value);
 			}
 		}
-		else if (opt.value[0].find("$jid") != std::string::npos) {
-			boost::replace_all(opt.value[0], "$jid", jid);
+		else if (opt.value.find("$jid") != std::string::npos) {
+			Util::replaceAll(opt.value, "$jid", jid);
 		}
 	}
 
-	// Load configs passed by command line
+	// Load configs passed by command line: "--section.key=value", or
+	// "--section.key value" for registered variables.
 	if (m_argc != 0 && m_argv) {
-		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
-		parsed_options parsed = parser.run();
-		BOOST_FOREACH(option &opt, parsed.options) {
-			if (opt.unregistered && !opt.value.empty()) {
-				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
+		std::vector<ParsedOption> cmdline;
+		for (int i = 1; i < m_argc; i++) {
+			std::string arg(m_argv[i]);
+			if (arg.size() <= 2 || arg.compare(0, 2, "--") != 0) {
+				continue;
+			}
+			std::string key = arg.substr(2);
+			size_t eq = key.find('=');
+			bool registered = findOption(transportOptions, key.substr(0, eq)) != NULL;
+			if (eq != std::string::npos) {
+				std::string value = key.substr(eq + 1);
+				key = key.substr(0, eq);
+				if (registered) {
+					cmdline.push_back({key, value});
+				}
+				else if (!value.empty()) {
+					m_unregistered[key] = ConfigValue(value);
+				}
+			}
+			else if (registered && i + 1 < m_argc) {
+				cmdline.push_back({key, m_argv[++i]});
 			}
 		}
-		store(parsed, m_variables);
+		if (!storeOptions(transportOptions, cmdline, m_variables, m_final, error)) {
+			std::cerr << "Command line parsing error: " << error << std::endl;
+			return false;
+		}
 	}
 
-	store(parsed, m_variables);
-	notify(m_variables);
-
-	onConfigReloaded();
-
-	return true;
-}
-
-bool Config::load(std::istream &ifs) {
-	options_description opts("Transport options");
-	return load(ifs, opts);
-}
-
-bool Config::load(const std::string &configfile, const std::string &jid) {
-	try {
-		options_description opts("Transport options");
-		return load(configfile, opts, jid);
-	} catch ( const boost::program_options::multiple_occurrences& e ) {
-#if (BOOST_MAJOR_VERSION >= 1 && BOOST_MINOR_VERSION >= 42)
-		std::cerr << configfile << " parsing error: " << e.what() << " from option: " << e.get_option_name() << std::endl;
-#else
-		std::cerr << configfile << " parsing error: " << e.what() << std::endl;
-#endif
+	if (!storeOptions(transportOptions, parsed, m_variables, m_final, error)) {
+		std::cerr << m_file << " parsing error: " << error << std::endl;
 		return false;
 	}
+
+	if (onConfigReloaded) {
+		onConfigReloaded();
+	}
+
+	return true;
 }
 
 bool Config::reload() {
@@ -301,13 +432,13 @@ Config::SectionValuesCont Config::getSectionValues(const std::string& sectionNam
 	SectionValuesCont sectionValues;
 
 	std::string sectionSearchString = sectionName + ".";
-	BOOST_FOREACH (const Variables::value_type & varItem, m_variables) {
-		if (boost::istarts_with(varItem.first, sectionSearchString))
+	for (const std::map<std::string, ConfigValue>::value_type &varItem : m_variables) {
+		if (Util::iStartsWith(varItem.first, sectionSearchString))
 			sectionValues[varItem.first] = varItem.second;
 	}
 
-	BOOST_FOREACH (const UnregisteredCont::value_type & varItem, m_unregistered) {
-		if (boost::istarts_with(varItem.first, sectionSearchString))
+	for (const UnregisteredCont::value_type &varItem : m_unregistered) {
+		if (Util::iStartsWith(varItem.first, sectionSearchString))
 			sectionValues[varItem.first] = varItem.second;
 	}
 
@@ -326,80 +457,61 @@ std::string Config::getCommandLineArgs() const {
 }
 
 void Config::updateBackendConfig(const std::string &backendConfig) {
-	options_description opts("Backend options");
-	opts.add_options()
-		("registration.needPassword", value<bool>()->default_value(true), "")
-		("registration.needRegistration", value<bool>()->default_value(true), "")
-		("registration.extraField", value<std::vector<std::string> >()->multitoken(), "")
-		("features.receipts", value<bool>()->default_value(false), "")
-		("features.muc", value<bool>()->default_value(false), "")
-		("features.rawxml", value<bool>()->default_value(false), "")
-		("features.disable_jid_escaping", value<bool>()->default_value(false), "")
-		("features.send_buddies_on_login", value<bool>()->default_value(false), "")
-	;
+	std::vector<ParsedOption> parsed;
+	std::string error;
+	if (!parseIni(backendConfig, parsed, error) || !storeOptions(backendOptions, parsed, m_backendConfig, m_backendFinal, error)) {
+		std::cerr << "Backend config parsing error: " << error << std::endl;
+	}
 
-	std::stringstream ifs(backendConfig);
-	parsed_options parsed = parse_config_file(ifs, opts, true);
-
-	store(parsed, m_backendConfig);
-	notify(m_backendConfig);
-
-	onBackendConfigUpdated();
+	if (onBackendConfigUpdated) {
+		onBackendConfigUpdated();
+	}
 
 	if (CONFIG_BOOL_DEFAULTED(this, "features.disable_jid_escaping", false)) {
-		Variables::iterator it(m_variables.find("service.jid_escaping"));
-		boost::program_options::variable_value& vx(it->second);
-		vx.value() = false;
+		std::map<std::string, ConfigValue>::iterator it(m_variables.find("service.jid_escaping"));
+		if (it != m_variables.end()) {
+			it->second = ConfigValue(false);
+		}
 	}
 }
 
 Config *Config::createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port) {
-	std::string jid;
-	std::ostringstream os;
-	std::string configFile;
-	boost::program_options::variables_map vm;
-	boost::program_options::options_description desc("Usage: spectrum <config_file.cfg>\nAllowed options");
-	desc.add_options()
-		("help", "help")
-		("host,h", boost::program_options::value<std::string>(&host)->default_value(""), "Host to connect to")
-		("port,p", boost::program_options::value<int>(&port)->default_value(10000), "Port to connect to")
-		("no-daemonize,n", "Do not run spectrum as daemon")
-		("no-debug,d", "Create coredumps on crash")
-		("jid,j", boost::program_options::value<std::string>(&jid)->default_value(""), "Specify JID of transport manually")
-		("config", boost::program_options::value<std::string>(&configFile)->default_value(""), "Config file")
-		;
+	CommandLine cmdline;
+	cmdline.addOption("help", 0, false, "help");
+	cmdline.addOption("host", 'h', true, "Host to connect to", "");
+	cmdline.addOption("port", 'p', true, "Port to connect to", "10000");
+	cmdline.addOption("no-daemonize", 'n', false, "Do not run spectrum as daemon");
+	cmdline.addOption("no-debug", 'd', false, "Create coredumps on crash");
+	cmdline.addOption("jid", 'j', true, "Specify JID of transport manually", "");
+	cmdline.addOption("config", 0, true, "Config file", "");
+	cmdline.setPositional("config");
+	std::string usage = cmdline.usage("Usage: spectrum <config_file.cfg>\nAllowed options");
 
-	os << desc;
-	try
-	{
-		boost::program_options::positional_options_description p;
-		p.add("config", -1);
-		boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
-			options(desc).positional(p).allow_unregistered().run(), vm);
-		boost::program_options::notify(vm);
-			
-		if (vm.count("help"))
-		{
-			error = os.str();
-			return NULL;
-		}
-
-		if (vm.count("config") == 0) {
-			error = os.str();
-			return NULL;
-		}
-	}
-	catch (std::runtime_error& e)
-	{
-		error = std::string(e.what()) + "\n" + os.str();
-		return NULL;
-	}
-	catch (...)
-	{
-		error = os.str();
+	if (!cmdline.parse(argc, argv, error)) {
+		error += "\n" + usage;
 		return NULL;
 	}
 
+	if (cmdline.has("help")) {
+		error = usage;
+		return NULL;
+	}
+
+	host = cmdline.get("host");
+	std::string portStr = cmdline.get("port");
+	size_t pos = 0;
+	try {
+		port = std::stoi(portStr, &pos);
+	}
+	catch (...) {
+		pos = 0;
+	}
+	if (portStr.empty() || pos != portStr.size()) {
+		error = "the argument ('" + portStr + "') for option '--port' is invalid\n" + usage;
+		return NULL;
+	}
+
+	std::string configFile = cmdline.get("config");
 	Config *config = new Config(argc, argv);
 	if (!config->load(configFile)) {
 		error = "Can't open " + configFile + " configuration file.\n";

@@ -22,25 +22,12 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 
 	public:
 		void setUp (void) {
-			onUserPresenceReceived = false;
-			onCapabilitiesReceived = false;
-
 			setMeUp();
-			component->onUserPresenceReceived.connect(boost::bind(&ComponentTest::handleUserPresenceReceived, this, _1));
-			component->getFrontend()->onCapabilitiesReceived.connect(boost::bind(&ComponentTest::handleUserDiscoInfoReceived, this, _1, _2));
 		}
 
 		void tearDown (void) {
 			tearMeDown();
 		}
-
-	void handleUserDiscoInfoReceived(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info) {
-		onCapabilitiesReceived = true;
-	}
-
-	void handleUserPresenceReceived(Swift::Presence::ref presence) {
-		onUserPresenceReceived = true;
-	}
 
 	void handlePresenceWithNode() {
 		Swift::Presence::ref response = Swift::Presence::create();
@@ -73,12 +60,9 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		loop->processEvents();
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(getStanza(received[0])->getPayload<Swift::DiscoInfo>());
-		CPPUNIT_ASSERT(onUserPresenceReceived);
+		// The presence reached the user manager, which logged the user in.
+		CPPUNIT_ASSERT_EQUAL(1, userManager->getUserCount());
 	}
-
-	private:
-		bool onUserPresenceReceived;
-		bool onCapabilitiesReceived;
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION (ComponentTest);

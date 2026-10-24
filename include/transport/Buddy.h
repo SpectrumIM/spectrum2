@@ -21,12 +21,9 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <algorithm>
-#include "Swiften/Elements/VCard.h"
-#include "Swiften/Elements/Presence.h"
-
-//Default resource name which contacts use
-#define JID_DEFAULT_RESOURCE "bot"
+#include "transport/protocol.pb.h"
 
 namespace Transport {
 
@@ -54,9 +51,9 @@ class Buddy {
 
 		/// Destructor
 		virtual ~Buddy();
-		
+
 		/// Sets unique ID used to identify this buddy by StorageBackend.
-		
+
 		/// This is set
 		/// by RosterStorage class once the buddy is stored into database or when the
 		/// buddy is loaded from database.
@@ -69,21 +66,6 @@ class Buddy {
 		/// \return ID which identifies the buddy in database or -1 if it's new buddy which is
 		/// not in database yet.
 		long getID();
-
-		/// Returns full JID of this buddy.
-
-		/// \param hostname hostname used as domain in returned JID
-		/// \return full JID of this buddy
-		const Swift::JID &getJID();
-
-		/// Generates whole Presennce stanza with current status/show for this buddy.
-
-		/// Presence stanza does not containt "to" attribute, it has to be added manually.
-		/// \param features features used in returned stanza
-		/// \param only_new if True, this function returns Presence stanza only if it's different
-		/// than the previously generated one.
-		/// \return Presence stanza or NULL.
-		std::vector<Swift::Presence::ref> &generatePresenceStanzas(int features, bool only_new = false);
 
 		void setBlocked(bool block) {
 			if (block)
@@ -121,19 +103,8 @@ class Buddy {
 		/// \return RosterManager associated with this buddy.
 		RosterManager *getRosterManager() { return m_rosterManager; }
 
-		/// Returns legacy network username which does not contain unsafe characters,
-		/// so it can be used in JIDs.
-		std::string getSafeName();
-
+		/// Sends this buddy's current status to the user.
 		void sendPresence();
-
-		void handleRawPresence(Swift::Presence::ref);
-
-		/// Handles VCard from legacy network and forwards it to XMPP user.
-
-		/// \param id ID used in IQ-result.
-		/// \param vcard VCard which will be sent.
-		void handleVCardReceived(const std::string &id, Swift::VCard::ref vcard);
 
 		/// Returns legacy network username of this buddy. (for example UIN for ICQ, JID for Jabber, ...).
 
@@ -152,10 +123,10 @@ class Buddy {
 
 		/// Returns current legacy network status and statuMessage of this buddy.
 
-		/// \param status current status/show is stored here
+		/// \param status current status is stored here
 		/// \param statusMessage current status message is stored here
 		/// \return true if status was stored successfully
-		virtual bool getStatus(Swift::StatusShow &status, std::string &statusMessage) = 0;
+		virtual bool getStatus(pbnetwork::StatusType &status, std::string &statusMessage) = 0;
 
 		/// Returns SHA-1 hash of buddy icon (avatar) or empty string if there is no avatar for this buddy.
 
@@ -163,19 +134,6 @@ class Buddy {
 		virtual std::string getIconHash() = 0;
 
 		virtual bool isAvailable() = 0;
-
-		/// Returns legacy name of buddy from JID.
-
-		/// \param jid Jabber ID.
-		/// \return legacy name of buddy from JID.
-		static std::string JIDToLegacyName(const Swift::JID &jid, User *user = NULL);
-		static Buddy *JIDToBuddy(const Swift::JID &jid, User *user);
-		static BuddyFlag buddyFlagsFromJID(const Swift::JID &jid);
-
-	protected:
-		void generateJID();
-		Swift::JID m_jid;
-		std::vector<Swift::Presence::ref> m_presences;
 
 	private:
 		long m_id;

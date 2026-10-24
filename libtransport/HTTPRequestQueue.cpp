@@ -1,4 +1,5 @@
 #include "transport/HTTPRequestQueue.h"
+#include <boost/bind.hpp>
 #include "transport/HTTPRequest.h"
 #include "transport/Transport.h"
 
@@ -19,7 +20,7 @@ HTTPRequestQueue::~HTTPRequestQueue() {
 	m_queueTimer->stop();
 
 	if (m_req) {
-		m_req->onRequestFinished.disconnect(boost::bind(&HTTPRequestQueue::handleRequestFinished, this));
+		m_req->onRequestFinished = nullptr;
 	}
 }
 
@@ -45,7 +46,7 @@ void HTTPRequestQueue::sendNextRequest() {
 	m_queue.pop();
 
 	LOG4CXX_INFO(httpRequestQueueLogger, m_user << ": Starting request '" << m_req->getURL() << "'.");
-	m_req->onRequestFinished.connect(boost::bind(&HTTPRequestQueue::handleRequestFinished, this));
+	m_req->onRequestFinished = [this]() { handleRequestFinished(); };
 	m_req->execute();
 }
 

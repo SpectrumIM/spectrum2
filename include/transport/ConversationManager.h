@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <map>
 
-#include "Swiften/Elements/Message.h"
+#include "transport/protocol.pb.h"
 
 namespace Transport {
 
@@ -74,22 +74,31 @@ class ConversationManager {
 
 		void deleteAllConversations();
 
-		void resetResources();
-		void removeJID(const Swift::JID &jid);
-		void clearJIDs();
+		/// Returns the conversation a message from the user goes to, creating it when needed.
+
+		/// \param buddyName legacy name of the buddy or room.
+		/// \param pm true when the message is a private message in room buddyName.
+		/// \param nickname nickname of the room participant the private message goes to.
+		/// \return Conversation or NULL.
+		Conversation *getConversationForMessage(const std::string &buddyName, bool pm = false, const std::string &nickname = "");
+
+		/// Handles a message from the user: sends it to its conversation (see getConversationForMessage).
+
+		/// \param type kind of the message (see Conversation).
+		/// \param message message; buddyName() is the conversation, pm() and nickname() address
+		/// a private message in a room.
+		/// \return the conversation the message went to, or NULL.
+		Conversation *handleMessageReceived(pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &message);
 
 		std::map<std::string, Conversation *> &getConversations() {
 			return m_convs;
 		}
 
 	private:
-		void handleMessageReceived(Swift::Message::ref message);
-
 		Component *m_component;
 		User *m_user;
 
 		std::map<std::string, Conversation *> m_convs;
-		friend class UserManager;
 };
 
 }

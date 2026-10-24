@@ -19,6 +19,8 @@
  */
 
 #include "adhocmanager.h"
+#include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include "adhoccommandfactory.h"
 #include "discoitemsresponder.h"
 #include "transport/UserManager.h"
@@ -44,7 +46,11 @@ AdHocManager::AdHocManager(Component *component, DiscoItemsResponder *discoItems
 	m_collectTimer->onTick.connect(boost::bind(&AdHocManager::removeOldSessions, this));
 	m_collectTimer->start();
 
-	m_userManager->onUserCreated.connect(boost::bind(&AdHocManager::handleUserCreated, this, _1));
+	auto prevUserCreated = m_userManager->onUserCreated;
+	m_userManager->onUserCreated = [prevUserCreated, this](User *user) {
+		prevUserCreated(user);
+		handleUserCreated(user);
+	};
 }
 
 AdHocManager::~AdHocManager() {

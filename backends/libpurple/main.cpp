@@ -1,4 +1,6 @@
 #include "utils.h"
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "glib.h"
 
@@ -24,8 +26,7 @@
 #endif
 #include "errno.h"
 #include <boost/make_shared.hpp>
-#include <boost/locale.hpp>
-#include <boost/locale/conversion.hpp>
+#include "transport/Util.h"
 #include <boost/thread/mutex.hpp>
 
 #ifdef WITH_LIBEVENT
@@ -746,7 +747,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 		std::string LegacyNameToName(PurpleAccount *account, const std::string &legacyName) {
 			std::string conversationName = legacyName;
 			BOOST_FOREACH(std::string _room, m_rooms[np->m_accounts[account]]) {
-				std::string lowercased_room = boost::locale::to_lower(_room);
+				std::string lowercased_room = Transport::Util::toLowerUTF8(_room);
 				if (lowercased_room.compare(conversationName) == 0) {
 					conversationName = _room;
 					break;
@@ -759,7 +760,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			std::string conversationName = legacyName;
 			BOOST_FOREACH(std::string _room, m_rooms[np->m_accounts[account]]) {
 				if (_room.compare(conversationName) == 0) {
-					conversationName = boost::locale::to_lower(legacyName);
+					conversationName = Transport::Util::toLowerUTF8(legacyName);
 					break;
 				}
 			}
@@ -1532,7 +1533,7 @@ static void *notify_user_info(PurpleConnection *gc, const char *who, PurpleNotif
 	while (vcardEntries) {
 		vcardEntry = (PurpleNotifyUserInfoEntry *)(vcardEntries->data);
 		if (purple_notify_user_info_entry_get_label_wrapped(vcardEntry) && purple_notify_user_info_entry_get_value_wrapped(vcardEntry)){
-			label = boost::locale::to_lower(purple_notify_user_info_entry_get_label_wrapped(vcardEntry));
+			label = Transport::Util::toLowerUTF8(purple_notify_user_info_entry_get_label_wrapped(vcardEntry));
 			if (label == "given name" || label == "first name") {
 				firstName = purple_notify_user_info_entry_get_value_wrapped(vcardEntry);
 			}
