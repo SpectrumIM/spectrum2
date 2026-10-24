@@ -32,7 +32,10 @@ option(ENABLE_PURPLE "Build Libpurple plugin" ON)
 option(ENABLE_SMSTOOLS3 "Build SMSTools3 plugin" ON)
 option(ENABLE_XMPP "Build XMPP plugin" ON)
 option(ENABLE_WEBUI "Build Web UI" ON)
-option(ENABLE_SLACK_FRONTEND "Build Slack frontend" OFF)
+include(CMakeDependentOption)
+option(ENABLE_XMPP_FRONTEND "Build XMPP frontend" ON)
+# Slack frontend is built on top of the XMPP frontend
+cmake_dependent_option(ENABLE_SLACK_FRONTEND "Build Slack frontend" OFF "ENABLE_XMPP_FRONTEND" OFF)
 option(ENABLE_DOCS "Build Docs" ON)
 # option(ENABLE_LOG "Build with logging using Log4cxx" ON)
 option(ENABLE_TESTS "Build Tests using CppUnit" OFF)
@@ -187,6 +190,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 add_definitions(-DSUPPORT_LEGACY_CAPS)
+
+if(ENABLE_XMPP_FRONTEND)
+	add_definitions(-DENABLE_XMPP_FRONTEND)
+endif()
 
 if(ENABLE_SLACK_FRONTEND)
 	add_definitions(-DENABLE_SLACK_FRONTEND)

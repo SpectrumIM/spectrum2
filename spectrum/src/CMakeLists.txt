@@ -15,7 +15,11 @@ if (ENABLE_PURPLE AND PURPLE_FOUND)
 add_dependencies(spectrum2 spectrum2_libpurple_backend)
 endif()
 
-target_link_libraries(spectrum2 transport spectrum2-xmpp-frontend ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+target_link_libraries(spectrum2 transport ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${PROTOBUF_LIBRARY})
+
+if(ENABLE_XMPP_FRONTEND)
+	target_link_libraries(spectrum2 spectrum2-xmpp-frontend)
+endif()
 
 if(ENABLE_SLACK_FRONTEND)
 	target_link_libraries(spectrum2 spectrum2-slack-frontend)

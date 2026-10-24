@@ -16,7 +16,9 @@
 #include "transport/Util.h"
 #include "transport/Logging.h"
 #include "transport/Frontend.h"
+#ifdef ENABLE_XMPP_FRONTEND
 #include "frontends/xmpp/XMPPFrontendPlugin.h"
+#endif
 #ifdef ENABLE_SLACK_FRONTEND
 #include "frontends/slack/SlackFrontendPlugin.h"
 #endif

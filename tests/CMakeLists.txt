@@ -1,7 +1,7 @@
 	add_subdirectory(libtransport)
 	add_subdirectory(integration)
 
-	if(ENABLE_TESTS)
+	if(ENABLE_TESTS AND ENABLE_XMPP_FRONTEND)
 
 	  add_test(
 	    NAME libtransport_test
