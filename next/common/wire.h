@@ -14,8 +14,8 @@ using Socket = std::intptr_t;
 // Creates the sockets layer (WSAStartup on Windows). Call once at startup.
 bool initSockets();
 
-// Listens on 0.0.0.0:port. Returns -1 on error.
-Socket listenOn(int port);
+// Listens on host:port (IPv4 address, 0.0.0.0 for all). Returns -1 on error.
+Socket listenOn(int port, const std::string &host = "0.0.0.0");
 
 // Connects to host:port. Returns -1 on error.
 Socket connectTo(const std::string &host, int port);

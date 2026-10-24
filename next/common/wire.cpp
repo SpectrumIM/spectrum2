@@ -64,7 +64,7 @@ bool initSockets() {
 #endif
 }
 
-Socket listenOn(int port) {
+Socket listenOn(int port, const std::string &host) {
 	SOCKET fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (fd == INVALID_SOCKET) {
 		return -1;
@@ -74,8 +74,11 @@ Socket listenOn(int port) {
 
 	sockaddr_in addr{};
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr.sin_port = htons(static_cast<uint16_t>(port));
+	if (::inet_pton(AF_INET, host.c_str(), &addr.sin_addr) != 1) {
+		::closesocket(fd);
+		return -1;
+	}
 	if (::bind(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) != 0 || ::listen(fd, 16) != 0) {
 		::closesocket(fd);
 		return -1;
