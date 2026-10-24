@@ -357,6 +357,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 
 		void handleLoginRequest(const std::string &user, const std::string &legacyName, const std::string &password, const std::map<std::string, std::string> &settings) {
 			PurpleAccount *account = NULL;
+			bool newAccount = false;
 
 			std::string name;
 			std::string protocol;
@@ -401,6 +402,7 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 				LOG4CXX_INFO(logger, "Creating account with name '" << name.c_str() << "' and protocol '" << protocol << "'");
 				account = purple_account_new_wrapped(name.c_str(), protocol.c_str());
 				purple_accounts_add_wrapped(account);
+				newAccount = true;
 			}
 
 			m_sessions[user] = account;
@@ -409,7 +411,10 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			// Default avatar
 			setDefaultAvatar(account, legacyName);
 
-			purple_account_set_password_wrapped(account, password.c_str());
+			const char *saved = purple_account_get_password_wrapped(account);
+			if (newAccount || !saved) {
+				purple_account_set_password_wrapped(account, password.c_str());
+			}
 			purple_account_set_bool_wrapped(account, "custom_smileys", FALSE);
 			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
