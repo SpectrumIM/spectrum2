@@ -1,4 +1,5 @@
 #include "transport/Config.h"
+#include <cstring>
 #include <boost/bind.hpp>
 #include "transport/CommandLine.h"
 #include "transport/Transport.h"

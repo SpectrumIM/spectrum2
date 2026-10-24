@@ -9,6 +9,7 @@
  */
 
 #include "transport/Config.h"
+#include <cstring>
 #include <boost/foreach.hpp>
 #include "transport/BoostNetworkPlugin.h"
 #include <memory>

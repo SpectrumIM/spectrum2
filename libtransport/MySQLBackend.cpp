@@ -24,6 +24,7 @@
 #include "transport/Util.h"
 #include "transport/Logging.h"
 #include <boost/bind.hpp>
+#include <cstring>
 
 #define EXEC(STMT, METHOD) \
 	{\

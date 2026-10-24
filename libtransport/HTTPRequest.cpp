@@ -1,4 +1,5 @@
 #include "transport/HTTPRequest.h"
+#include <cstring>
 
 namespace Transport {
 

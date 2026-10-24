@@ -9,6 +9,7 @@
  */
 
 #include "transport/Config.h"
+#include <cstring>
 #include <boost/bind.hpp>
 #include "transport/Logging.h"
 #include "transport/BoostNetworkPlugin.h"
