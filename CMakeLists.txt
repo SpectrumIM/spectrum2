@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.12)
 
 project(libtransport)
 
@@ -93,14 +93,19 @@ endif(WIN32)
 find_package( Threads )
 
 set(Boost_FIND_QUIETLY ON)
-find_package(Boost COMPONENTS program_options date_time system filesystem regex thread locale REQUIRED)
+set(BOOST_COMPONENTS program_options date_time system filesystem regex thread locale)
+find_package(Boost CONFIG QUIET COMPONENTS ${BOOST_COMPONENTS})
+if(NOT Boost_FOUND)
+	# Boost installed without BoostConfig.cmake, fall back to CMake's FindBoost
+	if(POLICY CMP0167)
+		cmake_policy(SET CMP0167 OLD)
+	endif()
+	find_package(Boost MODULE REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+endif()
 
 message( STATUS "Found Boost: ${Boost_VERSION}, ${Boost_LIBRARIES}, ${Boost_INCLUDE_DIR}")
 
-if(${Boost_VERSION} GREATER 104999)
-	message( STATUS "Using BOOST_FILESYSTEM_VERSION=3")
-	add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
-endif()
+add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
 add_definitions(-DBOOST_BIND_GLOBAL_PLACEHOLDERS)
 
 # FIND POPT
