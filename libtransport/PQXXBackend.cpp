@@ -205,6 +205,9 @@ bool PQXXBackend::getUser(const std::string &barejid, UserInfo &user) {
 		user.jid = r[0][1].as<std::string>();
 		user.uin = r[0][2].as<std::string>();
 		user.password = r[0][3].as<std::string>();
+		if (!CONFIG_STRING(m_config, "database.encryption_key").empty()) {
+			user.password = StorageBackend::decryptPassword(user.password, CONFIG_STRING(m_config, "database.encryption_key"));
+		}
 		user.encoding = r[0][4].as<std::string>();
 		user.language = r[0][5].as<std::string>();
 		user.vip = r[0][6].as<bool>();
