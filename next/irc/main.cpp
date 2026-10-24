@@ -59,6 +59,8 @@ struct Session {
 	// Messages waiting for a channel join to be confirmed, keyed by channel.
 	std::mutex stateLock;
 	std::map<std::string, std::vector<std::string>> pending;
+	// Nicks in each joined channel, to report QUIT and NICK per channel.
+	std::map<std::string, std::set<std::string>> members;
 
 	void sendLine(const std::string &line) {
 		std::lock_guard<std::mutex> lock(writeLock);
@@ -121,6 +123,59 @@ void sendIncoming(const std::string &user, const std::string &buddy, const std::
 	toFrontend(makeWrapper(WrapperMessage::TYPE_CONV_MESSAGE, m));
 }
 
+// Someone in a channel: present (STATUS_ONLINE), gone (STATUS_NONE) or renamed (newName).
+void sendParticipant(const std::string &user, const std::string &room, const std::string &nick,
+		int flag, pbnetwork::StatusType status, const std::string &newName = "") {
+	pbnetwork::Participant p;
+	p.set_username(user);
+	p.set_room(room);
+	p.set_nickname(nick);
+	p.set_flag(flag);
+	p.set_status(status);
+	if (!newName.empty()) p.set_newname(newName);
+	toFrontend(makeWrapper(WrapperMessage::TYPE_PARTICIPANT_CHANGED, p));
+}
+
+// NAMES entries carry the channel mode as a prefix: ~ & @ % are operators, + is voice.
+void sendNames(std::shared_ptr<Session> s, const std::string &room, const std::string &names) {
+	std::istringstream in(names);
+	std::string name;
+	while (in >> name) {
+		int flag = pbnetwork::PARTICIPANT_FLAG_NONE;
+		size_t start = name.find_first_not_of("~&@%+");
+		if (start == std::string::npos) continue;
+		if (name.find_first_of("~&@%") < start) flag = pbnetwork::PARTICIPANT_FLAG_MODERATOR;
+		std::string nick = name.substr(start);
+		if (nick == s->nick) flag |= pbnetwork::PARTICIPANT_FLAG_ME;
+		{
+			std::lock_guard<std::mutex> lock(s->stateLock);
+			s->members[room].insert(nick);
+		}
+		sendParticipant(s->user, room, nick, flag, pbnetwork::STATUS_ONLINE);
+	}
+}
+
+// Reports nick as gone from every channel it was in (QUIT), or renamed (NICK).
+void forEachChannelOf(std::shared_ptr<Session> s, const std::string &nick, const std::string &newName) {
+	std::vector<std::string> rooms;
+	{
+		std::lock_guard<std::mutex> lock(s->stateLock);
+		for (auto &entry : s->members) {
+			if (entry.second.erase(nick)) {
+				rooms.push_back(entry.first);
+				if (!newName.empty()) entry.second.insert(newName);
+			}
+		}
+	}
+	for (const auto &room : rooms) {
+		if (newName.empty()) {
+			sendParticipant(s->user, room, nick, pbnetwork::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_NONE);
+		} else {
+			sendParticipant(s->user, room, nick, pbnetwork::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_ONLINE, newName);
+		}
+	}
+}
+
 // Reads IRC lines from the session's socket until it closes.
 void readIrc(std::shared_ptr<Session> s) {
 	std::string buf;
@@ -148,7 +203,50 @@ void readIrc(std::shared_ptr<Session> s) {
 			if (t.empty()) continue;
 			const std::string &cmd = t[0];
 
-			if (cmd == "JOIN" && t.size() >= 2 && nickOf(prefix) == s->nick) {
+			if (cmd == "JOIN" && t.size() >= 2 && nickOf(prefix) != s->nick) {
+				std::string nick = nickOf(prefix);
+				{
+					std::lock_guard<std::mutex> lock(s->stateLock);
+					s->members[t[1]].insert(nick);
+				}
+				sendParticipant(s->user, t[1], nick, pbnetwork::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_ONLINE);
+			} else if (cmd == "PART" && t.size() >= 2) {
+				std::string nick = nickOf(prefix);
+				{
+					std::lock_guard<std::mutex> lock(s->stateLock);
+					if (nick == s->nick) {
+						s->members.erase(t[1]);
+					} else {
+						s->members[t[1]].erase(nick);
+					}
+				}
+				if (nick != s->nick) {
+					sendParticipant(s->user, t[1], nick, pbnetwork::PARTICIPANT_FLAG_NONE, pbnetwork::STATUS_NONE);
+				}
+			} else if (cmd == "KICK" && t.size() >= 3) {
+				bool me = t[2] == s->nick;
+				{
+					std::lock_guard<std::mutex> lock(s->stateLock);
+					if (me) {
+						s->members.erase(t[1]);
+						s->joined.erase(t[1]);
+					} else {
+						s->members[t[1]].erase(t[2]);
+					}
+				}
+				sendParticipant(s->user, t[1], t[2],
+					me ? pbnetwork::PARTICIPANT_FLAG_KICKED | pbnetwork::PARTICIPANT_FLAG_ME : pbnetwork::PARTICIPANT_FLAG_NONE,
+					pbnetwork::STATUS_NONE);
+			} else if (cmd == "QUIT") {
+				forEachChannelOf(s, nickOf(prefix), "");
+			} else if (cmd == "NICK" && t.size() >= 2) {
+				std::string nick = nickOf(prefix);
+				if (nick == s->nick) s->nick = t[1];
+				forEachChannelOf(s, nick, t[1]);
+			} else if (cmd == "353" && t.size() >= 5) {
+				// RPL_NAMREPLY: <me> <type> <channel> :<names>
+				sendNames(s, t[3], t[4]);
+			} else if (cmd == "JOIN" && t.size() >= 2 && nickOf(prefix) == s->nick) {
 				// Server confirmed our join: send what was queued for this channel.
 				std::vector<std::string> queued;
 				{

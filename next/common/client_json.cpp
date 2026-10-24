@@ -22,6 +22,7 @@ std::unique_ptr<google::protobuf::Message> payloadFor(WrapperMessage::Type type)
 		case WrapperMessage::TYPE_CONV_MESSAGE: return std::make_unique<pbnetwork::ConversationMessage>();
 		case WrapperMessage::TYPE_JOIN_ROOM: return std::make_unique<pbnetwork::Room>();
 		case WrapperMessage::TYPE_LEAVE_ROOM: return std::make_unique<pbnetwork::Room>();
+		case WrapperMessage::TYPE_PARTICIPANT_CHANGED: return std::make_unique<pbnetwork::Participant>();
 		default: return nullptr;
 	}
 }

@@ -3,7 +3,7 @@
 //   spectrum_next_frontend [client_port=5230] [backend_port=5231]
 //
 // Clients send WrapperMessage frames (Login, Logout, ConversationMessage, JoinRoom, LeaveRoom, Ping).
-// The backend sends Connected, Disconnected, ConversationMessage, Ping.
+// The backend sends Connected, Disconnected, ConversationMessage, ParticipantChanged, Ping.
 // Login accepts any password (first test). Messages are routed by userName.
 
 #include <cstdlib>
@@ -188,6 +188,11 @@ void handleBackend(std::shared_ptr<Client> b) {
 			case WrapperMessage::TYPE_CONV_MESSAGE: {
 				pbnetwork::ConversationMessage m;
 				if (m.ParseFromString(msg.payload())) sendToUser(m.username(), msg);
+				break;
+			}
+			case WrapperMessage::TYPE_PARTICIPANT_CHANGED: {
+				pbnetwork::Participant p;
+				if (p.ParseFromString(msg.payload())) sendToUser(p.username(), msg);
 				break;
 			}
 			case WrapperMessage::TYPE_PING:
