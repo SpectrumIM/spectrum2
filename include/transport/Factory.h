@@ -22,7 +22,6 @@
 
 #include <string>
 #include <algorithm>
-#include "Swiften/Elements/Message.h"
 
 namespace Transport {
 
@@ -32,9 +31,11 @@ class ConversationManager;
 class RosterManager;
 struct BuddyInfo;
 
+/// Creates conversations and buddies for the backend side: a conversation comes
+/// from Frontend::createConversation, with the backend listening on onMessageToSend.
 class Factory {
 	public:
-		
+
 		virtual Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc = false) = 0;
 
 		virtual Buddy *createBuddy(RosterManager *rosterManager, const BuddyInfo &buddyInfo) = 0;

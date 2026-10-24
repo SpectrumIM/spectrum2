@@ -22,11 +22,8 @@
 
 #include "transport/UserManager.h"
 
-#include "Swiften/Elements/Message.h"
-#include "Swiften/Elements/Presence.h"
-#include "Swiften/Elements/DiscoInfo.h"
-
 #include <string>
+#include <vector>
 #include <map>
 
 namespace Transport {
@@ -49,15 +46,13 @@ class SlackUserManager : public UserManager {
 
 		void reconnectUser(const std::string &user);
 
-		virtual void sendVCard(unsigned int id, Swift::VCard::ref vcard);
+		virtual void sendVCard(unsigned int id, const pbnetwork::VCard &vcard);
 
 		UserRegistration *getUserRegistration();
 
 		std::string handleOAuth2Code(const std::string &code, const std::string &state);
 
 		std::string getOAuth2URL(const std::vector<std::string> &args);
-
-		void sendMessage(std::shared_ptr<Swift::Message> message);
 
 		SlackSession *moveTempSession(const std::string &user);
 		void moveTempSession(const std::string &user, SlackSession *session);

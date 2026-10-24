@@ -23,10 +23,7 @@
 #include "transport/Event.h"
 
 #include <functional>
-
-#include "Swiften/Queries/Responder.h"
-#include "Swiften/Elements/InBandRegistrationPayload.h"
-#include "Swiften/Elements/RosterPayload.h"
+#include <string>
 
 namespace Transport {
 

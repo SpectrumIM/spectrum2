@@ -36,18 +36,17 @@ class SlackSession;
 
 class SlackUser : public User {
 	public:
-		SlackUser(const Swift::JID &jid, UserInfo &userInfo, Component * component, UserManager *userManager);
+		SlackUser(const std::string &user, UserInfo &userInfo, Component * component, UserManager *userManager);
 
 		virtual ~SlackUser();
 
-		void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e);
+		void disconnectUser(const std::string &error, pbnetwork::ConnectionError e);
 
 		SlackSession *getSession() {
 			return m_session;
 		}
 
 	private:
-		Swift::JID m_jid;
 		Component *m_component;
 		UserManager *m_userManager;
 		UserInfo m_userInfo;

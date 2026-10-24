@@ -23,58 +23,98 @@
 #include "transport/User.h"
 
 #include <time.h>
-#include "Swiften/Disco/EntityCapsManager.h"
-#include "Swiften/Disco/EntityCapsProvider.h"
-#include "Swiften/Elements/SpectrumErrorPayload.h"
-#include "Swiften/Network/Timer.h"
-#include "Swiften/Network/Connection.h"
-#include "Swiften/VCards/GetVCardRequest.h"
+#include <list>
+#include <map>
+#include <vector>
+#include "Swiften/JID/JID.h"
+#include "Swiften/Elements/Presence.h"
+#include "Swiften/Elements/DiscoInfo.h"
 #include "Swiften/Elements/DiscoItems.h"
+#include "Swiften/Network/Timer.h"
+#include "Swiften/VCards/GetVCardRequest.h"
 
 namespace Transport {
 
 class Component;
-class RosterManager;
-class ConversationManager;
 class UserManager;
-class PresenceOracle;
+class XMPPFrontend;
 struct UserInfo;
 
 /// Represents online XMPP user.
 class XMPPUser : public User {
 	public:
 		/// Creates new User class.
-		/// \param jid XMPP JID associated with this user
+		/// \param user bare JID of the XMPP user
 		/// \param userInfo UserInfo struct with informations needed to connect
 		/// this user to legacy network
 		/// \param component Component associated with this user
-		XMPPUser(const Swift::JID &jid, UserInfo &userInfo, Component * component, UserManager *userManager);
+		XMPPUser(const std::string &user, UserInfo &userInfo, Component * component, UserManager *userManager);
 
 		/// Destroyes User.
 		virtual ~XMPPUser();
 
-		void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e);
+		/// Returns bare JID of the user.
+		const Swift::JID &getJID() { return m_jid; }
+
+		/// Returns full JIDs of the user's resources which support particular feature.
+		/// \param feature disco#info feature.
+		std::vector<Swift::JID> getJIDWithFeature(const std::string &feature);
+
+		void disconnectUser(const std::string &error, pbnetwork::ConnectionError e);
 
 		void requestVCard();
 
 		void clearRoomList();
 
-		void addRoomToRoomList(const std::string &handle, const std::string &name);
+		void addRoomToRoomList(const std::string &room, const std::string &name);
 
 		std::shared_ptr<Swift::DiscoItems> getRoomList() {
 			return m_rooms;
 		}
 
+		void sendCurrentPresence();
+
+		/// Handles presence from XMPP JID associated with this user.
+		/// \param presence Swift::Presence.
+		void handlePresence(Swift::Presence::ref presence);
+
+		void handleSubscription(Swift::Presence::ref presence);
+
+		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
+
+		int getResourceCount() {
+			return m_resources;
+		}
+
+		void leaveRoom(const std::string &room);
+
+		/// Sends the next 1:1 messages to the user's bare JID again.
+		void resetResources();
+
+		/// The resource is gone: removes it from all conversations and leaves the rooms nobody is in.
+		void removeJID(const Swift::JID &jid);
+
+	protected:
+		void handleRoomJoined(Conversation *conv);
+
 	private:
+		XMPPFrontend *getFrontend();
 		void onConnectingTimeout();
 		void handleVCardReceived(std::shared_ptr<Swift::VCard> vcard, Swift::ErrorPayload::ref error, Swift::GetVCardRequest::ref request);
+		/// Sends the user's status (the presence of his highest priority resource) to the legacy network.
+		void sendStatus(Swift::Presence::ref presence);
+		void clearJIDs();
 
 		Swift::JID m_jid;
 		Component *m_component;
 		UserManager *m_userManager;
-		UserInfo m_userInfo;
 		std::list <Swift::GetVCardRequest::ref> m_vcardRequests;
 		std::shared_ptr<Swift::DiscoItems> m_rooms;
+		Swift::Timer::ref m_reconnectTimer;
+		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
+		int m_resources;
+		// The presence which joined each room, by room name.
+		std::map<std::string, Swift::Presence::ref> m_joinedRooms;
 };
 
 }

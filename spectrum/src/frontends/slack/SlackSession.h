@@ -21,12 +21,13 @@
 #pragma once
 
 #include "transport/StorageBackend.h"
+#include "transport/protocol.pb.h"
 
 #include <string>
 #include <algorithm>
 #include <map>
 
-#include "Swiften/Elements/Message.h"
+#include <boost/signals2.hpp>
 #include "Swiften/Network/Timer.h"
 
 namespace Transport {
@@ -37,6 +38,7 @@ class HTTPRequest;
 class SlackRTM;
 class SlackAPI;
 class User;
+class Conversation;
 class SlackIdManager;
 
 class SlackSession {
@@ -47,7 +49,8 @@ class SlackSession {
 
 		boost::signals2::signal<void (const std::string &user)> onInstallationDone;
 
-		void sendMessage(std::shared_ptr<Swift::Message> message);
+		/// Posts the message from the legacy network to the conversation's Slack channel.
+		void sendMessage(Conversation *conv, const pbnetwork::ConversationMessage &message);
 
 		void sendMessageToAll(const std::string &msg);
 
@@ -63,6 +66,8 @@ class SlackSession {
 		void handleRegisterMessage(const std::string &message, std::vector<std::string> &args, bool quiet = false);
 
 	private:
+		/// Logs the Slack user in (once) and connects him to the legacy network.
+		User *loginUser();
 		void handleRTMStarted();
 		void handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet);
 
@@ -76,8 +81,9 @@ class SlackSession {
 		StorageBackend *m_storageBackend;
 		UserInfo m_uinfo;
 		SlackRTM *m_rtm;
-		std::map<std::string, std::string> m_jid2channel;
-		std::map<std::string, std::string> m_channel2jid;
+		// Legacy network room name <-> Slack channel ID
+		std::map<std::string, std::string> m_room2channel;
+		std::map<std::string, std::string> m_channel2room;
 		std::string m_slackChannel;
 		User *m_user;
 		Swift::Timer::ref m_onlineBuddiesTimer;

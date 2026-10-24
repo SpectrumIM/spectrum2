@@ -49,7 +49,11 @@ class VCardResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT_EQUAL(0, (int) received.size());
 		CPPUNIT_ASSERT_EQUAL(std::string("#room/user"), vcardName);
 
-		userManager->sendVCard(vcardId, payload);
+		pbnetwork::VCard vcard;
+		vcard.set_username("user@localhost");
+		vcard.set_buddyname("#room/user");
+		vcard.set_id(vcardId);
+		userManager->sendVCard(vcardId, vcard);
 		loop->processEvents();
 
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());

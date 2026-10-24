@@ -51,7 +51,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		// with BUDDY_JID_ESCAPING it escapes /
 		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "msn/something", "Buddy 1", grp, BUDDY_JID_ESCAPING);
 		CPPUNIT_ASSERT(buddy->isValid());
-		CPPUNIT_ASSERT_EQUAL(std::string("msn\\2fsomething@localhost/bot"), buddy->getJID().toString());
+		CPPUNIT_ASSERT_EQUAL(std::string("msn\\2fsomething@localhost/bot"), JIDUtils::getBuddyJID(buddy).toString());
 		delete buddy;
 
 		// without BUDDY_JID_ESCAPING it shoudl fail
@@ -65,8 +65,8 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void JIDToLegacyName() {
-		CPPUNIT_ASSERT_EQUAL(std::string("hanzz@test"), Buddy::JIDToLegacyName("hanzz\\40test@localhost/bot"));
-		CPPUNIT_ASSERT_EQUAL(std::string("hanzz@test"), Buddy::JIDToLegacyName("hanzz%test@localhost/bot"));
+		CPPUNIT_ASSERT_EQUAL(std::string("hanzz@test"), JIDUtils::JIDToLegacyName("hanzz\\40test@localhost/bot"));
+		CPPUNIT_ASSERT_EQUAL(std::string("hanzz@test"), JIDUtils::JIDToLegacyName("hanzz%test@localhost/bot"));
 	}
 
 	void getSafeName() {
@@ -77,15 +77,16 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		grp.push_back("group1");
 		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1@test", "Buddy 1", grp, BUDDY_JID_ESCAPING);
 
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test"), buddy->getSafeName());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40test"), JIDUtils::getSafeName(buddy->getName(), buddy->getFlags()));
 
 		buddy->setFlags(BUDDY_NO_FLAG);
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test"), buddy->getSafeName());
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1%test"), JIDUtils::getSafeName(buddy->getName(), buddy->getFlags()));
+		delete buddy;
 	}
 
 	void buddyFlagsFromJID() {
-		CPPUNIT_ASSERT_EQUAL(BUDDY_JID_ESCAPING, Buddy::buddyFlagsFromJID("hanzz\\40test@localhost/bot"));
-		CPPUNIT_ASSERT_EQUAL(BUDDY_NO_FLAG, Buddy::buddyFlagsFromJID("hanzz%test@localhost/bot"));
+		CPPUNIT_ASSERT_EQUAL(BUDDY_JID_ESCAPING, JIDUtils::buddyFlagsFromJID("hanzz\\40test@localhost/bot"));
+		CPPUNIT_ASSERT_EQUAL(BUDDY_NO_FLAG, JIDUtils::buddyFlagsFromJID("hanzz%test@localhost/bot"));
 	}
 
 	void sendPresence() {
@@ -95,7 +96,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		std::vector<std::string> grp;
 		grp.push_back("group1");
 		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
-		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
+		buddy->setStatus(pbnetwork::STATUS_AWAY,"status1");
 		user->getRosterManager()->setBuddy(buddy);
 		received.clear();
 
@@ -113,7 +114,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		std::vector<std::string> grp;
 		grp.push_back("group1");
 		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
-		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "status1");
+		buddy->setStatus(pbnetwork::STATUS_AWAY,"status1");
 		user->getRosterManager()->setBuddy(buddy);
 		received.clear();
 
@@ -123,7 +124,7 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		CPPUNIT_ASSERT(payload1);
 		CPPUNIT_ASSERT_EQUAL(1, (int) payload1->getItems().size());
 		Swift::RosterItemPayload item = payload1->getItems()[0];
-		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), Buddy::JIDToLegacyName(item.getJID()));
+		CPPUNIT_ASSERT_EQUAL(std::string("buddy1"), JIDUtils::JIDToLegacyName(item.getJID()));
 		CPPUNIT_ASSERT_EQUAL(std::string("Buddy 2"), item.getName());
 	}
 
@@ -134,11 +135,11 @@ class LocalBuddyTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		std::vector<std::string> grp;
 		grp.push_back("group1");
 		LocalBuddy *buddy = new LocalBuddy(user->getRosterManager(), -1, "buddy1", "Buddy 1", grp, BUDDY_JID_ESCAPING);
-		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::Away), "");
+		buddy->setStatus(pbnetwork::STATUS_AWAY,"");
 		user->getRosterManager()->setBuddy(buddy);
 		received.clear();
 
-		buddy->setStatus(Swift::StatusShow(Swift::StatusShow::None), "");
+		buddy->setStatus(pbnetwork::STATUS_NONE, "");
 		CPPUNIT_ASSERT_EQUAL(1, (int) received.size());
 		CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
 		CPPUNIT_ASSERT_EQUAL(Swift::StatusShow::None, dynamic_cast<Swift::Presence *>(getStanza(received[0]))->getShow());

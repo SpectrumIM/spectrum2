@@ -20,91 +20,40 @@
 
 #include "transport/NetworkPluginServer.h"
 #include "transport/Event.h"
-#include "transport/PresenceOracle.h"
-#include "transport/Event.h"
 #include "transport/User.h"
-#include "transport/Event.h"
 #include "transport/Transport.h"
-#include "transport/Event.h"
 #include "transport/RosterManager.h"
-#include "transport/Event.h"
 #include "transport/UserManager.h"
-#include "transport/Event.h"
 #include "transport/ConversationManager.h"
-#include "transport/Event.h"
 #include "transport/LocalBuddy.h"
-#include "transport/Event.h"
 #include "transport/Config.h"
-#include "transport/Event.h"
 #include "transport/Conversation.h"
-#include "transport/Event.h"
 #include "transport/Logging.h"
-#include "transport/Event.h"
 #include "transport/AdminInterface.h"
-#include "transport/Event.h"
 #include "transport/Frontend.h"
-#include "transport/Event.h"
 #include "transport/Factory.h"
-#include "transport/Event.h"
-#include "transport/UserRegistry.h"
-#include "transport/Event.h"
 #include "transport/protocol.pb.h"
-#include "transport/Event.h"
 #include "transport/Util.h"
-#include "transport/Event.h"
-#include "Swiften/Server/ServerStanzaChannel.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/StreamError.h"
-#include "transport/Event.h"
-#include "Swiften/Network/BoostConnectionServer.h"
-#include "transport/Event.h"
 #include "Swiften/Network/ConnectionServerFactory.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/AttentionPayload.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/XHTMLIMPayload.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/Delay.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/DeliveryReceipt.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/DeliveryReceiptRequest.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/InvisiblePayload.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/SpectrumErrorPayload.h"
-#include "transport/Event.h"
-#include "Swiften/Elements/RawXMLPayload.h"
-#include "transport/Event.h"
-#include <Swiften/Serializer/XML/XMLElement.h>
-#include "transport/Event.h"
 
-#include "boost/date_time/posix_time/posix_time.hpp"
-#include "transport/Event.h"
-#include <regex>
-#include "transport/Event.h"
+#include <algorithm>
+#include <cstring>
+#include <iostream>
+#include <sstream>
 
 #include "transport/utf8.h"
-#include "transport/Event.h"
 
 #ifdef _WIN32
 #include "windows.h"
-#include "transport/Event.h"
 #include <stdint.h>
-#include "transport/Event.h"
 #else
+#include <arpa/inet.h>
 #include "sys/wait.h"
-#include "transport/Event.h"
 #include "sys/signal.h"
-#include "transport/Event.h"
 #include <sys/types.h>
-#include "transport/Event.h"
 #include <signal.h>
-#include "transport/Event.h"
 #include "popt.h"
-#include "transport/Event.h"
 #include <dirent.h>
-#include "transport/Event.h"
 #endif
 
 using namespace Transport::Util;
@@ -118,32 +67,20 @@ DEFINE_LOGGER(networkPluginServerLogger, "NetworkPluginServer");
 
 static NetworkPluginServer *_server;
 
-class NetworkConversation : public Conversation {
-	public:
-		NetworkConversation(ConversationManager *conversationManager, const std::string &legacyName, bool muc = false) : Conversation(conversationManager, legacyName, muc) {
-		}
-
-		// Called when there's new message to legacy network from XMPP network
-		void sendMessage(std::shared_ptr<Swift::Message> &message) {
-			onMessageToSend(this, message);
-		}
-
-		Event<void (NetworkConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
-};
-
 class NetworkFactory : public Factory {
 	public:
-		NetworkFactory(NetworkPluginServer *nps) {
+		NetworkFactory(NetworkPluginServer *nps, Component *component) {
 			m_nps = nps;
+			m_component = component;
 		}
 
 		virtual ~NetworkFactory() {}
 
-		// Creates new conversation (NetworkConversation in this case)
+		// Creates new conversation; the frontend shows it, we send its messages to the backend.
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc) {
-			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName, isMuc);
-			nc->onMessageToSend = [nps = m_nps](NetworkConversation *conv, std::shared_ptr<Swift::Message> &msg) { nps->handleMessageReceived(conv, msg); };
-			return nc;
+			Conversation *conv = m_component->getFrontend()->createConversation(conversationManager, legacyName, isMuc);
+			conv->onMessageToSend = [nps = m_nps](Conversation *c, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &msg) { nps->handleMessageReceived(c, type, msg); };
+			return conv;
 		}
 
 		// Creates new LocalBuddy
@@ -166,6 +103,7 @@ class NetworkFactory : public Factory {
 
 	private:
 		NetworkPluginServer *m_nps;
+		Component *m_component;
 };
 
 // Wraps google protobuf payload into WrapperMessage and serialize it to string
@@ -310,7 +248,7 @@ static void handleBuddyPayload(LocalBuddy *buddy, const pbnetwork::Buddy &payloa
 		buddy->setGroups(groups);
 	}
 
-	buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+	buddy->setStatus(payload.status(), payload.statusmessage());
 	buddy->setIconHash(payload.iconhash());
 	buddy->setBlocked(payload.blocked());
 }
@@ -325,14 +263,9 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_startingBackend = false;
 	m_lastLogin = 0;
 	m_firstPong = true;
-	m_xmppParser = new Swift::XMPPParser(this, &m_collection, component->getNetworkFactories()->getXMLParserFactory());
-	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
-	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType, false);
-	m_component->m_factory = new NetworkFactory(this);
+	m_component->m_factory = new NetworkFactory(this, component);
 	m_userManager->onUserCreated = [this](User *user) { handleUserCreated(user); };
 	m_userManager->onUserDestroyed = [this](User *user) { handleUserDestroyed(user); };
-
-	m_component->onRawIQReceived = [this](std::shared_ptr<Swift::IQ> iq) { handleRawIQReceived(iq); };
 
 	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
@@ -348,16 +281,15 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 		m_collectTimer->start();
 	}
 
-	m_component->getFrontend()->onVCardRequired = [this](User *user, const std::string &name, unsigned int id) { handleVCardRequired(user, name, id); };
-	m_component->getFrontend()->onVCardUpdated = [this](User *user, std::shared_ptr<Swift::VCard> vcard) { handleVCardUpdated(user, vcard); };
+	Frontend *frontend = m_component->getFrontend();
+	frontend->onVCardRequired = [this](User *user, const std::string &name, unsigned int id) { handleVCardRequired(user, name, id); };
+	frontend->onVCardUpdated = [this](User *user, const pbnetwork::VCard &vcard) { handleVCardUpdated(user, vcard); };
 
-	m_component->getFrontend()->onBuddyAdded = [this](Buddy *buddy, const Swift::RosterItemPayload &item) { handleBuddyAdded(buddy, item); };
-	m_component->getFrontend()->onBuddyRemoved = [this](Buddy *buddy) { handleBuddyRemoved(buddy); };
-	m_component->getFrontend()->onBuddyUpdated = [this](Buddy *buddy, const Swift::RosterItemPayload &item) { handleBuddyUpdated(buddy, item); };
+	frontend->onBuddyAdded = [this](Buddy *buddy, const pbnetwork::Buddy &item) { handleBuddyAdded(buddy, item); };
+	frontend->onBuddyRemoved = [this](Buddy *buddy) { handleBuddyRemoved(buddy); };
+	frontend->onBuddyUpdated = [this](Buddy *buddy, const pbnetwork::Buddy &item) { handleBuddyUpdated(buddy, item); };
 
-// // 	m_blockResponder = new BlockResponder(component->getIQRouter(), userManager);
-// // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
-// // 	m_blockResponder->start();
+	frontend->onRawXMLReceived = [this](User *user, const std::string &xml) { handleRawXMLReceived(user, xml); };
 
 	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(*(Swift::HostAddress::fromString(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1"))), std::stoi(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
@@ -383,10 +315,6 @@ NetworkPluginServer::~NetworkPluginServer() {
 	m_server->stop();
 	m_server.reset();
 	delete m_component->m_factory;
-	delete m_xmppParser;
-// 	delete m_vcardResponder;
-// 	delete m_rosterResponder;
-// 	delete m_blockResponder;
 }
 
 void NetworkPluginServer::start() {
@@ -416,7 +344,7 @@ void NetworkPluginServer::start() {
 						if (WEXITSTATUS(status) == ENOENT) {
 							LOG4CXX_ERROR(networkPluginServerLogger, "This usually means the path to backend executable defined in config file as '[service] backend=\"...\"' is wrong or the executable does not exists.");
 						}
-						
+
 					}
 					LOG4CXX_ERROR(networkPluginServerLogger, "Check backend log for more details");
 					continue;
@@ -485,7 +413,7 @@ void NetworkPluginServer::handleSessionFinished(Backend *c) {
 	}
 
 	for (std::list<User *>::const_iterator it = c->users.begin(); it != c->users.end(); it++) {
-		LOG4CXX_ERROR(networkPluginServerLogger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getJID().toString());
+		LOG4CXX_ERROR(networkPluginServerLogger, "Backend " << c << " (ID=" << c->id << ") disconnected (probably crashed) with active user " << (*it)->getUserName());
 		(*it)->setData(NULL);
 		(*it)->handleDisconnected("Internal Server Error, please reconnect.");
 	}
@@ -520,7 +448,7 @@ void NetworkPluginServer::handleConnectedPayload(const std::string &data) {
 	}
 
 	user->setConnected(true);
-	m_component->m_userRegistry->onPasswordValid(payload.user());
+	m_component->getFrontend()->handleLoginResult(payload.user(), true, "");
 }
 
 void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
@@ -530,13 +458,13 @@ void NetworkPluginServer::handleDisconnectedPayload(const std::string &data) {
 		return;
 	}
 
-	m_component->m_userRegistry->onPasswordInvalid(payload.user(), payload.message());
+	m_component->getFrontend()->handleLoginResult(payload.user(), false, payload.message());
 
 	User *user = m_userManager->getUser(payload.user());
 	if (!user) {
 		return;
 	}
-	user->handleDisconnected(payload.message(), (Swift::SpectrumErrorPayload::Error) payload.error());
+	user->handleDisconnected(payload.message(), (pbnetwork::ConnectionError) payload.error());
 }
 
 void NetworkPluginServer::handleVCardPayload(const std::string &data) {
@@ -546,19 +474,17 @@ void NetworkPluginServer::handleVCardPayload(const std::string &data) {
 		// TODO: ERROR
 		return;
 	}
+
+	pbnetwork::VCard vcard(payload);
 	std::string field;
 
-	std::shared_ptr<Swift::VCard> vcard(new Swift::VCard());
-
 	utf8::replace_invalid(payload.fullname().begin(), payload.fullname().end(), std::back_inserter(field), '_');
-	vcard->setFullName(field);
+	vcard.set_fullname(field);
 
 	field.clear();
 
 	utf8::replace_invalid(payload.nickname().begin(), payload.nickname().end(), std::back_inserter(field), '_');
-	vcard->setNickname(field);
-
-	vcard->setPhoto(Swift::createByteArray(payload.photo()));
+	vcard.set_nickname(field);
 
 	m_userManager->sendVCard(payload.id(), vcard);
 }
@@ -574,26 +500,10 @@ void NetworkPluginServer::handleAuthorizationPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	// Create subscribe presence and forward it to XMPP side
-	Swift::Presence::ref response = Swift::Presence::create();
-	response->setTo(user->getJID());
-	std::string name = payload.buddyname();
-
-	if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
-		name = Swift::JID::getEscapedNode(name);
-	}
-	else {
-		if (name.find_last_of("@") != std::string::npos) {
-			name.replace(name.find_last_of("@"), 1, "%");
-		}
-	}
-
-	response->setFrom(Swift::JID(name, m_component->getJID().toString()));
-	response->setType(Swift::Presence::Subscribe);
-	m_component->getFrontend()->sendPresence(response);
+	user->getRosterManager()->doRequestAuthorization(payload.buddyname());
 }
 
-void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift::ChatState::ChatStateType type) {
+void NetworkPluginServer::handleChatStatePayload(const std::string &data, pbnetwork::WrapperMessage_Type type) {
 	pbnetwork::Buddy payload;
 	if (payload.ParseFromString(data) == false) {
 		// TODO: ERROR
@@ -606,16 +516,17 @@ void NetworkPluginServer::handleChatStatePayload(const std::string &data, Swift:
 
 	// We're not creating new Conversation just because of chatstates.
 	// Some networks/clients spams with chatstates a lot and it leads to bigger memory usage.
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+	Conversation *conv = user->getConversationManager()->getConversation(payload.buddyname());
 	if (!conv) {
 		return;
 	}
 
 	// Forward chatstate
-	std::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->addPayload(std::make_shared<Swift::ChatState>(type));
-
-	conv->handleMessage(msg);
+	pbnetwork::ConversationMessage msg;
+	msg.set_username(payload.username());
+	msg.set_buddyname(payload.buddyname());
+	msg.set_message("");
+	conv->handleMessage(type, msg);
 }
 
 void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
@@ -655,7 +566,7 @@ void NetworkPluginServer::handleBuddyChangedPayload(const std::string &data) {
 
 		buddy->setBlocked(payload.blocked());
 		user->getRosterManager()->setBuddy(buddy);
-		buddy->setStatus(Swift::StatusShow((Swift::StatusShow::Type) payload.status()), payload.statusmessage());
+		buddy->setStatus(payload.status(), payload.statusmessage());
 		buddy->setIconHash(payload.iconhash());
 	}
 }
@@ -685,12 +596,12 @@ void NetworkPluginServer::handleParticipantChangedPayload(const std::string &dat
 	if (!user)
 		return;
 
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.room());
+	Conversation *conv = user->getConversationManager()->getConversation(payload.room());
 	if (!conv) {
 		return;
 	}
 
-	conv->handleParticipantChanged(payload.nickname(), (Conversation::ParticipantFlag) payload.flag(), payload.status(), payload.statusmessage(), payload.newname(), payload.iconhash(), payload.alias());
+	conv->handleParticipantChanged(payload);
 }
 
 void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
@@ -701,17 +612,26 @@ void NetworkPluginServer::handleRoomChangedPayload(const std::string &data) {
 
 	User *user = m_userManager->getUser(payload.username());
 	if (!user) {
-		LOG4CXX_ERROR(networkPluginServerLogger, "RoomChangePayload for unknown user " << user);
+		LOG4CXX_ERROR(networkPluginServerLogger, "RoomChangePayload for unknown user " << payload.username());
 		return;
 	}
 
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.room());
+	Conversation *conv = user->getConversationManager()->getConversation(payload.room());
 	if (!conv) {
 		LOG4CXX_ERROR(networkPluginServerLogger, "RoomChangePayload for unknown conversation " << payload.room());
 		return;
 	}
 
 	conv->setNickname(payload.nickname());
+}
+
+Conversation *NetworkPluginServer::getOrCreateConversation(User *user, const std::string &name) {
+	Conversation *conv = user->getConversationManager()->getConversation(name);
+	if (!conv) {
+		conv = m_component->getFactory()->createConversation(user->getConversationManager(), name, false);
+		user->getConversationManager()->addConversation(conv);
+	}
+	return conv;
 }
 
 void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool subject) {
@@ -732,7 +652,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	// Message from legacy network triggers network acticity
 	user->updateLastActivity();
 
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+	Conversation *conv = user->getConversationManager()->getConversation(payload.buddyname());
 
 	// We can't create Conversation for payload with nickname, because this means the message is from room,
 	// but this user is not in any room, so it's OK to just reject this message
@@ -742,66 +662,23 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	}
 
 	if (conv && payload.pm()) {
-		conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname() + "/" + payload.nickname());
+		conv = user->getConversationManager()->getConversation(payload.buddyname() + "/" + payload.nickname());
 		if (!conv) {
-			conv = new NetworkConversation(user->getConversationManager(), payload.nickname());
+			conv = m_component->getFactory()->createConversation(user->getConversationManager(), payload.nickname(), false);
 			std::string name = payload.buddyname();
 			conv->setRoom(name);
 			conv->setNickname(payload.buddyname() + "/" + payload.nickname());
 
 			user->getConversationManager()->addConversation(conv);
-			conv->onMessageToSend = [this](NetworkConversation *nc, std::shared_ptr<Swift::Message> &msg) { handleMessageReceived(nc, msg); };
 		}
 	}
 
 	// Create new Conversation if it does not exist
 	if (!conv) {
-		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
-		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend = [this](NetworkConversation *nc, std::shared_ptr<Swift::Message> &msg) { handleMessageReceived(nc, msg); };
+		conv = getOrCreateConversation(user, payload.buddyname());
 	}
 
-
-	// Convert payload to Swift::Message
-	std::shared_ptr<Swift::Message> msg(new Swift::Message());
-	if (subject) {
-		msg->setSubject(payload.message());
-	}
-	else {
-		msg->setBody(payload.message());
-	}
-
-	// Add xhtml-im payload.
-	if (CONFIG_BOOL(m_config, "service.enable_xhtml") && !payload.xhtml().empty()) {
-		msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(payload.xhtml()));
-	}
-
-	for (const pbnetwork::Attachment &att : payload.attachment()) {
-		addOobPayload(msg, att.url(), att.description());
-	}
-
-	// Split the message if configured, or just preprocess
-	LOG4CXX_TRACE(networkPluginServerLogger, "handleConvMessagePayload: wrapping media");
-	typedef std::vector<std::shared_ptr<Swift::Message> > MsgList;
-	MsgList msgs = wrapIncomingMedia(msg);
-
-	// Forward all parts
-	for (MsgList::iterator it=msgs.begin(); it!=msgs.end(); it++) {
-		if (payload.headline()) {
-			(*it)->setType(Swift::Message::Headline);
-		}
-
-		(*it)->addPayload(std::make_shared<Swift::ChatState>(Swift::ChatState::Active));
-
-		if (!payload.timestamp().empty()) {
-			boost::posix_time::ptime timestamp = boost::posix_time::from_iso_string(payload.timestamp());
-			std::shared_ptr<Swift::Delay> delay(std::make_shared<Swift::Delay>());
-			delay->setStamp(timestamp);
-			(*it)->addPayload(delay);
-		}
-
-		conv->handleMessage((*it), payload.nickname(), payload.carbon());
-	}
+	conv->handleMessage(subject ? pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED : pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE, payload);
 
 	m_userManager->messageToXMPPSent();
 }
@@ -823,10 +700,7 @@ void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
 		return;
 	}
 
-	std::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->addPayload(std::make_shared<Swift::DeliveryReceipt>(payload.id()));
-
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
+	Conversation *conv = user->getConversationManager()->getConversation(payload.buddyname());
 
 	// Receipts don't create conversation
 	if (!conv) {
@@ -834,7 +708,7 @@ void NetworkPluginServer::handleConvMessageAckPayload(const std::string &data) {
 	}
 
 	// Forward it
-	conv->handleMessage(msg);
+	conv->handleMessage(pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE_ACK, payload);
 }
 
 void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
@@ -848,19 +722,10 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	if (!user)
 		return;
 
-	std::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->setBody(payload.message());
-	msg->addPayload(std::make_shared<Swift::AttentionPayload>());
-
 	// Attentions trigger new Conversation creation
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(payload.buddyname());
-	if (!conv) {
-		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
-		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend = [this](NetworkConversation *nc, std::shared_ptr<Swift::Message> &msg) { handleMessageReceived(nc, msg); };
-	}
+	Conversation *conv = getOrCreateConversation(user, payload.buddyname());
 
-	conv->handleMessage(msg);
+	conv->handleMessage(pbnetwork::WrapperMessage_Type_TYPE_ATTENTION, payload);
 }
 
 void NetworkPluginServer::handleStatsPayload(Backend *c, const std::string &data) {
@@ -887,7 +752,7 @@ void NetworkPluginServer::connectWaitingUsers() {
 		User *u = m_waitingUsers.front();
 		m_waitingUsers.pop_front();
 
-		LOG4CXX_INFO(networkPluginServerLogger, "Associating " << u->getJID().toString() << " with this backend");
+		LOG4CXX_INFO(networkPluginServerLogger, "Associating " << u->getUserName() << " with this backend");
 
 		// associate backend with user
 		handleUserCreated(u);
@@ -928,12 +793,8 @@ void NetworkPluginServer::handleQueryPayload(Backend *b, const std::string &data
 		return;
 	}
 
-	std::shared_ptr<Swift::Message> msg(new Swift::Message());
-	msg->setBody(payload.config());
-	m_adminInterface->handleQuery(msg);
-
 	pbnetwork::BackendConfig response;
-	response.set_config(msg->getBody().get_value_or(""));
+	response.set_config(m_adminInterface->handleQuery(payload.config()));
 
 	std::string message;
 	response.SerializeToString(&message);
@@ -969,193 +830,23 @@ void NetworkPluginServer::handleRoomListPayload(const std::string &data) {
 
 		user->clearRoomList();
 		for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
-			user->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+			user->addRoomToRoomList(payload.room(i), payload.name(i));
 		}
 	}
 	else {
 		m_component->getFrontend()->clearRoomList();
 		for (int i = 0; i < payload.room_size() && i < payload.name_size(); i++) {
-			m_component->getFrontend()->addRoomToRoomList(Swift::JID::getEscapedNode(payload.room(i)) + "@" + m_component->getJID().toString(), payload.name(i));
+			m_component->getFrontend()->addRoomToRoomList(payload.room(i), payload.name(i));
 		}
-	}
-}
-void NetworkPluginServer::handleElement(std::shared_ptr<Swift::ToplevelElement> element) {
-	std::shared_ptr<Swift::Stanza> stanza = std::dynamic_pointer_cast<Swift::Stanza>(element);
-	if (!stanza) {
-		return;
-	}
-
-	User *user = m_userManager->getUser(stanza->getTo().toBare());
-	if (!user)
-		return;
-
-	Swift::JID originalJID = stanza->getFrom();
-	NetworkConversation *conv = (NetworkConversation *) user->getConversationManager()->getConversation(originalJID.toBare());
-
-	LocalBuddy *buddy = (LocalBuddy *) user->getRosterManager()->getBuddy(stanza->getFrom().toBare());
-	if (buddy) {
-		const Swift::JID &jid = buddy->getJID();
-		if (stanza->getFrom().getResource().empty()) {
-			stanza->setFrom(Swift::JID(jid.getNode(), jid.getDomain()));
-		}
-		else {
-			stanza->setFrom(Swift::JID(jid.getNode(), jid.getDomain(), stanza->getFrom().getResource()));
-		}
-	}
-	else {
-		std::string name = stanza->getFrom().toBare();
-		if (conv && conv->isMUC()) {
-			if (name.find_last_of("@") != std::string::npos) {
-				name.replace(name.find_last_of("@"), 1, "%");
-			}
-		}
-		else {
-			if (CONFIG_BOOL_DEFAULTED(m_config, "service.jid_escaping", true)) {
-				name = Swift::JID::getEscapedNode(name);
-			}
-			else {
-				if (name.find_last_of("@") != std::string::npos) {
-					name.replace(name.find_last_of("@"), 1, "%");
-				}
-			}
-		}
-		if (stanza->getFrom().getResource().empty()) {
-			stanza->setFrom(Swift::JID(name, m_component->getJID().toString()));
-		}
-		else {
-			stanza->setFrom(Swift::JID(name, m_component->getJID().toString(), stanza->getFrom().getResource()));
-		}
-	}
-
-	std::shared_ptr<Swift::Message> message = std::dynamic_pointer_cast<Swift::Message>(stanza);
-	if (message) {
-		if (conv) {
-			if (conv->isMUC() || message->getType() == Swift::Message::Groupchat) {
-				conv->handleRawMessage(message);
-				return;
-			}
-
-			// The message goes to the last-replied resource
-			Swift::JID delivered = conv->getDeliveryJID();
-			message->setTo(delivered);
-
-			// In gateway mode the XMPP server copies the message to the other resources itself
-			if (!m_component->inServerMode()) {
-				conv->handleRawMessage(message);
-				return;
-			}
-
-			// The other resources of the user get a XEP-0280 <received> carbon
-			std::shared_ptr<Swift::Message> copy(new Swift::Message(*message));
-			conv->handleRawMessage(message);
-			conv->forwardReceivedCopies(copy, delivered);
-			return;
-		}
-
-		m_component->getFrontend()->sendMessage(message);
-		return;
-	}
-
-	std::shared_ptr<Swift::Presence> presence = std::dynamic_pointer_cast<Swift::Presence>(stanza);
-	if (presence) {
-		if (buddy) {
-			if (!buddy->isAvailable() && presence->getType() != Swift::Presence::Unavailable) {
-				buddy->m_status.setType(Swift::StatusShow::Online);
-			}
-			buddy->handleRawPresence(presence);
-		}
-		else if (conv) {
-			conv->handleRawPresence(presence);
-		}
-		else {
-			m_component->getFrontend()->sendPresence(presence);
-		}
-
-		return;
-	}
-
-	// TODO: Move m_id2resource in User and clean it up
-	std::shared_ptr<Swift::IQ> iq = std::dynamic_pointer_cast<Swift::IQ>(stanza);
-	if (iq) {
-		if (m_id2resource.find(stanza->getTo().toBare().toString() + stanza->getID()) != m_id2resource.end()) {
-			iq->setTo(Swift::JID(iq->getTo().getNode(), iq->getTo().getDomain(), m_id2resource[stanza->getTo().toBare().toString() + stanza->getID()]));
-			m_id2resource.erase(stanza->getTo().toBare().toString() + stanza->getID());
-		}
-		else {
-			Swift::Presence::ref highest = m_component->getPresenceOracle()->getHighestPriorityPresence(user->getJID());
-			if (highest) {
-			    iq->setTo(highest->getFrom());
-			} else {
-			    iq->setTo(user->getJID());
-			}
-		}
-		// In gateway mode the XMPP server rejects a component stanza without a recipient and drops the stream.
-		// In server mode an IQ without 'to' is a valid server-directed IQ, so it is left alone.
-		if (!m_component->inServerMode() && !iq->getTo().isValid()) {
-			LOG4CXX_WARN(networkPluginServerLogger, "Dropping IQ " << iq->getID() << " from backend: no valid recipient");
-			return;
-		}
-		m_component->getFrontend()->sendIQ(iq);
-		return;
 	}
 }
 
 void NetworkPluginServer::handleRawXML(const std::string &xml) {
-	m_xmppParser->parse(xml);
+	m_component->getFrontend()->sendRawXML(xml);
 }
 
-void NetworkPluginServer::handleRawPresenceReceived(std::shared_ptr<Swift::Presence> presence) {
-	if (!CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
-		return;
-	}
-
-	User *user = m_userManager->getUser(presence->getFrom().toBare());
-	if (!user)
-		return;
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-
-	Swift::JID legacyname = Swift::JID(Buddy::JIDToLegacyName(presence->getTo()));
-	if (!presence->getTo().getResource().empty()) {
-		presence->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), presence->getTo().getResource()));
-	}
-	else {
-		presence->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
-	}
-
-	std::string xml = safeByteArrayToString(m_serializer->serializeElement(presence));
-	WRAP(xml, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML);
-	send(c->connection, xml);
-}
-
-void NetworkPluginServer::handleRawIQReceived(std::shared_ptr<Swift::IQ> iq) {
-	User *user = m_userManager->getUser(iq->getFrom().toBare());
-	if (!user)
-		return;
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-
-	if (iq->getType() == Swift::IQ::Get) {
-		m_id2resource[iq->getFrom().toBare().toString() + iq->getID()] = iq->getFrom().getResource();
-	}
-
-	Swift::JID legacyname = Swift::JID(Buddy::JIDToLegacyName(iq->getTo()));
-	if (!iq->getTo().getResource().empty()) {
-		iq->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), iq->getTo().getResource()));
-	}
-	else {
-		iq->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
-	}
-
-	std::string xml = safeByteArrayToString(m_serializer->serializeElement(iq));
-	WRAP(xml, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML);
-	send(c->connection, xml);
+void NetworkPluginServer::handleRawXMLReceived(User *user, const std::string &xml) {
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML, xml);
 }
 
 void NetworkPluginServer::handleDataRead(Backend *c, std::shared_ptr<Swift::SafeByteArray> data) {
@@ -1228,13 +919,9 @@ void NetworkPluginServer::handleDataRead(Backend *c, std::shared_ptr<Swift::Safe
 				handleVCardPayload(wrapper.payload());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING:
-				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Composing);
-				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED:
-				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Paused);
-				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING:
-				handleChatStatePayload(wrapper.payload(), Swift::ChatState::Active);
+				handleChatStatePayload(wrapper.payload(), wrapper.type());
 				break;
 			case pbnetwork::WrapperMessage_Type_TYPE_AUTH_REQUEST:
 				handleAuthorizationPayload(wrapper.payload());
@@ -1278,6 +965,17 @@ void NetworkPluginServer::send(std::shared_ptr<Swift::Connection> &c, const std:
 	c->write(Swift::createSafeByteArray(std::string(header, 4) + data));
 }
 
+void NetworkPluginServer::sendToUserBackend(User *user, pbnetwork::WrapperMessage_Type type, const std::string &payload) {
+	Backend *c = (Backend *) user->getData();
+	if (!c) {
+		return;
+	}
+
+	std::string message = payload;
+	WRAP(message, type);
+	send(c->connection, message);
+}
+
 void NetworkPluginServer::pingTimeout() {
 	LOG4CXX_INFO(networkPluginServerLogger, "Sending PING to backends");
 	// TODO: move to separate timer, those 2 loops could be expensive
@@ -1304,7 +1002,7 @@ void NetworkPluginServer::pingTimeout() {
 
 		// Move inactive users to long-running backend.
 		for (User *u : usersToMove) {
-			LOG4CXX_INFO(networkPluginServerLogger, "Moving user " << u->getJID().toString() << " to long-running backend");
+			LOG4CXX_INFO(networkPluginServerLogger, "Moving user " << u->getUserName() << " to long-running backend");
 			if (!moveToLongRunBackend(u))
 				break;
 		}
@@ -1384,13 +1082,13 @@ bool NetworkPluginServer::moveToLongRunBackend(User *user) {
 	// Check if user has already some backend
 	Backend *old = (Backend *) user->getData();
 	if (!old) {
-		LOG4CXX_INFO(networkPluginServerLogger, "User " << user->getJID().toString() << " does not have old backend. Not moving.");
+		LOG4CXX_INFO(networkPluginServerLogger, "User " << user->getUserName() << " does not have old backend. Not moving.");
 		return true;
 	}
 
 	// if he's already on long run, do nothing
 	if (old->longRun) {
-		LOG4CXX_INFO(networkPluginServerLogger, "User " << user->getJID().toString() << " is already on long-running backend. Not moving.");
+		LOG4CXX_INFO(networkPluginServerLogger, "User " << user->getUserName() << " is already on long-running backend. Not moving.");
 		return true;
 	}
 
@@ -1398,7 +1096,7 @@ bool NetworkPluginServer::moveToLongRunBackend(User *user) {
 	// for its connection
 	Backend *backend = getFreeClient(false, true);
 	if (!backend) {
-		LOG4CXX_INFO(networkPluginServerLogger, "No free long-running backend for user " << user->getJID().toString() << ". Will try later");
+		LOG4CXX_INFO(networkPluginServerLogger, "No free long-running backend for user " << user->getUserName() << ". Will try later");
 		return false;
 	}
 
@@ -1424,7 +1122,7 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 
 	// Add user to queue if there's no free backend to handle him so far.
 	if (!c) {
-		LOG4CXX_INFO(networkPluginServerLogger, "There is no backend to handle user " << user->getJID().toString() << ". Adding him to queue.");
+		LOG4CXX_INFO(networkPluginServerLogger, "There is no backend to handle user " << user->getUserName() << ". Adding him to queue.");
 		m_waitingUsers.push_back(user);
 		return;
 	}
@@ -1435,9 +1133,8 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 
 	// Don't forget to disconnect these in handleUserDestroyed!!!
 	user->onReadyToConnect = [this, user]() { handleUserReadyToConnect(user); };
-	user->onPresenceChanged = [this, user](Swift::Presence::ref presence) { handleUserPresenceChanged(user, presence); };
-	user->onRawPresenceReceived = [this](Swift::Presence::ref presence) { handleRawPresenceReceived(presence); };
-	user->onRoomJoined = [this, user](const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password) { handleRoomJoined(user, who, room, nickname, password); };
+	user->onStatusChanged = [this, user](const pbnetwork::Status &status) { handleUserStatusChanged(user, status); };
+	user->onRoomJoined = [this, user](const std::string &room, const std::string &nickname, const std::string &password) { handleRoomJoined(user, room, nickname, password); };
 	user->onRoomLeft = [this, user](const std::string &room) { handleRoomLeft(user, room); };
 
 	user->getRosterManager()->onBuddyAdded = [this, user](Buddy *buddy) { handleUserBuddyAdded(user, buddy); };
@@ -1448,7 +1145,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 	UserInfo userInfo = user->getUserInfo();
 
 	pbnetwork::Login login;
-	login.set_user(user->getJID().toBare());
+	login.set_user(user->getUserName());
 	login.set_legacyname(userInfo.uin);
 	login.set_password(userInfo.password);
 	pbnetwork::Login_UserSettings *settings = login.mutable_settings();
@@ -1480,7 +1177,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 			}
 
 			pbnetwork::Buddy *buddy = buddies.add_buddy();
-			buddy->set_username(user->getJID().toBare());
+			buddy->set_username(user->getUserName());
 			buddy->set_buddyname(b->getName());
 			buddy->set_alias(b->getAlias());
 			buddy->set_iconhash(b->getIconHash());
@@ -1498,45 +1195,22 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 	}
 }
 
-void NetworkPluginServer::handleUserPresenceChanged(User *user, Swift::Presence::ref presence) {
-	if (presence->getShow() == Swift::StatusShow::None)
+void NetworkPluginServer::handleUserStatusChanged(User *user, const pbnetwork::Status &s) {
+	if (s.status() == pbnetwork::STATUS_NONE)
 		return;
 
-	handleRawPresenceReceived(presence);
-
-	UserInfo userInfo = user->getUserInfo();
-
-	pbnetwork::Status status;
-	status.set_username(user->getJID().toBare());
-
-	bool isInvisible = presence->getPayload<Swift::InvisiblePayload>() != NULL;
-	if (isInvisible) {
-		LOG4CXX_INFO(networkPluginServerLogger, "This presence is invisible");
-		status.set_status((pbnetwork::STATUS_INVISIBLE));
-	}
-	else {
-		status.set_status((pbnetwork::StatusType) presence->getShow());
-	}
-
-	status.set_statusmessage(presence->getStatus());
+	pbnetwork::Status status(s);
+	status.set_username(user->getUserName());
 
 	std::string message;
 	status.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_STATUS_CHANGED);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_STATUS_CHANGED, message);
 }
 
-void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, const std::string &r, const std::string &nickname, const std::string &password) {
-	UserInfo userInfo = user->getUserInfo();
-
+void NetworkPluginServer::handleRoomJoined(User *user, const std::string &r, const std::string &nickname, const std::string &password) {
 	pbnetwork::Room room;
-	room.set_username(user->getJID().toBare());
+	room.set_username(user->getUserName());
 	room.set_nickname(nickname);
 	room.set_room(r);
 	room.set_password(password);
@@ -1544,20 +1218,12 @@ void NetworkPluginServer::handleRoomJoined(User *user, const Swift::JID &who, co
 	std::string message;
 	room.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM);
- 
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_JOIN_ROOM, message);
 }
 
 void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
-	UserInfo userInfo = user->getUserInfo();
-
 	pbnetwork::Room room;
-	room.set_username(user->getJID().toBare());
+	room.set_username(user->getUserName());
 	room.set_nickname("");
 	room.set_room(r);
 	room.set_password("");
@@ -1565,13 +1231,7 @@ void NetworkPluginServer::handleRoomLeft(User *user, const std::string &r) {
 	std::string message;
 	room.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM);
- 
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_LEAVE_ROOM, message);
 }
 
 void NetworkPluginServer::handleUserDestroyed(User *user) {
@@ -1579,8 +1239,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	UserInfo userInfo = user->getUserInfo();
 
 	user->onReadyToConnect = nullptr;
-	user->onPresenceChanged = nullptr;
-	user->onRawPresenceReceived = nullptr;
+	user->onStatusChanged = nullptr;
 	user->onRoomJoined = nullptr;
 	user->onRoomLeft = nullptr;
 
@@ -1588,14 +1247,14 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	user->getRosterManager()->onBuddyRemoved = nullptr;
 
 	pbnetwork::Logout logout;
-	logout.set_user(user->getJID().toBare());
+	logout.set_user(user->getUserName());
 	logout.set_legacyname(userInfo.uin);
 
 	std::string message;
 	logout.SerializeToString(&message);
 
 	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_LOGOUT);
- 
+
 	Backend *c = (Backend *) user->getData();
 	if (!c) {
 		return;
@@ -1603,7 +1262,7 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	send(c->connection, message);
 	c->users.remove(user);
 
-	// If backend should handle only one user, it must not accept another one before 
+	// If backend should handle only one user, it must not accept another one before
 	// we kill it, so set up willDie to true
 	if (c->users.size() == 0 && CONFIG_INT(m_config, "service.users_per_backend") == 1) {
 		LOG4CXX_INFO(networkPluginServerLogger, "Backend " << c->id << " will die, because the last user disconnected");
@@ -1611,124 +1270,60 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	}
 }
 
-void NetworkPluginServer::handleMessageReceived(NetworkConversation *conv, std::shared_ptr<Swift::Message> &msg) {
-	conv->getConversationManager()->getUser()->updateLastActivity();
+void NetworkPluginServer::handleMessageReceived(Conversation *conv, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &msg) {
+	User *user = conv->getConversationManager()->getUser();
+	user->updateLastActivity();
 
-	if (CONFIG_BOOL_DEFAULTED(m_config, "features.rawxml", false)) {
-		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
-		if (!c) {
-			return;
-		}
-		Swift::JID legacyname = Swift::JID(Buddy::JIDToLegacyName(msg->getTo()));
-		if (!msg->getTo().getResource().empty()) {
-			msg->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain(), msg->getTo().getResource()));
-		}
-		else {
-			msg->setTo(Swift::JID(legacyname.getNode(), legacyname.getDomain()));
-		}
-		std::string xml = safeByteArrayToString(m_serializer->serializeElement(msg));
-		WRAP(xml, pbnetwork::WrapperMessage_Type_TYPE_RAW_XML);
-		send(c->connection, xml);
-		return;
-	}
-
-	std::shared_ptr<Swift::ChatState> statePayload = msg->getPayload<Swift::ChatState>();
-	if (statePayload) {
-		pbnetwork::WrapperMessage_Type type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED;
-		switch (statePayload->getChatState()) {
-			case Swift::ChatState::Active:
-				type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING;
-				break;
-			case Swift::ChatState::Composing:
-				type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING;
-				break;
-			case Swift::ChatState::Paused:
-				type = pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED;
-				break;
-			default:
-				break;
-		}
-		if (type != pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED) {
+	switch (type) {
+		case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPING:
+		case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_TYPED:
+		case pbnetwork::WrapperMessage_Type_TYPE_BUDDY_STOPPED_TYPING: {
 			pbnetwork::Buddy buddy;
-			buddy.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
+			buddy.set_username(user->getUserName());
 			buddy.set_buddyname(conv->getLegacyName());
 
 			std::string message;
 			buddy.SerializeToString(&message);
 
-			WRAP(message, type);
+			sendToUserBackend(user, type, message);
+			break;
+		}
+		case pbnetwork::WrapperMessage_Type_TYPE_ATTENTION:
+		case pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED: {
+			pbnetwork::ConversationMessage m;
+			m.set_username(user->getUserName());
+			m.set_buddyname(conv->getLegacyName());
+			m.set_message(msg.message());
 
-			Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
-			if (!c) {
-				return;
+			std::string message;
+			m.SerializeToString(&message);
+
+			sendToUserBackend(user, type, message);
+			break;
+		}
+		case pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE: {
+			// Send normal message
+			if (msg.message().empty() && msg.xhtml().empty()) {
+				break;
 			}
-			send(c->connection, message);
+
+			pbnetwork::ConversationMessage m;
+			m.set_username(user->getUserName());
+			m.set_buddyname(conv->getLegacyName());
+			m.set_message(msg.message());
+			m.set_xhtml(msg.xhtml());
+			if (!msg.id().empty()) {
+				m.set_id(msg.id());
+			}
+
+			std::string message;
+			m.SerializeToString(&message);
+
+			sendToUserBackend(user, type, message);
+			break;
 		}
-	}
-
-	std::shared_ptr<Swift::AttentionPayload> attentionPayload = msg->getPayload<Swift::AttentionPayload>();
-	if (attentionPayload) {
-		pbnetwork::ConversationMessage m;
-		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
-		m.set_buddyname(conv->getLegacyName());
-		m.set_message(msg->getBody().get_value_or(""));
-
-		std::string message;
-		m.SerializeToString(&message);
-
-		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ATTENTION);
-
-		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
-		send(c->connection, message);
-		return;
-	}
-
-	if (!msg->getSubject().empty()) {
-		pbnetwork::ConversationMessage m;
-		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
-		m.set_buddyname(conv->getLegacyName());
-		m.set_message(msg->getSubject());
-
-		std::string message;
-		m.SerializeToString(&message);
-
-		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_ROOM_SUBJECT_CHANGED);
-
-		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
-		send(c->connection, message);
-		return;
-	}
-	
-
-	std::string xhtml;
-	std::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload = msg->getPayload<Swift::XHTMLIMPayload>();
-	if (xhtmlPayload) {
-		xhtml = xhtmlPayload->getBody();
-	}
-
-	// Send normal message
-	std::string body = msg->getBody().get_value_or("");
-	if (!body.empty() || !xhtml.empty()) {
-		pbnetwork::ConversationMessage m;
-		m.set_username(conv->getConversationManager()->getUser()->getJID().toBare());
-		m.set_buddyname(conv->getLegacyName());
-		m.set_message(body);
-		m.set_xhtml(xhtml);
-		std::shared_ptr<Swift::DeliveryReceiptRequest> receiptPayload = msg->getPayload<Swift::DeliveryReceiptRequest>();
-		if (receiptPayload && !msg->getID().empty()) {
-			m.set_id(msg->getID());
-		}
-
-		std::string message;
-		m.SerializeToString(&message);
-
-		WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE);
-
-		Backend *c = (Backend *) conv->getConversationManager()->getUser()->getData();
-		if (!c) {
-			return;
-		}
-		send(c->connection, message);
+		default:
+			break;
 	}
 }
 
@@ -1736,7 +1331,7 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	User *user = b->getRosterManager()->getUser();
 
 	pbnetwork::Buddy buddy;
-	buddy.set_username(user->getJID().toBare());
+	buddy.set_username(user->getUserName());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	for (const std::string &g : b->getGroups()) {
@@ -1747,216 +1342,18 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	std::string message;
 	buddy.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_REMOVED, message);
 }
 
-
-// Trims linebreaks and spaces from XHTML chunk of text
-inline std::string xhtml_trim(std::string &s) {
-	static const std::string t[] = {" ", "\n", "\t", "<br>", "<br/>"};
-	bool match = true;
-	while (match) {
-		match = false;
-		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
-			if (Util::iStartsWith(s, t[i])) {
-				s.erase(0, t[i].size());
-				match = true;
-			}
-	}
-	match = true;
-	while (match) {
-		match = false;
-		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
-			if (Util::iEndsWith(s, t[i])) {
-				s.erase(s.size() - t[i].size());
-				match = true;
-			}
-	}
-	return s;
-}
-//Same for plaintext
-std::string plaintext_trim(std::string &text) {
-	static std::string t = " \n\t";
-	text.erase(text.find_last_not_of(t) + 1);
-	text.erase(0, text.find_first_not_of(t));
-	return text;
-}
-
-//Duplicates a Swift::Message and replaces its body and XHTML parts
-Swift::Message::ref copySwiftMessage(const Swift::Message* msg, const std::string& xhtml, const std::string& body) {
-    Swift::Message::ref this_msg(new Swift::Message());
-    //Copy all payloads by reference, except for body and XHTML
-    std::vector<Swift::Payload::ref> payloads = msg->getPayloads();
-    for (size_t i=0; i<payloads.size(); i++) {
-        if(!dynamic_cast<Swift::Body*>(payloads[i].get()) && !dynamic_cast<Swift::XHTMLIMPayload*>(payloads[i].get()))
-            this_msg->addPayload(payloads[i]);
-    }
-    //Add new body and XHTML tags
-    this_msg->setBody(body);
-    this_msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(xhtml));
-    LOG4CXX_TRACE(networkPluginServerLogger, "Adding partial message: '" << xhtml << "', '" << body << "'");
-    return this_msg;
-}
-
-/*
-Process all media links (<img>, ..) in the message XHTML and apply required wrappers
-and mitigations to ensure broader support for inplace display.
-Returns a list of messages to deliver.
-
-Copies any additional payloads into each of messages by reference (modify one == modify all).
-
-Possible modes:
-*/
-enum OobMode {
-	OobWrapAll	= 1,	//1. Wrap all media as OOB tags. (Standards-compliant)
-	OobExclusive	= 2,	//2. Make the first media the only content of the message.
-	OobSplit	= 3,	//3. Split into multiple text-only/media-only messages.
-};
-
-void NetworkPluginServer::addOobPayload(Swift::Message::ref message, const std::string &url, const std::string &description) {
-	const std::string OOB_NAMESPACE = "jabber:x:oob";
-	std::shared_ptr<Swift::XMLElement> oobElement = std::make_shared<Swift::XMLElement>("x", OOB_NAMESPACE);
-	std::shared_ptr<Swift::XMLElement> urlNode = std::make_shared<Swift::XMLElement>("url", "", url);
-	oobElement->addNode(urlNode);
-	if (!description.empty()) {
-		std::shared_ptr<Swift::XMLElement> descNode = std::make_shared<Swift::XMLElement>("desc");
-		oobElement->addNode(descNode);
-	}
-	std::shared_ptr<Swift::RawXMLPayload> oobPayload = std::make_shared<Swift::RawXMLPayload>(oobElement->serialize());
-	message->addPayload(oobPayload);
-}
-
-std::vector<std::shared_ptr<Swift::Message> >
-NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
-    std::vector<std::shared_ptr<Swift::Message> > result;
-
-    std::shared_ptr<Swift::XHTMLIMPayload> xhtmlPayload =
-        msg->getPayload<Swift::XHTMLIMPayload>();
-    if (!xhtmlPayload) { //XHTML not available or disabled
-        result.push_back(msg);
-        return result;
-    }
-
-    const std::string& xhtml = xhtmlPayload->getBody();
-    if (xhtml.find("<img") == std::string::npos) { //Clearly no media
-        result.push_back(msg);
-        return result;
-    }
-    const std::string body = msg->getBody().get();
-
-    OobMode oobMode = OobWrapAll;
-    if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_split", false))
-        //Split the message into parts so that each part only contains one media instance or one chunk of text
-        oobMode = OobSplit;
-    else if (CONFIG_BOOL_DEFAULTED(m_config, "service.oob_replace_body", false))
-        // Some clients require plaintext to contain only the OOB URL to be displayed
-        // This is not required by XEP and we lose parts of plaintext (e.g. captions).
-        oobMode = OobExclusive;
-
-    LOG4CXX_TRACE(networkPluginServerLogger, "wrapIncomingMedia: mode=" << (int) oobMode);
-    LOG4CXX_TRACE(networkPluginServerLogger, "xhtml = " << xhtml);
-    LOG4CXX_TRACE(networkPluginServerLogger, "body = " << body);
-
-
-    //Find all <img...> entries
-    //Handles: spaces, unrelated tags
-    //Doesn't handle: unquoted src, escaped "'>s, quotes in quotes ("quote: 'text' end quote")
-    static std::regex image_expr("<img\\s+[^>]*src\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>");
-
-    int matchCount = 0;
-    std::string firstUrl;
-
-    std::string::const_iterator xhtml_pos = xhtml.begin();
-    std::string::size_type body_pos = 0;
-
-    std::smatch match;
-    while(std::regex_search(xhtml_pos, xhtml.end(), match, image_expr)) {
-        matchCount++;
-        const std::string& image_tag = match[0];
-        const std::string& image_url = match[1];
-        if (firstUrl.empty())
-            firstUrl = image_url;
-        LOG4CXX_TRACE(networkPluginServerLogger, "match: image_tag=" << image_tag << ", image_url="<< image_url);
-
-        //Process the part before the match
-        if ((oobMode == OobSplit) && (match[0].first != xhtml_pos)) {
-            std::string xhtml_prev(xhtml_pos, match[0].first);
-            xhtml_trim(xhtml_prev);
-
-            //Find the same URI in the plaintext body
-            std::string body_prev = "";
-            std::string::size_type body_match = body.find(image_url, body_pos);
-            if (body_match != std::string::npos) {
-                body_prev = body.substr(body_pos, body_match-body_pos);
-                plaintext_trim(body_prev);
-                body_pos = body_match + image_url.size();
-            }
-
-            //If anything of that is not empty, post as a message
-            if (!xhtml_prev.empty() || !body_prev.empty())
-                result.push_back(copySwiftMessage(msg.get(), xhtml_prev, body_prev));
-        }
-
-        //Now the match
-        std::shared_ptr<Swift::Message> this_msg;
-        if (oobMode == OobSplit) {
-            this_msg = copySwiftMessage(msg.get(), image_tag, image_url);
-            result.push_back(this_msg);
-        } else {
-            this_msg = msg;
-        }
-
-        addOobPayload(this_msg, image_url, "");
-
-        //In single-OOB mode there's no point to process further media
-        if (oobMode == OobExclusive)
-            break;
-
-        xhtml_pos = match[0].second;
-    }
-
-    //Post the text remainder
-    if ((oobMode == OobSplit) && (xhtml_pos != xhtml.end())) {
-        std::string xhtml_prev(xhtml_pos, xhtml.end());
-        xhtml_trim(xhtml_prev);
-
-        std::string body_prev = body.substr(body_pos, body.size()-body_pos);
-        plaintext_trim(body_prev);
-
-        if (!xhtml_prev.empty() || !body_prev.empty())
-            result.push_back(copySwiftMessage(msg.get(), xhtml_prev, body_prev));
-    }
-
-    LOG4CXX_DEBUG(networkPluginServerLogger, "wrapIncomingMedia: matchCount==" << matchCount);
-
-    if (oobMode != OobSplit)
-        result.push_back(msg); //Push the non-split message only
-
-    if (matchCount==0) {
-        LOG4CXX_WARN(networkPluginServerLogger, "xhtml seems to contain an image, but doesn't match: " + xhtml);
-    } else {
-        // Replace the plaintext.
-        // Normally it's up to the backend to provide us with <body> matching the <xhtml> version.
-        if (oobMode == OobExclusive)
-            msg->setBody(firstUrl);
-    }
-    return result;
-}
-
-void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPayload &item) {
+void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const pbnetwork::Buddy &item) {
 	User *user = b->getRosterManager()->getUser();
 
-	dynamic_cast<LocalBuddy *>(b)->setAlias(item.getName());
-	dynamic_cast<LocalBuddy *>(b)->setGroups(item.getGroups());
+	std::vector<std::string> groups(item.group().begin(), item.group().end());
+	dynamic_cast<LocalBuddy *>(b)->setAlias(item.alias());
+	dynamic_cast<LocalBuddy *>(b)->setGroups(groups);
 
 	pbnetwork::Buddy buddy;
-	buddy.set_username(user->getJID().toBare());
+	buddy.set_username(user->getUserName());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	for (const std::string &g : b->getGroups()) {
@@ -1967,22 +1364,16 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 	std::string message;
 	buddy.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED, message);
 }
 
-void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item) {
+void NetworkPluginServer::handleBuddyAdded(Buddy *buddy, const pbnetwork::Buddy &item) {
 	handleBuddyUpdated(buddy, item);
 }
 
 void NetworkPluginServer::handleUserBuddyAdded(User *user, Buddy *b) {
 	pbnetwork::Buddy buddy;
-	buddy.set_username(user->getJID().toBare());
+	buddy.set_username(user->getUserName());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	for (const std::string &g : b->getGroups()) {
@@ -1993,13 +1384,7 @@ void NetworkPluginServer::handleUserBuddyAdded(User *user, Buddy *b) {
 	std::string message;
 	buddy.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED, message);
 }
 
 void NetworkPluginServer::handleUserBuddyRemoved(User *user, Buddy *b) {
@@ -2010,7 +1395,7 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 	User *user = b->getRosterManager()->getUser();
 
 	pbnetwork::Buddy buddy;
-	buddy.set_username(user->getJID().toBare());
+	buddy.set_username(user->getUserName());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
 	for (const std::string &g : b->getGroups()) {
@@ -2022,57 +1407,34 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 	std::string message;
 	buddy.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_BUDDY_CHANGED, message);
 }
 
 
-void NetworkPluginServer::handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> v) {
-	if (!v) {
-		LOG4CXX_INFO(networkPluginServerLogger, user->getJID().toString() << ": Received empty VCard");
-		return;
-	}
-
+void NetworkPluginServer::handleVCardUpdated(User *user, const pbnetwork::VCard &v) {
 	pbnetwork::VCard vcard;
-	vcard.set_username(user->getJID().toBare());
+	vcard.set_username(user->getUserName());
 	vcard.set_buddyname("");
 	vcard.set_id(0);
-	vcard.set_photo(&v->getPhoto()[0], v->getPhoto().size());
-	vcard.set_nickname(v->getNickname());
+	vcard.set_photo(v.photo());
+	vcard.set_nickname(v.nickname());
 
 	std::string message;
 	vcard.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_VCARD, message);
 }
 
 void NetworkPluginServer::handleVCardRequired(User *user, const std::string &name, unsigned int id) {
 	pbnetwork::VCard vcard;
-	vcard.set_username(user->getJID().toBare());
+	vcard.set_username(user->getUserName());
 	vcard.set_buddyname(name);
 	vcard.set_id(id);
 
 	std::string message;
 	vcard.SerializeToString(&message);
 
-	WRAP(message, pbnetwork::WrapperMessage_Type_TYPE_VCARD);
-
-	Backend *c = (Backend *) user->getData();
-	if (!c) {
-		return;
-	}
-	send(c->connection, message);
+	sendToUserBackend(user, pbnetwork::WrapperMessage_Type_TYPE_VCARD, message);
 }
 
 void NetworkPluginServer::sendPing(Backend *c) {

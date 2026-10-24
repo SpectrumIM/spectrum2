@@ -23,7 +23,6 @@
 #include <string>
 #include <map>
 
-#include "Swiften/Elements/Message.h"
 #include "transport/StorageBackend.h"
 
 namespace Transport {

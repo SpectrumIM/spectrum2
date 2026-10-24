@@ -31,7 +31,6 @@
 #include "transport/MemoryUsage.h"
 #include "transport/Config.h"
 #include "transport/Util.h"
-#include "Swiften/Elements/MUCPayload.h"
 
 #include <memory>
 #include <sstream>
@@ -218,7 +217,7 @@ class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
 					time_t now = time(NULL);
 					for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
 						User *user = *u;
-						lst += "   " + user->getJID().toBare().toString();
+						lst += "   " + user->getUserName();
 						lst += " - non-active for " + toString(now - user->getLastActivity()) + " seconds";
 						lst += "\n";
 					}
@@ -1149,19 +1148,14 @@ void AdminInterface::addCommand(AdminInterfaceCommand *command) {
 	m_commands[command->getName()] = command;
 }
 
-void AdminInterface::handleQuery(Swift::Message::ref message) {
-	std::string msg = message->getBody().get_value_or("");
-	LOG4CXX_INFO(adminInterfaceLogger, "Message from admin received: '" << msg << "'");
-	message->setTo(message->getFrom());
-	message->setFrom(m_component->getJID());
+std::string AdminInterface::handleQuery(const std::string &query) {
+	LOG4CXX_INFO(adminInterfaceLogger, "Message from admin received: '" << query << "'");
 
-	std::string body = msg;
 	std::vector<std::string> args;
-	args = Util::split(body, ' ');
+	args = Util::split(query, ' ');
 
 	if (args.empty()) {
-		message->setBody("Error: Unknown variable or command");
-		return;
+		return "Error: Unknown variable or command";
 	}
 
 	// Check for 'get' and 'set' command.
@@ -1178,15 +1172,13 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 	// We removed the 'get' and 'set' from args, so check we have more
 	// data there.
 	if (args.empty()) {
-		message->setBody("Error: Unknown variable or command");
-		return;
+		return "Error: Unknown variable or command";
 	}
 
 	// Find the right AdminInterfaceCommand
 	std::map<std::string, AdminInterfaceCommand *>::iterator it = m_commands.find(args[0]);
 	if (it == m_commands.end()) {
-		message->setBody("Error: Unknown variable or command");
-		return;
+		return "Error: Unknown variable or command";
 	}
 	AdminInterfaceCommand *command = it->second;
 	args.erase(args.begin());
@@ -1207,8 +1199,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 	if (command->getContext() == AdminInterfaceCommand::UserContext) {
 		if (args.empty()) {
-			message->setBody("Error: No username given");
-			return;
+			return "Error: No username given";
 		}
 
 		if (!m_storageBackend || !m_storageBackend->getUser(args[0], uinfo)) {
@@ -1222,44 +1213,16 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 	// Execute the command
 	switch (action) {
 		case AdminInterfaceCommand::None:
-			message->setBody("Error: Unknown variable or command");
-			break;
+			return "Error: Unknown variable or command";
 		case AdminInterfaceCommand::Get:
-			message->setBody(command->handleGetRequest(uinfo, user, args));
-			break;
+			return command->handleGetRequest(uinfo, user, args);
 		case AdminInterfaceCommand::Set:
-			message->setBody(command->handleSetRequest(uinfo, user, args));
-			break;
+			return command->handleSetRequest(uinfo, user, args);
 		case AdminInterfaceCommand::Execute:
-			message->setBody(command->handleExecuteRequest(uinfo, user, args));
-			break;
+			return command->handleExecuteRequest(uinfo, user, args);
 	}
 
-	return;
-// 	else if (m_component->getFrontend()->handleAdminMessage(message)) {
-// 		LOG4CXX_INFO(adminInterfaceLogger, "Message handled by frontend");
-// 	}
-}
-
-void AdminInterface::handleMessageReceived(Swift::Message::ref message) {
-	if (!message->getTo().getNode().empty())
-		return;
-
-	std::vector<std::string> const &x = CONFIG_VECTOR(m_component->getConfig(),"service.admin_jid");
-	if (std::find(x.begin(), x.end(), message->getFrom().toBare().toString()) == x.end()) {
-	    LOG4CXX_WARN(adminInterfaceLogger, "Message not from admin user, but from " << message->getFrom().toBare().toString());
-	    return;
-
-	}
-
-	// Ignore empty messages
-	if (message->getBody().get_value_or("").empty()) {
-		return;
-	}
-
-	handleQuery(message);
-
-	m_component->getFrontend()->sendMessage(message);
+	return "Error: Unknown variable or command";
 }
 
 }

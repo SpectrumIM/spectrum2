@@ -25,8 +25,8 @@
 #include "transport/UserManager.h"
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/Presence.h"
-#include "Swiften/Disco/EntityCapsProvider.h"
 #include "Swiften/Elements/DiscoInfo.h"
+#include "Swiften/Elements/VCard.h"
 #include "Swiften/Network/Timer.h"
 
 namespace Transport {
@@ -41,14 +41,19 @@ class AdHocManager;
 class SettingsAdHocCommandFactory;
 class RosterResponder;
 class DiscoItemsResponder;
+class XMPPFrontend;
 
+/// Manages online XMPP Users.
+
+/// This class handles presences and creates User classes when new user connects.
+/// It also removes the User class once the last user's resource disconnected.
 class XMPPUserManager : public UserManager {
 	public:
 		XMPPUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
 
 		virtual ~XMPPUserManager();
 
-		virtual void sendVCard(unsigned int id, Swift::VCard::ref vcard);
+		virtual void sendVCard(unsigned int id, const pbnetwork::VCard &vcard);
 
 		UserRegistration *getUserRegistration();
 
@@ -56,7 +61,35 @@ class XMPPUserManager : public UserManager {
 			return m_discoItemsResponder;
 		}
 
+		/// Handles presence addressed to the transport itself (for example to="j2j.domain.tld")
+		/// or to a room (for example to="#chat%irc.freenode.org@irc.domain.tld").
+		void handlePresence(Swift::Presence::ref presence);
+
+		/// Handles every presence the frontend receives.
+		void handleGeneralPresenceReceived(Swift::Presence::ref presence);
+
+		void handleMessageReceived(Swift::Message::ref message);
+
+		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
+
+		/// Connects user manually.
+		/// \param user JID of user.
+		void connectUser(const Swift::JID &user);
+
+		/// Disconnects user manually.
+		/// \param user JID of user.
+		void disconnectUser(const Swift::JID &user);
+
+	protected:
+		void doRemoveUser(User *user);
+
 	private:
+		XMPPFrontend *getFrontend();
+		void handleProbePresence(Swift::Presence::ref presence);
+		void handleErrorPresence(Swift::Presence::ref presence);
+		void handleSubscription(Swift::Presence::ref presence);
+		void handleMUCPresence(Swift::Presence::ref presence);
+		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
 		void handleVCardRequired(User *, const std::string &name, unsigned int id);
 		void handleVCardUpdated(User *, std::shared_ptr<Swift::VCard> vcard);
 
@@ -69,6 +102,7 @@ class XMPPUserManager : public UserManager {
 		SettingsAdHocCommandFactory *m_settings;
 		RosterResponder *m_rosterResponder;
 		DiscoItemsResponder *m_discoItemsResponder;
+		Swift::Timer::ref m_removeTimer;
 };
 
 }

@@ -25,6 +25,8 @@
 #include "SlackRosterManager.h"
 #include "SlackIdManager.h"
 
+#include "SlackUserManager.h"
+
 #include "transport/Transport.h"
 #include "transport/HTTPRequest.h"
 #include "transport/Util.h"
@@ -32,13 +34,14 @@
 #include "transport/Config.h"
 #include "transport/ConversationManager.h"
 #include "transport/Conversation.h"
+#include "transport/RosterManager.h"
+#include "transport/User.h"
+#include "transport/UserManager.h"
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
-
-#include "Swiften/Elements/MUCPayload.h"
 
 #include <map>
 #include <iterator>
@@ -93,14 +96,7 @@ void SlackSession::sendOnlineBuddies() {
 
 		if (m_onlineBuddies[it->first] != onlineBuddies) {
 			m_onlineBuddies[it->first] = onlineBuddies;
-			std::string legacyName = it->first;
-			if (legacyName.find_last_of("@") != std::string::npos) {
-				legacyName.replace(legacyName.find_last_of("@"), 1, "%"); // OK
-			}
-
-
-			std::string to = legacyName + "@" + m_component->getJID().toBare().toString();
-			setPurpose(onlineBuddies, m_jid2channel[to]);
+			setPurpose(onlineBuddies, m_room2channel[it->first]);
 		}
 	}
 	m_onlineBuddiesTimer->start();
@@ -108,7 +104,7 @@ void SlackSession::sendOnlineBuddies() {
 
 void SlackSession::sendMessageToAll(const std::string &msg) {
 	std::vector<std::string> channels;
-	for (std::map<std::string, std::string>::const_iterator it = m_jid2channel.begin(); it != m_jid2channel.end(); it++) {
+	for (std::map<std::string, std::string>::const_iterator it = m_room2channel.begin(); it != m_room2channel.end(); it++) {
 		if (std::find(channels.begin(), channels.end(), it->second) == channels.end()) {
 			channels.push_back(it->second);
 			m_rtm->getAPI()->sendMessage("Spectrum 2", it->second, msg);
@@ -116,30 +112,25 @@ void SlackSession::sendMessageToAll(const std::string &msg) {
 	}
 }
 
-void SlackSession::sendMessage(std::shared_ptr<Swift::Message> message) {
-	if (m_user) {
-		std::map<std::string, Conversation *> convs = m_user->getConversationManager()->getConversations();
-		for (std::map<std::string, Conversation *> ::const_iterator it = convs.begin(); it != convs.end(); it++) {
-			Conversation *conv = it->second;
-			if (!conv) {
-				continue;
-			}
-
-			if (conv->getNickname() == message->getFrom().getResource()) {
-				return;
-			}
+void SlackSession::sendMessage(Conversation *conv, const pbnetwork::ConversationMessage &message) {
+	std::string from;
+	std::string channel;
+	if (conv->isMUC()) {
+		// Our own message coming back from the room.
+		if (message.nickname() == conv->getNickname()) {
+			return;
 		}
+		from = message.nickname();
+		channel = m_room2channel[conv->getLegacyName()];
 	}
 
-	std::string from = message->getFrom().getResource();
-	std::string channel = m_jid2channel[message->getFrom().toBare().toString()];
 	if (channel.empty()) {
 		if (m_slackChannel.empty()) {
-			LOG4CXX_ERROR(slackSessionLogger, m_uinfo.jid << ": Received message for unknown channel from " << message->getFrom().toBare().toString());
+			LOG4CXX_ERROR(slackSessionLogger, m_uinfo.jid << ": Received message for unknown channel from " << conv->getLegacyName());
 			return;
 		}
 		channel = m_slackChannel;
-		from = Buddy::JIDToLegacyName(message->getFrom(), m_user);
+		from = conv->getLegacyName();
 
 		Buddy *b;
 		if (m_user && (b = m_user->getRosterManager()->getBuddy(from)) != NULL) {
@@ -148,8 +139,34 @@ void SlackSession::sendMessage(std::shared_ptr<Swift::Message> message) {
 	}
 
 	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << "Sending message to Slack channel " << channel << " from " << from);
-	std::string body = message->getBody().get_value_or("");
-	m_rtm->getAPI()->sendMessage(from, channel, body);
+	m_rtm->getAPI()->sendMessage(from, channel, message.message());
+}
+
+User *SlackSession::loginUser() {
+	if (m_user) {
+		return m_user;
+	}
+
+	UserManager *userManager = static_cast<SlackFrontend *>(m_component->getFrontend())->getUserManager();
+	User *user = userManager->getUser(m_uinfo.jid);
+	if (!user) {
+		UserInfo res = m_uinfo;
+		m_storageBackend->getUser(m_uinfo.jid, res);
+		UserManager::LoginError error;
+		user = userManager->loginUser(m_uinfo.jid, res, error);
+		if (!user) {
+			LOG4CXX_WARN(slackSessionLogger, m_uinfo.jid << ": Login refused");
+			return NULL;
+		}
+	}
+
+	// The Slack user is always online.
+	user->setReadyToConnect();
+	pbnetwork::Status status;
+	status.set_username(m_uinfo.jid);
+	status.set_status(pbnetwork::STATUS_ONLINE);
+	user->onStatusChanged(status);
+	return user;
 }
 
 void SlackSession::setPurpose(const std::string &purpose, const std::string &channel) {
@@ -172,7 +189,7 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 	std::string &legacyServer = args[4];
 	std::string &slackChannel = args[5];
 
-	std::string to = legacyRoom + "%" + legacyServer + "@" + m_component->getJID().toString();
+	std::string room = legacyRoom + "@" + legacyServer;
 // 	if (!CONFIG_BOOL_DEFAULTED(m_component->getConfig(), "registration.needRegistration", true)) {
 // 		m_uinfo.uin = name;
 // 		m_storageBackend->setUser(m_uinfo);
@@ -180,15 +197,13 @@ void SlackSession::handleJoinRoomCreated(const std::string &channelId, std::vect
 
 	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Channel " << args[5] << " is created. Joining the room on legacy network.");
 
-	m_jid2channel[to] = slackChannel;
-	m_channel2jid[slackChannel] = to;
+	m_room2channel[room] = slackChannel;
+	m_channel2room[slackChannel] = room;
 
-	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
-	presence->setTo(Swift::JID(to + "/" + name));
-	presence->setType(Swift::Presence::Available);
-	presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-	m_component->getFrontend()->onPresenceReceived(presence);
+	User *user = loginUser();
+	if (user) {
+		user->joinRoom(room, name, "");
+	}
 
 	m_onlineBuddiesTimer->start();
 }
@@ -207,12 +222,7 @@ void SlackSession::handleSlackChannelCreated(const std::string &channelId) {
 	m_slackChannel = channelId;
 
 	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Main Slack Channel created, connecting the legacy network");
-	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
-	presence->setTo(m_component->getJID());
-	presence->setType(Swift::Presence::Available);
-	presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-	m_component->getFrontend()->onPresenceReceived(presence);
+	loginUser();
 }
 
 void SlackSession::leaveRoom(const std::string &channel_) {
@@ -221,35 +231,37 @@ void SlackSession::leaveRoom(const std::string &channel_) {
 		channel.erase(0, 1);
 	}
 	std::string channelId = m_idManager->getId(channel);
-	std::string to = m_channel2jid[channelId];
-	if (to.empty()) {
+	std::string room = m_channel2room[channelId];
+	if (room.empty()) {
 		LOG4CXX_ERROR(slackSessionLogger, "Spectrum 2 is not configured to transport this Slack channel.");
 		return;
 	}
 
-	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Leaving the legacy network room " << to);
+	LOG4CXX_INFO(slackSessionLogger, m_uinfo.jid << ": Leaving the legacy network room " << room);
 
-	Swift::Presence::ref presence = Swift::Presence::create();
-	presence->setFrom(Swift::JID(m_uinfo.jid + "/default"));
-	presence->setTo(Swift::JID(to + "/" + m_uinfo.uin));
-	presence->setType(Swift::Presence::Unavailable);
-	presence->addPayload(std::shared_ptr<Swift::Payload>(new Swift::MUCPayload()));
-	m_component->getFrontend()->onPresenceReceived(presence);
+	if (m_user) {
+		m_user->leaveRoom(room);
+	}
 }
 
 void SlackSession::handleMessageReceived(const std::string &channel, const std::string &user, const std::string &message, const std::string &ts, bool quiet) {
-	std::string to = m_channel2jid[channel];
+	std::string room = m_channel2room[channel];
 	if (m_idManager->getName(user) == m_idManager->getSelfName()) {
 		return;
 	}
 
-	if (!to.empty()) {
-		std::shared_ptr<Swift::Message> msg(new Swift::Message());
-		msg->setType(Swift::Message::Groupchat);
-		msg->setTo(to);
-		msg->setFrom(Swift::JID(m_uinfo.jid + "/default"));
-		msg->setBody("<" + m_idManager->getName(user) + "> " + message);
-		m_component->getFrontend()->onMessageReceived(msg);
+	if (!m_user) {
+		return;
+	}
+
+	pbnetwork::ConversationMessage msg;
+	msg.set_username(m_uinfo.jid);
+	msg.set_message("<" + m_idManager->getName(user) + "> " + message);
+
+	if (!room.empty()) {
+		m_user->getUserManager()->messageToBackendSent();
+		msg.set_buddyname(room);
+		m_user->getConversationManager()->handleMessageReceived(pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE, msg);
 	}
 	else {
 		// When changing the purpose, we do not want to spam to room with the info,
@@ -260,11 +272,11 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 		// TODO: MAP `user` to JID somehow and send the message to proper JID.
 		// So far send to all online contacts
 
-		if (!m_user || !m_user->getRosterManager()) {
+		if (!m_user->getRosterManager()) {
 			return;
 		}
 
-		Swift::StatusShow s;
+		pbnetwork::StatusType s;
 		std::string statusMessage;
 		const RosterManager::BuddiesMap &roster = m_user->getRosterManager()->getBuddies();
 		for (RosterManager::BuddiesMap::const_iterator bt = roster.begin(); bt != roster.end(); bt++) {
@@ -277,15 +289,13 @@ void SlackSession::handleMessageReceived(const std::string &channel, const std::
 				continue;
 			}
 
-			if (s.getType() == Swift::StatusShow::None) {
+			if (s == pbnetwork::STATUS_NONE) {
 				continue;
 			}
 
-			std::shared_ptr<Swift::Message> msg(new Swift::Message());
-			msg->setTo(b->getJID());
-			msg->setFrom(Swift::JID(m_uinfo.jid + "/default"));
-			msg->setBody("<" + m_idManager->getName(user) + "> " + message);
-			m_component->getFrontend()->onMessageReceived(msg);
+			m_user->getUserManager()->messageToBackendSent();
+			msg.set_buddyname(b->getName());
+			m_user->getConversationManager()->handleMessageReceived(pbnetwork::WrapperMessage_Type_TYPE_CONV_MESSAGE, msg);
 		}
 	}
 }

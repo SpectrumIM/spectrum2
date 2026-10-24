@@ -19,6 +19,7 @@
  */
 
 #include "blockresponder.h"
+#include "jidutils.h"
 
 #include <iostream>
 #include <boost/bind.hpp>
@@ -50,9 +51,9 @@ bool BlockResponder::handleSetRequest(const Swift::JID& from, const Swift::JID& 
 		return true;
 	}
 
-	Buddy *buddy = Buddy::JIDToBuddy(to, user);
+	Buddy *buddy = JIDUtils::JIDToBuddy(to, user);
 	if (!buddy) {
-		LOG4CXX_WARN(blockResponderLogger, from.toBare().toString() << ": Buddy " << Buddy::JIDToLegacyName(to, user) << " does not exist");
+		LOG4CXX_WARN(blockResponderLogger, from.toBare().toString() << ": Buddy " << JIDUtils::JIDToLegacyName(to, user) << " does not exist");
 		return true;
 	}
 

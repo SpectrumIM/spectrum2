@@ -23,8 +23,6 @@
 #include <string>
 #include <map>
 
-#include "Swiften/Elements/Message.h"
-
 namespace Transport {
 
 class Component;
@@ -40,11 +38,11 @@ class AdminInterface {
 
 		~AdminInterface();
 
-		void handleQuery(Swift::Message::ref message);
+		/// Runs an admin command ("get|set <command> [user] [args]").
+		/// \return the reply for the admin
+		std::string handleQuery(const std::string &query);
 
 		void addCommand(AdminInterfaceCommand *command);
-
-		void handleMessageReceived(Swift::Message::ref message);
 
 	private:
 

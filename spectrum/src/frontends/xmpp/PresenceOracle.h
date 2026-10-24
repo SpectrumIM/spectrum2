@@ -32,8 +32,8 @@
 
 namespace Transport {
 
-/// Tracks the presences of connected users. Component feeds it every
-/// presence the frontend receives.
+/// Tracks the presences of connected users. XMPPFrontend feeds it every
+/// presence it receives.
 class PresenceOracle {
 	public:
 		PresenceOracle();

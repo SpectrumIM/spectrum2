@@ -25,47 +25,35 @@
 #include <time.h>
 
 #include <functional>
+#include <list>
+#include <string>
 
 #include "transport/StorageBackend.h"
-#include "Swiften/Elements/SpectrumErrorPayload.h"
-#include "Swiften/JID/JID.h"
-#include "Swiften/Elements/Presence.h"
-#include "Swiften/Elements/Message.h"
-#include "Swiften/Elements/DiscoInfo.h"
-#include "Swiften/Network/Timer.h"
-#include "Swiften/Network/Connection.h"
+#include "transport/protocol.pb.h"
 
 namespace Transport {
 
 class Component;
 class RosterManager;
+class Conversation;
 class ConversationManager;
 class UserManager;
-class PresenceOracle;
 
-/// Represents online XMPP user.
+/// Represents online user.
 class User {
 	public:
 		/// Creates new User class.
-		/// \param jid XMPP JID associated with this user
+		/// \param user user name (the bare JID for XMPP) associated with this user
 		/// \param userInfo UserInfo struct with informations needed to connect
 		/// this user to legacy network
 		/// \param component Component associated with this user
-		User(const Swift::JID &jid, UserInfo &userInfo, Component * component, UserManager *userManager);
+		User(const std::string &user, UserInfo &userInfo, Component * component, UserManager *userManager);
 
 		/// Destroyes User.
 		virtual ~User();
 
-		/// Returns JID of XMPP user who is currently connected using this User class.
-		/// \return full JID
-		const Swift::JID &getJID();
-
-		/// Returns full JID which supports particular feature or invalid JID.
-		/// \param feature disco#info feature.
-		/// \return full JID which supports particular feature or invalid JID.
-		std::vector<Swift::JID> getJIDWithFeature(const std::string &feature);
-
-// 		Swift::DiscoInfo::ref getCaps(const Swift::JID &jid) const;
+		/// Returns name of the user (the bare JID for XMPP).
+		const std::string &getUserName() { return m_userName; }
 
 		/// Returns UserInfo struct with informations needed to connect the legacy network.
 		/// \return UserInfo struct
@@ -78,22 +66,17 @@ class User {
 		Component *getComponent() { return m_component; }
 
 		UserManager *getUserManager() { return m_userManager; }
-		
-		virtual void disconnectUser(const std::string &error, Swift::SpectrumErrorPayload::Error e) = 0;
+
+		virtual void disconnectUser(const std::string &error, pbnetwork::ConnectionError e) = 0;
 		virtual void clearRoomList() {}
-		virtual void addRoomToRoomList(const std::string &handle, const std::string &name) {}
+		virtual void addRoomToRoomList(const std::string &room, const std::string &name) {}
 		virtual void requestVCard() {}
+
+		/// Sends the user's current state (transport contact status) to the user's clients.
+		virtual void sendCurrentPresence() {}
 
 		void setData(void *data) { m_data = data; }
 		void *getData() { return m_data; }
-
-		/// Handles presence from XMPP JID associated with this user.
-		/// \param presence Swift::Presence.
-		void handlePresence(Swift::Presence::ref presence, bool forceJoin = false);
-
-		void handleSubscription(Swift::Presence::ref presence);
-
-		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
 
 		time_t &getLastActivity() {
 			return m_lastActivity;
@@ -107,24 +90,21 @@ class User {
 		/// \return language
 		const char *getLang() { return "en"; }
 
-		void handleDisconnected(const std::string &error, Swift::SpectrumErrorPayload::Error e = Swift::SpectrumErrorPayload::CONNECTION_ERROR_OTHER_ERROR);
+		void handleDisconnected(const std::string &error, pbnetwork::ConnectionError e = pbnetwork::CONNECTION_ERROR_OTHER_ERROR);
 
 		bool isReadyToConnect() {
 			return m_readyForConnect;
 		}
 
-		void setConnected(bool connected);
+		/// Marks the user as ready to be connected to the legacy network (once).
+		void setReadyToConnect();
 
-		void sendCurrentPresence();
+		void setConnected(bool connected);
 
 		void setIgnoreDisconnect(bool ignoreDisconnect);
 
 		bool isConnected() {
 			return m_connected;
-		}
-
-		int getResourceCount() {
-			return m_resources;
 		}
 
 		void addUserSetting(const std::string &key, const std::string &value) {
@@ -149,36 +129,43 @@ class User {
 			m_storageBackend = storageBackend;
 		}
 
-		void leaveRoom(const std::string &room);
+		StorageBackend *getStorageBackend() {
+			return m_storageBackend;
+		}
+
+		/// Joins the room on the legacy network. Postponed until the user is connected.
+		/// \return the room's Conversation, or NULL if the join is postponed.
+		Conversation *joinRoom(const std::string &room, const std::string &nickname, const std::string &password);
+
+		virtual void leaveRoom(const std::string &room);
 
 		Event<void ()> onReadyToConnect;
-		Event<void (Swift::Presence::ref presence)> onPresenceChanged;
-		Event<void (Swift::Presence::ref presence)> onRawPresenceReceived;
-		Event<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		/// The user's own status changed (STATUS_NONE: all the user's clients are gone).
+		Event<void (const pbnetwork::Status &status)> onStatusChanged;
+		Event<void (const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
 		Event<void (const std::string &room)> onRoomLeft;
 		Event<void ()> onDisconnected;
 
-	private:
-		void onConnectingTimeout();
+	protected:
+		/// Called whenever the user (re)joins a room on the legacy network, right before onRoomJoined.
+		virtual void handleRoomJoined(Conversation *conv) {}
 
-		Swift::JID m_jid;
+	private:
+		Conversation *doJoinRoom(const pbnetwork::Room &room);
+
+		std::string m_userName;
 		Component *m_component;
 		RosterManager *m_rosterManager;
 		UserManager *m_userManager;
 		ConversationManager *m_conversationManager;
-		PresenceOracle *m_presenceOracle;
 		UserInfo m_userInfo;
 		void *m_data;
 		bool m_connected;
 		bool m_readyForConnect;
 		bool m_ignoreDisconnect;
-		Swift::Timer::ref m_reconnectTimer;
-		std::shared_ptr<Swift::Connection> connection;
 		time_t m_lastActivity;
-		std::map<Swift::JID, Swift::DiscoInfo::ref> m_legacyCaps;
-		int m_resources;
 		int m_reconnectCounter;
-		std::list<Swift::Presence::ref> m_joinedRooms;
+		std::list<pbnetwork::Room> m_joinedRooms;
 		bool m_cacheMessages;
 		int m_reconnectLimit;
 		StorageBackend *m_storageBackend;

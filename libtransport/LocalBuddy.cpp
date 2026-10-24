@@ -27,21 +27,21 @@
 namespace Transport {
 
 LocalBuddy::LocalBuddy(RosterManager *rosterManager, long id, const std::string &name, const std::string &alias, const std::vector<std::string> &groups, BuddyFlag flags) : Buddy(rosterManager, id, flags) {
-	m_status = Swift::StatusShow::None;
+	m_status = pbnetwork::STATUS_NONE;
 	m_alias = alias;
 	m_name = name;
 	m_groups = groups;
-	try {
-		generateJID();
-	} catch (...) {
-	}
 }
 
 LocalBuddy::~LocalBuddy() {
 }
 
-void LocalBuddy::setStatus(const Swift::StatusShow &status, const std::string &statusMessage) {
-	bool changed = ((m_status.getType() != status.getType()) || (m_statusMessage != statusMessage));
+bool LocalBuddy::isValid() {
+	return getRosterManager()->isValidBuddyName(m_name, getFlags());
+}
+
+void LocalBuddy::setStatus(pbnetwork::StatusType status, const std::string &statusMessage) {
+	bool changed = ((m_status != status) || (m_statusMessage != statusMessage));
 	if (changed) {
 		m_status = status;
 		m_statusMessage = statusMessage;
@@ -62,15 +62,11 @@ bool LocalBuddy::setName(const std::string &name) {
 	if (name == m_name) {
 		return true;
 	}
-	std::string oldName = name;
-	m_name = name;
-	try {
-		generateJID();
-		return m_jid.isValid();
-	} catch (...) {
-		m_name = oldName;
+	if (!getRosterManager()->isValidBuddyName(name, getFlags())) {
 		return false;
 	}
+	m_name = name;
+	return true;
 }
 
 void LocalBuddy::setAlias(const std::string &alias) {
@@ -101,7 +97,7 @@ void LocalBuddy::setGroups(const std::vector<std::string> &groups) {
 	}
 }
 
-bool LocalBuddy::getStatus(Swift::StatusShow &status, std::string &statusMessage) {
+bool LocalBuddy::getStatus(pbnetwork::StatusType &status, std::string &statusMessage) {
 	if (getRosterManager()->getUser()->getComponent()->getFrontend()->isRawXMLEnabled()) {
 		return false;
 	}

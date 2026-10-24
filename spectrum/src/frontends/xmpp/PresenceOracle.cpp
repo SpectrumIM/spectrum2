@@ -18,8 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 
-#include "transport/PresenceOracle.h"
-#include "transport/Frontend.h"
+#include "PresenceOracle.h"
 #include "Swiften/Elements/MUCPayload.h"
 
 

@@ -25,59 +25,60 @@
 #include <string>
 #include <map>
 #include <functional>
-#include "Swiften/Elements/Message.h"
-#include "Swiften/Elements/Presence.h"
-#include "Swiften/JID/JID.h"
-#include "Swiften/Disco/EntityCapsProvider.h"
-#include "Swiften/Elements/DiscoInfo.h"
-#include "Swiften/Elements/VCard.h"
-#include "Swiften/Network/Timer.h"
+
+#include "transport/protocol.pb.h"
 
 namespace Transport {
 
 class User;
 class Component;
 class StorageBackend;
-class StorageResponder;
-class RosterResponder;
 class UserRegistration;
 class UserRegistry;
+struct UserInfo;
 
-/// Manages online XMPP Users.
+/// Manages online Users.
 
-/// This class handles presences and creates User classes when new user connects.
-/// It also removes the User class once the last user's resource disconnected.
+/// The frontend's subclass logs users in (loginUser) when they connect and
+/// removes them (removeUser) when they go away.
 
 /// Basic user creation process:
 /**
 	\msc
-	Component,UserManager,User,StorageBackend,Slot;
-	---  [ label = "Available presence received"];
-	Component->UserManager [label="handlePresence(...)", URL="\ref UserManager::handlePresence()"];
-	UserManager->StorageBackend [label="getUser(...)", URL="\ref StorageBackend::getUser()"];
+	Frontend,UserManager,StorageBackend,User,Slot;
+	---  [ label = "User connects"];
+	Frontend->StorageBackend [label="getUser(...)", URL="\ref StorageBackend::getUser()"];
+	Frontend->UserManager [label="loginUser(...)", URL="\ref UserManager::loginUser()"];
 	UserManager->User [label="User::User(...)", URL="\ref User"];
 	UserManager->Slot [label="onUserCreated(...)", URL="\ref UserManager::onUserCreated()"];
-	UserManager->User [label="handlePresence(...)", URL="\ref User::handlePresence()"];
 	\endmsc
 */
-class UserManager /*: public Swift::EntityCapsProvider*/ {
+class UserManager {
 	public:
+		/// Why loginUser refused the login.
+		typedef enum {
+			LoginOK,
+			LoginNotVIP,
+			LoginTransportDisabled,
+		} LoginError;
+
 		/// Creates new UserManager.
-		/// \param component Component which's presence will be handled
+		/// \param component Component
 		/// \param storageBackend Storage backend used to fetch UserInfos
 		UserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL);
 
 		/// Destroys UserManager.
 		virtual ~UserManager();
 
-		virtual void sendVCard(unsigned int id, Swift::VCard::ref vcard) = 0;
+		/// Answers the vcard request with this id (see Frontend::onVCardRequired).
+		virtual void sendVCard(unsigned int id, const pbnetwork::VCard &vcard) = 0;
 
 		virtual UserRegistration *getUserRegistration() = 0;
 
-		/// Returns user according to his bare JID.
-		/// \param barejid bare JID of user
+		/// Returns user according to his name (bare JID for XMPP).
+		/// \param user name of user
 		/// \return User class associated with this user
-		User *getUser(const std::string &barejid);
+		User *getUser(const std::string &user);
 
 		/// Returns map with all connected users.
 		/// \return All connected users.
@@ -89,14 +90,26 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 		/// \return number of online users
 		int getUserCount();
 
+		/// Stores res as a new registration of the user (auto-registration).
+		/// \param res UserInfo to store; reloaded from the storage to get the user ID.
+		/// \return true if the user is registered now.
+		bool autoRegisterUser(UserInfo &res);
+
+		/// Logs in a registered user: checks service.vip_only and the user's
+		/// enable_transport setting, creates the User and emits onUserCreated.
+		/// \param user name of user
+		/// \param res UserInfo of the registered user
+		/// \param error why the login was refused
+		/// \return the User, or NULL if the login was refused or the user was disconnected
+		/// in onUserCreated.
+		User *loginUser(const std::string &user, UserInfo &res, LoginError &error);
+
 		/// Removes user. This function disconnects user and safely removes
 		/// User class. This does *not* remove user from StorageBackend.
 		/// \param user User class to remove
 		void removeUser(User *user, bool onUserBehalf = true);
 
 		void removeAllUsers(bool onUserBehalf = true);
-
-// 		Swift::DiscoInfo::ref getCaps(const Swift::JID&) const;
 
 		/// Called when new User class is created.
 		/// \param user newly created User class
@@ -108,8 +121,8 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 
 		/// Returns true if user is connected.
 		/// \return True if user is connected.
-		bool isUserConnected(const std::string &barejid) const {
-			return m_users.find(barejid) != m_users.end();
+		bool isUserConnected(const std::string &user) const {
+			return m_users.find(user) != m_users.end();
 		}
 
 		/// Returns pointer to UserRegistry.
@@ -122,44 +135,31 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 			return m_component;
 		}
 
-		/// Connects user manually.
-		/// \param user JID of user.
-		void connectUser(const Swift::JID &user);
-
-		/// Disconnects user manually.
-		/// \param user JID of user.
-		void disconnectUser(const Swift::JID &user);
+		StorageBackend *getStorageBackend() {
+			return m_storageBackend;
+		}
 
 		void messageToXMPPSent() { m_sentToXMPP++; }
 		void messageToBackendSent() { m_sentToBackend++; }
 
 		unsigned long getMessagesToXMPP() { return m_sentToXMPP; }
 		unsigned long getMessagesToBackend() { return m_sentToBackend; }
-		
+
+	protected:
+		/// Called by removeUser after the user is taken out of the user list, before
+		/// onUserDestroyed and its deletion.
+		virtual void doRemoveUser(User *user) {}
 
 	private:
-		void handlePresence(Swift::Presence::ref presence);
-		void handleMessageReceived(Swift::Message::ref message);
-		void handleGeneralPresenceReceived(Swift::Presence::ref presence);
-		void handleProbePresence(Swift::Presence::ref presence);
-		void handleErrorPresence(Swift::Presence::ref presence);
-		void handleSubscription(Swift::Presence::ref presence);
-		void handleMUCPresence(Swift::Presence::ref presence);
-		void handleRemoveTimeout(const std::string jid, User *user, bool reconnect);
-		void handleDiscoInfo(const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info);
 		void addUser(User *user);
 
-		long m_onlineBuddies;
 		User *m_cachedUser;
 		std::map<std::string, User *> m_users;
 		Component *m_component;
 		StorageBackend *m_storageBackend;
-		StorageResponder *m_storageResponder;
 		UserRegistry *m_userRegistry;
-		Swift::Timer::ref m_removeTimer;
 		unsigned long m_sentToXMPP;
 		unsigned long m_sentToBackend;
-		friend class RosterResponder;
 };
 
 }

@@ -26,8 +26,6 @@
 #include "transport/User.h"
 #include "transport/Logging.h"
 
-using namespace Swift;
-
 namespace Transport {
 
 DEFINE_LOGGER(userRegistrationLogger, "UserRegistration");

@@ -21,22 +21,11 @@
 #pragma once
 
 #include <time.h>
+#include <list>
 #include <vector>
-#include "Swiften/Disco/EntityCapsManager.h"
 #include "Swiften/Network/BoostConnectionServer.h"
 #include "Swiften/Network/Connection.h"
-#include "Swiften/Elements/ChatState.h"
-#include "Swiften/Elements/RosterItemPayload.h"
-#include "Swiften/Elements/VCard.h"
-#include "Swiften/Elements/Message.h"
-#include "Swiften/Elements/Presence.h"
-#include "Swiften/Elements/IQ.h"
 #include "Swiften/Network/Timer.h"
-#include "Swiften/Parser/PayloadParsers/FullPayloadParserFactoryCollection.h"
-#include "Swiften/Serializer/PayloadSerializers/FullPayloadSerializerCollection.h"
-#include "Swiften/Parser/XMPPParser.h"
-#include "Swiften/Parser/XMPPParserClient.h"
-#include "Swiften/Serializer/XMPPSerializer.h"
 #include "transport/protocol.pb.h"
 
 #define NETWORK_PLUGIN_API_VERSION (1)
@@ -49,14 +38,10 @@ class Component;
 class Buddy;
 class LocalBuddy;
 class Config;
-class NetworkConversation;
-class VCardResponder;
-class RosterResponder;
-class BlockResponder;
-class DummyReadBytestream;
+class Conversation;
 class AdminInterface;
 
-class NetworkPluginServer : Swift::XMPPParserClient {
+class NetworkPluginServer {
 	public:
 		struct Backend {
 			int pongReceived;
@@ -98,7 +83,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 
 		bool moveToLongRunBackend(User *user);
 
-		void handleMessageReceived(NetworkConversation *conv, std::shared_ptr<Swift::Message> &message);
+		void handleMessageReceived(Conversation *conv, pbnetwork::WrapperMessage_Type type, const pbnetwork::ConversationMessage &message);
 
 	public:
 		void handleNewClientConnection(std::shared_ptr<Swift::Connection> c);
@@ -115,7 +100,7 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleParticipantChangedPayload(const std::string &payload);
 		void handleRoomChangedPayload(const std::string &payload);
 		void handleVCardPayload(const std::string &payload);
-		void handleChatStatePayload(const std::string &payload, Swift::ChatState::ChatStateType type);
+		void handleChatStatePayload(const std::string &payload, pbnetwork::WrapperMessage_Type type);
 		void handleAuthorizationPayload(const std::string &payload);
 		void handleAttentionPayload(const std::string &payload);
 		void handleStatsPayload(Backend *c, const std::string &payload);
@@ -125,29 +110,29 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		void handleRawXML(const std::string &xml);
 
 		void handleUserCreated(User *user);
-		void handleRoomJoined(User *user, const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password);
+		void handleRoomJoined(User *user, const std::string &room, const std::string &nickname, const std::string &password);
 		void handleRoomLeft(User *user, const std::string &room);
 		void handleUserReadyToConnect(User *user);
-		void handleUserPresenceChanged(User *user, Swift::Presence::ref presence);
+		void handleUserStatusChanged(User *user, const pbnetwork::Status &status);
 		void handleUserDestroyed(User *user);
 
-		void handleBuddyUpdated(Buddy *buddy, const Swift::RosterItemPayload &item);
+		void handleBuddyUpdated(Buddy *buddy, const pbnetwork::Buddy &item);
 		void handleBuddyRemoved(Buddy *buddy);
-		void handleBuddyAdded(Buddy *buddy, const Swift::RosterItemPayload &item);
+		void handleBuddyAdded(Buddy *buddy, const pbnetwork::Buddy &item);
 		void handleUserBuddyAdded(User *user, Buddy *buddy);
 		void handleUserBuddyRemoved(User *user, Buddy *buddy);
 
 		void handleBlockToggled(Buddy *buddy);
 
-		void handleVCardUpdated(User *user, std::shared_ptr<Swift::VCard> vcard);
+		void handleVCardUpdated(User *user, const pbnetwork::VCard &vcard);
 		void handleVCardRequired(User *user, const std::string &name, unsigned int id);
 
 		void handlePIDTerminated(unsigned long pid);
 
-		std::vector<std::shared_ptr<Swift::Message> > wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg);
-
 	private:
 		void send(std::shared_ptr<Swift::Connection> &, const std::string &data);
+		/// Sends the wrapped payload to the backend of user, if the user has one.
+		void sendToUserBackend(User *user, pbnetwork::WrapperMessage_Type type, const std::string &payload);
 
 		void pingTimeout();
 		void sendPing(Backend *c);
@@ -155,18 +140,11 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		Backend *getFreeClient(bool acceptUsers = true, bool longRun = false, bool check = false);
 		void connectWaitingUsers();
 		void loginDelayFinished();
-		void handleRawIQReceived(std::shared_ptr<Swift::IQ> iq);
-		void handleRawPresenceReceived(std::shared_ptr<Swift::Presence> presence);
-
-		void handleStreamStart(const Swift::ProtocolHeader&) {}
-		void handleElement(std::shared_ptr<Swift::ToplevelElement> element);
-		void handleStreamEnd() {}
-		void addOobPayload(Swift::Message::ref message, const std::string &url, const std::string &description);
+		void handleRawXMLReceived(User *user, const std::string &xml);
+		/// Returns the user's conversation with name, creating it when needed.
+		Conversation *getOrCreateConversation(User *user, const std::string &name);
 
 		UserManager *m_userManager;
-		VCardResponder *m_vcardResponder;
-		RosterResponder *m_rosterResponder;
-		BlockResponder *m_blockResponder;
 		Config *m_config;
 		std::shared_ptr<Swift::ConnectionServer> m_server;
 		std::list<Backend *>  m_clients;
@@ -181,11 +159,6 @@ class NetworkPluginServer : Swift::XMPPParserClient {
 		AdminInterface *m_adminInterface;
 		bool m_startingBackend;
 		time_t m_lastLogin;
-		Swift::XMPPParser *m_xmppParser;
-		Swift::FullPayloadParserFactoryCollection m_collection;
-		Swift::XMPPSerializer *m_serializer;
-		Swift::FullPayloadSerializerCollection m_collection2;
-		std::map <std::string, std::string> m_id2resource;
 		bool m_firstPong;
 };
 

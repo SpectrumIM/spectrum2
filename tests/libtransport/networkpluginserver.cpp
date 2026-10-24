@@ -196,7 +196,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 			User *user = userManager->getUser("user@localhost");
 			clk.start();
-			user->getRosterManager()->sendUnavailablePresences("user@localhost");
+			static_cast<XMPPRosterManager *>(user->getRosterManager())->sendUnavailablePresences("user@localhost");
 			clk.end();
 			std::cerr << " " << clk.elapsedTime() << " s";
 		}
@@ -280,7 +280,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			CPPUNIT_ASSERT_EQUAL(std::string("buddy1\\40domain.tld@localhost/res2"), dynamic_cast<Swift::Presence *>(getStanza(received[1]))->getFrom().toString());
 
 			received.clear();
-			user->getRosterManager()->sendUnavailablePresences("user@localhost");
+			static_cast<XMPPRosterManager *>(user->getRosterManager())->sendUnavailablePresences("user@localhost");
 
 			CPPUNIT_ASSERT_EQUAL(3, (int) received.size());
 			CPPUNIT_ASSERT(dynamic_cast<Swift::Presence *>(getStanza(received[0])));
@@ -365,6 +365,12 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 
 		// Media message testing
 
+		std::vector<Swift::Message::ref> wrapIncomingMedia(Swift::Message::ref msg) {
+			User *user = userManager->getUser("user@localhost");
+			XMPPConversation conv(user->getConversationManager(), "buddy");
+			return conv.wrapIncomingMedia(msg);
+		}
+
 		void wrapIncomingMediaNormal() {
 			//Normal wrapping converts all <img> tags to OOB attachments
 			this->cfg->setValue("service.oob_replace_body", false);
@@ -374,7 +380,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			msg->setBody(OOB_TEST_BODY);
 			msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
 
-			std::vector<Swift::Message::ref> parts = serv->wrapIncomingMedia(msg);
+			std::vector<Swift::Message::ref> parts = wrapIncomingMedia(msg);
 			CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(parts.size()));
 
 			//The contents of the body/xhtml should stay the same
@@ -400,7 +406,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			msg->setBody(OOB_TEST_BODY);
 			msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
 
-			std::vector<Swift::Message::ref> parts = serv->wrapIncomingMedia(msg);
+			std::vector<Swift::Message::ref> parts = wrapIncomingMedia(msg);
 			CPPUNIT_ASSERT_EQUAL(1, static_cast<int>(parts.size()));
 
 			//The body should be set to URI1, the xhtml should stay the same
@@ -425,7 +431,7 @@ class NetworkPluginServerTest : public CPPUNIT_NS :: TestFixture, public BasicTe
 			msg->setBody(OOB_TEST_BODY);
 			msg->addPayload(std::make_shared<Swift::XHTMLIMPayload>(OOB_TEST_XHTML));
 
-			std::vector<Swift::Message::ref> parts = serv->wrapIncomingMedia(msg);
+			std::vector<Swift::Message::ref> parts = wrapIncomingMedia(msg);
 			CPPUNIT_ASSERT_EQUAL(5, static_cast<int>(parts.size()));
 			//for (int i=0; i< parts.size(); i++) {
 			//	LOG4CXX_DEBUG(logger, "part " << i << ": body = " << parts[i]->getBody().get());
