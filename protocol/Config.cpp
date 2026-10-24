@@ -19,7 +19,9 @@
  */
 
 #include "transport/Config.h"
+#include <algorithm>
 #include <fstream>
+#include <list>
 
 #ifdef _WIN32
 #include <direct.h>
