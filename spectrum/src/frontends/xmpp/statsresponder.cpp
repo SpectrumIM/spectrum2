@@ -88,7 +88,7 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 		unsigned long contactsOnline = 0;
 		unsigned long contactsTotal = 0;
 
-		Swift::StatusShow s;
+		pbnetwork::StatusType s;
 		std::string statusMessage;
 		for (std::map<std::string, User *>::const_iterator it = m_userManager->getUsers().begin(); it != m_userManager->getUsers().end(); it++) {
 			if (!(*it).second) {
@@ -102,7 +102,7 @@ bool StatsResponder::handleGetRequest(const Swift::JID& from, const Swift::JID& 
 				}
 				if (!(*bt).second->getStatus(s, statusMessage))
 					continue;
-				if (s.getType() != Swift::StatusShow::None) {
+				if (s != pbnetwork::STATUS_NONE) {
 					contactsOnline++;
 				}
 			}
