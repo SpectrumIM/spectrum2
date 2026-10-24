@@ -54,11 +54,11 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			photo = "";
 
 			setMeUp();
-			userManager->onUserCreated.connect(boost::bind(&UserTest::handleUserCreated, this, _1));
+			userManager->onUserCreated = [this](User *user) { handleUserCreated(user); };
 			connectUser();
 			received.clear();
 
-			frontend->onVCardUpdated.connect(boost::bind(&UserTest::handleVCardUpdated, this, _1, _2));
+			frontend->onVCardUpdated = [this](User *user, std::shared_ptr<Swift::VCard> vcard) { handleVCardUpdated(user, vcard); };
 		}
 
 		void tearDown (void) {
@@ -75,10 +75,10 @@ class UserTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 	}
 
 	void handleUserCreated(User *user) {
-		user->onReadyToConnect.connect(boost::bind(&UserTest::handleUserReadyToConnect, this, user));
-		user->onPresenceChanged.connect(boost::bind(&UserTest::handleUserPresenceChanged, this, user, _1));
-		user->onRoomJoined.connect(boost::bind(&UserTest::handleRoomJoined, this, user, _1, _2, _3, _4));
-		user->onRoomLeft.connect(boost::bind(&UserTest::handleRoomLeft, this, user, _1));
+		user->onReadyToConnect = [this, user]() { handleUserReadyToConnect(user); };
+		user->onPresenceChanged = [this, user](Swift::Presence::ref presence) { handleUserPresenceChanged(user, presence); };
+		user->onRoomJoined = [this, user](const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password) { handleRoomJoined(user, who, room, nickname, password); };
+		user->onRoomLeft = [this, user](const std::string &room) { handleRoomLeft(user, room); };
 	}
 
 	void handleUserReadyToConnect(User *user) {

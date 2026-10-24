@@ -23,16 +23,9 @@
 #include "transport/Util.h"
 #include "transport/HTTPRequest.h"
 #include "transport/Logging.h"
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <iterator>
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <boost/numeric/conversion/cast.hpp>
-
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 
 namespace Transport {
 
@@ -64,8 +57,7 @@ std::string OAuth2::generateAuthURL() {
 		url += "&redirect_uri=" + Util::urlencode(m_redirectURL);
 	}
 
-	boost::uuids::uuid uuid = boost::uuids::random_generator()();
-	m_state = boost::lexical_cast<std::string>(uuid);
+	m_state = Util::generateUUID();
 	url += "&state=" + Util::urlencode(m_state);
 
 	return url;

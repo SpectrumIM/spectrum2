@@ -19,6 +19,7 @@
  */
 
 #include "XMPPFrontend.h"
+#include <boost/foreach.hpp>
 #include "XMPPRosterManager.h"
 #include "XMPPUser.h"
 #include "XMPPUserManager.h"
@@ -106,7 +107,11 @@ void XMPPFrontend::init(Component *transport, Swift::EventLoop *loop, Swift::Net
 	m_userManager = NULL;
 	m_jid = Swift::JID(CONFIG_STRING(m_config, "service.jid"));
 
-	m_config->onBackendConfigUpdated.connect(boost::bind(&XMPPFrontend::handleBackendConfigChanged, this));
+	auto prevBackendConfig = m_config->onBackendConfigUpdated;
+	m_config->onBackendConfigUpdated = [prevBackendConfig, this]() {
+		prevBackendConfig();
+		handleBackendConfigChanged();
+	};
 
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<StorageParser>("private", "jabber:iq:private"));
 	m_parserFactories.push_back(new Swift::GenericPayloadParserFactory<Swift::AttentionParser>("attention", "urn:xmpp:attention:0"));

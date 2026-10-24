@@ -169,7 +169,7 @@ class UserManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 		connectSecondResource();
 
 		User *user = userManager->getUser("user@localhost");
-		user->onPresenceChanged.connect(boost::bind(&UserManagerTest::handleUserPresenceChanged, this, user, _1));
+		user->onPresenceChanged = [this, user](Swift::Presence::ref presence) { handleUserPresenceChanged(user, presence); };
 
 		// we should get presences
 		CPPUNIT_ASSERT_EQUAL(4, (int) received2.size());

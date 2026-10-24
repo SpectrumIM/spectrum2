@@ -19,6 +19,7 @@
  */
 
 #include "transport/UserManager.h"
+#include "transport/AdminInterface.h"
 #include "transport/User.h"
 #include "transport/Transport.h"
 #include "transport/StorageBackend.h"
@@ -54,13 +55,19 @@ UserManager::UserManager(Component *component, UserRegistry *userRegistry, Stora
 	m_storageBackend = storageBackend;
 	m_userRegistry = userRegistry;
 
-	component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
-	component->getFrontend()->onCapabilitiesReceived.connect(bind(&UserManager::handleDiscoInfo, this, _1, _2));
-	m_component->getFrontend()->onMessageReceived.connect(bind(&UserManager::handleMessageReceived, this, _1));
-	m_component->getFrontend()->onPresenceReceived.connect(bind(&UserManager::handleGeneralPresenceReceived, this, _1));
+	component->onUserPresenceReceived = [this](Swift::Presence::ref presence) { handlePresence(presence); };
+	component->getFrontend()->onCapabilitiesReceived = [this](const Swift::JID &jid, std::shared_ptr<Swift::DiscoInfo> info) { handleDiscoInfo(jid, info); };
+	// Message order: UserManager first, then the admin interface (if any).
+	m_component->getFrontend()->onMessageReceived = [this](Swift::Message::ref message) {
+		handleMessageReceived(message);
+		if (m_component->getAdminInterface()) {
+			m_component->getAdminInterface()->handleMessageReceived(message);
+		}
+	};
+	m_component->onGeneralPresenceReceived = [this](Swift::Presence::ref presence) { handleGeneralPresenceReceived(presence); };
 
-	m_userRegistry->onConnectUser.connect(bind(&UserManager::connectUser, this, _1));
-	m_userRegistry->onDisconnectUser.connect(bind(&UserManager::disconnectUser, this, _1));
+	m_userRegistry->onConnectUser = [this](const Swift::JID &user) { connectUser(user); };
+	m_userRegistry->onDisconnectUser = [this](const Swift::JID &user) { disconnectUser(user); };
 
 	m_removeTimer = m_component->getNetworkFactories()->getTimerFactory()->createTimer(1);
 }
@@ -565,8 +572,6 @@ void UserManager::connectUser(const Swift::JID &user) {
 				// Switch the session = accept new one, disconnect old one.
 				// Unavailable presence from old session has to be ignored, otherwise it would disconnect the user from legacy network.
 				m_userRegistry->onPasswordValid(user);
-				m_component->onUserPresenceReceived.disconnect(bind(&UserManager::handlePresence, this, _1));
-				m_component->onUserPresenceReceived.connect(bind(&UserManager::handlePresence, this, _1));
 			}
 		}
 		else {

@@ -20,13 +20,11 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <boost/program_options.hpp>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/assign.hpp>
 #include <boost/bind.hpp>
-#include <boost/signals2.hpp>
+#include <functional>
 
 namespace Transport {
 
@@ -124,10 +122,10 @@ class TRANSPORT_API Config {
 		const std::string &getConfigFile() { return m_file; }
 
 		/// This signal is emitted when config is loaded/reloaded.
-		boost::signals2::signal<void ()> onConfigReloaded;
+		Event<void ()> onConfigReloaded;
 
 		void updateBackendConfig(const std::string &backendConfig);
-		boost::signals2::signal<void ()> onBackendConfigUpdated;
+		Event<void ()> onBackendConfigUpdated;
 
 		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
 	

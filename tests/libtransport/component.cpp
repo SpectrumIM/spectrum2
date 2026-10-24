@@ -26,8 +26,17 @@ class ComponentTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			onCapabilitiesReceived = false;
 
 			setMeUp();
-			component->onUserPresenceReceived.connect(boost::bind(&ComponentTest::handleUserPresenceReceived, this, _1));
-			component->getFrontend()->onCapabilitiesReceived.connect(boost::bind(&ComponentTest::handleUserDiscoInfoReceived, this, _1, _2));
+			// Chain onto the UserManager handler set in setMeUp().
+			auto prevPresence = component->onUserPresenceReceived;
+			component->onUserPresenceReceived = [this, prevPresence](Swift::Presence::ref presence) {
+				prevPresence(presence);
+				handleUserPresenceReceived(presence);
+			};
+			auto prevCaps = component->getFrontend()->onCapabilitiesReceived;
+			component->getFrontend()->onCapabilitiesReceived = [this, prevCaps](const Swift::JID &jid, std::shared_ptr<Swift::DiscoInfo> info) {
+				prevCaps(jid, info);
+				handleUserDiscoInfoReceived(jid, info);
+			};
 		}
 
 		void tearDown (void) {

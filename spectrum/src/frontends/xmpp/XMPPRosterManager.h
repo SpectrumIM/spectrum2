@@ -25,8 +25,6 @@
 #include <string>
 #include <algorithm>
 #include <map>
-#include <boost/pool/pool_alloc.hpp>
-#include <boost/pool/object_pool.hpp>
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Queries/GenericRequest.h"
 #include "Swiften/Roster/SetRosterRequest.h"
@@ -54,7 +52,6 @@ class AddressedRosterRequest : public Swift::GenericRequest<Swift::RosterPayload
 /// Manages roster of one XMPP user.
 class XMPPRosterManager : public RosterManager {
 	public:
-		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<std::string, Buddy *> > > BuddiesMap;
 		/// Creates new XMPPRosterManager.
 		/// \param user User associated with this XMPPRosterManager.
 		/// \param component Transport instance associated with this roster.

@@ -78,7 +78,7 @@ std::string StorageBackend::decryptPassword(std::string &encrypted, const std::s
 
 std::string StorageBackend::serializeGroups(const std::vector<std::string> &groups) {
 	std::string ret;
-	BOOST_FOREACH(const std::string &group, groups) {
+	for (const std::string &group : groups) {
 		ret += group + "\n";
 	}
 	if (!ret.empty()) {
@@ -93,7 +93,7 @@ std::vector<std::string> StorageBackend::deserializeGroups(std::string &groups) 
 		return ret;
 	}
 
-	boost::split(ret, groups, boost::is_any_of("\n"));
+	ret = Util::split(groups, '\n');
 	if (ret.back().empty()) {
 		ret.erase(ret.end() - 1);
 	}

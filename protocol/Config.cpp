@@ -32,7 +32,7 @@
 
 #include "iostream"
 #include "boost/version.hpp"
-#include "boost/algorithm/string.hpp"
+#include "transport/Util.h"
 
 #define BOOST_MAJOR_VERSION BOOST_VERSION / 100000
 #define BOOST_MINOR_VERSION BOOST_VERSION / 100 % 1000
@@ -40,15 +40,6 @@
 using namespace boost::program_options;
 
 namespace Transport {
-static int getRandomPort(const std::string &s) {
-	unsigned long r = 0;
-	BOOST_FOREACH(char c, s) {
-		r += (int) c;
-	}
-	srand(time(NULL) + r);
-	return 30000 + rand() % 10000;
-}
-
 bool Config::load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid) {
 	std::ifstream ifs(configfile.c_str());
 	if (!ifs.is_open())
@@ -160,7 +151,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	bool found_backend_port = false;
 	bool found_database = false;
 	std::string jid = "";
-	BOOST_FOREACH(option &opt, parsed.options) {
+	for (option &opt : parsed.options) {
 		if (opt.string_key == "service.jid") {
 			if (_jid.empty()) {
 				jid = opt.value[0];
@@ -173,7 +164,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 		else if (opt.string_key == "service.backend_port") {
 			found_backend_port = true;
 			if (opt.value[0] == "0") {
-				opt.value[0] = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
+				opt.value[0] = std::to_string(Util::getRandomPort(_jid.empty() ? jid : _jid));
 			}
 		}
 		else if (opt.string_key == "service.working_dir") {
@@ -207,7 +198,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	}
 	if (!found_backend_port) {
 		std::vector<std::string> value;
-		std::string p = boost::lexical_cast<std::string>(getRandomPort(_jid.empty() ? jid : _jid));
+		std::string p = std::to_string(Util::getRandomPort(_jid.empty() ? jid : _jid));
 		value.push_back(p);
 		parsed.options.push_back(boost::program_options::basic_option<char>("service.backend_port", value));
 	}
@@ -218,7 +209,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	}
 
 	std::list<std::string> has_key;
-	BOOST_FOREACH(option &opt, parsed.options) {
+	for (option &opt : parsed.options) {
 		if (opt.unregistered) {
 			if (std::find(has_key.begin(), has_key.end(), opt.string_key) == has_key.end()) {
 				has_key.push_back(opt.string_key);
@@ -246,7 +237,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 			}
 		}
 		else if (opt.value[0].find("$jid") != std::string::npos) {
-			boost::replace_all(opt.value[0], "$jid", jid);
+			Util::replaceAll(opt.value[0], "$jid", jid);
 		}
 	}
 
@@ -254,7 +245,7 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	if (m_argc != 0 && m_argv) {
 		basic_command_line_parser<char> parser = command_line_parser(m_argc, m_argv).options(opts).allow_unregistered();
 		parsed_options parsed = parser.run();
-		BOOST_FOREACH(option &opt, parsed.options) {
+		for (option &opt : parsed.options) {
 			if (opt.unregistered && !opt.value.empty()) {
 				m_unregistered[opt.string_key] = variable_value(opt.value[0], false);
 			}
@@ -265,7 +256,9 @@ bool Config::load(std::istream &ifs, boost::program_options::options_description
 	store(parsed, m_variables);
 	notify(m_variables);
 
-	onConfigReloaded();
+	if (onConfigReloaded) {
+		onConfigReloaded();
+	}
 
 	return true;
 }
@@ -301,13 +294,13 @@ Config::SectionValuesCont Config::getSectionValues(const std::string& sectionNam
 	SectionValuesCont sectionValues;
 
 	std::string sectionSearchString = sectionName + ".";
-	BOOST_FOREACH (const Variables::value_type & varItem, m_variables) {
-		if (boost::istarts_with(varItem.first, sectionSearchString))
+	for (const Variables::value_type &varItem : m_variables) {
+		if (Util::iStartsWith(varItem.first, sectionSearchString))
 			sectionValues[varItem.first] = varItem.second;
 	}
 
-	BOOST_FOREACH (const UnregisteredCont::value_type & varItem, m_unregistered) {
-		if (boost::istarts_with(varItem.first, sectionSearchString))
+	for (const UnregisteredCont::value_type &varItem : m_unregistered) {
+		if (Util::iStartsWith(varItem.first, sectionSearchString))
 			sectionValues[varItem.first] = varItem.second;
 	}
 
@@ -344,7 +337,9 @@ void Config::updateBackendConfig(const std::string &backendConfig) {
 	store(parsed, m_backendConfig);
 	notify(m_backendConfig);
 
-	onBackendConfigUpdated();
+	if (onBackendConfigUpdated) {
+		onBackendConfigUpdated();
+	}
 
 	if (CONFIG_BOOL_DEFAULTED(this, "features.disable_jid_escaping", false)) {
 		Variables::iterator it(m_variables.find("service.jid_escaping"));

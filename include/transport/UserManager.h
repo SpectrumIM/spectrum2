@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <string>
 #include <map>
-#include <boost/signals2.hpp>
+#include <functional>
 #include "Swiften/Elements/Message.h"
 #include "Swiften/Elements/Presence.h"
 #include "Swiften/JID/JID.h"
@@ -98,11 +100,11 @@ class UserManager /*: public Swift::EntityCapsProvider*/ {
 
 		/// Called when new User class is created.
 		/// \param user newly created User class
-		boost::signals2::signal<void (User *user)> onUserCreated;
+		Event<void (User *user)> onUserCreated;
 
 		/// Called when User class is going to be removed
 		/// \param user removed User class
-		boost::signals2::signal<void (User *user)> onUserDestroyed;
+		Event<void (User *user)> onUserDestroyed;
 
 		/// Returns true if user is connected.
 		/// \return True if user is connected.

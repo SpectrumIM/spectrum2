@@ -20,17 +20,11 @@
 
 #pragma once
 
+#include "transport/Event.h"
+#include "transport/protocol.pb.h"
+
 #include <string>
-#include <algorithm>
-#include <boost/signals2.hpp>
-#include <Swiften/EventLoop/EventLoop.h>
-#include <Swiften/Network/NetworkFactories.h>
-#include "Swiften/Elements/RosterPayload.h"
-#include "Swiften/Elements/VCard.h"
-#include "Swiften/Elements/Message.h"
-#include "Swiften/Elements/IQ.h"
-#include "Swiften/Elements/DiscoInfo.h"
-#include "Swiften/Elements/Presence.h"
+#include <vector>
 
 namespace Transport {
 
@@ -46,6 +40,9 @@ class Frontend;
 
 struct UserInfo;
 
+// The core speaks protobuf (protocol.proto) only. Users are identified by a
+// plain string; frontends (XMPP, Slack, protobuf) translate their own
+// addressing to and from it.
 class FrontendPlugin {
 	public:
 		virtual std::string name() const = 0;
@@ -61,29 +58,26 @@ class Frontend {
 
 		virtual ~Frontend() {}
 
-		virtual void init(Component *component, Swift::EventLoop *loop, Swift::NetworkFactories *factories, Config *config, UserRegistry *userRegistry) = 0;
+		virtual void init(Component *component, Config *config, UserRegistry *userRegistry) = 0;
 
 		virtual void connectToServer() = 0;
 
 		virtual void disconnectFromServer() = 0;
 
-		virtual void sendPresence(Swift::Presence::ref presence) = 0;
+		// Status of one of the user's buddies, shown to the user's sessions.
+		virtual void sendBuddyStatus(const std::string &user, const std::string &buddy, const pbnetwork::Status &status) = 0;
 
-		virtual void sendVCard(Swift::VCard::ref vcard, Swift::JID to) = 0;
+		virtual void sendVCard(const std::string &user, const pbnetwork::VCard &vcard) = 0;
 
-		virtual void sendRosterRequest(Swift::RosterPayload::ref, Swift::JID to) = 0;
+		virtual void requestRoster(const std::string &user) = 0;
 
-		virtual void sendMessage(std::shared_ptr<Swift::Message> message) = 0;
-
-		virtual void sendIQ(std::shared_ptr<Swift::IQ>) = 0;
-
-		virtual std::shared_ptr<Swift::DiscoInfo> sendCapabilitiesRequest(Swift::JID to) = 0;
+		virtual void sendMessage(const pbnetwork::ConversationMessage &message) = 0;
 
 		virtual void reconnectUser(const std::string &user) = 0;
 
 		virtual RosterManager *createRosterManager(User *user, Component *component) = 0;
 
-		virtual User *createUser(const Swift::JID &jid, UserInfo &userInfo, Component *component, UserManager *userManager) = 0;
+		virtual User *createUser(const std::string &user, UserInfo &userInfo, Component *component, UserManager *userManager) = 0;
 
 		virtual UserManager *createUserManager(Component *component, UserRegistry *userRegistry, StorageBackend *storageBackend = NULL) = 0;
 
@@ -96,15 +90,15 @@ class Frontend {
 
 		virtual bool isRawXMLEnabled() { return false; }
 
-		boost::signals2::signal<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
-		boost::signals2::signal<void (User *, std::shared_ptr<Swift::VCard> vcard)> onVCardUpdated;
-		boost::signals2::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyUpdated;
-		boost::signals2::signal<void (Buddy *)> onBuddyRemoved;
-		boost::signals2::signal<void (Buddy *, const Swift::RosterItemPayload &item)> onBuddyAdded;
-		boost::signals2::signal<void (Swift::Message::ref message)> onMessageReceived;
-		boost::signals2::signal<void (bool /* isAvailable */)> onAvailableChanged;
-		boost::signals2::signal<void (std::shared_ptr<Swift::Presence>) > onPresenceReceived;
-		boost::signals2::signal<void (const Swift::JID& jid, std::shared_ptr<Swift::DiscoInfo> info)> onCapabilitiesReceived;
+		Event<void (User *, const std::string &name, unsigned int id)> onVCardRequired;
+		Event<void (User *, const pbnetwork::VCard &vcard)> onVCardUpdated;
+		Event<void (Buddy *, const pbnetwork::Buddy &buddy)> onBuddyUpdated;
+		Event<void (Buddy *)> onBuddyRemoved;
+		Event<void (Buddy *, const pbnetwork::Buddy &buddy)> onBuddyAdded;
+		Event<void (const pbnetwork::ConversationMessage &message)> onMessageReceived;
+		Event<void (bool /* isAvailable */)> onAvailableChanged;
+		// A user's own status, as aggregated by the frontend (e.g. XMPP resources).
+		Event<void (const pbnetwork::Status &status)> onUserStatusChanged;
 };
 
 }

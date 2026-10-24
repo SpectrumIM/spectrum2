@@ -20,7 +20,9 @@
 
 #pragma once
 
-#include <boost/signals2.hpp>
+#include "transport/Event.h"
+
+#include <functional>
 
 #include "Swiften/Queries/Responder.h"
 #include "Swiften/Elements/InBandRegistrationPayload.h"
@@ -70,15 +72,15 @@ class UserRegistration {
 
 		/// Called when new user has been registered.
 		/// \param userInfo UserInfo struct with informations about user
-		boost::signals2::signal<void (const UserInfo &userInfo)> onUserRegistered;
+		Event<void (const UserInfo &userInfo)> onUserRegistered;
 
 		/// Called when user has been unregistered.
 		/// \param userInfo UserInfo struct with informations about user
-		boost::signals2::signal<void (const UserInfo &userInfo)> onUserUnregistered;
+		Event<void (const UserInfo &userInfo)> onUserUnregistered;
 
 		/// Called when user's registration has been updated.
 		/// \param userInfo UserInfo struct with informations about user
-		boost::signals2::signal<void (const UserInfo &userInfo)> onUserUpdated;
+		Event<void (const UserInfo &userInfo)> onUserUpdated;
 
 	private:
 		Component *m_component;

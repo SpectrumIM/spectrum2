@@ -1,4 +1,5 @@
 #include "basictest.h"
+#include <boost/foreach.hpp>
 #include "XMPPFrontend.h"
 #include "XMPPUserRegistration.h"
 #include "XMPPUserManager.h"

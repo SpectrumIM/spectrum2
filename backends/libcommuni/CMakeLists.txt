@@ -11,7 +11,7 @@ endif()
 
 add_definitions(-DQT_NO_KEYWORDS)
 add_executable(spectrum2_libcommuni_backend ${SRC})
-target_compile_features(spectrum2_libcommuni_backend PUBLIC cxx_std_11)
+target_compile_features(spectrum2_libcommuni_backend PUBLIC cxx_std_20)
 
 if(NOT WIN32)
 	if(ENABLE_QT6)

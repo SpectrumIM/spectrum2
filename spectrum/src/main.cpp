@@ -19,9 +19,8 @@
 #endif
 #include "Swiften/EventLoop/SimpleEventLoop.h"
 #include "Swiften/Network/BoostNetworkFactories.h"
-#include <boost/thread.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <filesystem>
+#include <functional>
 #ifndef WIN32
 #include "sys/signal.h"
 #include "sys/stat.h"
@@ -143,7 +142,7 @@ static void daemonize(const char *cwd, const char *lock_file) {
 }
 #endif
 
-static void _createDirectories(Transport::Config *config, boost::filesystem::path ph) {
+static void _createDirectories(Transport::Config *config, std::filesystem::path ph) {
 	if (ph.empty() || exists(ph)) {
 		return;
 	}
@@ -152,7 +151,7 @@ static void _createDirectories(Transport::Config *config, boost::filesystem::pat
 	_createDirectories(config, ph.parent_path());
 
 	// Now that parent's path exists, create the directory
-	boost::filesystem::create_directory(ph);
+	std::filesystem::create_directory(ph);
 
 #ifndef WIN32
 	if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
@@ -228,7 +227,7 @@ int mainloop() {
 	std::string plugin_fc = "create_" + frontend_name + "_frontend_plugin";
 
 	dll::shared_library self(dll::program_location());
-	boost::function<std::shared_ptr<FrontendPlugin>()> creator;
+	std::function<std::shared_ptr<FrontendPlugin>()> creator;
 
 	try {
 		creator = self.get_alias<std::shared_ptr<FrontendPlugin>()>(plugin_fc);
@@ -441,7 +440,7 @@ int main(int argc, char **argv)
 
 	// create directories
 	try {
-		_createDirectories(&config, boost::filesystem::path(CONFIG_STRING(&config, "service.working_dir")));
+		_createDirectories(&config, std::filesystem::path(CONFIG_STRING(&config, "service.working_dir")));
 	}
 	catch (...) {
 		std::cerr << "Can't create service.working_dir directory " << CONFIG_STRING(&config, "service.working_dir") << ".\n";
@@ -451,17 +450,17 @@ int main(int argc, char **argv)
 	// create directories
 	try {
 		_createDirectories(&config,
-			boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
+			std::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string()
 		);
 	}
 	catch (...) {
-		std::cerr << "Can't create service.pidfile directory " << boost::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
+		std::cerr << "Can't create service.pidfile directory " << std::filesystem::path(CONFIG_STRING(&config, "service.pidfile")).parent_path().string() << ".\n";
 		return 1;
 	}
 	// create directories
 	try {
 		_createDirectories(&config,
-			boost::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
+			std::filesystem::path(CONFIG_STRING(&config, "service.portfile")).parent_path().string()
 		);
 	}
 	catch (...) {

@@ -1,12 +1,14 @@
 #pragma once 
 
 #include <boost/bind.hpp>
-#include <boost/signals2.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
+#include <functional>
+#include <thread>
+#include <mutex>
+#include <vector>
 #include <queue>
 #include <iostream>
 #include "Swiften/EventLoop/EventLoop.h"
+#include "transport/Event.h"
 
 namespace Transport {
 
@@ -50,14 +52,14 @@ class ThreadPool
 	std::queue<int> freeThreads;
 	
 	std::queue<Thread*> requestQueue;
-	boost::thread **worker;
+	std::vector<std::thread> worker;
 
-	boost::mutex count_lock;
-	boost::mutex pool_lock;
-	boost::mutex criticalregion;
+	std::mutex count_lock;
+	std::mutex pool_lock;
+	std::mutex criticalregion;
 	Swift::EventLoop *loop;
 
-	boost::signals2::signal < void () > onWorkerAvailable;
+	Event<void ()> onWorkerAvailable;
 	
 	public:
 	ThreadPool(Swift::EventLoop *loop, int maxthreads);

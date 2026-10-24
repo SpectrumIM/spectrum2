@@ -22,21 +22,15 @@
 #include "transport/Frontend.h"
 #include "Swiften/Elements/MUCPayload.h"
 
-#include <boost/bind.hpp>
 
 using namespace Swift;
 
 namespace Transport {
 
-PresenceOracle::PresenceOracle(Frontend* frontend) {
-	frontend_ = frontend;
-	frontend_->onPresenceReceived.connect(boost::bind(&PresenceOracle::handleIncomingPresence, this, _1));
-	frontend_->onAvailableChanged.connect(boost::bind(&PresenceOracle::handleStanzaChannelAvailableChanged, this, _1));
+PresenceOracle::PresenceOracle() {
 }
 
 PresenceOracle::~PresenceOracle() {
-	frontend_->onPresenceReceived.disconnect(boost::bind(&PresenceOracle::handleIncomingPresence, this, _1));
-	frontend_->onAvailableChanged.disconnect(boost::bind(&PresenceOracle::handleStanzaChannelAvailableChanged, this, _1));
 }
 
 void PresenceOracle::handleStanzaChannelAvailableChanged(bool available) {
@@ -83,7 +77,9 @@ void PresenceOracle::handleIncomingPresence(Presence::ref presence) {
 			jidMap[passedPresence->getFrom()] = passedPresence;
 		}
 		entries_[bareJID] = jidMap;
-		onPresenceChange(passedPresence);
+		if (onPresenceChange) {
+			onPresenceChange(passedPresence);
+		}
 	}
 }
 

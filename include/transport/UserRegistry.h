@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <string>
 #include <map>
 #include "Swiften/Server/UserRegistry.h"
@@ -96,10 +98,10 @@ class UserRegistry : public Swift::UserRegistry {
 		const std::string getUserPassword(const std::string &barejid);
 
 		/// Emitted when user wants to connect legacy network to validate the password.
-		boost::signals2::signal<void (const Swift::JID &user)> onConnectUser;
+		Event<void (const Swift::JID &user)> onConnectUser;
 
 		/// Emitted when user disconnected XMPP server and therefore should disconnect legacy network.
-		boost::signals2::signal<void (const Swift::JID &user)> onDisconnectUser;
+		Event<void (const Swift::JID &user)> onDisconnectUser;
 
 	private:
 		typedef struct {

@@ -20,12 +20,12 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <string>
 #include <algorithm>
 #include <map>
-#include <boost/pool/pool_alloc.hpp>
-#include <boost/pool/object_pool.hpp>
-#include <boost/signals2.hpp>
+#include <functional>
 // #include "rosterstorage.h"
 #include "Swiften/Elements/RosterPayload.h"
 #include "Swiften/Queries/GenericRequest.h"
@@ -44,7 +44,7 @@ class RosterStorage;
 /// Manages roster of one XMPP user.
 class RosterManager {
 	public:
-		typedef std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > > BuddiesMap;
+		typedef std::map<std::string, Buddy *> BuddiesMap;
 		/// Creates new RosterManager.
 		/// \param user User associated with this RosterManager.
 		/// \param component Transport instance associated with this roster.
@@ -94,15 +94,15 @@ class RosterManager {
 
 		/// Called when new Buddy is added to this roster.
 		/// \param buddy newly added Buddy
-		boost::signals2::signal<void (Buddy *buddy)> onBuddySet;
+		Event<void (Buddy *buddy)> onBuddySet;
 
 		/// Called when Buddy has been removed from this roster.
 		/// \param buddy removed Buddy
-		boost::signals2::signal<void (Buddy *buddy)> onBuddyUnset;
+		Event<void (Buddy *buddy)> onBuddyUnset;
 
-		boost::signals2::signal<void (Buddy *buddy)> onBuddyAdded;
+		Event<void (Buddy *buddy)> onBuddyAdded;
 		
-		boost::signals2::signal<void (Buddy *buddy)> onBuddyRemoved;
+		Event<void (Buddy *buddy)> onBuddyRemoved;
 
 		void handleBuddyChanged(Buddy *buddy);
 
@@ -123,7 +123,7 @@ class RosterManager {
 		void sendUnavailablePresences(const Swift::JID &to);
 
 	protected:
-		std::map<std::string, Buddy *, std::less<std::string>, boost::pool_allocator< std::pair<const std::string, Buddy *> > > m_buddies;
+		BuddiesMap m_buddies;
 
 	private:
 		Component *m_component;

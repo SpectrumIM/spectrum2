@@ -19,6 +19,7 @@
  */
 
 #include "discoinforesponder.h"
+#include <boost/foreach.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -42,7 +43,11 @@ namespace Transport {
 
 DiscoInfoResponder::DiscoInfoResponder(Swift::IQRouter *router, Config *config, UserManager *userManager) : Swift::GetResponder<DiscoInfo>(router) {
 	m_config = config;
-	m_config->onBackendConfigUpdated.connect(boost::bind(&DiscoInfoResponder::updateFeatures, this));
+	auto prevBackendConfig = m_config->onBackendConfigUpdated;
+	m_config->onBackendConfigUpdated = [prevBackendConfig, this]() {
+		prevBackendConfig();
+		updateFeatures();
+	};
 	m_buddyInfo = NULL;
 	m_transportInfo.addIdentity(DiscoInfo::Identity(CONFIG_STRING(m_config, "identity.name"),
 													CONFIG_STRING(m_config, "identity.category"),

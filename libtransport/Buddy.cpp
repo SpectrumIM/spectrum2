@@ -28,8 +28,6 @@
 #include "Swiften/Elements/VCardUpdate.h"
 #include "Swiften/Elements/Presence.h"
 
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
 
 namespace Transport {
 
@@ -42,7 +40,7 @@ Buddy::~Buddy() {
 
 void Buddy::sendPresence() {
 	std::vector<Swift::Presence::ref> &presences = generatePresenceStanzas(255);
-	BOOST_FOREACH(Swift::Presence::ref presence, presences) {
+	for (Swift::Presence::ref presence : presences) {
 		m_rosterManager->getUser()->getComponent()->getFrontend()->sendPresence(presence);
 	}
 }
@@ -144,7 +142,7 @@ std::vector<Swift::Presence::ref> &Buddy::generatePresenceStanzas(int features, 
 // 		}
 	}
 
-	BOOST_FOREACH(Swift::Presence::ref &p, m_presences) {
+	for (Swift::Presence::ref &p : m_presences) {
 		if (p->getFrom() == presence->getFrom()) {
 			p = presence;
 			return m_presences;

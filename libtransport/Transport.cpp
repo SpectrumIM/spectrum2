@@ -26,7 +26,6 @@
 #include "transport/Config.h"
 
 #include <boost/bind.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 
 using namespace Swift;
 
@@ -51,8 +50,15 @@ Component::Component(Frontend *frontend, Swift::EventLoop *loop, Swift::NetworkF
 	m_reconnectTimer = m_factories->getTimerFactory()->createTimer(3000);
 	m_reconnectTimer->onTick.connect(boost::bind(&Component::start, this)); 
 
-	m_presenceOracle = new Transport::PresenceOracle(frontend);
-	m_presenceOracle->onPresenceChange.connect(boost::bind(&Component::handlePresence, this, _1));
+	m_presenceOracle = new Transport::PresenceOracle();
+	m_presenceOracle->onPresenceChange = [this](Swift::Presence::ref presence) { handlePresence(presence); };
+
+	// The oracle sees presences before UserManager does, as before.
+	frontend->onPresenceReceived = [this](Swift::Presence::ref presence) {
+		m_presenceOracle->handleIncomingPresence(presence);
+		onGeneralPresenceReceived(presence);
+	};
+	frontend->onAvailableChanged = [this](bool available) { m_presenceOracle->handleStanzaChannelAvailableChanged(available); };
 
 	m_frontend->init(this, loop, factories, config, userRegistry);
 }
@@ -96,7 +102,7 @@ void Component::handleConnectionError(const std::string &error) {
 }
 
 void Component::handleDataRead(const std::string &data) {
-	if (!boost::starts_with(data, "<auth")) {
+	if (data.compare(0, 5, "<auth") != 0) {
 		LOG4CXX_INFO(logger_xml, "RAW DATA IN " << data);
 	}
 }

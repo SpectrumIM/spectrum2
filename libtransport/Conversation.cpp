@@ -96,7 +96,7 @@ void Conversation::destroyRoom() {
 		p->addStatusCode(c2);
 
 		presence->addPayload(std::shared_ptr<Swift::Payload>(p));
-		BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+		for (const Swift::JID &jid : m_jids) {
 			presence->setTo(jid);
 			m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 		}
@@ -133,7 +133,7 @@ void Conversation::handleRawMessage(std::shared_ptr<Swift::Message> &message) {
 			cacheMessage(message);
 		}
 		else {
-			BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+			for (const Swift::JID &jid : m_jids) {
 				message->setTo(jid);
 				// Subject has to be sent after our own presence (the one with code 110)
 				if (!message->getSubject().empty()) {
@@ -250,7 +250,7 @@ void Conversation::handleMessage(std::shared_ptr<Swift::Message> &message, const
 			    << ", will send to bare JID for archival.");
 			this->forwardAsCarbonSent(message, this->m_jid.toBare());
 		} else
-		BOOST_FOREACH(const Swift::Presence::ref &it, presences) {
+		for (const Swift::Presence::ref &it : presences) {
 			this->forwardAsCarbonSent(message, it->getFrom());
 		}
 	} else {
@@ -574,7 +574,7 @@ void Conversation::handleParticipantChanged(const std::string &nick, Conversatio
 		m_participants[nick].alias = alias;
 	}
 
-	BOOST_FOREACH(const Swift::JID &jid, m_jids) {
+	for (const Swift::JID &jid : m_jids) {
 		presence->setTo(jid);
 		m_conversationManager->getComponent()->getFrontend()->sendPresence(presence);
 	}

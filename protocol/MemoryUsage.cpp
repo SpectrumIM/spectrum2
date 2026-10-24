@@ -24,7 +24,7 @@
 #include <cstring>
 #include <fstream>
 #include <algorithm>
-#include <boost/lexical_cast.hpp>
+#include <string>
 #ifndef WIN32
 #include <sys/param.h>
 #else 
@@ -112,7 +112,7 @@ void process_mem_usage(double& shared, double& resident_set, pid_t pid) {
 	// 'file' stat seems to give the most reliable results
 	std::string f = "/proc/self/statm";
 	if (pid != 0) {
-		f = "/proc/" + boost::lexical_cast<std::string>(pid) + "/statm";
+		f = "/proc/" + std::to_string(pid) + "/statm";
 	}
 	ifstream stat_stream(f.c_str(), ios_base::in);
 	if (!stat_stream.is_open()) {

@@ -197,8 +197,12 @@ SlackUserManager::SlackUserManager(Component *component, UserRegistry *userRegis
 	m_storageBackend = storageBackend;
     m_userRegistration = new SlackUserRegistration(component, this, storageBackend);
 
-	onUserCreated.connect(boost::bind(&SlackUserManager::handleUserCreated, this, _1));
-	m_component->onAdminInterfaceSet.connect(boost::bind(&SlackUserManager::handleAdminInterfaceSet, this));
+	auto prevUserCreated = onUserCreated;
+	onUserCreated = [prevUserCreated, this](User *user) {
+		prevUserCreated(user);
+		handleUserCreated(user);
+	};
+	m_component->onAdminInterfaceSet = [this]() { handleAdminInterfaceSet(); };
 }
 
 SlackUserManager::~SlackUserManager() {

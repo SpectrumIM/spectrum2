@@ -25,10 +25,6 @@
 #include "transport/RosterManager.h"
 #include "transport/User.h"
 #include "transport/Logging.h"
-#include <boost/shared_ptr.hpp>
-#include <boost/thread.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/regex.hpp> 
 
 using namespace Swift;
 
@@ -54,7 +50,9 @@ bool UserRegistration::registerUser(const UserInfo &row, bool allowPasswordChang
 	if (!registered || (registered && allowPasswordChange)) {
 		m_storageBackend->setUser(row);
 		doUserRegistration(row);
-		onUserRegistered(row);
+		if (onUserRegistered) {
+			onUserRegistered(row);
+		}
 	}
 
 	return !registered;
@@ -82,7 +80,9 @@ bool UserRegistration::unregisterUser(const std::string &barejid) {
 	}
 
 	doUserUnregistration(userInfo);
-	onUserUnregistered(userInfo);
+	if (onUserUnregistered) {
+		onUserUnregistered(userInfo);
+	}
 
 	return true;
 }

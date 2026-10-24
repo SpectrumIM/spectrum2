@@ -66,7 +66,7 @@ bool PQXXBackend::connect() {
 			connection_str += " password=" + CONFIG_STRING(m_config, "database.password");
 		}
 		if (CONFIG_INT(m_config, "database.port") != 0) {
-			connection_str += " port=" + boost::lexical_cast<std::string>(CONFIG_INT(m_config, "database.port"));
+			connection_str += " port=" + std::to_string(CONFIG_INT(m_config, "database.port"));
 		}
 	}
 	else {
@@ -369,7 +369,7 @@ bool PQXXBackend::getBuddies(long id, std::list<BuddyInfo> &roster) {
 					break;
 			}
 
-			BOOST_FOREACH(BuddyInfo &b, roster) {
+			for (BuddyInfo &b : roster) {
 				if (buddy_id == b.id) {
 					b.settings[key] = var;
 					break;

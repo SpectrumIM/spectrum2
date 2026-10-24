@@ -35,11 +35,8 @@
 #include "Swiften/Elements/SpectrumErrorPayload.h"
 #include "Swiften/Elements/CapsInfo.h"
 #include "Swiften/Elements/VCardUpdate.h"
-#include <boost/foreach.hpp>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define foreach         BOOST_FOREACH
 
 namespace Transport {
 
@@ -91,7 +88,7 @@ void User::sendCurrentPresence() {
 	}
 
 	std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
-	foreach(Swift::Presence::ref presence, presences) {
+	for (Swift::Presence::ref presence : presences) {
 		if (presence->getType() == Swift::Presence::Unavailable) {
 			continue;
 		}
@@ -132,7 +129,7 @@ void User::setConnected(bool connected) {
 	sendCurrentPresence();
 
 	if (m_connected) {
-		BOOST_FOREACH(Swift::Presence::ref &presence, m_joinedRooms) {
+		for (Swift::Presence::ref &presence : m_joinedRooms) {
 			handlePresence(presence, true);
 		}
 	}
@@ -146,9 +143,11 @@ void User::setCacheMessages(bool cacheMessages) {
 }
 
 void User::leaveRoom(const std::string &room) {
-	onRoomLeft(room);
+	if (onRoomLeft) {
+		onRoomLeft(room);
+	}
 
-	BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
+	for (Swift::Presence::ref &p : m_joinedRooms) {
 		if (Buddy::JIDToLegacyName(p->getTo()) == room) {
 			m_joinedRooms.remove(p);
 			break;
@@ -189,7 +188,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				if (m_component->getFrontend()->sendCapabilitiesRequest(presence->getFrom()) != Swift::DiscoInfo::ref()) {
 					LOG4CXX_INFO(userLogger, m_jid.toString() << ": Ready to be connected to legacy network");
 					m_readyForConnect = true;
-					onReadyToConnect();
+					if (onReadyToConnect) {
+						onReadyToConnect();
+					}
 				}
 				else {
 					m_reconnectTimer->start();
@@ -198,7 +199,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			else if (m_component->inServerMode()) {
 				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Ready to be connected to legacy network");
 				m_readyForConnect = true;
-				onReadyToConnect();
+				if (onReadyToConnect) {
+					onReadyToConnect();
+				}
 			}
 			else {
 				m_reconnectTimer->start();
@@ -223,7 +226,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 			if (getUserSetting("stay_connected") != "1") {
 				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Going to left room " << room);
-				onRawPresenceReceived(presence);
+				if (onRawPresenceReceived) {
+					onRawPresenceReceived(presence);
+				}
 				leaveRoom(room);
 			}
 
@@ -234,7 +239,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			if (!m_readyForConnect) {
 				LOG4CXX_INFO(userLogger, m_jid.toString() << ": Ready to be connected to legacy network");
 				m_readyForConnect = true;
-				onReadyToConnect();
+				if (onReadyToConnect) {
+					onReadyToConnect();
+				}
 			}
 
 			std::string room = Buddy::JIDToLegacyName(presence->getTo());
@@ -255,14 +262,18 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				}
 
 				if (forceJoin) {
-					onRawPresenceReceived(presence);
-					onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
+					if (onRawPresenceReceived) {
+						onRawPresenceReceived(presence);
+					}
+					if (onRoomJoined) {
+						onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
+					}
 				}
 				return;
 			}
 
 			bool isInJoined = false;
-			BOOST_FOREACH(Swift::Presence::ref &p, m_joinedRooms) {
+			for (Swift::Presence::ref &p : m_joinedRooms) {
 				if (p->getTo() == presence->getTo()) {
 					isInJoined = true;
 				}
@@ -287,13 +298,19 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 				conv->setMUCEscaping(true);
 			}
 
-			onRawPresenceReceived(presence);
-			onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
+			if (onRawPresenceReceived) {
+				onRawPresenceReceived(presence);
+			}
+			if (onRoomJoined) {
+				onRoomJoined(presence->getFrom(), room, presence->getTo().getResource(), password);
+			}
 
 			return;
 		}
 
-		onRawPresenceReceived(presence);
+		if (onRawPresenceReceived) {
+			onRawPresenceReceived(presence);
+		}
 	}
 
 	int currentResourcesCount = m_presenceOracle->getAllPresence(m_jid).size();
@@ -306,7 +323,7 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 
 		std::string presences;
 		std::vector<Swift::Presence::ref> ps = m_presenceOracle->getAllPresence(m_jid);
-		BOOST_FOREACH(Swift::Presence::ref p, ps) {
+		for (Swift::Presence::ref p : ps) {
 			if (p != presence) {
 				presences += p->getFrom().toString() + " ";
 			}
@@ -360,7 +377,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			response->setTo(m_jid);
 			response->setFrom(m_component->getJID());
 			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Changing legacy network presence to " << response->getType());
-			onPresenceChanged(highest);
+			if (onPresenceChanged) {
+				onPresenceChanged(highest);
+			}
 			setCacheMessages(false);
 		}
 		else {
@@ -374,7 +393,9 @@ void User::handlePresence(Swift::Presence::ref presence, bool forceJoin) {
 			response->setTo(m_jid.toBare());
 			response->setFrom(m_component->getJID());
 			response->setType(Swift::Presence::Unavailable);
-			onPresenceChanged(response);
+			if (onPresenceChanged) {
+				onPresenceChanged(response);
+			}
 		}
 	}
 }
@@ -397,12 +418,16 @@ void User::onConnectingTimeout() {
 		return;
 	m_reconnectTimer->stop();
 	m_readyForConnect = true;
-	onReadyToConnect();
+	if (onReadyToConnect) {
+		onReadyToConnect();
+	}
 
 	Swift::Presence::ref highest = m_presenceOracle->getHighestPriorityPresence(m_jid.toBare());
 	if (highest) {
 		LOG4CXX_INFO(userLogger, m_jid.toString() << ": Changing legacy network presence to " << highest->getType());
-		onPresenceChanged(highest);
+		if (onPresenceChanged) {
+			onPresenceChanged(highest);
+		}
 	}
 }
 
@@ -423,9 +448,15 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 			LOG4CXX_INFO(userLogger, m_jid.toString() << ": Disconnecting from legacy network " << error << ", trying to reconnect automatically.");
 			// Simulate destruction/resurrection :)
 			// TODO: If this stops working, create onReconnect signal
-			m_userManager->onUserDestroyed(this);
-			m_userManager->onUserCreated(this);
-			onReadyToConnect();
+			if (m_userManager->onUserDestroyed) {
+				m_userManager->onUserDestroyed(this);
+			}
+			if (m_userManager->onUserCreated) {
+				m_userManager->onUserCreated(this);
+			}
+			if (onReadyToConnect) {
+				onReadyToConnect();
+			}
 			return;
 		}
 	}
@@ -436,7 +467,9 @@ void User::handleDisconnected(const std::string &error, Swift::SpectrumErrorPayl
 	else {
 		LOG4CXX_INFO(userLogger, m_jid.toString() << ": Disconnected from legacy network with error " << error);
 	}
-	onDisconnected();
+	if (onDisconnected) {
+		onDisconnected();
+	}
 
 	std::shared_ptr<Swift::Message> msg(new Swift::Message());
 	msg->setBody(error);
@@ -457,7 +490,7 @@ std::vector<Swift::JID> User::getJIDWithFeature(const std::string &feature) {
        std::vector<Swift::JID> jid;
        std::vector<Swift::Presence::ref> presences = m_presenceOracle->getAllPresence(m_jid);
 
-       foreach(Swift::Presence::ref presence, presences) {
+       for (Swift::Presence::ref presence : presences) {
                if (presence->getType() == Swift::Presence::Unavailable)
                        continue;
 

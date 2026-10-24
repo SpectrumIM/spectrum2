@@ -19,6 +19,7 @@
  */
 
 #include "discoitemsresponder.h"
+#include <boost/foreach.hpp>
 
 #include <iostream>
 #include <boost/bind.hpp>

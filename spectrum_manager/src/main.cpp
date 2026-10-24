@@ -1,4 +1,5 @@
 #include "managerconfig.h"
+#include <boost/algorithm/string.hpp>
 #include "methods.h"
 #ifdef ENABLE_WEBUI
 #include "server/server.h"

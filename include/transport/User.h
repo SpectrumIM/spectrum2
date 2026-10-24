@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <time.h>
 
-#include <boost/signals2.hpp>
+#include <functional>
 
 #include "transport/StorageBackend.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
@@ -149,12 +151,12 @@ class User {
 
 		void leaveRoom(const std::string &room);
 
-		boost::signals2::signal<void ()> onReadyToConnect;
-		boost::signals2::signal<void (Swift::Presence::ref presence)> onPresenceChanged;
-		boost::signals2::signal<void (Swift::Presence::ref presence)> onRawPresenceReceived;
-		boost::signals2::signal<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
-		boost::signals2::signal<void (const std::string &room)> onRoomLeft;
-		boost::signals2::signal<void ()> onDisconnected;
+		Event<void ()> onReadyToConnect;
+		Event<void (Swift::Presence::ref presence)> onPresenceChanged;
+		Event<void (Swift::Presence::ref presence)> onRawPresenceReceived;
+		Event<void (const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password)> onRoomJoined;
+		Event<void (const std::string &room)> onRoomLeft;
+		Event<void ()> onDisconnected;
 
 	private:
 		void onConnectingTimeout();

@@ -1,5 +1,7 @@
 // Transport includes
 #include "transport/Config.h"
+#include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #include "transport/NetworkPlugin.h"
 #include "transport/Logging.h"
 

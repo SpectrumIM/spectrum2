@@ -11,7 +11,9 @@ add_library(transport-protocol SHARED
 
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
 add_dependencies(transport-protocol pb)
-target_compile_features(transport-protocol PUBLIC cxx_std_11)
+# Compiled as C++20; public headers stay C++17-compatible because Swiften-based
+# consumers (libtransport, XMPP frontend) cannot build as C++20 with Boost 1.78.
+target_compile_features(transport-protocol PRIVATE cxx_std_20 INTERFACE cxx_std_17)
 
 if(WIN32)
 	target_compile_definitions(transport-protocol PRIVATE TRANSPORT_API=__declspec\(dllexport\))

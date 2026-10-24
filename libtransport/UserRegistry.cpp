@@ -63,7 +63,9 @@ void UserRegistry::isValidUserPassword(const Swift::JID& user, Swift::ServerFrom
 
 	users[key].password = Swift::safeByteArrayToString(password);
 	users[key].session = session;
-	onConnectUser(user);
+	if (onConnectUser) {
+		onConnectUser(user);
+	}
 
 	return;
 }
@@ -82,8 +84,9 @@ void UserRegistry::stopLogin(const Swift::JID& user, Swift::ServerFromClientSess
 
 	// ::removeLater can be called only by libtransport, not by Swift and libtransport
 	// takes care about user disconnecting itself, so don't call our signal.
-	if (!m_inRemoveLater)
+	if (!m_inRemoveLater && onDisconnectUser) {
 		onDisconnectUser(user);
+	}
 }
 
 void UserRegistry::onPasswordValid(const Swift::JID &user) {

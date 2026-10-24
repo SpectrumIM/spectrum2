@@ -36,8 +36,8 @@ class RosterManagerTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			setMeUp();
 			connectUser();
 			User *user = userManager->getUser("user@localhost");
-			user->getRosterManager()->onBuddyAdded.connect(boost::bind(&RosterManagerTest::handleBuddyAdded, this, _1));
-			user->getRosterManager()->onBuddyRemoved.connect(boost::bind(&RosterManagerTest::handleBuddyRemoved, this, _1));
+			user->getRosterManager()->onBuddyAdded = [this](Buddy *buddy) { handleBuddyAdded(buddy); };
+			user->getRosterManager()->onBuddyRemoved = [this](Buddy *buddy) { handleBuddyRemoved(buddy); };
 			received.clear();
 		}
 

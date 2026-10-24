@@ -1,4 +1,7 @@
 #include "APIServer.h"
+#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 #include "methods.h"
 
 #include <stdio.h>

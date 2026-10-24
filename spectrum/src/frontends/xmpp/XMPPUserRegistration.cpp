@@ -19,6 +19,8 @@
  */
 
 #include "XMPPUserRegistration.h"
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 #include "XMPPRosterManager.h"
 #include "transport/UserManager.h"
 #include "transport/StorageBackend.h"

@@ -30,16 +30,31 @@
 #include "transport/Frontend.h"
 #include "transport/MemoryUsage.h"
 #include "transport/Config.h"
+#include "transport/Util.h"
 #include "Swiften/Elements/MUCPayload.h"
 
-#include <boost/foreach.hpp>
 #include <memory>
-#include <boost/lexical_cast.hpp>
+#include <sstream>
+#include <type_traits>
 
 namespace Transport {
 
 DEFINE_LOGGER(adminInterfaceLogger, "AdminInterface");
 
+// Formats numbers the way boost::lexical_cast did: integers as-is and
+// floating point values without trailing zeros.
+template <typename T>
+static std::string toString(T value) {
+	if constexpr (std::is_floating_point_v<T>) {
+		std::ostringstream os;
+		os.precision(17);
+		os << value;
+		return os.str();
+	}
+	else {
+		return std::to_string(value);
+	}
+}
 // currently unused
 #if 0
 static std::string getArg(const std::string &body) {
@@ -73,7 +88,7 @@ class StatusCommand : public AdminInterfaceCommand {
 
 			int users = m_userManager->getUserCount();
 			int backends = m_server->getBackendCount();
-			ret = "Running (" + boost::lexical_cast<std::string>(users) + " users connected using " + boost::lexical_cast<std::string>(backends) + " backends)";
+			ret = "Running (" + toString(users) + " users connected using " + toString(backends) + " backends)";
 			return ret;
 		}
 
@@ -100,7 +115,7 @@ class UptimeCommand : public AdminInterfaceCommand {
 				return ret;
 			}
 
-			return boost::lexical_cast<std::string>(time(0) - m_start);
+			return toString(time(0) - m_start);
 		}
 
 	private:
@@ -160,7 +175,7 @@ class OnlineUsersCountCommand : public AdminInterfaceCommand {
 			}
 
 			int users = m_userManager->getUserCount();
-			return boost::lexical_cast<std::string>(users);
+			return toString(users);
 		}
 
 	private:
@@ -192,7 +207,7 @@ class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
 			for (std::list <NetworkPluginServer::Backend *>::const_iterator b = backends.begin(); b != backends.end(); b++) {
 				NetworkPluginServer::Backend *backend = *b;
-				lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + ")";
+				lst += "Backend " + toString(id) + " (ID=" + backend->id + ")";
 				lst += backend->acceptUsers ? "" : " - not-accepting";
 				lst += backend->longRun ? " - long-running" : "";
 				lst += ":\n";
@@ -204,7 +219,7 @@ class OnlineUsersPerBackendCommand : public AdminInterfaceCommand {
 					for (std::list<User *>::const_iterator u = backend->users.begin(); u != backend->users.end(); u++) {
 						User *user = *u;
 						lst += "   " + user->getJID().toBare().toString();
-						lst += " - non-active for " + boost::lexical_cast<std::string>(now - user->getLastActivity()) + " seconds";
+						lst += " - non-active for " + toString(now - user->getLastActivity()) + " seconds";
 						lst += "\n";
 					}
 				}
@@ -238,7 +253,7 @@ class BackendsCountCommand : public AdminInterfaceCommand {
 			}
 
 			int backends = m_server->getBackendCount();
-			return boost::lexical_cast<std::string>(backends);
+			return toString(backends);
 		}
 
 	private:
@@ -301,7 +316,7 @@ class HasOnlineUserCommand : public AdminInterfaceCommand {
 			}
 
 			user = m_userManager->getUser(args[0]);
-			return boost::lexical_cast<std::string>(user != NULL);
+			return toString(user != NULL);
 		}
 
 	private:
@@ -331,11 +346,11 @@ class ResMemoryCommand : public AdminInterfaceCommand {
 			double rss = 0;
 			process_mem_usage(shared, rss);
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			for (NetworkPluginServer::Backend * backend : backends) {
 				rss += backend->res;
 			}
 
-			return boost::lexical_cast<std::string>(rss);
+			return toString(rss);
 		}
 
 	private:
@@ -365,11 +380,11 @@ class ShrMemoryCommand : public AdminInterfaceCommand {
 			double rss = 0;
 			process_mem_usage(shared, rss);
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			for (NetworkPluginServer::Backend * backend : backends) {
 				shared += backend->shared;
 			}
 
-			return boost::lexical_cast<std::string>(shared);
+			return toString(shared);
 		}
 
 	private:
@@ -401,11 +416,11 @@ class UsedMemoryCommand : public AdminInterfaceCommand {
 			rss -= shared;
 
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			for (NetworkPluginServer::Backend * backend : backends) {
 				rss += backend->res - backend->shared;
 			}
 
-			return boost::lexical_cast<std::string>(rss);
+			return toString(rss);
 		}
 
 	private:
@@ -433,18 +448,18 @@ class AverageMemoryPerUserCommand : public AdminInterfaceCommand {
 			}
 
 			if (m_userManager->getUserCount() == 0) {
-				return boost::lexical_cast<std::string>(0);
+				return toString(0);
 			}
 			else {
 				unsigned long per_user = 0;
 				const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-				BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+				for (NetworkPluginServer::Backend * backend : backends) {
 					if (backend->res >= backend->init_res) {
 						per_user += (backend->res - backend->init_res);
 					}
 				}
 
-				return boost::lexical_cast<std::string>(per_user / m_userManager->getUserCount());
+				return toString(per_user / m_userManager->getUserCount());
 			}
 		}
 
@@ -475,8 +490,8 @@ class ResMemoryPerBackendCommand : public AdminInterfaceCommand {
 			std::string lst;
 			int id = 1;
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-				lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res) + "\n";
+			for (NetworkPluginServer::Backend * backend : backends) {
+				lst += "Backend " + toString(id) + " (ID=" + backend->id + "): " + toString(backend->res) + "\n";
 				id++;
 			}
 
@@ -509,8 +524,8 @@ class ShrMemoryPerBackendCommand : public AdminInterfaceCommand {
 			std::string lst;
 			int id = 1;
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->shared) + "\n";
+			for (NetworkPluginServer::Backend * backend : backends) {
+				lst += "Backend " + toString(id)  + " (ID=" + backend->id + "): " + toString(backend->shared) + "\n";
 				id++;
 			}
 
@@ -543,8 +558,8 @@ class UsedMemoryPerBackendCommand : public AdminInterfaceCommand {
 			std::string lst;
 			int id = 1;
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
-				lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>(backend->res - backend->shared) + "\n";
+			for (NetworkPluginServer::Backend * backend : backends) {
+				lst += "Backend " + toString(id)  + " (ID=" + backend->id + "): " + toString(backend->res - backend->shared) + "\n";
 				id++;
 			}
 
@@ -577,12 +592,12 @@ class AverageMemoryPerUserPerBackendCommand : public AdminInterfaceCommand {
 			std::string lst;
 			int id = 1;
 			const std::list <NetworkPluginServer::Backend *> &backends = m_server->getBackends();
-			BOOST_FOREACH(NetworkPluginServer::Backend * backend, backends) {
+			for (NetworkPluginServer::Backend * backend : backends) {
 				if (backend->users.size() == 0 || backend->res < backend->init_res) {
-					lst += "Backend " + boost::lexical_cast<std::string>(id)  + " (ID=" + backend->id + "): 0\n";
+					lst += "Backend " + toString(id)  + " (ID=" + backend->id + "): 0\n";
 				}
 				else {
-					lst += "Backend " + boost::lexical_cast<std::string>(id) + " (ID=" + backend->id + "): " + boost::lexical_cast<std::string>((backend->res - backend->init_res) / backend->users.size()) + "\n";
+					lst += "Backend " + toString(id) + " (ID=" + backend->id + "): " + toString((backend->res - backend->init_res) / backend->users.size()) + "\n";
 				}
 				id++;
 			}
@@ -613,7 +628,7 @@ class CrashedBackendsCountCommand : public AdminInterfaceCommand {
 				return ret;
 			}
 
-			return boost::lexical_cast<std::string>(m_server->getCrashedBackends().size());
+			return toString(m_server->getCrashedBackends().size());
 		}
 
 	private:
@@ -641,7 +656,7 @@ class CrashedBackendsCommand : public AdminInterfaceCommand {
 
 			std::string lst;
 			const std::vector<std::string> &backends = m_server->getCrashedBackends();
-			BOOST_FOREACH(const std::string &backend, backends) {
+			for (const std::string &backend : backends) {
 				lst += backend + "\n";
 			}
 			return lst;
@@ -670,7 +685,7 @@ class MessagesFromXMPPCommand : public AdminInterfaceCommand {
 			}
 
 			int msgCount = m_userManager->getMessagesToBackend();
-			return boost::lexical_cast<std::string>(msgCount);
+			return toString(msgCount);
 		}
 
 	private:
@@ -696,7 +711,7 @@ class MessagesToXMPPCommand : public AdminInterfaceCommand {
 			}
 
 			int msgCount = m_userManager->getMessagesToXMPP();
-			return boost::lexical_cast<std::string>(msgCount);
+			return toString(msgCount);
 		}
 
 	private:
@@ -716,7 +731,7 @@ class RegisterCommand : public AdminInterfaceCommand {
 
 			std::string fields = component->getFrontend()->getRegistrationFields();
 			std::vector<std::string> args;
-			boost::split(args, fields, boost::is_any_of("\n"));
+			args = Util::split(fields, '\n');
 			addArg("username", args[0]);
 			if (fields.size() > 1) {
 				addArg("legacy_username", args[1]);
@@ -843,7 +858,7 @@ class GetOAuth2URLCommand : public AdminInterfaceCommand {
 			setDescription("get_oauth2_code - Get OAUth2 URL");
 			std::string fields = component->getFrontend()->getRegistrationFields();
 			std::vector<std::string> args;
-			boost::split(args, fields, boost::is_any_of("\n"));
+			args = Util::split(fields, '\n');
 			addArg("username", args[0]);
 			if (fields.size() > 1) {
 				addArg("legacy_username", args[1]);
@@ -1071,7 +1086,7 @@ class ArgsCommand : public AdminInterfaceCommand {
 			}
 			AdminInterfaceCommand *command = it->second;
 
-			BOOST_FOREACH(const AdminInterfaceCommand::Arg &arg, command->getArgs()) {
+			for (const AdminInterfaceCommand::Arg &arg : command->getArgs()) {
 				ret += arg.name + " - \"" + arg.label + "\" " + "Example: \"" + arg.example + "\" Type: \"" + arg.type + "\"\n";
 			}
 
@@ -1090,7 +1105,6 @@ AdminInterface::AdminInterface(Component *component, UserManager *userManager, N
 	m_server = server;
 	m_userRegistration = userRegistration;
 
-	m_component->getFrontend()->onMessageReceived.connect(bind(&AdminInterface::handleMessageReceived, this, _1));
 
 	addCommand(new StatusCommand(m_server, m_userManager));
 	addCommand(new UptimeCommand());
@@ -1143,7 +1157,7 @@ void AdminInterface::handleQuery(Swift::Message::ref message) {
 
 	std::string body = msg;
 	std::vector<std::string> args;
-	boost::split(args, body, boost::is_any_of(" "));
+	args = Util::split(body, ' ');
 
 	if (args.empty()) {
 		message->setBody("Error: Unknown variable or command");

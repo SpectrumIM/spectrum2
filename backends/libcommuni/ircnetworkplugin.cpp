@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02111-1301  USA
  */
 #include <IrcCommand>
+#include <boost/algorithm/string.hpp>
 #include <IrcMessage>
 #include "ircnetworkplugin.h"
 #include "transport/Logging.h"

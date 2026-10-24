@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include "transport/Event.h"
+
 #include <vector>
 #include <boost/bind.hpp>
-#include <boost/signals2.hpp>
+#include <functional>
 #include "Swiften/Network/BoostTimerFactory.h"
 #include "Swiften/Network/BoostIOServiceThread.h"
 #include "Swiften/Network/NetworkFactories.h"
@@ -93,10 +95,10 @@ namespace Transport {
 			/// This signal is emitted when server disconnects the transport because of some error.
 
 			/// \param error disconnection error
-			boost::signals2::signal<void (const std::string &error)> onConnectionError;
+			Event<void (const std::string &error)> onConnectionError;
 
 			/// This signal is emitted when transport successfully connects the server.
-			boost::signals2::signal<void ()> onConnected;
+			Event<void ()> onConnected;
 
 			/// This signal is emitted when XML stanza is sent to server.
 
@@ -106,11 +108,14 @@ namespace Transport {
 			/// (for example to="j2j.domain.tld") and for presences comming to
 			/// MUC (for example to="#chat%irc.freenode.org@irc.domain.tld")
 			/// \param presence Presence.
-			boost::signals2::signal<void (Swift::Presence::ref presence)> onUserPresenceReceived;
+			Event<void (Swift::Presence::ref presence)> onUserPresenceReceived;
 
-			boost::signals2::signal<void (std::shared_ptr<Swift::IQ>)> onRawIQReceived;
+			/// Every presence the frontend receives, before user handling (fed by Component).
+			Event<void (Swift::Presence::ref presence)> onGeneralPresenceReceived;
 
-			boost::signals2::signal<void ()> onAdminInterfaceSet;
+			Event<void (std::shared_ptr<Swift::IQ>)> onRawIQReceived;
+
+			Event<void ()> onAdminInterfaceSet;
 			
 			void handlePresence(Swift::Presence::ref presence);
 			void handleConnected();

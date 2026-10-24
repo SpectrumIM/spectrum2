@@ -19,6 +19,8 @@
  */
 
 #include "session.h"
+#include <boost/lexical_cast.hpp>
+#include <boost/foreach.hpp>
 #include <QtCore>
 #include <iostream>
 #include <IrcCommand>

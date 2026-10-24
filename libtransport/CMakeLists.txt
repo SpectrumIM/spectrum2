@@ -51,7 +51,9 @@
 	if(WIN32)
 		target_link_libraries(transport psapi.lib bcrypt.lib)
 	endif()
-	target_compile_features(transport PUBLIC cxx_std_11)
+	# C++17 while libtransport still builds Swiften sources: Boost.Signals2 1.78
+	# disconnect-by-slot does not compile as C++20.
+	target_compile_features(transport PUBLIC cxx_std_17)
 
 	if(PQXX_FOUND)
 		target_link_libraries(transport	${PQXX_LIBRARIES} ${PQ_LIBRARY})

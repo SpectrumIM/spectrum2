@@ -21,15 +21,14 @@
 #include "transport/Logging.h"
 #include "transport/Config.h"
 #include "transport/Util.h"
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <iterator>
 #include <algorithm>
 #include <memory>
 
 
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <filesystem>
+#include <string>
 
 #ifndef WIN32
 #include "sys/signal.h"
@@ -44,7 +43,6 @@
 #define getpid _getpid
 #endif
 
-using namespace boost::filesystem;
 
 
 namespace Transport {
@@ -131,7 +129,7 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 		}
 		p.load(istream);
 		LogString pid, jid, id;
-		log4cxx::helpers::Transcoder::decode(boost::lexical_cast<std::string>(getpid()), pid);
+		log4cxx::helpers::Transcoder::decode(std::to_string(getpid()), pid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING(config, "service.jid"), jid);
 		log4cxx::helpers::Transcoder::decode(CONFIG_STRING_DEFAULTED(config, "service.backend_id", ""), id);
 #ifdef _MSC_VER
@@ -145,13 +143,13 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 #endif
 
 		std::vector<std::string> dirs;
-		BOOST_FOREACH(const log4cxx::LogString &prop, p.propertyNames()) {
-			if (boost::ends_with(prop, ".File")) {
+		for (const log4cxx::LogString &prop : p.propertyNames()) {
+			if (prop.ends_with(".File")) {
 				std::string dir;
 				log4cxx::helpers::Transcoder::encode(p.get(prop), dir);
-				boost::replace_all(dir, "${jid}", jid);
-				boost::replace_all(dir, "${pid}", pid);
-				boost::replace_all(dir, "${id}", id);
+				Util::replaceAll(dir, "${jid}", jid);
+				Util::replaceAll(dir, "${pid}", pid);
+				Util::replaceAll(dir, "${id}", id);
 				dirs.push_back(dir);
 			}
 		}
@@ -161,13 +159,13 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 		old_cmask = umask(0007);
 #endif
 
-		BOOST_FOREACH(std::string &dir, dirs) {
+		for (std::string &dir : dirs) {
 			if (!dir.empty()) {
 				try {
-					Transport::Util::createDirectories(config, boost::filesystem::path(dir).parent_path());
+					Transport::Util::createDirectories(config, std::filesystem::path(dir).parent_path());
 				}
-				catch (const boost::filesystem::filesystem_error &e) {
-					std::cerr << "Can't create logging directory directory " << boost::filesystem::path(dir).parent_path().string() << ": " << e.what() << ".\n";
+				catch (const std::filesystem::filesystem_error &e) {
+					std::cerr << "Can't create logging directory directory " << std::filesystem::path(dir).parent_path().string() << ": " << e.what() << ".\n";
 				}
 			}
 		}
@@ -184,7 +182,7 @@ static void initLogging(Config *config, std::string key, bool only_create_dir = 
 
 		// Change owner of main log file
 #ifndef WIN32
-	BOOST_FOREACH(std::string &dir, dirs) {
+	for (std::string &dir : dirs) {
 		if (!CONFIG_STRING(config, "service.group").empty() && !CONFIG_STRING(config, "service.user").empty()) {
 			struct group *gr;
 			if ((gr = getgrnam(CONFIG_STRING(config, "service.group").c_str())) == NULL) {

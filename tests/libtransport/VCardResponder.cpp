@@ -26,7 +26,7 @@ class VCardResponderTest : public CPPUNIT_NS :: TestFixture, public BasicTest {
 			setMeUp();
 			connectUser();
 			received.clear();
-			component->getFrontend()->onVCardRequired.connect(boost::bind(&VCardResponderTest::handleVCardRequired, this, _1, _2, _3));
+			component->getFrontend()->onVCardRequired = [this](User *user, const std::string &name, unsigned int id) { handleVCardRequired(user, name, id); };
 		}
 
 		void tearDown (void) {

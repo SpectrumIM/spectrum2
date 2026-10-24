@@ -20,7 +20,9 @@
 
 #pragma once
 
-#include <boost/signals2.hpp>
+#include "transport/Event.h"
+
+#include <functional>
 
 #include <Swiften/Network/TLSConnectionFactory.h>
 #include <Swiften/Network/HostAddressPort.h>
@@ -53,10 +55,10 @@ class WebSocketClient {
 
 		void write(const std::string &data);
 
-		boost::signals2::signal<void (const std::string &payload)> onPayloadReceived;
+		Event<void (const std::string &payload)> onPayloadReceived;
 
-		boost::signals2::signal<void ()> onWebSocketConnected;
-		boost::signals2::signal<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
+		Event<void ()> onWebSocketConnected;
+		Event<void (const boost::optional<Swift::Connection::Error> &error)> onWebSocketDisconnected;
 
 	private:
 		void handleDNSResult(const std::vector<Swift::HostAddress>&, boost::optional<Swift::DomainNameResolveError>);

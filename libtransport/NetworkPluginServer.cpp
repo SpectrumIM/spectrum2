@@ -19,52 +19,92 @@
  */
 
 #include "transport/NetworkPluginServer.h"
+#include "transport/Event.h"
 #include "transport/PresenceOracle.h"
+#include "transport/Event.h"
 #include "transport/User.h"
+#include "transport/Event.h"
 #include "transport/Transport.h"
+#include "transport/Event.h"
 #include "transport/RosterManager.h"
+#include "transport/Event.h"
 #include "transport/UserManager.h"
+#include "transport/Event.h"
 #include "transport/ConversationManager.h"
+#include "transport/Event.h"
 #include "transport/LocalBuddy.h"
+#include "transport/Event.h"
 #include "transport/Config.h"
+#include "transport/Event.h"
 #include "transport/Conversation.h"
+#include "transport/Event.h"
 #include "transport/Logging.h"
+#include "transport/Event.h"
 #include "transport/AdminInterface.h"
+#include "transport/Event.h"
 #include "transport/Frontend.h"
+#include "transport/Event.h"
 #include "transport/Factory.h"
+#include "transport/Event.h"
 #include "transport/UserRegistry.h"
+#include "transport/Event.h"
 #include "transport/protocol.pb.h"
+#include "transport/Event.h"
 #include "transport/Util.h"
+#include "transport/Event.h"
 #include "Swiften/Server/ServerStanzaChannel.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/StreamError.h"
+#include "transport/Event.h"
 #include "Swiften/Network/BoostConnectionServer.h"
+#include "transport/Event.h"
 #include "Swiften/Network/ConnectionServerFactory.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/AttentionPayload.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/XHTMLIMPayload.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/Delay.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/DeliveryReceipt.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/DeliveryReceiptRequest.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/InvisiblePayload.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/SpectrumErrorPayload.h"
+#include "transport/Event.h"
 #include "Swiften/Elements/RawXMLPayload.h"
+#include "transport/Event.h"
 #include <Swiften/Serializer/XML/XMLElement.h>
+#include "transport/Event.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
-#include <boost/regex.hpp>
-#include <boost/algorithm/string.hpp>
+#include "transport/Event.h"
+#include <regex>
+#include "transport/Event.h"
 
 #include "transport/utf8.h"
+#include "transport/Event.h"
 
 #ifdef _WIN32
 #include "windows.h"
+#include "transport/Event.h"
 #include <stdint.h>
+#include "transport/Event.h"
 #else
 #include "sys/wait.h"
+#include "transport/Event.h"
 #include "sys/signal.h"
+#include "transport/Event.h"
 #include <sys/types.h>
+#include "transport/Event.h"
 #include <signal.h>
+#include "transport/Event.h"
 #include "popt.h"
+#include "transport/Event.h"
 #include <dirent.h>
+#include "transport/Event.h"
 #endif
 
 using namespace Transport::Util;
@@ -88,7 +128,7 @@ class NetworkConversation : public Conversation {
 			onMessageToSend(this, message);
 		}
 
-		boost::signals2::signal<void (NetworkConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
+		Event<void (NetworkConversation *, std::shared_ptr<Swift::Message> &)> onMessageToSend;
 };
 
 class NetworkFactory : public Factory {
@@ -102,7 +142,7 @@ class NetworkFactory : public Factory {
 		// Creates new conversation (NetworkConversation in this case)
 		Conversation *createConversation(ConversationManager *conversationManager, const std::string &legacyName, bool isMuc) {
 			NetworkConversation *nc = new NetworkConversation(conversationManager, legacyName, isMuc);
-			nc->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, m_nps, _1, _2));
+			nc->onMessageToSend = [nps = m_nps](NetworkConversation *conv, std::shared_ptr<Swift::Message> &msg) { nps->handleMessageReceived(conv, msg); };
 			return nc;
 		}
 
@@ -137,7 +177,7 @@ class NetworkFactory : public Factory {
 // Executes new backend
 static unsigned long exec_(const std::string& exePath, const char *host, const char *port, const char *log_id, const char *cmdlineArgs) {
 	// BACKEND_ID is replaced with unique ID. The ID is increasing for every backend.
-	std::string finalExePath = boost::replace_all_copy(exePath, "BACKEND_ID", boost::lexical_cast<std::string>(backend_id++));	
+	std::string finalExePath = Util::replaceAllCopy(exePath, "BACKEND_ID", std::to_string(backend_id++));
 
 #ifdef _WIN32
 	// Add host and port.
@@ -289,10 +329,10 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 	m_xmppParser->parse("<stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams' to='localhost' version='1.0'>");
 	m_serializer = new Swift::XMPPSerializer(&m_collection2, Swift::ClientStreamType, false);
 	m_component->m_factory = new NetworkFactory(this);
-	m_userManager->onUserCreated.connect(boost::bind(&NetworkPluginServer::handleUserCreated, this, _1));
-	m_userManager->onUserDestroyed.connect(boost::bind(&NetworkPluginServer::handleUserDestroyed, this, _1));
+	m_userManager->onUserCreated = [this](User *user) { handleUserCreated(user); };
+	m_userManager->onUserDestroyed = [this](User *user) { handleUserDestroyed(user); };
 
-	m_component->onRawIQReceived.connect(boost::bind(&NetworkPluginServer::handleRawIQReceived, this, _1));
+	m_component->onRawIQReceived = [this](std::shared_ptr<Swift::IQ> iq) { handleRawIQReceived(iq); };
 
 	m_pingTimer = component->getNetworkFactories()->getTimerFactory()->createTimer(20000);
 	m_pingTimer->onTick.connect(boost::bind(&NetworkPluginServer::pingTimeout, this));
@@ -308,18 +348,18 @@ NetworkPluginServer::NetworkPluginServer(Component *component, Config *config, U
 		m_collectTimer->start();
 	}
 
-	m_component->getFrontend()->onVCardRequired.connect(boost::bind(&NetworkPluginServer::handleVCardRequired, this, _1, _2, _3));
-	m_component->getFrontend()->onVCardUpdated.connect(boost::bind(&NetworkPluginServer::handleVCardUpdated, this, _1, _2));
+	m_component->getFrontend()->onVCardRequired = [this](User *user, const std::string &name, unsigned int id) { handleVCardRequired(user, name, id); };
+	m_component->getFrontend()->onVCardUpdated = [this](User *user, std::shared_ptr<Swift::VCard> vcard) { handleVCardUpdated(user, vcard); };
 
-	m_component->getFrontend()->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleBuddyAdded, this, _1, _2));
-	m_component->getFrontend()->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleBuddyRemoved, this, _1));
-	m_component->getFrontend()->onBuddyUpdated.connect(boost::bind(&NetworkPluginServer::handleBuddyUpdated, this, _1, _2));
+	m_component->getFrontend()->onBuddyAdded = [this](Buddy *buddy, const Swift::RosterItemPayload &item) { handleBuddyAdded(buddy, item); };
+	m_component->getFrontend()->onBuddyRemoved = [this](Buddy *buddy) { handleBuddyRemoved(buddy); };
+	m_component->getFrontend()->onBuddyUpdated = [this](Buddy *buddy, const Swift::RosterItemPayload &item) { handleBuddyUpdated(buddy, item); };
 
 // // 	m_blockResponder = new BlockResponder(component->getIQRouter(), userManager);
 // // 	m_blockResponder->onBlockToggled.connect(boost::bind(&NetworkPluginServer::handleBlockToggled, this, _1));
 // // 	m_blockResponder->start();
 
-	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(*(Swift::HostAddress::fromString(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1"))), boost::lexical_cast<int>(CONFIG_STRING(m_config, "service.backend_port")));
+	m_server = component->getNetworkFactories()->getConnectionServerFactory()->createConnectionServer(*(Swift::HostAddress::fromString(CONFIG_STRING_DEFAULTED(m_config, "service.backend_host", "127.0.0.1"))), std::stoi(CONFIG_STRING(m_config, "service.backend_port")));
 	m_server->onNewConnection.connect(boost::bind(&NetworkPluginServer::handleNewClientConnection, this, _1));
 }
 
@@ -710,7 +750,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 			conv->setNickname(payload.buddyname() + "/" + payload.nickname());
 
 			user->getConversationManager()->addConversation(conv);
-			conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+			conv->onMessageToSend = [this](NetworkConversation *nc, std::shared_ptr<Swift::Message> &msg) { handleMessageReceived(nc, msg); };
 		}
 	}
 
@@ -718,7 +758,7 @@ void NetworkPluginServer::handleConvMessagePayload(const std::string &data, bool
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+		conv->onMessageToSend = [this](NetworkConversation *nc, std::shared_ptr<Swift::Message> &msg) { handleMessageReceived(nc, msg); };
 	}
 
 
@@ -817,7 +857,7 @@ void NetworkPluginServer::handleAttentionPayload(const std::string &data) {
 	if (!conv) {
 		conv = new NetworkConversation(user->getConversationManager(), payload.buddyname());
 		user->getConversationManager()->addConversation(conv);
-		conv->onMessageToSend.connect(boost::bind(&NetworkPluginServer::handleMessageReceived, this, _1, _2));
+		conv->onMessageToSend = [this](NetworkConversation *nc, std::shared_ptr<Swift::Message> &msg) { handleMessageReceived(nc, msg); };
 	}
 
 	conv->handleMessage(msg);
@@ -1255,7 +1295,7 @@ void NetworkPluginServer::pingTimeout() {
 			}
 
 			// Find users which are inactive for more than 'diff'
-			BOOST_FOREACH(User *u, (*it)->users) {
+			for (User *u : (*it)->users) {
 				if (now - u->getLastActivity() > diff) {
 					usersToMove.push_back(u);
 				}
@@ -1263,7 +1303,7 @@ void NetworkPluginServer::pingTimeout() {
 		}
 
 		// Move inactive users to long-running backend.
-		BOOST_FOREACH(User *u, usersToMove) {
+		for (User *u : usersToMove) {
 			LOG4CXX_INFO(networkPluginServerLogger, "Moving user " << u->getJID().toString() << " to long-running backend");
 			if (!moveToLongRunBackend(u))
 				break;
@@ -1298,7 +1338,7 @@ void NetworkPluginServer::pingTimeout() {
 			std::string pid = (*it)->id;
 			if (!pid.empty()) {
 				try {
-					kill(boost::lexical_cast<int>(pid), SIGABRT);
+					kill(std::stoi(pid), SIGABRT);
 				}
 				catch (...) { }
 			}
@@ -1311,7 +1351,7 @@ void NetworkPluginServer::pingTimeout() {
 		}
 	}
 
-	BOOST_FOREACH(Backend *b, toRemove) {
+	for (Backend *b : toRemove) {
 		handleSessionFinished(b);
 	}
 
@@ -1394,14 +1434,14 @@ void NetworkPluginServer::handleUserCreated(User *user) {
 	c->users.push_back(user);
 
 	// Don't forget to disconnect these in handleUserDestroyed!!!
-	user->onReadyToConnect.connect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
-	user->onPresenceChanged.connect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
-	user->onRawPresenceReceived.connect(boost::bind(&NetworkPluginServer::handleRawPresenceReceived, this, _1));
-	user->onRoomJoined.connect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
-	user->onRoomLeft.connect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+	user->onReadyToConnect = [this, user]() { handleUserReadyToConnect(user); };
+	user->onPresenceChanged = [this, user](Swift::Presence::ref presence) { handleUserPresenceChanged(user, presence); };
+	user->onRawPresenceReceived = [this](Swift::Presence::ref presence) { handleRawPresenceReceived(presence); };
+	user->onRoomJoined = [this, user](const Swift::JID &who, const std::string &room, const std::string &nickname, const std::string &password) { handleRoomJoined(user, who, room, nickname, password); };
+	user->onRoomLeft = [this, user](const std::string &room) { handleRoomLeft(user, room); };
 
-	user->getRosterManager()->onBuddyAdded.connect(boost::bind(&NetworkPluginServer::handleUserBuddyAdded, this, user, _1));
-	user->getRosterManager()->onBuddyRemoved.connect(boost::bind(&NetworkPluginServer::handleUserBuddyRemoved, this, user, _1));
+	user->getRosterManager()->onBuddyAdded = [this, user](Buddy *buddy) { handleUserBuddyAdded(user, buddy); };
+	user->getRosterManager()->onBuddyRemoved = [this, user](Buddy *buddy) { handleUserBuddyRemoved(user, buddy); };
 }
 
 void NetworkPluginServer::handleUserReadyToConnect(User *user) {
@@ -1444,7 +1484,7 @@ void NetworkPluginServer::handleUserReadyToConnect(User *user) {
 			buddy->set_buddyname(b->getName());
 			buddy->set_alias(b->getAlias());
 			buddy->set_iconhash(b->getIconHash());
-			BOOST_FOREACH(const std::string &g, b->getGroups()) {
+			for (const std::string &g : b->getGroups()) {
 				buddy->add_group(g);
 			}
 			buddy->set_status(pbnetwork::STATUS_NONE);
@@ -1538,14 +1578,14 @@ void NetworkPluginServer::handleUserDestroyed(User *user) {
 	m_waitingUsers.remove(user);
 	UserInfo userInfo = user->getUserInfo();
 
-	user->onReadyToConnect.disconnect(boost::bind(&NetworkPluginServer::handleUserReadyToConnect, this, user));
-	user->onPresenceChanged.disconnect(boost::bind(&NetworkPluginServer::handleUserPresenceChanged, this, user, _1));
-	user->onRawPresenceReceived.disconnect(boost::bind(&NetworkPluginServer::handleRawPresenceReceived, this, _1));
-	user->onRoomJoined.disconnect(boost::bind(&NetworkPluginServer::handleRoomJoined, this, user, _1, _2, _3, _4));
-	user->onRoomLeft.disconnect(boost::bind(&NetworkPluginServer::handleRoomLeft, this, user, _1));
+	user->onReadyToConnect = nullptr;
+	user->onPresenceChanged = nullptr;
+	user->onRawPresenceReceived = nullptr;
+	user->onRoomJoined = nullptr;
+	user->onRoomLeft = nullptr;
 
-	user->getRosterManager()->onBuddyAdded.disconnect(boost::bind(&NetworkPluginServer::handleUserBuddyAdded, this, user, _1));
-	user->getRosterManager()->onBuddyRemoved.disconnect(boost::bind(&NetworkPluginServer::handleUserBuddyRemoved, this, user, _1));
+	user->getRosterManager()->onBuddyAdded = nullptr;
+	user->getRosterManager()->onBuddyRemoved = nullptr;
 
 	pbnetwork::Logout logout;
 	logout.set_user(user->getJID().toBare());
@@ -1699,7 +1739,7 @@ void NetworkPluginServer::handleBuddyRemoved(Buddy *b) {
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+	for (const std::string &g : b->getGroups()) {
 		buddy.add_group(g);
 	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
@@ -1724,7 +1764,7 @@ inline std::string xhtml_trim(std::string &s) {
 	while (match) {
 		match = false;
 		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
-			if (boost::algorithm::istarts_with(s, t[i])) {
+			if (Util::iStartsWith(s, t[i])) {
 				s.erase(0, t[i].size());
 				match = true;
 			}
@@ -1733,7 +1773,7 @@ inline std::string xhtml_trim(std::string &s) {
 	while (match) {
 		match = false;
 		for (int i=0; i<sizeof(t)/sizeof(t[0]); i++)
-			if (boost::algorithm::iends_with(s, t[i])) {
+			if (Util::iEndsWith(s, t[i])) {
 				s.erase(s.size() - t[i].size());
 				match = true;
 			}
@@ -1827,7 +1867,7 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
     //Find all <img...> entries
     //Handles: spaces, unrelated tags
     //Doesn't handle: unquoted src, escaped "'>s, quotes in quotes ("quote: 'text' end quote")
-    static boost::regex image_expr("<img\\s+[^>]*src\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>");
+    static std::regex image_expr("<img\\s+[^>]*src\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>");
 
     int matchCount = 0;
     std::string firstUrl;
@@ -1835,8 +1875,8 @@ NetworkPluginServer::wrapIncomingMedia(std::shared_ptr<Swift::Message>& msg) {
     std::string::const_iterator xhtml_pos = xhtml.begin();
     std::string::size_type body_pos = 0;
 
-    boost::smatch match;
-    while(boost::regex_search(xhtml_pos, xhtml.end(), match, image_expr)) {
+    std::smatch match;
+    while(std::regex_search(xhtml_pos, xhtml.end(), match, image_expr)) {
         matchCount++;
         const std::string& image_tag = match[0];
         const std::string& image_url = match[1];
@@ -1919,7 +1959,7 @@ void NetworkPluginServer::handleBuddyUpdated(Buddy *b, const Swift::RosterItemPa
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+	for (const std::string &g : b->getGroups()) {
 		buddy.add_group(g);
 	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
@@ -1945,7 +1985,7 @@ void NetworkPluginServer::handleUserBuddyAdded(User *user, Buddy *b) {
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+	for (const std::string &g : b->getGroups()) {
 		buddy.add_group(g);
 	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
@@ -1973,7 +2013,7 @@ void NetworkPluginServer::handleBlockToggled(Buddy *b) {
 	buddy.set_username(user->getJID().toBare());
 	buddy.set_buddyname(b->getName());
 	buddy.set_alias(b->getAlias());
-	BOOST_FOREACH(const std::string &g, b->getGroups()) {
+	for (const std::string &g : b->getGroups()) {
 		buddy.add_group(g);
 	}
 	buddy.set_status(pbnetwork::STATUS_NONE);
@@ -2164,10 +2204,10 @@ NetworkPluginServer::Backend *NetworkPluginServer::getFreeClient(bool acceptUser
 		log_id_it = std::find(m_pids.begin(), m_pids.end(), 0);
 		std::string log_id = "";
 		if (log_id_it == m_pids.end()) {
-			log_id = boost::lexical_cast<std::string>(m_pids.size() + 1);
+			log_id = std::to_string(m_pids.size() + 1);
 		}
 		else {
-			log_id = boost::lexical_cast<std::string>(log_id_it - m_pids.begin() + 1);
+			log_id = std::to_string(log_id_it - m_pids.begin() + 1);
 		}
 		unsigned long pid = exec_(CONFIG_STRING(m_config, "service.backend"), CONFIG_STRING(m_config, "service.backend_host").c_str(), CONFIG_STRING(m_config, "service.backend_port").c_str(), log_id.c_str(), m_config->getCommandLineArgs().c_str());
 		if (log_id_it == m_pids.end()) {

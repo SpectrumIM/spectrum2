@@ -1,7 +1,7 @@
 file(GLOB SRC *.cpp)
 
 add_executable(spectrum2_swiften_backend ${SRC})
-target_compile_features(spectrum2_swiften_backend PUBLIC cxx_std_11)
+target_compile_features(spectrum2_swiften_backend PUBLIC cxx_std_17)
 
 
 target_link_libraries(spectrum2_swiften_backend transport-plugin ${Boost_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES})
