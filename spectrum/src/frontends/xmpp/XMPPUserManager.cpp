@@ -451,6 +451,11 @@ void XMPPUserManager::handleMessageReceived(Swift::Message::ref message) {
 		msg.set_xhtml(xhtmlPayload->getBody());
 	}
 
+	// Send normal message only when there is something to send
+	if (body.empty() && msg.xhtml().empty()) {
+		return;
+	}
+
 	msg.set_message(body);
 	if (message->getPayload<Swift::DeliveryReceiptRequest>() && !message->getID().empty()) {
 		msg.set_id(message->getID());
