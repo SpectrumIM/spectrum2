@@ -19,6 +19,7 @@
  */
 
 #include "XMPPRosterManager.h"
+#include <boost/bind.hpp>
 #include "XMPPFrontend.h"
 #include "XMPPUser.h"
 #include "PresenceOracle.h"

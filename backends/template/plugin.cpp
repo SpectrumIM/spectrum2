@@ -6,7 +6,6 @@
 
 // Boost
 #include <boost/algorithm/string.hpp>
-using namespace boost::program_options;
 using namespace Transport;
 
 DEFINE_LOGGER(logger, "Backend Template");

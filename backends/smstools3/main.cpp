@@ -9,6 +9,7 @@
  */
 
 #include "transport/Config.h"
+#include <boost/bind.hpp>
 #include "transport/Logging.h"
 #include "transport/BoostNetworkPlugin.h"
 #include <boost/filesystem.hpp>
@@ -24,7 +25,6 @@
 #include <boost/algorithm/string.hpp>
 
 using namespace boost::filesystem;
-using namespace boost::program_options;
 
 using namespace Transport;
 

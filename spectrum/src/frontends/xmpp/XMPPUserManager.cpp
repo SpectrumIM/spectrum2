@@ -19,6 +19,7 @@
  */
 
 #include "XMPPUserManager.h"
+#include <boost/bind.hpp>
 #include "XMPPUserRegistration.h"
 #include "XMPPUser.h"
 #include "XMPPRosterManager.h"

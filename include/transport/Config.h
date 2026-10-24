@@ -22,14 +22,42 @@
 
 #include "transport/Event.h"
 
-#include <boost/program_options.hpp>
-#include <boost/bind.hpp>
-#include <functional>
+#include <iosfwd>
+#include <list>
+#include <map>
+#include <set>
+#include <string>
+#include <variant>
+#include <vector>
 
 namespace Transport {
 
+/// Value of one config variable.
+
+/// Holds a string, int, bool, list (unregistered variable set more than once)
+/// or vector (registered multi-value variable). as<T>() throws
+/// std::bad_variant_access when the value has a different type.
+class ConfigValue {
+	public:
+		ConfigValue() {}
+		ConfigValue(const std::string &value) : m_value(value) {}
+		ConfigValue(const char *value) : m_value(std::string(value)) {}
+		ConfigValue(int value) : m_value(value) {}
+		ConfigValue(bool value) : m_value(value) {}
+		ConfigValue(const std::list<std::string> &value) : m_value(value) {}
+		ConfigValue(const std::vector<std::string> &value) : m_value(value) {}
+
+		bool empty() const { return m_value.index() == 0; }
+
+		template <class T>
+		const T &as() const { return std::get<T>(m_value); }
+
+	private:
+		std::variant<std::monostate, std::string, int, bool, std::list<std::string>, std::vector<std::string> > m_value;
+};
+
 template <class myType>
-const myType &safeAs(const boost::program_options::variable_value &var, const myType &def) {
+const myType &safeAs(const ConfigValue &var, const myType &def) {
 	try  {
 		return var.as<myType>();
 	}
@@ -54,9 +82,6 @@ const myType &safeAs(const boost::program_options::variable_value &var, const my
 
 namespace Transport {
 
-/// Represents variable:value pairs.
-typedef boost::program_options::variables_map Variables;
-
 /// Represents config file.
 
 /// It's used to load config file and allows others parts of libtransport to be configured
@@ -65,8 +90,8 @@ typedef boost::program_options::variables_map Variables;
 /// class documentation to get a list of all relevant variables for that class.
 class TRANSPORT_API Config {
 	public:
-		typedef std::map<std::string, boost::program_options::variable_value> SectionValuesCont;
-		typedef std::map<std::string, boost::program_options::variable_value> UnregisteredCont;
+		typedef std::map<std::string, ConfigValue> SectionValuesCont;
+		typedef std::map<std::string, ConfigValue> UnregisteredCont;
 
 		/// Constructor.
 		Config(int argc = 0, char **argv = NULL) : m_argc(argc), m_argv(argv) {}
@@ -75,23 +100,12 @@ class TRANSPORT_API Config {
 		virtual ~Config() {}
 
 		/// Loads data from config file.
-		
-		/// You can pass your extra options which will be recognized by
-		/// the parser using opts parameter.
+
 		/// \param configfile path to config file
-		/// \param opts extra options which will be recognized by a parser
-		bool load(const std::string &configfile, boost::program_options::options_description &opts, const std::string &jid = "");
-
-		bool load(std::istream &ifs, boost::program_options::options_description &opts, const std::string &jid = "");
-
-		bool load(std::istream &ifs);
-
-		/// Loads data from config file.
-		
-		/// This function loads only config variables needed by libtransport.
-		/// \see load(const std::string &, boost::program_options::options_description &)
-		/// \param configfile path to config file
+		/// \param jid overrides service.jid from the config file when not empty
 		bool load(const std::string &configfile, const std::string &jid = "");
+
+		bool load(std::istream &ifs, const std::string &jid = "");
 
 		bool reload();
 
@@ -101,10 +115,10 @@ class TRANSPORT_API Config {
 		}
 
 		/// Returns value of variable defined by key.
-		
+
 		/// For variables in sections you can use "section.variable" key format.
 		/// \param key config variable name
-		const boost::program_options::variable_value &operator[] (const std::string &key) {
+		const ConfigValue &operator[] (const std::string &key) {
 			if (m_variables.find(key) != m_variables.end()) {
 				return m_variables[key];
 			}
@@ -115,7 +129,7 @@ class TRANSPORT_API Config {
 		}
 
 		SectionValuesCont getSectionValues(const std::string& sectionName);
- 
+
 		std::string getCommandLineArgs() const;
 
 		/// Returns path to config file from which data were loaded.
@@ -128,17 +142,21 @@ class TRANSPORT_API Config {
 		Event<void ()> onBackendConfigUpdated;
 
 		static Config *createFromArgs(int argc, char **argv, std::string &error, std::string &host, int &port);
-	
+
 	private:
 		int m_argc;
 		char **m_argv;
 		std::string m_file;
 		std::string m_jid;
+		// Variables which got a value from the command line or a config
+		// file; later loads don't override them, only their defaults.
+		std::set<std::string> m_final;
+		std::set<std::string> m_backendFinal;
 
 	protected:
-		Variables m_variables;
-		Variables m_backendConfig;
-		std::map<std::string, boost::program_options::variable_value> m_unregistered;
+		std::map<std::string, ConfigValue> m_variables;
+		std::map<std::string, ConfigValue> m_backendConfig;
+		std::map<std::string, ConfigValue> m_unregistered;
 
 };
 

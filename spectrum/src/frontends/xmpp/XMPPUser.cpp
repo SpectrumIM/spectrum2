@@ -19,6 +19,7 @@
  */
 
 #include "XMPPUser.h"
+#include <boost/bind.hpp>
 #include "XMPPFrontend.h"
 #include "XMPPRosterManager.h"
 #include "XMPPConversation.h"

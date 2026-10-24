@@ -19,6 +19,7 @@
  */
 
 #include "SlackRTM.h"
+#include <boost/bind.hpp>
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackIdManager.h"

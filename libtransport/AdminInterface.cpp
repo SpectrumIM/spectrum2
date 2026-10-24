@@ -19,6 +19,8 @@
  */
 
 #include "transport/AdminInterface.h"
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 #include "transport/AdminInterfaceCommand.h"
 #include "transport/User.h"
 #include "transport/Transport.h"

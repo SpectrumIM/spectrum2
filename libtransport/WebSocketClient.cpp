@@ -19,6 +19,8 @@
  */
 
 #include "transport/WebSocketClient.h"
+#include <boost/bind.hpp>
+#include <boost/optional.hpp>
 #include "transport/Transport.h"
 #include "transport/Util.h"
 #include "transport/Logging.h"

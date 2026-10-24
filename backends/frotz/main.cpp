@@ -23,7 +23,6 @@
 
 using namespace boost::asio::ip;
 
-using namespace boost::program_options;
 using namespace Transport;
 
 class FrotzNetworkPlugin;

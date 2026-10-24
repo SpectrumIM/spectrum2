@@ -244,15 +244,10 @@ class TestingStorageBackend : public StorageBackend {
 
 class TestingConfig : public Config {
 public:
-	typedef std::map<std::string, boost::program_options::variable_value> VarMap;
+	inline std::map<std::string, ConfigValue>& variables() { return this->m_variables; }
 
-	inline boost::program_options::variables_map& variables() { return this->m_variables; }
-
-	void setValue(const std::string& name, const boost::program_options::variable_value& value) {
-		(*(static_cast<VarMap*>(&this->m_variables)))[name] = value;
-	}
-	void setValue(const std::string& name, const boost::any& value, const bool defaulted = false) {
-		this->setValue(name, boost::program_options::variable_value(value, defaulted));
+	void setValue(const std::string& name, const ConfigValue& value) {
+		this->m_variables[name] = value;
 	}
 };
 

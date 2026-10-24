@@ -1,4 +1,5 @@
 #include <cppunit/TestFixture.h>
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/Swiften.h>

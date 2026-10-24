@@ -19,6 +19,7 @@
  */
 
 #include "transport/RosterStorage.h"
+#include <boost/bind.hpp>
 #include "transport/Buddy.h"
 #include "transport/User.h"
 #include "transport/StorageBackend.h"

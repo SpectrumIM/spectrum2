@@ -1,4 +1,5 @@
 #include "transport/ThreadPool.h"
+#include <boost/bind.hpp>
 #include "transport/Logging.h"
 
 namespace Transport {

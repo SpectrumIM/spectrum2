@@ -1,4 +1,5 @@
 #include "transport/HTTPRequestQueue.h"
+#include <boost/bind.hpp>
 #include "transport/HTTPRequest.h"
 #include "transport/Transport.h"
 

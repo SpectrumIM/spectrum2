@@ -19,6 +19,7 @@
  */
 
 #include "transport/NetworkPluginServer.h"
+#include <boost/bind.hpp>
 #include "transport/Event.h"
 #include "transport/User.h"
 #include "transport/Transport.h"

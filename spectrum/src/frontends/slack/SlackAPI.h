@@ -21,6 +21,7 @@
 #pragma once
 
 #include "transport/HTTPRequestQueue.h"
+#include <boost/function.hpp>
 #include "transport/HTTPRequest.h"
 #include <json/json.h>
 

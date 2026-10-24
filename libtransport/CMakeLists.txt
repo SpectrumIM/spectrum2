@@ -46,7 +46,7 @@
 
 	find_package(CURL)
 
-	target_link_libraries(transport transport-protocol ${CURL_LIBRARIES} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY} ${PROTOBUF_LIBRARY} JsonCpp::JsonCpp)
+	target_link_libraries(transport transport-protocol ${CURL_LIBRARIES} ${SQLITE3_LIBRARIES} ${MYSQL_LIBRARIES} ${SWIFTEN_LIBRARY} ${Boost_LIBRARIES} ${LOG4CXX_LIBRARIES} ${POPT_LIBRARY} ${PROTOBUF_LIBRARY} JsonCpp::JsonCpp)
 
 	if(WIN32)
 		target_link_libraries(transport psapi.lib bcrypt.lib)

@@ -19,6 +19,7 @@
  */
 
 #include <string>
+#include <boost/bind.hpp>
 #include <map>
 #include "Swiften/Server/UserRegistry.h"
 #include "transport/UserRegistry.h"

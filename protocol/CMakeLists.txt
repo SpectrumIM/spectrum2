@@ -6,7 +6,19 @@ file(GLOB SRC *.cpp)
 
 add_library(transport-protocol SHARED
 	${SRC}
+	${CMAKE_CURRENT_SOURCE_DIR}/inih/ini.c
 	${CMAKE_CURRENT_SOURCE_DIR}/../include/transport/protocol.pb.cc
+)
+
+# inih parses the config files: no multi-line values, '#' comments are
+# stripped by Config itself, lines of any length.
+target_compile_definitions(transport-protocol PRIVATE
+	INI_ALLOW_MULTILINE=0
+	INI_ALLOW_INLINE_COMMENTS=0
+	INI_STOP_ON_FIRST_ERROR=1
+	INI_USE_STACK=0
+	INI_ALLOW_REALLOC=1
+	INI_MAX_LINE=1048576
 )
 
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/../include/transport/protocol.pb.cc PROPERTIES GENERATED 1)
@@ -25,7 +37,6 @@ endif()
 
 target_link_libraries(transport-protocol
 	${PROTOBUF_LIBRARY}
-	${Boost_LIBRARIES}
 	${LOG4CXX_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 )

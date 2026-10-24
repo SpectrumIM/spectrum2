@@ -19,6 +19,7 @@
  */
 
 #include "SlackRosterManager.h"
+#include <boost/bind.hpp>
 #include "SlackFrontend.h"
 #include "SlackUser.h"
 #include "SlackSession.h"

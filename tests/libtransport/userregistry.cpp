@@ -1,4 +1,6 @@
 #include <cppunit/TestFixture.h>
+#include <boost/bind.hpp>
+#include <boost/optional.hpp>
 #include <cppunit/extensions/HelperMacros.h>
 #include <Swiften/EventLoop/DummyEventLoop.h>
 #include <Swiften/Server/Server.h>

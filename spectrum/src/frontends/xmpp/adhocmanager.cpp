@@ -19,6 +19,7 @@
  */
 
 #include "adhocmanager.h"
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include "adhoccommandfactory.h"
 #include "discoitemsresponder.h"
