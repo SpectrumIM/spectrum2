@@ -419,12 +419,6 @@ class SpectrumNetworkPlugin : public NetworkPlugin {
 			purple_account_set_bool_wrapped(account, "direct_connect", FALSE);
 			purple_account_set_bool_wrapped(account, "compat-verification", TRUE);
 
-
-			// Stored user settings
-			for (const auto& item: settings) {
-				purple_account_set_string_wrapped(account, item.first.c_str(), item.second.c_str());
-			}
-
 			setDefaultAccountOptions(account);
 
 			// Enable account + privacy lists
