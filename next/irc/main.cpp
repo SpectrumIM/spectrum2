@@ -4,9 +4,10 @@
 //   spectrum_next_irc [frontend_host=127.0.0.1] [frontend_port=5231] [irc_host=127.0.0.1] [irc_port=6667]
 //
 // Login.legacyName is "nick@server[:port]" (as in the libpurple IRC backend); a bare nick
-// uses the default IRC server given on the command line. Password is ignored (first test).
+// uses the default IRC server given on the command line. A non-empty Login.password is sent
+// as PASS (on Libera it identifies the nick to NickServ).
 // ConversationMessage.buddyName is the IRC target: a nick or a #channel.
-// Channels are joined on the first message sent to them.
+// JoinRoom/LeaveRoom send JOIN/PART; a channel is also joined on the first message sent to it.
 
 #include <cstdlib>
 #include <csignal>
@@ -61,7 +62,8 @@ struct Session {
 
 	void sendLine(const std::string &line) {
 		std::lock_guard<std::mutex> lock(writeLock);
-		std::cerr << "> " << user << ": " << line << "\n";
+		// The password never reaches the log
+		std::cerr << "> " << user << ": " << (line.compare(0, 5, "PASS ") == 0 ? "PASS ***" : line) << "\n";
 		sendRaw(fd, line + "\r\n");
 	}
 };
@@ -230,6 +232,10 @@ void login(const pbnetwork::Login &login) {
 		}
 		sessions[s->user] = s;
 	}
+	// Server password; on Libera it also identifies the nick to NickServ
+	if (!login.password().empty()) {
+		s->sendLine("PASS " + login.password());
+	}
 	s->sendLine("NICK " + s->nick);
 	s->sendLine("USER " + s->nick + " 0 * :" + s->nick);
 	std::thread(readIrc, s).detach();
@@ -261,6 +267,30 @@ void sendOut(const pbnetwork::ConversationMessage &m) {
 		return;
 	}
 	s->sendLine("PRIVMSG " + target + " :" + m.message());
+}
+
+// Joins a channel now. Messages sent before the server confirms are queued (see sendOut).
+void joinRoom(const pbnetwork::Room &room) {
+	auto s = sessionFor(room.username());
+	if (!s) {
+		sendDisconnected(room.username(), 1, "not logged in");
+		return;
+	}
+	std::lock_guard<std::mutex> lock(s->stateLock);
+	if (s->joined.count(room.room()) || s->pending.count(room.room())) {
+		return;
+	}
+	s->pending[room.room()];
+	s->sendLine("JOIN " + room.room() + (room.password().empty() ? "" : " " + room.password()));
+}
+
+void leaveRoom(const pbnetwork::Room &room) {
+	auto s = sessionFor(room.username());
+	if (!s) return;
+	std::lock_guard<std::mutex> lock(s->stateLock);
+	s->joined.erase(room.room());
+	s->pending.erase(room.room());
+	s->sendLine("PART " + room.room());
 }
 
 // Sends QUIT on every IRC connection and closes it. Called on shutdown.
@@ -329,6 +359,16 @@ int main(int argc, char **argv) {
 			case WrapperMessage::TYPE_CONV_MESSAGE: {
 				pbnetwork::ConversationMessage m;
 				if (m.ParseFromString(msg.payload())) sendOut(m);
+				break;
+			}
+			case WrapperMessage::TYPE_JOIN_ROOM: {
+				pbnetwork::Room r;
+				if (r.ParseFromString(msg.payload())) joinRoom(r);
+				break;
+			}
+			case WrapperMessage::TYPE_LEAVE_ROOM: {
+				pbnetwork::Room r;
+				if (r.ParseFromString(msg.payload())) leaveRoom(r);
 				break;
 			}
 			case WrapperMessage::TYPE_PING:

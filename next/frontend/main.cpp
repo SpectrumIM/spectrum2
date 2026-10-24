@@ -2,7 +2,7 @@
 //
 //   spectrum_next_frontend [client_port=5230] [backend_port=5231]
 //
-// Clients send WrapperMessage frames (Login, Logout, ConversationMessage, Ping).
+// Clients send WrapperMessage frames (Login, Logout, ConversationMessage, JoinRoom, LeaveRoom, Ping).
 // The backend sends Connected, Disconnected, ConversationMessage, Ping.
 // Login accepts any password (first test). Messages are routed by userName.
 
